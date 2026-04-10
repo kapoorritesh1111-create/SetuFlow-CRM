@@ -1,0 +1,200 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+
+function ActionButton({ href, label, primary = false, download, onClick }: { href?: string; label: string; primary?: boolean; download?: boolean; onClick?: () => void | Promise<void> }) {
+  const className = primary
+    ? 'inline-flex min-h-[54px] items-center justify-center rounded-[1.35rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800'
+    : 'inline-flex min-h-[54px] items-center justify-center rounded-[1.35rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50';
+
+  if (href) {
+    return (
+      <a href={href} className={className} download={download}>
+        {label}
+      </a>
+    );
+  }
+
+  return (
+    <button type="button" className={className} onClick={onClick}>
+      {label}
+    </button>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-3 last:border-b-0 last:pb-0">
+      <span className="text-sm font-medium text-slate-500">{label}</span>
+      <span className="max-w-[70%] text-right text-sm text-slate-700">{value}</span>
+    </div>
+  );
+}
+
+function QrHint({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="rounded-[1.35rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+      <p className="text-sm font-semibold text-slate-900">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-slate-600">{detail}</p>
+    </div>
+  );
+}
+
+export function VCardShareActions({
+  previewPath,
+  downloadPath,
+  fullName,
+  organizationName,
+  roleLabel,
+  email,
+  primaryPhone,
+}: {
+  previewPath: string;
+  downloadPath: string;
+  fullName: string;
+  organizationName: string;
+  roleLabel: string;
+  email: string;
+  primaryPhone: string;
+}) {
+  const [origin, setOrigin] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [copiedSummary, setCopiedSummary] = useState(false);
+  const [shareSupported, setShareSupported] = useState(false);
+  const [shareState, setShareState] = useState<'idle' | 'shared' | 'fallback'>('idle');
+
+  const previewUrl = useMemo(() => (origin ? `${origin}${previewPath}` : previewPath), [origin, previewPath]);
+  const downloadUrl = useMemo(() => (origin ? `${origin}${downloadPath}` : downloadPath), [origin, downloadPath]);
+  const qrImageUrl = useMemo(
+    () =>
+      previewUrl
+        ? `https://api.qrserver.com/v1/create-qr-code/?size=224x224&margin=8&data=${encodeURIComponent(previewUrl)}`
+        : '',
+    [previewUrl],
+  );
+  const shareText = useMemo(
+    () => `Save ${fullName} · ${roleLabel}\n${organizationName}\nDirect contact: ${email}${primaryPhone ? ` · ${primaryPhone}` : ''}\nOpen the premium identity page: ${previewUrl}`,
+    [email, fullName, organizationName, previewUrl, primaryPhone, roleLabel],
+  );
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOrigin(window.location.origin);
+      setShareSupported(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
+    }
+  }, []);
+
+  async function copyPreviewLink() {
+    try {
+      await navigator.clipboard.writeText(previewUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  async function copyIntroSummary() {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopiedSummary(true);
+      window.setTimeout(() => setCopiedSummary(false), 1800);
+    } catch {
+      setCopiedSummary(false);
+    }
+  }
+
+  async function handleNativeShare() {
+    if (!shareSupported) {
+      await copyPreviewLink();
+      setShareState('fallback');
+      window.setTimeout(() => setShareState('idle'), 2200);
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: `${fullName} · SETU Flow digital vCard`,
+        text: `${fullName} · ${roleLabel} · ${organizationName}`,
+        url: previewUrl,
+      });
+      setShareState('shared');
+      window.setTimeout(() => setShareState('idle'), 2200);
+    } catch {
+      setShareState('idle');
+    }
+  }
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1.04fr,0.96fr]">
+      <div className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand-700">Apple layout share system</p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Calm sharing around one premium destination</h3>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+              Batch 12 trims the share layer down to the essentials. Preview remains the hero, native share and intro copy sit beside it, and everything else supports the same save-first identity story instead of acting like separate utilities.
+            </p>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">vCard ROI batch 12</span>
+        </div>
+
+        <div className="mt-6 rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] sm:p-5">
+          <p className="text-sm font-semibold text-slate-900">Primary share actions</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">Lead with the preview. Everything else helps someone pass along the same premium identity page with the right context intact.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <ActionButton href={previewUrl} label="Open preview" primary />
+            <ActionButton label={shareSupported ? 'Share now' : 'Copy share link'} onClick={handleNativeShare} />
+            <ActionButton label={copiedSummary ? 'Intro copied' : 'Copy intro'} onClick={copyIntroSummary} />
+            <ActionButton href={downloadUrl} label="Download .vcf" download />
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] sm:p-5">
+          <p className="text-sm font-semibold text-slate-900">Share state</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {copied
+              ? 'Preview link copied.'
+              : shareState === 'shared'
+                ? 'Shared through native share sheet.'
+                : shareState === 'fallback'
+                  ? 'Native share unavailable, so the preview link was copied instead.'
+                  : 'Ready to send as a calm, save-first identity destination.'}
+          </p>
+
+          <div className="mt-4 rounded-[1.4rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <p className="font-medium text-slate-900">Recommended intro</p>
+            <p className="mt-2 whitespace-pre-line">{shareText}</p>
+          </div>
+
+          <div className="mt-4 rounded-[1.4rem] border border-slate-200 px-4 py-2">
+            <DetailRow label="Preview URL" value={previewUrl} />
+            <DetailRow label="Identity layer" value="Verified, contextual, and save-first" />
+            <DetailRow label="Recipient flow" value="Open → trust → save → contact" />
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">QR as a premium handoff</p>
+            <p className="mt-1 text-sm text-slate-600">The QR lands on the same calm destination, so the story remains consistent across in-person and remote sharing.</p>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Live</span>
+        </div>
+
+        <div className="mt-5 rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
+          <div className="flex min-h-[244px] items-center justify-center rounded-[1.6rem] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4">
+            {qrImageUrl ? <img src={qrImageUrl} alt="QR code for digital vCard preview" className="h-56 w-56 rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <p className="max-w-xs text-center text-sm text-slate-500">Preparing QR for the durable preview URL…</p>}
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <QrHint title="Why it works" detail="The scan does not open a utility surface. It opens the same premium identity card, with the same save-contact dominance and same trust cues." />
+            <QrHint title="What to look for" detail="On mobile, the first visible action should still be save contact. QR simply changes how the person arrives, not what they feel when they land." />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

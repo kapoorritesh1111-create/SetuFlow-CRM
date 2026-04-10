@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+body {
+  @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-[#0F172A] dark:text-neutral-50;
+  background-image:
+    radial-gradient(circle at top, rgba(53, 159, 145, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(31, 72, 124, 0.12), transparent 30%),
+    linear-gradient(180deg, #f8fcfd 0%, #eef6fb 100%);
+}
+
+.dark body {
+  background-image: linear-gradient(180deg, #0f172a 0%, #13253f 100%);
+}
+
+body.drawer-open {
+  overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+*::selection {
+  background: rgba(53, 159, 145, 0.24);
+}
+
+input,
+select,
+textarea {
+  @apply min-h-[2.875rem] w-full rounded-[10px] border border-neutral-200 bg-white px-3.5 py-2.5 text-sm text-neutral-900 shadow-soft outline-none transition placeholder:text-neutral-600 hover:border-neutral-600/30 focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/10 dark:border-[#334155] dark:bg-[#1E293B] dark:text-neutral-50 dark:placeholder:text-slate-300;
+}
+
+textarea {
+  @apply min-h-[6rem];
+}
+
+button {
+  @apply min-h-[2.75rem] transition disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@layer utilities {
+  .premium-surface {
+    @apply border border-white/60 bg-white/90 shadow-premium backdrop-blur dark:border-[#334155] dark:bg-[#1E293B] dark:shadow-glow;
+  }
+
+  .next-action-surface {
+    @apply border border-neutral-200 bg-neutral-50 shadow-premium dark:border-[#334155] dark:bg-[#1E293B] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_8px_rgba(0,0,0,0.4)];
+  }
+}
+
+@media (max-width: 640px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+}

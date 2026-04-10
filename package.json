@@ -1,0 +1,54 @@
+{
+  "name": "setu-flow",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/**/*.test.mjs",
+    "test:release-readiness": "node --test tests/release-readiness.test.mjs tests/repo-smoke.test.mjs",
+    "test:sprint0": "node --test tests/release-readiness.test.mjs tests/repo-smoke.test.mjs tests/workspace/workspace-roles.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:demo": "playwright test tests/e2e/demo-readiness-walkthrough.spec.ts",
+    "test:e2e:live": "PLAYWRIGHT_BASE_URL=https://www.setuflowcrm.com playwright test",
+    "test:e2e:headed": "PLAYWRIGHT_HEADLESS=false playwright test tests/e2e/demo-readiness-walkthrough.spec.ts",
+    "check:dashboard": "node scripts/check-dashboard-freeze.mjs",
+    "verify": "npm run typecheck && npm test && npm run build",
+    "test:sprint4": "node --test tests/pipeline/pipeline-screen.test.mjs",
+    "test:sprint5": "node --test tests/quotes/quote-rfq-screen.test.mjs tests/pipeline/pipeline-screen.test.mjs tests/leads/lead-command-center-screen.test.mjs",
+    "test:sprint6": "node --test tests/products/products-screen.test.mjs tests/quotes/quote-rfq-screen.test.mjs",
+    "test:sprint7": "node --test tests/compliance/compliance-documents-screen.test.mjs tests/leads/lead-command-center-screen.test.mjs",
+    "test:sprint8": "node --test tests/contracts/contracts-screen.test.mjs tests/leads/lead-command-center-screen.test.mjs",
+    "test:sprint9": "node --test tests/dashboard/dashboard-reports-screen.test.mjs tests/contracts/contracts-screen.test.mjs",
+    "test:sprint10": "node --test tests/admin/admin-surfaces-screen.test.mjs tests/dashboard/dashboard-reports-screen.test.mjs",
+    "test:sprint11": "node --test tests/ui-system-dark-mode.test.mjs tests/leads/leads-list-screen.test.mjs tests/pipeline/pipeline-screen.test.mjs tests/products/products-screen.test.mjs",
+    "test:e2e:smoke:live": "PLAYWRIGHT_BASE_URL=https://www.setuflowcrm.com playwright test tests/e2e/smoke.spec.ts",
+    "test:e2e:demo:live": "PLAYWRIGHT_BASE_URL=https://www.setuflowcrm.com playwright test tests/e2e/demo-readiness-walkthrough.spec.ts",
+    "release:proof": "npm run typecheck && npm run test:release-readiness && npm test && npm run build"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.56.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.0",
+    "@types/node": "^22.13.10",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": "22.x",
+    "npm": "10.x"
+  }
+}

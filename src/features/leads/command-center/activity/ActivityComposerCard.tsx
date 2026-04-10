@@ -1,0 +1,57 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { addLeadNote } from '@/features/leads/server/actions'
+import { Edit3, ICON_CONTAINER_CLASS } from '../ui-system'
+
+export function ActivityComposerCard({
+  leadId,
+  onAskAiSummary,
+}: {
+  leadId: string
+  onAskAiSummary?: () => void
+}) {
+  const router = useRouter()
+  const [note, setNote] = useState('')
+  const [pending, setPending] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  return (
+    <section className="premium-surface rounded-[12px] p-6">
+      <div className="flex items-center gap-3">
+        <span className={ICON_CONTAINER_CLASS}><Edit3 className="h-4 w-4 text-neutral-600" /></span>
+        <div>
+          <h3 className="text-lg font-semibold text-neutral-900">Add internal note</h3>
+          <p className="text-sm text-neutral-600">Capture call notes, pricing context, buyer objections, or next-step reasoning.</p>
+        </div>
+      </div>
+      <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={6} className="mt-4 w-full rounded-[10px] border border-neutral-200 bg-neutral-50 px-3 py-3 text-sm outline-none transition focus:border-brand-primary/30 focus:bg-white focus:ring-2 focus:ring-brand-primary/10" placeholder="Capture the note that should appear in the lead timeline." />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={pending || !note.trim()}
+          onClick={async () => {
+            setPending(true)
+            setMessage(null)
+            const formData = new FormData()
+            formData.set('lead_id', leadId)
+            formData.set('note', note)
+            const result = await addLeadNote(undefined, formData)
+            setPending(false)
+            setMessage(result?.error || result?.success || null)
+            if (!result?.error) {
+              setNote('')
+              router.refresh()
+            }
+          }}
+          className="rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {pending ? 'Saving…' : 'Save note'}
+        </button>
+        {onAskAiSummary ? <button type="button" onClick={onAskAiSummary} className="rounded-[8px] bg-neutral-50 px-4 py-2.5 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-100">Use AI summary</button> : null}
+      </div>
+      {message ? <p className="mt-3 text-sm text-neutral-600">{message}</p> : null}
+    </section>
+  )
+}
