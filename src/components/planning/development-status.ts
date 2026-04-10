@@ -117,6 +117,7 @@ export const roadmapMilestones = [
 
 export const backlogSections = [
   {
+    title: 'Sprint 2 · Active',
     sprint: 'Sprint 2 · Active',
     description: 'Complete the Quote → Order transition using the existing shared foundations and locked flow.',
     status: 'in-progress' as ChecklistStatus,
@@ -127,6 +128,7 @@ export const backlogSections = [
     ],
   },
   {
+    title: 'Sprint 3 · Next',
     sprint: 'Sprint 3 · Next',
     description: 'Expand operational depth after the Order transition is stable.',
     status: 'next' as ChecklistStatus,
@@ -137,6 +139,7 @@ export const backlogSections = [
     ],
   },
   {
+    title: 'Sprint 4+ · Locked',
     sprint: 'Sprint 4+ · Locked',
     description: 'Keep later-stage intelligence and automation visible without activating it early.',
     status: 'locked' as ChecklistStatus,
