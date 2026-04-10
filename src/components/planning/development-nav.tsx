@@ -5,6 +5,9 @@ const links = [
   { href: '/development/master-plan', label: 'Master plan' },
   { href: '/development/readiness', label: 'Readiness' },
   { href: '/development/backlog', label: 'Backlog' },
+  { href: '/development/product', label: 'Product' },
+  { href: '/development/architecture', label: 'Architecture' },
+  { href: '/development/ux-rules', label: 'UX rules' },
   { href: '/development/screens/leads-capture', label: 'Screen specs' },
 ];
 

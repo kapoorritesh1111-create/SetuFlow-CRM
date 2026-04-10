@@ -1,28 +1,36 @@
 import Link from 'next/link';
 import { SiteShell } from '@/components/marketing/site-shell';
 import { DevelopmentNav } from '@/components/planning/development-nav';
-
-const sprintMap = [
-  ['Sprint 1', 'Clean repo baseline, locked development workplace, reusable UI foundations, and Leads/Capture/Quote alignment.'],
-  ['Current gate', 'Run the full production build and deployment validation in the complete workspace before marking Sprint 1 Complete.'],
-];
+import { roadmapMilestones, sprintProgress } from '@/components/planning/development-status';
+import { StatusBadge } from '@/components/ui/status-badge';
 
 const rules = [
-  'Stay inside Sprint 1 until complete-workspace validation is confirmed.',
+  'Sprint 1 stays active until complete-workspace validation is confirmed.',
   'Keep the product centered on Capture, Lead, Quote, and Order.',
   'Do not create new top-level product modules or alternate workflow paths.',
-  'Treat /development, /development/master-plan, /development/readiness, /development/backlog, and /development/screens/leads-capture as the active operating pages for Sprint 1.',
-  'Keep planning inside the HTML development workplace, with backlog in /development/backlog and no scattered markdown files.',
+  'Treat /development, /development/master-plan, /development/readiness, /development/backlog, /development/product, /development/architecture, /development/ux-rules, and /development/screens/leads-capture as the operating pages.',
+  'Keep backlog and planning inside the HTML development workplace, not in markdown task dumps.',
+  'Let future sprints stay visible, but only activate them after the current sprint is formally closed.',
   'Keep mobile and tablet quality as strict as desktop polish.',
 ];
 
 const references = [
-  { href: '/development', label: 'Development hub', body: 'The operating surface with the visible checklist and live readiness summary.' },
-  { href: '/development/readiness', label: 'Readiness board', body: 'The blunt status view for the clean Sprint 1 baseline and the remaining validation gate.' },
-  { href: '/development/backlog', label: 'Sprint backlog', body: 'The in-app backlog that decides what is active, what is next, and what is parked.' },
+  { href: '/development/product', label: 'Product contract', body: 'The locked product definition that keeps the roadmap tied to one enterprise operating flow.' },
+  { href: '/development/architecture', label: 'Architecture contract', body: 'The domain and service rules that should govern later sprint implementation depth.' },
+  { href: '/development/ux-rules', label: 'UX rules', body: 'The screen-level decision principles that prevent visual and workflow drift.' },
+  { href: '/development', label: 'Development hub', body: 'The operating surface with the visible checklist, roadmap snapshot, and live readiness summary.' },
+  { href: '/development/readiness', label: 'Readiness board', body: 'The blunt status view for the last Sprint 1 gate and the real boundary to signoff.' },
+  { href: '/development/backlog', label: 'Sprint backlog', body: 'The in-app backlog that now shows current and pending sprint work in one controlled place.' },
   { href: '/development/screens/leads-capture', label: 'Locked screen specs', body: 'The Sprint 1 screen reference for Leads and Capture.' },
   { href: '/workspace/leads', label: 'Active workspace previews', body: 'The implemented Leads, Capture, and Quote surfaces that reflect the locked flow.' },
 ];
+
+const toneMap = {
+  done: 'success',
+  'in-progress': 'info',
+  next: 'warning',
+  locked: 'neutral',
+} as const;
 
 export default function MasterPlanPage() {
   return (
@@ -31,52 +39,38 @@ export default function MasterPlanPage() {
         <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)] lg:p-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Locked master plan</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">One visible source of truth for the locked flow, minimal repo baseline, and Sprint 1 completion gate.</h1>
-              <p className="mt-5 text-base leading-8 text-slate-600">This page is the permanent repo contract for what stays active: one development workplace, one locked flow, one screen-spec path, and one final validation gate before Sprint 1 is marked complete.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Master plan</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">The product is still locked to one flow, but the plan now shows where every remaining sprint belongs.</h1>
+              <p className="mt-5 text-lg leading-8 text-slate-600">Sprint 1 is {sprintProgress.percentLabel} complete. This plan keeps the current validation gate explicit while making Sprint 2, Sprint 3, and Sprint 4 visible as structured pending work, not as scattered ideas or accidental scope creep.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Locked product identity</p>
-              <p className="mt-3 text-2xl font-semibold leading-tight">Trade execution system for import-export sales teams</p>
-              <p className="mt-4 text-sm leading-7 text-white/85">Core flow: Capture → Lead → Quote → Order</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Locked flow</p>
+              <p className="mt-3 text-2xl font-semibold leading-tight">Capture → Lead → Quote → Order</p>
+              <p className="mt-4 text-sm leading-7 text-white/85">Every sprint must deepen this path. No alternate structures, no detached modules, and no backlog outside the development workplace.</p>
             </div>
           </div>
           <div className="mt-8"><DevelopmentNav /></div>
         </section>
 
-        <section className="mt-10 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="mt-10 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
           <div className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Active product focus</p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              {['Capture', 'Lead', 'Quote', 'Order'].map((item) => (
-                <span key={item} className="rounded-full bg-[#1F487C]/5 px-4 py-2 text-sm font-semibold text-[#1F487C]">{item}</span>
-              ))}
-            </div>
-            <p className="mt-5 text-sm leading-7 text-slate-600">Everything else supports this flow. Importance does not automatically earn a new source-of-truth page or extra repo documentation.</p>
-          </div>
-          <div className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Clean repo baseline</p>
-            <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
-              <li>• Keep active app code, shared foundations, config, public assets, and only the essential docs.</li>
-              <li>• Remove iteration notes, prompt dumps, archived planning packs, and validation scratch files.</li>
-              <li>• Keep the HTML development workplace as the live planning layer.</li>
-              <li>• Do not rebuild repo clutter while Sprint 1 is still being validated.</li>
-            </ul>
-          </div>
-        </section>
-
-        <section className="mt-10 grid gap-5 xl:grid-cols-2">
-          <div className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Sprint mapping</p>
-            <div className="mt-5 space-y-3">
-              {sprintMap.map(([title, body]) => (
-                <div key={title} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                  <p className="font-semibold text-slate-900">{title}</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">{body}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Sprint roadmap</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Realigned to current reality instead of flattening everything back to Sprint 1.</h2>
+            <div className="mt-6 space-y-4">
+              {roadmapMilestones.map((milestone) => (
+                <div key={milestone.sprint} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-950">{milestone.sprint}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">{milestone.summary}</p>
+                    </div>
+                    <StatusBadge label={milestone.badgeLabel} tone={toneMap[milestone.status]} className="shrink-0" />
+                  </div>
                 </div>
               ))}
             </div>
           </div>
+
           <div className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">No-drift rules</p>
             <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
@@ -89,9 +83,9 @@ export default function MasterPlanPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Reference map</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Everything active should be one click away from here.</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Everything active should still be one click away from here.</h2>
             </div>
-            <Link href="/development/screens/leads-capture" className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open locked screen specs</Link>
+            <Link href="/development/backlog" className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open backlog</Link>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {references.map((item) => (
