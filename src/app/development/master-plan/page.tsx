@@ -11,14 +11,15 @@ const rules = [
   'Stay inside Sprint 1 until complete-workspace validation is confirmed.',
   'Keep the product centered on Capture, Lead, Quote, and Order.',
   'Do not create new top-level product modules or alternate workflow paths.',
-  'Treat /development, /development/master-plan, /development/readiness, and /development/screens/leads-capture as the only active source-of-truth pages.',
-  'Keep planning inside the HTML development workplace, not scattered markdown files.',
+  'Treat /development, /development/master-plan, /development/readiness, /development/backlog, and /development/screens/leads-capture as the active operating pages for Sprint 1.',
+  'Keep planning inside the HTML development workplace, with backlog in /development/backlog and no scattered markdown files.',
   'Keep mobile and tablet quality as strict as desktop polish.',
 ];
 
 const references = [
   { href: '/development', label: 'Development hub', body: 'The operating surface with the visible checklist and live readiness summary.' },
   { href: '/development/readiness', label: 'Readiness board', body: 'The blunt status view for the clean Sprint 1 baseline and the remaining validation gate.' },
+  { href: '/development/backlog', label: 'Sprint backlog', body: 'The in-app backlog that decides what is active, what is next, and what is parked.' },
   { href: '/development/screens/leads-capture', label: 'Locked screen specs', body: 'The Sprint 1 screen reference for Leads and Capture.' },
   { href: '/workspace/leads', label: 'Active workspace previews', body: 'The implemented Leads, Capture, and Quote surfaces that reflect the locked flow.' },
 ];

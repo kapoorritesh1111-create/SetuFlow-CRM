@@ -2,7 +2,7 @@ export type ChecklistStatus = 'done' | 'in-progress' | 'next' | 'locked';
 
 export type ChecklistItem = {
   id: string;
-  area: 'Workspace discipline' | 'UI foundation' | 'Leads' | 'Capture' | 'Quote' | 'Validation';
+  area: 'Workspace discipline' | 'Planning discipline' | 'UI foundation' | 'Leads' | 'Capture' | 'Quote' | 'Validation';
   label: string;
   status: ChecklistStatus;
   note: string;
@@ -16,6 +16,107 @@ export const sprintFocus = {
     'Use the complete workspace to rerun the full production build and deployment validation, then mark Sprint 1 Complete without adding new product scope.',
 };
 
+export type BacklogSection = {
+  title: string;
+  heading: string;
+  status: ChecklistStatus;
+  badgeLabel: string;
+  summary: string;
+  items: Array<{
+    title: string;
+    note: string;
+    status: ChecklistStatus;
+    stateLabel: string;
+  }>;
+};
+
+export const backlogSections: BacklogSection[] = [
+  {
+    title: 'Sprint 1 · Active',
+    heading: 'Only the final validation gate remains active.',
+    status: 'in-progress',
+    badgeLabel: 'Active now',
+    summary:
+      'Implementation, cleanup, and copy alignment are complete. The only active backlog items are environment-level validation and Sprint 1 signoff.',
+    items: [
+      {
+        title: 'Run the full production build in the complete workspace',
+        note: 'Use the real environment to confirm the optimized production build finishes cleanly after the ultra-clean repo pass.',
+        status: 'in-progress',
+        stateLabel: 'Active',
+      },
+      {
+        title: 'Run deployment validation in the complete workspace',
+        note: 'Confirm no runtime regressions or deployment-specific issues before readiness is marked Sprint 1 Complete.',
+        status: 'next',
+        stateLabel: 'Next',
+      },
+      {
+        title: 'Finalize readiness to Sprint 1 Complete',
+        note: 'Close the final validation gate only after build and deployment confirmation are complete in the real environment.',
+        status: 'next',
+        stateLabel: 'Next',
+      },
+    ],
+  },
+  {
+    title: 'Next up · Not active',
+    heading: 'Visible for continuity, locked from implementation.',
+    status: 'locked',
+    badgeLabel: 'Locked',
+    summary:
+      'These are likely follow-on themes after Sprint 1 signoff, but they stay non-active until Sprint 1 is formally closed.',
+    items: [
+      {
+        title: 'Deepen quote approval flow detail',
+        note: 'Only consider after Sprint 1 is complete and the next sprint is explicitly opened.',
+        status: 'locked',
+        stateLabel: 'Locked',
+      },
+      {
+        title: 'Extend order-entry handoff clarity',
+        note: 'Keep visible as the likely next flow step, but do not start it during Sprint 1.',
+        status: 'locked',
+        stateLabel: 'Locked',
+      },
+      {
+        title: 'Tighten role-based visibility rules',
+        note: 'Useful future work, but not part of the current locked scope.',
+        status: 'locked',
+        stateLabel: 'Locked',
+      },
+    ],
+  },
+  {
+    title: 'Parking lot',
+    heading: 'Explicitly not in scope right now.',
+    status: 'locked',
+    badgeLabel: 'Do not touch',
+    summary:
+      'Keep these visible so they do not sneak into the sprint through side conversations or repo drift.',
+    items: [
+      {
+        title: 'CRM analytics expansion',
+        note: 'Out of Sprint 1 scope.',
+        status: 'locked',
+        stateLabel: 'Parked',
+      },
+      {
+        title: 'AI suggestions and automation layers',
+        note: 'Do not activate until the core Capture → Lead → Quote → Order path is fully validated in production.',
+        status: 'locked',
+        stateLabel: 'Parked',
+      },
+      {
+        title: 'New top-level modules or alternate workflow paths',
+        note: 'Blocked by the locked master plan. Do not redesign product structure.',
+        status: 'locked',
+        stateLabel: 'Blocked',
+      },
+    ],
+  },
+];
+
 export const checklistItems: ChecklistItem[] = [
   {
     id: 'repo-cleanup',
@@ -27,9 +128,16 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: 'single-dev-workplace',
     area: 'Workspace discipline',
-    label: 'Keep one active development workplace at /development with master plan, readiness, and locked screen specs.',
+    label: 'Keep one active development workplace at /development with master plan, readiness, backlog, and locked screen specs.',
     status: 'done',
-    note: 'Only /development, /development/master-plan, /development/readiness, and /development/screens/leads-capture remain as the operational source-of-truth pages.',
+    note: 'Operational control now lives in /development, /development/master-plan, /development/readiness, /development/backlog, and /development/screens/leads-capture.',
+  },
+  {
+    id: 'backlog-discipline',
+    area: 'Planning discipline',
+    label: 'Keep the sprint backlog inside the HTML development workplace so future work stays visible without bringing markdown clutter back.',
+    status: 'done',
+    note: 'Backlog is now repo-backed at /development/backlog and acts as the no-drift gate for active Sprint 1 work.',
   },
   {
     id: 'html-visibility',
@@ -119,7 +227,7 @@ export const checklistItems: ChecklistItem[] = [
 
 export const readinessSummary = {
   sprint: sprintFocus.sprint,
-  status: 'Sprint 1 implementation complete; clean repo baseline ready; full-environment validation pending',
+  status: 'Sprint 1 implementation complete; clean repo baseline and in-app backlog ready; full-environment validation pending',
   buildStatus:
     'Clean-workspace validation completed through npm ci and typecheck. Full production build and deployment confirmation must be rerun in the complete workspace before marking Sprint 1 Complete.',
   driftRisk: 'Low',
@@ -131,7 +239,12 @@ export const readinessAreas = [
   {
     title: 'Development workplace lock',
     status: 'done' as ChecklistStatus,
-    summary: 'The active repo points to one development hub and only four source-of-truth pages.',
+    summary: 'The active repo points to one development hub with one backlog page and four locked implementation source-of-truth pages.',
+  },
+  {
+    title: 'Backlog discipline',
+    status: 'done' as ChecklistStatus,
+    summary: 'Sprint backlog now lives at /development/backlog so planning stays visible without adding repo clutter back.',
   },
   {
     title: 'Repo cleanliness',

@@ -17,6 +17,11 @@ const pinned = [
     body: 'Live Sprint 1 status, cleanup state, blockers, and the only remaining validation gate.',
   },
   {
+    title: 'Sprint backlog',
+    href: '/development/backlog',
+    body: 'The in-product backlog that keeps active work visible and prevents markdown task drift from coming back.',
+  },
+  {
     title: 'Locked screen specs',
     href: '/development/screens/leads-capture',
     body: 'Desktop, tablet, and mobile blueprints for the Leads and Capture implementation pass.',
@@ -37,12 +42,12 @@ export default function DevelopmentPage() {
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Development workplace</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">One locked Sprint 1 workplace and one clean repo baseline for Setu Flow.</h1>
-              <p className="mt-5 text-lg leading-8 text-slate-600">This page is the operating surface for the locked Sprint 1 build. The repo has been stripped down to active code, the four source-of-truth pages, and only the essential docs so the next step can happen from a clean base.</p>
+              <p className="mt-5 text-lg leading-8 text-slate-600">This page is the operating surface for the locked Sprint 1 build. The repo has been stripped down to active code, one in-product backlog, the locked source-of-truth pages, and only the essential docs so the next step can happen from a clean base without drift.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Current focus</p>
               <p className="mt-3 text-2xl font-semibold leading-tight">{sprintFocus.sprint} · implementation complete, clean baseline ready, awaiting full-environment validation</p>
-              <p className="mt-4 text-sm leading-7 text-white/85">Flow remains locked to {sprintFocus.flow}. No product-structure redesigns, no sprint drift, no extra planning clutter in-repo.</p>
+              <p className="mt-4 text-sm leading-7 text-white/85">Flow remains locked to {sprintFocus.flow}. No product-structure redesigns, no sprint drift, and no backlog living outside the development workplace.</p>
             </div>
           </div>
           <div className="mt-8"><DevelopmentNav /></div>
@@ -54,11 +59,12 @@ export default function DevelopmentPage() {
           <div className="mt-8 flex flex-wrap gap-4">
             <Link href="/development/master-plan" className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open master plan</Link>
             <Link href="/development/readiness" className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open readiness</Link>
+            <Link href="/development/backlog" className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open backlog</Link>
             <Link href="/development/screens/leads-capture" className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open locked screen specs</Link>
           </div>
         </section>
 
-        <section className="mt-10 grid gap-5 xl:grid-cols-4">
+        <section className="mt-10 grid gap-5 xl:grid-cols-5">
           {pinned.map((item) => (
             <Link key={item.href} href={item.href} className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_20px_60px_rgba(31,72,124,0.08)] transition hover:-translate-y-0.5 hover:border-[#1F487C]/20 hover:shadow-[0_24px_70px_rgba(31,72,124,0.12)]">
               <p className="text-sm font-semibold text-slate-950">{item.title}</p>
@@ -96,7 +102,7 @@ export default function DevelopmentPage() {
             <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Non-negotiable ritual</p>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
-                <li>• Before coding: check /development, /development/master-plan, /development/readiness, and /development/screens/leads-capture.</li>
+                <li>• Before coding: check /development, /development/master-plan, /development/readiness, /development/backlog, and /development/screens/leads-capture.</li>
                 <li>• During coding: stay in Sprint 1 and keep the Capture → Lead → Quote → Order flow intact.</li>
                 <li>• After coding: update checklist and readiness in the repo, not in extra markdown or conversation-only notes.</li>
               </ul>
