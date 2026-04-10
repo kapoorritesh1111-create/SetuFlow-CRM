@@ -121,12 +121,22 @@ export const backlogSections = [
     heading: 'Finish the Quote → Order transition cleanly',
     sprint: 'Sprint 2 · Active',
     badgeLabel: 'Active',
+    summary: 'Complete the active Sprint 2 lane using the existing shared foundations and locked Capture → Lead → Quote → Order flow.',
     description: 'Complete the Quote → Order transition using the existing shared foundations and locked flow.',
     status: 'in-progress' as ChecklistStatus,
     items: [
-      'Refine Order entry details and first operational states.',
-      'Deepen Quote → Order continuity around blockers, documents, and execution readiness.',
-      'Re-run full-environment production build validation for the Sprint 2 repo state.',
+      {
+        title: 'Refine Order entry details and first operational states',
+        summary: 'Keep inherited context, documents, and execution cues visible inside Order.',
+      },
+      {
+        title: 'Deepen Quote → Order continuity around blockers, documents, and execution readiness',
+        summary: 'Make the handoff feel operationally honest before later execution stages exist.',
+      },
+      {
+        title: 'Re-run full-environment production build validation for the Sprint 2 repo state',
+        summary: 'Use the complete workspace to confirm the latest Sprint 2 changes after patching.',
+      },
     ],
   },
   {
@@ -134,12 +144,22 @@ export const backlogSections = [
     heading: 'Expand operational depth after Order is stable',
     sprint: 'Sprint 3 · Next',
     badgeLabel: 'Next',
+    summary: 'Prepare the next sprint without activating it early.',
     description: 'Expand operational depth after the Order transition is stable.',
     status: 'next' as ChecklistStatus,
     items: [
-      'Role-based visibility and workflow continuity.',
-      'Operational hardening across later order stages.',
-      'Pipeline continuity beyond first-order creation.',
+      {
+        title: 'Role-based visibility and workflow continuity',
+        summary: 'Add guarded visibility only after core order creation is stable.',
+      },
+      {
+        title: 'Operational hardening across later order stages',
+        summary: 'Deepen the execution model after the first-order handoff is validated.',
+      },
+      {
+        title: 'Pipeline continuity beyond first-order creation',
+        summary: 'Carry the CRM story forward without disrupting the current active sprint.',
+      },
     ],
   },
   {
@@ -147,12 +167,22 @@ export const backlogSections = [
     heading: 'Keep later-stage work visible but inactive',
     sprint: 'Sprint 4+ · Locked',
     badgeLabel: 'Locked',
+    summary: 'Maintain visibility into future expansion without pulling it into the current sprint.',
     description: 'Keep later-stage intelligence and automation visible without activating it early.',
     status: 'locked' as ChecklistStatus,
     items: [
-      'Analytics and executive visibility.',
-      'Automation and AI layers.',
-      'Broader systems integrations.',
+      {
+        title: 'Analytics and executive visibility',
+        summary: 'Reserved for a later maturity stage.',
+      },
+      {
+        title: 'Automation and AI layers',
+        summary: 'Do not activate until the core operational flow is stable.',
+      },
+      {
+        title: 'Broader systems integrations',
+        summary: 'Only after the core CRM execution path is proven.',
+      },
     ],
   },
 ];
