@@ -1,0 +1,4 @@
+-- Operational checklist only.
+-- 1. Rotate any previously exposed anon or service-role keys.
+-- 2. Replace old values in GitHub, Vercel, and local env files.
+-- 3. Confirm Auth redirect URLs include local and production app URLs only.

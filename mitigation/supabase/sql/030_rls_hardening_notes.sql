@@ -1,0 +1,11 @@
+-- Example pattern only. Adjust to your exact membership schema.
+-- Ensure every mutable CRM table has organization-scoped RLS.
+-- Example:
+-- create policy leads_org_select on public.leads
+-- for select using (
+--   exists (
+--     select 1 from public.organization_members om
+--     where om.organization_id = leads.organization_id
+--       and om.user_id = auth.uid()
+--   )
+-- );
