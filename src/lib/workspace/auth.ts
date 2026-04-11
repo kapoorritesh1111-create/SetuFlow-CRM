@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { unstable_noStore as noStore } from 'next/cache'; // ✅ ADD THIS
+import { unstable_noStore as noStore } from 'next/cache';
 
 import type { User } from '@supabase/supabase-js';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -52,14 +52,10 @@ function getRequestedOrganizationId(user: User) {
   const cookieStore = cookies();
   const cookieOrgId = normalizeOrganizationId(cookieStore.get(ACTIVE_ORGANIZATION_COOKIE)?.value);
   const userMetadataOrgId = normalizeOrganizationId(
-    (user.user_metadata as Record<string, unknown> | undefined)?.active_organization_id as
-      | string
-      | undefined,
+    (user.user_metadata as Record<string, unknown> | undefined)?.active_organization_id as string | undefined,
   );
   const appMetadataOrgId = normalizeOrganizationId(
-    (user.app_metadata as Record<string, unknown> | undefined)?.active_organization_id as
-      | string
-      | undefined,
+    (user.app_metadata as Record<string, unknown> | undefined)?.active_organization_id as string | undefined,
   );
 
   return cookieOrgId ?? userMetadataOrgId ?? appMetadataOrgId ?? null;
@@ -95,11 +91,7 @@ export function clearActiveOrganization() {
 }
 
 async function getWorkspaceRowsWithClient(client: QueryClient, user: User) {
-  const { data: profileRows } = await client
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .limit(1);
+  const { data: profileRows } = await client.from('profiles').select('*').eq('id', user.id).limit(1);
 
   let profile = ((profileRows ?? [])[0] ?? null) as WorkspaceProfile | null;
 
@@ -124,9 +116,7 @@ async function getWorkspaceRowsWithClient(client: QueryClient, user: User) {
       .eq('user_id', key)
       .eq('is_active', true);
 
-    const { data: membershipRows } = await membershipQuery
-      .order?.('updated_at', { ascending: false })
-      .limit(50);
+    const { data: membershipRows } = await membershipQuery.order?.('updated_at', { ascending: false }).limit(50);
 
     const rows = (membershipRows ?? []) as MembershipRow[];
     if (rows.length > 0) {
@@ -155,7 +145,7 @@ async function getWorkspaceRowsWithClient(client: QueryClient, user: User) {
 }
 
 export async function getCurrentWorkspace(): Promise<WorkspaceContext> {
-  noStore(); // ✅ THE ONLY FIX
+  noStore(); // ✅ ONLY FIX
 
   if (!hasSupabaseEnv) {
     return {
@@ -199,10 +189,7 @@ export async function getCurrentWorkspace(): Promise<WorkspaceContext> {
   }
 
   if (!profile || !membership || !organization) {
-    const fallbackRows = await getWorkspaceRowsWithClient(
-      supabase as unknown as QueryClient,
-      user,
-    );
+    const fallbackRows = await getWorkspaceRowsWithClient(supabase as unknown as QueryClient, user);
     profile = profile ?? fallbackRows.profile;
     membership = membership ?? fallbackRows.membership;
     memberships = memberships.length > 0 ? memberships : fallbackRows.memberships;
@@ -217,4 +204,62 @@ export async function getCurrentWorkspace(): Promise<WorkspaceContext> {
     organization,
     missingEnv: false,
   };
+}
+
+export function hasWorkspaceRole(currentRoles: string[] | undefined, allowedRoles: readonly WorkspaceRole[]) {
+  return hasCanonicalWorkspaceRole(currentRoles, allowedRoles);
+}
+
+export async function getWorkspaceRoleNames(membershipId: string | null | undefined) {
+  if (!membershipId || !hasSupabaseEnv) return [] as WorkspaceRole[];
+
+  const readRoles = async (client: unknown) => {
+    const { data, error } = await (client as any)
+      .from('user_roles')
+      .select('roles(name)')
+      .eq('organization_member_id', membershipId);
+
+    if (error) return [] as WorkspaceRole[];
+    return normalizeWorkspaceRoles((data ?? []).map((item: any) => item.roles?.name));
+  };
+
+  const admin = createAdminSupabaseClient();
+  if (admin) {
+    const adminRoles = await readRoles(admin);
+    if (adminRoles.length > 0) return adminRoles;
+  }
+
+  const supabase = await createClient();
+  return readRoles(supabase);
+}
+
+export async function getWorkspaceAccess(): Promise<WorkspaceAccessContext> {
+  const context = await getCurrentWorkspace();
+  const currentRoles = await getWorkspaceRoleNames(context.membership?.id);
+
+  return {
+    ...context,
+    currentRoles,
+    canAccessAdmin: hasWorkspaceRole(currentRoles, ADMIN_ROLE_NAMES),
+  };
+}
+
+export async function requireAdminWorkspace() {
+  const context = await getWorkspaceAccess();
+
+  if (context.missingEnv) return context;
+  if (!context.user) redirect('/login');
+  if (!context.membership || !context.organization) notFound();
+  if (!context.canAccessAdmin) notFound();
+
+  return context;
+}
+
+export async function requireWorkspace(): Promise<WorkspaceAccessContext> {
+  const context = await getWorkspaceAccess();
+
+  if (context.missingEnv) return context;
+  if (!context.user) redirect('/login');
+
+  return context;
 }
