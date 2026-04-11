@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
-import mapData from '@/features/dashboard/data/world-map-data.json';
+import { useEffect, useMemo, useState } from 'react';
 import type { CountryCoverageDatum } from '@/features/dashboard/types';
 import { cn, formatDate } from '@/lib/utils';
 import { useWorldMapControls } from '@/features/dashboard/hooks/use-world-map-controls';
@@ -19,8 +18,6 @@ type WorldMapData = {
   paths: Record<string, { path: string; name: string }>;
 };
 
-const worldMap = mapData as WorldMapData;
-
 const TOOLTIP_WIDTH = 184;
 const TOOLTIP_HEIGHT = 126;
 const TOOLTIP_OFFSET_X = 14;
@@ -33,6 +30,33 @@ export function WorldCoverageMap({
   onSelectCountry,
   className,
 }: WorldCoverageMapProps) {
+  const [worldMap, setWorldMap] = useState<WorldMapData | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadWorldMap() {
+      const response = await fetch('/world-map-data.json', { signal: controller.signal });
+
+      if (!response.ok) {
+        throw new Error('Failed to load world map data');
+      }
+
+      const data = (await response.json()) as WorldMapData;
+      setWorldMap(data);
+    }
+
+    loadWorldMap().catch((error: unknown) => {
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      console.error(error);
+    });
+
+    return () => controller.abort();
+  }, []);
+
   const coverageMap = useMemo(
     () => new Map(countries.map((country) => [country.countryCode, country] as const)),
     [countries],
@@ -64,6 +88,13 @@ export function WorldCoverageMap({
   const hovered = hoveredCode ? coverageMap.get(hoveredCode) ?? null : null;
 
   const tooltipStyle = useMemo(() => {
+    if (!worldMap) {
+      return {
+        left: TOOLTIP_PADDING,
+        top: TOOLTIP_PADDING,
+      };
+    }
+
     if (!pointerPosition) {
       return {
         left: TOOLTIP_PADDING,
@@ -84,7 +115,27 @@ export function WorldCoverageMap({
         maxTop,
       ),
     };
-  }, [pointerPosition]);
+  }, [pointerPosition, worldMap]);
+
+  if (!worldMap) {
+    return (
+      <div
+        className={cn(
+          'relative overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.14),transparent_48%),linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.98))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]',
+          className,
+        )}
+      >
+        <div className="mb-4 flex items-center justify-end gap-2 opacity-60">
+          <div className="h-9 w-11 rounded-full border border-slate-200 bg-white" />
+          <div className="h-9 w-11 rounded-full border border-slate-200 bg-white" />
+          <div className="h-9 w-20 rounded-full border border-slate-200 bg-white" />
+        </div>
+        <div className="flex h-[420px] items-center justify-center rounded-[1.4rem] bg-[#eef4ff] text-sm font-medium text-slate-500">
+          Loading world map…
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
