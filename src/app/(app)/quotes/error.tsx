@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { ErrorBoundaryView } from '@/components/ui/error-boundary-view';
+import { ErrorBoundaryView } from '@/components/app/error-boundary-view';
 
 export default function RouteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { console.error(error); }, [error]);
