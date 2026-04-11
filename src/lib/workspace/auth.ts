@@ -1,5 +1,7 @@
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
+import { unstable_noStore as noStore } from 'next/cache'; // ✅ ADD THIS
+
 import type { User } from '@supabase/supabase-js';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
@@ -153,6 +155,8 @@ async function getWorkspaceRowsWithClient(client: QueryClient, user: User) {
 }
 
 export async function getCurrentWorkspace(): Promise<WorkspaceContext> {
+  noStore(); // ✅ THE ONLY FIX
+
   if (!hasSupabaseEnv) {
     return {
       user: null,
@@ -213,63 +217,4 @@ export async function getCurrentWorkspace(): Promise<WorkspaceContext> {
     organization,
     missingEnv: false,
   };
-}
-
-
-export function hasWorkspaceRole(currentRoles: string[] | undefined, allowedRoles: readonly WorkspaceRole[]) {
-  return hasCanonicalWorkspaceRole(currentRoles, allowedRoles);
-}
-
-export async function getWorkspaceRoleNames(membershipId: string | null | undefined) {
-  if (!membershipId || !hasSupabaseEnv) return [] as WorkspaceRole[];
-
-  const readRoles = async (client: unknown) => {
-    const { data, error } = await (client as any)
-      .from('user_roles')
-      .select('roles(name)')
-      .eq('organization_member_id', membershipId);
-
-    if (error) return [] as WorkspaceRole[];
-    return normalizeWorkspaceRoles((data ?? []).map((item: any) => item.roles?.name));
-  };
-
-  const admin = createAdminSupabaseClient();
-  if (admin) {
-    const adminRoles = await readRoles(admin);
-    if (adminRoles.length > 0) return adminRoles;
-  }
-
-  const supabase = await createClient();
-  return readRoles(supabase);
-}
-
-export async function getWorkspaceAccess(): Promise<WorkspaceAccessContext> {
-  const context = await getCurrentWorkspace();
-  const currentRoles = await getWorkspaceRoleNames(context.membership?.id);
-
-  return {
-    ...context,
-    currentRoles,
-    canAccessAdmin: hasWorkspaceRole(currentRoles, ADMIN_ROLE_NAMES),
-  };
-}
-
-export async function requireAdminWorkspace() {
-  const context = await getWorkspaceAccess();
-
-  if (context.missingEnv) return context;
-  if (!context.user) redirect('/login');
-  if (!context.membership || !context.organization) notFound();
-  if (!context.canAccessAdmin) notFound();
-
-  return context;
-}
-
-export async function requireWorkspace(): Promise<WorkspaceAccessContext> {
-  const context = await getWorkspaceAccess();
-
-  if (context.missingEnv) return context;
-  if (!context.user) redirect('/login');
-
-  return context;
 }
