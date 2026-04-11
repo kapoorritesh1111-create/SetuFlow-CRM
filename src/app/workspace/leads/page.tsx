@@ -51,7 +51,7 @@ const cardActions = [
   { label: 'Call', shortLabel: 'Call' },
   { label: 'WhatsApp', shortLabel: 'WA' },
   { label: 'Email', shortLabel: 'Email' },
-  { label: 'Create Quote', shortLabel: 'Quote', emphasis: 'primary' as const, href: '/workspace/quotes' },
+  { label: 'Create Quote', shortLabel: 'Quote', emphasis: 'primary' as const, href: '/quotes' },
 ];
 
 const selectedLead = leads[0];
@@ -85,7 +85,7 @@ const quotePreview = [
 const quoteReadiness = [
   {
     title: 'Why Quote is open now',
-    body: 'The lead is qualified, the requested products are known, and landed-pricing intent is already explicit. Sprint 1 should reward that with a dominant Quote entry action.',
+    body: 'The lead is qualified, the requested products are known, and landed-pricing intent is already explicit. The approved rework should reward that with a dominant Quote entry action.',
     badge: { label: 'Qualified handoff', tone: 'success' as const },
   },
   {
@@ -115,7 +115,7 @@ export default function WorkspaceLeadsPage() {
         meta={['Capture → Lead → Quote → Order', 'Qualified leads open Quote', 'No command-center drift', 'Mobile sticky CTA ready']}
         actions={[
           { label: 'Open Capture', href: '/workspace/capture', type: 'secondary' },
-          { label: 'Create Quote', href: '/workspace/quotes', type: 'primary' },
+          { label: 'Create Quote', href: '/quotes', type: 'primary' },
         ]}
       />
 
@@ -245,7 +245,7 @@ export default function WorkspaceLeadsPage() {
             <QuickActionMenu
               className="mt-5"
               items={[
-                { label: 'Open Draft Quote', shortLabel: 'Quote', href: '/workspace/quotes', emphasis: 'primary' },
+                { label: 'Open Draft Quote', shortLabel: 'Quote', href: '/quotes', emphasis: 'primary' },
                 { label: 'Open Capture', shortLabel: 'Capture', href: '/workspace/capture' },
                 { label: 'Add Note', shortLabel: 'Note' },
               ]}
@@ -255,7 +255,7 @@ export default function WorkspaceLeadsPage() {
           <SectionCard
             eyebrow="Why this matters"
             title="What changed from the old direction"
-            description="Sprint 1 replaces heavy theatre with a clear flow that sales teams can understand in minutes."
+            description="The approved rework replaces heavy theatre with a clear flow that sales teams can understand in minutes."
           >
             <ul className="space-y-3 text-sm leading-6 text-slate-700">
               <li>• Status is shared and reusable instead of screen-specific decoration.</li>
@@ -264,10 +264,10 @@ export default function WorkspaceLeadsPage() {
               <li>• Capture remains the intake route, not a competing workspace pattern.</li>
             </ul>
             <div className="mt-5 rounded-[1.5rem] border border-[#1F487C]/10 bg-[#1F487C]/5 p-4 text-sm leading-6 text-slate-700">
-              This pass adds visible quote-entry handoff logic and CTA helper copy while keeping the layout inside the locked Sprint 1 spec.
+              This pass adds visible quote-entry handoff logic and CTA helper copy while keeping the layout inside the locked rework contract.
             </div>
             <div className="mt-4">
-              <Link href="/development/readiness" className="text-sm font-semibold text-[#1F487C]">View Sprint 1 readiness →</Link>
+              <Link href="/development/readiness" className="text-sm font-semibold text-[#1F487C]">View approved rework readiness →</Link>
             </div>
           </SectionCard>
         </div>
@@ -285,7 +285,7 @@ export default function WorkspaceLeadsPage() {
           </div>
           <QuickActionMenu
             items={[
-              { label: 'Open Draft Quote', shortLabel: 'Quote', href: '/workspace/quotes', emphasis: 'primary' },
+              { label: 'Open Draft Quote', shortLabel: 'Quote', href: '/quotes', emphasis: 'primary' },
               { label: 'Add Note', shortLabel: 'Note' },
               { label: 'Open Capture', shortLabel: 'Capture', href: '/workspace/capture' },
             ]}

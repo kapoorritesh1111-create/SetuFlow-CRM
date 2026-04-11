@@ -3,47 +3,48 @@ import { SiteShell } from '@/components/marketing/site-shell';
 import { DevelopmentChecklist } from '@/components/planning/development-checklist';
 import { DevelopmentNav } from '@/components/planning/development-nav';
 import { readinessSummary, roadmapMilestones, sprintFocus, sprintProgress } from '@/components/planning/development-status';
+import { PRODUCT_ROUTES, PRODUCT_SHELL_LABELS } from '@/lib/product-contract';
 import { StatusBadge } from '@/components/ui/status-badge';
 
 const pinned = [
   {
     title: 'Product contract',
-    href: '/development/product',
+    href: PRODUCT_ROUTES.development.product,
     body: 'The locked product definition that prevents side-module drift and keeps every sprint tied to the core commercial flow.',
   },
   {
     title: 'Architecture contract',
-    href: '/development/architecture',
+    href: PRODUCT_ROUTES.development.architecture,
     body: 'The domain and service rules that preserve maintainability as the remaining sprints get built.',
   },
   {
     title: 'UX rules',
-    href: '/development/ux-rules',
+    href: PRODUCT_ROUTES.development.uxRules,
     body: 'The trainability and enterprise-safety rules that stop good-looking chaos from returning.',
   },
   {
     title: 'Master plan',
-    href: '/development/master-plan',
+    href: PRODUCT_ROUTES.development.masterPlan,
     body: 'The single source of truth for the locked flow, current sprint state, and the roadmap for the remaining sprints.',
   },
   {
     title: 'Readiness',
-    href: '/development/readiness',
+    href: PRODUCT_ROUTES.development.readiness,
     body: 'Live implementation status for the active sprint, the real validation state, and the blunt signal for when signoff is real.',
   },
   {
     title: 'Sprint backlog',
-    href: '/development/backlog',
+    href: PRODUCT_ROUTES.development.backlog,
     body: 'The in-product backlog that shows active Sprint 2 work plus the sequenced work for later sprints without bringing markdown clutter back.',
   },
   {
     title: 'Locked screen specs',
-    href: '/development/screens/leads-capture',
+    href: PRODUCT_ROUTES.development.screens,
     body: 'Desktop, tablet, and mobile blueprints for the locked Leads and Capture implementation path.',
   },
   {
     title: 'Active workspace previews',
-    href: '/workspace/leads',
+    href: PRODUCT_ROUTES.workspace.leads,
     body: 'The shared preview shell now mirrors the approved product shape so visible progress stays tied to the same contract as development status.',
   },
 ];
@@ -79,10 +80,10 @@ export default function DevelopmentPage() {
             <StatusBadge label={`Drift risk · ${readinessSummary.driftRisk}`} tone="warning" />
           </div>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link href="/development/master-plan" className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open master plan</Link>
-            <Link href="/development/readiness" className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open readiness</Link>
-            <Link href="/development/backlog" className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open backlog</Link>
-            <Link href="/development/screens/leads-capture" className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open locked screen specs</Link>
+            <Link href={PRODUCT_ROUTES.development.masterPlan} className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open master plan</Link>
+            <Link href={PRODUCT_ROUTES.development.readiness} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open readiness</Link>
+            <Link href={PRODUCT_ROUTES.development.backlog} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open backlog</Link>
+            <Link href={PRODUCT_ROUTES.development.screens} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open locked screen specs</Link>
           </div>
         </section>
 
@@ -102,7 +103,7 @@ export default function DevelopmentPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Master checklist</p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Visible by default inside the HTML workplace</h2>
               </div>
-              <Link href="/development/readiness" className="text-sm font-semibold text-[#1F487C]">Open readiness view</Link>
+              <Link href={PRODUCT_ROUTES.development.readiness} className="text-sm font-semibold text-[#1F487C]">Open readiness view</Link>
             </div>
             <div className="mt-6">
               <DevelopmentChecklist />
@@ -129,11 +130,11 @@ export default function DevelopmentPage() {
             </section>
 
             <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Non-negotiable ritual</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">{PRODUCT_SHELL_LABELS.ritualHeading}</p>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
-                <li>• Before coding: check /development and confirm the visible shell still matches the approved rework contract before touching deeper features.</li>
-                <li>• During coding: update the shared shell contract in the same PR as any visible navigation or workflow change.</li>
-                <li>• After coding: update readiness and workspace previews inside the repo so the next session starts from what the product actually shows.</li>
+                <li>• {PRODUCT_SHELL_LABELS.ritualBeforeCoding}</li>
+                <li>• {PRODUCT_SHELL_LABELS.ritualDuringCoding}</li>
+                <li>• {PRODUCT_SHELL_LABELS.ritualAfterCoding}</li>
               </ul>
             </section>
           </div>

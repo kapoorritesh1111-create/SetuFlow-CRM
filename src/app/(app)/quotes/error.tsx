@@ -1,0 +1,9 @@
+'use client';
+
+import { useEffect } from 'react';
+import { ErrorBoundaryView } from '@/components/ui/error-boundary-view';
+
+export default function RouteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => { console.error(error); }, [error]);
+  return <ErrorBoundaryView title="Route unavailable" description="This workspace route could not be loaded. Try again." reset={reset} homeHref="/dashboard" homeLabel="Back to dashboard" />;
+}

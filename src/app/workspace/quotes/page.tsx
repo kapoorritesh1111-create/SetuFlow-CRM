@@ -15,7 +15,7 @@ export default function QuotesPage() {
         status="Review"
         meta={['Buyer context preserved', 'Approval gate visible', 'Order carry-forward ready']}
         actions={[
-          { label: 'Convert to Order', href: '/workspace/orders', type: 'primary' },
+          { label: 'Convert to Order', href: '/orders', type: 'primary' },
         ]}
       />
 
@@ -44,7 +44,7 @@ export default function QuotesPage() {
         description="Order creation depends on a clear commercial state. Execution readiness can still be pending after conversion, but the quote review gate must be visible before the move forward."
         actions={
           <Link
-            href="/workspace/orders"
+            href="/orders"
             className={`rounded-2xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${workspacePrimaryButtonClass}`}
           >
             Convert to Order

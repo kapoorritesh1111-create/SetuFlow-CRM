@@ -1,14 +1,15 @@
 import Link from 'next/link';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 const links = [
-  { href: '/development', label: 'Development hub' },
-  { href: '/development/master-plan', label: 'Master plan' },
-  { href: '/development/readiness', label: 'Readiness' },
-  { href: '/development/backlog', label: 'Backlog' },
-  { href: '/development/product', label: 'Product' },
-  { href: '/development/architecture', label: 'Architecture' },
-  { href: '/development/ux-rules', label: 'UX rules' },
-  { href: '/development/screens/leads-capture', label: 'Screen specs' },
+  { href: PRODUCT_ROUTES.development.home, label: 'Development hub' },
+  { href: PRODUCT_ROUTES.development.masterPlan, label: 'Master plan' },
+  { href: PRODUCT_ROUTES.development.readiness, label: 'Readiness' },
+  { href: PRODUCT_ROUTES.development.backlog, label: 'Backlog' },
+  { href: PRODUCT_ROUTES.development.product, label: 'Product' },
+  { href: PRODUCT_ROUTES.development.architecture, label: 'Architecture' },
+  { href: PRODUCT_ROUTES.development.uxRules, label: 'UX rules' },
+  { href: PRODUCT_ROUTES.development.screens, label: 'Screen specs' },
 ];
 
 export function DevelopmentNav() {

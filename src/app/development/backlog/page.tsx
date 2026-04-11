@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { SiteShell } from '@/components/marketing/site-shell';
 import { DevelopmentNav } from '@/components/planning/development-nav';
 import { backlogSections, readinessSummary, sprintFocus, sprintProgress } from '@/components/planning/development-status';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { StatusBadge } from '@/components/ui/status-badge';
 
 const toneMap = {
@@ -35,9 +36,9 @@ export default function DevelopmentBacklogPage() {
             <StatusBadge label="Backlog is repo-backed" tone="neutral" />
           </div>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link href="/development/readiness" className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open readiness</Link>
-            <Link href="/development/master-plan" className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open master plan</Link>
-            <Link href="/development/screens/leads-capture" className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open locked screen specs</Link>
+            <Link href={PRODUCT_ROUTES.development.readiness} className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open readiness</Link>
+            <Link href={PRODUCT_ROUTES.development.masterPlan} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open master plan</Link>
+            <Link href={PRODUCT_ROUTES.development.screens} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open locked screen specs</Link>
           </div>
         </section>
 

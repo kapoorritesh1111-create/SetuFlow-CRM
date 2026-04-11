@@ -66,7 +66,7 @@ export default function WorkspaceCapturePage() {
         meta={['Inbound only', 'Duplicate-aware', 'Lead + quote handoff ready', 'Tablet stack verified in layout']}
         actions={[
           { label: 'Open Leads', href: '/workspace/leads', type: 'secondary' },
-          { label: 'Lead + Draft Quote', href: '/workspace/quotes', type: 'primary' },
+          { label: 'Lead + Draft Quote', href: '/quotes', type: 'primary' },
         ]}
       />
 
@@ -145,7 +145,7 @@ export default function WorkspaceCapturePage() {
                   items={[
                     { label: 'Create Lead', shortLabel: 'Lead', href: '/workspace/leads' },
                     { label: 'Merge Existing', shortLabel: 'Merge' },
-                    { label: 'Lead + Draft Quote', shortLabel: 'Quote', href: '/workspace/quotes', emphasis: 'primary' },
+                    { label: 'Lead + Draft Quote', shortLabel: 'Quote', href: '/quotes', emphasis: 'primary' },
                   ]}
                 />
               </div>
@@ -231,7 +231,7 @@ export default function WorkspaceCapturePage() {
             items={[
               { label: 'Create Lead', shortLabel: 'Lead', href: '/workspace/leads' },
               { label: 'Merge Existing', shortLabel: 'Merge' },
-              { label: 'Lead + Draft Quote', shortLabel: 'Quote', href: '/workspace/quotes', emphasis: 'primary' },
+              { label: 'Lead + Draft Quote', shortLabel: 'Quote', href: '/quotes', emphasis: 'primary' },
             ]}
           />
         </div>

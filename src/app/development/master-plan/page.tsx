@@ -1,28 +1,30 @@
 import Link from 'next/link';
 import { SiteShell } from '@/components/marketing/site-shell';
 import { DevelopmentNav } from '@/components/planning/development-nav';
-import { roadmapMilestones, sprintProgress } from '@/components/planning/development-status';
+import { roadmapMilestones } from '@/components/planning/development-status';
+import { LOCKED_PRODUCT_FLOW, PRODUCT_ROUTES, driftGuardrails } from '@/lib/product-contract';
 import { StatusBadge } from '@/components/ui/status-badge';
 
 const rules = [
   'The approved rework stays active until the visible shell, quote path, and order path stop contradicting each other.',
-  'Keep the product centered on Capture, Lead, Quote, and Order.',
+  `Keep the product centered on ${LOCKED_PRODUCT_FLOW.join(' → ')}.`,
   'Do not create new top-level product modules or alternate workflow paths.',
-  'Treat /development, /development/master-plan, /development/readiness, /development/backlog, /development/product, /development/architecture, /development/ux-rules, and /development/screens/leads-capture as the operating pages.',
+  `Treat ${PRODUCT_ROUTES.development.home}, ${PRODUCT_ROUTES.development.masterPlan}, ${PRODUCT_ROUTES.development.readiness}, ${PRODUCT_ROUTES.development.backlog}, ${PRODUCT_ROUTES.development.product}, ${PRODUCT_ROUTES.development.architecture}, ${PRODUCT_ROUTES.development.uxRules}, and ${PRODUCT_ROUTES.development.screens} as the operating pages.`,
+  ...driftGuardrails,
   'Keep backlog and planning inside the HTML development workplace, not in markdown task dumps.',
   'Let future sprints stay visible, but only activate them after the current sprint is formally closed.',
   'Keep mobile and tablet quality as strict as desktop polish.',
 ];
 
 const references = [
-  { href: '/development/product', label: 'Product contract', body: 'The locked product definition that keeps the roadmap tied to one enterprise operating flow.' },
-  { href: '/development/architecture', label: 'Architecture contract', body: 'The domain and service rules that should govern later sprint implementation depth.' },
-  { href: '/development/ux-rules', label: 'UX rules', body: 'The screen-level decision principles that prevent visual and workflow drift.' },
-  { href: '/development', label: 'Development hub', body: 'The operating surface with the visible checklist, roadmap snapshot, and live readiness summary.' },
-  { href: '/development/readiness', label: 'Readiness board', body: 'The blunt status view for rework validation, shell integrity, and the real boundary to signoff.' },
-  { href: '/development/backlog', label: 'Sprint backlog', body: 'The in-app backlog that now shows current and pending sprint work in one controlled place.' },
-  { href: '/development/screens/leads-capture', label: 'Locked screen specs', body: 'The locked screen reference for Leads and Capture that Sprint 2 must continue to respect.' },
-  { href: '/workspace/leads', label: 'Active workspace previews', body: 'The implemented Leads, Capture, and Quote surfaces that reflect the locked flow.' },
+  { href: PRODUCT_ROUTES.development.product, label: 'Product contract', body: 'The locked product definition that keeps the roadmap tied to one enterprise operating flow.' },
+  { href: PRODUCT_ROUTES.development.architecture, label: 'Architecture contract', body: 'The domain and service rules that should govern later sprint implementation depth.' },
+  { href: PRODUCT_ROUTES.development.uxRules, label: 'UX rules', body: 'The screen-level decision principles that prevent visual and workflow drift.' },
+  { href: PRODUCT_ROUTES.development.home, label: 'Development hub', body: 'The operating surface with the visible checklist, roadmap snapshot, and live readiness summary.' },
+  { href: PRODUCT_ROUTES.development.readiness, label: 'Readiness board', body: 'The blunt status view for rework validation, shell integrity, and the real boundary to signoff.' },
+  { href: PRODUCT_ROUTES.development.backlog, label: 'Sprint backlog', body: 'The in-app backlog that now shows current and pending sprint work in one controlled place.' },
+  { href: PRODUCT_ROUTES.development.screens, label: 'Locked screen specs', body: 'The locked screen reference for Leads and Capture that Sprint 2 must continue to respect.' },
+  { href: PRODUCT_ROUTES.workspace.leads, label: 'Active workspace previews', body: 'The implemented Leads, Capture, and Quote surfaces that reflect the locked flow.' },
 ];
 
 const toneMap = {
@@ -45,7 +47,7 @@ export default function MasterPlanPage() {
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Locked flow</p>
-              <p className="mt-3 text-2xl font-semibold leading-tight">Capture → Lead → Quote → Order</p>
+              <p className="mt-3 text-2xl font-semibold leading-tight">{LOCKED_PRODUCT_FLOW.join(' → ')}</p>
               <p className="mt-4 text-sm leading-7 text-white/85">Every sprint must deepen this path. No alternate structures, no detached modules, and no backlog outside the development workplace.</p>
             </div>
           </div>
@@ -85,7 +87,7 @@ export default function MasterPlanPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Reference map</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Everything active should still be one click away from here.</h2>
             </div>
-            <Link href="/development/backlog" className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open backlog</Link>
+            <Link href={PRODUCT_ROUTES.development.backlog} className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open backlog</Link>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {references.map((item) => (

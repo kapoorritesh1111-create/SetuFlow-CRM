@@ -78,7 +78,7 @@ export default function WorkspaceDashboardPage() {
               <li>• Every widget points back to a lead, quote, or order action.</li>
             </ul>
             <div className="mt-5 rounded-[1.5rem] border border-[#1F487C]/10 bg-[#1F487C]/5 p-4 text-sm text-slate-700">
-              Link the dashboard to <Link href="/workspace/leads" className="font-semibold text-[#1F487C]">Leads</Link>, <Link href="/workspace/quotes" className="font-semibold text-[#1F487C]">Quote Builder</Link>, and <Link href="/workspace/orders" className="font-semibold text-[#1F487C]">Orders</Link> so the page feels operational, not passive.
+              Link the dashboard to <Link href="/workspace/leads" className="font-semibold text-[#1F487C]">Leads</Link>, <Link href="/quotes" className="font-semibold text-[#1F487C]">Quote Builder</Link>, and <Link href="/orders" className="font-semibold text-[#1F487C]">Orders</Link> so the page feels operational, not passive.
             </div>
           </PreviewPanel>
         </div>

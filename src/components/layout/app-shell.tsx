@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppLogo } from '@/components/branding/app-logo';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { cn, getInitials } from '@/lib/utils';
-import { primaryAppShellNav } from '@/lib/product-contract';
+import { PRODUCT_ROUTES, PRODUCT_SHELL_LABELS, primaryAppShellNav } from '@/lib/product-contract';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 import type { Database } from '@/types/database';
 
@@ -53,7 +53,7 @@ const ADMIN_TABS: ContextTab[] = [
 const navSections: NavSection[] = [
   {
     id: 'product-shell',
-    label: 'Product shell',
+    label: PRODUCT_SHELL_LABELS.productShell,
     icon: '◫',
     items: primaryAppShellNav.map((item) => ({ href: item.href, label: item.label, exact: item.exact })),
   },
@@ -100,8 +100,8 @@ function getSectionIcon(icon: string) {
 function getNavItemIcon(href: string) {
   if (href.includes('/dashboard')) return 'dashboard';
   if (href.includes('/leads')) return 'users';
-  if (href.includes('/workspace/quotes')) return 'file-text-o';
-  if (href.includes('/workspace/orders')) return 'shopping-bag';
+  if (href.includes(PRODUCT_ROUTES.app.quotes)) return 'file-text-o';
+  if (href.includes(PRODUCT_ROUTES.app.orders)) return 'shopping-bag';
   if (href.includes('/admin/users')) return 'building-o';
   if (href.includes('/pipeline')) return 'random';
   if (href.includes('/products')) return 'archive';
@@ -185,7 +185,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     };
   }
 
-  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+  if (pathname === PRODUCT_ROUTES.app.dashboard || pathname.startsWith(`${PRODUCT_ROUTES.app.dashboard}/`)) {
     return {
       title: 'Dashboard',
       description:
@@ -194,7 +194,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     };
   }
 
-  if (pathname === '/leads' || pathname.startsWith('/leads/')) {
+  if (pathname === PRODUCT_ROUTES.app.leads || pathname.startsWith(`${PRODUCT_ROUTES.app.leads}/`)) {
     if (/^\/leads\/[^/]+\/quote/.test(pathname)) {
       return {
         title: 'Quotes',
@@ -219,7 +219,7 @@ function getRouteMeta(pathname: string): RouteMeta {
         description:
           'Stay inside one lead context for stage movement, follow-ups, RFQs, quotes, and activity history.',
         tabs: PRODUCT_SHELL_TABS,
-        backHref: '/leads',
+        backHref: PRODUCT_ROUTES.app.leads,
         backLabel: 'Back to leads',
       };
     }
@@ -227,6 +227,25 @@ function getRouteMeta(pathname: string): RouteMeta {
       title: 'Leads',
       description:
         'Find the right lead quickly, act in bulk when needed, and open existing leads in the command center route.',
+      tabs: PRODUCT_SHELL_TABS,
+    };
+  }
+
+
+  if (pathname === PRODUCT_ROUTES.app.quotes || pathname.startsWith(`${PRODUCT_ROUTES.app.quotes}/`)) {
+    return {
+      title: 'Quotes',
+      description:
+        'Review commercial fit, confirm approval state, and move into order creation only when the gate is clear.',
+      tabs: PRODUCT_SHELL_TABS,
+    };
+  }
+
+  if (pathname === PRODUCT_ROUTES.app.orders || pathname.startsWith(`${PRODUCT_ROUTES.app.orders}/`)) {
+    return {
+      title: 'Orders',
+      description:
+        'Carry accepted commercial truth into operational readiness without hiding blockers or required follow-through.',
       tabs: PRODUCT_SHELL_TABS,
     };
   }

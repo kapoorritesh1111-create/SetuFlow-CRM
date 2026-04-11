@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 
-import { primaryWorkspacePreviewNav } from '@/lib/product-contract';
+import { PRODUCT_SHELL_LABELS, PRODUCT_ROUTES, primaryWorkspacePreviewNav } from '@/lib/product-contract';
 
 export function WorkspaceShell({ title, eyebrow, description, children }: { title: string; eyebrow: string; description: string; children: ReactNode }) {
   return (
@@ -13,10 +13,10 @@ export function WorkspaceShell({ title, eyebrow, description, children }: { titl
             <Link href="/" className="flex items-center gap-3">
               <Image src="/logos/setu-flow-logo.png" alt="Setu Flow" width={164} height={48} className="h-10 w-auto" priority />
             </Link>
-            <span className="hidden rounded-full border border-[#1F487C]/10 bg-[#1F487C]/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#1F487C] md:inline-flex">Approved workspace preview</span>
+            <span className="hidden rounded-full border border-[#1F487C]/10 bg-[#1F487C]/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#1F487C] md:inline-flex">{PRODUCT_SHELL_LABELS.previewBadge}</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/development" className="hidden text-sm font-medium text-slate-600 transition hover:text-[#1F487C] md:inline-flex">Development plan</Link>
+            <Link href={PRODUCT_ROUTES.development.home} className="hidden text-sm font-medium text-slate-600 transition hover:text-[#1F487C] md:inline-flex">Development plan</Link>
             <Link href="/client-login" className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_26px_rgba(31,72,124,0.18)]">Client login</Link>
           </div>
         </div>
@@ -38,7 +38,7 @@ export function WorkspaceShell({ title, eyebrow, description, children }: { titl
               <h1 className="text-3xl font-semibold tracking-tight text-slate-950 lg:text-4xl">{title}</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 lg:text-base">{description}</p>
             </div>
-            <Link href="/development" className="inline-flex rounded-full border border-[#1F487C]/15 px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open full implementation plan</Link>
+            <Link href={PRODUCT_ROUTES.development.home} className="inline-flex rounded-full border border-[#1F487C]/15 px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open full implementation plan</Link>
           </div>
         </section>
         <div className="mt-8">{children}</div>
