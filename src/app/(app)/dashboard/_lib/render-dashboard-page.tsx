@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import DashboardInteractive from '@/features/dashboard/components/dashboard-interactive';
 import type { DashboardScope } from '@/features/dashboard/types';
 import type { WorkspaceMode } from '@/features/workspace/types';
-import { getDashboardData } from '@/lib/queries/data';
+import { getDashboardData } from '@/lib/queries/dashboard';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 

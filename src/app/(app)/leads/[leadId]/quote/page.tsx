@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import { getLeadProfileData } from '@/lib/queries/data';
+import { getLeadProfileData } from '@/lib/queries/leads';
 import { hasSupabaseEnv } from '@/lib/env';
 import QuotePrintButton from '@/features/leads/components/quote-print-button';
 import { QuoteWorkspace } from '@/features/quotes/components/quote-workspace';

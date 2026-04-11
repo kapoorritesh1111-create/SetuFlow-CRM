@@ -4,7 +4,7 @@ import { PipelineBoard } from '@/features/pipeline/components/pipeline-board';
 import { parseWorkspaceMode, workspaceModeToLeadJourney } from '@/features/workspace/mode';
 import { buildTodayLayerState } from '@/features/workspace/today';
 import { normalizeQuoteRecords } from '@/lib/normalizers/quote-normalizer';
-import { getLeadsPageData } from '@/lib/queries/data';
+import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 

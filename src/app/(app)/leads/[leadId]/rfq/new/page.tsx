@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { normalizeQuotesForTimeline } from '@/lib/normalizers/quote-normalizer';
-import { getLeadProfileData } from '@/lib/queries/data';
+import { getLeadProfileData } from '@/lib/queries/leads';
 import { hasSupabaseEnv } from '@/lib/env';
 import RfqForm from '@/features/rfqs/components/rfq-form';
 import { buildLeadActivityTimeline } from '@/lib/activity-timeline';

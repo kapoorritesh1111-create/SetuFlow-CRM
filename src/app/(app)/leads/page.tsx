@@ -4,7 +4,7 @@ import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
 import { parseWorkspaceMode, workspaceModeToLeadJourney } from '@/features/workspace/mode';
 import { buildTodayLayerState } from '@/features/workspace/today';
-import { getLeadsPageData } from '@/lib/queries/data';
+import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { normalizeQuoteRecords } from '@/lib/normalizers/quote-normalizer';

@@ -1,7 +1,7 @@
 import { EmptyState } from '@/components/ui/empty-state'
 import { notFound } from 'next/navigation'
 import { hasSupabaseEnv } from '@/lib/env'
-import { getLeadProfileData } from '@/lib/queries/data'
+import { getLeadProfileData } from '@/lib/queries/leads'
 import { requireWorkspace } from '@/lib/workspace/auth'
 import LeadCommandCenterPage from '@/features/leads/command-center/LeadCommandCenterPage'
 import { toLeadProfileSnapshot } from '@/features/leads/command-center/adapters'

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { writeAuditLog } from '@/lib/auditLog';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getComplianceStatus, getMappingState, getPricingReadiness, getQualificationState, getTaskStatus } from '@/lib/queries/lead-command-center';
-import { getLeadProfileData } from '@/lib/queries/data';
+import { getLeadProfileData } from '@/lib/queries/leads';
 import { buildStageMoveReadiness } from '@/lib/queries/pipeline-stage-gating';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
