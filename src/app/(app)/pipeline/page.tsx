@@ -1,12 +1,20 @@
+import dynamic from 'next/dynamic';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
-import { PipelineBoard } from '@/features/pipeline/components/pipeline-board';
 import { parseWorkspaceMode, workspaceModeToLeadJourney } from '@/features/workspace/mode';
 import { buildTodayLayerState } from '@/features/workspace/today';
 import { normalizeQuoteRecords } from '@/lib/normalizers/quote-normalizer';
 import { getPipelinePageData } from '@/lib/queries/pipeline';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
+
+const PipelineBoard = dynamic(
+  () => import('@/features/pipeline/components/pipeline-board').then((mod) => mod.PipelineBoard),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
 
 export default async function PipelinePage({
   searchParams,
