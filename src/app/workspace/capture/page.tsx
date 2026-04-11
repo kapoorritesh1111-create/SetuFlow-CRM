@@ -56,10 +56,10 @@ export default function WorkspaceCapturePage() {
     <WorkspaceShell
       eyebrow="Product view · capture"
       title="Capture turns messy inbound inputs into structured commercial work"
-      description="Sprint 1 keeps Capture inbound-only and applies the same reusable foundations used in Leads so the product feels like one system instead of separate experiments."
+      description="Capture now represents the intake wedge inside the approved rework, turning messy inbound inputs into structured lead and quote work."
     >
       <PageHeader
-        eyebrow="Sprint 1 · Capture"
+        eyebrow="Approved rework · Capture"
         title="Unified intake with one review pattern"
         description="vCard import, card scan, document parsing, and pasted inquiries all feed the same review step before the system commits work into Leads and Quotes."
         status="Ready"

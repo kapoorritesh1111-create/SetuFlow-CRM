@@ -105,11 +105,11 @@ export default function WorkspaceLeadsPage() {
     <WorkspaceShell
       eyebrow="Product view · leads"
       title="A lead workspace that feels obvious, fast, and ready to train"
-      description="Sprint 1 keeps Leads in a clean list-and-detail flow with shared UI foundations, visible statuses, and tap-first interaction patterns that stay aligned to the locked screen spec."
+      description="The approved rework keeps Leads clean, obvious, and action-first so Capture and Quote handoff feel like one product instead of scattered modules."
     >
       <PageHeader
-        eyebrow="Sprint 1 · Leads"
-        title="Lead command surface aligned to the locked development workplace"
+        eyebrow="Approved rework · Leads"
+        title="Leads are now the first operating surface"
         description="The list, selected detail, and next action all use the same reusable component language so Leads and Capture stay visually and structurally aligned without drifting into a command-center shell."
         status="Ready"
         meta={['Capture → Lead → Quote → Order', 'Qualified leads open Quote', 'No command-center drift', 'Mobile sticky CTA ready']}

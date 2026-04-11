@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppLogo } from '@/components/branding/app-logo';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { cn, getInitials } from '@/lib/utils';
+import { primaryAppShellNav } from '@/lib/product-contract';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 import type { Database } from '@/types/database';
 
@@ -39,23 +40,7 @@ type ShortcutDefinition = {
   description: string;
 };
 
-const CORE_TABS: ContextTab[] = [
-  { href: '/dashboard', label: 'Dashboard', exact: true },
-  { href: '/leads', label: 'Leads', exact: true },
-  { href: '/pipeline', label: 'Pipeline', exact: true },
-];
-
-const BUYER_TABS: ContextTab[] = [
-  { href: '/dashboard/buyers', label: 'Dashboard', exact: true },
-  { href: '/leads/buyers', label: 'Leads', exact: true },
-  { href: '/pipeline/buyers', label: 'Pipeline', exact: true },
-];
-
-const SUPPLIER_TABS: ContextTab[] = [
-  { href: '/dashboard/suppliers', label: 'Dashboard', exact: true },
-  { href: '/leads/suppliers', label: 'Leads', exact: true },
-  { href: '/pipeline/suppliers', label: 'Pipeline', exact: true },
-];
+const PRODUCT_SHELL_TABS: ContextTab[] = primaryAppShellNav.map((item) => ({ href: item.href, label: item.label, exact: item.exact }));
 
 const ADMIN_TABS: ContextTab[] = [
   { href: '/admin/organization', label: 'Organization', exact: true },
@@ -65,60 +50,13 @@ const ADMIN_TABS: ContextTab[] = [
   { href: '/admin/ai-analytics', label: 'AI analytics', exact: true },
 ];
 
-const OPERATIONS_TABS: ContextTab[] = [
-  { href: '/products', label: 'Products', exact: true },
-  { href: '/documents', label: 'Documents', exact: true },
-  { href: '/compliance', label: 'Compliance', exact: true },
-  { href: '/trade-events', label: 'Trade events', exact: true },
-  { href: '/tasks', label: 'Tasks', exact: true },
-  { href: '/settings/lists', label: 'Settings lists', exact: true },
-  { href: '/integrations', label: 'Integrations', exact: true },
-  { href: '/ai-suggestions', label: 'AI assist', exact: true },
-];
-
-const CONTACT_EXCHANGE_TABS: ContextTab[] = [
-  { href: '/contact-exchange/vcard', label: 'My Digital vCard', exact: true },
-  { href: '/contact-exchange/scan', label: 'Scan Contact Info', exact: true },
-];
-
-const contactExchangeSection: NavSection = {
-  id: 'contact-exchange',
-  label: 'Contact exchange',
-  icon: 'C',
-  items: [
-    { href: '/contact-exchange/vcard', label: 'My Digital vCard' },
-    { href: '/contact-exchange/scan', label: 'Scan Contact Info' },
-  ],
-};
-
 const navSections: NavSection[] = [
   {
-    id: 'core',
-    label: 'Core workspaces',
+    id: 'product-shell',
+    label: 'Product shell',
     icon: '◫',
-    items: [
-      { href: '/dashboard', label: 'Dashboard', exact: true },
-      { href: '/leads', label: 'Leads', exact: true },
-      { href: '/pipeline', label: 'Pipeline', exact: true },
-    ],
+    items: primaryAppShellNav.map((item) => ({ href: item.href, label: item.label, exact: item.exact })),
   },
-  {
-    id: 'operations',
-    label: 'Operations',
-    icon: 'O',
-    items: [
-      { href: '/products', label: 'Products' },
-      { href: '/documents', label: 'Documents' },
-      { href: '/compliance', label: 'Compliance' },
-      { href: '/trade-events', label: 'Trade events' },
-      { href: '/tasks', label: 'Tasks' },
-      { href: '/contracts', label: 'Contracts' },
-      { href: '/settings/lists', label: 'Settings lists' },
-      { href: '/integrations', label: 'Integrations' },
-      { href: '/ai-suggestions', label: 'AI assist' },
-    ],
-  },
-  contactExchangeSection,
 ];
 
 const adminSection: NavSection = {
@@ -162,6 +100,9 @@ function getSectionIcon(icon: string) {
 function getNavItemIcon(href: string) {
   if (href.includes('/dashboard')) return 'dashboard';
   if (href.includes('/leads')) return 'users';
+  if (href.includes('/workspace/quotes')) return 'file-text-o';
+  if (href.includes('/workspace/orders')) return 'shopping-bag';
+  if (href.includes('/admin/users')) return 'building-o';
   if (href.includes('/pipeline')) return 'random';
   if (href.includes('/products')) return 'archive';
   if (href.includes('/documents')) return 'file-text-o';
@@ -240,7 +181,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Contracts',
       description: 'Track signed commitments, linked quotes, files, and open blockers from one progression desk.',
-      tabs: CORE_TABS,
+      tabs: PRODUCT_SHELL_TABS,
     };
   }
 
@@ -249,7 +190,7 @@ function getRouteMeta(pathname: string): RouteMeta {
       title: 'Dashboard',
       description:
         'Get to the most important buyer and supplier metrics first, then move into focused operating lanes.',
-      tabs: CORE_TABS,
+      tabs: PRODUCT_SHELL_TABS,
     };
   }
 
@@ -277,7 +218,7 @@ function getRouteMeta(pathname: string): RouteMeta {
         title: 'Lead profile',
         description:
           'Stay inside one lead context for stage movement, follow-ups, RFQs, quotes, and activity history.',
-        tabs: CORE_TABS,
+        tabs: PRODUCT_SHELL_TABS,
         backHref: '/leads',
         backLabel: 'Back to leads',
       };
@@ -286,7 +227,7 @@ function getRouteMeta(pathname: string): RouteMeta {
       title: 'Leads',
       description:
         'Find the right lead quickly, act in bulk when needed, and open existing leads in the command center route.',
-      tabs: CORE_TABS,
+      tabs: PRODUCT_SHELL_TABS,
     };
   }
 
@@ -295,7 +236,7 @@ function getRouteMeta(pathname: string): RouteMeta {
       title: 'Pipeline',
       description:
         'Keep stage movement visible, actionable, and easy to scan across the full workspace.',
-      tabs: CORE_TABS,
+      tabs: PRODUCT_SHELL_TABS,
     };
   }
 
@@ -303,7 +244,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Products',
       description: 'Manage shared commercial reference data for daily execution.',
-      tabs: OPERATIONS_TABS,
+
     };
   }
 
@@ -311,7 +252,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Trade events',
       description: 'Maintain trade event records used across lead and pipeline workflows.',
-      tabs: OPERATIONS_TABS,
+
     };
   }
 
@@ -319,7 +260,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Settings lists',
       description: 'Update shared option lists that power forms throughout the app.',
-      tabs: OPERATIONS_TABS,
+
     };
   }
 
@@ -327,7 +268,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Integrations',
       description: 'Review external systems connected to this workspace.',
-      tabs: OPERATIONS_TABS,
+
     };
   }
 
@@ -335,7 +276,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'AI assist',
       description: 'Review explainable summaries and next-best-action suggestions anchored to workspace data.',
-      tabs: OPERATIONS_TABS,
+
     };
   }
 
@@ -343,7 +284,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'My Digital vCard',
       description: 'Share your professional contact identity through one review-first surface before QR, link, and VCF automation ships.',
-      tabs: CONTACT_EXCHANGE_TABS,
+      tabs: PRODUCT_SHELL_TABS,
     };
   }
 
@@ -351,7 +292,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Scan Contact Info',
       description: 'Capture inbound contact details through one AI-assisted review surface without forcing save automation yet.',
-      tabs: CONTACT_EXCHANGE_TABS,
+      tabs: PRODUCT_SHELL_TABS,
     };
   }
 
@@ -359,7 +300,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Tasks',
       description: 'Track outstanding work tied to the commercial operating flow.',
-      tabs: OPERATIONS_TABS,
+
     };
   }
 
@@ -367,7 +308,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Documents',
       description: 'Review deal-linked files, version posture, expiry, and approvals without leaving the operations lane.',
-      tabs: OPERATIONS_TABS,
+
     };
   }
 
@@ -375,7 +316,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Compliance',
       description: 'Keep required compliance tasks, reviews, and lead blockers visible alongside commercial work.',
-      tabs: OPERATIONS_TABS,
+
     };
   }
 
@@ -385,35 +326,26 @@ function getRouteMeta(pathname: string): RouteMeta {
   };
 }
 
-function getWorkspaceModeFromLocation(pathname: string, modeParam: string | null) {
-  if (pathname.startsWith('/dashboard/buyers') || pathname.startsWith('/leads/buyers') || pathname.startsWith('/pipeline/buyers')) return 'buyers' as const;
-  if (pathname.startsWith('/dashboard/suppliers') || pathname.startsWith('/leads/suppliers') || pathname.startsWith('/pipeline/suppliers')) return 'suppliers' as const;
-  return modeParam === 'buyers' || modeParam === 'suppliers' ? modeParam : 'all';
+function getWorkspaceModeFromLocation(_pathname: string, _modeParam: string | null) {
+  return 'all' as const;
 }
 
 function getWorkspaceBasePath(pathname: string) {
   if (pathname.startsWith('/dashboard')) return '/dashboard';
   if (pathname.startsWith('/leads')) return '/leads';
-  if (pathname.startsWith('/pipeline')) return '/pipeline';
   return null;
 }
 
-function withWorkspaceMode(href: string, mode: 'all' | 'buyers' | 'suppliers') {
-  if (!['/dashboard', '/leads', '/pipeline'].includes(href)) return href;
-  return mode === 'all' ? href : `${href}?mode=${mode}`;
+function withWorkspaceMode(href: string, _mode: 'all' | 'buyers' | 'suppliers') {
+  return href;
 }
 
 function withWorkspaceModePreservedParams(
   href: string,
-  mode: 'all' | 'buyers' | 'suppliers',
-  currentParams?: string,
+  _mode: 'all' | 'buyers' | 'suppliers',
+  _currentParams?: string,
 ) {
-  if (!['/dashboard', '/leads', '/pipeline'].includes(href)) return href;
-  const params = new URLSearchParams(currentParams ?? '');
-  if (mode === 'all') params.delete('mode');
-  else params.set('mode', mode);
-  const query = params.toString();
-  return query ? `${href}?${query}` : href;
+  return href;
 }
 
 function ShellNavigation({
@@ -559,7 +491,7 @@ export function AppShell({
   const routeMeta = getRouteMeta(pathname);
   const workspaceMode = getWorkspaceModeFromLocation(pathname, searchParams.get('mode'));
   const workspaceBasePath = getWorkspaceBasePath(pathname);
-  const showWorkspaceModeSwitch = Boolean(workspaceBasePath) && !/^\/leads\/[^/]+/.test(pathname);
+  const showWorkspaceModeSwitch = false;
   const currentWorkspaceModeHref = (mode: 'all' | 'buyers' | 'suppliers') => {
     if (!workspaceBasePath) return pathname;
     return withWorkspaceModePreservedParams(workspaceBasePath, mode, searchParams.toString());

@@ -19,13 +19,13 @@ export default function DevelopmentBacklogPage() {
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Sprint backlog</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">One backlog surface inside the development workplace, with Sprint 2 active and the remaining sprints visible in order.</h1>
-              <p className="mt-5 text-lg leading-8 text-slate-600">Backlog stays in the HTML workplace instead of extra repo files. Every item must support the locked {sprintFocus.flow} path, respect the currently active sprint, and improve readiness without creating structural drift.</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">One backlog surface inside the development workplace, with the approved rework active and deeper module work sequenced behind it.</h1>
+              <p className="mt-5 text-lg leading-8 text-slate-600">Backlog stays in the HTML workplace instead of extra repo files. Every item must support the locked {sprintFocus.flow} path, respect the active rework contract, and improve readiness without recreating structural drift.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Backlog rule</p>
               <p className="mt-3 text-2xl font-semibold leading-tight">If work is not on this page, it is not scheduled work.</p>
-              <p className="mt-4 text-sm leading-7 text-white/85">Sprint 2 remains the only active lane. The full roadmap stays visible here through Sprint 10 so sequencing does not drift again.</p>
+              <p className="mt-4 text-sm leading-7 text-white/85">The approved rework remains the only active lane. The deeper roadmap stays visible here so sequencing does not drift again.</p>
             </div>
           </div>
           <div className="mt-8"><DevelopmentNav /></div>

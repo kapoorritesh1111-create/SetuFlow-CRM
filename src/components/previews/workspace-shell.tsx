@@ -2,14 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 
-const links = [
-  { href: '/workspace/dashboard', label: 'Dashboard' },
-  { href: '/workspace/leads', label: 'Leads' },
-  { href: '/workspace/capture', label: 'Capture' },
-  { href: '/workspace/quotes', label: 'Quote Builder' },
-  { href: '/workspace/orders', label: 'Orders' },
-  { href: '/workspace/my-card', label: 'My Card' }
-];
+import { primaryWorkspacePreviewNav } from '@/lib/product-contract';
 
 export function WorkspaceShell({ title, eyebrow, description, children }: { title: string; eyebrow: string; description: string; children: ReactNode }) {
   return (
@@ -20,7 +13,7 @@ export function WorkspaceShell({ title, eyebrow, description, children }: { titl
             <Link href="/" className="flex items-center gap-3">
               <Image src="/logos/setu-flow-logo.png" alt="Setu Flow" width={164} height={48} className="h-10 w-auto" priority />
             </Link>
-            <span className="hidden rounded-full border border-[#1F487C]/10 bg-[#1F487C]/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#1F487C] md:inline-flex">Workspace previews</span>
+            <span className="hidden rounded-full border border-[#1F487C]/10 bg-[#1F487C]/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#1F487C] md:inline-flex">Approved workspace preview</span>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/development" className="hidden text-sm font-medium text-slate-600 transition hover:text-[#1F487C] md:inline-flex">Development plan</Link>
@@ -29,7 +22,7 @@ export function WorkspaceShell({ title, eyebrow, description, children }: { titl
         </div>
         <div className="mx-auto max-w-7xl px-4 pb-4 sm:px-6 lg:px-8">
           <nav className="flex flex-wrap gap-2">
-            {links.map((link) => (
+            {primaryWorkspacePreviewNav.map((link) => (
               <Link key={link.href} href={link.href} className="rounded-full border border-[#1F487C]/10 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#1F487C]/30 hover:text-[#1F487C]">
                 {link.label}
               </Link>

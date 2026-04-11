@@ -12,10 +12,10 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6 p-4 sm:p-6">
       <PageHeader
-        eyebrow="Sprint 2"
-        title="Order entry"
+        eyebrow="Approved rework · Orders"
+        title="Orders"
         description="Create the first operational order record from an approved quote without losing buyer, SKU, pricing, or readiness context."
-        badge="Quote to Order"
+        badge="Post-acceptance execution"
         status="In progress"
         meta={['Buyer aligned', 'Pricing snapshot locked', 'Dispatch gates visible']}
       />

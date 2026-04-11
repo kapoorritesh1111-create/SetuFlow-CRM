@@ -8,10 +8,10 @@ export default function QuotesPage() {
   return (
     <div className="space-y-6 p-4 sm:p-6">
       <PageHeader
-        eyebrow="Sprint 2"
-        title="Quote entry"
+        eyebrow="Approved rework · Quotes"
+        title="Quotes"
         description="Review commercial fit, confirm approval state, and convert the quote into the first operational order record only when the gate is clear."
-        badge="Quote to Order"
+        badge="Hero workflow"
         status="Review"
         meta={['Buyer context preserved', 'Approval gate visible', 'Order carry-forward ready']}
         actions={[

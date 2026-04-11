@@ -24,7 +24,7 @@ export function ReadinessBoard() {
         <div className="rounded-[2rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-8 text-white shadow-[0_20px_60px_rgba(31,72,124,0.15)]">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">Next action</p>
           <p className="mt-3 text-2xl font-semibold leading-tight">{sprintFocus.nextAction}</p>
-          <p className="mt-4 text-sm leading-7 text-white/85">Scope remains locked to {sprintFocus.flow}. Do not expand beyond Sprint 2 while restoring planning integrity and validating Quote → Order continuity.</p>
+          <p className="mt-4 text-sm leading-7 text-white/85">Scope remains locked to {sprintFocus.flow}. Do not expand beyond the approved shell contract while live quote and order behavior are still being aligned.</p>
         </div>
       </section>
 

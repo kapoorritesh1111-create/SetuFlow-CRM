@@ -94,25 +94,25 @@ export type ScreenPlan = {
 export const lockedProductFlow = ['Capture', 'Lead', 'Quote', 'Order'] as const;
 
 export const sprintProgress = {
-  sprint: 'Sprint 2',
-  percent: 44,
-  percentLabel: '44%',
+  sprint: 'Approved rework',
+  percent: 18,
+  percentLabel: '18%',
 };
 
 export const sprintFocus = {
-  sprint: 'Sprint 2',
-  title: 'Complete the Quote → Order transition without redesigning the product structure.',
+  sprint: 'Approved rework',
+  title: 'Lock the product shell to Leads, Quotes, Orders, Dashboard, and Admin before deeper module work continues.',
   nextAction:
-    'Restore the full planning operating system first, then continue Sprint 2 delivery on Quote → Order continuity, order readiness, and execution handoff clarity.',
+    'Keep the workspace and development status tied to one product contract so shell, previews, and execution notes cannot drift apart again.',
   flow: 'Capture → Lead → Quote → Order',
 };
 
 export const readinessSummary = {
-  status: 'Sprint 2 active',
-  buildStatus: 'Full repo compile validated; page-data runtime verification still pending',
-  driftRisk: 'Reduced after contract restoration',
+  status: 'Approved rework active',
+  buildStatus: 'Typecheck passes; shell alignment is now the visible source of truth while deeper runtime proof still needs to be revalidated',
+  driftRisk: 'Lowered by shared shell definitions, but still present until more surfaces consume the same contract',
   blockers:
-    'Compilation and type validation succeeded in the current full repository. Remaining verification is limited to page-data/runtime execution during production build collection.',
+    'The product shell, previews, and development pages are now being aligned to the approved rework, but quote and order first-class live app routes still need full implementation and runtime verification.',
 };
 
 export const planningSurfaces: PlanningSurface[] = [

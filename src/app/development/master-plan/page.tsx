@@ -5,7 +5,7 @@ import { roadmapMilestones, sprintProgress } from '@/components/planning/develop
 import { StatusBadge } from '@/components/ui/status-badge';
 
 const rules = [
-  'Sprint 1 stays complete and Sprint 2 stays active until Quote → Order continuity and runtime validation are confirmed.',
+  'The approved rework stays active until the visible shell, quote path, and order path stop contradicting each other.',
   'Keep the product centered on Capture, Lead, Quote, and Order.',
   'Do not create new top-level product modules or alternate workflow paths.',
   'Treat /development, /development/master-plan, /development/readiness, /development/backlog, /development/product, /development/architecture, /development/ux-rules, and /development/screens/leads-capture as the operating pages.',
@@ -19,7 +19,7 @@ const references = [
   { href: '/development/architecture', label: 'Architecture contract', body: 'The domain and service rules that should govern later sprint implementation depth.' },
   { href: '/development/ux-rules', label: 'UX rules', body: 'The screen-level decision principles that prevent visual and workflow drift.' },
   { href: '/development', label: 'Development hub', body: 'The operating surface with the visible checklist, roadmap snapshot, and live readiness summary.' },
-  { href: '/development/readiness', label: 'Readiness board', body: 'The blunt status view for Sprint 2 validation, planning integrity, and the real boundary to signoff.' },
+  { href: '/development/readiness', label: 'Readiness board', body: 'The blunt status view for rework validation, shell integrity, and the real boundary to signoff.' },
   { href: '/development/backlog', label: 'Sprint backlog', body: 'The in-app backlog that now shows current and pending sprint work in one controlled place.' },
   { href: '/development/screens/leads-capture', label: 'Locked screen specs', body: 'The locked screen reference for Leads and Capture that Sprint 2 must continue to respect.' },
   { href: '/workspace/leads', label: 'Active workspace previews', body: 'The implemented Leads, Capture, and Quote surfaces that reflect the locked flow.' },
@@ -41,7 +41,7 @@ export default function MasterPlanPage() {
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Master plan</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">The product is still locked to one flow, but the plan now shows where every remaining sprint belongs.</h1>
-              <p className="mt-5 text-lg leading-8 text-slate-600">Sprint 1 is complete and Sprint 2 is active. This plan keeps the current validation gate explicit while preserving Sprint 3 through Sprint 10 as structured future work, not scattered ideas or accidental scope creep.</p>
+              <p className="mt-5 text-lg leading-8 text-slate-600">The approved rework is active. This plan keeps the visible shell correction explicit while preserving deeper phase work as structured future execution instead of scattered ideas or accidental scope creep.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Locked flow</p>
