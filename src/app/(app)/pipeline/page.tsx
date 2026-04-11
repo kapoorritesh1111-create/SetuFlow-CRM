@@ -4,7 +4,7 @@ import { PipelineBoard } from '@/features/pipeline/components/pipeline-board';
 import { parseWorkspaceMode, workspaceModeToLeadJourney } from '@/features/workspace/mode';
 import { buildTodayLayerState } from '@/features/workspace/today';
 import { normalizeQuoteRecords } from '@/lib/normalizers/quote-normalizer';
-import { getLeadsPageData } from '@/lib/queries/leads';
+import { getPipelinePageData } from '@/lib/queries/pipeline';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
@@ -27,7 +27,7 @@ export default async function PipelinePage({
     );
   }
 
-  const data = await getLeadsPageData(workspace.organization.id);
+  const data = await getPipelinePageData(workspace.organization.id);
 
   if (!data) {
     return (
