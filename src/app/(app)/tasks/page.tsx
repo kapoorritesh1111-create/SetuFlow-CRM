@@ -1,7 +1,7 @@
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { TasksWorkspace } from '@/features/tasks/components/tasks-workspace';
-import { getTasksWorkspaceData } from '@/lib/queries/data';
+import { getTasksWorkspaceData } from '@/lib/queries/tasks';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
 export default async function TasksPage() {

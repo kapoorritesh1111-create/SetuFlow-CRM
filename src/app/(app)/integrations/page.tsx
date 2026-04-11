@@ -1,7 +1,7 @@
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { IntegrationsWorkspace } from '@/features/integrations/components/integrations-workspace';
-import { getIntegrationsWorkspaceData } from '@/lib/queries/data';
+import { getIntegrationsWorkspaceData } from '@/lib/queries/integrations';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
 export default async function IntegrationsPage() {

@@ -1,7 +1,7 @@
 import { EmptyState } from '@/components/ui/empty-state';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { SettingsListsManager } from '@/features/settings/components/settings-lists-manager';
-import { getSettingsListsData } from '@/lib/queries/data';
+import { getSettingsListsData } from '@/lib/queries/settings-lists';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { WorkspaceState } from '@/components/ui/workspace-state';

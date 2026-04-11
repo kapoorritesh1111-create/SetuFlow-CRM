@@ -4,7 +4,7 @@ import { TradeEventsManager } from '@/features/trade-events/components/trade-eve
 import { TradeEventEntryCapture } from '@/features/trade-events/components/trade-event-entry-capture';
 import { TradeShowCapture } from '@/features/trade-events/components/trade-show-capture';
 import { convertTradeEventEntryToLead } from '@/features/trade-events/server/actions';
-import { getTradeEventsData } from '@/lib/queries/data';
+import { getTradeEventsData } from '@/lib/queries/trade-events';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { requireWorkspace } from '@/lib/workspace/auth';
 

@@ -1,7 +1,7 @@
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { AISuggestionsWorkspace } from '@/features/ai/components/ai-suggestions-workspace';
-import { getAISuggestionsData } from '@/lib/queries/data';
+import { getAISuggestionsData } from '@/lib/queries/ai-suggestions';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
 export default async function AISuggestionsPage({ searchParams }: { searchParams?: { status?: string | string[]; type?: string | string[]; family?: string | string[]; leadId?: string | string[] } }) {

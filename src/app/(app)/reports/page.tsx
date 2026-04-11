@@ -2,7 +2,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { ReportsWorkspace } from '@/features/reports/components/reports-workspace';
-import { getReportsData } from '@/lib/queries/data';
+import { getReportsData } from '@/lib/queries/reports';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 

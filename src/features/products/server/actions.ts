@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { recordAuditEvent } from '@/lib/auditLog';
 import { normalizeCurrencyCode, parseIdList, validateOrganizationProductIds } from '@/lib/catalog-pricing-model';
-import { getProductsData } from '@/lib/queries/data';
+import { getProductsData } from '@/lib/queries/products';
 import { hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { parseBoolean, parseNullableNumber } from '@/lib/utils';
