@@ -24,7 +24,7 @@ export function ReadinessBoard() {
         <div className="rounded-[2rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-8 text-white shadow-[0_20px_60px_rgba(31,72,124,0.15)]">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">Next action</p>
           <p className="mt-3 text-2xl font-semibold leading-tight">{sprintFocus.nextAction}</p>
-          <p className="mt-4 text-sm leading-7 text-white/85">Scope remains locked to {sprintFocus.flow}. Do not expand beyond Sprint 1 while polishing this foundation.</p>
+          <p className="mt-4 text-sm leading-7 text-white/85">Scope remains locked to {sprintFocus.flow}. Do not expand beyond Sprint 2 while restoring planning integrity and validating Quote → Order continuity.</p>
         </div>
       </section>
 
@@ -46,7 +46,7 @@ export function ReadinessBoard() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#359F91]">Readiness by area</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">The actual state of Sprint 1 right now</h2>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">The actual state of the active sprint right now</h2>
           </div>
           <StatusBadge label={readinessSummary.status} tone="success" />
         </div>

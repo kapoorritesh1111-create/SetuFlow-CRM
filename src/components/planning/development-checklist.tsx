@@ -24,7 +24,7 @@ export function DevelopmentChecklist() {
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#359F91]">Master checklist</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Repo-backed Sprint 1 execution tracker</h2>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Repo-backed planning and execution tracker</h2>
             <p className="mt-2 max-w-3xl text-sm text-slate-600">This status is now maintained in the repo so the HTML workplace, readiness view, and implementation pages stay aligned every time code changes.</p>
           </div>
           <div className="min-w-[220px] rounded-[1.5rem] border border-[#1F487C]/10 bg-slate-50 p-4">

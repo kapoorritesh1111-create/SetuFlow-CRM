@@ -109,10 +109,10 @@ export const sprintFocus = {
 
 export const readinessSummary = {
   status: 'Sprint 2 active',
-  buildStatus: 'Planning contracts restored; full repo build required',
+  buildStatus: 'Full repo compile validated; page-data runtime verification still pending',
   driftRisk: 'Reduced after contract restoration',
   blockers:
-    'This uploaded deployed repo snapshot only contains the planning contract file, so compile confirmation for every /development page still requires the full application workspace.',
+    'Compilation and type validation succeeded in the current full repository. Remaining verification is limited to page-data/runtime execution during production build collection.',
 };
 
 export const planningSurfaces: PlanningSurface[] = [
@@ -205,7 +205,7 @@ export const readinessAreas: ReadinessArea[] = [
   },
   {
     title: 'Build validation',
-    summary: 'A full production build still has to be run in the complete application workspace because the uploaded repo snapshot is partial.',
+    summary: 'Compilation and type validation passed in the current full repository; remaining verification is focused on runtime page-data collection and affected route behavior.',
     status: 'next',
   },
 ];
@@ -263,8 +263,8 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: 'full-build',
     area: 'Validation',
-    label: 'Run full build in the complete workspace after restoration',
-    note: 'Required because this uploaded snapshot does not include the entire app needed for end-to-end compile confirmation.',
+    label: 'Finish runtime build validation after compile-safe restoration',
+    note: 'Compilation and type checks passed in the full repo, but runtime page-data collection and affected route behavior still need verification before claiming full end-to-end success.',
     status: 'next',
   },
 ];

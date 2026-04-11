@@ -35,9 +35,9 @@ export default function LeadsCaptureSpecsPage() {
     <SiteShell>
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)] lg:p-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Locked Sprint 1 screen specs</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Locked Leads + Capture screen specs</p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">Exact Leads + Capture blueprint for desktop, tablet, and mobile.</h1>
-          <p className="mt-4 max-w-5xl text-base leading-8 text-slate-600">This page is the visual contract for Sprint 1. Use it to stop design drift, implementation drift, and chat drift. If a future design pass conflicts with this page, this page wins unless the product contract is explicitly changed.</p>
+          <p className="mt-4 max-w-5xl text-base leading-8 text-slate-600">This page is the visual contract for the Leads + Capture operating area. Use it to stop design drift, implementation drift, and chat drift. Sprint 2 work must still respect this page unless the product contract is explicitly changed.</p>
           <div className="mt-8">
             <DevelopmentNav />
           </div>
@@ -51,7 +51,7 @@ export default function LeadsCaptureSpecsPage() {
         </section>
 
         <section className="mt-10 grid gap-5 lg:grid-cols-3">
-          <Frame title="Locked layout rules" note="These rules are not optional during Sprint 1.">
+          <Frame title="Locked layout rules" note="These rules are not optional during the active planning cycle.">
             <ul className="space-y-3 text-sm leading-6 text-slate-700">
               <li>• No multi-panel command center patterns.</li>
               <li>• No hover-only actions. Everything must work on touch.</li>
@@ -72,7 +72,7 @@ export default function LeadsCaptureSpecsPage() {
               ))}
             </div>
           </Frame>
-          <Frame title="Sprint 1 reusable components" note="Build these first so the UI system does not drift across screens.">
+          <Frame title="Reusable components that remain locked" note="These stay the baseline so the UI system does not drift across screens.">
             <div className="flex flex-wrap gap-2">
               {['StatusBadge', 'CountryPill', 'LeadCard', 'QuickActionButton', 'QuickActionMenu', 'PageHeader', 'SearchField', 'SegmentedToggle', 'IntakeModeCard', 'ConfidenceBadge', 'DuplicateAlert', 'StickyActionBar'].map((item) => (
                 <span key={item} className="rounded-full border border-[#359F91]/15 bg-[#359F91]/10 px-3 py-2 text-xs font-semibold text-[#1F487C]">{item}</span>
@@ -273,7 +273,7 @@ export default function LeadsCaptureSpecsPage() {
           <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700">
             <p>We are building Setu Flow as a Trade Execution System for import-export sales teams.</p>
             <p className="mt-3">Locked flow: Capture -&gt; Lead -&gt; Quote -&gt; Order</p>
-            <p className="mt-3">Locked Sprint 1 screen specs exist in:</p>
+            <p className="mt-3">Locked Leads + Capture screen specs exist in:</p>
             <ul className="mt-2 list-disc pl-5">
               <li>docs/SCREEN_SPECS_SPRINT1.md</li>
               <li>/development/screens/leads-capture</li>
