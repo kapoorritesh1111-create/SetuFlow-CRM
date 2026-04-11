@@ -3,11 +3,15 @@ import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
+import { unstable_noStore as noStore } from 'next/cache'; // ✅ ADD THIS
+
 export const dynamic = 'force-dynamic';
 
 import type { ReactNode } from 'react';
 
 export default async function AuthenticatedLayout({ children }: { children: ReactNode }) {
+  noStore(); // ✅ CRITICAL: forces runtime, prevents build execution
+
   const workspace = await getWorkspaceAccess();
 
   if (workspace.missingEnv && !hasSupabaseEnv) {
