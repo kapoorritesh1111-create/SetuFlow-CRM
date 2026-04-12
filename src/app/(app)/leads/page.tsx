@@ -8,6 +8,7 @@ import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { normalizeQuoteRecords } from '@/lib/normalizers/quote-normalizer';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 export default async function LeadsPage({
   searchParams,

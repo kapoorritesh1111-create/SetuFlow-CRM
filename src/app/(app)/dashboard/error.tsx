@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { ErrorBoundaryView } from '@/components/app/error-boundary-view';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 export default function DashboardRouteError({
   error,

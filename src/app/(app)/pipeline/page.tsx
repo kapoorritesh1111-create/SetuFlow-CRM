@@ -7,6 +7,7 @@ import { normalizeQuoteRecords } from '@/lib/normalizers/quote-normalizer';
 import { getPipelinePageData } from '@/lib/queries/pipeline';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 const PipelineBoard = dynamic(
   () => import('@/features/pipeline/components/pipeline-board').then((mod) => mod.PipelineBoard),

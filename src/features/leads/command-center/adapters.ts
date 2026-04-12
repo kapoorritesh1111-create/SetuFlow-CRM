@@ -1,7 +1,6 @@
 import type { LeadProfileData } from '@/lib/queries/data'
 import { buildStageMoveReadiness } from '@/lib/queries/pipeline-stage-gating'
 import { PRODUCT_ROUTES } from '@/lib/product-contract'
-import { buildStageMoveReadiness } from '@/lib/queries/pipeline-stage-gating'
 import {
   getActivePricingBasis,
   getActivityFeed,
