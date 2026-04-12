@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from 'next/cache';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -292,11 +293,11 @@ async function fetchQuoteRecord(db: any, organizationId: string, quoteId: string
 }
 
 function revalidateCommercialViews(leadId?: string) {
-  revalidatePath('/dashboard');
-  revalidatePath('/leads');
+  revalidatePath(PRODUCT_ROUTES.app.dashboard);
+  revalidatePath(PRODUCT_ROUTES.app.leads);
   if (leadId) {
-    revalidatePath(`/leads/${leadId}`);
-    revalidatePath(`/leads/${leadId}/quote`);
+    revalidatePath(`${PRODUCT_ROUTES.app.leads}/${leadId}`);
+    revalidatePath(`${PRODUCT_ROUTES.app.leads}/${leadId}/quote`);
   }
 }
 

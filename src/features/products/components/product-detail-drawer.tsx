@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { useEffect, useMemo, useState } from 'react';
 import { deleteProduct } from '@/features/products/api/delete-product';
 import { updateProductDetail } from '@/features/products/api/update-product-detail';
@@ -206,8 +207,8 @@ export function ProductDetailDrawer({ open, detail, loading, error, onClose, onS
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Downstream commercial handoff</div>
               <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold">
                 <Link href="/pipeline" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Pipeline</Link>
-                <Link href="/leads" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Leads</Link>
-                <Link href="/quotes" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Quotes</Link>
+                <Link href={PRODUCT_ROUTES.app.leads} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Leads</Link>
+                <Link href={PRODUCT_ROUTES.app.quotes} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Quotes</Link>
               </div>
             </div>
           </div>

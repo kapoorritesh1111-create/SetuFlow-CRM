@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from 'next/cache';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { createClient } from '@/lib/supabase/server';
 import { writeAuditLog } from '@/lib/auditLog';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -149,9 +150,9 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
   });
 
   revalidatePath('/pipeline');
-  revalidatePath('/leads');
-  revalidatePath('/dashboard');
-  revalidatePath(`/leads/${leadId}`);
+  revalidatePath(PRODUCT_ROUTES.app.leads);
+  revalidatePath(PRODUCT_ROUTES.app.dashboard);
+  revalidatePath(`${PRODUCT_ROUTES.app.leads}/${leadId}`);
 
   return { success: 'Lead stage updated.', lead: { id: updatedLeadRow.id, stage_id: updatedLeadRow.stage_id ?? stageId, updated_at: updatedLeadRow.updated_at ?? occurredAt } };
 }
