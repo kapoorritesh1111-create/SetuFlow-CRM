@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { SiteShell } from '@/components/marketing/site-shell';
 import { DevelopmentNav } from '@/components/planning/development-nav';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 const statusTokens = [
   { name: 'New', color: 'bg-[#1F487C]', note: 'Freshly created or imported record' },
@@ -275,8 +276,8 @@ export default function LeadsCaptureSpecsPage() {
             <p className="mt-3">Locked flow: Capture -&gt; Lead -&gt; Quote -&gt; Order</p>
             <p className="mt-3">Locked Leads + Capture screen specs exist in:</p>
             <ul className="mt-2 list-disc pl-5">
-              <li>docs/SCREEN_SPECS_SPRINT1.md</li>
-              <li>/development/screens/leads-capture</li>
+              <li>docs/leads-capture-spec.md</li>
+              <li>{PRODUCT_ROUTES.development.screens}</li>
             </ul>
             <p className="mt-3">Follow the locked rules:</p>
             <ul className="mt-2 list-disc pl-5">

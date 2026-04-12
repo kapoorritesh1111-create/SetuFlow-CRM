@@ -25,7 +25,7 @@ export default function ArchitecturePage() {
         <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)] lg:p-10">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Architecture contract</p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">Build discipline that keeps Setu Flow from collapsing into route sprawl and logic chaos.</h1>
-          <p className="mt-4 max-w-4xl text-base leading-8 text-slate-600">The target architecture is intentionally simple: clear domains, clear services, clear platform rules, and no excuse for god files or cross-surface drift.</p>
+          <p className="mt-4 max-w-4xl text-base leading-8 text-slate-600">The target architecture is intentionally simple: clear domains, clear services, clear platform rules, and no excuse for god files or cross-surface drift while the current app-owned routes deepen safely.</p>
           <div className="mt-8"><DevelopmentNav /></div>
         </section>
 
@@ -53,9 +53,9 @@ export default function ArchitecturePage() {
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Migration order</p>
           <ol className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
             <li>1. Simplify navigation and visible product surfaces.</li>
-            <li>2. Promote Quotes into a true first-class module.</li>
+            <li>2. Deepen Quotes inside the current app-owned route without reintroducing preview leakage.</li>
             <li>3. Fold capture into Leads as a unified intake capability.</li>
-            <li>4. Create Orders as a first-class post-quote object.</li>
+            <li>4. Deepen Orders inside the current app-owned route without reintroducing preview leakage.</li>
             <li>5. Centralize approvals, audit, and progression rules.</li>
             <li>6. Break up legacy god files and tighten domain ownership.</li>
           </ol>

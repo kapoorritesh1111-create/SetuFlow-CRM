@@ -1,3 +1,5 @@
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
+
 export type LeadJourney = 'buyer' | 'supplier';
 
 export type JourneyCopy = {
@@ -59,7 +61,7 @@ export function isPipelineInJourney(pipelineLeadType: 'buyer' | 'supplier' | 'bo
 }
 
 export function getJourneyLeadPath(journey: '' | LeadJourney) {
-  return journey ? JOURNEY_COPY[journey].leadsPath : '/leads';
+  return journey ? JOURNEY_COPY[journey].leadsPath : PRODUCT_ROUTES.app.leads;
 }
 
 export function getJourneyPipelinePath(journey: '' | LeadJourney) {

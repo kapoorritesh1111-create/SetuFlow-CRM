@@ -1,5 +1,6 @@
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { redirect } from 'next/navigation';
 
 export default function DevelopmentScreensIndexPage() {
-  redirect('/development/screens/leads-capture');
+  redirect(PRODUCT_ROUTES.development.screens);
 }

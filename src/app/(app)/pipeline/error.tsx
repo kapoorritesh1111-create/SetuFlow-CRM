@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { ErrorBoundaryView } from '@/components/app/error-boundary-view';
+import { ErrorBoundaryView } from '@/components/app/error-boundary-view'
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 export default function RouteError({
   error,
@@ -19,7 +20,7 @@ export default function RouteError({
       title="Pipeline workspace unavailable"
       description="We could not load the live pipeline lanes, summary metrics, or move controls for this workspace. Try again, then return to leads if you need a stable recovery route."
       reset={reset}
-      homeHref="/leads"
+      homeHref={PRODUCT_ROUTES.app.leads}
       homeLabel="Return to leads"
     />
   );

@@ -43,9 +43,9 @@ const pinned = [
     body: 'Desktop, tablet, and mobile blueprints for the locked Leads and Capture implementation path.',
   },
   {
-    title: 'Active workspace previews',
+    title: 'Active flow surfaces',
     href: PRODUCT_ROUTES.workspace.leads,
-    body: 'The shared preview shell now mirrors the approved product shape so visible progress stays tied to the same contract as development status.',
+    body: 'The current Leads and Capture workspace surfaces plus the app-owned Quotes and Orders routes stay tied to the same product contract as development status.',
   },
 ];
 
@@ -65,7 +65,7 @@ export default function DevelopmentPage() {
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Development workplace</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">Setu Flow is in approved rework execution, and the workplace now reflects the product shell we are actually trying to ship.</h1>
-              <p className="mt-5 text-lg leading-8 text-slate-600">This page is the operating surface for the approved rework. The visible shell now stays tied to the same contract as the workspace previews so navigation, status, and implementation steps stop contradicting each other.</p>
+              <p className="mt-5 text-lg leading-8 text-slate-600">This page is the operating surface for the approved rework. The visible shell now stays tied to the same contract as the current workflow surfaces so navigation, status, and implementation steps stop contradicting each other.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Current focus</p>

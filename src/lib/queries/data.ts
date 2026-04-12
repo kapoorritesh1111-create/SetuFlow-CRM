@@ -1,3 +1,4 @@
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
@@ -1354,7 +1355,7 @@ export async function getDashboardData(
       label: 'Overdue Follow-ups',
       value: summaryMetrics.overdueFollowUpCount,
       rawValue: summaryMetrics.overdueFollowUpCount,
-      href: '/leads',
+      href: PRODUCT_ROUTES.app.leads,
       drillThroughLabel: 'Open lead follow-up queue',
       trendLabel: summaryMetrics.overdueFollowUpCount ? 'Needs action today' : 'On track',
       trendDirection: summaryMetrics.overdueFollowUpCount ? 'up' : 'neutral',
@@ -1542,7 +1543,7 @@ export async function getDashboardData(
           reason: `Scheduled for ${formatDateTime(followUp.scheduled_at)}`,
           severity: 'high',
           ctaLabel: 'Open lead',
-          ctaHref: lead ? `/leads/${lead.id}` : '/leads',
+          ctaHref: lead ? `${PRODUCT_ROUTES.app.leads}/${lead.id}` : PRODUCT_ROUTES.app.leads,
           leadId: lead?.id,
           companyName: lead?.company_name,
           dueAt: followUp.scheduled_at,
@@ -1616,7 +1617,7 @@ export async function getDashboardData(
           reason: `Quote status: ${quote.status}`,
           severity: 'medium',
           ctaLabel: 'Open quote',
-          ctaHref: lead ? `/leads/${lead.id}/quote` : '/quotes',
+          ctaHref: lead ? `/leads/${lead.id}/quote` : PRODUCT_ROUTES.app.quotes,
           leadId: lead?.id,
           companyName: lead?.company_name,
           dueAt: quote.updated_at,

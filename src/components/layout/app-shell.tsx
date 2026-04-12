@@ -98,8 +98,8 @@ function getSectionIcon(icon: string) {
 }
 
 function getNavItemIcon(href: string) {
-  if (href.includes('/dashboard')) return 'dashboard';
-  if (href.includes('/leads')) return 'users';
+  if (href.includes(PRODUCT_ROUTES.app.dashboard)) return 'dashboard';
+  if (href.includes(PRODUCT_ROUTES.app.leads)) return 'users';
   if (href.includes(PRODUCT_ROUTES.app.quotes)) return 'file-text-o';
   if (href.includes(PRODUCT_ROUTES.app.orders)) return 'shopping-bag';
   if (href.includes('/admin/users')) return 'building-o';
@@ -350,8 +350,8 @@ function getWorkspaceModeFromLocation(_pathname: string, _modeParam: string | nu
 }
 
 function getWorkspaceBasePath(pathname: string) {
-  if (pathname.startsWith('/dashboard')) return '/dashboard';
-  if (pathname.startsWith('/leads')) return '/leads';
+  if (pathname.startsWith(PRODUCT_ROUTES.app.dashboard)) return PRODUCT_ROUTES.app.dashboard;
+  if (pathname.startsWith(PRODUCT_ROUTES.app.leads)) return PRODUCT_ROUTES.app.leads;
   return null;
 }
 
@@ -609,8 +609,8 @@ export function AppShell({
 
   useEffect(() => {
     const runChordNavigation = (key: string) => {
-      if (key === 'd') router.push('/dashboard');
-      if (key === 'l') router.push('/leads');
+      if (key === 'd') router.push(PRODUCT_ROUTES.app.dashboard);
+      if (key === 'l') router.push(PRODUCT_ROUTES.app.leads);
       if (key === 'p') router.push('/pipeline');
       if (key === 'o') router.push('/products');
       if (key === 'a' && canAccessAdmin) router.push('/admin/users');

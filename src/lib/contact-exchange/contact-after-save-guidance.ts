@@ -1,3 +1,4 @@
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import type { ContactPostApplyAssistResult } from '@/lib/contact-exchange/contact-post-apply-assist';
 
 export type ContactScanSavedLead = {
@@ -314,7 +315,7 @@ function buildContactReuseHooks(args: { lead: ContactScanSavedLead; hasDirectCon
       title: 'Reuse the captured contact route immediately',
       detail: 'Because email or phone is already present, the operator can move straight into a first-touch sequence without re-entering the contact data anywhere else.',
       actionLabel: 'Stay in saved lead',
-      href: '/leads',
+      href: PRODUCT_ROUTES.app.leads,
       timing: 'Immediate next action',
       reason: 'The save payload already contains the captured route, so the next step should stay lightweight.',
     });
@@ -324,7 +325,7 @@ function buildContactReuseHooks(args: { lead: ContactScanSavedLead; hasDirectCon
       title: 'Reuse company/domain context for routing',
       detail: 'Use the saved domain or website signal to place the lead in the right account context before the first outbound share moment.',
       actionLabel: 'Stay in saved lead',
-      href: '/leads',
+      href: PRODUCT_ROUTES.app.leads,
       timing: 'After save review',
       reason: 'Domain context is already on the saved record and can improve the first-touch handoff.',
     });

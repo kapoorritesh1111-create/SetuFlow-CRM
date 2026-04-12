@@ -5,6 +5,7 @@ import { SectionCard } from '@/components/ui/section-card';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName } from '@/lib/workspace/roles';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 const setupNotes = [
   'Setup stays profile- and admin-driven so sharing never becomes a heavy standalone workflow.',
@@ -32,7 +33,7 @@ export default async function DigitalVCardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Global contact exchange · outbound" title="My Digital vCard" description="The locked engine stays untouched. Batch 12 applies the final Apple-level layout system: calm identity-first composition, dominant save-contact conversion, lighter supporting context, and a cleaner share layer without reopening workflow or backend scope." badge="vCard ROI batch 12" actions={[{ label: 'Open share preview', href: '/contact-exchange/vcard/preview' }, { label: 'Go to leads', href: '/leads', type: 'primary' }]} />
+      <PageHeader eyebrow="Global contact exchange · outbound" title="My Digital vCard" description="The locked engine stays untouched. Batch 12 applies the final Apple-level layout system: calm identity-first composition, dominant save-contact conversion, lighter supporting context, and a cleaner share layer without reopening workflow or backend scope." badge="vCard ROI batch 12" actions={[{ label: 'Open share preview', href: '/contact-exchange/vcard/preview' }, { label: 'Go to leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' }]} />
 
       <SectionCard>
         <div className="grid gap-4 lg:grid-cols-3">

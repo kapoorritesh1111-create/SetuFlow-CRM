@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { SiteShell } from '@/components/marketing/site-shell';
 import { DevelopmentNav } from '@/components/planning/development-nav';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 const modules = ['Leads', 'Quotes', 'Orders', 'Dashboard', 'Admin'];
 const hiddenSystems = ['Capture / intake', 'Pricing engine', 'RFQ parsing', 'Compliance', 'Documents', 'Contracts', 'AI assist', 'My Card / share contact'];
@@ -54,8 +55,8 @@ export default function ProductContractPage() {
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">No new top-level product area gets added just because a feature is important.</h2>
           <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-600">Important does not mean top-level. Many enterprise capabilities matter deeply but still belong inside the flow rather than beside it.</p>
           <div className="mt-6 flex flex-wrap gap-4">
-            <Link href="/development/backlog" className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open sprint backlog</Link>
-            <Link href="/workspace/leads" className="rounded-full border border-[#1F487C]/15 px-5 py-3 text-sm font-semibold text-[#1F487C]">See product views</Link>
+            <Link href={PRODUCT_ROUTES.development.backlog} className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open sprint backlog</Link>
+            <Link href={PRODUCT_ROUTES.workspace.leads} className="rounded-full border border-[#1F487C]/15 px-5 py-3 text-sm font-semibold text-[#1F487C]">See product views</Link>
           </div>
         </section>
       </main>

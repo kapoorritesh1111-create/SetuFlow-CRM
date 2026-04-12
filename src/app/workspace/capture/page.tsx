@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { QuickActionMenu } from '@/components/ui/quick-action-menu';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 const sources = [
   { title: 'Upload vCard', note: 'Inbound contact file parsed into structured lead fields.', state: 'Ready now' },
@@ -65,8 +66,8 @@ export default function WorkspaceCapturePage() {
         status="Ready"
         meta={['Inbound only', 'Duplicate-aware', 'Lead + quote handoff ready', 'Tablet stack verified in layout']}
         actions={[
-          { label: 'Open Leads', href: '/workspace/leads', type: 'secondary' },
-          { label: 'Lead + Draft Quote', href: '/quotes', type: 'primary' },
+          { label: 'Open Leads', href: PRODUCT_ROUTES.workspace.leads, type: 'secondary' },
+          { label: 'Lead + Draft Quote', href: PRODUCT_ROUTES.app.quotes, type: 'primary' },
         ]}
       />
 
@@ -143,9 +144,9 @@ export default function WorkspaceCapturePage() {
                 <QuickActionMenu
                   className="mt-5"
                   items={[
-                    { label: 'Create Lead', shortLabel: 'Lead', href: '/workspace/leads' },
+                    { label: 'Create Lead', shortLabel: 'Lead', href: PRODUCT_ROUTES.workspace.leads },
                     { label: 'Merge Existing', shortLabel: 'Merge' },
-                    { label: 'Lead + Draft Quote', shortLabel: 'Quote', href: '/quotes', emphasis: 'primary' },
+                    { label: 'Lead + Draft Quote', shortLabel: 'Quote', href: PRODUCT_ROUTES.app.quotes, emphasis: 'primary' },
                   ]}
                 />
               </div>
@@ -229,9 +230,9 @@ export default function WorkspaceCapturePage() {
           </div>
           <QuickActionMenu
             items={[
-              { label: 'Create Lead', shortLabel: 'Lead', href: '/workspace/leads' },
+              { label: 'Create Lead', shortLabel: 'Lead', href: PRODUCT_ROUTES.workspace.leads },
               { label: 'Merge Existing', shortLabel: 'Merge' },
-              { label: 'Lead + Draft Quote', shortLabel: 'Quote', href: '/quotes', emphasis: 'primary' },
+              { label: 'Lead + Draft Quote', shortLabel: 'Quote', href: PRODUCT_ROUTES.app.quotes, emphasis: 'primary' },
             ]}
           />
         </div>

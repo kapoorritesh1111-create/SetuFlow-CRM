@@ -24,7 +24,7 @@ const references = [
   { href: PRODUCT_ROUTES.development.readiness, label: 'Readiness board', body: 'The blunt status view for rework validation, shell integrity, and the real boundary to signoff.' },
   { href: PRODUCT_ROUTES.development.backlog, label: 'Sprint backlog', body: 'The in-app backlog that now shows current and pending sprint work in one controlled place.' },
   { href: PRODUCT_ROUTES.development.screens, label: 'Locked screen specs', body: 'The locked screen reference for Leads and Capture that Sprint 2 must continue to respect.' },
-  { href: PRODUCT_ROUTES.workspace.leads, label: 'Active workspace previews', body: 'The implemented Leads, Capture, and Quote surfaces that reflect the locked flow.' },
+  { href: PRODUCT_ROUTES.workspace.leads, label: 'Active flow surfaces', body: 'The implemented Leads and Capture workspace surfaces plus the app-owned Quotes and Orders routes that carry the locked flow.' },
 ];
 
 const toneMap = {

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 type PremiumVCardPreviewProps = {
   fullName: string;
@@ -204,7 +205,7 @@ export function PremiumVCardPreview({
               <Link href="/contact-exchange/vcard/preview" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
                 Open preview
               </Link>
-              <Link href="/leads" className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">
+              <Link href={PRODUCT_ROUTES.app.leads} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">
                 Back to leads
               </Link>
             </div>

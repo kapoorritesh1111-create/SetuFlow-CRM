@@ -1,3 +1,4 @@
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import Link from 'next/link';
 import { WorkspaceShell } from '@/components/previews/workspace-shell';
 import { LeadCard } from '@/components/ui/lead-card';
@@ -51,7 +52,7 @@ const cardActions = [
   { label: 'Call', shortLabel: 'Call' },
   { label: 'WhatsApp', shortLabel: 'WA' },
   { label: 'Email', shortLabel: 'Email' },
-  { label: 'Create Quote', shortLabel: 'Quote', emphasis: 'primary' as const, href: '/quotes' },
+  { label: 'Create Quote', shortLabel: 'Quote', emphasis: 'primary' as const, href: PRODUCT_ROUTES.app.quotes },
 ];
 
 const selectedLead = leads[0];
@@ -114,8 +115,8 @@ export default function WorkspaceLeadsPage() {
         status="Ready"
         meta={['Capture → Lead → Quote → Order', 'Qualified leads open Quote', 'No command-center drift', 'Mobile sticky CTA ready']}
         actions={[
-          { label: 'Open Capture', href: '/workspace/capture', type: 'secondary' },
-          { label: 'Create Quote', href: '/quotes', type: 'primary' },
+          { label: 'Open Capture', href: PRODUCT_ROUTES.workspace.capture, type: 'secondary' },
+          { label: 'Create Quote', href: PRODUCT_ROUTES.app.quotes, type: 'primary' },
         ]}
       />
 
@@ -245,8 +246,8 @@ export default function WorkspaceLeadsPage() {
             <QuickActionMenu
               className="mt-5"
               items={[
-                { label: 'Open Draft Quote', shortLabel: 'Quote', href: '/quotes', emphasis: 'primary' },
-                { label: 'Open Capture', shortLabel: 'Capture', href: '/workspace/capture' },
+                { label: 'Open Draft Quote', shortLabel: 'Quote', href: PRODUCT_ROUTES.app.quotes, emphasis: 'primary' },
+                { label: 'Open Capture', shortLabel: 'Capture', href: PRODUCT_ROUTES.workspace.capture },
                 { label: 'Add Note', shortLabel: 'Note' },
               ]}
             />
@@ -267,7 +268,7 @@ export default function WorkspaceLeadsPage() {
               This pass adds visible quote-entry handoff logic and CTA helper copy while keeping the layout inside the locked rework contract.
             </div>
             <div className="mt-4">
-              <Link href="/development/readiness" className="text-sm font-semibold text-[#1F487C]">View approved rework readiness →</Link>
+              <Link href={PRODUCT_ROUTES.development.readiness} className="text-sm font-semibold text-[#1F487C]">View approved rework readiness →</Link>
             </div>
           </SectionCard>
         </div>
@@ -285,9 +286,9 @@ export default function WorkspaceLeadsPage() {
           </div>
           <QuickActionMenu
             items={[
-              { label: 'Open Draft Quote', shortLabel: 'Quote', href: '/quotes', emphasis: 'primary' },
+              { label: 'Open Draft Quote', shortLabel: 'Quote', href: PRODUCT_ROUTES.app.quotes, emphasis: 'primary' },
               { label: 'Add Note', shortLabel: 'Note' },
-              { label: 'Open Capture', shortLabel: 'Capture', href: '/workspace/capture' },
+              { label: 'Open Capture', shortLabel: 'Capture', href: PRODUCT_ROUTES.workspace.capture },
             ]}
           />
         </div>
