@@ -8,6 +8,7 @@ import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } fro
 import { parseLeadWorkflow } from '@/lib/lead-workflow';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
 import { isPipelineInJourney, type LeadJourney } from '@/lib/journey';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildStageMoveReadiness, type StageMoveReadiness } from '@/lib/queries/pipeline-stage-gating';
 import { cn, formatDateTime } from '@/lib/utils';
 import { navigateToLeadCommandCenter } from '@/lib/lead-command-center-navigation';
@@ -1276,7 +1277,7 @@ export function PipelineBoard({
               ? 'This workspace can load leads, but the /pipeline board cannot render lanes until at least one pipeline and one stage exist in settings.'
               : 'The current mode does not have any configured lanes to render. Switch journey mode or review the pipeline stage setup.'
           }
-          primaryActionHref={canManageLeads ? '/settings/lists' : '/leads'}
+          primaryActionHref={canManageLeads ? '/settings/lists' : PRODUCT_ROUTES.app.leads}
           primaryActionLabel={canManageLeads ? 'Review pipeline settings' : 'Open leads'}
           secondaryActionHref={!canManageLeads ? '/admin/organization' : undefined}
           secondaryActionLabel={!canManageLeads ? 'Review workspace roles' : undefined}
@@ -1288,9 +1289,9 @@ export function PipelineBoard({
           eyebrow="Pipeline board"
           title="No leads in this pipeline yet"
           description={canManageLeads ? 'Your stages are configured, but there are no leads to place on the board yet. Add the first lead from the leads workspace and return here for stage execution.' : 'This workspace has no pipeline cards yet and your current role is read-only. Ask a workspace admin to add the first lead or grant edit access.'}
-          primaryActionHref="/leads"
+          primaryActionHref={PRODUCT_ROUTES.app.leads}
           primaryActionLabel={canManageLeads ? 'Open leads workspace' : 'Open leads'}
-          secondaryActionHref={!canManageLeads ? '/admin/organization' : '/dashboard'}
+          secondaryActionHref={!canManageLeads ? '/admin/organization' : PRODUCT_ROUTES.app.dashboard}
           secondaryActionLabel={!canManageLeads ? 'Review workspace roles' : 'Back to dashboard'}
         />
       ) : null}

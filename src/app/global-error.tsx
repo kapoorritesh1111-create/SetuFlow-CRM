@@ -19,7 +19,7 @@ export default function RouteError({
       title="Application error"
       description="The application hit an unexpected error. Retry the route or return to the dashboard."
       reset={reset}
-      homeHref="/dashboard"
+      homeHref={PRODUCT_ROUTES.app.dashboard}
       homeLabel="Dashboard"
     />
   );

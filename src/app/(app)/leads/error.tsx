@@ -19,7 +19,7 @@ export default function RouteError({
       title="Leads workspace unavailable"
       description="The leads list could not be rendered for this workspace. Retry the route first, then return to the dashboard if the issue keeps repeating."
       reset={reset}
-      homeHref="/dashboard"
+      homeHref={PRODUCT_ROUTES.app.dashboard}
       homeLabel="Return to dashboard"
     />
   );

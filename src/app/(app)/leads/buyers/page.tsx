@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 export default function DeprecatedRouteRedirect() {
-  redirect('/leads?mode=buyers');
+  redirect(`${PRODUCT_ROUTES.app.leads}?mode=buyers`);
 }

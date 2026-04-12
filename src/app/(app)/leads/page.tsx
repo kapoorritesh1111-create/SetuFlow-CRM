@@ -22,7 +22,7 @@ export default async function LeadsPage({
         eyebrow="Leads workspace"
         title="Workspace membership needed"
         description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization_members row is active for this user and points to the seeded workspace."
-        primaryActionHref="/dashboard"
+        primaryActionHref={PRODUCT_ROUTES.app.dashboard}
         primaryActionLabel="Go to dashboard"
       />
     );
@@ -36,7 +36,7 @@ export default async function LeadsPage({
         eyebrow="Leads workspace"
         title="Leads will appear here"
         description="Connect Supabase and your live lead table will render in this workspace."
-        primaryActionHref="/dashboard"
+        primaryActionHref={PRODUCT_ROUTES.app.dashboard}
         primaryActionLabel="Back to dashboard"
       />
     );

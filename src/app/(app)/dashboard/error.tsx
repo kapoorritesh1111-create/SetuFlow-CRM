@@ -19,7 +19,7 @@ export default function DashboardRouteError({
       title="Dashboard temporarily unavailable"
       description="SETU Flow hit an unexpected issue while rendering the dashboard. Try again to recover the dashboard shell, or return to the main dashboard route."
       reset={reset}
-      homeHref="/dashboard"
+      homeHref={PRODUCT_ROUTES.app.dashboard}
       homeLabel="Go to dashboard"
     />
   );

@@ -19,7 +19,7 @@ export default function RouteError({
       title="Workspace error"
       description="This workspace hit an unexpected error while loading. Retry the route or return to the dashboard."
       reset={reset}
-      homeHref="/dashboard"
+      homeHref={PRODUCT_ROUTES.app.dashboard}
       homeLabel="Dashboard"
     />
   );

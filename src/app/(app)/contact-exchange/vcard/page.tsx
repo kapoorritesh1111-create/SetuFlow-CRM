@@ -17,7 +17,7 @@ export default async function DigitalVCardPage() {
   const workspace = await requireWorkspace();
 
   if (!workspace.membership || !workspace.organization) {
-    return <WorkspaceState eyebrow="Global contact exchange" title="Workspace membership needed" description="Your account is signed in, but no active organization membership could be loaded. Restore workspace access before reviewing personal contact exchange surfaces." primaryActionHref="/dashboard" primaryActionLabel="Go to dashboard" />;
+    return <WorkspaceState eyebrow="Global contact exchange" title="Workspace membership needed" description="Your account is signed in, but no active organization membership could be loaded. Restore workspace access before reviewing personal contact exchange surfaces." primaryActionHref={PRODUCT_ROUTES.app.dashboard} primaryActionLabel="Go to dashboard" />;
   }
 
   const fullName = workspace.profile?.full_name?.trim() || workspace.user?.email?.split('@')[0] || 'SETU Flow user';

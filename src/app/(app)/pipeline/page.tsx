@@ -29,7 +29,7 @@ export default async function PipelinePage({
         eyebrow="Pipeline workspace"
         title="Workspace membership needed"
         description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization_members row is active for this user and points to the seeded workspace."
-        primaryActionHref="/dashboard"
+        primaryActionHref={PRODUCT_ROUTES.app.dashboard}
         primaryActionLabel="Go to dashboard"
       />
     );
@@ -43,7 +43,7 @@ export default async function PipelinePage({
         eyebrow="Pipeline workspace"
         title="Pipeline will appear here"
         description="Connect Supabase and live pipeline stages will load from your workspace."
-        primaryActionHref="/dashboard"
+        primaryActionHref={PRODUCT_ROUTES.app.dashboard}
         primaryActionLabel="Back to dashboard"
       />
     );

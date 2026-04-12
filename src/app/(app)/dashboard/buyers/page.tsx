@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 export default function DeprecatedRouteRedirect() {
-  redirect('/dashboard?mode=buyers');
+  redirect(`${PRODUCT_ROUTES.app.dashboard}?mode=buyers`);
 }

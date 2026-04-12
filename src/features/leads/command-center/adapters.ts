@@ -1,5 +1,7 @@
 import type { LeadProfileData } from '@/lib/queries/data'
 import { buildStageMoveReadiness } from '@/lib/queries/pipeline-stage-gating'
+import { PRODUCT_ROUTES } from '@/lib/product-contract'
+import { buildStageMoveReadiness } from '@/lib/queries/pipeline-stage-gating'
 import {
   getActivePricingBasis,
   getActivityFeed,
@@ -368,7 +370,7 @@ export function toLeadProfileSnapshot(data: LeadProfileData): LeadProfileSnapsho
       tasksWorkspace: '/tasks',
       contractsWorkspace: '/contracts',
       aiWorkspace: '/ai-suggestions',
-      backToLeads: '/leads',
+      backToLeads: PRODUCT_ROUTES.app.leads,
     },
   }
 }

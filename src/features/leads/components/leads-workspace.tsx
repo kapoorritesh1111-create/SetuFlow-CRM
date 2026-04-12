@@ -11,6 +11,7 @@ import { batchScheduleLeadFollowUps, batchMoveLeadsToStage } from '@/features/le
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
 import { JOURNEY_COPY, isPipelineInJourney, type LeadJourney } from '@/lib/journey';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { formatDateTime } from '@/lib/utils';
 import { navigateToLeadCommandCenter } from '@/lib/lead-command-center-navigation';
 import { buildLeadCommercialReadiness, getPricingReadinessLabel, type LeadCommercialReadiness } from '@/lib/catalog-pricing-model';
@@ -1134,7 +1135,7 @@ export function LeadsWorkspace({
                       : 'This workspace is empty and your role is read-only. Ask a workspace admin to add the first lead or grant edit access.'
                     : 'Adjust your today filter, search, or filters to recover an active queue.'
                 }
-                primaryActionHref={isWorkspaceEmpty && !search && activeFilterCount === 0 && canManageLeads ? '/leads' : undefined}
+                primaryActionHref={isWorkspaceEmpty && !search && activeFilterCount === 0 && canManageLeads ? PRODUCT_ROUTES.app.leads : undefined}
                 primaryActionLabel={isWorkspaceEmpty && !search && activeFilterCount === 0 && canManageLeads ? 'Stay on leads' : undefined}
                 secondaryActionHref={!canManageLeads ? '/admin/organization' : undefined}
                 secondaryActionLabel={!canManageLeads ? 'Review workspace roles' : undefined}

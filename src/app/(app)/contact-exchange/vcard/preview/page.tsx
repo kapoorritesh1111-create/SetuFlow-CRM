@@ -4,12 +4,13 @@ import { SectionCard } from '@/components/ui/section-card';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName } from '@/lib/workspace/roles';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 export default async function DigitalVCardPreviewPage() {
   const workspace = await requireWorkspace();
 
   if (!workspace.membership || !workspace.organization) {
-    return <WorkspaceState eyebrow="Global contact exchange" title="Workspace membership needed" description="Your account is signed in, but no active organization membership could be loaded. Restore workspace access before opening the digital card preview." primaryActionHref="/dashboard" primaryActionLabel="Go to dashboard" />;
+    return <WorkspaceState eyebrow="Global contact exchange" title="Workspace membership needed" description="Your account is signed in, but no active organization membership could be loaded. Restore workspace access before opening the digital card preview." primaryActionHref={PRODUCT_ROUTES.app.dashboard} primaryActionLabel="Go to dashboard" />;
   }
 
   const fullName = workspace.profile?.full_name?.trim() || workspace.user?.email?.split('@')[0] || 'SETU Flow user';

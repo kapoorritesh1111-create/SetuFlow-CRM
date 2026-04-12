@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from 'next/cache';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { writeAuditLog } from '@/lib/auditLog';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -270,10 +271,10 @@ function normalizeIsoDateTime(value: string) {
 }
 
 function revalidateLeadSurfaces(leadId?: string) {
-  revalidatePath('/leads');
-  revalidatePath('/dashboard');
+  revalidatePath(PRODUCT_ROUTES.app.leads);
+  revalidatePath(PRODUCT_ROUTES.app.dashboard);
   revalidatePath('/pipeline');
-  if (leadId) revalidatePath(`/leads/${leadId}`);
+  if (leadId) revalidatePath(`${PRODUCT_ROUTES.app.leads}/${leadId}`);
 }
 
 async function insertActivity(db: any, payload: ActivityPayload) {
