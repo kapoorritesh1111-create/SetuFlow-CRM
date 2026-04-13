@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import Link from 'next/link';
 import { WorkspaceShell } from '@/components/previews/workspace-shell';

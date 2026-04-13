@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { redirect } from 'next/navigation';
 

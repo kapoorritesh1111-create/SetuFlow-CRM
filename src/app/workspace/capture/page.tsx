@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { WorkspaceShell } from '@/components/previews/workspace-shell';
 import { PageHeader } from '@/components/ui/page-header';
 import { QuickActionMenu } from '@/components/ui/quick-action-menu';

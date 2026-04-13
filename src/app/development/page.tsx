@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { SiteShell } from '@/components/marketing/site-shell';
 import { DevelopmentChecklist } from '@/components/planning/development-checklist';

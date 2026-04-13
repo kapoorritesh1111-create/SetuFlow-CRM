@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import type { ReactNode } from 'react';
 import { SiteShell } from '@/components/marketing/site-shell';
 import { DevelopmentNav } from '@/components/planning/development-nav';

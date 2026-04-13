@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { SiteShell } from '@/components/marketing/site-shell';

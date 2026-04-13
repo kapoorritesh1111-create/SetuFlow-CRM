@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { SiteShell } from '@/components/marketing/site-shell';
 import { DevelopmentNav } from '@/components/planning/development-nav';
 import { ReadinessBoard } from '@/components/planning/readiness-board';

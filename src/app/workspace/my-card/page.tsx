@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { WorkspaceShell } from '@/components/previews/workspace-shell';
 import { PreviewPanel } from '@/components/previews/ui';
 
