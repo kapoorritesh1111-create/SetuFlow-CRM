@@ -21,11 +21,11 @@ export function LeadCommandTabs({
             type="button"
             onClick={() => onSelect(tab.key)}
             className={active
-              ? 'inline-flex h-10 items-center gap-2 rounded-full bg-brand-primary px-3.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(59,130,246,0.20)]'
-              : 'inline-flex h-10 items-center gap-2 rounded-full bg-white px-3.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-50 hover:text-neutral-900'}
+              ? 'inline-flex h-9 items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/8 px-3.5 text-sm font-semibold text-brand-dark shadow-soft'
+              : 'inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 text-sm font-medium text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900'}
           >
             <span className={ICON_CONTAINER_CLASS}>
-              <TabIcon className={`h-4 w-4 ${active ? 'text-brand-primary' : 'text-neutral-600'}`} />
+              <TabIcon className={`h-4 w-4 ${active ? 'text-brand-dark' : 'text-neutral-600'}`} />
             </span>
             {tab.label}
           </button>

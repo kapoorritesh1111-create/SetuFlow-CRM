@@ -33,19 +33,20 @@ export function LeadRightRail({
 
   return (
     <aside className="sticky top-[98px] space-y-4 self-start md:top-[108px]">
-      <Card title="Next step">
+      <Card title="Workflow guidance">
         <div className="mt-3 flex items-start gap-3">
           <span className={ICON_CONTAINER_CLASS}><NextIcon className="h-4 w-4 text-neutral-600" /></span>
           <div>
-            <h3 className="text-xl font-semibold leading-tight text-neutral-900">{nextAction.title}</h3>
+            <h3 className="text-lg font-semibold leading-tight text-neutral-900">{nextAction.title}</h3>
             <p className="mt-2 text-sm leading-7 text-neutral-600">{nextAction.summary}</p>
           </div>
         </div>
-        <button type="button" onClick={onOpenNextAction} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[8px] bg-brand-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark">
-          <span className={ICON_CONTAINER_CLASS}><OpenIcon className="h-4 w-4 text-neutral-900" /></span>
-          {nextAction.primaryLabel}
-        </button>
-        {nextAction.dueAt ? <span className="mt-3 inline-flex rounded-full bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-600">Due {formatDate(nextAction.dueAt)}</span> : null}
+        <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-neutral-600">
+          <button type="button" onClick={onOpenNextAction} className="rounded-full border border-neutral-200 bg-white px-3 py-2 transition hover:border-neutral-300 hover:bg-neutral-50">
+            Open workflow
+          </button>
+          {nextAction.dueAt ? <span className="rounded-full bg-neutral-50 px-3 py-2">Due {formatDate(nextAction.dueAt)}</span> : null}
+        </div>
       </Card>
 
       <Card title="Quote focus">
@@ -53,10 +54,11 @@ export function LeadRightRail({
         <p className="mt-2 text-sm leading-6 text-neutral-600">
           {quoteFocus.hasActiveQuote
             ? `${quoteFocus.status || 'Draft'} · ${quoteFocus.pricingBasis?.replace(/_/g, ' ') || 'Pricing basis pending'}`
-            : 'Create the first quote from here when the lead is commercially ready.'}
+            : 'The lead surface now keeps quote creation above every other CTA. Launch the first quote from the main workspace or here.'}
         </p>
-        <button type="button" onClick={onOpenQuote} className={quoteFocus.hasActiveQuote ? 'mt-4 rounded-[8px] bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-100' : 'mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[8px] bg-brand-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark'}>
-          {quoteFocus.hasActiveQuote ? 'Review active quote' : 'Create quote'}
+        <button type="button" onClick={onOpenQuote} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[8px] bg-brand-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark">
+          <span className={ICON_CONTAINER_CLASS}><OpenIcon className="h-4 w-4 text-neutral-900" /></span>
+          {quoteFocus.hasActiveQuote ? 'Continue quote' : 'Create quote'}
         </button>
       </Card>
 

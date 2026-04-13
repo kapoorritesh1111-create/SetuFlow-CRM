@@ -67,7 +67,7 @@ export function LeadCommandHeader({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-2">
             <StatusChip label={pricingReadinessLabel(pricingReadiness)} tone={pricingReadiness === 'ready' ? 'emerald' : pricingReadiness === 'partial' ? 'amber' : 'slate'} Icon={getStatusIcon(pricingReadiness === 'ready' ? 'ready' : pricingReadiness === 'partial' ? 'progress' : 'cold')} />
-            <StatusChip label={complianceLabel(complianceGate)} tone={complianceGate === 'CLEAR' ? 'emerald' : complianceGate === 'WARNING' ? 'amber' : 'amber'} Icon={getStatusIcon(complianceGate === 'CLEAR' ? 'ready' : complianceGate === 'WARNING' ? 'progress' : 'blocked')} />
+            <StatusChip label={complianceLabel(complianceGate)} tone={complianceGate === 'CLEAR' ? 'emerald' : 'amber'} Icon={getStatusIcon(complianceGate === 'CLEAR' ? 'ready' : complianceGate === 'WARNING' ? 'progress' : 'blocked')} />
             {nextFollowUpAt ? <StatusChip label={`Next follow-up ${formatDate(nextFollowUpAt)}`} tone="slate" Icon={getStatusIcon('ontrack')} /> : null}
           </div>
 
@@ -87,21 +87,16 @@ export function LeadCommandHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-          <button type="button" onClick={onOpenQuote} className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-brand-primary px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-dark">
+          <button type="button" onClick={onOpenQuote} className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-brand-primary px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-dark">
             <span className={ICON_CONTAINER_CLASS}><QuoteActionIcon className="h-4 w-4 text-neutral-900" /></span>
-            {quoteFocus.hasActiveQuote ? 'Review quote' : 'Create quote'}
-          </button>
-          <button type="button" onClick={onQuickEdit} className="h-10 rounded-[8px] border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-600 shadow-soft transition hover:border-neutral-600/30">
-            Quick edit
-          </button>
-          <button type="button" onClick={onOpenAiAssist} aria-label="Ask AI to help with this lead" className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-neutral-200 bg-white text-neutral-600 shadow-soft transition hover:border-brand-primary/30 hover:text-brand-primary">
-            <span className={ICON_CONTAINER_CLASS}><Sparkles className="h-4 w-4 text-brand-primary" /></span>
+            {quoteFocus.hasActiveQuote ? 'Continue quote' : 'Create quote'}
           </button>
           <details className="group relative">
-            <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-[10px] border border-neutral-200 bg-white text-neutral-600 shadow-soft transition hover:border-neutral-600/30">
+            <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-[10px] border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-soft transition hover:border-neutral-600/30">
               <span className="text-lg leading-none">⋯</span>
+              Lead tools
             </summary>
-            <div className="absolute right-0 z-20 mt-2 w-56 rounded-[10px] border border-neutral-200 bg-white p-2 shadow-premium">
+            <div className="absolute right-0 z-20 mt-2 w-60 rounded-[10px] border border-neutral-200 bg-white p-2 shadow-premium">
               <button type="button" onClick={onQuickEdit} className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2.5 text-left text-sm text-neutral-600 hover:bg-neutral-50">
                 <span className={ICON_CONTAINER_CLASS}><NoteIcon className="h-4 w-4 text-neutral-600" /></span>
                 Edit lead details
@@ -114,13 +109,17 @@ export function LeadCommandHeader({
                 <span className={ICON_CONTAINER_CLASS}><NoteIcon className="h-4 w-4 text-neutral-600" /></span>
                 Add note
               </button>
+              <button type="button" onClick={onOpenAiAssist} className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2.5 text-left text-sm text-neutral-600 hover:bg-neutral-50">
+                <span className={ICON_CONTAINER_CLASS}><Sparkles className="h-4 w-4 text-brand-primary" /></span>
+                Ask AI for help
+              </button>
             </div>
           </details>
         </div>
       </div>
 
       <div className="rounded-[10px] bg-neutral-50/90 px-4 py-2 text-sm text-neutral-600" style={{ borderLeft: `3px solid ${getStageAccent(currentStageLabel)}` }}>
-        <span className="font-semibold text-neutral-900">Operator focus:</span> {nextActionSummary}
+        <span className="font-semibold text-neutral-900">Commercial focus:</span> {nextActionSummary}
       </div>
     </div>
   )

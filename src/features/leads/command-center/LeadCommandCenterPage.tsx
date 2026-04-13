@@ -9,10 +9,10 @@ import { moveLeadToStage } from '@/features/pipeline/server/actions'
 import type { LeadQualificationStatus } from '@/lib/lead-workflow'
 import type { LeadCommandCenterTabKey, LeadProfileSnapshot, PipelineStageItem, WorkflowActionKey } from './types'
 import { LeadCommandHeader } from './LeadCommandHeader'
-import { LeadCommandTabs } from './LeadCommandTabs'
 import { LeadPipelineStageStrip } from './LeadPipelineStageStrip'
 import LeadQuickEditDrawer, { type LeadQuickEditDrawerSection } from './LeadQuickEditDrawer'
 import { LeadContextRail } from './LeadContextRail'
+import { LeadQuotePrimaryPanel } from './LeadQuotePrimaryPanel'
 import { LeadRightRail } from './LeadRightRail'
 import { LeadAiAssistPopover } from './LeadAiAssistPopover'
 import { LeadTodayContextBar, type LeadTodayContext } from './LeadTodayContextBar'
@@ -80,7 +80,13 @@ function updatePipelineStageState(stages: PipelineStageItem[], currentStageId?: 
 }
 
 function getVisibleLeadTabs(snapshot: LeadProfileSnapshot, hasActiveQuote: boolean) {
-  return snapshot.tabs.filter((tab) => hasActiveQuote || tab.key !== 'quotes')
+  return snapshot.tabs
+    .filter((tab) => hasActiveQuote || tab.key !== 'quotes')
+    .map((tab) => {
+      if (tab.key === 'workflow') return { ...tab, label: 'Quote prep' }
+      if (tab.key === 'activity') return { ...tab, label: 'Lead log' }
+      return tab
+    })
 }
 
 function buildLiveWorkflowCards(snapshot: LeadProfileSnapshot, input: {
@@ -290,13 +296,13 @@ export default function LeadCommandCenterPage({
     }),
   }), [commercialState, leadState, mappingState, snapshot, workflowState])
 
-  const visibleTabs = useMemo(() => getVisibleLeadTabs(liveSnapshot, liveSnapshot.quoteFocus.hasActiveQuote), [liveSnapshot])
+  const hasActiveQuoteRecord = liveSnapshot.quoteFocus.hasActiveQuote
 
   useEffect(() => {
-    if (activeTab === 'quotes' && !visibleTabs.some((tab) => tab.key === 'quotes')) {
+    if (activeTab === 'quotes' && !hasActiveQuoteRecord) {
       setActiveTab('workflow')
     }
-  }, [activeTab, visibleTabs])
+  }, [activeTab, hasActiveQuoteRecord])
 
   const openDrawer = (section: LeadQuickEditDrawerSection) => {
     setDrawerSection(section)
@@ -406,39 +412,99 @@ export default function LeadCommandCenterPage({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_272px] xl:gap-6">
         <main className="space-y-6">
+          <LeadQuotePrimaryPanel
+            snapshot={liveSnapshot}
+            nextFollowUpAt={workflowState.nextFollowUpAt}
+            onOpenQuote={() => void handleOpenQuoteWorkspace()}
+            onOpenQualification={() => {
+              setActiveTab('workflow')
+              setActiveWorkflowPanel('qualification')
+            }}
+            onOpenCoverage={() => {
+              setActiveTab('workflow')
+              setActiveWorkflowPanel('coverage')
+            }}
+            onOpenFollowUp={() => {
+              setActiveTab('workflow')
+              setActiveWorkflowPanel(liveSnapshot.nextAction.workflowPanel)
+            }}
+          />
+
           <LeadContextRail snapshot={liveSnapshot} nextFollowUpAt={workflowState.nextFollowUpAt} leadQueue={leadQueue} navigationQueryString={navigationQueryString} />
 
-          <div className="sticky top-[80px] z-20 rounded-[12px] border border-neutral-200/70 bg-white/92 px-4 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur md:top-[88px] md:px-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <LeadCommandTabs tabs={visibleTabs} activeTab={activeTab} onSelect={setActiveTab} />
-              <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
-                <Link href={todayContext?.pipelineHref ?? '/pipeline'} className="rounded-full bg-neutral-50 px-3 py-1.5 font-semibold text-neutral-600 transition hover:bg-neutral-100">Pipeline</Link>
-                <Link href={liveSnapshot.links.tasksWorkspace} className="rounded-full bg-neutral-50 px-3 py-1.5 font-semibold text-neutral-600 transition hover:bg-neutral-100">Task queue</Link>
+          <div className="sticky top-[80px] z-20 rounded-[12px] border border-neutral-200/70 bg-white/92 px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur md:top-[88px] md:px-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Supporting records</p>
+                <p className="mt-2 text-sm text-neutral-600">Quote prep stays fixed in place. Open quote record or lead log only when you need to inspect history, then return to the main quote-prep workspace.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {hasActiveQuoteRecord ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab((current) => current === 'quotes' ? 'workflow' : 'quotes')}
+                    className={activeTab === 'quotes'
+                      ? 'inline-flex h-9 items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/8 px-3.5 text-sm font-semibold text-brand-dark shadow-soft'
+                      : 'inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 text-sm font-medium text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900'}
+                  >
+                    {activeTab === 'quotes' ? 'Hide quote record' : 'View quote record'}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab((current) => current === 'activity' ? 'workflow' : 'activity')}
+                  className={activeTab === 'activity'
+                    ? 'inline-flex h-9 items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/8 px-3.5 text-sm font-semibold text-brand-dark shadow-soft'
+                    : 'inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 text-sm font-medium text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900'}
+                >
+                  {activeTab === 'activity' ? 'Hide lead log' : 'View lead log'}
+                </button>
+                <Link href={todayContext?.pipelineHref ?? '/pipeline'} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50">Pipeline</Link>
               </div>
             </div>
           </div>
 
-          <div>
-            {activeTab === 'workflow' ? (
-              <WorkflowTab
-                snapshot={liveSnapshot}
-                leadId={leadState.id}
-                pendingFollowUpId={workflowState.pendingFollowUpId}
-                activePanel={activeWorkflowPanel}
-                onPanelChange={setActiveWorkflowPanel}
-                onEditCoverage={() => openDrawer('coverage')}
-                onOpenQuote={() => void handleOpenQuoteWorkspace()}
-              />
-            ) : null}
+          <div className="space-y-5">
+            <WorkflowTab
+              snapshot={liveSnapshot}
+              leadId={leadState.id}
+              pendingFollowUpId={workflowState.pendingFollowUpId}
+              activePanel={activeWorkflowPanel}
+              onPanelChange={setActiveWorkflowPanel}
+              onEditCoverage={() => openDrawer('coverage')}
+              onOpenQuote={() => void handleOpenQuoteWorkspace()}
+            />
+
             {activeTab === 'quotes' ? (
-              <QuotesTab
-                quoteFocus={liveSnapshot.quoteFocus}
-                commercial={liveSnapshot.commercial}
-                activity={[...opsHistory.map((item) => ({ id: item.id, kind: item.kind, title: item.label, detail: item.detail ?? 'Lead operation recorded', happenedAt: item.happenedAt })), ...liveSnapshot.activity]}
-                onOpenQuote={() => void handleOpenQuoteWorkspace()}
-              />
+              <section className="space-y-4 rounded-[12px] border border-neutral-200/80 bg-neutral-50/65 p-4 md:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Supporting record</p>
+                    <h3 className="mt-1 text-lg font-semibold text-neutral-900">Quote record stays secondary to Quote prep</h3>
+                  </div>
+                  <button type="button" onClick={() => setActiveTab('workflow')} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50">Hide quote record</button>
+                </div>
+                <QuotesTab
+                  quoteFocus={liveSnapshot.quoteFocus}
+                  commercial={liveSnapshot.commercial}
+                  activity={[...opsHistory.map((item) => ({ id: item.id, kind: item.kind, title: item.label, detail: item.detail ?? 'Lead operation recorded', happenedAt: item.happenedAt })), ...liveSnapshot.activity]}
+                  onOpenQuote={() => void handleOpenQuoteWorkspace()}
+                />
+              </section>
             ) : null}
-            {activeTab === 'activity' ? <ActivityTab snapshot={liveSnapshot} onAskAiSummary={() => setAiPopoverOpen(true)} onOpenFollowUp={() => { setActiveTab('workflow'); setActiveWorkflowPanel('follow_up') }} /> : null}
+
+            {activeTab === 'activity' ? (
+              <section className="space-y-4 rounded-[12px] border border-neutral-200/80 bg-neutral-50/65 p-4 md:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Supporting record</p>
+                    <h3 className="mt-1 text-lg font-semibold text-neutral-900">Lead log opens only when history needs review</h3>
+                  </div>
+                  <button type="button" onClick={() => setActiveTab('workflow')} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50">Hide lead log</button>
+                </div>
+                <ActivityTab snapshot={liveSnapshot} onAskAiSummary={() => setAiPopoverOpen(true)} />
+              </section>
+            ) : null}
           </div>
         </main>
 
@@ -465,11 +531,9 @@ export default function LeadCommandCenterPage({
       />
 
       <LeadStickyActionBar
-        tabs={visibleTabs}
         activeTab={activeTab}
         hasActiveQuote={liveSnapshot.quoteFocus.hasActiveQuote}
         quoteBusy={quoteBusy}
-        onSelectTab={setActiveTab}
         onOpenQuote={() => void handleOpenQuoteWorkspace()}
         onQuickEdit={() => openDrawer('details')}
         onOpenFollowUp={() => {

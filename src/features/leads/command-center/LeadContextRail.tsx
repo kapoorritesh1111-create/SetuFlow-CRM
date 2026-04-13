@@ -11,9 +11,9 @@ type QueueLead = {
 
 function DetailTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[12px] border border-slate-200 bg-slate-50 px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-medium text-slate-900">{value}</p>
+    <div className="rounded-[12px] border border-neutral-200/70 bg-neutral-50/80 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">{label}</p>
+      <p className="mt-2 text-sm font-medium text-neutral-900">{value}</p>
     </div>
   )
 }
@@ -45,26 +45,18 @@ export function LeadContextRail({
   ]
 
   return (
-    <section className="rounded-[12px] border border-neutral-200/70 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <section className="rounded-[16px] border border-neutral-200/70 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-600">Lead essentials</p>
-          <h2 className="mt-2 text-lg font-semibold text-neutral-900">Keep the operator context visible without another side rail</h2>
-          <p className="mt-2 text-sm leading-6 text-neutral-600">Contact, ownership, coverage, and the next follow-up now stay in one compact in-flow strip so the lead workspace can stay centered on the next commercial move.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-600">Lead reference</p>
+          <h2 className="mt-2 text-lg font-semibold text-neutral-900">Keep context nearby without turning it into the work surface</h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">This strip is now passive support only. The commercial move stays centered on quote creation above, while contact and ownership details stay easy to scan here.</p>
         </div>
 
         {(leadQueue?.previous || leadQueue?.next) ? (
-          <div className="rounded-[12px] border border-slate-200 bg-slate-50 px-4 py-3 lg:max-w-xs">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Queue handoff</p>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              {leadQueue?.next
-                ? `${leadQueue.next.companyName} is next in the operator queue.`
-                : 'No next lead is queued right now.'}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {leadQueue?.previous ? <Link href={`/leads/${leadQueue.previous.id}${navigationQueryString ?? ''}`} className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-100">Previous lead</Link> : null}
-              {leadQueue?.next ? <Link href={`/leads/${leadQueue.next.id}${navigationQueryString ?? ''}`} className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Next lead</Link> : null}
-            </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+            {leadQueue?.previous ? <Link href={`/leads/${leadQueue.previous.id}${navigationQueryString ?? ''}`} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50">Previous lead</Link> : null}
+            {leadQueue?.next ? <Link href={`/leads/${leadQueue.next.id}${navigationQueryString ?? ''}`} className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-800 transition hover:border-neutral-300 hover:bg-neutral-100">Next lead</Link> : null}
           </div>
         ) : null}
       </div>
