@@ -36,7 +36,7 @@ const pinned = [
   {
     title: 'Sprint backlog',
     href: PRODUCT_ROUTES.development.backlog,
-    body: 'The in-product backlog that shows active Sprint 2 work plus the sequenced work for later sprints without bringing markdown clutter back.',
+    body: 'The in-product backlog that shows Sprint 2 closed cleanly, Sprint 3 ready next, and later sprint work still sequenced behind it.',
   },
   {
     title: 'Locked screen specs',
@@ -65,13 +65,13 @@ export default function DevelopmentPage() {
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Development workplace</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">Setu Flow is in approved rework execution, and the workplace now reflects the product shell we are actually trying to ship.</h1>
-              <p className="mt-5 text-lg leading-8 text-slate-600">This page is the operating surface for the approved rework. The visible shell now stays tied to the same contract as the current workflow surfaces so navigation, status, and implementation steps stop contradicting each other.</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">Sprint 2 is complete, and the development workplace now shows the locked plan, proven build status, and the next safe phase.</h1>
+              <p className="mt-5 text-lg leading-8 text-slate-600">This page is the operating surface for the locked sprint plan. Development status, readiness, and implementation guidance now move together so the repo does not drift away from the shipped baseline.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Current focus</p>
               <p className="mt-3 text-2xl font-semibold leading-tight">{sprintFocus.sprint} · shell contract shared · drift guard active</p>
-              <p className="mt-4 text-sm leading-7 text-white/85">Flow remains locked to {sprintFocus.flow}. Today’s implementation priority is shell clarity first, then quote and order depth on top of that contract.</p>
+              <p className="mt-4 text-sm leading-7 text-white/85">Flow remains locked to {sprintFocus.flow}. Today’s implementation priority is Sprint 3 lead simplification on top of the already proven build-safe baseline.</p>
             </div>
           </div>
           <div className="mt-8"><DevelopmentNav /></div>
@@ -114,7 +114,7 @@ export default function DevelopmentPage() {
           <div className="space-y-5">
             <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Roadmap alignment</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">The approved rework is now the reference point, and later module work should only continue through that shell instead of bypassing it.</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Sprint status is now back on the plan, and later module work should only continue when the roadmap reaches it in order.</h2>
               <div className="mt-6 space-y-4">
                 {roadmapMilestones.map((milestone) => (
                   <div key={milestone.sprint} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">

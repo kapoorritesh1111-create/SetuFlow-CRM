@@ -39,7 +39,7 @@ export default function LeadsCaptureSpecsPage() {
         <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)] lg:p-10">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Locked Leads + Capture screen specs</p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">Exact Leads + Capture blueprint for desktop, tablet, and mobile.</h1>
-          <p className="mt-4 max-w-5xl text-base leading-8 text-slate-600">This page is the visual contract for the Leads + Capture operating area. Use it to stop design drift, implementation drift, and chat drift. Approved rework implementation must still respect this page unless the product contract is explicitly changed.</p>
+          <p className="mt-4 max-w-5xl text-base leading-8 text-slate-600">This page is the visual contract for the Leads + Capture operating area. Use it to stop design drift, implementation drift, and chat drift. Sprint 3 work must still respect this completed Sprint 2 foundation unless the product contract is explicitly changed.</p>
           <div className="mt-8">
             <DevelopmentNav />
           </div>

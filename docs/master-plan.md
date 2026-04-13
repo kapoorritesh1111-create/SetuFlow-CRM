@@ -7,14 +7,12 @@ Setu Flow is a trade execution system for import-export sales teams.
 Capture -> Lead -> Quote -> Order
 
 ## Current state
-Sprint 1 is 97% complete.
+Sprint 2 is complete.
 
-The product implementation for Leads, Capture, and Quote is complete inside the locked scope.
-The only remaining Sprint 1 work is full-environment validation:
-- production build confirmation
-- deployment validation
-- runtime confirmation
-- readiness signoff
+A clean production build has already been verified and deployed successfully.
+There are currently no confirmed build blockers in the latest verified baseline.
+
+Next phase: Sprint 3 is ready to start.
 
 ## Operating pages
 Use these pages before any implementation work:
@@ -33,12 +31,13 @@ Use these pages before any implementation work:
 - keep one active development workplace at `/development`
 - keep Sprint 1 aligned to Leads, Capture, and Quote entry only
 - complete real-environment build and deployment validation
-- mark readiness to Sprint 1 Complete only after confirmation
+- status: complete
 
 ### Sprint 2 - Capture foundation
 - create unified Capture entry under Leads
 - deepen intake review for vCard, business card, and document upload
 - add confidence states and duplicate detection depth
+- status: complete
 
 ### Sprint 3 - Lead simplification
 - reduce lead surface complexity

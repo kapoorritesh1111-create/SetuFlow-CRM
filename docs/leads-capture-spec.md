@@ -1,7 +1,7 @@
 # Setu Flow Leads and Capture Spec
 
 ## Purpose
-Locked Sprint 1 screen and interaction reference for Leads and Capture.
+Locked screen and interaction reference for the completed Sprint 2 Leads and Capture foundation.
 
 ## Core rules
 - One screen = one decision
