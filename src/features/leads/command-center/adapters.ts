@@ -337,7 +337,7 @@ export function toLeadProfileSnapshot(data: LeadProfileData): LeadProfileSnapsho
     taskUrgency: tasks.urgency,
     tabs: [
       { key: 'workflow', label: 'Workflow' },
-      { key: 'quotes', label: 'Quotes' },
+      ...(quoteFocus.hasActiveQuote ? [{ key: 'quotes' as const, label: 'Quotes' }] : []),
       { key: 'activity', label: 'Activity' },
     ],
     pipeline,

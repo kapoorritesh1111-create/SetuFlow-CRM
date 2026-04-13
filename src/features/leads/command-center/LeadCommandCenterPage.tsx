@@ -79,6 +79,10 @@ function updatePipelineStageState(stages: PipelineStageItem[], currentStageId?: 
   })
 }
 
+function getVisibleLeadTabs(snapshot: LeadProfileSnapshot, hasActiveQuote: boolean) {
+  return snapshot.tabs.filter((tab) => hasActiveQuote || tab.key !== 'quotes')
+}
+
 function buildLiveWorkflowCards(snapshot: LeadProfileSnapshot, input: {
   qualificationStatus: LeadQualificationStatus
   qualificationMissingCount: number
@@ -286,6 +290,14 @@ export default function LeadCommandCenterPage({
     }),
   }), [commercialState, leadState, mappingState, snapshot, workflowState])
 
+  const visibleTabs = useMemo(() => getVisibleLeadTabs(liveSnapshot, liveSnapshot.quoteFocus.hasActiveQuote), [liveSnapshot])
+
+  useEffect(() => {
+    if (activeTab === 'quotes' && !visibleTabs.some((tab) => tab.key === 'quotes')) {
+      setActiveTab('workflow')
+    }
+  }, [activeTab, visibleTabs])
+
   const openDrawer = (section: LeadQuickEditDrawerSection) => {
     setDrawerSection(section)
     setEditOpen(true)
@@ -353,7 +365,6 @@ export default function LeadCommandCenterPage({
   }
 
   const aiReviewLink = aiReviewHref || `${liveSnapshot.links.aiWorkspace}?leadId=${leadState.id}`
-  const openQuotesTab = () => setActiveTab('quotes')
   const openActivityTab = () => setActiveTab('activity')
   const navigationQueryString = todayContext?.mode && todayContext.mode !== 'all' ? `?mode=${todayContext.mode}` : ''
 
@@ -393,13 +404,13 @@ export default function LeadCommandCenterPage({
       {quoteMessage ? <p className="text-sm text-slate-600">{quoteMessage}</p> : null}
       {todayContext ? <LeadTodayContextBar todayContext={todayContext} /> : null}
 
-      <div className="grid gap-5 xl:grid-cols-[250px_minmax(0,1fr)_272px] xl:gap-6">
-        <LeadContextRail snapshot={liveSnapshot} nextFollowUpAt={workflowState.nextFollowUpAt} leadQueue={leadQueue} navigationQueryString={navigationQueryString} />
-
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_272px] xl:gap-6">
         <main className="space-y-6">
+          <LeadContextRail snapshot={liveSnapshot} nextFollowUpAt={workflowState.nextFollowUpAt} leadQueue={leadQueue} navigationQueryString={navigationQueryString} />
+
           <div className="sticky top-[80px] z-20 rounded-[12px] border border-neutral-200/70 bg-white/92 px-4 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur md:top-[88px] md:px-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <LeadCommandTabs tabs={liveSnapshot.tabs} activeTab={activeTab} onSelect={setActiveTab} />
+              <LeadCommandTabs tabs={visibleTabs} activeTab={activeTab} onSelect={setActiveTab} />
               <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
                 <Link href={todayContext?.pipelineHref ?? '/pipeline'} className="rounded-full bg-neutral-50 px-3 py-1.5 font-semibold text-neutral-600 transition hover:bg-neutral-100">Pipeline</Link>
                 <Link href={liveSnapshot.links.tasksWorkspace} className="rounded-full bg-neutral-50 px-3 py-1.5 font-semibold text-neutral-600 transition hover:bg-neutral-100">Task queue</Link>
@@ -416,7 +427,7 @@ export default function LeadCommandCenterPage({
                 activePanel={activeWorkflowPanel}
                 onPanelChange={setActiveWorkflowPanel}
                 onEditCoverage={() => openDrawer('coverage')}
-                onOpenQuotesTab={openQuotesTab}
+                onOpenQuote={() => void handleOpenQuoteWorkspace()}
               />
             ) : null}
             {activeTab === 'quotes' ? (
@@ -440,9 +451,7 @@ export default function LeadCommandCenterPage({
             setActiveTab('workflow')
             setActiveWorkflowPanel(liveSnapshot.nextAction.workflowPanel)
           }}
-          onOpenQuotesTab={openQuotesTab}
-          leadQueue={leadQueue}
-          navigationQueryString={navigationQueryString}
+          onOpenQuote={() => void handleOpenQuoteWorkspace()}
         />
       </div>
 
@@ -456,7 +465,9 @@ export default function LeadCommandCenterPage({
       />
 
       <LeadStickyActionBar
+        tabs={visibleTabs}
         activeTab={activeTab}
+        hasActiveQuote={liveSnapshot.quoteFocus.hasActiveQuote}
         quoteBusy={quoteBusy}
         onSelectTab={setActiveTab}
         onOpenQuote={() => void handleOpenQuoteWorkspace()}

@@ -35,7 +35,7 @@ export function QuoteSummaryCard({
           <p className="mt-3 text-sm leading-7 text-neutral-600">{commercial.quoteSend.summary}</p>
         </div>
         <button type="button" onClick={onOpenQuote} className="rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark">
-          {quoteFocus.hasActiveQuote ? 'Open quote workspace' : 'Create quote draft'}
+          {quoteFocus.hasActiveQuote ? 'Review quote' : 'Create quote'}
         </button>
       </div>
 

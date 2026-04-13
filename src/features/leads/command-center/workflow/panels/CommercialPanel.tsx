@@ -3,11 +3,11 @@ import type { LeadProfileSnapshot, QuoteFocusSummary } from '../../types'
 export function CommercialPanel({
   commercial,
   quoteFocus,
-  onOpenQuotesTab,
+  onOpenQuote,
 }: {
   commercial: LeadProfileSnapshot['commercial']
   quoteFocus: QuoteFocusSummary
-  onOpenQuotesTab: () => void
+  onOpenQuote: () => void
 }) {
   return (
     <section className="premium-surface rounded-[12px] p-5">
@@ -16,7 +16,13 @@ export function CommercialPanel({
           <h3 className="text-lg font-semibold text-neutral-900">Commercial lane</h3>
           <p className="mt-1 text-sm leading-6 text-neutral-600">Keep one quote in focus and keep the pricing basis trustworthy without repeating quote actions all over the page.</p>
         </div>
-        <button type="button" onClick={onOpenQuotesTab} className="rounded-[8px] bg-neutral-50 px-4 py-2.5 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-100">Open Quotes tab</button>
+        <button
+          type="button"
+          onClick={onOpenQuote}
+          className={quoteFocus.hasActiveQuote ? 'rounded-[8px] bg-neutral-50 px-4 py-2.5 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-100' : 'rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark'}
+        >
+          {quoteFocus.hasActiveQuote ? 'Review quote' : 'Create quote'}
+        </button>
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <div className="rounded-[10px] bg-neutral-50 p-4">

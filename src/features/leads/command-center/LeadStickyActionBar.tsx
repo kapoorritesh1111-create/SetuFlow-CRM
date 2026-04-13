@@ -27,14 +27,18 @@ function TabChip({
 }
 
 export function LeadStickyActionBar({
+  tabs,
   activeTab,
+  hasActiveQuote,
   quoteBusy,
   onSelectTab,
   onOpenQuote,
   onQuickEdit,
   onOpenFollowUp,
 }: {
+  tabs: Array<{ key: LeadCommandCenterTabKey; label: string }>
   activeTab: LeadCommandCenterTabKey
+  hasActiveQuote: boolean
   quoteBusy?: boolean
   onSelectTab: (tab: LeadCommandCenterTabKey) => void
   onOpenQuote: () => void
@@ -49,9 +53,15 @@ export function LeadStickyActionBar({
     <section className="sticky bottom-3 z-30 rounded-[16px] border border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_18px_44px_rgba(15,23,42,0.14)] backdrop-blur supports-[backdrop-filter]:bg-white/85">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
-          <TabChip active={activeTab === 'workflow'} label="Workflow" onClick={() => onSelectTab('workflow')} Icon={getTabIcon('workflow')} />
-          <TabChip active={activeTab === 'quotes'} label="Quotes" onClick={() => onSelectTab('quotes')} Icon={getTabIcon('quotes')} />
-          <TabChip active={activeTab === 'activity'} label="Activity" onClick={() => onSelectTab('activity')} Icon={getTabIcon('activity')} />
+          {tabs.map((tab) => (
+            <TabChip
+              key={tab.key}
+              active={activeTab === tab.key}
+              label={tab.label}
+              onClick={() => onSelectTab(tab.key)}
+              Icon={getTabIcon(tab.key)}
+            />
+          ))}
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={onQuickEdit} className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700">
@@ -64,7 +74,7 @@ export function LeadStickyActionBar({
           </button>
           <button type="button" onClick={onOpenQuote} disabled={quoteBusy} className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-primary px-4 text-sm font-semibold text-white disabled:opacity-60">
             <span className={ICON_CONTAINER_CLASS}><QuoteIcon className="h-4 w-4 text-neutral-900" /></span>
-            {quoteBusy ? 'Opening quote…' : 'Open quote'}
+            {quoteBusy ? 'Opening quote…' : hasActiveQuote ? 'Review quote' : 'Create quote'}
           </button>
         </div>
       </div>

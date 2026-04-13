@@ -4,13 +4,6 @@ import { formatDate } from '@/lib/utils'
 import type { LeadProfileSnapshot, NextActionSummary, QuoteFocusSummary } from './types'
 import { getActionIcon, getStatusIcon, getUrgencyStatus, ICON_CONTAINER_CLASS } from './ui-system'
 
-type QueueLead = {
-  id: string
-  companyName: string
-  stageName?: string | null
-  nextFollowUpAt?: string | null
-}
-
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-[12px] bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
@@ -26,22 +19,14 @@ export function LeadRightRail({
   compliance,
   workspaceLinks,
   onOpenNextAction,
-  onOpenQuotesTab,
-  leadQueue,
-  navigationQueryString,
+  onOpenQuote,
 }: {
   nextAction: NextActionSummary
   quoteFocus: QuoteFocusSummary
   compliance: LeadProfileSnapshot['compliance']
   workspaceLinks: LeadProfileSnapshot['links']
   onOpenNextAction: () => void
-  onOpenQuotesTab: () => void
-  leadQueue?: {
-    previous?: QueueLead | null
-    next?: QueueLead | null
-    hotList: QueueLead[]
-  }
-  navigationQueryString?: string
+  onOpenQuote: () => void
 }) {
   const NextIcon = getStatusIcon(getUrgencyStatus(nextAction.urgency))
   const OpenIcon = getActionIcon('open')
@@ -58,7 +43,7 @@ export function LeadRightRail({
         </div>
         <button type="button" onClick={onOpenNextAction} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[8px] bg-brand-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark">
           <span className={ICON_CONTAINER_CLASS}><OpenIcon className="h-4 w-4 text-neutral-900" /></span>
-          Open next action
+          {nextAction.primaryLabel}
         </button>
         {nextAction.dueAt ? <span className="mt-3 inline-flex rounded-full bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-600">Due {formatDate(nextAction.dueAt)}</span> : null}
       </Card>
@@ -68,10 +53,10 @@ export function LeadRightRail({
         <p className="mt-2 text-sm leading-6 text-neutral-600">
           {quoteFocus.hasActiveQuote
             ? `${quoteFocus.status || 'Draft'} · ${quoteFocus.pricingBasis?.replace(/_/g, ' ') || 'Pricing basis pending'}`
-            : 'Open the Quotes tab when the commercial lane is ready.'}
+            : 'Create the first quote from here when the lead is commercially ready.'}
         </p>
-        <button type="button" onClick={onOpenQuotesTab} className="mt-4 rounded-[8px] bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-100">
-          Open Quotes tab
+        <button type="button" onClick={onOpenQuote} className={quoteFocus.hasActiveQuote ? 'mt-4 rounded-[8px] bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-100' : 'mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[8px] bg-brand-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark'}>
+          {quoteFocus.hasActiveQuote ? 'Review active quote' : 'Create quote'}
         </button>
       </Card>
 
@@ -89,22 +74,6 @@ export function LeadRightRail({
           </Link>
         </div>
       </Card>
-
-      {leadQueue?.hotList?.length ? (
-        <Card title="Queue context">
-          <div className="mt-3 space-y-2">
-            {leadQueue.hotList.slice(0, 4).map((item) => (
-              <Link key={item.id} href={`/leads/${item.id}${navigationQueryString ?? ''}`} className="flex items-center justify-between rounded-[10px] bg-neutral-50 px-3 py-3 text-sm transition hover:bg-white hover:shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-                <div>
-                  <p className="font-semibold text-neutral-900">{item.companyName}</p>
-                  <p className="mt-1 text-xs text-neutral-600">{item.stageName || 'Lead in progress'}</p>
-                </div>
-                <span className="text-xs text-neutral-500">{formatDate(item.nextFollowUpAt)}</span>
-              </Link>
-            ))}
-          </div>
-        </Card>
-      ) : null}
     </aside>
   )
 }

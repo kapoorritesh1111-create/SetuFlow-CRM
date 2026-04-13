@@ -36,7 +36,7 @@ const pinned = [
   {
     title: 'Sprint backlog',
     href: PRODUCT_ROUTES.development.backlog,
-    body: 'The in-product backlog that shows Sprint 2 closed cleanly, Sprint 3 ready next, and later sprint work still sequenced behind it.',
+    body: 'The in-product backlog that shows Sprint 2 closed cleanly, Sprint 3 active now, and later sprint work still sequenced behind it.',
   },
   {
     title: 'Locked screen specs',
@@ -65,7 +65,7 @@ export default function DevelopmentPage() {
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Development workplace</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">Sprint 2 is complete, and the development workplace now shows the locked plan, proven build status, and the next safe phase.</h1>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">Sprint 2 is complete, and the development workplace now shows the locked plan, proven build status, and Sprint 3 now in progress.</h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">This page is the operating surface for the locked sprint plan. Development status, readiness, and implementation guidance now move together so the repo does not drift away from the shipped baseline.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">

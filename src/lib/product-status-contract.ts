@@ -96,17 +96,17 @@ export type ScreenPlan = {
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
-  sprint: 'Sprint 2',
-  percent: 100,
-  percentLabel: '100%',
+  sprint: 'Sprint 3',
+  percent: 18,
+  percentLabel: '18%',
 };
 
 export const sprintFocus = {
-  sprint: 'Sprint 3 · Ready',
+  sprint: 'Sprint 3 · In progress',
   title:
-    'Sprint 2 is formally complete. The next safe phase is Lead simplification while keeping Capture → Lead → Quote → Order locked.',
+    'Sprint 2 remains complete, and Sprint 3 is now active with the Leads surface simplified into a clearer two-column workspace while Capture → Lead → Quote → Order stays locked.',
   nextAction:
-    'Start Sprint 3 only through the development pages: simplify the Leads surface, make Create Quote the dominant CTA, and tighten activity plus next-action clarity without redesigning product behavior.',
+    'Continue Sprint 3 only through the development pages: keep the Leads surface narrow, make Create Quote the dominant CTA, and consolidate context around the main workflow without redesigning product behavior.',
   flow: LOCKED_PRODUCT_FLOW.join(' → '),
 };
 
@@ -127,7 +127,7 @@ export const planningSurfaces: PlanningSurface[] = [
     href: PRODUCT_ROUTES.development.home,
     summary: 'Operating-system overview for the locked flow, current sprint status, and the next approved execution lane.',
     status: 'done',
-    focus: 'Keep the repo speaking one sprint timeline again: Sprint 2 complete, Sprint 3 ready.',
+    focus: 'Keep the repo speaking one sprint timeline again: Sprint 2 complete, Sprint 3 active.',
   },
   {
     id: 'master-plan',
@@ -135,7 +135,7 @@ export const planningSurfaces: PlanningSurface[] = [
     href: PRODUCT_ROUTES.development.masterPlan,
     summary: 'Sprint roadmap for the locked flow from completed foundation work into the next product phase.',
     status: 'done',
-    focus: 'Preserve the original plan while showing clearly that Sprint 2 is complete and Sprint 3 is next.',
+    focus: 'Preserve the original plan while showing clearly that Sprint 2 is complete and Sprint 3 is the active lane.',
   },
   {
     id: 'readiness',
@@ -149,9 +149,9 @@ export const planningSurfaces: PlanningSurface[] = [
     id: 'backlog',
     title: PRODUCT_ROUTES.development.backlog,
     href: PRODUCT_ROUTES.development.backlog,
-    summary: 'Repo-backed backlog showing Sprint 3 ready next and later work still sequenced behind it.',
+    summary: 'Repo-backed backlog showing Sprint 3 active now and later work still sequenced behind it.',
     status: 'done',
-    focus: 'Keep the next phase narrow and avoid skipping ahead to later modules.',
+    focus: 'Keep the active phase narrow and avoid skipping ahead to later modules.',
   },
   {
     id: 'product',
@@ -175,7 +175,7 @@ export const planningSurfaces: PlanningSurface[] = [
     href: PRODUCT_ROUTES.development.uxRules,
     summary: 'Rules for clarity, locking, trust, and trainable workflow behavior.',
     status: 'done',
-    focus: 'Prevent visual drift while Sprint 3 work begins.',
+    focus: 'Prevent visual drift while Sprint 3 work continues.',
   },
   {
     id: 'screen-leads-capture',
@@ -204,9 +204,9 @@ export const readinessAreas: ReadinessArea[] = [
     status: 'done',
   },
   {
-    title: 'Sprint 3 entry criteria are ready',
-    summary: 'Lead simplification is the next approved execution lane and should be started only through the development pages and locked flow rules.',
-    status: 'next',
+    title: 'Sprint 3 is active and narrowly scoped',
+    summary: 'Lead simplification is the active execution lane and now includes a cleaner two-column lead workspace with in-flow essentials while development stays inside the locked flow rules.',
+    status: 'in-progress',
   },
   {
     title: 'No new build blocker is confirmed',
@@ -240,7 +240,7 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: 'development-pages-aligned',
     area: 'Development pages',
-    label: 'Development pages now show Sprint 2 complete and Sprint 3 ready',
+    label: 'Development pages now show Sprint 2 complete and Sprint 3 active',
     note: 'The development hub, master plan, readiness page, backlog, and screen references now speak the same status language.',
     status: 'done',
   },
@@ -268,9 +268,9 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: 'sprint-3-entry',
     area: 'Next phase',
-    label: 'Sprint 3 scope is queued and visible',
-    note: 'The next safe phase is Lead simplification, Create Quote CTA emphasis, and activity plus next-action clarity.',
-    status: 'next',
+    label: 'Sprint 3 scope is active and visible',
+    note: 'The active phase is Lead simplification, Create Quote CTA emphasis, and activity plus next-action clarity.',
+    status: 'in-progress',
   },
 ];
 
@@ -302,13 +302,13 @@ export const roadmapMilestones: RoadmapMilestone[] = [
   {
     sprint: 'Sprint 3 · Lead simplification',
     summary: 'Reduce lead-surface complexity and make Create Quote the dominant commercial next step.',
-    badgeLabel: 'Next',
-    status: 'next',
-    objective: 'Start the next phase without changing the locked commercial flow or destabilizing the build.',
+    badgeLabel: 'In progress',
+    status: 'in-progress',
+    objective: 'Continue the active phase without changing the locked commercial flow or destabilizing the build.',
     outcomes: [
       'Lead surface complexity is reduced.',
       'Create Quote becomes the dominant CTA when a lead is ready.',
-      'Activity and next-action surfaces are more unified and easier to train on.',
+      'Workflow stays primary until a quote exists, then Quotes and quote-only drawer operations become the review surface.',
     ],
   },
   {
@@ -399,39 +399,39 @@ export const roadmapMilestones: RoadmapMilestone[] = [
 
 export const backlogSections: BacklogSection[] = [
   {
-    title: 'Sprint 3 · Ready',
-    heading: 'Start Lead simplification without drifting from the locked flow',
+    title: 'Sprint 3 · In progress',
+    heading: 'Lead simplification is active without drifting from the locked flow',
     sprint: 'Sprint 3',
-    badgeLabel: 'Next',
+    badgeLabel: 'In progress',
     summary:
       'Sprint 2 is complete. The next lane is Lead simplification, not architecture drift, not module sprawl, and not optional redesign work.',
     description:
       'Keep this sprint narrow: reduce lead-surface complexity, make Create Quote dominant, and unify activity plus next-action guidance while leaving working build-safe code untouched unless a real blocker appears.',
-    status: 'next',
+    status: 'in-progress',
     items: [
       {
         title: 'Reduce lead surface complexity',
         note: 'Remove friction and simplify what users see first on the Leads surface.',
-        stateLabel: 'Next',
-        status: 'next',
+        stateLabel: 'In progress',
+        status: 'in-progress',
       },
       {
         title: 'Make Create Quote the dominant CTA',
         note: 'When a lead is ready, the next action must be obvious and commercially aligned.',
-        stateLabel: 'Next',
-        status: 'next',
+        stateLabel: 'In progress',
+        status: 'in-progress',
       },
       {
         title: 'Unify activity and next-action surfaces',
         note: 'Reduce fragmentation so reps can understand the lead state quickly.',
-        stateLabel: 'Next',
-        status: 'next',
+        stateLabel: 'In progress',
+        status: 'in-progress',
       },
       {
         title: 'Keep build-safe discipline while Sprint 3 starts',
         note: 'Do not touch the worker fix or other stable build-safe code unless a real blocker proves it is necessary.',
-        stateLabel: 'Next',
-        status: 'next',
+        stateLabel: 'In progress',
+        status: 'in-progress',
       },
     ],
   },
@@ -507,7 +507,7 @@ export const productTracks: ProductTrack[] = [
     id: 'lead',
     title: 'Lead operating area',
     summary: 'Leads are the next execution lane. Sprint 3 should simplify the surface and make quote-starting action more obvious.',
-    status: 'next',
+    status: 'in-progress',
     scope: ['Lead list', 'Lead detail', 'Activity', 'Next actions', 'Create Quote dominance'],
   },
   {
@@ -565,9 +565,9 @@ export const architectureLanes: ArchitectureLane[] = [
   {
     id: 'lead-simplification',
     title: 'Lead-surface simplification',
-    summary: 'Sprint 3 should simplify the Leads experience before deeper Quote and Orders work begins.',
-    status: 'next',
-    target: 'Make the next commercial action obvious without redesigning the shell.',
+    summary: 'Sprint 3 is simplifying the Leads experience now, with workflow-first quote entry before deeper Quote and Orders work.',
+    status: 'in-progress',
+    target: 'Keep quote entry workflow-first until a real quote exists, then expose quote review cleanly.',
   },
   {
     id: 'hidden-services',
@@ -608,7 +608,7 @@ export const uxRules: UxRule[] = [
     id: 'lead-next-action',
     title: 'Make the lead next action obvious',
     rule: 'Sprint 3 should reduce lead complexity and make Create Quote the dominant CTA when the lead is ready.',
-    status: 'next',
+    status: 'in-progress',
   },
   {
     id: 'status-honesty',
@@ -662,8 +662,8 @@ export const screenPlans: ScreenPlan[] = [
     id: 'lead-workspace',
     title: 'Lead workspace simplification',
     route: PRODUCT_ROUTES.workspace.leads,
-    summary: 'Sprint 3 should simplify the Leads workspace and make the quote-starting next action more dominant.',
-    status: 'next',
+    summary: 'Sprint 3 is actively simplifying the Leads workspace and making the quote-starting next action more dominant.',
+    status: 'in-progress',
     primaryGoal: 'Help reps understand the lead state quickly and move into quoting with less friction.',
     layout: [
       {
@@ -679,7 +679,7 @@ export const screenPlans: ScreenPlan[] = [
       {
         title: 'Primary CTA emphasis',
         purpose: 'Make Create Quote the obvious next step when a lead is ready.',
-        blocks: ['Create Quote CTA', 'Activity summary', 'Next action panel'],
+        blocks: ['Create Quote CTA', 'Activity summary', 'Workflow-first quote entry'],
       },
     ],
     actions: ['Create Quote', 'Add note', 'Advance qualification'],
@@ -765,7 +765,7 @@ export const screenPlans: ScreenPlan[] = [
 
 export const developmentWorkspace = {
   flow: LOCKED_PRODUCT_FLOW.join(' → '),
-  activeSprint: 'Sprint 3 · Ready',
+  activeSprint: 'Sprint 3 · In progress',
   completedSprint: 'Sprint 2 · Complete',
   planningSurfaces,
   roadmapMilestones,

@@ -10,7 +10,7 @@ export function WorkflowTab({
   activePanel,
   onPanelChange,
   onEditCoverage,
-  onOpenQuotesTab,
+  onOpenQuote,
 }: {
   snapshot: LeadProfileSnapshot
   leadId: string
@@ -18,7 +18,7 @@ export function WorkflowTab({
   activePanel: WorkflowActionKey | null
   onPanelChange: (key: WorkflowActionKey | null) => void
   onEditCoverage: () => void
-  onOpenQuotesTab: () => void
+  onOpenQuote: () => void
 }) {
   return (
     <div className="space-y-5">
@@ -42,7 +42,7 @@ export function WorkflowTab({
         snapshot={snapshot}
         leadId={leadId}
         pendingFollowUpId={pendingFollowUpId}
-        onOpenQuotesTab={onOpenQuotesTab}
+        onOpenQuote={onOpenQuote}
         onEditCoverage={onEditCoverage}
       />
     </div>

@@ -80,13 +80,18 @@ type Props = {
   onQuoteReady?: (payload: { quoteId?: string | null; quoteNumber?: string | null; quoteCountDelta?: number }) => void
 }
 
-const SECTION_LABELS: Array<{ id: LeadQuickEditDrawerSection; label: string }> = [
+const BASE_SECTION_LABELS: Array<{ id: Exclude<LeadQuickEditDrawerSection, 'quote'>; label: string }> = [
   { id: 'details', label: 'Lead details' },
   { id: 'coverage', label: 'Coverage' },
   { id: 'workflow', label: 'Workflow' },
   { id: 'outreach', label: 'AI outreach' },
-  { id: 'quote', label: 'Quote ops' },
 ]
+
+function getSectionLabels(hasActiveQuote: boolean): Array<{ id: LeadQuickEditDrawerSection; label: string }> {
+  return hasActiveQuote
+    ? [...BASE_SECTION_LABELS, { id: 'quote', label: 'Quote ops' }]
+    : BASE_SECTION_LABELS
+}
 
 const QUALIFICATION_OPTIONS: Array<{ value: LeadQualificationStatus; label: string }> = [
   { value: 'not_started', label: 'Not started' },
@@ -300,6 +305,8 @@ export default function LeadQuickEditDrawer({
 }: Props) {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState<LeadQuickEditDrawerSection>(initialSection)
+  const hasActiveQuote = quoteCount > 0
+  const visibleSections = useMemo(() => getSectionLabels(hasActiveQuote), [hasActiveQuote])
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [detailsSaving, setDetailsSaving] = useState(false)
@@ -353,7 +360,7 @@ export default function LeadQuickEditDrawer({
 
   useEffect(() => {
     if (!open) return
-    setActiveSection(initialSection)
+    setActiveSection(initialSection === 'quote' && !hasActiveQuote ? 'workflow' : initialSection)
     setName(lead.name || '')
     setContactName(lead.contactName || '')
     setEmail(lead.email || '')
@@ -402,7 +409,14 @@ export default function LeadQuickEditDrawer({
     selectedMarketIds,
     selectedProductIds,
     availableProducts,
+    hasActiveQuote,
   ])
+
+  useEffect(() => {
+    if (!hasActiveQuote && activeSection === 'quote') {
+      setActiveSection('workflow')
+    }
+  }, [activeSection, hasActiveQuote])
 
   if (!open) return null
 
@@ -773,7 +787,7 @@ export default function LeadQuickEditDrawer({
             <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm text-slate-600">Close</button>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            {SECTION_LABELS.map((section) => (
+            {visibleSections.map((section) => (
               <button
                 key={section.id}
                 type="button"
@@ -868,6 +882,20 @@ export default function LeadQuickEditDrawer({
               <div className="rounded-3xl border border-slate-200 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
+                    <p className="text-sm font-semibold text-slate-900">Commercial handoff</p>
+                    <p className="mt-1 text-xs text-slate-500">Use one workflow-first quote entry. Quote-only operations appear after a real quote exists.</p>
+                  </div>
+                  <button type="button" onClick={() => void openQuoteWorkspace()} disabled={quoteOpening} className={hasActiveQuote ? 'rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-60' : 'rounded-full bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60'}>{quoteOpening ? 'Opening…' : hasActiveQuote ? 'Review quote' : 'Create quote'}</button>
+                </div>
+                <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <p className="font-semibold text-slate-900">{hasActiveQuote ? (latestQuoteNumber ?? 'Active quote in progress') : 'No active quote yet'}</p>
+                  <p className="mt-1">{hasActiveQuote ? 'Quote work can now be reviewed without duplicating entry paths.' : 'Stay in workflow until commercial readiness is clear, then create the first quote from here.'}</p>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
                     <p className="text-sm font-semibold text-slate-900">Follow-up control</p>
                     <p className="mt-1 text-xs text-slate-500">Changes save automatically so operators can keep momentum inside the command center.</p>
                   </div>
@@ -891,6 +919,7 @@ export default function LeadQuickEditDrawer({
                 </div>
                 <p className="mt-3 text-sm text-slate-500">{followUpSaving ? 'Saving follow-up…' : followUpMessage || 'Pick a date to auto-save the next action.'}</p>
               </div>
+
 
               <div className="rounded-3xl border border-slate-200 p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -931,7 +960,7 @@ export default function LeadQuickEditDrawer({
               {[
                 { key: 'intro', label: 'Introduction', subject: introTemplate.subject, body: introBody, setBody: setIntroBody, type: 'introduction' as const },
                 { key: 'follow-up', label: 'Follow-up', subject: followUpTemplate.subject, body: followUpBody, setBody: setFollowUpBody, type: 'follow_up' as const },
-                { key: 'quote', label: 'Quote message', subject: quoteTemplate.subject, body: quoteBody, setBody: setQuoteBody, type: 'quote_message' as const },
+                ...(hasActiveQuote ? [{ key: 'quote', label: 'Quote message', subject: quoteTemplate.subject, body: quoteBody, setBody: setQuoteBody, type: 'quote_message' as const }] : []),
               ].map((item) => (
                 <div key={item.key} className="rounded-3xl border border-slate-200 p-4">
                   <p className="text-sm font-semibold text-slate-900">{item.label}</p>
@@ -943,12 +972,12 @@ export default function LeadQuickEditDrawer({
             </div>
           ) : null}
 
-          {activeSection === 'quote' ? (
+          {activeSection === 'quote' && hasActiveQuote ? (
             <div className="space-y-5">
               <div className="rounded-3xl border border-slate-200 p-4">
                 <p className="text-sm font-semibold text-slate-900">Quote workspace</p>
-                <p className="mt-2 text-sm text-slate-600">{quoteCount > 0 ? `Latest quote: ${latestQuoteNumber ?? 'draft available'}` : 'No quote exists yet. Create or open the quote workspace now.'}</p>
-                <button type="button" onClick={() => void openQuoteWorkspace()} disabled={quoteOpening} className="mt-3 rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{quoteOpening ? 'Opening…' : quoteCount > 0 ? 'Review quote' : 'Create quote & open'}</button>
+                <p className="mt-2 text-sm text-slate-600">Latest quote: {latestQuoteNumber ?? 'draft available'}</p>
+                <button type="button" onClick={() => void openQuoteWorkspace()} disabled={quoteOpening} className="mt-3 rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{quoteOpening ? 'Opening…' : 'Review quote'}</button>
               </div>
 
               <div className="rounded-3xl border border-slate-200 p-4">

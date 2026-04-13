@@ -89,7 +89,7 @@ export function LeadCommandHeader({
         <div className="flex flex-wrap items-center gap-2 xl:justify-end">
           <button type="button" onClick={onOpenQuote} className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-brand-primary px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-dark">
             <span className={ICON_CONTAINER_CLASS}><QuoteActionIcon className="h-4 w-4 text-neutral-900" /></span>
-            {quoteFocus.hasActiveQuote ? 'Open quote' : 'Create quote'}
+            {quoteFocus.hasActiveQuote ? 'Review quote' : 'Create quote'}
           </button>
           <button type="button" onClick={onQuickEdit} className="h-10 rounded-[8px] border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-600 shadow-soft transition hover:border-neutral-600/30">
             Quick edit
