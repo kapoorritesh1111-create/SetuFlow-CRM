@@ -40,6 +40,7 @@ export const PRODUCT_ROUTES = {
     architecture: '/development/architecture',
     uxRules: '/development/ux-rules',
     screens: '/development/screens/leads-capture',
+    buyerReady: '/development/buyer-ready',
   },
 } as const;
 

@@ -21,13 +21,13 @@ export default function DevelopmentBacklogPage() {
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Sprint backlog</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">One backlog surface inside the development workplace, with Sprint 2 complete, Sprint 3 in progress, and deeper module work sequenced behind it.</h1>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">One backlog surface inside the development workplace, with Sprint 2 complete, Sprint 3 formally closed on a deployed baseline, and buyer-ready work sequenced clearly behind it.</h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">Backlog stays in the HTML workplace instead of extra repo files. Every item must support the locked {sprintFocus.flow} path, respect the confirmed shipped baseline, and improve readiness without recreating structural drift.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Backlog rule</p>
               <p className="mt-3 text-2xl font-semibold leading-tight">If work is not on this page, it is not scheduled work.</p>
-              <p className="mt-4 text-sm leading-7 text-white/85">Sprint 3 is the active approved lane. The deeper roadmap stays visible here so sequencing does not drift again.</p>
+              <p className="mt-4 text-sm leading-7 text-white/85">Sprint 3 is now closed. Buyer-ready gaps are tracked explicitly so later work starts from the shipped Leads baseline instead of reopening closed simplification work.</p>
             </div>
           </div>
           <div className="mt-8"><DevelopmentNav /></div>
@@ -39,6 +39,7 @@ export default function DevelopmentBacklogPage() {
           <div className="mt-8 flex flex-wrap gap-4">
             <Link href={PRODUCT_ROUTES.development.readiness} className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Open readiness</Link>
             <Link href={PRODUCT_ROUTES.development.masterPlan} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open master plan</Link>
+            <Link href={PRODUCT_ROUTES.development.buyerReady} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open buyer ready</Link>
             <Link href={PRODUCT_ROUTES.development.screens} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Open locked screen specs</Link>
           </div>
         </section>

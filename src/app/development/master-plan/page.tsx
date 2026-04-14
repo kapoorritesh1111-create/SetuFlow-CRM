@@ -7,10 +7,10 @@ import { LOCKED_PRODUCT_FLOW, PRODUCT_ROUTES, driftGuardrails } from '@/lib/prod
 import { StatusBadge } from '@/components/ui/status-badge';
 
 const rules = [
-  'Sprint 2 is now formally closed, and new work should start from Sprint 3 without changing the locked flow.',
+  'Sprint 2 is now formally closed, Sprint 3 is now formally closed, and new work should start only from the next sequenced roadmap phase without changing the locked flow.',
   `Keep the product centered on ${LOCKED_PRODUCT_FLOW.join(' → ')}.`,
   'Do not create new top-level product modules or alternate workflow paths.',
-  `Treat ${PRODUCT_ROUTES.development.home}, ${PRODUCT_ROUTES.development.masterPlan}, ${PRODUCT_ROUTES.development.readiness}, ${PRODUCT_ROUTES.development.backlog}, ${PRODUCT_ROUTES.development.product}, ${PRODUCT_ROUTES.development.architecture}, ${PRODUCT_ROUTES.development.uxRules}, and ${PRODUCT_ROUTES.development.screens} as the operating pages.`,
+  `Treat ${PRODUCT_ROUTES.development.home}, ${PRODUCT_ROUTES.development.masterPlan}, ${PRODUCT_ROUTES.development.readiness}, ${PRODUCT_ROUTES.development.backlog}, ${PRODUCT_ROUTES.development.product}, ${PRODUCT_ROUTES.development.architecture}, ${PRODUCT_ROUTES.development.uxRules}, ${PRODUCT_ROUTES.development.buyerReady}, and ${PRODUCT_ROUTES.development.screens} as the operating pages.`,
   ...driftGuardrails,
   'Keep backlog and planning inside the HTML development workplace, not in markdown task dumps.',
   'Let future sprints stay visible, but only activate them after the current sprint is formally closed.',
@@ -22,7 +22,8 @@ const references = [
   { href: PRODUCT_ROUTES.development.architecture, label: 'Architecture contract', body: 'The domain and service rules that should govern later sprint implementation depth.' },
   { href: PRODUCT_ROUTES.development.uxRules, label: 'UX rules', body: 'The screen-level decision principles that prevent visual and workflow drift.' },
   { href: PRODUCT_ROUTES.development.home, label: 'Development hub', body: 'The operating surface with the visible checklist, roadmap snapshot, and live readiness summary.' },
-  { href: PRODUCT_ROUTES.development.readiness, label: 'Readiness board', body: 'The blunt status view for build proof, shell integrity, and the real boundary to sprint signoff.' },
+  { href: PRODUCT_ROUTES.development.readiness, label: 'Readiness board', body: 'The blunt status view for deployment proof, shell integrity, and the real boundary to sprint signoff.' },
+  { href: PRODUCT_ROUTES.development.buyerReady, label: 'Buyer ready gap', body: 'The explicit gap view for what still needs to land from the approved rework before buyer-facing confidence is claimed.' },
   { href: PRODUCT_ROUTES.development.backlog, label: 'Sprint backlog', body: 'The in-app backlog that now shows current and pending sprint work in one controlled place.' },
   { href: PRODUCT_ROUTES.development.screens, label: 'Locked screen specs', body: 'The locked screen reference for Leads and Capture that Sprint 3 must continue to respect.' },
   { href: PRODUCT_ROUTES.workspace.leads, label: 'Active flow surfaces', body: 'The implemented Leads and Capture workspace surfaces plus the app-owned Quotes and Orders routes that carry the locked flow.' },
@@ -43,8 +44,8 @@ export default function MasterPlanPage() {
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Master plan</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">The product is still locked to one flow, but the plan now shows where every remaining sprint belongs.</h1>
-              <p className="mt-5 text-lg leading-8 text-slate-600">Sprint 2 is complete. This plan now shows Sprint 3 as the active phase while preserving the remaining roadmap in order instead of letting work drift or skip ahead.</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">The product is still locked to one flow, and the plan now shows both the deployed baseline and where the remaining rework still belongs.</h1>
+              <p className="mt-5 text-lg leading-8 text-slate-600">Sprint 2 is complete, the current baseline is deployed successfully, and this plan now shows Sprint 3 as formally closed while preserving the remaining roadmap in order instead of letting work drift or skip ahead.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Locked flow</p>

@@ -5,6 +5,7 @@ const links = [
   { href: PRODUCT_ROUTES.development.home, label: 'Development hub' },
   { href: PRODUCT_ROUTES.development.masterPlan, label: 'Master plan' },
   { href: PRODUCT_ROUTES.development.readiness, label: 'Readiness' },
+  { href: PRODUCT_ROUTES.development.buyerReady, label: 'Buyer ready' },
   { href: PRODUCT_ROUTES.development.backlog, label: 'Backlog' },
   { href: PRODUCT_ROUTES.development.product, label: 'Product' },
   { href: PRODUCT_ROUTES.development.architecture, label: 'Architecture' },

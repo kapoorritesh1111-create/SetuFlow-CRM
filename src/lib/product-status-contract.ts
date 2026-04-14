@@ -81,6 +81,19 @@ export type ScreenLayoutSection = {
   blocks: string[];
 };
 
+export type BuyerReadyItem = {
+  label: string;
+  note: string;
+  status: ChecklistStatus;
+};
+
+export type BuyerReadySection = {
+  title: string;
+  summary: string;
+  status: ChecklistStatus;
+  items: BuyerReadyItem[];
+};
+
 export type ScreenPlan = {
   id: string;
   title: string;
@@ -97,25 +110,25 @@ export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
   sprint: 'Sprint 3',
-  percent: 99,
-  percentLabel: '99%',
+  percent: 100,
+  percentLabel: '100%',
 };
 
 export const sprintFocus = {
-  sprint: 'Sprint 3 · In progress',
+  sprint: 'Sprint 3 · Complete',
   title:
-    'Sprint 2 remains complete, and Sprint 3 is now active with the Leads surface pushed into a quote-first workspace, a decisive above-the-fold commercial state instead of four equal readiness tracks, a prioritized one-blocker-at-a-time quote-prep queue, a unified blocker call inside that queue instead of duplicate support guidance, a passive lead log, quieter sticky chrome, and a quieter support rail that now behaves like passive context instead of a competing work lane, while the nearby lead-reference strip compresses into a compact tray that keeps supporting records and full lead detail on demand only, and the lower support-detail area now stays collapsed by default until a blocker is explicitly inspected, while quote record and lead log now share one quieter on-demand supporting-record panel with one collapse path instead of opening as separate full-width sections, and the right rail now compresses into a quieter passive support watchlist where blocker detail and workspace links open only on demand, while the shared supporting-record surface can now collapse back to a lighter summary drawer instead of keeping full detail open all the time, so Quote prep stays fixed and Capture → Lead → Quote → Order remains locked.',
+    'Sprint 2 remains complete, the latest production build deployed successfully, and Sprint 3 is now formally complete with a quote-first Leads workspace, one decisive above-the-fold commercial state, a prioritized one-blocker-at-a-time quote-prep lane, passive activity, quiet sticky chrome, a compact lead-reference tray, a collapsed-by-default lower support-detail area, a shared supporting-record surface that can step back to a lighter summary drawer, and a passive right-rail watchlist so Capture → Lead → Quote → Order stays commercially clear.',
   nextAction:
-    'Continue Sprint 3 only through the development pages: keep the Leads surface narrow, keep Create Quote or Continue Quote dominant, keep the support lane prioritized around one blocker at a time, keep duplicate blocker guidance collapsed into the quote-prep lane, keep sticky actions commercially quiet, keep the right rail passive and non-competitive, and keep quote record plus lead history opened only on demand inside one quieter shared supporting-record panel, keep lower support detail collapsed by default until a blocker is explicitly inspected, and keep the right rail compressed into a passive support watchlist where blocker detail and workspace links open only on demand, and let the shared supporting-record surface collapse back to a lighter summary drawer whenever full record detail is no longer needed so secondary surfaces never behave like competing work lanes.',
+    'Treat the deployed Sprint 3 Leads baseline as closed, preserve the build-safe baseline, and use the Buyer ready tab to track the remaining approved rework that now starts after Sprint 3 rather than inside it.',
   flow: LOCKED_PRODUCT_FLOW.join(' → '),
 };
 
 export const readinessSummary = {
-  status: 'Sprint 2 complete',
+  status: 'Deployment verified',
   buildStatus:
-    'A prior clean production build and deployment are still recorded for the verified baseline. In this Sprint 3 pass, typecheck passed and Next build compiled successfully before entering lint/type validation, but a fresh local build still did not finish end-to-end inside the run window, so no new blocker is confirmed and full re-verification is still pending.',
+    'The latest production build completed successfully, generated all static pages, finalized optimization, and deployed without a confirmed blocker. Local build discipline still matters, but deployment proof is now current and real.',
   driftRisk:
-    'Controlled because development status, shell truth, and deployment proof are now aligned. Keep future work on the development pages so the repo does not drift from the sprint plan again.',
+    'Controlled because the development pages, workflow state, and successful deployment proof now match. Keep future workflow changes paired with development-page updates so the repo does not drift again.',
   blockers:
     'No confirmed build blockers. Keep experimental.webpackBuildWorker = false in place until a future real build proves it is safe to remove.',
 };
@@ -141,17 +154,25 @@ export const planningSurfaces: PlanningSurface[] = [
     id: 'readiness',
     title: PRODUCT_ROUTES.development.readiness,
     href: PRODUCT_ROUTES.development.readiness,
-    summary: 'Readiness, build confidence, blockers, and anti-drift discipline anchored to real production proof.',
+    summary: 'Readiness, build confidence, blockers, and anti-drift discipline anchored to current production proof.',
     status: 'done',
-    focus: 'Keep build and deployment truth visible so future sprint work does not overwrite proven readiness.',
+    focus: 'Keep the successful deployment and the active workflow truth visible together.',
+  },
+  {
+    id: 'buyer-ready',
+    title: 'Buyer ready',
+    href: PRODUCT_ROUTES.development.buyerReady,
+    summary: 'The gap view for what is already true, what still needs to land from the approved rework, and what must be complete before buyer-facing walkthroughs.',
+    status: 'done',
+    focus: 'Keep buyer-readiness honest instead of implying the rework is fully closed.',
   },
   {
     id: 'backlog',
     title: PRODUCT_ROUTES.development.backlog,
     href: PRODUCT_ROUTES.development.backlog,
-    summary: 'Repo-backed backlog showing Sprint 3 active now and later work still sequenced behind it.',
+    summary: 'Repo-backed backlog showing Sprint 3 closed cleanly and later work still sequenced behind it.',
     status: 'done',
-    focus: 'Keep the active phase narrow and avoid skipping ahead to later modules.',
+    focus: 'Keep later work sequenced behind the closed Sprint 3 baseline and avoid skipping ahead without updating the plan.',
   },
   {
     id: 'product',
@@ -175,13 +196,13 @@ export const planningSurfaces: PlanningSurface[] = [
     href: PRODUCT_ROUTES.development.uxRules,
     summary: 'Rules for clarity, locking, trust, and trainable workflow behavior.',
     status: 'done',
-    focus: 'Prevent visual drift while Sprint 3 work continues.',
+    focus: 'Prevent visual drift now that Sprint 3 is closed and later work is still sequenced.',
   },
   {
     id: 'screen-leads-capture',
     title: PRODUCT_ROUTES.development.screens,
     href: PRODUCT_ROUTES.development.screens,
-    summary: 'Screen-layout reference for the completed Leads + Capture foundation that Sprint 3 must continue to respect.',
+    summary: 'Screen-layout reference for the completed Leads + Capture foundation and the now-closed Sprint 3 Leads baseline that later work must continue to respect.',
     status: 'done',
     focus: 'Keep Lead and Capture implementation aligned to the locked screen contract.',
   },
@@ -194,8 +215,8 @@ export const readinessAreas: ReadinessArea[] = [
     status: 'done',
   },
   {
-    title: 'Clean production build and deployment are already proven',
-    summary: 'The latest real external build cleared page-data collection, generated static pages successfully, completed deployment, and introduced no confirmed blocker.',
+    title: 'Current production deployment is verified',
+    summary: 'The latest external build completed successfully, generated static pages, finalized optimization, and deployed without a confirmed blocker.',
     status: 'done',
   },
   {
@@ -204,9 +225,14 @@ export const readinessAreas: ReadinessArea[] = [
     status: 'done',
   },
   {
-    title: 'Sprint 3 is active and narrowly scoped',
-    summary: 'Lead simplification is the active execution lane and now includes a cleaner two-column lead workspace, an above-the-fold quote-first commercial state that summarizes quote readiness as one decisive call instead of four equal tracks, a prioritized one-blocker-at-a-time quote-prep queue with its blocker summary collapsed into the same lane instead of a second support hero, a passive lead log so note-taking and history stay secondary to quote motion, quieter sticky support actions, a passive right rail that stops behaving like a competing work lane, and on-demand quote record plus lead log controls folded into a compact lead-reference tray, while the records themselves now open inside one quieter shared supporting-record panel, lower support detail stays collapsed by default until a blocker is explicitly inspected, and the right rail now behaves as a passive support watchlist with blocker detail plus workspace links opened only on demand, while the shared supporting-record surface can collapse back to a lighter summary drawer whenever the user is done reviewing deeper record detail, so the page chrome keeps pointing back to quote creation while development stays inside the locked flow rules.',
-    status: 'in-progress',
+    title: 'Sprint 3 workflow state is complete and accurately reflected',
+    summary: 'Lead simplification is now complete and the current repo reflects the quote-first workspace, decisive commercial state, prioritized quote-prep lane, passive activity, compact lead-reference tray, collapsed lower support detail, quieter shared supporting-record surface, and passive support watchlist defined by the Sprint 3 rework.',
+    status: 'done',
+  },
+  {
+    title: 'Buyer readiness still has explicit post-Sprint-3 work',
+    summary: 'The successful deployment does not mean the full rework is buyer-ready yet. Quote builder depth, trust layers, end-to-end QA, and buyer-facing proof still need to be completed and are now tracked in the Buyer ready tab.',
+    status: 'next',
   },
   {
     title: 'No new build blocker is confirmed',
@@ -240,8 +266,8 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: 'development-pages-aligned',
     area: 'Development pages',
-    label: 'Development pages now show Sprint 2 complete and Sprint 3 active',
-    note: 'The development hub, master plan, readiness page, backlog, and screen references now speak the same status language as Sprint 3 continues through quote-first simplification.',
+    label: 'Development pages now show Sprint 2 complete and Sprint 3 closed',
+    note: 'The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprint 3 formally closed on the deployed quote-first Leads baseline.',
     status: 'done',
   },
   {
@@ -268,9 +294,9 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: 'sprint-3-entry',
     area: 'Next phase',
-    label: 'Sprint 3 scope is active and visible',
-    note: 'The active phase is Lead simplification, Create Quote CTA emphasis, and keeping support guidance collapsed into one quote-prep decision lane.',
-    status: 'in-progress',
+    label: 'Sprint 3 scope is closed and visible',
+    note: 'The closed phase is Lead simplification, Create Quote CTA emphasis, and keeping support guidance collapsed into one quote-prep decision lane as the stable deployed baseline.',
+    status: 'done',
   },
 ];
 
@@ -302,9 +328,9 @@ export const roadmapMilestones: RoadmapMilestone[] = [
   {
     sprint: 'Sprint 3 · Lead simplification',
     summary: 'Reduce lead-surface complexity and turn the lead page into a quote-first commercial workspace.',
-    badgeLabel: 'In progress',
-    status: 'in-progress',
-    objective: 'Continue the active phase without changing the locked commercial flow or destabilizing the build.',
+    badgeLabel: 'Done',
+    status: 'done',
+    objective: 'Close Lead simplification cleanly without changing the locked commercial flow or destabilizing the build.',
     outcomes: [
       'Lead surface complexity is reduced through a quote-first workspace hierarchy.',
       'Create Quote or Continue Quote becomes the dominant CTA when a lead is ready.',
@@ -399,39 +425,39 @@ export const roadmapMilestones: RoadmapMilestone[] = [
 
 export const backlogSections: BacklogSection[] = [
   {
-    title: 'Sprint 3 · In progress',
+    title: 'Sprint 3 · Complete',
     heading: 'Lead simplification is active without drifting from the locked flow',
     sprint: 'Sprint 3',
-    badgeLabel: 'In progress',
+    badgeLabel: 'Done',
     summary:
-      'Sprint 2 is complete. The next lane is Lead simplification, not architecture drift, not module sprawl, and not optional redesign work.',
+      'Sprint 2 is complete and Sprint 3 is now formally closed. The next lane is the sequenced buyer-ready work that follows Lead simplification, not architecture drift, not module sprawl, and not optional redesign work.',
     description:
-      'Keep this sprint narrow: reduce lead-surface complexity, make Create Quote dominant, collapse duplicate blocker guidance into the quote-prep lane, summarize above-the-fold quote readiness as one decisive commercial state, keep lower support detail collapsed by default until a blocker is explicitly inspected, and demote supporting workflow guidance beneath the quote-first workspace while leaving working build-safe code untouched unless a real blocker appears.',
-    status: 'in-progress',
+      'Sprint 3 is now closed on the deployed quote-first Leads baseline. Preserve this narrowed workspace, keep Create Quote dominant, keep support guidance collapsed into the quote-prep lane, and do not reopen closed simplification work unless a real blocker proves the baseline wrong.',
+    status: 'done',
     items: [
       {
         title: 'Reduce lead surface complexity',
         note: 'Remove friction and simplify what users see first on the Leads surface.',
-        stateLabel: 'In progress',
-        status: 'in-progress',
+        stateLabel: 'Done',
+        status: 'done',
       },
       {
         title: 'Make Create Quote the dominant CTA',
         note: 'When a lead is ready, quote creation or continuation must be the clearest commercial move on the page.',
-        stateLabel: 'In progress',
-        status: 'in-progress',
+        stateLabel: 'Done',
+        status: 'done',
       },
       {
         title: 'Unify activity and next-action surfaces',
         note: 'Keep notes and history passive, prioritize one support blocker at a time, avoid duplicated support CTAs in the sticky bar, and avoid duplicate blocker guidance inside the workflow lane.',
-        stateLabel: 'In progress',
-        status: 'in-progress',
+        stateLabel: 'Done',
+        status: 'done',
       },
       {
-        title: 'Keep build-safe discipline while Sprint 3 starts',
+        title: 'Keep build-safe discipline while Sprint 3 closes',
         note: 'Do not touch the worker fix or other stable build-safe code unless a real blocker proves it is necessary.',
-        stateLabel: 'In progress',
-        status: 'in-progress',
+        stateLabel: 'Done',
+        status: 'done',
       },
     ],
   },
@@ -440,7 +466,7 @@ export const backlogSections: BacklogSection[] = [
     heading: 'Quote builder, trust layers, and Orders depth stay sequenced behind Sprint 3',
     sprint: 'Sprints 4-6',
     badgeLabel: 'Locked',
-    summary: 'The next deeper commercial and operational work stays visible, but it is not active until Sprint 3 is complete.',
+    summary: 'The next deeper commercial and operational work stays visible, and it now begins after Sprint 3 is formally complete.',
     description: 'This protects the plan from skipping directly into later features before the Leads surface is simplified cleanly.',
     status: 'locked',
     items: [
@@ -507,7 +533,7 @@ export const productTracks: ProductTrack[] = [
     id: 'lead',
     title: 'Lead operating area',
     summary: 'Leads are the next execution lane. Sprint 3 should simplify the surface and make quote-starting action more obvious.',
-    status: 'in-progress',
+    status: 'done',
     scope: ['Lead list', 'Lead detail', 'Activity', 'Next actions', 'Create Quote dominance'],
   },
   {
@@ -566,7 +592,7 @@ export const architectureLanes: ArchitectureLane[] = [
     id: 'lead-simplification',
     title: 'Lead-surface simplification',
     summary: 'Sprint 3 is simplifying the Leads experience now by making the lead page read like a quote-first workspace with one decisive above-the-fold commercial state, then a prioritized support queue before deeper Quote and Orders work.',
-    status: 'in-progress',
+    status: 'done',
     target: 'Keep quote launch dominant until a real quote exists, then expose quote review cleanly.',
   },
   {
@@ -608,7 +634,7 @@ export const uxRules: UxRule[] = [
     id: 'lead-next-action',
     title: 'Make the lead next action obvious',
     rule: 'Sprint 3 should reduce lead complexity and make Create Quote the dominant CTA when the lead is ready.',
-    status: 'in-progress',
+    status: 'done',
   },
   {
     id: 'status-honesty',
@@ -627,6 +653,40 @@ export const uxRules: UxRule[] = [
     title: 'Keep mobile and tablet quality strict',
     rule: 'Touch-first quality remains mandatory before desktop polish expands.',
     status: 'done',
+  },
+];
+
+export const buyerReadySections: BuyerReadySection[] = [
+  {
+    title: 'Already true in the deployed baseline',
+    summary: 'These rework outcomes are already visible in the current deployed product and should now be treated as baseline truth.',
+    status: 'done',
+    items: [
+      { label: 'Deployment proof is current', note: 'The latest production build completed and deployed successfully, so development pages should stop speaking as if deployment is still only partially verified.', status: 'done' },
+      { label: 'Leads is now quote-first', note: 'The lead surface has been simplified into one commercial lane with quieter support surfaces and on-demand records.', status: 'done' },
+      { label: 'Capture → Lead → Quote → Order remains locked', note: 'The rework preserved the product structure instead of introducing new top-level modules.', status: 'done' },
+    ],
+  },
+  {
+    title: 'Still needed before buyer-facing readiness',
+    summary: 'These are the remaining gaps from the approved rework that still need to be finished before the product is ready for buyer-facing walkthroughs or signoff.',
+    status: 'done',
+    items: [
+      { label: 'Close Sprint 3 formally', note: 'Sprint 3 is now formally closed in the development pages and buyer-ready tracking no longer treats Lead simplification as an open batch.', status: 'done' },
+      { label: 'Build Sprint 4 quote-builder core', note: 'Guided builder steps, draft structure, review flow, and send checkpoints still need to land after Sprint 3 closes.', status: 'next' },
+      { label: 'Add trust-layer proof', note: 'Approvals, audit visibility, and quote locking remain part of the approved rework and still need to be completed for buyer confidence.', status: 'next' },
+      { label: 'Strengthen end-to-end buyer QA', note: 'Run buyer-demo journeys across Leads, Quote, and Order handoff so buyer-facing walkthroughs are based on proven flows rather than page-level success alone.', status: 'next' },
+    ],
+  },
+  {
+    title: 'Release-proof and handoff work still pending',
+    summary: 'The later rework phases that turn the shipped product into a buyer-ready story are still explicitly sequenced behind the active sprint.',
+    status: 'locked',
+    items: [
+      { label: 'Orders foundation depth', note: 'Accepted-quote snapshots, execution readiness, and subordinate document or compliance surfaces remain later roadmap work.', status: 'locked' },
+      { label: 'Buyer demo and leadership walkthrough assets', note: 'Formal walkthrough scripts, proof points, and signoff materials are still part of the release-readiness endgame.', status: 'locked' },
+      { label: 'Final release-readiness closure', note: 'The roadmap still requires the later demo and release-readiness sprint before broader external confidence is claimed.', status: 'locked' },
+    ],
   },
 ];
 
@@ -663,7 +723,7 @@ export const screenPlans: ScreenPlan[] = [
     title: 'Lead workspace simplification',
     route: PRODUCT_ROUTES.workspace.leads,
     summary: 'Sprint 3 is actively simplifying the Leads workspace and making the quote-starting workspace visually dominant through one decisive above-the-fold commercial state while support work queues behind one current blocker, the blocker summary lives inside that same queue, the right rail stays compressed into a passive support watchlist with on-demand detail, and the shared supporting-record surface can collapse back to a lighter summary drawer when full detail is no longer needed.',
-    status: 'in-progress',
+    status: 'done',
     primaryGoal: 'Help reps understand the lead state quickly and move into quoting without competing surface noise.',
     layout: [
       {
@@ -766,7 +826,7 @@ export const screenPlans: ScreenPlan[] = [
 
 export const developmentWorkspace = {
   flow: LOCKED_PRODUCT_FLOW.join(' → '),
-  activeSprint: 'Sprint 3 · In progress',
+  activeSprint: 'Sprint 3 · Complete',
   completedSprint: 'Sprint 2 · Complete',
   planningSurfaces,
   roadmapMilestones,
@@ -775,6 +835,7 @@ export const developmentWorkspace = {
   architectureLanes,
   uxRules,
   screenPlans,
+  buyerReadySections,
 };
 
 export const masterPlan = roadmapMilestones;
@@ -783,3 +844,4 @@ export const productPlan = productTracks;
 export const architecturePlan = architectureLanes;
 export const uxRulesPlan = uxRules;
 export const developmentScreens = screenPlans;
+export const buyerReadyPlan = buyerReadySections;
