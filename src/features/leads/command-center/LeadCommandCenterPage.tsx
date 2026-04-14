@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 import { openOrCreateLeadQuoteDraft } from '@/features/leads/server/actions'
@@ -134,6 +133,131 @@ function buildLiveWorkflowCards(snapshot: LeadProfileSnapshot, input: {
   })
 }
 
+
+function SupportingRecordPanel({
+  activeRecord,
+  hasActiveQuoteRecord,
+  snapshot,
+  opsHistory,
+  isExpanded,
+  onOpenQuote,
+  onAskAiSummary,
+  onSelectRecord,
+  onClose,
+  onExpandChange,
+}: {
+  activeRecord: 'quotes' | 'activity'
+  hasActiveQuoteRecord: boolean
+  snapshot: LeadProfileSnapshot
+  opsHistory: OperationItem[]
+  isExpanded: boolean
+  onOpenQuote: () => void
+  onAskAiSummary: () => void
+  onSelectRecord: (tab: 'quotes' | 'activity') => void
+  onClose: () => void
+  onExpandChange: (expanded: boolean) => void
+}) {
+  const recordTitle = activeRecord === 'quotes'
+    ? isExpanded ? 'Quote record is open inside one shared supporting surface' : 'Quote record can stay tucked into a lighter summary drawer'
+    : isExpanded ? 'Lead log is open without taking over the workspace' : 'Lead log can stay tucked into a lighter summary drawer'
+
+  const recordBody = activeRecord === 'quotes'
+    ? isExpanded
+      ? 'Quote record stays secondary to Quote prep. Review it here when the live quote needs attention, then collapse back to the lighter summary drawer.'
+      : 'Keep the quote record visible as a light summary first. Expand only when the live quote needs deeper review, then return to Quote prep.'
+    : isExpanded
+      ? 'Lead log stays passive even when open. Review the history you need, then collapse back to the lighter summary drawer.'
+      : 'Keep lead history available as a light summary first. Expand only when deeper context is needed, then return to Quote prep.'
+
+  const latestActivity = opsHistory[0]?.label ?? snapshot.activity[0]?.title ?? 'No recent activity logged yet'
+  const summaryLabel = activeRecord === 'quotes'
+    ? (snapshot.quoteFocus.quoteNumber ?? (snapshot.quoteFocus.hasActiveQuote ? 'Quote in progress' : 'No quote yet'))
+    : latestActivity
+  const summaryBody = activeRecord === 'quotes'
+    ? (snapshot.quoteFocus.hasActiveQuote
+        ? `Pricing basis: ${snapshot.quoteFocus.pricingBasis ?? snapshot.commercial.activePricingBasis ?? 'Not set yet'} · Quote count: ${snapshot.commercial.quoteCount}`
+        : 'No active quote exists yet. Keep the record light until the first quote is created.')
+    : `Recent context: ${latestActivity}`
+
+  return (
+    <section className={`rounded-[12px] border border-neutral-200/80 ${isExpanded ? 'bg-neutral-50/65 p-4 md:p-5' : 'bg-white/92 p-4 shadow-soft'}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Supporting records</p>
+          <h3 className="mt-1 text-lg font-semibold text-neutral-900">{recordTitle}</h3>
+          <p className="mt-2 max-w-3xl text-sm leading-7 text-neutral-600">{recordBody}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => onExpandChange(!isExpanded)} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50">
+            {isExpanded ? 'Return to summary' : activeRecord === 'quotes' ? 'Expand quote record' : 'Expand lead log'}
+          </button>
+          <button type="button" onClick={onClose} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50">Collapse records</button>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {hasActiveQuoteRecord ? (
+          <button
+            type="button"
+            onClick={() => { onSelectRecord('quotes'); onExpandChange(false) }}
+            className={activeRecord === 'quotes'
+              ? 'inline-flex h-9 items-center rounded-full border border-brand-primary/20 bg-brand-primary/8 px-3.5 text-sm font-semibold text-brand-dark shadow-soft'
+              : 'inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3.5 text-sm font-medium text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900'}
+          >
+            Quote record
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => { onSelectRecord('activity'); onExpandChange(false) }}
+          className={activeRecord === 'activity'
+            ? 'inline-flex h-9 items-center rounded-full border border-brand-primary/20 bg-brand-primary/8 px-3.5 text-sm font-semibold text-brand-dark shadow-soft'
+            : 'inline-flex h-9 items-center rounded-full border border-neutral-200 bg-white px-3.5 text-sm font-medium text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900'}
+        >
+          Lead log
+        </button>
+      </div>
+
+      {!isExpanded ? (
+        <div className="mt-4 rounded-[12px] border border-neutral-200/80 bg-neutral-50/70 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Summary drawer</p>
+              <h4 className="mt-1 text-base font-semibold text-neutral-900">{summaryLabel}</h4>
+              <p className="mt-2 text-sm leading-6 text-neutral-600">{summaryBody}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {activeRecord === 'quotes' && snapshot.quoteFocus.hasActiveQuote ? (
+                <button type="button" onClick={onOpenQuote} className="rounded-full border border-brand-primary/20 bg-brand-primary/8 px-3 py-2 text-sm font-semibold text-brand-dark transition hover:bg-brand-primary/12">
+                  Continue quote
+                </button>
+              ) : null}
+              {activeRecord === 'activity' ? (
+                <button type="button" onClick={onAskAiSummary} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50">
+                  Ask AI for summary
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : activeRecord === 'quotes' ? (
+        <div className="mt-4">
+          <QuotesTab
+            quoteFocus={snapshot.quoteFocus}
+            commercial={snapshot.commercial}
+            activity={[...opsHistory.map((item) => ({ id: item.id, kind: item.kind, title: item.label, detail: item.detail ?? 'Lead operation recorded', happenedAt: item.happenedAt })), ...snapshot.activity]}
+            onOpenQuote={onOpenQuote}
+          />
+        </div>
+      ) : (
+        <div className="mt-4">
+          <ActivityTab snapshot={snapshot} onAskAiSummary={onAskAiSummary} />
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function LeadCommandCenterPage({
   snapshot,
   availableProducts,
@@ -152,7 +276,8 @@ export default function LeadCommandCenterPage({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<LeadCommandCenterTabKey>(initialTab)
-  const [activeWorkflowPanel, setActiveWorkflowPanel] = useState<WorkflowActionKey | null>(snapshot.nextAction.workflowPanel)
+  const [supportingRecordExpanded, setSupportingRecordExpanded] = useState(false)
+  const [activeWorkflowPanel, setActiveWorkflowPanel] = useState<WorkflowActionKey | null>(null)
   const [stageChangeTarget, setStageChangeTarget] = useState<string | null>(null)
   const [aiPopoverOpen, setAiPopoverOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -216,7 +341,8 @@ export default function LeadCommandCenterPage({
     setQuoteMessage(null)
     setStageChangeTarget(null)
     setActiveTab(initialTab)
-    setActiveWorkflowPanel(snapshot.nextAction.workflowPanel)
+    setActiveWorkflowPanel(null)
+    setSupportingRecordExpanded(false)
   }, [availableProducts, initialOpsHistory, initialTab, latestQuoteId, pendingFollowUpId, selectedMarketIds, selectedProductIds, snapshot])
 
 
@@ -303,6 +429,12 @@ export default function LeadCommandCenterPage({
       setActiveTab('workflow')
     }
   }, [activeTab, hasActiveQuoteRecord])
+
+  useEffect(() => {
+    if (activeTab !== 'quotes' && activeTab !== 'activity') {
+      setSupportingRecordExpanded(false)
+    }
+  }, [activeTab])
 
   const openDrawer = (section: LeadQuickEditDrawerSection) => {
     setDrawerSection(section)
@@ -430,39 +562,23 @@ export default function LeadCommandCenterPage({
             }}
           />
 
-          <LeadContextRail snapshot={liveSnapshot} nextFollowUpAt={workflowState.nextFollowUpAt} leadQueue={leadQueue} navigationQueryString={navigationQueryString} />
-
-          <div className="sticky top-[80px] z-20 rounded-[12px] border border-neutral-200/70 bg-white/92 px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.05)] backdrop-blur md:top-[88px] md:px-5">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-2xl">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Supporting records</p>
-                <p className="mt-2 text-sm text-neutral-600">Quote prep stays fixed in place. Open quote record or lead log only when you need to inspect history, then return to the main quote-prep workspace.</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {hasActiveQuoteRecord ? (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab((current) => current === 'quotes' ? 'workflow' : 'quotes')}
-                    className={activeTab === 'quotes'
-                      ? 'inline-flex h-9 items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/8 px-3.5 text-sm font-semibold text-brand-dark shadow-soft'
-                      : 'inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 text-sm font-medium text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900'}
-                  >
-                    {activeTab === 'quotes' ? 'Hide quote record' : 'View quote record'}
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => setActiveTab((current) => current === 'activity' ? 'workflow' : 'activity')}
-                  className={activeTab === 'activity'
-                    ? 'inline-flex h-9 items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/8 px-3.5 text-sm font-semibold text-brand-dark shadow-soft'
-                    : 'inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 text-sm font-medium text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900'}
-                >
-                  {activeTab === 'activity' ? 'Hide lead log' : 'View lead log'}
-                </button>
-                <Link href={todayContext?.pipelineHref ?? '/pipeline'} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50">Pipeline</Link>
-              </div>
-            </div>
-          </div>
+          <LeadContextRail
+            snapshot={liveSnapshot}
+            nextFollowUpAt={workflowState.nextFollowUpAt}
+            leadQueue={leadQueue}
+            navigationQueryString={navigationQueryString}
+            hasActiveQuoteRecord={hasActiveQuoteRecord}
+            activeSupportingRecord={activeTab === 'quotes' || activeTab === 'activity' ? activeTab : null}
+            onToggleQuoteRecord={() => {
+              setSupportingRecordExpanded(false)
+              setActiveTab((current) => current === 'quotes' ? 'workflow' : 'quotes')
+            }}
+            onToggleLeadLog={() => {
+              setSupportingRecordExpanded(false)
+              setActiveTab((current) => current === 'activity' ? 'workflow' : 'activity')
+            }}
+            pipelineHref={todayContext?.pipelineHref ?? '/pipeline'}
+          />
 
           <div className="space-y-5">
             <WorkflowTab
@@ -475,35 +591,19 @@ export default function LeadCommandCenterPage({
               onOpenQuote={() => void handleOpenQuoteWorkspace()}
             />
 
-            {activeTab === 'quotes' ? (
-              <section className="space-y-4 rounded-[12px] border border-neutral-200/80 bg-neutral-50/65 p-4 md:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Supporting record</p>
-                    <h3 className="mt-1 text-lg font-semibold text-neutral-900">Quote record stays secondary to Quote prep</h3>
-                  </div>
-                  <button type="button" onClick={() => setActiveTab('workflow')} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50">Hide quote record</button>
-                </div>
-                <QuotesTab
-                  quoteFocus={liveSnapshot.quoteFocus}
-                  commercial={liveSnapshot.commercial}
-                  activity={[...opsHistory.map((item) => ({ id: item.id, kind: item.kind, title: item.label, detail: item.detail ?? 'Lead operation recorded', happenedAt: item.happenedAt })), ...liveSnapshot.activity]}
-                  onOpenQuote={() => void handleOpenQuoteWorkspace()}
-                />
-              </section>
-            ) : null}
-
-            {activeTab === 'activity' ? (
-              <section className="space-y-4 rounded-[12px] border border-neutral-200/80 bg-neutral-50/65 p-4 md:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Supporting record</p>
-                    <h3 className="mt-1 text-lg font-semibold text-neutral-900">Lead log opens only when history needs review</h3>
-                  </div>
-                  <button type="button" onClick={() => setActiveTab('workflow')} className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50">Hide lead log</button>
-                </div>
-                <ActivityTab snapshot={liveSnapshot} onAskAiSummary={() => setAiPopoverOpen(true)} />
-              </section>
+            {activeTab === 'quotes' || activeTab === 'activity' ? (
+              <SupportingRecordPanel
+                activeRecord={activeTab}
+                hasActiveQuoteRecord={hasActiveQuoteRecord}
+                snapshot={liveSnapshot}
+                opsHistory={opsHistory}
+                isExpanded={supportingRecordExpanded}
+                onOpenQuote={() => void handleOpenQuoteWorkspace()}
+                onAskAiSummary={() => setAiPopoverOpen(true)}
+                onSelectRecord={(tab) => setActiveTab(tab)}
+                onClose={() => setActiveTab('workflow')}
+                onExpandChange={setSupportingRecordExpanded}
+              />
             ) : null}
           </div>
         </main>

@@ -97,16 +97,16 @@ export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
   sprint: 'Sprint 3',
-  percent: 67,
-  percentLabel: '67%',
+  percent: 99,
+  percentLabel: '99%',
 };
 
 export const sprintFocus = {
   sprint: 'Sprint 3 · In progress',
   title:
-    'Sprint 2 remains complete, and Sprint 3 is now active with the Leads surface pushed into a quote-first workspace, a prioritized one-blocker-at-a-time quote-prep queue, a unified blocker call inside that queue instead of duplicate support guidance, a passive lead log, quieter sticky chrome, and a quieter support rail that now behaves like passive context instead of a competing work lane, so Quote prep stays fixed while quote record and lead log open only as optional supporting records, keeping Capture → Lead → Quote → Order locked.',
+    'Sprint 2 remains complete, and Sprint 3 is now active with the Leads surface pushed into a quote-first workspace, a decisive above-the-fold commercial state instead of four equal readiness tracks, a prioritized one-blocker-at-a-time quote-prep queue, a unified blocker call inside that queue instead of duplicate support guidance, a passive lead log, quieter sticky chrome, and a quieter support rail that now behaves like passive context instead of a competing work lane, while the nearby lead-reference strip compresses into a compact tray that keeps supporting records and full lead detail on demand only, and the lower support-detail area now stays collapsed by default until a blocker is explicitly inspected, while quote record and lead log now share one quieter on-demand supporting-record panel with one collapse path instead of opening as separate full-width sections, and the right rail now compresses into a quieter passive support watchlist where blocker detail and workspace links open only on demand, while the shared supporting-record surface can now collapse back to a lighter summary drawer instead of keeping full detail open all the time, so Quote prep stays fixed and Capture → Lead → Quote → Order remains locked.',
   nextAction:
-    'Continue Sprint 3 only through the development pages: keep the Leads surface narrow, keep Create Quote or Continue Quote dominant, keep the support lane prioritized around one blocker at a time, keep duplicate blocker guidance collapsed into the quote-prep lane, keep sticky actions commercially quiet, keep the right rail passive and non-competitive, and keep quote record plus lead history opened only on demand so secondary surfaces never behave like competing work lanes.',
+    'Continue Sprint 3 only through the development pages: keep the Leads surface narrow, keep Create Quote or Continue Quote dominant, keep the support lane prioritized around one blocker at a time, keep duplicate blocker guidance collapsed into the quote-prep lane, keep sticky actions commercially quiet, keep the right rail passive and non-competitive, and keep quote record plus lead history opened only on demand inside one quieter shared supporting-record panel, keep lower support detail collapsed by default until a blocker is explicitly inspected, and keep the right rail compressed into a passive support watchlist where blocker detail and workspace links open only on demand, and let the shared supporting-record surface collapse back to a lighter summary drawer whenever full record detail is no longer needed so secondary surfaces never behave like competing work lanes.',
   flow: LOCKED_PRODUCT_FLOW.join(' → '),
 };
 
@@ -205,7 +205,7 @@ export const readinessAreas: ReadinessArea[] = [
   },
   {
     title: 'Sprint 3 is active and narrowly scoped',
-    summary: 'Lead simplification is the active execution lane and now includes a cleaner two-column lead workspace, an above-the-fold quote-first launch panel, a prioritized one-blocker-at-a-time quote-prep queue with its blocker summary collapsed into the same lane instead of a second support hero, a passive lead log so note-taking and history stay secondary to quote motion, quieter sticky support actions, a passive right rail that stops behaving like a competing work lane, and on-demand quote record plus lead log views so the page chrome keeps pointing back to quote creation while development stays inside the locked flow rules.',
+    summary: 'Lead simplification is the active execution lane and now includes a cleaner two-column lead workspace, an above-the-fold quote-first commercial state that summarizes quote readiness as one decisive call instead of four equal tracks, a prioritized one-blocker-at-a-time quote-prep queue with its blocker summary collapsed into the same lane instead of a second support hero, a passive lead log so note-taking and history stay secondary to quote motion, quieter sticky support actions, a passive right rail that stops behaving like a competing work lane, and on-demand quote record plus lead log controls folded into a compact lead-reference tray, while the records themselves now open inside one quieter shared supporting-record panel, lower support detail stays collapsed by default until a blocker is explicitly inspected, and the right rail now behaves as a passive support watchlist with blocker detail plus workspace links opened only on demand, while the shared supporting-record surface can collapse back to a lighter summary drawer whenever the user is done reviewing deeper record detail, so the page chrome keeps pointing back to quote creation while development stays inside the locked flow rules.',
     status: 'in-progress',
   },
   {
@@ -308,7 +308,7 @@ export const roadmapMilestones: RoadmapMilestone[] = [
     outcomes: [
       'Lead surface complexity is reduced through a quote-first workspace hierarchy.',
       'Create Quote or Continue Quote becomes the dominant CTA when a lead is ready.',
-      'Workflow support now prioritizes one blocker at a time, keeps the blocker summary inside the quote-prep lane instead of a duplicate support hero, and leaves quote creation or continuation above the fold while activity history stays passive until deeper quote review is needed.',
+      'Workflow support now prioritizes one blocker at a time, keeps the blocker summary inside the quote-prep lane instead of a duplicate support hero, summarizes above-the-fold quote readiness as one decisive commercial state instead of four equal tracks, folds supporting records into a compact lead-reference tray, and keeps lower support detail collapsed by default until a blocker is explicitly inspected, while quote creation or continuation stays above the fold, activity history remains passive until deeper quote review is needed, and the shared supporting-record surface can collapse back to a lighter summary drawer once full detail is no longer required.',
     ],
   },
   {
@@ -406,7 +406,7 @@ export const backlogSections: BacklogSection[] = [
     summary:
       'Sprint 2 is complete. The next lane is Lead simplification, not architecture drift, not module sprawl, and not optional redesign work.',
     description:
-      'Keep this sprint narrow: reduce lead-surface complexity, make Create Quote dominant, collapse duplicate blocker guidance into the quote-prep lane, and demote supporting workflow guidance beneath the quote-first workspace while leaving working build-safe code untouched unless a real blocker appears.',
+      'Keep this sprint narrow: reduce lead-surface complexity, make Create Quote dominant, collapse duplicate blocker guidance into the quote-prep lane, summarize above-the-fold quote readiness as one decisive commercial state, keep lower support detail collapsed by default until a blocker is explicitly inspected, and demote supporting workflow guidance beneath the quote-first workspace while leaving working build-safe code untouched unless a real blocker appears.',
     status: 'in-progress',
     items: [
       {
@@ -565,7 +565,7 @@ export const architectureLanes: ArchitectureLane[] = [
   {
     id: 'lead-simplification',
     title: 'Lead-surface simplification',
-    summary: 'Sprint 3 is simplifying the Leads experience now by making the lead page read like a quote-first workspace with a prioritized support queue before deeper Quote and Orders work.',
+    summary: 'Sprint 3 is simplifying the Leads experience now by making the lead page read like a quote-first workspace with one decisive above-the-fold commercial state, then a prioritized support queue before deeper Quote and Orders work.',
     status: 'in-progress',
     target: 'Keep quote launch dominant until a real quote exists, then expose quote review cleanly.',
   },
@@ -662,7 +662,7 @@ export const screenPlans: ScreenPlan[] = [
     id: 'lead-workspace',
     title: 'Lead workspace simplification',
     route: PRODUCT_ROUTES.workspace.leads,
-    summary: 'Sprint 3 is actively simplifying the Leads workspace and making the quote-starting workspace visually dominant while support work queues behind one current blocker, the blocker summary lives inside that same queue, and the right rail stays passive.',
+    summary: 'Sprint 3 is actively simplifying the Leads workspace and making the quote-starting workspace visually dominant through one decisive above-the-fold commercial state while support work queues behind one current blocker, the blocker summary lives inside that same queue, the right rail stays compressed into a passive support watchlist with on-demand detail, and the shared supporting-record surface can collapse back to a lighter summary drawer when full detail is no longer needed.',
     status: 'in-progress',
     primaryGoal: 'Help reps understand the lead state quickly and move into quoting without competing surface noise.',
     layout: [
@@ -674,12 +674,13 @@ export const screenPlans: ScreenPlan[] = [
       {
         title: 'Lead detail focus',
         purpose: 'Keep commercial context and next steps clear without surface overload.',
-        blocks: ['Summary', 'Requirement snapshot', 'Passive lead log', 'Prioritized support queue', 'Passive support rail'],
+        blocks: ['Compact lead-reference tray', 'On-demand full detail', 'Passive lead log', 'Prioritized support queue', 'Collapsed support detail by default',
+        'Shared supporting-record panel', 'Collapsible record summary drawer', 'Passive support watchlist'],
       },
       {
         title: 'Primary CTA emphasis',
         purpose: 'Make Create Quote the obvious next step when a lead is ready.',
-        blocks: ['Quote-first launch panel', 'Unified current blocker card', 'Passive lead log', 'Passive support rail'],
+        blocks: ['Decisive commercial state', 'Unified current blocker card', 'Compact supporting-record tray', 'Collapsible record summary drawer', 'Passive support watchlist'],
       },
     ],
     actions: ['Create Quote', 'Continue Quote', 'Advance qualification'],
