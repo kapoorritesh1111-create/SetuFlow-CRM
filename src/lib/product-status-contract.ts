@@ -104,16 +104,16 @@ export const sprintProgress = {
 export const sprintFocus = {
   sprint: 'Sprint 3 · In progress',
   title:
-    'Sprint 2 remains complete, and Sprint 3 is now active with the Leads surface pushed into a quote-first workspace, a narrowed quote-prep support lane, a passive lead log, and demoted support-surface navigation so Quote prep now stays fixed while quote record and lead log open only as optional supporting records, keeping Capture → Lead → Quote → Order locked.',
+    'Sprint 2 remains complete, and Sprint 3 is now active with the Leads surface pushed into a quote-first workspace, a prioritized one-blocker-at-a-time quote-prep queue, a unified blocker call inside that queue instead of duplicate support guidance, a passive lead log, quieter sticky chrome, and a quieter support rail that now behaves like passive context instead of a competing work lane, so Quote prep stays fixed while quote record and lead log open only as optional supporting records, keeping Capture → Lead → Quote → Order locked.',
   nextAction:
-    'Continue Sprint 3 only through the development pages: keep the Leads surface narrow, keep Create Quote or Continue Quote dominant, keep support navigation visually quiet, keep Quote prep fixed as the working surface, and keep quote record plus lead history opened only on demand so secondary surfaces never behave like competing work lanes.',
+    'Continue Sprint 3 only through the development pages: keep the Leads surface narrow, keep Create Quote or Continue Quote dominant, keep the support lane prioritized around one blocker at a time, keep duplicate blocker guidance collapsed into the quote-prep lane, keep sticky actions commercially quiet, keep the right rail passive and non-competitive, and keep quote record plus lead history opened only on demand so secondary surfaces never behave like competing work lanes.',
   flow: LOCKED_PRODUCT_FLOW.join(' → '),
 };
 
 export const readinessSummary = {
   status: 'Sprint 2 complete',
   buildStatus:
-    'Clean production build has already been verified and deployed successfully. Static pages generate cleanly and no new build blocker is confirmed in the latest baseline.',
+    'A prior clean production build and deployment are still recorded for the verified baseline. In this Sprint 3 pass, typecheck passed and Next build compiled successfully before entering lint/type validation, but a fresh local build still did not finish end-to-end inside the run window, so no new blocker is confirmed and full re-verification is still pending.',
   driftRisk:
     'Controlled because development status, shell truth, and deployment proof are now aligned. Keep future work on the development pages so the repo does not drift from the sprint plan again.',
   blockers:
@@ -205,7 +205,7 @@ export const readinessAreas: ReadinessArea[] = [
   },
   {
     title: 'Sprint 3 is active and narrowly scoped',
-    summary: 'Lead simplification is the active execution lane and now includes a cleaner two-column lead workspace, an above-the-fold quote-first launch panel, a narrowed quote-prep checklist that removes equal-weight workflow clutter, a passive lead log so note-taking and history stay secondary to quote motion, quieter support-surface navigation, and on-demand quote record plus lead log views so the page chrome keeps pointing back to quote creation while development stays inside the locked flow rules.',
+    summary: 'Lead simplification is the active execution lane and now includes a cleaner two-column lead workspace, an above-the-fold quote-first launch panel, a prioritized one-blocker-at-a-time quote-prep queue with its blocker summary collapsed into the same lane instead of a second support hero, a passive lead log so note-taking and history stay secondary to quote motion, quieter sticky support actions, a passive right rail that stops behaving like a competing work lane, and on-demand quote record plus lead log views so the page chrome keeps pointing back to quote creation while development stays inside the locked flow rules.',
     status: 'in-progress',
   },
   {
@@ -269,7 +269,7 @@ export const checklistItems: ChecklistItem[] = [
     id: 'sprint-3-entry',
     area: 'Next phase',
     label: 'Sprint 3 scope is active and visible',
-    note: 'The active phase is Lead simplification, Create Quote CTA emphasis, and activity plus next-action clarity.',
+    note: 'The active phase is Lead simplification, Create Quote CTA emphasis, and keeping support guidance collapsed into one quote-prep decision lane.',
     status: 'in-progress',
   },
 ];
@@ -308,7 +308,7 @@ export const roadmapMilestones: RoadmapMilestone[] = [
     outcomes: [
       'Lead surface complexity is reduced through a quote-first workspace hierarchy.',
       'Create Quote or Continue Quote becomes the dominant CTA when a lead is ready.',
-      'Workflow guidance supports the lead, while quote creation or continuation stays above the fold and activity history stays passive until deeper quote review is needed.',
+      'Workflow support now prioritizes one blocker at a time, keeps the blocker summary inside the quote-prep lane instead of a duplicate support hero, and leaves quote creation or continuation above the fold while activity history stays passive until deeper quote review is needed.',
     ],
   },
   {
@@ -406,7 +406,7 @@ export const backlogSections: BacklogSection[] = [
     summary:
       'Sprint 2 is complete. The next lane is Lead simplification, not architecture drift, not module sprawl, and not optional redesign work.',
     description:
-      'Keep this sprint narrow: reduce lead-surface complexity, make Create Quote dominant, and demote supporting workflow guidance beneath the quote-first workspace while leaving working build-safe code untouched unless a real blocker appears.',
+      'Keep this sprint narrow: reduce lead-surface complexity, make Create Quote dominant, collapse duplicate blocker guidance into the quote-prep lane, and demote supporting workflow guidance beneath the quote-first workspace while leaving working build-safe code untouched unless a real blocker appears.',
     status: 'in-progress',
     items: [
       {
@@ -423,7 +423,7 @@ export const backlogSections: BacklogSection[] = [
       },
       {
         title: 'Unify activity and next-action surfaces',
-        note: 'Keep notes and history passive so activity does not become a competing work lane.',
+        note: 'Keep notes and history passive, prioritize one support blocker at a time, avoid duplicated support CTAs in the sticky bar, and avoid duplicate blocker guidance inside the workflow lane.',
         stateLabel: 'In progress',
         status: 'in-progress',
       },
@@ -565,7 +565,7 @@ export const architectureLanes: ArchitectureLane[] = [
   {
     id: 'lead-simplification',
     title: 'Lead-surface simplification',
-    summary: 'Sprint 3 is simplifying the Leads experience now by making the lead page read like a quote-first workspace before deeper Quote and Orders work.',
+    summary: 'Sprint 3 is simplifying the Leads experience now by making the lead page read like a quote-first workspace with a prioritized support queue before deeper Quote and Orders work.',
     status: 'in-progress',
     target: 'Keep quote launch dominant until a real quote exists, then expose quote review cleanly.',
   },
@@ -662,7 +662,7 @@ export const screenPlans: ScreenPlan[] = [
     id: 'lead-workspace',
     title: 'Lead workspace simplification',
     route: PRODUCT_ROUTES.workspace.leads,
-    summary: 'Sprint 3 is actively simplifying the Leads workspace and making the quote-starting workspace visually dominant.',
+    summary: 'Sprint 3 is actively simplifying the Leads workspace and making the quote-starting workspace visually dominant while support work queues behind one current blocker, the blocker summary lives inside that same queue, and the right rail stays passive.',
     status: 'in-progress',
     primaryGoal: 'Help reps understand the lead state quickly and move into quoting without competing surface noise.',
     layout: [
@@ -674,12 +674,12 @@ export const screenPlans: ScreenPlan[] = [
       {
         title: 'Lead detail focus',
         purpose: 'Keep commercial context and next steps clear without surface overload.',
-        blocks: ['Summary', 'Requirement snapshot', 'Passive lead log', 'Commercial context'],
+        blocks: ['Summary', 'Requirement snapshot', 'Passive lead log', 'Prioritized support queue', 'Passive support rail'],
       },
       {
         title: 'Primary CTA emphasis',
         purpose: 'Make Create Quote the obvious next step when a lead is ready.',
-        blocks: ['Quote-first launch panel', 'Supporting workflow guidance', 'Passive lead log'],
+        blocks: ['Quote-first launch panel', 'Unified current blocker card', 'Passive lead log', 'Passive support rail'],
       },
     ],
     actions: ['Create Quote', 'Continue Quote', 'Advance qualification'],

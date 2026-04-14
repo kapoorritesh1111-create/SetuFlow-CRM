@@ -410,7 +410,7 @@ export default function LeadCommandCenterPage({
       {quoteMessage ? <p className="text-sm text-slate-600">{quoteMessage}</p> : null}
       {todayContext ? <LeadTodayContextBar todayContext={todayContext} /> : null}
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_272px] xl:gap-6">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px] xl:gap-6">
         <main className="space-y-6">
           <LeadQuotePrimaryPanel
             snapshot={liveSnapshot}
@@ -517,7 +517,6 @@ export default function LeadCommandCenterPage({
             setActiveTab('workflow')
             setActiveWorkflowPanel(liveSnapshot.nextAction.workflowPanel)
           }}
-          onOpenQuote={() => void handleOpenQuoteWorkspace()}
         />
       </div>
 
@@ -536,10 +535,6 @@ export default function LeadCommandCenterPage({
         quoteBusy={quoteBusy}
         onOpenQuote={() => void handleOpenQuoteWorkspace()}
         onQuickEdit={() => openDrawer('details')}
-        onOpenFollowUp={() => {
-          setActiveTab('workflow')
-          setActiveWorkflowPanel('follow_up')
-        }}
       />
 
       <LeadQuickEditDrawer
