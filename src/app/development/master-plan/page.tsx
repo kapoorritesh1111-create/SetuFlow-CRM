@@ -44,8 +44,8 @@ export default function MasterPlanPage() {
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Master plan</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">The product is still locked to one flow, and the plan now shows both the deployed baseline and where the remaining rework still belongs.</h1>
-              <p className="mt-5 text-lg leading-8 text-slate-600">Sprint 2 is complete, the current baseline is deployed successfully, and this plan now shows Sprint 3 as formally closed while preserving the remaining roadmap in order instead of letting work drift or skip ahead.</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">The product is still locked to one flow, and the plan now shows the deployed baseline plus the next active Sprint 4 quote-builder batch.</h1>
+              <p className="mt-5 text-lg leading-8 text-slate-600">The current baseline is deployed successfully, Sprint 3 is formally closed, and this plan now shows Sprint 4 quote-builder batch 10 as the next active lane while preserving the remaining roadmap in order.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Locked flow</p>

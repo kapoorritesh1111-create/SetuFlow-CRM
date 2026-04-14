@@ -28,11 +28,13 @@ type QuoteRecord = {
   created_at: string;
   updated_at: string;
   notes?: string | null;
+  current_version_id?: string | null;
   lineItems?: Array<{ id: string; product_id: string | null; product_variant_id: string | null; catalog_price_id: string | null; catalog_price_amount: number | null; catalog_price_currency: string | null; quantity: number; unit_price: number | null; currency: string | null; is_price_overridden?: boolean | null; override_reason?: string | null; notes: string | null }>;
 };
 
 type NegotiationEvent = { id: string; quote_id: string; event_type: string | null; message: string | null; created_at: string | null; actor_name: string | null; actor_type: string | null };
 type QuoteCommunication = { id: string; quote_id: string | null; related_entity: string; related_id: string | null; subject: string | null; summary: string | null; status: string; created_at: string; draft_source: string; metadata?: unknown };
+type QuoteVersionRecord = { id: string; quote_id: string | null; version_no: number | null; status: string | null; created_at: string | null; approved_at: string | null; sent_at: string | null; pdf_document_id: string | null };
 type QuoteSavedViewId = 'all' | 'pending_approval' | 'customer_active' | 'finished' | string;
 type QuoteSortMode = 'updated' | 'created' | 'value';
 type ProgressionGuardSummary = { blockerCount: number; blockerReasons: string[] };
@@ -40,7 +42,25 @@ type WorkflowStatus = ReturnType<typeof getQuoteWorkflowStatus>;
 type WorkflowNotice = { tone: 'success' | 'danger'; title: string; description: string };
 
 type QuoteStepState = 'done' | 'current' | 'upcoming' | 'skipped';
+type BuilderStepId = 'product' | 'pricing' | 'terms' | 'review' | 'send';
 type NegotiationComposerMode = 'counter_offer' | 'revision_requested' | 'customer_reply' | 'revision_ready' | 'accepted' | 'rejected' | 'send';
+
+type BuilderFocusStep = {
+  id: BuilderStepId;
+  label: string;
+  state: QuoteStepState;
+  detail: string;
+};
+
+type BuilderGuidance = {
+  steps: BuilderFocusStep[];
+  title: string;
+  description: string;
+  validationPrompts: string[];
+  recommendations: string[];
+  basisLabel: string;
+  templateLabel: string;
+};
 
 type QuoteQuickAction = {
   label: string;
@@ -141,37 +161,120 @@ function getStepClasses(state: QuoteStepState) {
   return 'border-slate-200 bg-white text-slate-600';
 }
 
-function getFocusQuoteSteps(quote: QuoteRecord) {
-  const { status, approvalRequired, approvalState } = getQuoteApprovalStateValue(quote);
-  const isOutcome = ['accepted', 'rejected', 'expired'].includes(status);
-  const review: QuoteStepState = ['pending_approval', 'approved', 'sent', 'revised', 'accepted', 'rejected', 'expired'].includes(status) ? 'done' : 'current';
-  const approval: QuoteStepState = !approvalRequired
-    ? 'skipped'
-    : approvalState === 'approved' || ['sent', 'revised'].includes(status) || isOutcome
-      ? 'done'
-      : approvalState === 'pending' || status === 'pending_approval'
-        ? 'current'
-        : 'upcoming';
-  const send: QuoteStepState = ['sent', 'revised'].includes(status) || isOutcome
-    ? 'done'
-    : (!approvalRequired || approvalState === 'approved') && ['approved', 'draft', 'internal_review'].includes(status)
-      ? 'current'
-      : 'upcoming';
-  const response: QuoteStepState = isOutcome
-    ? 'done'
-    : status === 'revised'
-      ? 'current'
-      : status === 'sent'
-        ? 'current'
-        : 'upcoming';
-  const outcome: QuoteStepState = isOutcome ? 'current' : 'upcoming';
-  return [
-    { id: 'review', label: 'Review', state: review },
-    { id: 'approval', label: 'Approval', state: approval },
-    { id: 'send', label: 'Send', state: send },
-    { id: 'response', label: 'Customer response', state: response },
-    { id: 'outcome', label: 'Outcome', state: outcome },
+function getFocusQuoteBuilderGuidance(quote: QuoteRecord, quoteSendGuard?: ProgressionGuardSummary): BuilderGuidance {
+  const { parsed, status, approvalRequired, approvalState } = getQuoteApprovalStateValue(quote);
+  const lineItems = quote.lineItems ?? [];
+  const plainNotes = String(parsed.plainNotes ?? '').trim();
+  const pricingBasis = String(parsed.meta.pricingBasis ?? 'fob').trim().toLowerCase();
+  const pricingTemplate = getPricingTemplate(String(parsed.meta.templateId ?? ''));
+  const basisLabel = pricingBasis === 'ex_factory' ? 'Ex-Factory' : pricingBasis === 'cif' ? 'CIF' : 'FOB';
+  const templateLabel = pricingTemplate?.name ?? 'Manual pricing';
+  const quoteIsFinalized = ['sent', 'accepted', 'rejected', 'expired', 'revised'].includes(status);
+  const productReady = lineItems.some((item) => Boolean(item.product_id || item.product_variant_id));
+  const pricingReady = lineItems.length > 0 && lineItems.every((item) => item.quantity > 0 && typeof item.unit_price === 'number' && !Number.isNaN(item.unit_price));
+  const termsReady = Boolean(parsed.meta.pricingBasis || parsed.meta.templateId || approvalRequired || plainNotes.length || quote.currency);
+  const reviewReady = productReady && pricingReady && termsReady;
+  const approvalGateClear = !approvalRequired || approvalState === 'approved';
+  const sendGuardClear = !quoteSendGuard?.blockerCount;
+  const sendReady = reviewReady && approvalGateClear && sendGuardClear;
+
+  let currentStep: BuilderStepId = 'send';
+  if (!productReady) currentStep = 'product';
+  else if (!pricingReady) currentStep = 'pricing';
+  else if (!termsReady) currentStep = 'terms';
+  else if (!quoteIsFinalized && !sendReady) currentStep = 'review';
+
+  const stepState = (stepId: BuilderStepId, isReady: boolean): QuoteStepState => {
+    if (quoteIsFinalized) return 'done';
+    if (isReady) return 'done';
+    if (currentStep === stepId) return 'current';
+    return 'upcoming';
+  };
+
+  const steps: BuilderFocusStep[] = [
+    {
+      id: 'product',
+      label: 'Product',
+      state: stepState('product', productReady),
+      detail: productReady ? `${lineItems.length} commercial line${lineItems.length === 1 ? '' : 's'} linked` : 'Add at least one product line to anchor the draft.',
+    },
+    {
+      id: 'pricing',
+      label: 'Pricing',
+      state: stepState('pricing', pricingReady),
+      detail: pricingReady ? `Basis ${basisLabel} · ${templateLabel}` : 'Complete quantity and unit price on every line before review.',
+    },
+    {
+      id: 'terms',
+      label: 'Terms',
+      state: stepState('terms', termsReady),
+      detail: approvalRequired ? `Approval ${approvalState.replaceAll('_', ' ')}` : 'No approval requirement recorded',
+    },
+    {
+      id: 'review',
+      label: 'Review',
+      state: quoteIsFinalized ? 'done' : currentStep === 'review' || (!sendReady && reviewReady) ? 'current' : reviewReady ? 'done' : 'upcoming',
+      detail: reviewReady ? 'Commercial structure is ready for a final operator pass.' : 'Bring product, pricing, and terms into one clean draft first.',
+    },
+    {
+      id: 'send',
+      label: 'Send',
+      state: quoteIsFinalized ? 'done' : sendReady ? 'current' : 'upcoming',
+      detail: quoteIsFinalized ? `Workflow reached ${status.replaceAll('_', ' ')}` : sendReady ? 'Ready for customer send from the fast lane.' : 'Approval and guard checks still gate send.',
+    },
   ];
+
+  const validationPrompts: string[] = [];
+  if (!productReady) validationPrompts.push('Add at least one product-linked line so the quote is anchored to real commercial scope.');
+  if (!pricingReady) validationPrompts.push('Complete quantity and unit price on every line before treating the draft as review-ready.');
+  if (!termsReady) validationPrompts.push('Set pricing basis, workflow notes, or approval posture so the terms step is explicit.');
+  if (approvalRequired && approvalState === 'pending') validationPrompts.push('Approval is still pending, so send must remain blocked until the reviewer clears it.');
+  if ((quoteSendGuard?.blockerCount ?? 0) > 0) validationPrompts.push(...(quoteSendGuard?.blockerReasons.slice(0, 2) ?? []));
+  if (!validationPrompts.length) validationPrompts.push('No builder validation gaps are flagged right now. The draft can stay in the fast lane.');
+
+  const recommendations: string[] = [];
+  if (!productReady) recommendations.push('Return to the full editor only to add the missing product context, then come back to the fast lane.');
+  if (productReady && !pricingReady) recommendations.push('Finish pricing on every existing line before changing approval or send posture.');
+  if (pricingReady && !termsReady) recommendations.push('Record terms and approval posture now so review reads like one commercial story.');
+  if (reviewReady && approvalRequired && approvalState === 'pending') recommendations.push('Use Request approval or Approve now here before treating send as the next move.');
+  if (reviewReady && approvalGateClear && !sendGuardClear) recommendations.push('Clear the current send blockers first so the send checkpoint stays truthful.');
+  if (sendReady) recommendations.push('The draft is ready for operator review and customer send without reopening the builder structure.');
+  if (!recommendations.length) recommendations.push('Keep the quote in focus, make one commercial move, and avoid bouncing across multiple quotes.');
+
+  let title = 'Builder posture is in progress';
+  let description = 'Use the guided Product → Pricing → Terms → Review → Send structure to close the next gap without opening trust-layer work early.';
+  if (!productReady) {
+    title = 'Product context is the next missing step';
+    description = 'This quote still needs product-linked scope before the rest of the builder flow becomes reliable.';
+  } else if (!pricingReady) {
+    title = 'Pricing completion is the next missing step';
+    description = 'Keep pricing explicit on every line so the review step stays honest and customer-ready.';
+  } else if (!termsReady) {
+    title = 'Terms posture still needs to be made explicit';
+    description = 'Set approval posture, basis, or operator notes so the draft can be reviewed as one coherent commercial package.';
+  } else if (approvalRequired && approvalState === 'pending') {
+    title = 'Review is complete, but approval still gates send';
+    description = 'The builder structure is in place. The safe next move is to clear approval before the quote leaves the team.';
+  } else if (!sendGuardClear) {
+    title = 'Send remains blocked by live guard checks';
+    description = 'The draft is structurally ready, but the explicit send checkpoint still shows active blockers that must be cleared first.';
+  } else if (quoteIsFinalized) {
+    title = 'Builder flow already moved past send';
+    description = `This quote has already reached ${status.replaceAll('_', ' ')}, so the guided builder sequence is complete for the current version.`;
+  } else if (sendReady) {
+    title = 'Builder flow is ready for send';
+    description = 'Product, pricing, terms, and review are aligned, and the current draft can stay in the fast lane through send.';
+  }
+
+  return {
+    steps,
+    title,
+    description,
+    validationPrompts: validationPrompts.slice(0, 3),
+    recommendations: recommendations.slice(0, 3),
+    basisLabel,
+    templateLabel,
+  };
 }
 
 function getApprovalAction(quote: QuoteRecord): QuoteQuickAction | null {
@@ -343,6 +446,7 @@ export function QuoteWorkspace({
   pricingSnapshot,
   quoteSendGuard,
   negotiationEvents = [],
+  quoteVersions = [],
   communications = [],
   leadCommandHref = `/leads/${leadId}?tab=quotes`,
   rfqWorkspaceHref = `/leads/${leadId}/rfq/new`,
@@ -362,6 +466,7 @@ export function QuoteWorkspace({
   pricingSnapshot: CatalogPricingSnapshot;
   quoteSendGuard?: ProgressionGuardSummary;
   negotiationEvents?: NegotiationEvent[];
+  quoteVersions?: QuoteVersionRecord[];
   communications?: QuoteCommunication[];
   leadCommandHref?: string;
   rfqWorkspaceHref?: string;
@@ -374,6 +479,7 @@ export function QuoteWorkspace({
   const [createOpen, setCreateOpen] = useState(false);
   const [quoteRecords, setQuoteRecords] = useState<QuoteRecord[]>(quotes);
   const [activeQuote, setActiveQuote] = useState<QuoteRecord | null>(null);
+  const [activeQuoteStep, setActiveQuoteStep] = useState<BuilderStepId | null>(null);
   const [focusQuoteId, setFocusQuoteId] = useState<string | null>(initialQuoteId ?? quotes[0]?.id ?? null);
   const [savedView, setSavedView] = useState<QuoteSavedViewId>(initialSavedView || 'all');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -510,6 +616,16 @@ export function QuoteWorkspace({
     return grouped;
   }, [communications]);
 
+  const getPreferredEditorStep = (quote: QuoteRecord): BuilderStepId => {
+    const guidance = getFocusQuoteBuilderGuidance(quote, quoteSendGuard);
+    return guidance.steps.find((step) => step.state === 'current')?.id ?? guidance.steps.find((step) => step.state === 'upcoming')?.id ?? guidance.steps[guidance.steps.length - 1]?.id ?? 'product';
+  };
+
+  const openQuoteEditor = (quote: QuoteRecord, preferredStep?: BuilderStepId) => {
+    setActiveQuote(quote);
+    setActiveQuoteStep(preferredStep ?? getPreferredEditorStep(quote));
+  };
+
   const upsertQuoteRecord = (next: QuoteRecord) => {
     setQuoteRecords((current) => {
       const existingIndex = current.findIndex((item) => item.id === next.id);
@@ -519,6 +635,7 @@ export function QuoteWorkspace({
       return clone;
     });
     setActiveQuote(next);
+    setActiveQuoteStep((current) => current ?? getPreferredEditorStep(next));
     setFocusQuoteId(next.id);
   };
 
@@ -603,8 +720,18 @@ export function QuoteWorkspace({
   };
 
   const focusQuoteMeta = focusQuote ? getQuoteApprovalStateValue(focusQuote) : null;
-  const focusQuoteSteps = focusQuote ? getFocusQuoteSteps(focusQuote) : [];
+  const focusBuilderGuidance = focusQuote ? getFocusQuoteBuilderGuidance(focusQuote, quoteSendGuard) : null;
   const focusQuoteTotals = focusQuote ? computeQuoteTotals(focusQuote.lineItems ?? [], focusQuote.currency) : null;
+  const focusQuoteVersions = focusQuote
+    ? quoteVersions
+        .filter((version) => version.quote_id === focusQuote.id)
+        .sort((left, right) => Number(right.version_no ?? 0) - Number(left.version_no ?? 0) || String(right.created_at ?? '').localeCompare(String(left.created_at ?? '')))
+    : [];
+  const currentFocusedVersion = focusQuote
+    ? focusQuoteVersions.find((version) => version.id === focusQuote.current_version_id) ?? focusQuoteVersions[0] ?? null
+    : null;
+  const sentFocusedVersion = focusQuoteVersions.find((version) => version.sent_at || String(version.status ?? '').toLowerCase() === 'sent') ?? null;
+  const approvedFocusedVersion = focusQuoteVersions.find((version) => version.approved_at || String(version.status ?? '').toLowerCase() === 'approved') ?? null;
   const focusApprovalAction = focusQuote ? getApprovalAction(focusQuote) : null;
   const focusSendAction = focusQuote ? getSendAction(focusQuote, quoteSendGuard) : null;
   const focusAcceptAction = focusQuote ? getOutcomeAction(focusQuote, 'accepted') : null;
@@ -617,11 +744,6 @@ export function QuoteWorkspace({
   const focusSendRun = focusSendAction?.run ?? null;
   const focusAcceptRun = focusAcceptAction?.run ?? null;
   const focusRejectRun = focusRejectAction?.run ?? null;
-  const currentNextStepDescription = focusSendAction?.disabled
-    ? focusApprovalAction?.disabled
-      ? 'Review the quote in the full editor to revise pricing, outcome, or workflow context.'
-      : focusApprovalAction?.description ?? 'Approval is not the active bottleneck for this quote.'
-    : focusSendAction?.description ?? 'Send the quote to the customer to continue the deal.';
 
   return (
     <section className="space-y-4">
@@ -629,8 +751,8 @@ export function QuoteWorkspace({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Quote workflow</p><span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getPricingReadinessClasses(pricingSnapshot.pricingReadiness)}`}>{getPricingReadinessLabel(pricingSnapshot.pricingReadiness)}</span></div>
-            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">One commercial lane for review, approval, and send</h3>
-            <p className="mt-2 text-sm text-slate-600">Keep the current quote visible, resolve blockers once, and open the deep editor only when pricing or approval needs more than the fast lane.</p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">One commercial lane for Product, Pricing, Terms, Review, and Send</h3>
+            <p className="mt-2 text-sm text-slate-600">Keep the current quote visible, preserve the guided builder posture after save, and open the deep editor only when pricing detail needs more than the fast lane.</p>
           </div>
           <button type="button" onClick={() => setCreateOpen(true)} disabled={!canManageQuotes} className="rounded-[10px] bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">{canManageQuotes ? 'New quote' : 'Read-only role'}</button>
         </div>
@@ -665,23 +787,54 @@ export function QuoteWorkspace({
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">{focusQuoteTotals?.currency} {focusQuoteTotals?.subtotal.toFixed(2)} subtotal</span>
                 <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">{focusQuoteTotals?.lineItemCount ?? 0} line items</span>
+                <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">Basis {focusBuilderGuidance?.basisLabel ?? 'FOB'}</span>
+                <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">Template {focusBuilderGuidance?.templateLabel ?? 'Manual pricing'}</span>
                 <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">Updated {formatDateTime(focusQuote.updated_at)}</span>
+                <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">Current version {currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : 'pending sync'}</span>
               </div>
 
               <div className="mt-6 grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
                 <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Review → approval → send</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Product → Pricing → Terms → Review → Send</p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {focusQuoteSteps.map((step) => (
+                    {focusBuilderGuidance?.steps.map((step) => (
                       <span key={step.id} className={`inline-flex rounded-full border px-3 py-2 text-sm font-medium ${getStepClasses(step.state)}`}>
                         {step.label}
                       </span>
                     ))}
                   </div>
                   <div className="mt-4 rounded-[1rem] bg-slate-50 p-4 text-sm text-slate-600">
-                    <p className="font-semibold text-slate-900">Current next step</p>
-                    <p className="mt-2">{currentNextStepDescription}</p>
-                    {quoteSendGuard?.blockerCount ? <p className="mt-2 text-amber-700">Send is gated until document and compliance blockers are cleared.</p> : null}
+                    <p className="font-semibold text-slate-900">{focusBuilderGuidance?.title ?? 'Builder posture'}</p>
+                    <p className="mt-2">{focusBuilderGuidance?.description ?? 'Keep the quote in the guided builder flow.'}</p>
+                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                      <div className="rounded-[1rem] border border-slate-200 bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Validation prompts</p>
+                        <ul className="mt-2 space-y-2 text-xs text-slate-600">
+                          {(focusBuilderGuidance?.validationPrompts ?? []).map((prompt) => (
+                            <li key={prompt}>• {prompt}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="rounded-[1rem] border border-slate-200 bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Recommendations</p>
+                        <ul className="mt-2 space-y-2 text-xs text-slate-600">
+                          {(focusBuilderGuidance?.recommendations ?? []).map((item) => (
+                            <li key={item}>• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-2">
+                    {focusBuilderGuidance?.steps.map((step) => (
+                      <div key={`${step.id}-detail`} className="rounded-[1rem] border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-semibold text-slate-900">{step.label}</p>
+                          <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStepClasses(step.state)}`}>{step.state}</span>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-slate-600">{step.detail}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
@@ -692,7 +845,7 @@ export function QuoteWorkspace({
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <button type="button" onClick={() => setActiveQuote(focusQuote)} disabled={!canManageQuotes} className="rounded-[10px] bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{canManageQuotes ? 'Review line items' : 'Read-only quote details'}</button>
+                    <button type="button" onClick={() => openQuoteEditor(focusQuote)} disabled={!canManageQuotes} className="rounded-[10px] bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{canManageQuotes ? `Continue ${getPreferredEditorStep(focusQuote).replace('_', ' ')} step` : 'Read-only quote details'}</button>
                     {focusApprovalAction ? (
                       <button
                         type="button"
@@ -748,6 +901,49 @@ export function QuoteWorkspace({
                       <p className="mt-2">{focusNegotiationSummary ?? 'Counter-offers, revision requests, and customer replies should be logged here before reps move to the next quote.'}</p>
                     </div>
                   </div>
+                  <div className="mt-4 grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
+                    <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Version history</p>
+                      <p className="mt-1 text-sm text-slate-600">Version visibility is already live here. The next safe Sprint 4 layer is exact-target remediation inside the same builder so review and send can land on the precise field or pricing line that still needs work without jumping into trust-layer redesign.</p>
+                      <div className="mt-4 space-y-2">
+                        {focusQuoteVersions.length ? focusQuoteVersions.map((version) => (
+                          <div key={version.id} className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="font-semibold text-slate-900">v{version.version_no ?? '—'} · {String(version.status ?? 'draft').replaceAll('_', ' ')}</p>
+                              <span className="text-xs text-slate-500">{formatDateTime(version.sent_at ?? version.approved_at ?? version.created_at)}</span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                              <span>{version.approved_at ? 'Approved' : 'Awaiting approval'}</span>
+                              <span>{version.sent_at ? 'Sent' : 'Not sent'}</span>
+                              <span>{version.id === currentFocusedVersion?.id ? 'Current version' : 'Prior version'}</span>
+                            </div>
+                          </div>
+                        )) : <div className="rounded-[1rem] border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">No quote versions are synced to this workspace yet.</div>}
+                      </div>
+                    </div>
+                    <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Send checkpoint history</p>
+                      <p className="mt-1 text-sm text-slate-600">Keep the latest approval and send posture visible without jumping ahead into trust-layer redesign.</p>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
+                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Current version</p>
+                          <p className="mt-2 font-semibold text-slate-900">{currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : 'Pending sync'}</p>
+                          <p className="mt-1 text-xs text-slate-500">{currentFocusedVersion ? `Created ${formatDateTime(currentFocusedVersion.created_at)}` : 'No linked version has been created yet.'}</p>
+                        </div>
+                        <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
+                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Latest sent</p>
+                          <p className="mt-2 font-semibold text-slate-900">{sentFocusedVersion?.version_no ? `v${sentFocusedVersion.version_no}` : 'Not sent yet'}</p>
+                          <p className="mt-1 text-xs text-slate-500">{sentFocusedVersion?.sent_at ? `Sent ${formatDateTime(sentFocusedVersion.sent_at)}` : 'The quote has not been sent from a synced version yet.'}</p>
+                        </div>
+                        <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 sm:col-span-2">
+                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Approval checkpoint</p>
+                          <p className="mt-2 font-semibold text-slate-900">{approvedFocusedVersion?.version_no ? `v${approvedFocusedVersion.version_no}` : 'No approved version yet'}</p>
+                          <p className="mt-1 text-xs text-slate-500">{approvedFocusedVersion?.approved_at ? `Approved ${formatDateTime(approvedFocusedVersion.approved_at)}` : 'Approval timing will appear here once a synced version is approved.'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
@@ -983,8 +1179,8 @@ export function QuoteWorkspace({
                       {isFocused ? 'In fast lane' : 'Bring to fast lane'}
                     </button>
                     {canManageQuotes ? <GenerateQuoteCoverNoteButton leadId={leadId} quoteId={quote.id} compact /> : null}
-                    <button type="button" onClick={() => setActiveQuote(quote)} disabled={!canManageQuotes} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
-                      {canManageQuotes ? 'Manage quote' : 'View quote'}
+                    <button type="button" onClick={() => openQuoteEditor(quote)} disabled={!canManageQuotes} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                      {canManageQuotes ? `Continue ${getPreferredEditorStep(quote).replace('_', ' ')} step` : 'View quote'}
                     </button>
                   </div>
                 </div>
@@ -1077,8 +1273,8 @@ export function QuoteWorkspace({
       <RightDrawer open={canManageQuotes && createOpen} onClose={() => setCreateOpen(false)} title="Create quote">
         {canManageQuotes ? <QuoteCreateWizardForm leadId={leadId} rfqs={rfqs} products={products} quoteSendGuard={quoteSendGuard} onClose={() => setCreateOpen(false)} onSaved={upsertQuoteRecord} /> : null}
       </RightDrawer>
-      <RightDrawer open={Boolean(activeQuote)} onClose={() => setActiveQuote(null)} title={canManageQuotes ? 'Manage quote workflow' : 'Quote details'}>
-        {activeQuote && canManageQuotes ? <QuoteEditWizardForm key={activeQuote.id} quote={activeQuote as any} products={products} quoteSendGuard={quoteSendGuard} onClose={() => setActiveQuote(null)} onSaved={upsertQuoteRecord as any} /> : activeQuote ? <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"><p className="font-semibold text-slate-900">Read-only quote details</p><p>{readOnlyMessage ?? 'This role can review quote details here but cannot edit the workflow.'}</p><Link href={leadCommandHref} className="inline-flex rounded-2xl border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-white">Return to lead command center</Link></div> : null}
+      <RightDrawer open={Boolean(activeQuote)} onClose={() => { setActiveQuote(null); setActiveQuoteStep(null); }} title={canManageQuotes ? 'Manage quote workflow' : 'Quote details'}>
+        {activeQuote && canManageQuotes ? <QuoteEditWizardForm key={`${activeQuote.id}-${activeQuoteStep ?? 'product'}`} quote={activeQuote as any} products={products} quoteVersions={quoteVersions as any} quoteSendGuard={quoteSendGuard} initialStepId={activeQuoteStep ?? undefined} onClose={() => { setActiveQuote(null); setActiveQuoteStep(null); }} onSaved={upsertQuoteRecord as any} /> : activeQuote ? <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"><p className="font-semibold text-slate-900">Read-only quote details</p><p>{readOnlyMessage ?? 'This role can review quote details here but cannot edit the workflow.'}</p><Link href={leadCommandHref} className="inline-flex rounded-2xl border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-white">Return to lead command center</Link></div> : null}
       </RightDrawer>
     </section>
   );

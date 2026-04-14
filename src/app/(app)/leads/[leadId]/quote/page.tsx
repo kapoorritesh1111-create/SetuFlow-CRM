@@ -233,8 +233,8 @@ export default async function QuotePage({ params, searchParams }: { params: { le
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Quote command lane</p>
-              <h2 className="mt-2 text-xl font-semibold text-slate-900">Keep pricing, approval, and send inside one commercial surface</h2>
-              <p className="mt-2 text-sm text-slate-600">Stay anchored to the lead command center while moving the current quote from draft to customer response. Surface blockers once, keep one quote in focus, and move accepted work straight into contracts.</p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-900">Move through Product, Pricing, Terms, Review, and Send inside one commercial surface</h2>
+              <p className="mt-2 text-sm text-slate-600">Stay anchored to the lead command center while moving the current quote through Product, Pricing, Terms, Review, and Send. Surface blockers once, keep one quote in focus, and move accepted work straight into contracts.</p>
             </div>
             <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getPricingReadinessClasses(pricingSnapshot.pricingReadiness)}`}>
               {getPricingReadinessLabel(pricingSnapshot.pricingReadiness)}
@@ -368,6 +368,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
         rfqWorkspaceHref={`/leads/${leadId}/rfq/new`}
         pricingSnapshot={pricingSnapshot}
         quoteSendGuard={quoteSendGuard}
+        quoteVersions={data.quoteVersions}
         negotiationEvents={data.negotiationEvents}
         communications={data.communications.filter((item) => item.quote_id || item.related_entity === 'quote').map((item) => ({
           id: item.id,

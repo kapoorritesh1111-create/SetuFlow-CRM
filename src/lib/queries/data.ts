@@ -680,6 +680,16 @@ export type LeadProfileData = QueryIssuePayload & {
       | 'notes'
     >[];
   }>;
+  quoteVersions: Array<{
+    id: string;
+    quote_id: string | null;
+    version_no: number | null;
+    status: string | null;
+    created_at: string | null;
+    approved_at: string | null;
+    sent_at: string | null;
+    pdf_document_id: string | null;
+  }>;
   negotiationEvents: Pick<
     QuoteNegotiationEventRow,
     'id' | 'quote_id' | 'quote_version_id' | 'event_type' | 'message' | 'created_at' | 'actor_name' | 'actor_type'
@@ -2369,6 +2379,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
       ...quote,
       lineItems: quoteLineItemsById.get(quote.id) ?? [],
     })) as LeadProfileData['quotes'],
+    quoteVersions: quoteVersionRows as LeadProfileData['quoteVersions'],
     negotiationEvents: rows(negotiationEventsResult.data) as LeadProfileData['negotiationEvents'],
     complianceItems: rows(complianceItemsResult.data) as LeadProfileData['complianceItems'],
     complianceDefinitions: rows(complianceDefinitionsResult.data) as LeadProfileData['complianceDefinitions'],

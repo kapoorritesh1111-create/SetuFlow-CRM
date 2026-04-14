@@ -1097,6 +1097,7 @@ export function LeadDrawer({
         key={selectedQuoteRow.quote.id}
         quote={selectedQuoteRow.quote as any}
         products={catalogProductOptions as any}
+        quoteVersions={quoteVersionRowsState.filter((version) => version.quote_id === selectedQuoteRow.quote.id) as any}
         onClose={() => setQuoteEditorOpen(false)}
         onSaved={(record) => handleQuoteSaved(record as Quote)}
       />

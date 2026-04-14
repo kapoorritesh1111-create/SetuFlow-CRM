@@ -47,7 +47,7 @@ export function WizardShell({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <div className="mt-4 flex flex-wrap gap-2">
           {steps.map((step, index) => {
             const isActive = step.id === activeStepId;
             const isComplete = index < activeIndex;
@@ -58,7 +58,7 @@ export function WizardShell({
                 type="button"
                 onClick={() => onStepChange(step.id)}
                 className={cn(
-                  'rounded-2xl border p-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                  'min-w-[180px] flex-1 rounded-2xl border p-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                   isActive
                     ? 'border-slate-900 bg-slate-900 text-white shadow-[0_16px_32px_rgba(15,23,42,0.18)]'
                     : isComplete

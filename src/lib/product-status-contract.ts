@@ -109,17 +109,17 @@ export type ScreenPlan = {
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
-  sprint: 'Sprint 3',
-  percent: 100,
-  percentLabel: '100%',
+  sprint: 'Sprint 4',
+  percent: 95,
+  percentLabel: '95%',
 };
 
 export const sprintFocus = {
-  sprint: 'Sprint 3 · Complete',
+  sprint: 'Sprint 4 · Batch 10 active',
   title:
-    'Sprint 2 remains complete, the latest production build deployed successfully, and Sprint 3 is now formally complete with a quote-first Leads workspace, one decisive above-the-fold commercial state, a prioritized one-blocker-at-a-time quote-prep lane, passive activity, quiet sticky chrome, a compact lead-reference tray, a collapsed-by-default lower support-detail area, a shared supporting-record surface that can step back to a lighter summary drawer, and a passive right-rail watchlist so Capture → Lead → Quote → Order stays commercially clear.',
+    'Sprint 3 remains formally closed on the deployed Leads baseline, and Sprint 4 is now inside its next controlled quote-builder batch: keep the live Product, Pricing, Terms, Review, and Send flow in place while tightening review/send remediation from step-level jumps into exact field and pricing-line targets inside the same builder, without jumping ahead to trust-layer work.',
   nextAction:
-    'Treat the deployed Sprint 3 Leads baseline as closed, preserve the build-safe baseline, and use the Buyer ready tab to track the remaining approved rework that now starts after Sprint 3 rather than inside it.',
+    'Keep Sprint 3 closed, preserve the build-safe baseline, and continue only the next justified Sprint 4 quote-builder batch: exact-target remediation inside the same quote builder after review/send guidance, so users land on the precise Product, Pricing, or Terms field or pricing line that still needs work without reopening lead simplification or jumping ahead to trust-layer work.',
   flow: LOCKED_PRODUCT_FLOW.join(' → '),
 };
 
@@ -140,7 +140,7 @@ export const planningSurfaces: PlanningSurface[] = [
     href: PRODUCT_ROUTES.development.home,
     summary: 'Operating-system overview for the locked flow, current sprint status, and the next approved execution lane.',
     status: 'done',
-    focus: 'Keep the repo speaking one sprint timeline again: Sprint 2 complete, Sprint 3 active.',
+    focus: 'Keep the repo speaking one sprint timeline again: Sprint 3 closed and Sprint 4 quote-builder batch 10 active.',
   },
   {
     id: 'master-plan',
@@ -148,7 +148,7 @@ export const planningSurfaces: PlanningSurface[] = [
     href: PRODUCT_ROUTES.development.masterPlan,
     summary: 'Sprint roadmap for the locked flow from completed foundation work into the next product phase.',
     status: 'done',
-    focus: 'Preserve the original plan while showing clearly that Sprint 2 is complete and Sprint 3 is the active lane.',
+    focus: 'Preserve the roadmap order while showing clearly that Sprint 3 is closed and Sprint 4 has started in one controlled batch.',
   },
   {
     id: 'readiness',
@@ -164,7 +164,7 @@ export const planningSurfaces: PlanningSurface[] = [
     href: PRODUCT_ROUTES.development.buyerReady,
     summary: 'The gap view for what is already true, what still needs to land from the approved rework, and what must be complete before buyer-facing walkthroughs.',
     status: 'done',
-    focus: 'Keep buyer-readiness honest instead of implying the rework is fully closed.',
+    focus: 'Keep buyer-readiness honest instead of implying the rework is fully closed, and track the active Sprint 4 quote-builder batch explicitly as remediation moves from step-level guidance into exact in-builder targets.',
   },
   {
     id: 'backlog',
@@ -231,8 +231,8 @@ export const readinessAreas: ReadinessArea[] = [
   },
   {
     title: 'Buyer readiness still has explicit post-Sprint-3 work',
-    summary: 'The successful deployment does not mean the full rework is buyer-ready yet. Quote builder depth, trust layers, end-to-end QA, and buyer-facing proof still need to be completed and are now tracked in the Buyer ready tab.',
-    status: 'next',
+    summary: 'The successful deployment does not mean the full rework is buyer-ready yet. Sprint 4 is now progressing through guided quote-builder batches, with workspace guidance live, edit continuity aligned to the same builder, pricing-risk cues now visible inside review and send decisions, and version continuity plus checkpoint history now visible inside the same builder review/send flow, while pricing lines now show readiness issues and quick fixes before review or send, and remediation now drills into the exact Product, Pricing, or Terms field or pricing line that still needs work, while trust layers, end-to-end QA, and buyer-facing proof still remain sequenced behind it.',
+    status: 'in-progress',
   },
   {
     title: 'No new build blocker is confirmed',
@@ -266,8 +266,8 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: 'development-pages-aligned',
     area: 'Development pages',
-    label: 'Development pages now show Sprint 2 complete and Sprint 3 closed',
-    note: 'The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprint 3 formally closed on the deployed quote-first Leads baseline.',
+    label: 'Development pages now show Sprint 3 closed and Sprint 4 quote-builder batch 10 active',
+    note: 'The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprint 3 formally closed and the next Sprint 4 quote-builder batch activated in order.',
     status: 'done',
   },
   {
@@ -294,9 +294,9 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: 'sprint-3-entry',
     area: 'Next phase',
-    label: 'Sprint 3 scope is closed and visible',
-    note: 'The closed phase is Lead simplification, Create Quote CTA emphasis, and keeping support guidance collapsed into one quote-prep decision lane as the stable deployed baseline.',
-    status: 'done',
+    label: 'Sprint 4 quote-builder exact-target batch is active and visible',
+    note: 'The active phase is the next Quote builder core batch after review/send step guidance: remediation now lands users on the exact Product, Pricing, or Terms field or pricing line inside the same five-step builder without reopening Sprint 3 or jumping to trust-layer locking.',
+    status: 'in-progress',
   },
 ];
 
@@ -339,14 +339,20 @@ export const roadmapMilestones: RoadmapMilestone[] = [
   },
   {
     sprint: 'Sprint 4 · Quote builder core',
-    summary: 'Build the guided quote-builder steps and draft structure after Lead simplification is complete.',
-    badgeLabel: 'Locked',
-    status: 'locked',
-    objective: 'Deepen Quotes only after Sprint 3 is finished cleanly.',
+    summary: 'Keep the guided quote-builder sequence truthful and extend the live workspace by tightening review/send remediation from step-aware jumps into exact field and pricing-line targeting.',
+    badgeLabel: 'In progress',
+    status: 'in-progress',
+    objective: 'Deepen Quotes in one controlled batch now that Sprint 3 is finished cleanly.',
     outcomes: [
       'Guided steps remain Product, Pricing, Terms, Review, and Send.',
-      'Draft, pricing, and review data structures are defined safely.',
-      'Version history and send checkpoints are visible.',
+      'The Quotes entry now reflects the guided builder instead of an order-conversion shortcut.',
+      'The live quote draft now follows Product, Pricing, Terms, Review, and Send instead of a loose three-step sequence.',
+      'The live workspace now keeps builder-step readiness, validation prompts, and recommendations visible after version history and send-checkpoint posture landed.',
+      'Existing quote editing now reopens inside Product, Pricing, Terms, Review, and Send and targets the next needed step from the fast lane.',
+      'Review and send now surface pricing-risk cues for overrides, MOQ pressure, approval posture, and send blockers inside the builder itself.',
+      'Builder review and send now keep current version, latest sent checkpoint, and latest approved checkpoint visible inside the same guided editor.',
+      'Pricing lines now surface line-level readiness issues plus quick-fix actions for MOQ pressure, missing product linkage, missing catalog baseline, zero quantity, and missing override reasons before review or send.',
+      'Review and send remediation now lands users on the exact field or pricing line that still needs work inside the same builder.',
     ],
   },
   {
@@ -462,19 +468,19 @@ export const backlogSections: BacklogSection[] = [
     ],
   },
   {
-    title: 'Sprints 4 to 6 · Queued',
-    heading: 'Quote builder, trust layers, and Orders depth stay sequenced behind Sprint 3',
+    title: 'Sprint 4 to 6 · Sequenced',
+    heading: 'Quote builder is now active, while trust layers and Orders depth remain sequenced behind it',
     sprint: 'Sprints 4-6',
-    badgeLabel: 'Locked',
-    summary: 'The next deeper commercial and operational work stays visible, and it now begins after Sprint 3 is formally complete.',
-    description: 'This protects the plan from skipping directly into later features before the Leads surface is simplified cleanly.',
-    status: 'locked',
+    badgeLabel: 'In progress',
+    summary: 'The next commercial and operational work stays visible, and Sprint 4 has now started with one controlled quote-builder batch after Sprint 3 formally closed.',
+    description: 'This protects the plan from skipping directly into trust-layer or order-depth work before the quote-builder starting structure is in place.',
+    status: 'in-progress',
     items: [
       {
         title: 'Sprint 4 · Quote builder core',
-        note: 'Guided steps, draft structure, versioning, and send checkpoints stay queued.',
-        stateLabel: 'Locked',
-        status: 'locked',
+        note: 'Batch 10 is now active: Review and Send remediation now lands on the exact Product, Pricing, or Terms field or pricing line that still needs work after step-aware guidance landed, without opening trust-layer work early.',
+        stateLabel: 'In progress',
+        status: 'in-progress',
       },
       {
         title: 'Sprint 5 · Trust layer',
@@ -539,8 +545,8 @@ export const productTracks: ProductTrack[] = [
   {
     id: 'quote',
     title: 'Quote hero workflow',
-    summary: 'Quote builder depth stays queued for Sprint 4 after Lead simplification is complete.',
-    status: 'locked',
+    summary: 'Quote builder core is now the active Sprint 4 lane, advancing from entry alignment into the guided five-step live draft flow plus visible builder-step guidance, edit continuity, pricing-risk cues, builder-side version continuity, pricing-line readiness cues, and exact-target review/send remediation.',
+    status: 'in-progress',
     scope: ['Guided builder', 'Pricing support', 'Terms', 'Review', 'Send', 'Approvals', 'Versioning', 'Locking'],
   },
   {
@@ -670,10 +676,10 @@ export const buyerReadySections: BuyerReadySection[] = [
   {
     title: 'Still needed before buyer-facing readiness',
     summary: 'These are the remaining gaps from the approved rework that still need to be finished before the product is ready for buyer-facing walkthroughs or signoff.',
-    status: 'done',
+    status: 'in-progress',
     items: [
       { label: 'Close Sprint 3 formally', note: 'Sprint 3 is now formally closed in the development pages and buyer-ready tracking no longer treats Lead simplification as an open batch.', status: 'done' },
-      { label: 'Build Sprint 4 quote-builder core', note: 'Guided builder steps, draft structure, review flow, and send checkpoints still need to land after Sprint 3 closes.', status: 'next' },
+      { label: 'Build Sprint 4 quote-builder core', note: 'The next guided batch is now underway: the live quote draft already follows Product, Pricing, Terms, Review, and Send, workspace guidance is live, edit continuity is step-aware, pricing-risk cues now stay visible inside review and send, builder-side version continuity is now visible before save or send, pricing lines now surface readiness issues plus quick-fix actions, and Review/Send now point to the exact field or pricing line that still needs work while deeper trust work remains sequenced behind Sprint 4.', status: 'in-progress' },
       { label: 'Add trust-layer proof', note: 'Approvals, audit visibility, and quote locking remain part of the approved rework and still need to be completed for buyer confidence.', status: 'next' },
       { label: 'Strengthen end-to-end buyer QA', note: 'Run buyer-demo journeys across Leads, Quote, and Order handoff so buyer-facing walkthroughs are based on proven flows rather than page-level success alone.', status: 'next' },
     ],
@@ -750,9 +756,9 @@ export const screenPlans: ScreenPlan[] = [
     id: 'quote-builder',
     title: 'Quote builder core',
     route: PRODUCT_ROUTES.app.quotes,
-    summary: 'Quote builder depth remains sequenced for Sprint 4 after Sprint 3 is finished.',
-    status: 'locked',
-    primaryGoal: 'Prepare the future builder structure without activating that work early.',
+    summary: 'Sprint 4 is now advancing from launchpad alignment into the live guided builder flow while workspace guidance is visible, edit continuity is step-aware, pricing-risk cues are live, builder-side version continuity is visible, pricing-line readiness cues are live, exact-target remediation is now in place, and deeper quote trust work remains later in the sprint.',
+    status: 'in-progress',
+    primaryGoal: 'Make the live quote draft follow the approved builder structure without activating trust-layer work early.',
     layout: [
       {
         title: 'Step rail',
@@ -762,16 +768,16 @@ export const screenPlans: ScreenPlan[] = [
       {
         title: 'Main builder canvas',
         purpose: 'Focus on one step at a time while preserving context.',
-        blocks: ['Current step form', 'Validation prompts', 'Recommendations'],
+        blocks: ['Current step form', 'Validation prompts', 'Recommendations', 'Step-aware edit drawer', 'Pricing readiness cues'],
       },
       {
         title: 'Summary and controls',
         purpose: 'Surface commercial truth and trust cues.',
-        blocks: ['Quote summary', 'Margin or risk cues', 'Approval state', 'Send control'],
+        blocks: ['Quote summary', 'Margin or risk cues', 'Version checkpoints', 'Approval state', 'Send control', 'Exact remediation target'],
       },
     ],
     actions: ['Save draft', 'Request approval', 'Send quote'],
-    dataContracts: ['quoteSteps', 'quoteDraft', 'pricingSummary', 'riskFlags', 'approvalState'],
+    dataContracts: ['quoteSteps', 'quoteDraft', 'pricingSummary', 'riskFlags', 'quoteVersionCheckpoint', 'approvalState', 'pricingLineIssues', 'stepRecommendations', 'remediationTarget'],
   },
   {
     id: 'orders',

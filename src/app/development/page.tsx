@@ -70,13 +70,13 @@ export default function DevelopmentPage() {
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Development workplace</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">Sprint 2 is complete, Sprint 3 is now formally closed on the deployed Leads baseline, and the development workplace shows the locked plan, current workflow truth, and the buyer-ready gap.</h1>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">Sprint 3 is now formally closed on the deployed Leads baseline, Sprint 4 quote-builder batch 10 is now active, and the development workplace shows the locked plan, current workflow truth, and the buyer-ready gap.</h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">This page is the operating surface for the locked sprint plan. Development status, deployment proof, workflow truth, and buyer-readiness gaps now move together so the repo does not drift away from the shipped baseline.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Current focus</p>
               <p className="mt-3 text-2xl font-semibold leading-tight">{sprintFocus.sprint} · shell contract shared · drift guard active</p>
-              <p className="mt-4 text-sm leading-7 text-white/85">Flow remains locked to {sprintFocus.flow}. Today’s operating truth is a deployed and formally closed Sprint 3 baseline plus a tracked buyer-ready gap for the remaining approved rework.</p>
+              <p className="mt-4 text-sm leading-7 text-white/85">Flow remains locked to {sprintFocus.flow}. Today’s operating truth is a deployed and formally closed Sprint 3 baseline plus an active Sprint 4 quote-builder batch tracked against the remaining buyer-ready gap.</p>
             </div>
           </div>
           <div className="mt-8"><DevelopmentNav /></div>
@@ -120,7 +120,7 @@ export default function DevelopmentPage() {
           <div className="space-y-5">
             <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Roadmap alignment</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Sprint status is now back on the plan, and later module work should only continue when the roadmap reaches it in order.</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Sprint status is back on the plan, and later module work should only continue when the roadmap reaches it in order after the active Sprint 4 batch.</h2>
               <div className="mt-6 space-y-4">
                 {roadmapMilestones.map((milestone) => (
                   <div key={milestone.sprint} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">

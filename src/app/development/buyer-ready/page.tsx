@@ -21,12 +21,12 @@ export default function BuyerReadyPage() {
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Buyer ready gap view</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">The build is deployed successfully and Sprint 3 is now formally closed. This page shows what is already true, what is still missing from the approved rework, and what must land before the product is buyer ready.</h1>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">The build is deployed successfully, Sprint 3 is formally closed, and Sprint 4 quote-builder batch 10 is now active. This page shows what is already true, what is still missing from the approved rework, and what must land before the product is buyer ready, including guided quote-builder work with live builder guidance, step-aware edit continuity, and live pricing-risk cues plus version continuity inside review/send and line-level pricing readiness cues plus exact-target review/send remediation inside the same builder.</h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">Use this tab to keep buyer-facing readiness honest. A successful deployment proves the baseline is live; it does not by itself mean the rework is complete enough for buyer walkthroughs, signoff, or external confidence.</p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Current gate</p>
-              <p className="mt-3 text-2xl font-semibold leading-tight">Deployment is verified. Buyer readiness is still a tracked post-Sprint-3 gap.</p>
+              <p className="mt-3 text-2xl font-semibold leading-tight">Deployment is verified. Buyer readiness is still a tracked post-Sprint-3 gap, and Sprint 4 is now progressing through guided quote-builder work with live builder-step guidance, validation prompts, recommendations, and live pricing-risk cues plus version continuity inside review/send and line-level pricing readiness cues plus exact-target review/send remediation inside the same builder.</p>
               <p className="mt-4 text-sm leading-7 text-white/85">Keep the product locked to {sprintFocus.flow} and finish the remaining approved rework in order before claiming buyer-facing completion.</p>
             </div>
           </div>
