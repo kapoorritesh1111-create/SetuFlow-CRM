@@ -142,7 +142,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "Operating-system overview for the locked flow, current sprint status, and the next approved execution lane.",
     status: "done",
     focus:
-      "Keep the repo speaking one sprint timeline again: Sprint 3, Sprint 4, Sprint 5, and Sprint 6 are all closed, and Sprint 7 is clearly shown as the next approved lane.",
+      "Keep the repo speaking one sprint timeline again: Sprints 1 through 6 are complete, and Sprint 7 Dashboard rebuild is the next approved lane.",
   },
   {
     id: "master-plan",
@@ -152,7 +152,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "Sprint roadmap for the locked flow from completed foundation work into the next product phase.",
     status: "done",
     focus:
-      "Preserve the roadmap order while showing clearly that Sprints 1 through 6 are complete and Sprint 7 Dashboard rebuild is the next approved phase.",
+      "Preserve the roadmap order while showing clearly that Sprints 1 through 6 are complete and Sprint 7 Dashboard rebuild is next.",
   },
   {
     id: "readiness",
@@ -172,17 +172,17 @@ export const planningSurfaces: PlanningSurface[] = [
       "The gap view for what is already true, what still needs to land from the approved rework, and what must be complete before buyer-facing walkthroughs.",
     status: "done",
     focus:
-      "Keep buyer-readiness honest instead of implying the overall roadmap is finished: quote builder, trust layer, and orders foundation are complete, while dashboard rebuild and later buyer-facing validation remain explicitly sequenced next.",
+      "Keep buyer-readiness honest instead of implying the overall roadmap is finished: Sprints 5 and 6 are complete, buyer-proof still requires QA and walkthrough assets, and Sprint 7 Dashboard rebuild remains next.",
   },
   {
     id: "backlog",
     title: PRODUCT_ROUTES.development.backlog,
     href: PRODUCT_ROUTES.development.backlog,
     summary:
-      "Repo-backed backlog showing Sprint 3 closed cleanly and later work still sequenced behind it.",
+      "Repo-backed backlog showing Sprints 1 through 6 complete and Sprint 7 next in sequence.",
     status: "done",
     focus:
-      "Keep later work sequenced behind the closed Sprint 3 baseline and avoid skipping ahead without updating the plan.",
+      "Keep later work sequenced behind the completed Sprint 6 baseline and avoid skipping ahead without updating the plan.",
   },
   {
     id: "product",
@@ -210,7 +210,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "Rules for clarity, locking, trust, and trainable workflow behavior.",
     status: "done",
     focus:
-      "Prevent visual drift now that Sprint 3 is closed and later work is still sequenced.",
+      "Prevent visual drift now that Sprints 1 through 6 are complete and Sprint 7 is still sequenced.",
   },
   {
     id: "screen-leads-capture",
@@ -252,7 +252,7 @@ export const readinessAreas: ReadinessArea[] = [
   {
     title: "Buyer readiness still has explicit post-Sprint-3 work",
     summary:
-      "The successful deployment does not mean the full product story is buyer-ready yet. Quote builder, trust layer, and Orders foundation are complete in the repo, while Dashboard rebuild, end-to-end buyer QA, and later buyer-facing proof still remain sequenced work.",
+      "The successful deployment does not mean the product is fully buyer-ready yet. Sprints 5 and 6 are complete in the repo, while end-to-end buyer QA, walkthrough proof, and release-readiness assets still remain sequenced work.",
     status: "next",
   },
   {
@@ -289,8 +289,8 @@ export const checklistItems: ChecklistItem[] = [
     id: "development-pages-aligned",
     area: "Development pages",
     label:
-      "Development pages now show Sprints 1 through 6 as complete",
-    note: "The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprints 1 through 6 complete and Sprint 7 clearly marked as next.",
+      "Development pages now show Sprint 6 complete and Sprint 7 next",
+    note: "The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprints 1 through 6 complete and Sprint 7 queued next.",
     status: "done",
   },
   {
@@ -319,9 +319,9 @@ export const checklistItems: ChecklistItem[] = [
     id: "sprint-3-entry",
     area: "Next phase",
     label:
-      "Sprint 7 Dashboard rebuild is the next sequenced lane",
-    note: "Sprints 4, 5, and 6 are now closed. The next execution lane is Dashboard rebuild: action-first, trade-map driven, and stripped of passive vanity metrics.",
-    status: "in-progress",
+      "Sprint 7 Dashboard rebuild is the next approved lane",
+    note: "Sprint 6 is now closed. The next approved lane is Sprint 7 Dashboard rebuild: action-first dashboard behavior, trade-map context, and commercial signals without reopening earlier workflow work.",
+    status: "next",
   },
 ];
 
@@ -481,7 +481,7 @@ export const backlogSections: BacklogSection[] = [
   {
     title: "Sprint 3 · Complete",
     heading:
-      "Lead simplification is complete without drifting from the locked flow",
+      "Lead simplification is complete and locked into the shipped flow",
     sprint: "Sprint 3",
     badgeLabel: "Done",
     summary:
@@ -517,15 +517,15 @@ export const backlogSections: BacklogSection[] = [
     ],
   },
   {
-    title: "Sprints 4 to 6 complete · Sprint 7 next",
+    title: "Sprints 4-6 complete · Sprint 7 next",
     heading:
-      "Quote builder, trust layer, and orders foundation are closed, and Dashboard rebuild is now the next controlled lane",
+      "Quote builder core, trust layer, and Orders foundation are closed. Sprint 7 is the next controlled lane",
     sprint: "Sprints 4-6",
-    badgeLabel: "Next",
+    badgeLabel: "Done",
     summary:
-      "Sprint 4 quote-builder core, Sprint 5 trust layer, and Sprint 6 Orders foundation are complete, and Sprint 7 Dashboard rebuild is now the next sequenced step.",
+      "Sprint 4 quote-builder core, Sprint 5 trust layer, and Sprint 6 Orders foundation are complete. Sprint 7 Dashboard rebuild is next.",
     description:
-      "This protects the plan from reopening completed sprints while keeping the next move focused on Dashboard rebuild instead of accidental side work.",
+      "This protects the plan from reopening earlier sprint work while keeping Dashboard rebuild sequenced as the next approved lane.",
     status: "done",
     items: [
       {
@@ -536,7 +536,7 @@ export const backlogSections: BacklogSection[] = [
       },
       {
         title: "Sprint 5 · Trust layer",
-        note: "Formally closed. All Batch 1 outcomes delivered: trust visibility, approval audit trail, Anthropic AI, lock enforcement in fast lane and quote list, Supabase rate limiter, live Orders page.",
+        note: "Complete. Trust visibility, approval audit trail, Anthropic AI, lock enforcement in fast lane and quote list, Supabase rate limiter, and live Orders data are all delivered.",
         stateLabel: "Done",
         status: "done",
       },
@@ -555,10 +555,10 @@ export const backlogSections: BacklogSection[] = [
     ],
   },
   {
-    title: "Sprints 7 to 10 · Locked",
+    title: "Sprints 8 to 10 · Locked",
     heading:
-      "Dashboard, outbound share, architecture cleanup, and final release proof remain later-phase work",
-    sprint: "Sprints 7-10",
+      "Outbound share, architecture cleanup, and final release proof remain later-phase work",
+    sprint: "Sprints 8-10",
     badgeLabel: "Locked",
     summary:
       "Keep the long-range roadmap visible without pretending it belongs to the immediate execution lane.",
@@ -568,9 +568,9 @@ export const backlogSections: BacklogSection[] = [
     items: [
       {
         title: "Sprint 7 · Dashboard rebuild",
-        note: "Action-first dashboard work remains a later phase.",
-        stateLabel: "Locked",
-        status: "locked",
+        note: "Next. Action-first dashboard rebuild starts after Sprint 6 and becomes the immediate next lane.",
+        stateLabel: "Next",
+        status: "next",
       },
       {
         title: "Sprint 8 · My Card and outbound share",
@@ -607,7 +607,7 @@ export const productTracks: ProductTrack[] = [
     id: "lead",
     title: "Lead operating area",
     summary:
-      "Leads are the next execution lane. Sprint 3 should simplify the surface and make quote-starting action more obvious.",
+      "Lead simplification is complete. The lead surface now serves as the stable quote-first operating area for the shipped baseline.",
     status: "done",
     scope: [
       "Lead list",
@@ -638,8 +638,8 @@ export const productTracks: ProductTrack[] = [
     id: "order",
     title: "Order execution entry",
     summary:
-      "Orders remain part of the locked product shell, but deeper execution work stays sequenced for Sprint 6.",
-    status: "locked",
+      "Orders foundation is complete. Accepted and sent quotes now surface documents, compliance, contract status, and dispatch readiness inside each order card.",
+    status: "done",
     scope: [
       "Snapshot",
       "Documents",
@@ -653,8 +653,8 @@ export const productTracks: ProductTrack[] = [
     id: "dashboard",
     title: "Dashboard awareness layer",
     summary:
-      "Dashboard work remains a later-phase rebuild after the core commercial flow is stable.",
-    status: "locked",
+      "Dashboard rebuild is the next approved phase after Sprint 6 closes.",
+    status: "next",
     scope: [
       "Today actions",
       "Pipeline health",
@@ -699,7 +699,7 @@ export const architectureLanes: ArchitectureLane[] = [
     id: "capture-foundation",
     title: "Leads + Capture foundation",
     summary:
-      "The Lead and Capture planning foundation is complete and should now be preserved while the next sprint starts.",
+      "The Lead and Capture planning foundation is complete and should stay preserved as later sprints build on it.",
     status: "done",
     target: "Keep the completed Sprint 2 foundation stable.",
   },
@@ -707,7 +707,7 @@ export const architectureLanes: ArchitectureLane[] = [
     id: "lead-simplification",
     title: "Lead-surface simplification",
     summary:
-      "Sprint 3 is simplifying the Leads experience now by making the lead page read like a quote-first workspace with one decisive above-the-fold commercial state, then a prioritized support queue before deeper Quote and Orders work.",
+      "Sprint 3 lead simplification is complete. The Leads surface now stays quote-first with one decisive above-the-fold commercial state and quieter supporting surfaces.",
     status: "done",
     target:
       "Keep quote launch dominant until a real quote exists, then expose quote review cleanly.",
@@ -725,8 +725,8 @@ export const architectureLanes: ArchitectureLane[] = [
     id: "trust-layers",
     title: "Approvals, audit, and locking",
     summary:
-      "Trust layers remain a later sprint so the architecture does not jump ahead of the product sequence.",
-    status: "locked",
+      "Trust layers are complete and must now stay stable while later sprints deepen surrounding workflows.",
+    status: "done",
     target:
       "Reduce buyer fear and operational ambiguity without changing the shell.",
   },
@@ -802,10 +802,10 @@ export const buyerReadySections: BuyerReadySection[] = [
     ],
   },
   {
-    title: "Still needed before buyer-facing readiness",
+    title: "Still needed before buyer-facing proof",
     summary:
-      "These are the remaining gaps from the approved rework that still need to be finished before the product is ready for buyer-facing walkthroughs or signoff. Sprint 4 quote-builder core itself is now complete.",
-    status: "in-progress",
+      "These are the remaining gaps that still need to be finished before the product is ready for buyer-facing walkthroughs or signoff. Core workflow, trust, and Orders foundation are complete through Sprint 6.",
+    status: "next",
     items: [
       {
         label: "Close Sprint 3 formally",
@@ -818,9 +818,9 @@ export const buyerReadySections: BuyerReadySection[] = [
         status: "done",
       },
       {
-        label: "Add trust-layer proof",
-        note: "Sprints 5 and 6 complete. Trust layer, lock enforcement, AI, live Orders with documents/compliance/contracts, and professional development pages all delivered. Next: Sprint 7 Dashboard rebuild.",
-        status: "in-progress",
+        label: "Complete trust and Orders proof",
+        note: "Sprints 5 and 6 are complete. Trust layer, lock enforcement, AI, live Orders with documents/compliance/contracts, and professional development pages are all delivered. Sprint 7 Dashboard rebuild remains next, but buyer-facing proof still requires QA and walkthrough assets.",
+        status: "done",
       },
       {
         label: "Strengthen end-to-end buyer QA",
@@ -832,7 +832,7 @@ export const buyerReadySections: BuyerReadySection[] = [
   {
     title: "Release-proof and handoff work still pending",
     summary:
-      "The later rework phases that turn the shipped product into a buyer-ready story are still explicitly sequenced behind the active sprint.",
+      "The later rework phases that turn the shipped product into a buyer-ready story are still explicitly sequenced behind the next dashboard sprint.",
     status: "locked",
     items: [
       {
@@ -962,10 +962,10 @@ export const screenPlans: ScreenPlan[] = [
     title: "Quote builder core",
     route: PRODUCT_ROUTES.app.quotes,
     summary:
-      "Sprint 4 quote-builder core is now complete: workspace guidance is visible, edit continuity is step-aware, pricing-risk cues are live, builder-side version continuity is visible, pricing-line readiness cues are live, exact-target remediation is in place, remediation return-loop continuity is live, checkpoint re-entry continuity is live, checkpoint decision contract is live with aligned continue-and-save action behavior, blocked submit now hands users into the leading exact fix target, and caution-level send posture requires explicit confirmation before save/create can continue. Sprint 5 trust enforcement and Sprint 6 Orders foundation are also complete.",
+      "Sprint 4 quote-builder core is complete, and Sprint 5 trust work is also complete: approval visibility, audit trail, lock enforcement, and send posture are now live while the builder remains stable on the approved guided flow.",
     status: "done",
     primaryGoal:
-      "Keep the live quote draft stable on the approved Sprint 4 builder structure now that the trust layer and Orders foundation are complete.",
+      "Keep the live quote draft stable on the approved guided builder structure while Dashboard rebuild happens separately in Sprint 7.",
     layout: [
       {
         title: "Step rail",
@@ -1017,10 +1017,10 @@ export const screenPlans: ScreenPlan[] = [
     title: "Orders workspace",
     route: PRODUCT_ROUTES.app.orders,
     summary:
-      "Orders remain sequenced for later foundation work after the earlier sprints are complete.",
+      "Orders workspace is live in the shipped baseline with accepted and sent quote context, documents, compliance, contract status, and dispatch readiness.",
     status: "locked",
     primaryGoal:
-      "Expose order readiness and inherited commercial truth when the roadmap reaches Sprint 6.",
+      "Expose order readiness and inherited commercial truth in the shipped Sprint 6 baseline.",
     layout: [
       {
         title: "Orders list",
@@ -1086,7 +1086,7 @@ export const screenPlans: ScreenPlan[] = [
 export const developmentWorkspace = {
   flow: LOCKED_PRODUCT_FLOW.join(" → "),
   activeSprint: "Sprint 6 · Complete",
-  completedSprint: "Sprint 5 · Complete",
+  completedSprint: "Sprint 2 · Complete",
   planningSurfaces,
   roadmapMilestones,
   backlogSections,
