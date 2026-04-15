@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CountryCoverageDatum } from '@/features/dashboard/types';
+import type { WorkspaceMode } from '@/features/workspace/types';
 import { cn, formatDate } from '@/lib/utils';
 import { useWorldMapControls } from '@/features/dashboard/hooks/use-world-map-controls';
 
@@ -9,6 +10,7 @@ type WorldCoverageMapProps = {
   countries: CountryCoverageDatum[];
   selectedCountryCode?: string;
   onSelectCountry: (countryCode: string) => void;
+  mode?: WorkspaceMode;
   className?: string;
 };
 
@@ -18,92 +20,127 @@ type WorldMapData = {
   paths: Record<string, { path: string; name: string }>;
 };
 
-const TOOLTIP_WIDTH = 184;
-const TOOLTIP_HEIGHT = 126;
 const TOOLTIP_OFFSET_X = 14;
 const TOOLTIP_OFFSET_Y = 14;
 const TOOLTIP_PADDING = 12;
+const TOOLTIP_W = 190;
+const TOOLTIP_H = 130;
 
-/** Urgency tier — drives node color and pulse animation */
-function getMarketTier(country: CountryCoverageDatum): 'critical' | 'active' | 'watch' | 'none' {
-  if (country.activeLeadCount >= 8 || country.openQuoteCount >= 4) return 'critical';
-  if (country.activeLeadCount >= 3 || country.openQuoteCount >= 2) return 'active';
-  if (country.activeLeadCount >= 1) return 'watch';
-  return 'none';
+// Stable tier derivation — memoized outside render
+function getMarketTier(c: CountryCoverageDatum): 'critical' | 'active' | 'watch' {
+  if (c.activeLeadCount >= 8 || c.openQuoteCount >= 4) return 'critical';
+  if (c.activeLeadCount >= 3 || c.openQuoteCount >= 2) return 'active';
+  return 'watch';
 }
 
-const TIER_COLORS = {
-  critical: { fill: '#f59e0b', stroke: '#d97706', pulse: 'rgba(245,158,11,0.35)' },
-  active:   { fill: '#1F487C', stroke: '#1e40af', pulse: 'rgba(31,72,124,0.3)' },
-  watch:    { fill: '#0891b2', stroke: '#0e7490', pulse: 'rgba(8,145,178,0.25)' },
-  none:     { fill: '#334155', stroke: '#475569', pulse: 'transparent' },
-} as const;
+// Role-aware fill: buyer-centric = blues, supplier-centric = purples, all = amber critical
+function getTierFill(tier: 'critical' | 'active' | 'watch', mode: WorkspaceMode, intensity: number): string {
+  if (mode === 'suppliers') {
+    const base = tier === 'critical' ? [168, 85, 247] : tier === 'active' ? [109, 40, 217] : [139, 92, 246];
+    return `rgba(${base[0]},${base[1]},${base[2]},${intensity})`;
+  }
+  if (mode === 'buyers') {
+    const base = tier === 'critical' ? [245, 158, 11] : tier === 'active' ? [31, 72, 124] : [8, 145, 178];
+    return `rgba(${base[0]},${base[1]},${base[2]},${intensity})`;
+  }
+  // all — same as buyers default
+  const base = tier === 'critical' ? [245, 158, 11] : tier === 'active' ? [31, 72, 124] : [8, 145, 178];
+  return `rgba(${base[0]},${base[1]},${base[2]},${intensity})`;
+}
 
-const SELECTED_COLOR = { fill: '#f8fafc', stroke: '#e2e8f0' };
+function getTierStroke(tier: 'critical' | 'active' | 'watch', mode: WorkspaceMode): string {
+  if (mode === 'suppliers') {
+    return tier === 'critical' ? '#9333ea' : tier === 'active' ? '#7c3aed' : '#8b5cf6';
+  }
+  return tier === 'critical' ? '#d97706' : tier === 'active' ? '#1e40af' : '#0e7490';
+}
 
 export function WorldCoverageMap({
   countries,
   selectedCountryCode,
   onSelectCountry,
+  mode = 'all',
   className,
 }: WorldCoverageMapProps) {
   const [worldMap, setWorldMap] = useState<WorldMapData | null>(null);
+  const fetchedRef = useRef(false);
 
+  // Lazy load map data only once
   useEffect(() => {
-    const controller = new AbortController();
-    fetch('/world-map-data.json', { signal: controller.signal })
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    const ctrl = new AbortController();
+    fetch('/world-map-data.json', { signal: ctrl.signal })
       .then(r => r.json())
-      .then(data => setWorldMap(data as WorldMapData))
-      .catch(err => { if (!controller.signal.aborted) console.error(err); });
-    return () => controller.abort();
+      .then((d: WorldMapData) => setWorldMap(d))
+      .catch(err => { if (!ctrl.signal.aborted) console.error('[map]', err); });
+    return () => ctrl.abort();
   }, []);
 
+  // Memoize heavy derived structures — only recompute when countries changes
   const coverageMap = useMemo(
     () => new Map(countries.map(c => [c.countryCode, c] as const)),
     [countries],
   );
 
-  const maxLeads = Math.max(...countries.map(c => c.activeLeadCount), 1);
+  const maxLeads = useMemo(
+    () => Math.max(...countries.map(c => c.activeLeadCount), 1),
+    [countries],
+  );
+
+  // Memoize tier+fill per country so paths don't recompute on hover/pan
+  const countryStyles = useMemo(() => {
+    const map = new Map<string, { fill: string; stroke: string; clickable: boolean }>();
+    for (const c of countries) {
+      const tier = getMarketTier(c);
+      const intensity = 0.28 + (c.activeLeadCount / maxLeads) * 0.58;
+      map.set(c.countryCode, {
+        fill: getTierFill(tier, mode, intensity),
+        stroke: getTierStroke(tier, mode),
+        clickable: true,
+      });
+    }
+    return map;
+  }, [countries, maxLeads, mode]);
+
+  const isSelectableCountry = useCallback(
+    (code: string) => coverageMap.has(code),
+    [coverageMap],
+  );
 
   const {
     zoom, pan, dragging, hoveredCode, pointerPosition,
     onZoomOut, onZoomIn, onResetView,
     onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onPointerLeave,
-  } = useWorldMapControls({
-    isSelectableCountry: (code) => coverageMap.has(code),
-    onSelectCountry,
-  });
+  } = useWorldMapControls({ isSelectableCountry, onSelectCountry });
 
   const hovered = hoveredCode ? coverageMap.get(hoveredCode) ?? null : null;
 
   const tooltipStyle = useMemo(() => {
     if (!worldMap || !pointerPosition) return { left: TOOLTIP_PADDING, top: TOOLTIP_PADDING };
     return {
-      left: Math.min(Math.max(pointerPosition.x + TOOLTIP_OFFSET_X, TOOLTIP_PADDING), worldMap.width - TOOLTIP_WIDTH - TOOLTIP_PADDING),
-      top: Math.min(Math.max(pointerPosition.y - TOOLTIP_OFFSET_Y, TOOLTIP_PADDING), worldMap.height - TOOLTIP_HEIGHT - TOOLTIP_PADDING),
+      left: Math.min(Math.max(pointerPosition.x + TOOLTIP_OFFSET_X, TOOLTIP_PADDING), worldMap.width - TOOLTIP_W - TOOLTIP_PADDING),
+      top: Math.min(Math.max(pointerPosition.y - TOOLTIP_OFFSET_Y, TOOLTIP_PADDING), worldMap.height - TOOLTIP_H - TOOLTIP_PADDING),
     };
   }, [pointerPosition, worldMap]);
 
-  // Compute route arcs: draw arcs from the selected market (or highest-lead market) to others
-  const routeOrigin = useMemo(() => {
-    if (!worldMap) return null;
-    const sourceCode = selectedCountryCode ?? countries[0]?.countryCode;
-    if (!sourceCode) return null;
-    // Approximate centroids by averaging bbox of paths — for production this would use precomputed centroids
-    // We use a simplified approach: hardcode rough world regions from iso2 codes
-    return sourceCode;
-  }, [selectedCountryCode, countries, worldMap]);
+  const modeAccent = mode === 'suppliers' ? 'text-purple-300' : mode === 'buyers' ? 'text-amber-300' : 'text-sky-300';
+  const modeLabel = mode === 'suppliers' ? 'Supplier view' : mode === 'buyers' ? 'Buyer view' : 'All markets';
 
   if (!worldMap) {
     return (
-      <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-800/80 bg-[#0a1628] p-4', className)}>
-        <div className="mb-4 flex items-center justify-end gap-2 opacity-40">
-          <div className="h-8 w-10 rounded-full border border-slate-700 bg-slate-800" />
-          <div className="h-8 w-10 rounded-full border border-slate-700 bg-slate-800" />
-          <div className="h-8 w-16 rounded-full border border-slate-700 bg-slate-800" />
+      <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-700/60 bg-[#0a1628] p-4', className)}>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <span className="h-6 w-32 animate-pulse rounded-full bg-slate-800" />
+          <div className="flex gap-1.5">
+            {[1,2,3].map(i => <span key={i} className="h-8 w-10 animate-pulse rounded-full bg-slate-800" />)}
+          </div>
         </div>
-        <div className="flex h-[420px] items-center justify-center rounded-[1.4rem] bg-[#0d1f3a] text-sm font-medium text-slate-500">
-          Loading trade map…
+        <div className="flex h-[420px] items-center justify-center rounded-[1.4rem] bg-[#0d1f3a]">
+          <div className="text-center">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-slate-400" />
+            <p className="mt-3 text-xs font-semibold text-slate-500">Loading trade map…</p>
+          </div>
         </div>
       </div>
     );
@@ -111,111 +148,93 @@ export function WorldCoverageMap({
 
   return (
     <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-700/60 bg-[#0a1628] p-4 shadow-[0_24px_64px_rgba(0,0,0,0.5)]', className)}>
-      {/* Controls */}
+      {/* Header bar */}
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          {selectedCountryCode && (
+          {selectedCountryCode ? (
             <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
               {coverageMap.get(selectedCountryCode)?.countryName ?? selectedCountryCode} · selected
             </span>
-          )}
-          {!selectedCountryCode && countries.length > 0 && (
-            <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-400">
-              {countries.length} active market{countries.length !== 1 ? 's' : ''} · click to drill down
+          ) : (
+            <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${modeAccent}`}>
+              {modeLabel} · {countries.length} market{countries.length !== 1 ? 's' : ''}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
-          <button type="button" onClick={onZoomOut} className="rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-sm font-medium text-slate-300 hover:bg-slate-700" aria-label="Zoom out">−</button>
-          <button type="button" onClick={onZoomIn} className="rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-sm font-medium text-slate-300 hover:bg-slate-700" aria-label="Zoom in">+</button>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={onZoomOut} aria-label="Zoom out" className="rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-sm font-medium text-slate-300 hover:bg-slate-700">−</button>
+          <button type="button" onClick={onZoomIn}  aria-label="Zoom in"  className="rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-sm font-medium text-slate-300 hover:bg-slate-700">+</button>
           <button type="button" onClick={onResetView} className="rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-sm font-medium text-slate-300 hover:bg-slate-700">Reset</button>
         </div>
       </div>
 
-      {/* Map */}
+      {/* Map container */}
       <div
         className={cn('relative h-[420px] overflow-hidden rounded-[1.4rem] bg-[#0d1f3a]', dragging ? 'cursor-grabbing' : 'cursor-grab')}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onPointerLeave={onPointerLeave}
       >
-        <svg viewBox={`0 0 ${worldMap.width} ${worldMap.height}`} className="h-full w-full" role="img" aria-label="Global trade coverage map">
+        <svg
+          viewBox={`0 0 ${worldMap.width} ${worldMap.height}`}
+          className="h-full w-full"
+          role="img"
+          aria-label="Global trade coverage map"
+        >
           <defs>
-            <radialGradient id="oceanGrad" cx="50%" cy="40%" r="70%">
+            <radialGradient id="ocean" cx="50%" cy="40%" r="70%">
               <stop offset="0%" stopColor="#112240" />
               <stop offset="100%" stopColor="#0a1628" />
             </radialGradient>
-            {/* Pulse animations for critical markets */}
-            <style>{`
-              @keyframes pulse-ring { 0% { r: 10px; opacity: 0.7; } 100% { r: 22px; opacity: 0; } }
-              .pulse-critical { animation: pulse-ring 1.8s ease-out infinite; }
-              .pulse-active { animation: pulse-ring 2.4s ease-out infinite; }
-            `}</style>
           </defs>
-          <rect width={worldMap.width} height={worldMap.height} fill="url(#oceanGrad)" />
+          <rect width={worldMap.width} height={worldMap.height} fill="url(#ocean)" />
 
           <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
-            {/* Country paths */}
             {Object.entries(worldMap.paths).map(([code, item]) => {
-              const stat = coverageMap.get(code);
               const isSelected = selectedCountryCode === code;
-              const isActive = Boolean(stat);
-              const tier = stat ? getMarketTier(stat) : 'none';
-              const colors = TIER_COLORS[tier];
+              const style = countryStyles.get(code);
 
               if (isSelected) {
-                return (
-                  <path key={code} d={item.path} data-country-code={code}
-                    fill={SELECTED_COLOR.fill} stroke={SELECTED_COLOR.stroke} strokeWidth={1.5}
-                    className="transition" />
-                );
+                return <path key={code} d={item.path} data-country-code={code} fill="#f8fafc" stroke="#e2e8f0" strokeWidth={1.5} className="transition" />;
               }
-              if (isActive) {
-                const intensity = 0.25 + (stat!.activeLeadCount / maxLeads) * 0.55;
-                return (
-                  <path key={code} d={item.path} data-country-code={code}
-                    fill={`rgba(${tier === 'critical' ? '245,158,11' : tier === 'active' ? '31,72,124' : '8,145,178'},${intensity})`}
-                    stroke={colors.stroke} strokeWidth={0.9}
-                    className="cursor-pointer transition hover:brightness-110" />
-                );
+              if (style) {
+                return <path key={code} d={item.path} data-country-code={code} fill={style.fill} stroke={style.stroke} strokeWidth={0.9} className="cursor-pointer transition hover:brightness-110" />;
               }
-              return (
-                <path key={code} d={item.path} data-country-code={code}
-                  fill="#1a2744" stroke="#243152" strokeWidth={0.4} className="transition" />
-              );
+              return <path key={code} d={item.path} data-country-code={code} fill="#1a2744" stroke="#243152" strokeWidth={0.4} />;
             })}
           </g>
         </svg>
 
-        {/* Tooltip */}
+        {/* Tooltip — only when hovering, not dragging */}
         {hovered && !dragging ? (
           <div
-            className="pointer-events-none absolute z-20 w-[184px] rounded-2xl border border-slate-700/80 bg-slate-950/95 px-3 py-3 text-white shadow-[0_16px_32px_rgba(0,0,0,0.5)] backdrop-blur"
+            className="pointer-events-none absolute z-20 w-[190px] rounded-2xl border border-slate-700/80 bg-slate-950/95 px-3 py-3 shadow-[0_16px_32px_rgba(0,0,0,0.5)] backdrop-blur"
             style={tooltipStyle}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold text-white">{hovered.countryName}</p>
-                <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-amber-400">
+                <p className={`mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] ${modeAccent}`}>
                   {getMarketTier(hovered) === 'critical' ? 'Critical market' : getMarketTier(hovered) === 'active' ? 'Active market' : 'Watch'}
                 </p>
               </div>
               <span className="flex-shrink-0 rounded-full bg-slate-800 px-2 py-1 text-[10px] font-semibold text-slate-100">
-                {hovered.activeLeadCount} lead{hovered.activeLeadCount !== 1 ? 's' : ''}
+                {hovered.activeLeadCount}L
               </span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="rounded-xl border border-slate-800 bg-slate-900 px-2.5 py-2">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">Quotes</p>
-                <p className="mt-1 text-base font-semibold text-white">{hovered.openQuoteCount}</p>
-              </div>
-              <div className="rounded-xl border border-slate-800 bg-slate-900 px-2.5 py-2">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">RFQs</p>
-                <p className="mt-1 text-base font-semibold text-white">{hovered.openRfqCount}</p>
-              </div>
+            <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+              {[
+                ['Quotes', hovered.openQuoteCount],
+                ['RFQs',   hovered.openRfqCount],
+              ].map(([l, v]) => (
+                <div key={String(l)} className="rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">{l}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-white">{v}</p>
+                </div>
+              ))}
             </div>
-            <div className="mt-2 rounded-xl border border-slate-800 bg-slate-900 px-2.5 py-2">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">Last activity</p>
-              <p className="mt-1 text-[13px] font-semibold text-slate-100">
+            <div className="mt-1.5 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">Last activity</p>
+              <p className="mt-0.5 text-[12px] font-semibold text-slate-100">
                 {hovered.lastActivityAt ? formatDate(hovered.lastActivityAt) : 'No activity yet'}
               </p>
             </div>
@@ -223,22 +242,33 @@ export function WorldCoverageMap({
         ) : null}
       </div>
 
-      {/* Market legend */}
+      {/* Legend */}
       <div className="mt-3 flex flex-wrap items-center gap-3 px-1">
-        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-          <span className="h-2.5 w-2.5 rounded-full bg-amber-400" /> Critical
-        </span>
-        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#1F487C]" /> Active
-        </span>
-        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-          <span className="h-2.5 w-2.5 rounded-full bg-cyan-600" /> Watch
-        </span>
-        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-          <span className="h-2.5 w-2.5 rounded-full bg-white/90" /> Selected
-        </span>
+        {mode === 'suppliers' ? (
+          <>
+            <LegendDot color="bg-purple-400" label="Critical" />
+            <LegendDot color="bg-purple-700" label="Active" />
+            <LegendDot color="bg-violet-500" label="Watch" />
+          </>
+        ) : (
+          <>
+            <LegendDot color="bg-amber-400" label="Critical" />
+            <LegendDot color="bg-[#1F487C]" label="Active" />
+            <LegendDot color="bg-cyan-600" label="Watch" />
+          </>
+        )}
+        <LegendDot color="bg-white/90" label="Selected" />
         <span className="ml-auto text-[10px] text-slate-600">Click any market to drill down</span>
       </div>
     </div>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+      <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
+      {label}
+    </span>
   );
 }

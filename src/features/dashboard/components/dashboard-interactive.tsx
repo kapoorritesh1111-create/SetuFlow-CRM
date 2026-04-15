@@ -1,18 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { DashboardData } from '@/lib/queries/data';
 import type { LeadJourney } from '@/features/dashboard/types';
 import { WidgetEmptyState, WidgetShell } from '@/components/ui/widget-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useDashboardLayout } from '@/features/dashboard/hooks/use-dashboard-layout';
-import { resolveDashboardDefaultLayout } from '@/features/dashboard/lib/dashboard-layout';
-import { DashboardWidgetErrorBoundary } from './dashboard-widget-error-boundary';
+import { DashboardControlBar, type DashboardFilters } from './dashboard-control-bar';
 import { DashboardCustomizePanel } from './dashboard-customize-panel';
-import { DashboardHeaderControls } from './dashboard-header-controls';
 import { DashboardTopStrip } from './dashboard-top-strip';
 import { DashboardWorldMapSection } from './dashboard-world-map-section';
+import { DashboardWidgetErrorBoundary } from './dashboard-widget-error-boundary';
 import { LeadHealthDonutCard } from './lead-health-donut-card';
 import { MarketCommandPanel } from './market-command-panel';
 import { NeedsAttentionCard } from './needs-attention-card';
@@ -44,78 +43,104 @@ export default function DashboardInteractive({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<WorkspaceMode>(workspaceMode);
+
+  // Global filter state — single source of truth for all downstream components
+  const [filters, setFilters] = useState<DashboardFilters>({
+    mode:         workspaceMode,
+    marketCode:   '',
+    stageFilter:  '',
+    statusFilter: '',
+  });
   const [todayFilter, setTodayFilter] = useState<TodayFilterKey>('all-open');
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
 
-  const defaultLayout = resolveDashboardDefaultLayout(data, dashboardVariant, currentRoles);
-  const todayState = useMemo(
-    () => buildTodayLayerStateFromDashboardData(data, mode, todayFilter, serverNowIso ?? new Date().toISOString()),
-    [data, mode, todayFilter, serverNowIso],
-  );
+  // Sync workspaceMode prop into filter state when it changes from outside
+  useEffect(() => {
+    setFilters(f => ({ ...f, mode: workspaceMode }));
+  }, [workspaceMode]);
 
-  useEffect(() => { setMode(workspaceMode); }, [workspaceMode]);
-
-  const handleModeChange = (nextMode: WorkspaceMode) => {
-    setMode(nextMode);
+  // Propagate mode changes to URL for deep links
+  const handleFiltersChange = useCallback((next: DashboardFilters) => {
+    setFilters(next);
     const params = new URLSearchParams(searchParams.toString());
-    if (nextMode === 'all') params.delete('mode');
-    else params.set('mode', nextMode);
-    const nextQuery = params.toString();
-    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
-  };
+    if (next.mode === 'all') params.delete('mode');
+    else params.set('mode', next.mode);
+    const q = params.toString();
+    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   const layout = useDashboardLayout(data, { dashboardVariant, currentRoles, persistenceKey });
 
-  // Selected market context — drives map drill-down panel
+  const todayState = useMemo(
+    () => buildTodayLayerStateFromDashboardData(data, filters.mode, todayFilter, serverNowIso ?? new Date().toISOString()),
+    [data, filters.mode, todayFilter, serverNowIso],
+  );
+
+  // Selected country — drives inline market panel
   const selectedCountry = useMemo(
     () => data.countryInsights.find(c => c.countryCode === layout.selectedCountryCode),
     [data.countryInsights, layout.selectedCountryCode],
   );
 
+  // Filtered attention items — by market when a market filter is active
+  const filteredAttentionItems = useMemo(() => {
+    if (!filters.marketCode) return data.attentionItems;
+    const insight = data.countryInsights.find(c => c.countryCode === filters.marketCode);
+    if (!insight) return data.attentionItems;
+    const ids = new Set(insight.topCompanies.map(co => co.leadId));
+    return data.attentionItems.filter(item => item.leadId && ids.has(item.leadId));
+  }, [data.attentionItems, data.countryInsights, filters.marketCode]);
+
+  // Countries shown on map — filtered when a market filter is active
+  const filteredCountries = useMemo(
+    () => filters.marketCode
+      ? data.countryCoverage.filter(c => c.countryCode === filters.marketCode)
+      : data.countryCoverage,
+    [data.countryCoverage, filters.marketCode],
+  );
+
+  // Market filter dropdown options
+  const availableMarkets = useMemo(
+    () => data.countryCoverage.map(c => ({ code: c.countryCode, name: c.countryName })),
+    [data.countryCoverage],
+  );
+
   const hasDiagnostics = data.queryIssues.length > 0 || !!readOnlyMessage;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 xl:px-0">
-      {/* Today/mode shell */}
+    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 px-4 pb-10 pt-5 sm:px-6 xl:px-0">
+
+      {/* Today / week / month filter shell */}
       <WorkspaceWorkflowShell
         title="Dashboard"
-        description="Geography-first trade command center. Select a market to drill into actions, buyers, and blockers."
-        mode={mode}
-        onModeChange={handleModeChange}
+        description="Geography-first trade command center."
+        mode={filters.mode}
+        onModeChange={mode => handleFiltersChange({ ...filters, mode })}
         todayState={todayState}
         onTodayFilterChange={setTodayFilter}
         showHeader={false}
-        utilities={(
-          <div className="flex items-center gap-2">
-            {hasDiagnostics && (
-              <button
-                type="button"
-                onClick={() => setDiagnosticsOpen(o => !o)}
-                className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
-              >
-                {diagnosticsOpen ? 'Hide' : 'Show'} diagnostics
-              </button>
-            )}
-            <DashboardHeaderControls
-              customizeOpen={layout.customizeOpen}
-              onToggleCustomize={layout.onToggleCustomize}
-            />
-          </div>
-        )}
+        utilities={hasDiagnostics ? (
+          <button type="button" onClick={() => setDiagnosticsOpen(o => !o)}
+            className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100">
+            {diagnosticsOpen ? 'Hide' : 'Show'} diagnostics
+          </button>
+        ) : undefined}
       />
 
-      {/* Collapsed diagnostics */}
+      {/* Persistent control bar — buyer/supplier/all always visible */}
+      <DashboardControlBar
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        availableMarkets={availableMarkets}
+        customizeOpen={layout.customizeOpen}
+        onToggleCustomize={layout.onToggleCustomize}
+      />
+
+      {/* Diagnostics — collapsed by default */}
       {diagnosticsOpen && hasDiagnostics && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-5 py-4">
-          {readOnlyMessage && (
-            <p className="text-sm text-amber-800"><strong>Read-only view:</strong> {readOnlyMessage}</p>
-          )}
-          {data.queryIssues.length > 0 && (
-            <ul className="mt-2 space-y-1 text-sm text-amber-700">
-              {data.queryIssues.map(issue => <li key={issue}>· {issue}</li>)}
-            </ul>
-          )}
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-5 py-4 text-sm">
+          {readOnlyMessage && <p className="text-amber-800"><strong>Read-only:</strong> {readOnlyMessage}</p>}
+          {data.queryIssues.map(issue => <p key={issue} className="mt-1 text-amber-700">· {issue}</p>)}
         </div>
       )}
 
@@ -133,110 +158,109 @@ export default function DashboardInteractive({
         onReset={layout.onResetLayout}
       />
 
-      {/* KPI strip — global metrics */}
+      {/* KPI strip — role-filtered */}
       {data.kpis.length > 0 && (
         <DashboardWidgetErrorBoundary
-          title="Metrics overview" description="Top-level commercial signals."
+          title="Commercial signals" description="Key metrics for the active view."
           eyebrow="Overview" fallbackTitle="Metrics unavailable"
-          fallbackDescription="The KPI strip hit a runtime issue."
+          fallbackDescription="KPI strip hit a runtime issue."
         >
-          <DashboardTopStrip kpis={data.kpis} />
+          <DashboardTopStrip kpis={data.kpis} mode={filters.mode} />
         </DashboardWidgetErrorBoundary>
       )}
 
-      {/* Trade map — always central, full width */}
+      {/* Trade map — central command surface */}
       <DashboardWidgetErrorBoundary
-        title="Trade map" description="Global market coverage — click any active market to drill down."
+        title="Trade map" description="Geography-first command surface."
         eyebrow="Command center" fallbackTitle="Trade map unavailable"
         fallbackDescription="The coverage map hit a runtime issue."
       >
         <WidgetShell
-          title="Global trade map"
+          title={selectedCountry ? `${selectedCountry.countryName} · Market drill-down` : 'Global trade map'}
           description={selectedCountry
-            ? `Showing market context for ${selectedCountry.countryName}. Click another country to switch, or close to return to global view.`
-            : "Highlighted markets have active leads, quotes, or compliance items. Click any market to drill into actions and buyer context."}
+            ? `Actions, buyers, and blockers for ${selectedCountry.countryName}. Click another country or clear to return.`
+            : `${filteredCountries.length} active market${filteredCountries.length !== 1 ? 's' : ''} — click any to drill into actions and buyer context.`}
           eyebrow="Command center"
           actions={selectedCountry ? (
-            <button
-              type="button"
-              onClick={layout.onCloseCountryDrawer}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-            >
+            <button type="button" onClick={layout.onCloseCountryDrawer}
+              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
               ✕ Clear market
             </button>
           ) : undefined}
         >
-          {data.countryCoverage.length ? (
+          {filteredCountries.length > 0 ? (
             <DashboardWorldMapSection
-              countries={data.countryCoverage}
+              countries={filteredCountries}
               selectedCountryCode={layout.selectedCountryCode}
               onSelectCountry={layout.onSelectCountry}
+              mode={filters.mode}
             />
           ) : (
             <WidgetEmptyState
-              title="Map lights up once leads are assigned to countries"
-              description="Add country data to your leads and the trade map will show market coverage automatically."
+              title="No markets match current filters"
+              description="Clear the market filter or add country data to leads to light up the map."
             />
           )}
 
-          {/* Inline market panel — renders below map, replaces drawer */}
           {selectedCountry && (
             <MarketCommandPanel
               country={selectedCountry}
               attentionItems={data.attentionItems}
+              mode={filters.mode}
               onClose={layout.onCloseCountryDrawer}
             />
           )}
         </WidgetShell>
       </DashboardWidgetErrorBoundary>
 
-      {/* Action row — lead health + action queue */}
-      <div className="grid gap-6 xl:grid-cols-[0.4fr_0.6fr]">
+      {/* Action row — lead health + filtered queue */}
+      <div className="grid gap-5 xl:grid-cols-[0.38fr_0.62fr]">
         <DashboardWidgetErrorBoundary
-          title="Lead health" description="Healthy vs at-risk vs blocked."
-          eyebrow="Health" fallbackTitle="Lead health unavailable"
-          fallbackDescription="The lead health chart hit a runtime issue."
+          title="Lead health" description="Health distribution across active leads."
+          eyebrow="Health signal" fallbackTitle="Lead health unavailable"
+          fallbackDescription="Health chart hit a runtime issue."
         >
           <LeadHealthDonutCard items={data.leadHealth} />
         </DashboardWidgetErrorBoundary>
 
         <DashboardWidgetErrorBoundary
-          title="Needs attention" description="Top priority action queue across all markets."
+          title="Action queue" description="Filtered by role and market."
           eyebrow="Action zone" fallbackTitle="Action queue unavailable"
-          fallbackDescription="The action queue hit a runtime issue."
+          fallbackDescription="Action queue hit a runtime issue."
         >
           <NeedsAttentionCard
-            items={data.attentionItems}
+            items={filteredAttentionItems}
+            mode={filters.mode}
+            marketCode={filters.marketCode}
             onFocus={layout.onFocusAttention}
           />
         </DashboardWidgetErrorBoundary>
       </div>
 
-      {/* Recent activity */}
+      {/* Commercial feed */}
       <DashboardWidgetErrorBoundary
-        title="Recent activity" description="Latest commercial events across all active leads."
-        eyebrow="Activity" fallbackTitle="Recent activity unavailable"
-        fallbackDescription="The activity feed hit a runtime issue."
+        title="Commercial feed" description="Recent events filtered by current view."
+        eyebrow="Feed" fallbackTitle="Feed unavailable"
+        fallbackDescription="Activity feed hit a runtime issue."
       >
-        <RecentActivityCard items={data.recentActivity} />
+        <RecentActivityCard items={data.recentActivity} mode={filters.mode} />
       </DashboardWidgetErrorBoundary>
 
       {/* Empty state */}
       {!data.kpis.length && !data.countryCoverage.length && !data.attentionItems.length && (
         <WidgetEmptyState
           title="Dashboard will appear here"
-          description="Live commercial signals will render once leads, quotes, and country data are present in the CRM."
+          description="Add leads with country data and the trade command center will populate automatically."
         />
       )}
 
-      {/* Compact footer signal */}
+      {/* Footer signals */}
       {(data.kpis.length > 0 || data.countryCoverage.length > 0) && (
         <div className="flex flex-wrap gap-2">
-          <StatusBadge label={`${data.countryCoverage.length} markets tracked`} tone={data.countryCoverage.length > 0 ? 'success' : 'warning'} />
-          <StatusBadge label={`${data.attentionItems.length} items need attention`} tone={data.attentionItems.length > 0 ? 'warning' : 'success'} />
-          {selectedCountry && (
-            <StatusBadge label={`${selectedCountry.countryName} · market view active`} tone="info" />
-          )}
+          <StatusBadge label={`${filteredCountries.length} market${filteredCountries.length !== 1 ? 's' : ''}`} tone={filteredCountries.length > 0 ? 'success' : 'warning'} />
+          <StatusBadge label={`${filteredAttentionItems.length} action${filteredAttentionItems.length !== 1 ? 's' : ''} flagged`} tone={filteredAttentionItems.length > 0 ? 'warning' : 'success'} />
+          {filters.mode !== 'all' && <StatusBadge label={`${filters.mode} view`} tone="info" />}
+          {selectedCountry && <StatusBadge label={`${selectedCountry.countryName} · drill-down`} tone="info" />}
         </div>
       )}
     </div>

@@ -1,31 +1,74 @@
 import { WidgetEmptyState, WidgetShell } from '@/components/ui/widget-shell';
 import { formatDateTime } from '@/lib/utils';
 import type { RecentActivityItem } from '@/features/dashboard/types';
+import type { WorkspaceMode } from '@/features/workspace/types';
 
-const iconMap: Record<string, string> = {
-  activity: '•',
-  quote: '$',
-  rfq: 'R',
-  task: '✓',
+const typeConfig: Record<string, { icon: string; role: 'buyer' | 'supplier' | 'both' }> = {
+  lead:       { icon: '👤', role: 'buyer' },
+  quote:      { icon: '📄', role: 'buyer' },
+  rfq:        { icon: '📋', role: 'supplier' },
+  document:   { icon: '📎', role: 'supplier' },
+  compliance: { icon: '✅', role: 'supplier' },
+  task:       { icon: '⚡', role: 'both' },
 };
 
-export function RecentActivityCard({ items }: { items: ReadonlyArray<RecentActivityItem> }) {
+const roleChip: Record<string, { label: string; cls: string }> = {
+  buyer:    { label: 'Buyer',    cls: 'bg-sky-50 text-sky-700' },
+  supplier: { label: 'Supplier', cls: 'bg-purple-50 text-purple-700' },
+  both:     { label: 'Shared',   cls: 'bg-slate-100 text-slate-600' },
+};
+
+type Props = {
+  items: ReadonlyArray<RecentActivityItem>;
+  mode?: WorkspaceMode;
+  marketCode?: string;
+};
+
+export function RecentActivityCard({ items, mode = 'all', marketCode }: Props) {
+  const filtered = items.filter(item => {
+    const role = typeConfig[item.type]?.role ?? 'both';
+    if (mode === 'buyers'    && role === 'supplier') return false;
+    if (mode === 'suppliers' && role === 'buyer')    return false;
+    return true;
+  });
+
+  const modeLabel = mode === 'buyers' ? ' · Buyers' : mode === 'suppliers' ? ' · Suppliers' : '';
+
   return (
-    <WidgetShell title="Recent Activity" description="Latest meaningful commercial events." eyebrow="Action zone">
-      {items.length ? (
-        <div className="space-y-3">
-          {items.map((item) => (
-            <div key={item.id} className="flex items-start gap-3 rounded-[1.2rem] border border-slate-200/70 bg-white px-4 py-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-700">{iconMap[item.iconKey] ?? '•'}</div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-900">{item.message}</p>
-                <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.timestamp)}</p>
+    <WidgetShell
+      title={`Commercial feed${modeLabel}`}
+      description="Recent meaningful events — filtered by your current view."
+      eyebrow="Feed"
+    >
+      {filtered.length ? (
+        <div className="space-y-2">
+          {filtered.slice(0, 8).map(item => {
+            const cfg = typeConfig[item.type] ?? { icon: '•', role: 'both' as const };
+            const chip = roleChip[cfg.role];
+            return (
+              <div key={item.id} className="flex items-start gap-3 rounded-[1.2rem] border border-slate-200/70 bg-white px-4 py-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 text-base">
+                  {cfg.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="text-xs font-medium text-slate-900">{item.message}</p>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${chip.cls}`}>{chip.label}</span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-slate-400">{formatDateTime(item.timestamp)}</p>
+                </div>
+                {item.href && (
+                  <a href={item.href} className="flex-shrink-0 text-[11px] font-semibold text-slate-500 hover:text-slate-800">→</a>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
-        <WidgetEmptyState title="No recent activity yet" description="Activity updates appear once leads, RFQs, quotes, and tasks start moving." />
+        <WidgetEmptyState
+          title="No recent events"
+          description={mode !== 'all' ? `No ${mode}-side activity yet.` : 'Activity will appear here as leads, quotes, and tasks move forward.'}
+        />
       )}
     </WidgetShell>
   );
