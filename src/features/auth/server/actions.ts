@@ -71,7 +71,7 @@ export async function loginWithUsername(
     return { error: loginParsed.error.issues[0]?.message ?? 'Username and password are required.' };
   }
 
-  const rateLimit = checkRateLimit(`login:${username.toLowerCase()}`, 8, 60_000);
+  const rateLimit = await checkRateLimit(`login:${username.toLowerCase()}`, 8, 60_000);
   if (!rateLimit.allowed) {
     return { error: 'Too many sign-in attempts. Please wait a minute and try again.' };
   }

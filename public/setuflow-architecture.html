@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Setu Flow — Full Product Architecture · Sprint 5 Batch 1</title>
+<title>Setu Flow — Full Product Architecture · Sprint 6 Active</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0a0f1e; color: #e2e8f0; padding: 32px; }
@@ -98,7 +98,7 @@
 <body>
 
 <h1>Setu Flow — Full Product Architecture</h1>
-<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Sprints 1–4 Closed</span> &nbsp;·&nbsp; <span style="color:#60a5fa;font-weight:600">Sprint 5 Batch 1 Active — 42%</span></p>
+<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Sprints 1–5 Closed ✓</span> &nbsp;·&nbsp; <span style="color:#60a5fa;font-weight:600">Sprint 6 · Orders Foundation — Active</span></p>
 <p class="stack-line">
   <code>Next.js 14</code> &nbsp;+&nbsp; <code>Supabase (Postgres + RLS)</code> &nbsp;+&nbsp;
   <code>TypeScript</code> &nbsp;+&nbsp; <code>Tailwind CSS</code> &nbsp;+&nbsp;
@@ -162,7 +162,7 @@
           <li>Sprint backlog</li>
           <li>Architecture contract</li>
           <li>UX rules &amp; buyer-ready gap view</li>
-          <li>Sprints 1–4 closed · Sprint 5 Batch 1 active (28%)</li>
+          <li>Sprints 1–5 closed · Sprint 6 Orders foundation active</li>
         </ul>
       </div>
     </div>
@@ -381,7 +381,7 @@
     <div class="stage">
       <span class="stage-num">4</span>
       <span class="stage-title">Orders</span>
-      <span class="stage-time">Accepted quote → execution readiness — Sprint 6 target for live data</span>
+      <span class="stage-time">Accepted + sent quotes — live Supabase data ✓ · Sprint 6 adds document checklist + dispatch gates</span>
       <div style="margin-top:8px">
         <div class="grid-3">
           <div class="metric-card">
@@ -397,8 +397,8 @@
             <div class="mc-note">Commercially valid vs dispatch-blocked — separate states, blockers stay visible</div>
           </div>
         </div>
-        <div style="margin-top:8px;font-size:10px;color:#c2410c;border:1px solid #c2410c;border-radius:6px;padding:6px 10px">
-          ⚠ Orders page is still a static mockup (hardcoded "Acme Imports / Mango Chips"). Sprint 6 target: live DB query from accepted quotes · order list view · compliance + document tabs folded into order detail.
+        <div style="margin-top:8px;font-size:10px;color:#0f766e;border:1px solid #0f766e;border-radius:6px;padding:6px 10px">
+      ✓ Sprint 6: Orders page queries accepted/sent quotes + lead context. Documents and compliance folded per order. Dispatch readiness gate visible. Next: contract status + execution depth.
         </div>
       </div>
     </div>
@@ -859,6 +859,9 @@
             <span class="tag tag-green">Sprint 5 · Approval audit trail live — pricing_quote_approval_requested / approved / rejected wired in updateQuoteWorkflow</span>
             <span class="tag tag-green">Sprint 5 · Anthropic AI live — ANTHROPIC_API_KEY activates LLM drafts with template fallback</span>
             <span class="tag tag-green">Sprint 5 · Lock-state enforcement live — isQuoteLocked() blocks updateQuoteWorkflow mutations + read-only banner in fast lane for sent/accepted/rejected/expired</span>
+            <span class="tag tag-green">Sprint 5 · Lock badge in quote list — ⊘ badge and muted row style on locked quotes in both selector and full list</span>
+            <span class="tag tag-green">Sprint 5 · Rate limiter fixed — Supabase-backed persistence replaces in-memory Map (was silently broken in serverless)</span>
+            <span class="tag tag-green">Sprint 5 · Orders page live — real Supabase query for accepted and sent quotes joined to lead context, no hardcoded data</span>
           </div>
         </div>
       </div>
@@ -866,14 +869,13 @@
         <div class="phase-box" style="border-color:#c2410c">
           <div class="phase-title" style="color:#f87171">⚠ Still needed before buyer-facing readiness</div>
           <div class="sproc-list">
-            <span class="tag tag-red">Orders page is hardcoded mockup — no live DB query (Sprint 6)</span>
-            <span class="tag tag-red">Rate limiter is in-memory Map — will not work in serverless production</span>
+            <span class="tag tag-red">Sprint 6 — contract status visible in Orders (contracts table query)</span>
+            <span class="tag tag-red">Sprint 6 — deeper execution depth per order (dispatch timeline, freight, ERP handoff)</span>
             <span class="tag tag-orange">data.ts god file — 2,984 lines, 18 domains (Sprint 9 target)</span>
             <span class="tag tag-orange">lead-drawer.tsx (1,678 lines) + leads-workspace.tsx (1,602 lines) — legacy surfaces not yet retired</span>
             <span class="tag tag-orange">No end-to-end tests — Playwright installed but no test files</span>
             <span class="tag tag-orange">No live integrations — email, ERP, freight, FX all planned only</span>
             <span class="tag tag-orange">Dashboard still passive metrics — Sprint 7 action-first rebuild pending</span>
-            <span class="tag tag-orange">Lock badge in quote list view — Sprint 5 Batch 1 next slice</span>
             <span class="tag tag-orange">Font Awesome loaded from local vendor (~1MB) — should be CDN or replaced</span>
           </div>
         </div>
@@ -889,7 +891,7 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <div class="section">
   <div class="section-box" style="border-color:#b45309">
-    <span class="section-label" style="color:#fbbf24">Sprint Roadmap — Sprint 5 Batch 1 Active · 28% complete</span>
+    <span class="section-label" style="color:#fbbf24">Sprint Roadmap — Sprints 1–5 Closed · Sprint 6 Orders Foundation Active</span>
     <div class="grid-5" style="margin-top:8px">
       <div class="env-card" style="border-color:#4ade80">
         <div class="env-title" style="color:#4ade80">Sprints 1–4 ✓ Closed</div>
@@ -901,24 +903,28 @@
         </ul>
         <div style="margin-top:6px;font-size:10px;color:#4ade80">All four sprints formally closed · deployment verified</div>
       </div>
-      <div class="env-card" style="border-color:#60a5fa">
-        <div class="env-title" style="color:#60a5fa">Sprint 5 — Trust layer · Batch 1 Active</div>
+      <div class="env-card" style="border-color:#4ade80">
+        <div class="env-title" style="color:#4ade80">Sprint 5 — Trust layer ✓ Closed</div>
         <ul>
-          <li>✓ Trust visibility in fast lane + send checkpoint</li>
-          <li>✓ Approval audit trail live (requested / approved / rejected)</li>
-          <li>✓ Anthropic AI wired — LLM drafts active</li>
-          <li>✓ Lock-state enforcement — mutations blocked + read-only banner</li>
-          <li>→ Next: lock badge in quote list view</li>
+          <li>✓ Trust visibility — fast lane + send checkpoint</li>
+          <li>✓ Approval audit trail (requested / approved / rejected)</li>
+          <li>✓ Anthropic AI — LLM drafts + template fallback</li>
+          <li>✓ Lock enforcement — banner + ⊘ badge in quote list</li>
+          <li>✓ Rate limiter — Supabase-backed</li>
+          <li>✓ Orders page — live accepted/sent data</li>
         </ul>
-        <div style="margin-top:6px;font-size:10px;color:#60a5fa">42% · Batch 1 in progress</div>
+        <div style="margin-top:6px;font-size:10px;color:#4ade80">100% · Formally closed</div>
       </div>
-      <div class="env-card" style="border-color:#475569">
-        <div class="env-title" style="color:#94a3b8">Sprint 6 — Orders 🔒 Locked</div>
+      <div class="env-card" style="border-color:#60a5fa">
+        <div class="env-title" style="color:#60a5fa">Sprint 6 — Orders foundation · Active</div>
         <ul>
-          <li>Orders module live data</li>
-          <li>Accepted quote snapshot path</li>
-          <li>Docs + compliance in order detail</li>
+          <li>✓ Orders page — live accepted/sent quotes + lead context</li>
+          <li>✓ Documents folded into each order record</li>
+          <li>✓ Compliance items folded into each order record</li>
+          <li>✓ Dispatch readiness gate visible per order</li>
+          <li>→ Next: contract status + deeper execution depth</li>
         </ul>
+        <div style="margin-top:6px;font-size:10px;color:#60a5fa">Sprint 6 active</div>
       </div>
       <div class="env-card" style="border-color:#475569">
         <div class="env-title" style="color:#94a3b8">Sprint 7 — Dashboard 🔒 Locked</div>
@@ -976,7 +982,7 @@
 
 <br>
 <div style="text-align:center;font-size:11px;color:#334155;padding:16px">
-  Setu Flow Product Architecture — Sprint 5 Batch 1 · 42% · Lock enforcement + Approval audit + Anthropic AI live
+  Setu Flow Product Architecture — Sprints 1–5 Closed · Sprint 6 Orders Foundation Active
 </div>
 
 </div><!-- end .diagram -->

@@ -1987,17 +1987,24 @@ export function QuoteWorkspace({
                       key={quote.id}
                       type="button"
                       onClick={() => setFocusQuoteId(quote.id)}
-                      className={`w-full rounded-2xl border p-4 text-left transition ${isFocused ? "border-brand-200 bg-brand-50/60 shadow-soft" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"}`}
+                      className={`w-full rounded-2xl border p-4 text-left transition ${isFocused ? "border-brand-200 bg-brand-50/60 shadow-soft" : isQuoteLocked(meta.status) ? "border-amber-100 bg-amber-50/40 hover:border-amber-200" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"}`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-semibold text-slate-900">
+                        <p className={`font-semibold ${isQuoteLocked(meta.status) ? "text-slate-600" : "text-slate-900"}`}>
                           Quote {quote.id.slice(0, 8)}
                         </p>
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getQuoteStatusBadgeClasses(meta.status)}`}
-                        >
-                          {meta.status.replaceAll("_", " ")}
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {isQuoteLocked(meta.status) ? (
+                            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                              ⊘ locked
+                            </span>
+                          ) : null}
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getQuoteStatusBadgeClasses(meta.status)}`}
+                          >
+                            {meta.status.replaceAll("_", " ")}
+                          </span>
+                        </div>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
                         <span>
@@ -2249,6 +2256,11 @@ export function QuoteWorkspace({
                       >
                         approval {approvalState.replaceAll("_", " ")}
                       </span>
+                      {isQuoteLocked(status) ? (
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                          ⊘ locked
+                        </span>
+                      ) : null}
                       {isFocused ? (
                         <span className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800">
                           focus quote

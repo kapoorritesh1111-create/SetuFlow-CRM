@@ -109,17 +109,17 @@ export type ScreenPlan = {
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
-  sprint: "Sprint 5 batch 1",
-  percent: 42,
-  percentLabel: "42% · Lock-state enforcement live · Approval audit trail · Anthropic AI wired",
+  sprint: "Sprint 6",
+  percent: 0,
+  percentLabel: "Sprint 6 · Orders foundation — active",
 };
 
 export const sprintFocus = {
-  sprint: "Sprint 5 · Batch 1 active",
+  sprint: "Sprint 6 · Orders foundation — active",
   title:
-    "Sprint 3 remains formally closed on the deployed Leads baseline, and Sprint 4 quote-builder core remains formally closed too. Sprint 5 Batch 1 trust-layer work has now advanced through three slices: approval state transitions write persistent audit events; Anthropic Claude AI is live with LLM-refined drafts and template fallback; and lock-state enforcement is now active — isQuoteLocked() blocks mutations in updateQuoteWorkflow and surfaces a clear read-only banner in the fast lane for sent, accepted, rejected, and expired quotes.",
+    "Sprint 5 is formally closed: the full trust-layer foundation landed across Batch 1 — approval audit trail, Anthropic AI, lock-state enforcement, Supabase rate limiter, and live Orders page. Sprint 6 is now open. Sprint 6 scope: deepen the Orders module around accepted-quote snapshots and fold documents and compliance into each order record so execution readiness is visible without leaving the Orders surface.",
   nextAction:
-    "Keep Sprint 4 formally closed. The next safe Sprint 5 Batch 1 move is trust-layer visibility in the quote list — surface a lock badge and muted row style on locked quotes in the quote list so operators can see lock state at a glance without opening the fast lane. Do not open revision workflow, post-send re-open paths, or full approval UI expansion yet.",
+    "Sprint 6 Batch 1: extend the Orders page to show per-order document checklist (documents linked to the quote or lead) and compliance items (lead_compliance_items linked to the lead) folded under each order record. Keep the existing accepted/sent query intact — add document and compliance data on top. Do not create new top-level routes. Preserve Capture → Lead → Quote → Order.",
   flow: LOCKED_PRODUCT_FLOW.join(" → "),
 };
 
@@ -391,25 +391,26 @@ export const roadmapMilestones: RoadmapMilestone[] = [
   {
     sprint: "Sprint 5 · Trust layer",
     summary:
-      "Batch 1 starts the trust layer by surfacing the approval gate, audit-event map, and quote lock-state contract inside the live quote workspace and the guided send checkpoint.",
-    badgeLabel: "Batch 1 active",
-    status: "in-progress",
+      "Batch 1 delivered the full trust-layer foundation: approval audit trail, Anthropic AI, lock-state enforcement across fast lane and quote list, production-safe rate limiter, and live Orders data.",
+    badgeLabel: "Done",
+    status: "done",
     objective:
-      "Start the trust contract through one visibility-first runtime slice without opening new top-level modules or deeper enforcement early.",
+      "Start the trust contract through visibility-first runtime slices without opening new top-level modules or deeper enforcement early.",
     outcomes: [
-      "Approval-required, approval-pending, and approval-cleared trust posture is now visible in the fast lane and the guided send checkpoint.",
-      "Approval state transitions (requested / approved / rejected) now write persistent audit events in updateQuoteWorkflow via writeQuoteAuditLog.",
-      "Anthropic Claude AI provider is now live — ANTHROPIC_API_KEY activates real LLM-refined drafts with graceful template fallback.",
-      "Lock-state enforcement is live — isQuoteLocked() blocks mutations in updateQuoteWorkflow for sent/accepted/rejected/expired quotes, and a clear read-only banner surfaces in the fast lane.",
-      "Post-send and outcome lock posture is visible before deeper enforcement begins.",
+      "Approval-required, approval-pending, and approval-cleared trust posture visible in fast lane and send checkpoint.",
+      "Approval state transitions (requested / approved / rejected) write persistent audit events in updateQuoteWorkflow.",
+      "Anthropic Claude AI live — ANTHROPIC_API_KEY activates LLM-refined drafts with graceful template fallback.",
+      "Lock-state enforcement live — isQuoteLocked() blocks mutations, amber banner in fast lane, ⊘ badge in quote list for sent/accepted/rejected/expired.",
+      "Rate limiter replaced — Supabase-backed persistence replaces in-memory serverless stub.",
+      "Orders page live — real Supabase query for accepted and sent quotes joined to lead context.",
     ],
   },
   {
     sprint: "Sprint 6 · Orders foundation",
     summary:
       "Create the Orders module around accepted-quote snapshots and fold related execution surfaces under it.",
-    badgeLabel: "Locked",
-    status: "locked",
+    badgeLabel: "Active",
+    status: "in-progress",
     objective: "Carry accepted commercial truth into execution cleanly.",
     outcomes: [
       "Orders exist as a first-class execution area.",
@@ -532,15 +533,15 @@ export const backlogSections: BacklogSection[] = [
       },
       {
         title: "Sprint 5 · Trust layer",
-        note: "Batch 1 is now at 42%: trust visibility live in fast lane and send checkpoint; approval audit trail wired; Anthropic AI live; lock-state enforcement active — mutations blocked on locked quotes, read-only banner in fast lane. Next: lock badge in quote list.",
-        stateLabel: "Batch 1 active",
-        status: "in-progress",
+        note: "Formally closed. All Batch 1 outcomes delivered: trust visibility, approval audit trail, Anthropic AI, lock enforcement in fast lane and quote list, Supabase rate limiter, live Orders page.",
+        stateLabel: "Done",
+        status: "done",
       },
       {
         title: "Sprint 6 · Orders foundation",
-        note: "Orders depth stays visible, but it does not become active work before the earlier commercial path is ready.",
-        stateLabel: "Locked",
-        status: "locked",
+        note: "Active. Extending the Orders module with per-order document checklist and compliance items folded under each order record.",
+        stateLabel: "Active",
+        status: "in-progress",
       },
     ],
   },
@@ -809,7 +810,7 @@ export const buyerReadySections: BuyerReadySection[] = [
       },
       {
         label: "Add trust-layer proof",
-        note: "Sprint 5 Batch 1 is now at 42%: approval audit trail wired; Anthropic AI live with LLM drafts; lock-state enforcement active — isQuoteLocked() blocks mutations and surfaces a read-only banner for sent/accepted/rejected/expired quotes. Next: lock badge in quote list view.",
+        note: "Sprint 5 formally closed. Full trust-layer foundation delivered: approval audit trail, Anthropic AI, lock-state enforcement, Supabase rate limiter, live Orders page. Sprint 6 now active — folding documents and compliance into Orders.",
         status: "in-progress",
       },
       {
