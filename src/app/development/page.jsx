@@ -3,73 +3,64 @@ import Link from "next/link";
 import { SiteShell } from "@/components/marketing/site-shell";
 import { DevelopmentChecklist } from "@/components/planning/development-checklist";
 import { DevelopmentNav } from "@/components/planning/development-nav";
-import {
-  readinessSummary,
-  roadmapMilestones,
-  sprintFocus,
-  sprintProgress,
-} from "@/components/planning/development-status";
+import { readinessSummary, roadmapMilestones, sprintFocus, } from "@/components/planning/development-status";
 import { PRODUCT_ROUTES, PRODUCT_SHELL_LABELS } from "@/lib/product-contract";
 import { StatusBadge } from "@/components/ui/status-badge";
-
 const pinned = [
-  {
-    title: "Product contract",
-    href: PRODUCT_ROUTES.development.product,
-    body: "The locked product definition that prevents side-module drift and keeps every sprint tied to the core commercial flow.",
-  },
-  {
-    title: "Architecture contract",
-    href: PRODUCT_ROUTES.development.architecture,
-    body: "The domain and service rules that preserve maintainability as the remaining sprints get built.",
-  },
-  {
-    title: "UX rules",
-    href: PRODUCT_ROUTES.development.uxRules,
-    body: "The trainability and enterprise-safety rules that stop good-looking chaos from returning.",
-  },
-  {
-    title: "Master plan",
-    href: PRODUCT_ROUTES.development.masterPlan,
-    body: "The single source of truth for the locked flow, current sprint state, and the roadmap for the remaining sprints.",
-  },
-  {
-    title: "Readiness",
-    href: PRODUCT_ROUTES.development.readiness,
-    body: "Live implementation status for the active sprint, the current deployment proof, and the blunt signal for when signoff is real.",
-  },
-  {
-    title: "Buyer ready",
-    href: PRODUCT_ROUTES.development.buyerReady,
-    body: "The explicit gap view for what the approved rework already delivered and what still needs to land before the product is buyer ready.",
-  },
-  {
-    title: "Sprint backlog",
-    href: PRODUCT_ROUTES.development.backlog,
-    body: "The in-product backlog that shows Sprint 2 closed cleanly, Sprint 3 closed formally, and later sprint work still sequenced behind it.",
-  },
-  {
-    title: "Locked screen specs",
-    href: PRODUCT_ROUTES.development.screens,
-    body: "Desktop, tablet, and mobile blueprints for the locked Leads and Capture implementation path.",
-  },
-  {
-    title: "Active flow surfaces",
-    href: PRODUCT_ROUTES.workspace.leads,
-    body: "The current Leads and Capture workspace surfaces plus the app-owned Quotes and Orders routes stay tied to the same product contract as development status.",
-  },
+    {
+        title: "Product contract",
+        href: PRODUCT_ROUTES.development.product,
+        body: "The locked product definition that prevents side-module drift and keeps every sprint tied to the core commercial flow.",
+    },
+    {
+        title: "Architecture contract",
+        href: PRODUCT_ROUTES.development.architecture,
+        body: "The domain and service rules that preserve maintainability as the remaining sprints get built.",
+    },
+    {
+        title: "UX rules",
+        href: PRODUCT_ROUTES.development.uxRules,
+        body: "The trainability and enterprise-safety rules that stop good-looking chaos from returning.",
+    },
+    {
+        title: "Master plan",
+        href: PRODUCT_ROUTES.development.masterPlan,
+        body: "The single source of truth for the locked flow, current sprint state, and the roadmap for the remaining sprints.",
+    },
+    {
+        title: "Readiness",
+        href: PRODUCT_ROUTES.development.readiness,
+        body: "Live implementation status for the active sprint, the current deployment proof, and the blunt signal for when signoff is real.",
+    },
+    {
+        title: "Buyer ready",
+        href: PRODUCT_ROUTES.development.buyerReady,
+        body: "The explicit gap view for what the approved rework already delivered and what still needs to land before the product is buyer ready.",
+    },
+    {
+        title: "Sprint backlog",
+        href: PRODUCT_ROUTES.development.backlog,
+        body: "The in-product backlog that shows Sprint 2 closed cleanly, Sprint 3 closed formally, and later sprint work still sequenced behind it.",
+    },
+    {
+        title: "Locked screen specs",
+        href: PRODUCT_ROUTES.development.screens,
+        body: "Desktop, tablet, and mobile blueprints for the locked Leads and Capture implementation path.",
+    },
+    {
+        title: "Active flow surfaces",
+        href: PRODUCT_ROUTES.workspace.leads,
+        body: "The current Leads and Capture workspace surfaces plus the app-owned Quotes and Orders routes stay tied to the same product contract as development status.",
+    },
 ];
-
 const roadmapTone = {
-  done: "success",
-  "in-progress": "info",
-  next: "warning",
-  locked: "neutral",
-} as const;
-
+    done: "success",
+    "in-progress": "info",
+    next: "warning",
+    locked: "neutral",
+};
 export default function DevelopmentPage() {
-  return (
-    <SiteShell>
+    return (<SiteShell>
       <main className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
         <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)] lg:p-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
@@ -110,65 +101,38 @@ export default function DevelopmentPage() {
             <DevelopmentNav />
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <StatusBadge label={readinessSummary.status} tone="success" />
-            <StatusBadge
-              label={`Build · ${readinessSummary.buildStatus}`}
-              tone="info"
-            />
-            <StatusBadge
-              label={`Drift risk · ${readinessSummary.driftRisk}`}
-              tone="warning"
-            />
+            <StatusBadge label={readinessSummary.status} tone="success"/>
+            <StatusBadge label={`Build · ${readinessSummary.buildStatus}`} tone="info"/>
+            <StatusBadge label={`Drift risk · ${readinessSummary.driftRisk}`} tone="warning"/>
           </div>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link
-              href={PRODUCT_ROUTES.development.masterPlan}
-              className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white"
-            >
+            <Link href={PRODUCT_ROUTES.development.masterPlan} className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">
               Open master plan
             </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.readiness}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
+            <Link href={PRODUCT_ROUTES.development.readiness} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
               Open readiness
             </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.buyerReady}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
+            <Link href={PRODUCT_ROUTES.development.buyerReady} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
               Open buyer ready
             </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.backlog}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
+            <Link href={PRODUCT_ROUTES.development.backlog} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
               Open backlog
             </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.screens}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
+            <Link href={PRODUCT_ROUTES.development.screens} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
               Open locked screen specs
             </Link>
           </div>
         </section>
 
         <section className="mt-10 grid gap-5 xl:grid-cols-4">
-          {pinned.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_20px_60px_rgba(31,72,124,0.08)] transition hover:-translate-y-0.5 hover:border-[#1F487C]/20 hover:shadow-[0_24px_70px_rgba(31,72,124,0.12)]"
-            >
+          {pinned.map((item) => (<Link key={item.href} href={item.href} className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_20px_60px_rgba(31,72,124,0.08)] transition hover:-translate-y-0.5 hover:border-[#1F487C]/20 hover:shadow-[0_24px_70px_rgba(31,72,124,0.12)]">
               <p className="text-sm font-semibold text-slate-950">
                 {item.title}
               </p>
               <p className="mt-3 text-sm leading-7 text-slate-600">
                 {item.body}
               </p>
-            </Link>
-          ))}
+            </Link>))}
         </section>
 
         <section className="mt-10 grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
@@ -182,10 +146,7 @@ export default function DevelopmentPage() {
                   Visible by default inside the HTML workplace
                 </h2>
               </div>
-              <Link
-                href={PRODUCT_ROUTES.development.readiness}
-                className="text-sm font-semibold text-[#1F487C]"
-              >
+              <Link href={PRODUCT_ROUTES.development.readiness} className="text-sm font-semibold text-[#1F487C]">
                 Open readiness view
               </Link>
             </div>
@@ -205,11 +166,7 @@ export default function DevelopmentPage() {
                 closed Sprint 4 baseline.
               </h2>
               <div className="mt-6 space-y-4">
-                {roadmapMilestones.map((milestone) => (
-                  <div
-                    key={milestone.sprint}
-                    className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4"
-                  >
+                {roadmapMilestones.map((milestone) => (<div key={milestone.sprint} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-950">
@@ -219,14 +176,9 @@ export default function DevelopmentPage() {
                           {milestone.summary}
                         </p>
                       </div>
-                      <StatusBadge
-                        label={milestone.badgeLabel}
-                        tone={roadmapTone[milestone.status]}
-                        className="shrink-0"
-                      />
+                      <StatusBadge label={milestone.badgeLabel} tone={roadmapTone[milestone.status]} className="shrink-0"/>
                     </div>
-                  </div>
-                ))}
+                  </div>))}
               </div>
             </section>
 
@@ -243,6 +195,5 @@ export default function DevelopmentPage() {
           </div>
         </section>
       </main>
-    </SiteShell>
-  );
+    </SiteShell>);
 }

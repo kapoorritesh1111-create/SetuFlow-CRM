@@ -2,24 +2,17 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { SiteShell } from "@/components/marketing/site-shell";
 import { DevelopmentNav } from "@/components/planning/development-nav";
-import {
-  buyerReadySections,
-  readinessSummary,
-  sprintFocus,
-} from "@/components/planning/development-status";
+import { buyerReadySections, readinessSummary, sprintFocus, } from "@/components/planning/development-status";
 import { PRODUCT_ROUTES } from "@/lib/product-contract";
 import { StatusBadge } from "@/components/ui/status-badge";
-
 const toneMap = {
-  done: "success",
-  "in-progress": "info",
-  next: "warning",
-  locked: "neutral",
-} as const;
-
+    done: "success",
+    "in-progress": "info",
+    next: "warning",
+    locked: "neutral",
+};
 export default function BuyerReadyPage() {
-  return (
-    <SiteShell>
+    return (<SiteShell>
       <main className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
         <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)] lg:p-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
@@ -65,41 +58,25 @@ export default function BuyerReadyPage() {
             <DevelopmentNav />
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <StatusBadge label={readinessSummary.status} tone="success" />
-            <StatusBadge label="Buyer readiness gap tracked" tone="warning" />
-            <StatusBadge
-              label="Approved rework sequencing preserved"
-              tone="neutral"
-            />
+            <StatusBadge label={readinessSummary.status} tone="success"/>
+            <StatusBadge label="Buyer readiness gap tracked" tone="warning"/>
+            <StatusBadge label="Approved rework sequencing preserved" tone="neutral"/>
           </div>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link
-              href={PRODUCT_ROUTES.development.readiness}
-              className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white"
-            >
+            <Link href={PRODUCT_ROUTES.development.readiness} className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">
               Open readiness
             </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.backlog}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
+            <Link href={PRODUCT_ROUTES.development.backlog} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
               Open backlog
             </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.masterPlan}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
+            <Link href={PRODUCT_ROUTES.development.masterPlan} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
               Open master plan
             </Link>
           </div>
         </section>
 
         <section className="mt-10 grid gap-5 lg:grid-cols-3">
-          {buyerReadySections.map((section) => (
-            <div
-              key={section.title}
-              className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_20px_60px_rgba(31,72,124,0.08)]"
-            >
+          {buyerReadySections.map((section) => (<div key={section.title} className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">
@@ -109,54 +86,35 @@ export default function BuyerReadyPage() {
                     {section.summary}
                   </p>
                 </div>
-                <StatusBadge
-                  label={
-                    section.status === "done"
-                      ? "Done"
-                      : section.status === "in-progress"
-                        ? "In progress"
-                        : section.status === "next"
-                          ? "Next"
-                          : "Locked"
-                  }
-                  tone={toneMap[section.status]}
-                  className="shrink-0"
-                />
+                <StatusBadge label={section.status === "done"
+                ? "Done"
+                : section.status === "in-progress"
+                    ? "In progress"
+                    : section.status === "next"
+                        ? "Next"
+                        : "Locked"} tone={toneMap[section.status]} className="shrink-0"/>
               </div>
               <div className="mt-5 space-y-3">
-                {section.items.map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4"
-                  >
+                {section.items.map((item) => (<div key={item.label} className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-semibold text-slate-900">
                         {item.label}
                       </p>
-                      <StatusBadge
-                        label={
-                          item.status === "done"
-                            ? "Done"
-                            : item.status === "in-progress"
-                              ? "In progress"
-                              : item.status === "next"
-                                ? "Next"
-                                : "Locked"
-                        }
-                        tone={toneMap[item.status]}
-                        className="shrink-0"
-                      />
+                      <StatusBadge label={item.status === "done"
+                    ? "Done"
+                    : item.status === "in-progress"
+                        ? "In progress"
+                        : item.status === "next"
+                            ? "Next"
+                            : "Locked"} tone={toneMap[item.status]} className="shrink-0"/>
                     </div>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
                       {item.note}
                     </p>
-                  </div>
-                ))}
+                  </div>))}
               </div>
-            </div>
-          ))}
+            </div>))}
         </section>
       </main>
-    </SiteShell>
-  );
+    </SiteShell>);
 }

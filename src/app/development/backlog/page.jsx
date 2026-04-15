@@ -2,25 +2,17 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { SiteShell } from "@/components/marketing/site-shell";
 import { DevelopmentNav } from "@/components/planning/development-nav";
-import {
-  backlogSections,
-  readinessSummary,
-  sprintFocus,
-  sprintProgress,
-} from "@/components/planning/development-status";
+import { backlogSections, readinessSummary, sprintFocus, } from "@/components/planning/development-status";
 import { PRODUCT_ROUTES } from "@/lib/product-contract";
 import { StatusBadge } from "@/components/ui/status-badge";
-
 const toneMap = {
-  done: "success",
-  "in-progress": "info",
-  next: "warning",
-  locked: "neutral",
-} as const;
-
+    done: "success",
+    "in-progress": "info",
+    next: "warning",
+    locked: "neutral",
+};
 export default function DevelopmentBacklogPage() {
-  return (
-    <SiteShell>
+    return (<SiteShell>
       <main className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
         <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)] lg:p-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
@@ -49,7 +41,7 @@ export default function DevelopmentBacklogPage() {
                 If work is not on this page, it is not scheduled work.
               </p>
               <p className="mt-4 text-sm leading-7 text-white/85">
-                Sprint 3 is now closed. Sprint 4 quote-builder core is now formally complete, and buyer-ready gaps are tracked explicitly so Review/Send keep the explicit blocked-versus-caution-versus-ready checkpoint decision visible, explain the leading reason, enforce that state on the actual submit path, keep save/create locked to the Send checkpoint, reopen the leading exact fix target on blocked submit, and require explicit caution confirmation before save/create can continue without reopening closed simplification work.
+                Sprint 3 is now closed. Sprint 4 quote-builder core is now formally complete, and buyer-ready gaps are tracked explicitly so Review/Send keep the blocked-versus-caution-versus-ready action state visible inside the footer with the leading reason shown at the moment of action, enforce that state on the actual submit path, keep save/create locked to the Send checkpoint, reopen the leading exact fix target on blocked submit, and require explicit caution confirmation before save/create can continue without reopening closed simplification work.
               </p>
             </div>
           </div>
@@ -57,47 +49,28 @@ export default function DevelopmentBacklogPage() {
             <DevelopmentNav />
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <StatusBadge label={readinessSummary.status} tone="success" />
-            <StatusBadge
-              label={`Build · ${readinessSummary.buildStatus}`}
-              tone="info"
-            />
-            <StatusBadge label="Backlog is repo-backed" tone="neutral" />
+            <StatusBadge label={readinessSummary.status} tone="success"/>
+            <StatusBadge label={`Build · ${readinessSummary.buildStatus}`} tone="info"/>
+            <StatusBadge label="Backlog is repo-backed" tone="neutral"/>
           </div>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link
-              href={PRODUCT_ROUTES.development.readiness}
-              className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white"
-            >
+            <Link href={PRODUCT_ROUTES.development.readiness} className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">
               Open readiness
             </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.masterPlan}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
+            <Link href={PRODUCT_ROUTES.development.masterPlan} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
               Open master plan
             </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.buyerReady}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
+            <Link href={PRODUCT_ROUTES.development.buyerReady} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
               Open buyer ready
             </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.screens}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
+            <Link href={PRODUCT_ROUTES.development.screens} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
               Open locked screen specs
             </Link>
           </div>
         </section>
 
         <section className="mt-10 grid gap-5 lg:grid-cols-2">
-          {backlogSections.map((section) => (
-            <div
-              key={section.title}
-              className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_20px_60px_rgba(31,72,124,0.08)]"
-            >
+          {backlogSections.map((section) => (<div key={section.title} className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">
@@ -107,21 +80,13 @@ export default function DevelopmentBacklogPage() {
                     {section.heading}
                   </h2>
                 </div>
-                <StatusBadge
-                  label={section.badgeLabel}
-                  tone={toneMap[section.status]}
-                  className="shrink-0"
-                />
+                <StatusBadge label={section.badgeLabel} tone={toneMap[section.status]} className="shrink-0"/>
               </div>
               <p className="mt-4 text-sm leading-7 text-slate-600">
                 {section.summary}
               </p>
               <div className="mt-5 space-y-3">
-                {section.items.map((item) => (
-                  <div
-                    key={item.title}
-                    className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4"
-                  >
+                {section.items.map((item) => (<div key={item.title} className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">
@@ -131,17 +96,11 @@ export default function DevelopmentBacklogPage() {
                           {item.note}
                         </p>
                       </div>
-                      <StatusBadge
-                        label={item.stateLabel}
-                        tone={toneMap[item.status]}
-                        className="shrink-0"
-                      />
+                      <StatusBadge label={item.stateLabel} tone={toneMap[item.status]} className="shrink-0"/>
                     </div>
-                  </div>
-                ))}
+                  </div>))}
               </div>
-            </div>
-          ))}
+            </div>))}
         </section>
 
         <section className="mt-10 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
@@ -193,6 +152,5 @@ export default function DevelopmentBacklogPage() {
           </div>
         </section>
       </main>
-    </SiteShell>
-  );
+    </SiteShell>);
 }

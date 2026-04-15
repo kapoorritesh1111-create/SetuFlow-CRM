@@ -5,6 +5,8 @@ import { DrawerActionBar } from '@/components/RightDrawer';
 export function CommercialWizardFooter({
   title,
   description,
+  statusLabel,
+  statusTone = 'neutral',
   error,
   success,
   isPending,
@@ -23,6 +25,8 @@ export function CommercialWizardFooter({
 }: {
   title: string;
   description: string;
+  statusLabel?: string;
+  statusTone?: 'success' | 'warning' | 'danger' | 'neutral';
   error?: string;
   success?: string;
   isPending: boolean;
@@ -40,6 +44,14 @@ export function CommercialWizardFooter({
   submitDisabled?: boolean;
 }) {
   const isFinalStep = activeStepIndex === totalSteps - 1;
+  const statusClasses =
+    statusTone === 'danger'
+      ? 'border-rose-200 bg-rose-50 text-rose-700'
+      : statusTone === 'warning'
+        ? 'border-amber-200 bg-amber-50 text-amber-800'
+        : statusTone === 'success'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border-slate-200 bg-white text-slate-700';
 
   return (
     <div className="space-y-3 border-t border-slate-200 pt-4">
@@ -68,8 +80,15 @@ export function CommercialWizardFooter({
       {success ? <p className="text-sm font-medium text-emerald-600">{success}</p> : null}
       <DrawerActionBar
         title={title}
-        description={isFinalStep ? description : 'Continue step by step without leaving the current workspace drawer.'}
+        description={description}
       >
+        {statusLabel ? (
+          <span
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${statusClasses}`}
+          >
+            {statusLabel}
+          </span>
+        ) : null}
         <button
           type="button"
           onClick={onCancel}
@@ -89,7 +108,7 @@ export function CommercialWizardFooter({
           <button
             type="submit"
             form={submitFormId}
-            disabled={isPending || !canGoNext}
+            disabled={isPending || submitDisabled || !canGoNext}
             className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {isPending ? 'Saving...' : submitLabel}
@@ -98,7 +117,7 @@ export function CommercialWizardFooter({
           <button
             type="button"
             onClick={onNext}
-            disabled={isPending || !canGoNext}
+            disabled={isPending || submitDisabled || !canGoNext}
             className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {nextLabel}
