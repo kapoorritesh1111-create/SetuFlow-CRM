@@ -118,7 +118,7 @@ export default async function OrdersPage() {
           title="Orders appear here when quotes are accepted or sent"
           description="Move a quote to accepted or sent status from the Lead quote workspace and it will appear here with its full execution context."
         >
-          <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+          <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
             Go to Leads
           </Link>
         </SectionCard>
