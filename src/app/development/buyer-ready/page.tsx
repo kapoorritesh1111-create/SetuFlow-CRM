@@ -29,7 +29,7 @@ export default function BuyerReadyPage() {
                 {readinessSummary.status}
               </p>
               <p className="mt-4 text-sm leading-7 text-white/85">
-                Product is live on {sprintFocus.flow}. Buyer-ready gaps are tracked below — remaining work is sequenced and will close in order.
+                Product is live on {sprintFocus.flow}. Buyer-ready gaps are tracked below — the Sprint 6 baseline is complete, and remaining proof work is sequenced without reopening older sprint lanes.
               </p>
             </div>
           </div>

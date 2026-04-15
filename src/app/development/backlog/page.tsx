@@ -20,11 +20,11 @@ export default function DevelopmentBacklogPage() {
                 Every scheduled item in one place — sequenced, tracked, and tied to the commercial flow.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
-                Work is sequenced along the {sprintFocus.flow} path. Items not on this page are not scheduled. Upcoming sprints stay visible but are not activated until the current sprint is formally closed.
+                Work is sequenced along the {sprintFocus.flow} path. Items not on this page are not scheduled. Sprint 6 is formally closed. The next approved lane stays visible as Sprint 7 Dashboard rebuild, while later sprints remain sequenced behind it.
               </p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Current sprint</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Current baseline</p>
               <p className="mt-3 text-2xl font-semibold leading-tight">{sprintFocus.sprint}</p>
               <p className="mt-4 text-sm leading-7 text-white/85">{sprintProgress.percentLabel}</p>
               <div className="mt-4 flex items-center gap-2">

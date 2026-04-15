@@ -109,17 +109,17 @@ export type ScreenPlan = {
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
-  sprint: "Sprint 6",
+  sprint: "Sprint 6 complete",
   percent: 100,
-  percentLabel: "Sprint 6 · Orders foundation — complete",
+  percentLabel: "Sprint 6 complete · Sprint 7 Dashboard rebuild next",
 };
 
 export const sprintFocus = {
-  sprint: "Sprint 6 · Orders foundation — complete",
+  sprint: "Sprint 6 complete · Sprint 7 next",
   title:
-    "Sprint 6 is complete. The Orders module now shows accepted and sent quotes with documents, compliance items, and contract status folded into each order card. Execution readiness is visible without leaving the Orders surface. Development pages have been rewritten with professional leadership-readable content. Sprint 7 is next: Dashboard rebuild — action-first, trade-map context, and removal of passive vanity metrics.",
+    "The Sprint 6 baseline is complete. Orders now carries accepted and sent quotes with documents, compliance items, contract status, and dispatch-readiness context inside each order card. The development surfaces should now read as a closed Sprint 6 baseline, with Sprint 7 Dashboard rebuild shown as the next approved lane rather than another active Sprint 3 or Sprint 4 state.",
   nextAction:
-    "Sprint 6 is formally complete. Sprint 7 scope: rebuild the Dashboard to be action-first with trade-map context and meaningful commercial signals. Remove passive vanity metrics. Do not start Sprint 7 until explicitly approved.",
+    "Keep Sprint 6 closed everywhere. The next approved lane is Sprint 7 Dashboard rebuild: action-first, trade-map context, and commercial signals without passive vanity metrics. Do not reopen Sprint 3, Sprint 4, or Sprint 5 wording on the development pages.",
   flow: LOCKED_PRODUCT_FLOW.join(" → "),
 };
 
@@ -250,9 +250,9 @@ export const readinessAreas: ReadinessArea[] = [
     status: "done",
   },
   {
-    title: "Buyer readiness still has explicit post-Sprint-3 work",
+    title: "Buyer readiness still needs QA and walkthrough proof",
     summary:
-      "The successful deployment does not mean the product is fully buyer-ready yet. Sprints 5 and 6 are complete in the repo, while end-to-end buyer QA, walkthrough proof, and release-readiness assets still remain sequenced work.",
+      "The successful deployment does not mean the product is fully buyer-ready yet. The core workflow is complete through Sprint 6, while end-to-end buyer QA, walkthrough proof, and release-readiness assets still remain sequenced work.",
     status: "next",
   },
   {
@@ -808,19 +808,14 @@ export const buyerReadySections: BuyerReadySection[] = [
     status: "next",
     items: [
       {
-        label: "Close Sprint 3 formally",
-        note: "Sprint 3 is now formally closed in the development pages and buyer-ready tracking no longer treats Lead simplification as an open batch.",
+        label: "Core workflow baseline is complete through Sprint 6",
+        note: "Lead simplification, quote-builder core, trust layer, and Orders foundation are complete. The development surfaces should not describe any of those lanes as still active work.",
         status: "done",
       },
       {
-        label: "Build Sprint 4 quote-builder core",
-        note: "Sprint 4 quote-builder core is now complete: the live quote draft follows Product, Pricing, Terms, Review, and Send, workspace guidance is live, edit continuity is step-aware, pricing-risk cues stay visible inside review and send, builder-side version continuity is visible before save or send, pricing lines surface readiness issues plus quick-fix actions, Review/Send point to the exact field or pricing line that still needs work, and after users return from that exact fix the originating checkpoint keeps the same loop visible with reopen-or-clear actions, while Review/Send keep the explicit blocked-versus-caution-versus-ready action state plus its leading reason visible in the footer, enforce that state on the real submit path, keep save/create locked to the Send checkpoint, reopen the leading exact fix target on blocked submit, and require explicit caution confirmation before save/create can continue before deeper trust work lands later.",
-        status: "done",
-      },
-      {
-        label: "Complete trust and Orders proof",
-        note: "Sprints 5 and 6 are complete. Trust layer, lock enforcement, AI, live Orders with documents/compliance/contracts, and professional development pages are all delivered. Sprint 7 Dashboard rebuild remains next, but buyer-facing proof still requires QA and walkthrough assets.",
-        status: "done",
+        label: "Dashboard rebuild is next, not part of buyer-proof closure",
+        note: "Sprint 7 Dashboard rebuild remains the next approved product lane, but buyer-facing proof still depends more on QA, walkthrough assets, and release proof than on reopening earlier sprint work.",
+        status: "next",
       },
       {
         label: "Strengthen end-to-end buyer QA",
@@ -836,8 +831,8 @@ export const buyerReadySections: BuyerReadySection[] = [
     status: "locked",
     items: [
       {
-        label: "Orders foundation depth",
-        note: "Accepted-quote snapshots, execution readiness, and subordinate document or compliance surfaces remain later roadmap work.",
+        label: "Dashboard and release-story depth",
+        note: "Dashboard rebuild, demo proof, and broader release-story polish remain later roadmap work after the Sprint 6 baseline.",
         status: "locked",
       },
       {

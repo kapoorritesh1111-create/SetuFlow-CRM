@@ -13,7 +13,7 @@ export function ReadinessBoard() {
     <div className="space-y-8">
       <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#359F91]">Current sprint</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#359F91]">Current baseline</p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{sprintFocus.sprint}</h2>
           <p className="mt-3 text-base leading-7 text-slate-600">{sprintFocus.title}</p>
           <div className="mt-6 flex flex-wrap gap-2">
@@ -46,7 +46,7 @@ export function ReadinessBoard() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#359F91]">Readiness by area</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">The actual state of the active sprint right now</h2>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">The actual state of the live Sprint 6 baseline right now</h2>
           </div>
           <StatusBadge label={readinessSummary.status} tone="success" />
         </div>
