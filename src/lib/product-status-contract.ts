@@ -110,16 +110,16 @@ export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
   sprint: "Sprint 6",
-  percent: 0,
-  percentLabel: "Sprint 6 · Orders foundation — active",
+  percent: 100,
+  percentLabel: "Sprint 6 · Orders foundation — complete",
 };
 
 export const sprintFocus = {
-  sprint: "Sprint 6 · Orders foundation — active",
+  sprint: "Sprint 6 · Orders foundation — complete",
   title:
-    "Sprint 5 is formally closed: the full trust-layer foundation landed across Batch 1 — approval audit trail, Anthropic AI, lock-state enforcement, Supabase rate limiter, and live Orders page. Sprint 6 is now open. Sprint 6 scope: deepen the Orders module around accepted-quote snapshots and fold documents and compliance into each order record so execution readiness is visible without leaving the Orders surface.",
+    "Sprint 6 is complete. The Orders module now shows accepted and sent quotes with documents, compliance items, and contract status folded into each order card. Execution readiness is visible without leaving the Orders surface. Development pages have been rewritten with professional leadership-readable content. Sprint 7 is next: Dashboard rebuild — action-first, trade-map context, and removal of passive vanity metrics.",
   nextAction:
-    "Sprint 6 Batch 1: extend the Orders page to show per-order document checklist (documents linked to the quote or lead) and compliance items (lead_compliance_items linked to the lead) folded under each order record. Keep the existing accepted/sent query intact — add document and compliance data on top. Do not create new top-level routes. Preserve Capture → Lead → Quote → Order.",
+    "Sprint 6 is formally complete. Sprint 7 scope: rebuild the Dashboard to be action-first with trade-map context and meaningful commercial signals. Remove passive vanity metrics. Do not start Sprint 7 until explicitly approved.",
   flow: LOCKED_PRODUCT_FLOW.join(" → "),
 };
 
@@ -408,14 +408,17 @@ export const roadmapMilestones: RoadmapMilestone[] = [
   {
     sprint: "Sprint 6 · Orders foundation",
     summary:
-      "Create the Orders module around accepted-quote snapshots and fold related execution surfaces under it.",
-    badgeLabel: "Active",
-    status: "in-progress",
+      "Orders module complete — accepted and sent quotes with documents, compliance, and contract status folded per order card. Development pages updated with leadership-readable content.",
+    badgeLabel: "Done",
+    status: "done",
     objective: "Carry accepted commercial truth into execution cleanly.",
     outcomes: [
-      "Orders exist as a first-class execution area.",
-      "Documents and compliance stay subordinate to Orders.",
-      "Accepted-quote context remains intact through handoff.",
+      "Orders page live with real accepted/sent quote data joined to lead context.",
+      "Documents folded per order — file name, type, version, status visible.",
+      "Compliance items folded per order — status and submission date visible.",
+      "Contract status folded per order — signed date, start/end dates visible.",
+      "Dispatch readiness gate summarised per order card.",
+      "All development pages updated with professional leadership-readable content.",
     ],
   },
   {
@@ -539,9 +542,15 @@ export const backlogSections: BacklogSection[] = [
       },
       {
         title: "Sprint 6 · Orders foundation",
-        note: "Active. Extending the Orders module with per-order document checklist and compliance items folded under each order record.",
-        stateLabel: "Active",
-        status: "in-progress",
+        note: "Complete. Orders page live with documents, compliance, and contract status per order. Development pages updated with professional leadership content.",
+        stateLabel: "Done",
+        status: "done",
+      },
+      {
+        title: "Sprint 7 · Dashboard rebuild",
+        note: "Next. Action-first Dashboard with trade-map context and commercial signals. Removes passive vanity metrics.",
+        stateLabel: "Next",
+        status: "next",
       },
     ],
   },
@@ -810,7 +819,7 @@ export const buyerReadySections: BuyerReadySection[] = [
       },
       {
         label: "Add trust-layer proof",
-        note: "Sprint 5 formally closed. Full trust-layer foundation delivered: approval audit trail, Anthropic AI, lock-state enforcement, Supabase rate limiter, live Orders page. Sprint 6 now active — folding documents and compliance into Orders.",
+        note: "Sprints 5 and 6 complete. Trust layer, lock enforcement, AI, live Orders with documents/compliance/contracts, and professional development pages all delivered. Next: Sprint 7 Dashboard rebuild.",
         status: "in-progress",
       },
       {

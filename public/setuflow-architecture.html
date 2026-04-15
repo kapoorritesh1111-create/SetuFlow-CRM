@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Setu Flow — Full Product Architecture · Sprint 6 Active</title>
+<title>Setu Flow — Full Product Architecture · Sprint 6 Complete · Sprint 7 Next</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0a0f1e; color: #e2e8f0; padding: 32px; }
@@ -98,7 +98,7 @@
 <body>
 
 <h1>Setu Flow — Full Product Architecture</h1>
-<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Sprints 1–5 Closed ✓</span> &nbsp;·&nbsp; <span style="color:#60a5fa;font-weight:600">Sprint 6 · Orders Foundation — Active</span></p>
+<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Sprints 1–5 Closed ✓</span> &nbsp;·&nbsp; <span style="color:#60a5fa;font-weight:600">Sprints 1–6 Closed ✓ · Sprint 7 Dashboard Next</span></p>
 <p class="stack-line">
   <code>Next.js 14</code> &nbsp;+&nbsp; <code>Supabase (Postgres + RLS)</code> &nbsp;+&nbsp;
   <code>TypeScript</code> &nbsp;+&nbsp; <code>Tailwind CSS</code> &nbsp;+&nbsp;
@@ -162,7 +162,7 @@
           <li>Sprint backlog</li>
           <li>Architecture contract</li>
           <li>UX rules &amp; buyer-ready gap view</li>
-          <li>Sprints 1–5 closed · Sprint 6 Orders foundation active</li>
+          <li>Sprints 1–6 closed · Sprint 7 Dashboard — next</li>
         </ul>
       </div>
     </div>
@@ -398,7 +398,7 @@
           </div>
         </div>
         <div style="margin-top:8px;font-size:10px;color:#0f766e;border:1px solid #0f766e;border-radius:6px;padding:6px 10px">
-      ✓ Sprint 6: Orders page queries accepted/sent quotes + lead context. Documents and compliance folded per order. Dispatch readiness gate visible. Next: contract status + execution depth.
+            <span class="tag tag-green">Sprint 6 · Orders foundation complete — documents, compliance, and contract status per order card</span>
         </div>
       </div>
     </div>
@@ -869,8 +869,7 @@
         <div class="phase-box" style="border-color:#c2410c">
           <div class="phase-title" style="color:#f87171">⚠ Still needed before buyer-facing readiness</div>
           <div class="sproc-list">
-            <span class="tag tag-red">Sprint 6 — contract status visible in Orders (contracts table query)</span>
-            <span class="tag tag-red">Sprint 6 — deeper execution depth per order (dispatch timeline, freight, ERP handoff)</span>
+            <span class="tag tag-red">Sprint 7 — Dashboard rebuild: action-first layout, trade map, commercial signals over passive metrics</span>
             <span class="tag tag-orange">data.ts god file — 2,984 lines, 18 domains (Sprint 9 target)</span>
             <span class="tag tag-orange">lead-drawer.tsx (1,678 lines) + leads-workspace.tsx (1,602 lines) — legacy surfaces not yet retired</span>
             <span class="tag tag-orange">No end-to-end tests — Playwright installed but no test files</span>
@@ -891,7 +890,7 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <div class="section">
   <div class="section-box" style="border-color:#b45309">
-    <span class="section-label" style="color:#fbbf24">Sprint Roadmap — Sprints 1–5 Closed · Sprint 6 Orders Foundation Active</span>
+    <span class="section-label" style="color:#fbbf24">Sprint Roadmap — Sprints 1–6 Closed · Sprint 7 Dashboard — Next</span>
     <div class="grid-5" style="margin-top:8px">
       <div class="env-card" style="border-color:#4ade80">
         <div class="env-title" style="color:#4ade80">Sprints 1–4 ✓ Closed</div>
@@ -915,24 +914,27 @@
         </ul>
         <div style="margin-top:6px;font-size:10px;color:#4ade80">100% · Formally closed</div>
       </div>
-      <div class="env-card" style="border-color:#60a5fa">
-        <div class="env-title" style="color:#60a5fa">Sprint 6 — Orders foundation · Active</div>
+      <div class="env-card" style="border-color:#4ade80">
+        <div class="env-title" style="color:#4ade80">Sprint 6 — Orders foundation ✓ Complete</div>
         <ul>
-          <li>✓ Orders page — live accepted/sent quotes + lead context</li>
-          <li>✓ Documents folded into each order record</li>
-          <li>✓ Compliance items folded into each order record</li>
-          <li>✓ Dispatch readiness gate visible per order</li>
-          <li>→ Next: contract status + deeper execution depth</li>
+          <li>✓ Orders page — live accepted/sent data</li>
+          <li>✓ Documents per order</li>
+          <li>✓ Compliance items per order</li>
+          <li>✓ Contract status per order</li>
+          <li>✓ Dispatch readiness gate</li>
+          <li>✓ Development pages — professional content</li>
         </ul>
-        <div style="margin-top:6px;font-size:10px;color:#60a5fa">Sprint 6 active</div>
+        <div style="margin-top:6px;font-size:10px;color:#4ade80">100% · Formally closed</div>
       </div>
-      <div class="env-card" style="border-color:#475569">
-        <div class="env-title" style="color:#94a3b8">Sprint 7 — Dashboard 🔒 Locked</div>
+      <div class="env-card" style="border-color:#60a5fa">
+        <div class="env-title" style="color:#60a5fa">Sprint 7 — Dashboard rebuild · Next</div>
         <ul>
-          <li>Action-first rebuild</li>
-          <li>Trade map + geo drill-down</li>
-          <li>Remove vanity metrics</li>
+          <li>Action-first layout — dominant next action always visible</li>
+          <li>Trade map with geographic drill-down</li>
+          <li>Commercial signals over passive vanity metrics</li>
+          <li>Pipeline and order execution summary</li>
         </ul>
+        <div style="margin-top:6px;font-size:10px;color:#60a5fa">Awaiting Sprint 6 formal closeout</div>
       </div>
       <div class="env-card" style="border-color:#475569">
         <div class="env-title" style="color:#94a3b8">Sprints 8–10 🔒 Locked</div>
@@ -982,7 +984,7 @@
 
 <br>
 <div style="text-align:center;font-size:11px;color:#334155;padding:16px">
-  Setu Flow Product Architecture — Sprints 1–5 Closed · Sprint 6 Orders Foundation Active
+  Setu Flow Product Architecture — Sprints 1–6 Closed · Sprint 7 Dashboard — Next
 </div>
 
 </div><!-- end .diagram -->

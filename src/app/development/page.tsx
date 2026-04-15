@@ -13,59 +13,18 @@ import { PRODUCT_ROUTES, PRODUCT_SHELL_LABELS } from "@/lib/product-contract";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 const pinned = [
-  {
-    title: "Product contract",
-    href: PRODUCT_ROUTES.development.product,
-    body: "The locked product definition that prevents side-module drift and keeps every sprint tied to the core commercial flow.",
-  },
-  {
-    title: "Architecture contract",
-    href: PRODUCT_ROUTES.development.architecture,
-    body: "The domain and service rules that preserve maintainability as the remaining sprints get built.",
-  },
-  {
-    title: "UX rules",
-    href: PRODUCT_ROUTES.development.uxRules,
-    body: "The trainability and enterprise-safety rules that stop good-looking chaos from returning.",
-  },
-  {
-    title: "Master plan",
-    href: PRODUCT_ROUTES.development.masterPlan,
-    body: "The single source of truth for the locked flow, current sprint state, and the roadmap for the remaining sprints.",
-  },
-  {
-    title: "Readiness",
-    href: PRODUCT_ROUTES.development.readiness,
-    body: "Live implementation status for the active sprint, the current deployment proof, and the blunt signal for when signoff is real.",
-  },
-  {
-    title: "Buyer ready",
-    href: PRODUCT_ROUTES.development.buyerReady,
-    body: "The explicit gap view for what the approved rework already delivered and what still needs to land before the product is buyer ready.",
-  },
-  {
-    title: "Sprint backlog",
-    href: PRODUCT_ROUTES.development.backlog,
-    body: "The in-product backlog that shows Sprint 2 closed cleanly, Sprint 3 closed formally, and later sprint work still sequenced behind it.",
-  },
-  {
-    title: "Locked screen specs",
-    href: PRODUCT_ROUTES.development.screens,
-    body: "Desktop, tablet, and mobile blueprints for the locked Leads and Capture implementation path.",
-  },
-  {
-    title: "Active flow surfaces",
-    href: PRODUCT_ROUTES.workspace.leads,
-    body: "The current Leads and Capture workspace surfaces plus the app-owned Quotes and Orders routes stay tied to the same product contract as development status.",
-  },
+  { title: "Product contract", href: PRODUCT_ROUTES.development.product, body: "The locked commercial flow and module boundaries that prevent scope creep and keep every sprint tied to the core trade execution story." },
+  { title: "Architecture contract", href: PRODUCT_ROUTES.development.architecture, body: "Domain and service rules that maintain clean separation as the product deepens, preventing god files and cross-surface coupling." },
+  { title: "UX rules", href: PRODUCT_ROUTES.development.uxRules, body: "Screen-level design principles that keep the interface trainable, predictable, and credible to enterprise buyers." },
+  { title: "Master plan", href: PRODUCT_ROUTES.development.masterPlan, body: "Sprint roadmap and completion status — the single source of truth for what has shipped, what is active, and what comes next." },
+  { title: "Readiness", href: PRODUCT_ROUTES.development.readiness, body: "Live deployment status, build confidence, and the honest signal for when a sprint is ready for signoff." },
+  { title: "Buyer ready", href: PRODUCT_ROUTES.development.buyerReady, body: "Gap analysis between what has shipped and what must land before the product is ready for buyer-facing walkthroughs and leadership signoff." },
+  { title: "Sprint backlog", href: PRODUCT_ROUTES.development.backlog, body: "The in-product backlog showing active and upcoming sprint work — sequenced in order and tied to the locked commercial flow." },
+  { title: "Screen specifications", href: PRODUCT_ROUTES.development.screens, body: "Desktop, tablet, and mobile layout specifications for the Leads and Capture surfaces." },
+  { title: "Live product", href: PRODUCT_ROUTES.workspace.leads, body: "The active Leads, Quotes, and Orders workspaces in the current deployed baseline." },
 ];
 
-const roadmapTone = {
-  done: "success",
-  "in-progress": "info",
-  next: "warning",
-  locked: "neutral",
-} as const;
+const roadmapTone = { done: "success", "in-progress": "info", next: "warning", locked: "neutral" } as const;
 
 export default function DevelopmentPage() {
   return (
@@ -74,104 +33,44 @@ export default function DevelopmentPage() {
         <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)] lg:p-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">
-                Development workplace
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Product development</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                Sprint 3 is now formally closed on the deployed Leads baseline,
-                Sprint 4 quote-builder core remains formally closed, and the
-                development workplace now opens Sprint 5 Batch 1 as a
-                visibility-first runtime slice, not deeper enforcement, while
-                keeping the locked plan, workflow truth, and remaining
-                buyer-ready gap visible.
+                Setu Flow — trade execution platform for import-export sales teams.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
-                This page is the operating surface for the locked sprint plan.
-                Sprint 4 stays closed here, and Sprint 5 Batch 1 has now opened through one safe runtime slice,
-                and deployment proof, workflow truth, and buyer-readiness gaps
-                still move together so the repo does not drift away from the
-                shipped baseline.
+                This workspace tracks sprint delivery, product readiness, and the gap between current capability and buyer-facing confidence. Every page reflects the live state of the product — not aspirational planning.
               </p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">
-                Current focus
-              </p>
-              <p className="mt-3 text-2xl font-semibold leading-tight">
-                {sprintFocus.sprint} · shell contract shared · drift guard
-                active
-              </p>
-              <p className="mt-4 text-sm leading-7 text-white/85">
-                Flow remains locked to {sprintFocus.flow}. Today’s operating
-                truth is a deployed and formally closed Sprint 3 baseline, a
-                formally closed Sprint 4 quote-builder baseline, and a
-                Sprint 5 Batch 1 trust lane that is now live in runtime and intentionally
-                limited to visibility-first trust cues, not deeper
-                enforcement.
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Active sprint</p>
+              <p className="mt-3 text-2xl font-semibold leading-tight">{sprintFocus.sprint}</p>
+              <p className="mt-4 text-sm leading-7 text-white/85">Core flow: {sprintFocus.flow}. Every sprint deepens this path.</p>
+              <div className="mt-4 flex items-center gap-2">
+                <div className="h-1.5 flex-1 rounded-full bg-white/20">
+                  <div className="h-1.5 rounded-full bg-white" style={{ width: `${sprintProgress.percent}%` }} />
+                </div>
+                <span className="text-xs font-semibold text-white/80">{sprintProgress.percent}%</span>
+              </div>
             </div>
           </div>
-          <div className="mt-8">
-            <DevelopmentNav />
-          </div>
+          <div className="mt-8"><DevelopmentNav /></div>
           <div className="mt-6 flex flex-wrap gap-3">
             <StatusBadge label={readinessSummary.status} tone="success" />
-            <StatusBadge
-              label={`Build · ${readinessSummary.buildStatus}`}
-              tone="info"
-            />
-            <StatusBadge
-              label={`Drift risk · ${readinessSummary.driftRisk}`}
-              tone="warning"
-            />
+            <StatusBadge label={sprintProgress.percentLabel} tone="info" />
           </div>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link
-              href={PRODUCT_ROUTES.development.masterPlan}
-              className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white"
-            >
-              Open master plan
-            </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.readiness}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
-              Open readiness
-            </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.buyerReady}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
-              Open buyer ready
-            </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.backlog}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
-              Open backlog
-            </Link>
-            <Link
-              href={PRODUCT_ROUTES.development.screens}
-              className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5"
-            >
-              Open locked screen specs
-            </Link>
+            <Link href={PRODUCT_ROUTES.development.masterPlan} className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-3 text-sm font-semibold text-white">Sprint roadmap</Link>
+            <Link href={PRODUCT_ROUTES.development.readiness} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Readiness status</Link>
+            <Link href={PRODUCT_ROUTES.development.buyerReady} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Buyer-ready gap</Link>
+            <Link href={PRODUCT_ROUTES.app.leads} className="rounded-full border border-[#1F487C]/15 bg-white px-5 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Live product</Link>
           </div>
         </section>
 
         <section className="mt-10 grid gap-5 xl:grid-cols-4">
           {pinned.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_20px_60px_rgba(31,72,124,0.08)] transition hover:-translate-y-0.5 hover:border-[#1F487C]/20 hover:shadow-[0_24px_70px_rgba(31,72,124,0.12)]"
-            >
-              <p className="text-sm font-semibold text-slate-950">
-                {item.title}
-              </p>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                {item.body}
-              </p>
+            <Link key={item.href} href={item.href} className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_20px_60px_rgba(31,72,124,0.08)] transition hover:-translate-y-0.5 hover:border-[#1F487C]/20 hover:shadow-[0_24px_70px_rgba(31,72,124,0.12)]">
+              <p className="text-sm font-semibold text-slate-950">{item.title}</p>
+              <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
             </Link>
           ))}
         </section>
@@ -180,55 +79,27 @@ export default function DevelopmentPage() {
           <div className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">
-                  Master checklist
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  Visible by default inside the HTML workplace
-                </h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Implementation checklist</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Verified against the shipped baseline</h2>
               </div>
-              <Link
-                href={PRODUCT_ROUTES.development.readiness}
-                className="text-sm font-semibold text-[#1F487C]"
-              >
-                Open readiness view
-              </Link>
+              <Link href={PRODUCT_ROUTES.development.readiness} className="text-sm font-semibold text-[#1F487C]">Full readiness view</Link>
             </div>
-            <div className="mt-6">
-              <DevelopmentChecklist />
-            </div>
+            <div className="mt-6"><DevelopmentChecklist /></div>
           </div>
 
           <div className="space-y-5">
             <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">
-                Roadmap alignment
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                Sprint status is back on the plan, and later module work should
-                only continue when the roadmap reaches it in order after the
-                closed Sprint 4 baseline.
-              </h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Sprint roadmap</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Delivered sprints closed. Active sprint tracked. Upcoming work sequenced.</h2>
               <div className="mt-6 space-y-4">
                 {roadmapMilestones.map((milestone) => (
-                  <div
-                    key={milestone.sprint}
-                    className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4"
-                  >
+                  <div key={milestone.sprint} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-slate-950">
-                          {milestone.sprint}
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-slate-600">
-                          {milestone.summary}
-                        </p>
+                        <p className="font-semibold text-slate-950">{milestone.sprint}</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">{milestone.summary}</p>
                       </div>
-                      <StatusBadge
-                        label={milestone.badgeLabel}
-                        tone={roadmapTone[milestone.status]}
-                        className="shrink-0"
-                      />
+                      <StatusBadge label={milestone.badgeLabel} tone={roadmapTone[milestone.status]} className="shrink-0" />
                     </div>
                   </div>
                 ))}
@@ -236,9 +107,7 @@ export default function DevelopmentPage() {
             </section>
 
             <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">
-                {PRODUCT_SHELL_LABELS.ritualHeading}
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">{PRODUCT_SHELL_LABELS.ritualHeading}</p>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
                 <li>• {PRODUCT_SHELL_LABELS.ritualBeforeCoding}</li>
                 <li>• {PRODUCT_SHELL_LABELS.ritualDuringCoding}</li>
