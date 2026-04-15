@@ -2476,8 +2476,8 @@ export function QuoteCreateWizardForm({
   );
   const sendCautionSignature =
     sendDecision.state === "caution"
-      ? `${sendDecision.primaryRecommendation?.key ?? ""}|${sendDecision.warningRecommendations
-          .map((recommendation) => recommendation.key)
+      ? `${sendDecision.primaryRecommendation?.recommendationKey ?? ""}|${sendDecision.warningRecommendations
+          .map((recommendation) => recommendation.recommendationKey)
           .join("|")}`
       : "ready";
   useEffect(() => {
@@ -3536,8 +3536,8 @@ export function QuoteEditWizardForm({
   );
   const sendCautionSignature =
     sendDecision.state === "caution"
-      ? `${sendDecision.primaryRecommendation?.key ?? ""}|${sendDecision.warningRecommendations
-          .map((recommendation) => recommendation.key)
+      ? `${sendDecision.primaryRecommendation?.recommendationKey ?? ""}|${sendDecision.warningRecommendations
+          .map((recommendation) => recommendation.recommendationKey)
           .join("|")}`
       : "ready";
   useEffect(() => {
