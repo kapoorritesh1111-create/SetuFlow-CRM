@@ -21,7 +21,7 @@ const pinned = [
   { title: "Buyer ready", href: PRODUCT_ROUTES.development.buyerReady, body: "Gap analysis between what has shipped and what must land before the product is ready for buyer-facing walkthroughs and leadership signoff." },
   { title: "Sprint backlog", href: PRODUCT_ROUTES.development.backlog, body: "The in-product backlog showing the closed Sprint 6 baseline and the next sequenced sprint work tied to the locked commercial flow." },
   { title: "Screen specifications", href: PRODUCT_ROUTES.development.screens, body: "Desktop, tablet, and mobile layout specifications for the Leads and Capture surfaces." },
-  { title: "Live product", href: PRODUCT_ROUTES.workspace.leads, body: "The active Leads, Quotes, and Orders workspaces in the Sprint 6 deployed baseline." },
+  { title: "Live product", href: PRODUCT_ROUTES.workspace.leads, body: "The active Leads, Quotes, Orders, Dashboard, and supporting workspaces in the current repo baseline." },
 ];
 
 const roadmapTone = { done: "success", "in-progress": "info", next: "warning", locked: "neutral" } as const;
@@ -38,7 +38,7 @@ export default function DevelopmentPage() {
                 Setu Flow — trade execution platform for import-export sales teams.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
-                This workspace tracks sprint delivery, product readiness, and the gap between current capability and buyer-facing confidence. Every page reflects the live state of the product — not aspirational planning.
+                This workspace tracks sprint delivery, repo alignment, and the gap between checked-in capability and buyer-facing proof. Every page should reflect the code that actually exists — not stale planning or aspirational wording.
               </p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">

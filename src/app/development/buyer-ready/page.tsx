@@ -20,7 +20,7 @@ export default function BuyerReadyPage() {
                 What the product can demonstrate today — and what must land before leadership walkthrough.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
-                A successful deployment is necessary but not sufficient for buyer-facing confidence. This page tracks the explicit gap between what has shipped and what is required for credible demos, leadership signoff, and external engagement.
+                A substantial codebase is necessary but not sufficient for buyer-facing confidence. This page tracks the explicit gap between what is already true in the repo and what still requires proof, walkthrough assets, and release-quality closure.
               </p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
@@ -29,7 +29,7 @@ export default function BuyerReadyPage() {
                 {readinessSummary.status}
               </p>
               <p className="mt-4 text-sm leading-7 text-white/85">
-                Product is live on {sprintFocus.flow}. Buyer-ready gaps are tracked below — the Sprint 6 baseline is complete, and remaining proof work is sequenced without reopening older sprint lanes.
+                Product is live on {sprintFocus.flow}. Buyer-ready gaps are tracked below — the closed workflow baseline stays protected while active dashboard work, proof refresh, and later release work remain sequenced.
               </p>
             </div>
           </div>

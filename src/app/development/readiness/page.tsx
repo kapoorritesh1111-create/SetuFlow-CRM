@@ -14,7 +14,7 @@ export default function ReadinessPage() {
             Live deployment status and sprint delivery confidence.
           </h1>
           <p className="mt-4 max-w-4xl text-base leading-8 text-slate-600">
-            Readiness is verified against the deployed baseline — not estimated. Build status, sprint completion, and buyer-facing gap are tracked here so leadership has an accurate view of where the product stands at any point in the delivery cycle.
+            Readiness is tracked against the cleaned repo baseline — not estimated. Build status, sprint state, drift risk, and the remaining proof gap are tracked here so leadership sees what is implemented, what is aligned, and what still needs fresh verification.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <span className="rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-semibold text-emerald-700">

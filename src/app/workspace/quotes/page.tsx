@@ -5,9 +5,9 @@ import { QuoteBuilderLaunchpad } from '@/features/quotes/components/quote-builde
 export default function WorkspaceQuotesPage() {
   return (
     <QuoteBuilderLaunchpad
-      eyebrow="Workspace preview · Quote builder core"
-      title="Quotes workspace preview"
-      description="The approved Sprint 4 starting point is the guided quote-builder flow. Use the lead-owned quote workspace for live buyer context and keep this page aligned to that roadmap truth."
+      eyebrow="Workspace route · Quote builder core"
+      title="Quotes workspace"
+      description="The guided quote-builder flow is already the repo baseline. Use the lead-owned quote workspace for live buyer context and keep this route aligned to the closed Sprint 4 builder contract, not older preview language."
     />
   );
 }

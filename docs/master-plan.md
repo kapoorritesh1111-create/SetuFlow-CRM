@@ -6,16 +6,22 @@ Setu Flow is a trade execution system for import-export sales teams.
 ## Locked flow
 Capture -> Lead -> Quote -> Order
 
-## Current state
-Sprint 2 is complete.
+## Current repo baseline
+- **Closed baseline:** Sprints 1 through 6 are reflected in live code.
+- **Active lane:** Sprint 7 Dashboard rebuild is already in progress in the repo and should now be treated as the active product lane.
+- **Seeded lane:** Sprint 8 My Card / contact-exchange work exists in code, but it stays subordinate to Sprint 7 until the dashboard lane is stabilized.
+- **Cleanup lane:** Sprint 9 architecture cleanup remains necessary because large quote/query files and legacy route duplication still exist.
 
-A clean production build has already been verified and deployed successfully.
-There are currently no confirmed build blockers in the latest verified baseline.
-
-Next phase: Sprint 3 is ready to start.
+## What this cleanup pass changes
+This repo pass is about **alignment before more feature depth**:
+- update development pages so they match the checked-in code
+- replace stale markdown that still described Sprint 2 or Sprint 3 as current
+- remove legacy duplicate files that were no longer imported
+- restore repo-backed smoke tests and lightweight validation scripts
+- make readiness language honest: code is ahead of the old docs, but fresh proof still needs a new verify run after install
 
 ## Operating pages
-Use these pages before any implementation work:
+Use these pages before implementation work:
 - /development
 - /development/master-plan
 - /development/readiness
@@ -25,62 +31,81 @@ Use these pages before any implementation work:
 - /development/ux-rules
 - /development/screens/leads-capture
 
-## Sprint roadmap
+## Delivery roadmap
 
 ### Sprint 1 - Product foundation closeout
-- keep one active development workplace at `/development`
-- keep Sprint 1 aligned to Leads, Capture, and Quote entry only
-- complete real-environment build and deployment validation
+- establish the locked commercial flow
+- keep one development workplace in the repo
+- close initial build/deployment readiness
 - status: complete
 
 ### Sprint 2 - Capture foundation
-- create unified Capture entry under Leads
-- deepen intake review for vCard, business card, and document upload
-- add confidence states and duplicate detection depth
+- unify inbound capture under Leads
+- support vCard, card scan, inquiry text, and document intake
+- keep review-before-save trust visible
 - status: complete
 
 ### Sprint 3 - Lead simplification
-- reduce lead surface complexity
-- make Create Quote the dominant CTA
-- unify activity and next-action surfaces
+- keep Leads quote-first
+- make Create Quote / Continue Quote dominant
+- keep support surfaces quieter and secondary
+- status: complete
 
 ### Sprint 4 - Quote builder core
-- build guided quote builder steps
-- define data model for draft, pricing, and review
-- add version history and send checkpoints
+- maintain the guided Product -> Pricing -> Terms -> Review -> Send flow
+- preserve exact remediation loops and checkpoint continuity
+- keep send-state enforcement inside the builder
+- status: complete
 
 ### Sprint 5 - Trust layer
-- Batch 1 started with a safe runtime slice: surface the approval gate contract in the quote fast lane
-- Batch 1 started with a safe runtime slice: surface the audit-event map for checkpoint, approval, send, and lock transitions
-- Batch 1 started with a safe runtime slice: surface quote lock posture after send and outcome without opening deeper enforcement
+- preserve approval visibility, audit events, lock enforcement, AI draft assist, and production-safe rate limiting
+- keep trust behavior stable while surrounding surfaces evolve
+- status: complete
 
 ### Sprint 6 - Orders foundation
-- create Orders module and accepted quote snapshot path
-- fold documents and compliance into order detail
+- keep Orders live from accepted and sent quotes
+- preserve document, compliance, contract, and dispatch-readiness context per order
+- status: complete
 
 ### Sprint 7 - Dashboard rebuild
-- make dashboard action-first
-- add trade map and geographic drill-down
-- remove passive vanity metrics
+- canonicalize the dashboard around actions first
+- keep trade-map and geographic drill-down meaningful
+- remove passive/fallback reporting language and duplicate preview drift
+- status: active in repo
 
 ### Sprint 8 - My Card and outbound share
-- build My Card page
-- add QR, public card page, and request-quote CTA path
+- finish the outward contact-exchange story already seeded in code
+- keep QR, preview, public-card, and request-quote flows subordinate to the core workflow
+- status: seeded, not the primary lane
 
 ### Sprint 9 - Architecture cleanup
-- split god files
-- re-home services into clearer domains
-- reduce route sprawl and legacy paths
+- split large quote/query files
+- tighten service and route boundaries
+- keep repo proof tooling simple and real
+- status: queued after Sprint 7/8 stabilization
 
 ### Sprint 10 - Demo and release readiness
-- prepare buyer demo script
-- prepare leadership walkthrough
-- verify end-to-end readiness against release criteria
+- refresh walkthrough assets
+- run end-to-end proof on the cleaned baseline
+- close buyer-facing readiness honestly
+- status: queued
+
+## Rework plan
+1. **Alignment and hygiene**
+   - keep docs, development pages, and repo scripts consistent with the checked-in code
+   - remove stale artifacts and dead duplicates
+2. **Sprint 7 closure**
+   - finish the canonical action-first dashboard story and its drill-down behavior
+3. **Sprint 8 closure**
+   - finish My Card / contact-exchange outward sharing without creating a detached product lane
+4. **Proof refresh**
+   - reinstall dependencies and run typecheck, smoke tests, and production build on the cleaned baseline
+5. **Architecture cleanup**
+   - break up the largest files only after product/status truth is stable again
 
 ## No-drift rules
-- Stay in the active sprint until its validation is complete
-- Do not redesign the product structure
-- Do not add new top-level modules without deliberate product approval
-- Do not create alternate workflow paths outside the locked flow
-- Keep planning inside the HTML development workplace instead of scattered markdown files
-- Keep later sprint work visible in the in-app backlog instead of losing it between cleanup passes
+- Keep Capture -> Lead -> Quote -> Order as the primary operating path.
+- Do not describe seeded or partial work as fully closed.
+- Do not leave markdown, development pages, and checked-in scripts speaking different timelines.
+- Do not add new top-level product stories when a capability belongs inside the locked flow.
+- Pair any roadmap change with updates to the shared status contract and development pages.

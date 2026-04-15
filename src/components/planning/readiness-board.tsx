@@ -46,7 +46,7 @@ export function ReadinessBoard() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#359F91]">Readiness by area</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">The actual state of the live Sprint 6 baseline right now</h2>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">The actual state of the cleaned repo baseline right now</h2>
           </div>
           <StatusBadge label={readinessSummary.status} tone="success" />
         </div>

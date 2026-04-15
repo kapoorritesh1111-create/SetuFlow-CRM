@@ -1,53 +1,53 @@
 # Setu Flow Architecture Contract
 
-## Target Structure
-src/
-  domains/
-    leads/
-    quotes/
-    orders/
-    catalog/
-    admin/
-  services/
-    intake/
-    pricing/
-    rfq/
-    compliance/
-    documents/
-    contracts/
-    ai/
-    approvals/
-    audit/
-    progression/
-  platform/
-    auth/
-    permissions/
-    db/
-    logging/
+## Current code shape
+The repo is currently organized around:
 
-## Domain Ownership
-- Leads owns qualification, contact context, activity, and quote creation entry.
-- Quotes owns quote drafting, pricing decisions, approvals, send flow, and locking.
-- Orders owns accepted quote snapshots, execution readiness, documents, and compliance tabs.
-- Catalog owns product and pricing input data.
-- Admin owns users, organization setup, integrations, reporting, and governance.
+- `src/app/` - route entry points and page shells
+- `src/features/` - domain and feature implementations
+- `src/components/` - shared UI and preview/presentation building blocks
+- `src/lib/` - contracts, queries, workflow logic, services, and shared utilities
+- `public/` - public artifacts including the architecture/status HTML
 
-## Non-Negotiable Rules
-- No business logic inside presentational components.
-- No giant catch-all actions files.
-- No giant catch-all queries files.
-- No cross-domain reach-through when a service boundary should exist.
-- One action per file.
-- One query per file or tightly related query set.
-- Shared services must stay domain-agnostic.
+This is the **actual current structure**. Any future target architecture must start from this reality rather than from an idealized folder sketch.
 
-## Migration Priorities
-1. Simplify nav and surface area.
-2. Promote quotes into a first-class module.
-3. Fold capture into leads.
-4. Create orders as a first-class module.
-5. Centralize approvals, audit, and progression rules.
-6. Break up legacy god files.
+## Product ownership lanes
+- **Leads** owns qualification, contact context, activity, and quote entry.
+- **Quotes** owns drafting, pricing, approvals, send flow, and lock posture.
+- **Orders** owns accepted commercial truth carried into execution.
+- **Dashboard** owns action-first visibility and trade-map context.
+- **Admin / governance** owns users, org setup, audit, analytics, and settings.
+- **Supporting lanes** such as products, documents, contracts, compliance, contact exchange, and trade events stay subordinate to the core commercial flow.
 
-## Readiness Standard
-Architecture changes are only considered successful when they reduce confusion, reduce coupling, and make the core flow easier to reason about.
+## Current architecture risks
+- oversized files still exist in quote and query layers
+- some preview/demo surfaces still overlap with app-owned routes
+- historical repo artifacts and stale scripts previously made proof status look cleaner than it really was
+- contact-exchange and dashboard work exist in code, but planning language was lagging behind implementation
+
+## Non-negotiable rules
+- No business logic in presentational components.
+- No dead duplicate files kept beside the active implementation.
+- No package scripts pointing to files that are not checked in.
+- Shared status truth must live in one repo-backed contract.
+- Product/docs/architecture pages must describe the code that actually exists.
+- Architecture cleanup must reduce confusion, not just move files around.
+
+## Cleanup priorities
+1. **Repo truth first**
+   - keep docs, development pages, and package scripts aligned
+2. **Dashboard canonicalization**
+   - choose the active dashboard story and remove drift between preview/fallback language and live implementation
+3. **Quote/query decomposition**
+   - split large quote and data files by responsibility
+4. **Route and feature tightening**
+   - keep preview/demo surfaces clearly secondary to app-owned routes
+5. **Proof refresh**
+   - keep smoke tests lightweight and checked in so the repo can prove its own state
+
+## Success standard
+Architecture work is only successful if:
+- the repo is easier to reason about,
+- status pages stay honest,
+- product ownership becomes clearer,
+- and future changes create less drift instead of more.

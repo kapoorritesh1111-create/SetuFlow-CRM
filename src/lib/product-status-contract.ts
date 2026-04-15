@@ -109,28 +109,28 @@ export type ScreenPlan = {
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
-  sprint: "Sprint 6 complete",
-  percent: 100,
-  percentLabel: "Sprint 6 complete · Sprint 7 Dashboard rebuild next",
+  sprint: "Sprint 6 closed · Sprint 7 active",
+  percent: 68,
+  percentLabel: "Sprint 6 closed · Sprint 7 active · Sprint 8 seeded",
 };
 
 export const sprintFocus = {
-  sprint: "Sprint 6 complete · Sprint 7 next",
+  sprint: "Sprint 6 closed · Sprint 7 active",
   title:
-    "The Sprint 6 baseline is complete. Orders now carries accepted and sent quotes with documents, compliance items, contract status, and dispatch-readiness context inside each order card. The development surfaces should now read as a closed Sprint 6 baseline, with Sprint 7 Dashboard rebuild shown as the next approved lane rather than another active Sprint 3 or Sprint 4 state.",
+    "The repo now reflects the actual codebase: Capture, Leads, Quotes, Trust, and Orders are closed through Sprint 6; Dashboard already has active implementation in the repo; My Card/contact-exchange work is seeded; and the immediate job is to finish Sprint 7 while keeping the repo aligned and provable.",
   nextAction:
-    "Keep Sprint 6 closed everywhere. The next approved lane is Sprint 7 Dashboard rebuild: action-first, trade-map context, and commercial signals without passive vanity metrics. Do not reopen Sprint 3, Sprint 4, or Sprint 5 wording on the development pages.",
+    "Finish the canonical action-first dashboard lane, keep Sprint 8 outward-share work sequenced behind it, and refresh proof on this cleaned baseline with a fresh install, smoke tests, typecheck, and production build.",
   flow: LOCKED_PRODUCT_FLOW.join(" → "),
 };
 
 export const readinessSummary = {
-  status: "Deployment verified",
+  status: "Repo aligned · proof refresh pending",
   buildStatus:
-    "The latest production build completed successfully, generated all static pages, finalized optimization, and deployed without a confirmed blocker. Local build discipline still matters, but deployment proof is now current and real.",
+    "Historical build and deployment artifacts exist, but this cleaned baseline still needs a fresh verify run after dependencies are installed.",
   driftRisk:
-    "Controlled because the development pages, workflow state, and successful deployment proof now match. Keep future workflow changes paired with development-page updates so the repo does not drift again.",
+    "Reduced — docs, development pages, package scripts, and repo artifacts now match the checked-in code and current rework plan.",
   blockers:
-    "No confirmed build blockers. Keep experimental.webpackBuildWorker = false in place until a future real build proves it is safe to remove.",
+    "Fresh dependency install plus verify run still required. Large quote/query files remain Sprint 9 cleanup targets.",
 };
 
 export const planningSurfaces: PlanningSurface[] = [
@@ -139,50 +139,50 @@ export const planningSurfaces: PlanningSurface[] = [
     title: PRODUCT_ROUTES.development.home,
     href: PRODUCT_ROUTES.development.home,
     summary:
-      "Operating-system overview for the locked flow, current sprint status, and the next approved execution lane.",
+      "Operating-system overview for the locked flow, current sprint state, and the active cleanup/execution lane.",
     status: "done",
     focus:
-      "Keep the repo speaking one sprint timeline again: Sprints 1 through 6 are complete, and Sprint 7 Dashboard rebuild is the next approved lane.",
+      "Keep the repo speaking one timeline: Sprint 6 is closed, Sprint 7 is active, and Sprint 8 is seeded rather than invisible.",
   },
   {
     id: "master-plan",
     title: PRODUCT_ROUTES.development.masterPlan,
     href: PRODUCT_ROUTES.development.masterPlan,
     summary:
-      "Sprint roadmap for the locked flow from completed foundation work into the next product phase.",
+      "Roadmap from the closed baseline into the active dashboard and cleanup sequence.",
     status: "done",
     focus:
-      "Preserve the roadmap order while showing clearly that Sprints 1 through 6 are complete and Sprint 7 Dashboard rebuild is next.",
+      "Preserve roadmap order while making the current active lane and later queued cleanup explicit.",
   },
   {
     id: "readiness",
     title: PRODUCT_ROUTES.development.readiness,
     href: PRODUCT_ROUTES.development.readiness,
     summary:
-      "Readiness, build confidence, blockers, and anti-drift discipline anchored to current production proof.",
+      "Readiness, build confidence, blockers, and proof refresh work anchored to the current cleaned repo.",
     status: "done",
     focus:
-      "Keep the successful deployment and the active workflow truth visible together.",
+      "Keep status language honest: code is aligned, fresh proof still needs to be rerun.",
   },
   {
     id: "buyer-ready",
     title: "Buyer ready",
     href: PRODUCT_ROUTES.development.buyerReady,
     summary:
-      "The gap view for what is already true, what still needs to land from the approved rework, and what must be complete before buyer-facing walkthroughs.",
+      "Gap view for what is already true in code and what still needs proof before buyer-facing confidence.",
     status: "done",
     focus:
-      "Keep buyer-readiness honest instead of implying the overall roadmap is finished: Sprints 5 and 6 are complete, buyer-proof still requires QA and walkthrough assets, and Sprint 7 Dashboard rebuild remains next.",
+      "Separate shipped code truth from release/demo proof that still remains.",
   },
   {
     id: "backlog",
     title: PRODUCT_ROUTES.development.backlog,
     href: PRODUCT_ROUTES.development.backlog,
     summary:
-      "Repo-backed backlog showing Sprints 1 through 6 complete and Sprint 7 next in sequence.",
+      "Repo-backed backlog showing the closed baseline, active Sprint 7 work, and queued cleanup.",
     status: "done",
     focus:
-      "Keep later work sequenced behind the completed Sprint 6 baseline and avoid skipping ahead without updating the plan.",
+      "Keep future work sequenced behind the active lane without pretending seeded work is either absent or fully closed.",
   },
   {
     id: "product",
@@ -198,26 +198,26 @@ export const planningSurfaces: PlanningSurface[] = [
     title: PRODUCT_ROUTES.development.architecture,
     href: PRODUCT_ROUTES.development.architecture,
     summary:
-      "Architecture guardrails for safe implementation as future sprints deepen the product.",
+      "Architecture guardrails focused on the real current code layout and queued cleanup lanes.",
     status: "done",
-    focus: "Keep future work disciplined and route-safe.",
+    focus: "Keep future cleanup grounded in the structure that actually exists today.",
   },
   {
     id: "ux-rules",
     title: PRODUCT_ROUTES.development.uxRules,
     href: PRODUCT_ROUTES.development.uxRules,
     summary:
-      "Rules for clarity, locking, trust, and trainable workflow behavior.",
+      "Rules for clarity, locking, trainability, and status honesty.",
     status: "done",
     focus:
-      "Prevent visual drift now that Sprints 1 through 6 are complete and Sprint 7 is still sequenced.",
+      "Prevent visual drift while dashboard and contact-exchange work deepen.",
   },
   {
     id: "screen-leads-capture",
     title: PRODUCT_ROUTES.development.screens,
     href: PRODUCT_ROUTES.development.screens,
     summary:
-      "Screen-layout reference for the completed Leads + Capture foundation and the now-closed Sprint 3 Leads baseline that later work must continue to respect.",
+      "Screen-layout reference for the completed Leads + Capture foundation and the quote-first lead workspace.",
     status: "done",
     focus:
       "Keep Lead and Capture implementation aligned to the locked screen contract.",
@@ -226,40 +226,40 @@ export const planningSurfaces: PlanningSurface[] = [
 
 export const readinessAreas: ReadinessArea[] = [
   {
-    title: "Development status is now repo-backed and aligned",
+    title: "Development status is now aligned to the checked-in code",
     summary:
-      "The development hub, master plan, readiness board, and backlog now all report the same sprint state instead of mixed timelines.",
+      "Development hub, backlog, buyer-ready view, markdown docs, and repo scripts now speak the same timeline instead of mixing old and new sprint states.",
     status: "done",
   },
   {
-    title: "Current production deployment is verified",
+    title: "Repo hygiene has been restored",
     summary:
-      "The latest external build completed successfully, generated static pages, finalized optimization, and deployed without a confirmed blocker.",
+      "Legacy duplicate JSX files and stale repo artifacts were removed, and lightweight checked-in smoke tests now exist again.",
     status: "done",
   },
   {
-    title: "Sprint 2 foundation is formally complete",
+    title: "Sprint 7 dashboard work is active in the repo",
     summary:
-      "The current baseline is stable enough to close Sprint 2 without changing working build-safe code.",
-    status: "done",
+      "Dashboard is no longer a blank future-only lane. Live routes, interactive components, and map-related code exist and should now be treated as active work.",
+    status: "in-progress",
   },
   {
-    title: "Sprint 3 workflow state is complete and accurately reflected",
+    title: "Sprint 8 outward-share work is seeded",
     summary:
-      "Lead simplification is now complete and the current repo reflects the quote-first workspace, decisive commercial state, prioritized quote-prep lane, passive activity, compact lead-reference tray, collapsed lower support detail, quieter shared supporting-record surface, and passive support watchlist defined by the Sprint 3 rework.",
-    status: "done",
+      "My Card, digital vCard preview, QR/share actions, and inbound scan-contact surfaces already exist in code, but they remain sequenced behind Sprint 7 closure.",
+    status: "in-progress",
   },
   {
-    title: "Buyer readiness still needs QA and walkthrough proof",
+    title: "Fresh proof refresh still needs to happen",
     summary:
-      "The successful deployment does not mean the product is fully buyer-ready yet. The core workflow is complete through Sprint 6, while end-to-end buyer QA, walkthrough proof, and release-readiness assets still remain sequenced work.",
+      "This cleanup pass aligned the repo, but a current install + typecheck + smoke test + production build still needs to be rerun on the cleaned baseline.",
     status: "next",
   },
   {
-    title: "No new build blocker is confirmed",
+    title: "Buyer-facing confidence still needs proof assets",
     summary:
-      "Build risk is currently low, but the existing worker fix stays in place until a future real build proves the repo no longer needs it.",
-    status: "done",
+      "The product surface is substantial, but walkthrough assets, proof points, and end-to-end demo validation still remain before broader release confidence is claimed.",
+    status: "next",
   },
 ];
 
@@ -282,45 +282,42 @@ export const checklistItems: ChecklistItem[] = [
     id: "shared-status-contract",
     area: "Anti-drift structure",
     label: "Planning and readiness truth lives in product-status-contract.ts",
-    note: "development-status.ts remains a compatibility pass-through instead of owning its own timeline.",
+    note: "Development pages and repo docs now share one timeline source again.",
     status: "done",
   },
   {
     id: "development-pages-aligned",
     area: "Development pages",
-    label:
-      "Development pages now show Sprint 6 complete and Sprint 7 next",
-    note: "The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprints 1 through 6 complete and Sprint 7 queued next.",
+    label: "Development pages describe Sprint 6 closed, Sprint 7 active, and Sprint 8 seeded",
+    note: "The development hub, master plan, readiness page, backlog, and buyer-ready view now match the checked-in code rather than stale markdown history.",
     status: "done",
   },
   {
-    id: "capture-foundation",
-    area: "Sprint completion",
-    label: "Sprint 2 Capture foundation is reflected as complete",
-    note: "Lead and Capture foundation status is now closed in the planning surfaces instead of being left in a stale transitional state.",
+    id: "markdown-aligned",
+    area: "Documentation",
+    label: "Markdown docs now reflect code reality and the active rework plan",
+    note: "Master plan, release readiness, product, architecture, and rework docs now describe the actual repo baseline.",
     status: "done",
   },
   {
-    id: "build-verification",
+    id: "repo-hygiene",
+    area: "Repo hygiene",
+    label: "Stale artifacts and dead duplicates were removed",
+    note: "Legacy JSX duplicates and stale .out artifacts were removed so the repo baseline is easier to trust.",
+    status: "done",
+  },
+  {
+    id: "smoke-tests",
     area: "Validation",
-    label:
-      "Production build and deployment proof are recorded in the status source",
-    note: "Development status now reflects the real production outcome: clean build, clean deployment, and no confirmed new blocker.",
+    label: "Checked-in smoke tests and dashboard validation scripts exist again",
+    note: "Package scripts now point to files that actually exist inside the repo.",
     status: "done",
   },
   {
-    id: "worker-fix-protection",
-    area: "Build safety",
-    label: "Existing webpack worker fix remains protected",
-    note: "Do not remove experimental.webpackBuildWorker = false until a future real build proves it is unnecessary.",
-    status: "done",
-  },
-  {
-    id: "sprint-3-entry",
-    area: "Next phase",
-    label:
-      "Sprint 7 Dashboard rebuild is the next approved lane",
-    note: "Sprint 6 is now closed. The next approved lane is Sprint 7 Dashboard rebuild: action-first dashboard behavior, trade-map context, and commercial signals without reopening earlier workflow work.",
+    id: "fresh-verify",
+    area: "Validation",
+    label: "Fresh verify run is still required on the cleaned baseline",
+    note: "Install dependencies and rerun typecheck, smoke tests, and build before claiming refreshed release proof.",
     status: "next",
   },
 ];
@@ -329,148 +326,137 @@ export const roadmapMilestones: RoadmapMilestone[] = [
   {
     sprint: "Sprint 1 · Product foundation closeout",
     summary:
-      "Keep one active development workplace, align Leads, Capture, and Quote entry, and close baseline readiness.",
+      "Establish the locked flow and make the development workplace the planning source of truth.",
     badgeLabel: "Done",
     status: "done",
     objective:
-      "Establish the locked flow and make the development workplace the planning source of truth.",
+      "Lock the product story and baseline operating rhythm.",
     outcomes: [
       "Development workplace pages exist and anchor planning.",
-      "Leads, Capture, and Quote entry stay inside the locked product scope.",
+      "Leads, Capture, and Quote entry stay inside the locked scope.",
       "Baseline readiness gates are visible instead of implied.",
     ],
   },
   {
     sprint: "Sprint 2 · Capture foundation",
     summary:
-      "Create the unified Capture entry under Leads and lock the intake review foundation to the current product contract.",
+      "Unify inbound capture under Leads and keep review-before-save trust visible.",
     badgeLabel: "Done",
     status: "done",
     objective:
-      "Finish the Leads + Capture foundation and close the sprint with real build and production proof.",
+      "Finish the inbound capture foundation cleanly.",
     outcomes: [
-      "Leads + Capture planning surfaces are aligned in the development workplace.",
-      "Clean production build has already been verified and deployed successfully.",
-      "Sprint 2 is now formally complete in the repo status source.",
+      "vCard, card scan, document, and inquiry intake paths exist.",
+      "Capture stays subordinate to Leads instead of becoming a detached product area.",
+      "Screen contracts preserve the intake foundation.",
     ],
   },
   {
     sprint: "Sprint 3 · Lead simplification",
     summary:
-      "Reduce lead-surface complexity and turn the lead page into a quote-first commercial workspace.",
+      "Keep Leads quote-first and reduce decision noise in the operating area.",
     badgeLabel: "Done",
     status: "done",
     objective:
-      "Close Lead simplification cleanly without changing the locked commercial flow or destabilizing the build.",
+      "Make quote entry the dominant next commercial action.",
     outcomes: [
-      "Lead surface complexity is reduced through a quote-first workspace hierarchy.",
-      "Create Quote or Continue Quote becomes the dominant CTA when a lead is ready.",
-      "Workflow support now prioritizes one blocker at a time, keeps the blocker summary inside the quote-prep lane instead of a duplicate support hero, summarizes above-the-fold quote readiness as one decisive commercial state instead of four equal tracks, folds supporting records into a compact lead-reference tray, and keeps lower support detail collapsed by default until a blocker is explicitly inspected, while quote creation or continuation stays above the fold, activity history remains passive until deeper quote review is needed, and the shared supporting-record surface can collapse back to a lighter summary drawer once full detail is no longer required.",
+      "Lead surface complexity is reduced.",
+      "Quote creation/continuation is visually dominant.",
+      "Support detail stays quieter and secondary until needed.",
     ],
   },
   {
     sprint: "Sprint 4 · Quote builder core",
     summary:
-      "Keep the guided quote-builder sequence truthful and extend the live workspace by keeping exact remediation loops visible again after users return to the originating review or send checkpoint.",
+      "Keep the guided quote-builder truthful, enforce send-state decisions, and preserve remediation continuity.",
     badgeLabel: "Done",
     status: "done",
     objective:
-      "Close Quote builder core cleanly now that Sprint 3 is finished and keep it stable until Sprint 5 is intentionally opened.",
+      "Close the builder baseline without reopening flow structure.",
     outcomes: [
-      "Guided steps remain Product, Pricing, Terms, Review, and Send.",
-      "The Quotes entry now reflects the guided builder instead of an order-conversion shortcut.",
-      "The live quote draft now follows Product, Pricing, Terms, Review, and Send instead of a loose three-step sequence.",
-      "The live workspace now keeps builder-step readiness, validation prompts, and recommendations visible after version history and send-checkpoint posture landed.",
-      "Existing quote editing now reopens inside Product, Pricing, Terms, Review, and Send and targets the next needed step from the fast lane.",
-      "Review and send now surface pricing-risk cues for overrides, MOQ pressure, approval posture, and send blockers inside the builder itself.",
-      "Builder review and send now keep current version, latest sent checkpoint, and latest approved checkpoint visible inside the same guided editor.",
-      "Pricing lines now surface line-level readiness issues plus quick-fix actions for MOQ pressure, missing product linkage, missing catalog baseline, zero quantity, and missing override reasons before review or send.",
-      "Review and send remediation now lands users on the exact field or pricing line that still needs work inside the same builder, returns directly to the originating checkpoint, keeps that checkpoint loop visible after users return, turns checkpoint guidance into aligned continue-and-save actions tied to the explicit blocked-versus-caution-versus-ready decision state, keeps the leading reason visible in the footer at the moment of action, enforces that state on the actual submit path, locks save/create to the Send checkpoint itself, hands blocked submit directly into the leading exact fix target, and requires explicit caution acknowledgement before save/create can continue.",
+      "Guided Product → Pricing → Terms → Review → Send flow is live.",
+      "Review/send checkpoints preserve exact remediation loops.",
+      "The workspace and launch surfaces both align to the builder story.",
     ],
   },
   {
     sprint: "Sprint 5 · Trust layer",
     summary:
-      "Batch 1 delivered the full trust-layer foundation: approval audit trail, Anthropic AI, lock-state enforcement across fast lane and quote list, production-safe rate limiter, and live Orders data.",
+      "Approval visibility, audit events, AI assist, lock posture, and production-safe rate limiting are live.",
     badgeLabel: "Done",
     status: "done",
     objective:
-      "Start the trust contract through visibility-first runtime slices without opening new top-level modules or deeper enforcement early.",
+      "Carry trust controls into the workflow without changing the product shell.",
     outcomes: [
-      "Approval-required, approval-pending, and approval-cleared trust posture visible in fast lane and send checkpoint.",
-      "Approval state transitions (requested / approved / rejected) write persistent audit events in updateQuoteWorkflow.",
-      "Anthropic Claude AI live — ANTHROPIC_API_KEY activates LLM-refined drafts with graceful template fallback.",
-      "Lock-state enforcement live — isQuoteLocked() blocks mutations, amber banner in fast lane, ⊘ badge in quote list for sent/accepted/rejected/expired.",
-      "Rate limiter replaced — Supabase-backed persistence replaces in-memory serverless stub.",
-      "Orders page live — real Supabase query for accepted and sent quotes joined to lead context.",
+      "Approval-required, approval-pending, and approval-cleared posture are visible.",
+      "Audit events are written for approval transitions.",
+      "Lock-state enforcement and live Orders data are in place.",
     ],
   },
   {
     sprint: "Sprint 6 · Orders foundation",
     summary:
-      "Orders module complete — accepted and sent quotes with documents, compliance, and contract status folded per order card. Development pages updated with leadership-readable content.",
+      "Orders already carry accepted/sent quote context with documents, compliance, contracts, and dispatch-readiness signals.",
     badgeLabel: "Done",
     status: "done",
-    objective: "Carry accepted commercial truth into execution cleanly.",
+    objective:
+      "Carry accepted commercial truth into execution cleanly.",
     outcomes: [
-      "Orders page live with real accepted/sent quote data joined to lead context.",
-      "Documents folded per order — file name, type, version, status visible.",
-      "Compliance items folded per order — status and submission date visible.",
-      "Contract status folded per order — signed date, start/end dates visible.",
-      "Dispatch readiness gate summarised per order card.",
-      "All development pages updated with professional leadership-readable content.",
+      "Orders page is live from real joined data.",
+      "Documents, compliance, and contract status are folded per order.",
+      "Dispatch-readiness context is visible at the order card level.",
     ],
   },
   {
     sprint: "Sprint 7 · Dashboard rebuild",
     summary:
-      "Rebuild Dashboard to be action-first with trade-map context and less vanity reporting.",
-    badgeLabel: "Locked",
-    status: "locked",
+      "Dashboard is active in code and now needs canonical action-first closure, trade-map drill-down, and copy/status cleanup.",
+    badgeLabel: "In progress",
+    status: "in-progress",
     objective:
-      "Make Dashboard useful only after the core operating workflow is stable.",
+      "Make Dashboard operational instead of decorative or drift-prone.",
     outcomes: [
-      "Dashboard emphasizes action over passive metrics.",
-      "Trade map and geographic drill-down support decision making.",
-      "Workflow surfaces stay primary for day-to-day work.",
+      "Live dashboard routes and interactive components already exist.",
+      "Action-first behavior should become the single canonical dashboard story.",
+      "Preview/fallback wording should stop lagging behind implemented code.",
     ],
   },
   {
     sprint: "Sprint 8 · My Card and outbound share",
     summary:
-      "Build outbound identity and sharing loops that feed qualified demand back into the workflow.",
-    badgeLabel: "Locked",
-    status: "locked",
+      "Outward contact-exchange work is seeded in the repo and should be finished after the dashboard lane stabilizes.",
+    badgeLabel: "Seeded",
+    status: "next",
     objective:
-      "Turn offline relationship moments into structured demand without breaking the core shell.",
+      "Turn contact exchange into a clean supporting loop for the core workflow.",
     outcomes: [
-      "My Card page exists as an outbound identity layer.",
-      "QR and public-card flows support follow-up.",
-      "Request-quote actions reconnect sharing to the commercial workflow.",
+      "Digital vCard, preview, QR/share actions, and inbound scan-contact routes exist.",
+      "Public/share surfaces should feed back into the commercial workflow.",
+      "The lane stays subordinate to the core operating flow rather than becoming a detached product story.",
     ],
   },
   {
     sprint: "Sprint 9 · Architecture cleanup",
     summary:
-      "Split god files, tighten service boundaries, and reduce legacy route sprawl after the workflow is stable.",
-    badgeLabel: "Locked",
-    status: "locked",
-    objective: "Scale only after product and sprint truth are stable.",
+      "Break up the biggest files, tighten route ownership, and keep proof tooling lightweight and real.",
+    badgeLabel: "Queued",
+    status: "next",
+    objective: "Reduce codebase friction only after status and product truth are stable again.",
     outcomes: [
-      "Large files are split into cleaner domain ownership.",
-      "Services become more explicit and reusable.",
-      "Legacy route clutter is reduced without changing the shell.",
+      "Large quote/query files are split by responsibility.",
+      "Preview/demo overlap is reduced.",
+      "Repo proof remains checked in and easy to run.",
     ],
   },
   {
     sprint: "Sprint 10 · Demo and release readiness",
     summary:
-      "Prepare the walkthroughs, proofs, and final validation needed for broader release confidence.",
-    badgeLabel: "Locked",
+      "Refresh the walkthroughs, proof points, and end-to-end validation needed for broader release confidence.",
+    badgeLabel: "Queued",
     status: "locked",
-    objective: "Close the roadmap with real demo and release readiness proof.",
+    objective: "Close the roadmap with current proof instead of inherited assumptions.",
     outcomes: [
-      "Buyer demo script is ready.",
+      "Buyer demo script is ready from the cleaned baseline.",
       "Leadership walkthrough is ready.",
       "End-to-end readiness is verified against release criteria.",
     ],
@@ -479,109 +465,109 @@ export const roadmapMilestones: RoadmapMilestone[] = [
 
 export const backlogSections: BacklogSection[] = [
   {
-    title: "Sprint 3 · Complete",
+    title: "Closed baseline · Sprints 1-6",
     heading:
-      "Lead simplification is complete and locked into the shipped flow",
-    sprint: "Sprint 3",
+      "Capture, Leads, Quotes, Trust, and Orders are closed baseline work and should not be reopened casually",
+    sprint: "Sprints 1-6",
     badgeLabel: "Done",
     summary:
-      "Sprint 2 is complete and Sprint 3 is now formally closed. The next lane is the sequenced buyer-ready work that follows Lead simplification, not architecture drift, not module sprawl, and not optional redesign work.",
+      "The workflow baseline is already substantial in code. Current work should extend from this baseline, not rewrite it.",
     description:
-      "Sprint 3 is now closed on the deployed quote-first Leads baseline. Preserve this narrowed workspace, keep Create Quote dominant, keep support guidance collapsed into the quote-prep lane, and do not reopen closed simplification work unless a real blocker proves the baseline wrong.",
+      "Treat the Capture → Lead → Quote → Order operating path as closed through Sprint 6. Preserve those wins while active dashboard work and cleanup move forward.",
     status: "done",
     items: [
       {
-        title: "Reduce lead surface complexity",
-        note: "Remove friction and simplify what users see first on the Leads surface.",
+        title: "Sprint 2 · Capture foundation",
+        note: "Inbound capture stays preserved under Leads with review-before-save trust.",
         stateLabel: "Done",
         status: "done",
       },
       {
-        title: "Make Create Quote the dominant CTA",
-        note: "When a lead is ready, quote creation or continuation must be the clearest commercial move on the page.",
+        title: "Sprint 3 · Lead simplification",
+        note: "Keep the quote-first lead workspace stable and avoid reopening surface sprawl.",
         stateLabel: "Done",
         status: "done",
       },
       {
-        title: "Unify activity and next-action surfaces",
-        note: "Keep notes and history passive, prioritize one support blocker at a time, avoid duplicated support CTAs in the sticky bar, and avoid duplicate blocker guidance inside the workflow lane.",
-        stateLabel: "Done",
-        status: "done",
-      },
-      {
-        title: "Keep build-safe discipline while Sprint 3 closes",
-        note: "Do not touch the worker fix or other stable build-safe code unless a real blocker proves it is necessary.",
-        stateLabel: "Done",
-        status: "done",
-      },
-    ],
-  },
-  {
-    title: "Sprints 4-6 complete · Sprint 7 next",
-    heading:
-      "Quote builder core, trust layer, and Orders foundation are closed. Sprint 7 is the next controlled lane",
-    sprint: "Sprints 4-6",
-    badgeLabel: "Done",
-    summary:
-      "Sprint 4 quote-builder core, Sprint 5 trust layer, and Sprint 6 Orders foundation are complete. Sprint 7 Dashboard rebuild is next.",
-    description:
-      "This protects the plan from reopening earlier sprint work while keeping Dashboard rebuild sequenced as the next approved lane.",
-    status: "done",
-    items: [
-      {
-        title: "Sprint 4 · Quote builder core",
-        note: "Sprint 4 is now formally complete: Review and Send keep the explicit blocked, caution, or ready action state visible inside the footer with the leading reason shown at the moment of action, enforce that state on the actual submit path, keep save/create locked to the Send checkpoint, reopen the leading exact fix target on blocked submit, and require explicit caution confirmation before save/create can continue, all while preserving the same exact-target continuity and without opening trust-layer work early.",
-        stateLabel: "Done",
-        status: "done",
-      },
-      {
-        title: "Sprint 5 · Trust layer",
-        note: "Complete. Trust visibility, approval audit trail, Anthropic AI, lock enforcement in fast lane and quote list, Supabase rate limiter, and live Orders data are all delivered.",
+        title: "Sprint 4-5 · Quotes and trust",
+        note: "Builder, approvals, audit, locking, and send posture are baseline truth now.",
         stateLabel: "Done",
         status: "done",
       },
       {
         title: "Sprint 6 · Orders foundation",
-        note: "Complete. Orders page live with documents, compliance, and contract status per order. Development pages updated with professional leadership content.",
+        note: "Orders already carry execution context and should remain the trusted handoff from commercial work.",
         stateLabel: "Done",
         status: "done",
-      },
-      {
-        title: "Sprint 7 · Dashboard rebuild",
-        note: "Next. Action-first Dashboard with trade-map context and commercial signals. Removes passive vanity metrics.",
-        stateLabel: "Next",
-        status: "next",
       },
     ],
   },
   {
-    title: "Sprints 8 to 10 · Locked",
+    title: "Sprint 7 · Active",
     heading:
-      "Outbound share, architecture cleanup, and final release proof remain later-phase work",
-    sprint: "Sprints 8-10",
-    badgeLabel: "Locked",
+      "Dashboard closure and repo proof refresh are the active execution lane",
+    sprint: "Sprint 7",
+    badgeLabel: "In progress",
     summary:
-      "Keep the long-range roadmap visible without pretending it belongs to the immediate execution lane.",
+      "Dashboard code is already present. The active job is to finish the canonical action-first story and refresh proof on the cleaned baseline.",
     description:
-      "These phases matter, but they stay locked until the current sprint sequence is completed in order.",
-    status: "locked",
+      "Do not treat Dashboard as untouched future work. It exists now, so the work is to normalize it, connect its drill-down logic, and keep the repo truthful and verifiable.",
+    status: "in-progress",
     items: [
       {
-        title: "Sprint 7 · Dashboard rebuild",
-        note: "Next. Action-first dashboard rebuild starts after Sprint 6 and becomes the immediate next lane.",
+        title: "Canonicalize dashboard narrative",
+        note: "Align live pages, architecture HTML, and development status language around one action-first dashboard story.",
+        stateLabel: "Active",
+        status: "in-progress",
+      },
+      {
+        title: "Finish map and drill-down posture",
+        note: "Keep geographic context meaningful and tied back to leads, quotes, and orders.",
+        stateLabel: "Active",
+        status: "in-progress",
+      },
+      {
+        title: "Refresh proof on cleaned baseline",
+        note: "Run install, typecheck, smoke tests, and build after alignment work lands.",
         stateLabel: "Next",
         status: "next",
       },
       {
-        title: "Sprint 8 · My Card and outbound share",
-        note: "Identity and share loops stay subordinate to the core workflow until later.",
-        stateLabel: "Locked",
-        status: "locked",
+        title: "Protect closed workflow lanes",
+        note: "Do not reopen older sprint work while dashboard closure is underway.",
+        stateLabel: "Guardrail",
+        status: "done",
+      },
+    ],
+  },
+  {
+    title: "Sprint 8-10 · Queued",
+    heading:
+      "Outward share completion, architecture cleanup, and final release proof remain sequenced behind the active lane",
+    sprint: "Sprints 8-10",
+    badgeLabel: "Queued",
+    summary:
+      "Later work is visible and real, but it stays behind the active dashboard + proof lane.",
+    description:
+      "Sprint 8 is seeded, Sprint 9 is necessary cleanup, and Sprint 10 is release-proof closure. Keep them visible without flattening the sequence.",
+    status: "next",
+    items: [
+      {
+        title: "Sprint 8 · My Card and contact exchange",
+        note: "Finish the outward-share loop that is already seeded in code after Sprint 7 stabilizes.",
+        stateLabel: "Queued",
+        status: "next",
       },
       {
-        title: "Sprints 9 and 10 · Cleanup and release proof",
-        note: "Architecture cleanup and broader demo/release readiness stay visible but inactive.",
-        stateLabel: "Locked",
+        title: "Sprint 9 · Architecture cleanup",
+        note: "Split the biggest files and reduce route/preview overlap only after product/status truth is stable.",
+        stateLabel: "Queued",
+        status: "next",
+      },
+      {
+        title: "Sprint 10 · Demo and release proof",
+        note: "Refresh walkthroughs and end-to-end evidence from the stabilized baseline.",
+        stateLabel: "Upcoming",
         status: "locked",
       },
     ],
@@ -593,7 +579,7 @@ export const productTracks: ProductTrack[] = [
     id: "capture",
     title: "Capture wedge",
     summary:
-      "Sprint 2 Capture foundation is complete. The current goal is to preserve it while later ingestion depth stays queued.",
+      "Capture foundation is complete and remains the inbound wedge under Leads.",
     status: "done",
     scope: [
       "Business card scan",
@@ -607,7 +593,7 @@ export const productTracks: ProductTrack[] = [
     id: "lead",
     title: "Lead operating area",
     summary:
-      "Lead simplification is complete. The lead surface now serves as the stable quote-first operating area for the shipped baseline.",
+      "Lead simplification is complete and the lead surface remains quote-first in the shipped baseline.",
     status: "done",
     scope: [
       "Lead list",
@@ -621,7 +607,7 @@ export const productTracks: ProductTrack[] = [
     id: "quote",
     title: "Quote hero workflow",
     summary:
-      "Quote builder core is now complete in Sprint 4, with the guided five-step live draft flow, builder-step guidance, edit continuity, pricing-risk cues, version continuity, pricing-line readiness cues, exact-target remediation, return-loop continuity, checkpoint re-entry continuity, explicit checkpoint decisioning, aligned continue-and-save action behavior, real submit enforcement, blocked-submit handoff, and caution confirmation all in place.",
+      "Quote builder core and trust controls are baseline truth now.",
     status: "done",
     scope: [
       "Guided builder",
@@ -638,7 +624,7 @@ export const productTracks: ProductTrack[] = [
     id: "order",
     title: "Order execution entry",
     summary:
-      "Orders foundation is complete. Accepted and sent quotes now surface documents, compliance, contract status, and dispatch readiness inside each order card.",
+      "Orders foundation is complete with execution-readiness context folded into each order card.",
     status: "done",
     scope: [
       "Snapshot",
@@ -653,21 +639,22 @@ export const productTracks: ProductTrack[] = [
     id: "dashboard",
     title: "Dashboard awareness layer",
     summary:
-      "Dashboard rebuild is the next approved phase after Sprint 6 closes.",
-    status: "next",
+      "Dashboard rebuild is active in the repo and is the current primary execution lane.",
+    status: "in-progress",
     scope: [
       "Today actions",
       "Pipeline health",
       "At-risk work",
       "Trade intelligence",
+      "Map drill-down",
     ],
   },
   {
     id: "my-card",
     title: "My Card sharing loop",
     summary:
-      "My Card stays visible as a support surface, but its demand-generation loop remains later-phase work.",
-    status: "locked",
+      "My Card and contact-exchange work are already seeded and remain the next sequenced support lane.",
+    status: "next",
     scope: [
       "QR share",
       "Contact save",
@@ -682,7 +669,7 @@ export const architectureLanes: ArchitectureLane[] = [
     id: "workflow-shell",
     title: "Workflow-first shell",
     summary:
-      "Top-level product understanding is anchored to Leads, Quotes, Orders, Dashboard, and Admin.",
+      "Top-level product understanding stays anchored to Leads, Quotes, Orders, Dashboard, and Admin.",
     status: "done",
     target:
       "Users should understand the product quickly without module clutter.",
@@ -691,7 +678,7 @@ export const architectureLanes: ArchitectureLane[] = [
     id: "contract-owned-truth",
     title: "Contract-owned product truth",
     summary:
-      "Visible shell and planning status are both owned by shared lib contracts instead of duplicated page-level maps.",
+      "Visible shell and planning status are owned by shared repo contracts rather than scattered page copy.",
     status: "done",
     target: "Prevent the repo from speaking in two sprint timelines at once.",
   },
@@ -699,36 +686,36 @@ export const architectureLanes: ArchitectureLane[] = [
     id: "capture-foundation",
     title: "Leads + Capture foundation",
     summary:
-      "The Lead and Capture planning foundation is complete and should stay preserved as later sprints build on it.",
+      "The Lead and Capture foundation is complete and remains locked as later work deepens around it.",
     status: "done",
-    target: "Keep the completed Sprint 2 foundation stable.",
+    target: "Keep the completed intake foundation stable.",
   },
   {
     id: "lead-simplification",
     title: "Lead-surface simplification",
     summary:
-      "Sprint 3 lead simplification is complete. The Leads surface now stays quote-first with one decisive above-the-fold commercial state and quieter supporting surfaces.",
+      "The Leads surface stays quote-first with quieter support layers and on-demand detail.",
     status: "done",
     target:
-      "Keep quote launch dominant until a real quote exists, then expose quote review cleanly.",
+      "Keep quote launch dominant until a real quote exists, then expose review cleanly.",
   },
   {
-    id: "hidden-services",
-    title: "Complexity hidden in services",
+    id: "repo-hygiene",
+    title: "Repo truth and proof hygiene",
     summary:
-      "Pricing, documents, contracts, compliance, capture parsing, and RFQ logic should stay behind the workflow shell.",
-    status: "locked",
+      "Package scripts, docs, and checked-in validation must stay as real as the code itself.",
+    status: "in-progress",
     target:
-      "Expose only what helps the user move Capture → Lead → Quote → Order forward.",
+      "Avoid hidden drift between implementation, docs, and proof claims.",
   },
   {
-    id: "trust-layers",
-    title: "Approvals, audit, and locking",
+    id: "quote-cleanup",
+    title: "Quote/query decomposition",
     summary:
-      "Trust layers are complete and must now stay stable while later sprints deepen surrounding workflows.",
-    status: "done",
+      "Large quote and query files remain the main cleanup target after status truth and dashboard closure stabilize.",
+    status: "next",
     target:
-      "Reduce buyer fear and operational ambiguity without changing the shell.",
+      "Reduce coupling and reasoning cost in the busiest parts of the codebase.",
   },
 ];
 
@@ -742,31 +729,31 @@ export const uxRules: UxRule[] = [
   {
     id: "no-top-level-sprawl",
     title: "Do not reopen module sprawl",
-    rule: "Pipeline, RFQ, documents, contracts, compliance, and similar complexity should not become competing top-level destinations.",
+    rule: "Important capabilities can be real without becoming competing top-level product stories.",
     status: "done",
   },
   {
     id: "capture-wedge",
     title: "Capture stays the intake wedge",
-    rule: "Capture belongs inside the Leads operating model and the completed Sprint 2 foundation should remain intact.",
+    rule: "Capture belongs inside the Leads operating model and the completed foundation should remain intact.",
     status: "done",
   },
   {
     id: "lead-next-action",
     title: "Make the lead next action obvious",
-    rule: "Sprint 3 should reduce lead complexity and make Create Quote the dominant CTA when the lead is ready.",
+    rule: "The lead workspace should keep quote creation or continuation visually dominant when a lead is ready.",
     status: "done",
   },
   {
     id: "status-honesty",
     title: "Status must describe implementation truth",
-    rule: "Do not describe unverified work as complete, and do not hide proven build or deployment success once it is real.",
+    rule: "Do not describe seeded or historical work as freshly proven, and do not describe active code as if it were absent.",
     status: "done",
   },
   {
     id: "shared-foundations",
     title: "Reuse shared UI foundations",
-    rule: "StatusBadge, LeadCard, QuickActionMenu, PageHeader, and SectionCard stay the baseline building blocks.",
+    rule: "Shared building blocks should remain the baseline instead of spawning one-off status surfaces.",
     status: "done",
   },
   {
@@ -779,24 +766,24 @@ export const uxRules: UxRule[] = [
 
 export const buyerReadySections: BuyerReadySection[] = [
   {
-    title: "Already true in the deployed baseline",
+    title: "Already true in the current repo baseline",
     summary:
-      "These rework outcomes are already visible in the current deployed product and should now be treated as baseline truth.",
+      "These outcomes are already visible in code and should now be treated as baseline truth rather than future intent.",
     status: "done",
     items: [
       {
-        label: "Deployment proof is current",
-        note: "The latest production build completed and deployed successfully, so development pages should stop speaking as if deployment is still only partially verified.",
+        label: "Workflow baseline is closed through Sprint 6",
+        note: "Capture, Leads, Quotes, trust controls, and Orders are all present in the current codebase.",
         status: "done",
       },
       {
-        label: "Leads is now quote-first",
-        note: "The lead surface has been simplified into one commercial lane with quieter support surfaces and on-demand records.",
+        label: "Dashboard work is real, not hypothetical",
+        note: "Dashboard routes, widgets, map surfaces, and interactive layout code already exist in the repo.",
         status: "done",
       },
       {
-        label: "Capture → Lead → Quote → Order remains locked",
-        note: "The rework preserved the product structure instead of introducing new top-level modules.",
+        label: "Contact-exchange work is seeded",
+        note: "Digital vCard, preview, QR/share, and scan-contact routes already exist and should stay sequenced as support work.",
         status: "done",
       },
     ],
@@ -804,45 +791,45 @@ export const buyerReadySections: BuyerReadySection[] = [
   {
     title: "Still needed before buyer-facing proof",
     summary:
-      "These are the remaining gaps that still need to be finished before the product is ready for buyer-facing walkthroughs or signoff. Core workflow, trust, and Orders foundation are complete through Sprint 6.",
-    status: "next",
+      "The codebase is substantial, but buyer-facing confidence still requires proof refresh and active-lane closure.",
+    status: "in-progress",
     items: [
       {
-        label: "Core workflow baseline is complete through Sprint 6",
-        note: "Lead simplification, quote-builder core, trust layer, and Orders foundation are complete. The development surfaces should not describe any of those lanes as still active work.",
-        status: "done",
+        label: "Finish Sprint 7 dashboard canonicalization",
+        note: "Unify the dashboard story around action-first behavior and meaningful drill-down into workflow work.",
+        status: "in-progress",
       },
       {
-        label: "Dashboard rebuild is next, not part of buyer-proof closure",
-        note: "Sprint 7 Dashboard rebuild remains the next approved product lane, but buyer-facing proof still depends more on QA, walkthrough assets, and release proof than on reopening earlier sprint work.",
+        label: "Refresh technical proof on the cleaned baseline",
+        note: "Run install, typecheck, smoke tests, and production build so readiness claims are current rather than inherited.",
         status: "next",
       },
       {
-        label: "Strengthen end-to-end buyer QA",
-        note: "Run buyer-demo journeys across Leads, Quote, and Order handoff so buyer-facing walkthroughs are based on proven flows rather than page-level success alone.",
+        label: "Run buyer-demo journeys end to end",
+        note: "Validate real storylines across Leads, Quote, Orders, dashboard context, and outward-share follow-up.",
         status: "next",
       },
     ],
   },
   {
-    title: "Release-proof and handoff work still pending",
+    title: "Release-proof closure still remains later",
     summary:
-      "The later rework phases that turn the shipped product into a buyer-ready story are still explicitly sequenced behind the next dashboard sprint.",
-    status: "locked",
+      "Architecture cleanup and formal release/demo proof stay sequenced after the active dashboard and proof-refresh lane.",
+    status: "next",
     items: [
       {
-        label: "Dashboard and release-story depth",
-        note: "Dashboard rebuild, demo proof, and broader release-story polish remain later roadmap work after the Sprint 6 baseline.",
-        status: "locked",
+        label: "Sprint 8 support-lane closure",
+        note: "Finish My Card / contact-exchange outward share without detaching it from the main workflow.",
+        status: "next",
       },
       {
-        label: "Buyer demo and leadership walkthrough assets",
-        note: "Formal walkthrough scripts, proof points, and signoff materials are still part of the release-readiness endgame.",
-        status: "locked",
+        label: "Sprint 9 architecture cleanup",
+        note: "Split the biggest files and reduce route overlap only after product/status truth is stable again.",
+        status: "next",
       },
       {
-        label: "Final release-readiness closure",
-        note: "The roadmap still requires the later demo and release-readiness sprint before broader external confidence is claimed.",
+        label: "Sprint 10 demo and release readiness",
+        note: "Refresh walkthrough assets, proof points, and signoff material from the stabilized baseline.",
         status: "locked",
       },
     ],
@@ -855,7 +842,7 @@ export const screenPlans: ScreenPlan[] = [
     title: "Leads + Capture foundation",
     route: PRODUCT_ROUTES.development.screens,
     summary:
-      "The Sprint 2 Leads + Capture screen contract is complete and should stay locked while Sprint 3 starts.",
+      "The Leads + Capture screen contract is complete and remains the locked inbound foundation.",
     status: "done",
     primaryGoal:
       "Keep inbound lead creation and quote-starting handoff clear and stable.",
@@ -901,7 +888,7 @@ export const screenPlans: ScreenPlan[] = [
     title: "Lead workspace simplification",
     route: PRODUCT_ROUTES.workspace.leads,
     summary:
-      "Sprint 3 is actively simplifying the Leads workspace and making the quote-starting workspace visually dominant through one decisive above-the-fold commercial state while support work queues behind one current blocker, the blocker summary lives inside that same queue, the right rail stays compressed into a passive support watchlist with on-demand detail, and the shared supporting-record surface can collapse back to a lighter summary drawer when full detail is no longer needed.",
+      "The lead workspace is now the stable quote-first operating area and should remain that way while later sprints deepen around it.",
     status: "done",
     primaryGoal:
       "Help reps understand the lead state quickly and move into quoting without competing surface noise.",
@@ -938,109 +925,18 @@ export const screenPlans: ScreenPlan[] = [
           "Decisive commercial state",
           "Unified current blocker card",
           "Compact supporting-record tray",
-          "Collapsible record summary drawer",
-          "Passive support watchlist",
+          "Quote CTA",
         ],
       },
     ],
-    actions: ["Create Quote", "Continue Quote", "Advance qualification"],
+    actions: ["Create Quote", "Continue Quote", "Review blocker"],
     dataContracts: [
       "leadSummary",
-      "leadTimeline",
-      "qualificationState",
-      "nextAction",
-      "quoteEntryState",
-    ],
-  },
-  {
-    id: "quote-builder",
-    title: "Quote builder core",
-    route: PRODUCT_ROUTES.app.quotes,
-    summary:
-      "Sprint 4 quote-builder core is complete, and Sprint 5 trust work is also complete: approval visibility, audit trail, lock enforcement, and send posture are now live while the builder remains stable on the approved guided flow.",
-    status: "done",
-    primaryGoal:
-      "Keep the live quote draft stable on the approved guided builder structure while Dashboard rebuild happens separately in Sprint 7.",
-    layout: [
-      {
-        title: "Step rail",
-        purpose: "Keep progress and structure obvious.",
-        blocks: ["Product", "Pricing", "Terms", "Review", "Send"],
-      },
-      {
-        title: "Main builder canvas",
-        purpose: "Focus on one step at a time while preserving context.",
-        blocks: [
-          "Current step form",
-          "Validation prompts",
-          "Recommendations",
-          "Step-aware edit drawer",
-          "Pricing readiness cues",
-        ],
-      },
-      {
-        title: "Summary and controls",
-        purpose: "Surface commercial truth and trust cues.",
-        blocks: [
-          "Quote summary",
-          "Margin or risk cues",
-          "Version checkpoints",
-          "Approval state",
-          "Send control",
-          "Exact remediation target",
-          "Remediation return path",
-          "Checkpoint loop status",
-        ],
-      },
-    ],
-    actions: ["Save draft", "Request approval", "Send quote"],
-    dataContracts: [
-      "quoteSteps",
-      "quoteDraft",
-      "pricingSummary",
-      "riskFlags",
-      "quoteVersionCheckpoint",
-      "approvalState",
-      "pricingLineIssues",
-      "stepRecommendations",
-      "remediationTarget",
-      "remediationSourceStep",
-    ],
-  },
-  {
-    id: "orders",
-    title: "Orders workspace",
-    route: PRODUCT_ROUTES.app.orders,
-    summary:
-      "Orders workspace is live in the shipped baseline with accepted and sent quote context, documents, compliance, contract status, and dispatch readiness.",
-    status: "locked",
-    primaryGoal:
-      "Expose order readiness and inherited commercial truth in the shipped Sprint 6 baseline.",
-    layout: [
-      {
-        title: "Orders list",
-        purpose: "Show operational status and exceptions quickly.",
-        blocks: ["Order rows", "Accepted-quote source", "Operational status"],
-      },
-      {
-        title: "Order detail tabs",
-        purpose:
-          "Organize post-acceptance work without fragmenting the product.",
-        blocks: ["Snapshot", "Documents", "Compliance", "Operations"],
-      },
-      {
-        title: "Readiness panel",
-        purpose: "Make blockers and next steps visible.",
-        blocks: ["Document readiness", "Execution blockers", "Owner actions"],
-      },
-    ],
-    actions: ["Review snapshot", "Resolve blockers", "Advance readiness"],
-    dataContracts: [
-      "orders",
-      "orderSnapshot",
-      "documentChecklist",
-      "complianceState",
-      "executionBlockers",
+      "commercialState",
+      "supportQueue",
+      "supportWatchlist",
+      "activityLog",
+      "quoteLaunchState",
     ],
   },
   {
@@ -1048,54 +944,33 @@ export const screenPlans: ScreenPlan[] = [
     title: "My Card / Share Contact",
     route: PRODUCT_ROUTES.workspace.myCard,
     summary:
-      "Outbound contact sharing remains later-phase work after the earlier workflow sprints are complete.",
-    status: "locked",
+      "Outbound contact exchange is seeded in the repo and should feed back into the locked workflow rather than forming a detached story.",
+    status: "next",
     primaryGoal:
-      "Convert trade-show and partner interactions into captured commercial demand later in the roadmap.",
+      "Turn contact exchange into a clean supporting loop for follow-up and quote creation.",
     layout: [
       {
-        title: "Profile card",
-        purpose: "Present a clean shareable identity.",
-        blocks: [
-          "Representative profile",
-          "Company profile",
-          "Save contact CTA",
-        ],
+        title: "Identity-first card",
+        purpose: "Let recipients understand who is reaching out immediately.",
+        blocks: ["Rep identity", "Role and org", "Direct actions"],
       },
       {
         title: "QR and sharing panel",
-        purpose: "Bridge physical meetings and digital follow-up.",
+        purpose: "Make it easy to save, share, and re-open the card.",
         blocks: ["QR code", "Share actions", "Request quote CTA"],
       },
     ],
     actions: ["Share contact", "Open public card", "Request quote"],
-    dataContracts: [
-      "profileCard",
-      "shareLinks",
-      "qrPayload",
-      "publicCardActions",
-    ],
+    dataContracts: ["contactCard", "shareActions", "publicCardCTA"],
   },
 ];
 
-export const developmentWorkspace = {
-  flow: LOCKED_PRODUCT_FLOW.join(" → "),
-  activeSprint: "Sprint 6 · Complete",
-  completedSprint: "Sprint 2 · Complete",
-  planningSurfaces,
+export const sprintSummary = {
+  activeSprint: "Sprint 7 · Active",
+  completedSprint: "Sprint 6 · Closed baseline",
   roadmapMilestones,
   backlogSections,
-  productTracks,
-  architectureLanes,
-  uxRules,
-  screenPlans,
-  buyerReadySections,
+  planningSurfaces,
 };
 
 export const masterPlan = roadmapMilestones;
-export const backlog = backlogSections;
-export const productPlan = productTracks;
-export const architecturePlan = architectureLanes;
-export const uxRulesPlan = uxRules;
-export const developmentScreens = screenPlans;
-export const buyerReadyPlan = buyerReadySections;
