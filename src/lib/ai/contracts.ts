@@ -29,6 +29,14 @@ export enum AiTaskType {
    * be deterministic in shape and avoid long free‑form text.
    */
   Summarisation = 'summarisation',
+  /**
+   * Draft generation for operator-review communications such as quote
+   * cover notes, follow-up emails, introductions, and compliance
+   * requests.  Sprint 5 Batch 1: wired to Anthropic Claude.
+   * Consumers must treat all drafts as advisory and require operator
+   * review before any send action.
+   */
+  DraftGeneration = 'generate_draft',
 }
 
 /**

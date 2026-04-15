@@ -7,6 +7,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { CANONICAL_SUGGESTION_TYPES, getSuggestionFamily, normalizeSuggestionType } from '@/lib/ai/suggestion-types';
 import { runAiTask } from '@/lib/ai/provider';
+import { AiTaskType } from '@/lib/ai/contracts';
 
 export type AiDraftRow = {
   id: string;
@@ -451,7 +452,7 @@ export async function generateAiDraft(_: AiDraftActionState | undefined, formDat
   let finalBody = draft.body;
   let finalSubject = draft.subject;
 
-  const aiResult = await runAiTask<string>('generate_draft', {
+  const aiResult = await runAiTask<string>(AiTaskType.DraftGeneration, {
     prompt: draft.content,
     content: draft.content,
     suggestionType,
