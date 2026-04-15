@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Setu Flow — Full Product Architecture</title>
+<title>Setu Flow — Full Product Architecture · Sprint 4 Final</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0a0f1e; color: #e2e8f0; padding: 32px; }
@@ -98,7 +98,7 @@
 <body>
 
 <h1>Setu Flow — Full Product Architecture</h1>
-<p class="subtitle">Trade execution system for import-export sales teams</p>
+<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Sprint 4 Closed</span> &nbsp;·&nbsp; <span style="color:#64748b">Sprint 5 Trust Layer — Locked</span></p>
 <p class="stack-line">
   <code>Next.js 14</code> &nbsp;+&nbsp; <code>Supabase (Postgres + RLS)</code> &nbsp;+&nbsp;
   <code>TypeScript</code> &nbsp;+&nbsp; <code>Tailwind CSS</code> &nbsp;+&nbsp;
@@ -161,7 +161,8 @@
           <li>Readiness board</li>
           <li>Sprint backlog</li>
           <li>Architecture contract</li>
-          <li>UX rules &amp; buyer-ready checklist</li>
+          <li>UX rules &amp; buyer-ready gap view</li>
+          <li>Sprints 1–4 closed · Sprint 5 locked</li>
         </ul>
       </div>
     </div>
@@ -271,13 +272,13 @@
         <div class="grid-3">
           <div class="metric-card">
             <div class="mc-title" style="color:#60a5fa">Lead command center</div>
-            <div class="mc-note">Full-page lead profile (refactored Sprint 4)</div>
+            <div class="mc-note">Full-page lead profile (refactored Sprint 3/4)</div>
             <div class="mc-detail">16 components: Header, Tabs, StageStrip, ContextRail, RightRail, StickyActionBar, TodayContextBar, WorkflowTab, QuotesTab, ActivityTab, panels (Qualification, Coverage, FollowUp, Commercial)</div>
           </div>
           <div class="metric-card">
             <div class="mc-title" style="color:#4ade80">Lead list + pipeline view</div>
             <div class="mc-note">Table + kanban board, filters, bulk actions</div>
-            <div class="mc-detail">leads-workspace.tsx · pipeline-board.tsx · LeadsToolbar · LeadsFiltersPanel · saved views · shareable filters</div>
+            <div class="mc-detail">leads-workspace.tsx (1,602 lines) · pipeline-board.tsx (1,379 lines) · LeadsToolbar · LeadsFiltersPanel · saved views · shareable filters</div>
           </div>
           <div class="metric-card">
             <div class="mc-title" style="color:#fbbf24">Quote prep checklist</div>
@@ -304,45 +305,73 @@
     <div class="stage">
       <span class="stage-num">3</span>
       <span class="stage-title">Quotes</span>
-      <span class="stage-time">Draft · price · approve · send</span>
+      <span class="stage-time">Draft · price · approve · send — full trust layer in wizard (4,466 lines)</span>
       <div class="parallel-box" style="margin-top:8px">
-        <div class="parallel-label">⚡ 5-step guided builder — launched from Lead context</div>
+        <div class="parallel-label">⚡ 5-step guided builder — launched from Lead context · full checkpoint decisioning</div>
         <div class="grid-5" style="margin-top:6px">
           <div class="metric-card">
             <div class="mc-title" style="color:#60a5fa">Step 1 · Product</div>
-            <div class="mc-note">RFQ linkage, template, pricing basis, currency</div>
+            <div class="mc-note">RFQ linkage, template, pricing basis, currency · exact-target remediation</div>
           </div>
           <div class="metric-card">
             <div class="mc-title" style="color:#4ade80">Step 2 · Pricing</div>
-            <div class="mc-note">Line items, catalog ref, MOQ cues, pricing deltas</div>
+            <div class="mc-note">Line items, catalog ref, MOQ cues, pricing deltas · risk flags + override reason</div>
           </div>
           <div class="metric-card">
             <div class="mc-title" style="color:#c084fc">Step 3 · Terms</div>
-            <div class="mc-note">Approval posture, workflow notes, commercial conditions</div>
+            <div class="mc-note">Approval posture, workflow notes · approval gate visible in step state</div>
           </div>
           <div class="metric-card">
             <div class="mc-title" style="color:#fbbf24">Step 4 · Review</div>
-            <div class="mc-note">Totals, draft structure, workflow posture</div>
+            <div class="mc-note">QuoteReviewPanel, totals, risk summary · version continuity panel</div>
           </div>
           <div class="metric-card">
             <div class="mc-title" style="color:#f87171">Step 5 · Send</div>
-            <div class="mc-note">Blockers explicit, approval required, compliance gate</div>
+            <div class="mc-note">Blocked / caution / ready decisioning · caution acknowledgement · blocked handoff</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <div class="phase-box">
+          <div class="phase-title">Trust layer — checkpoint &amp; remediation system</div>
+          <div class="sproc-list">
+            <span class="tag tag-red">CheckpointDecisionPanel — blocked vs caution vs ready</span>
+            <span class="tag tag-yellow">SendCautionAcknowledgementPanel</span>
+            <span class="tag tag-blue">CheckpointReadinessPanel</span>
+            <span class="tag tag-purple">RemediationFocusPanel — exact fix target</span>
+            <span class="tag tag-purple">RemediationReturnPanel — return loop continuity</span>
+            <span class="tag tag-purple">RemediationCheckpointPanel</span>
+            <span class="tag tag-teal">StepRemediationPanel</span>
+            <span class="tag tag-teal">PricingReadinessPanel</span>
+          </div>
+        </div>
+        <div class="phase-box" style="margin-top:6px">
+          <div class="phase-title">Version history + approval checkpoint panel</div>
+          <div class="sproc-list">
+            <span class="tag tag-blue">QuoteVersionCheckpointPanel — current / sent / approved</span>
+            <span class="tag tag-blue">Version trail (last 3 versions)</span>
+            <span class="tag tag-green">getCheckpointReadiness() — danger / warning / good</span>
+            <span class="tag tag-green">getCheckpointDecision() — action label + detail</span>
+            <span class="tag tag-orange">Real submit enforcement — blocked submit stops save</span>
+            <span class="tag tag-orange">Final-step submit locking</span>
           </div>
         </div>
       </div>
       <div style="margin-top:8px">
         <span class="tag tag-teal">Pricing engine (FX + freight)</span>
         <span class="tag tag-teal">Price override with reason</span>
-        <span class="tag tag-teal">Version history</span>
         <span class="tag tag-teal">Negotiation events</span>
         <span class="tag tag-teal">Approval routing</span>
         <span class="tag tag-teal">Quote locking after send</span>
         <span class="tag tag-teal">AI cover note</span>
         <span class="tag tag-teal">PDF generation helpers</span>
         <span class="tag tag-teal">RFQ linkage</span>
+        <span class="tag tag-teal">QuoteSummaryCards</span>
+        <span class="tag tag-teal">getQuoteRiskFlags()</span>
       </div>
       <div style="margin-top:6px;font-size:10px;color:#475569">
-        Pricing engine: 25+ files — repositories (quote-pricing, freight-profile, exchange-rate, negotiation) · services (compilation, FX-resolution, freight-calculation, override, approval, render, version, document) · mappers · types
+        Pricing engine: 25+ files — repositories (quote-pricing, freight-profile, exchange-rate, negotiation) · services (compilation, FX-resolution, freight-calculation, override, approval, render, version, document) · mappers · types ·
+        quote-wizard-form.tsx: <strong style="color:#fb923c">4,466 lines</strong> (was 856 — Sprint 4 full trust layer) · quote-workspace.tsx: <strong style="color:#fb923c">2,564 lines</strong> (was 1,085)
       </div>
     </div>
 
@@ -352,12 +381,12 @@
     <div class="stage">
       <span class="stage-num">4</span>
       <span class="stage-title">Orders</span>
-      <span class="stage-time">Accepted quote → execution readiness</span>
+      <span class="stage-time">Accepted quote → execution readiness — Sprint 6 target for live data</span>
       <div style="margin-top:8px">
         <div class="grid-3">
           <div class="metric-card">
             <div class="mc-title" style="color:#4ade80">Inherited context</div>
-            <div class="mc-note">Buyer, market, SKUs, pricing snapshot — carried from accepted quote</div>
+            <div class="mc-note">Buyer, market, SKUs, pricing snapshot — UX model correct, hardcoded placeholder data</div>
           </div>
           <div class="metric-card">
             <div class="mc-title" style="color:#fbbf24">Document pack</div>
@@ -368,8 +397,8 @@
             <div class="mc-note">Commercially valid vs dispatch-blocked — separate states, blockers stay visible</div>
           </div>
         </div>
-        <div style="margin-top:8px;font-size:10px;color:#475569">
-          ⚠ Sprint 6 target: live DB query from accepted quotes · order list view · compliance + document tabs folded into order detail
+        <div style="margin-top:8px;font-size:10px;color:#c2410c;border:1px solid #c2410c;border-radius:6px;padding:6px 10px">
+          ⚠ Orders page is still a static mockup (hardcoded "Acme Imports / Mango Chips"). Sprint 6 target: live DB query from accepted quotes · order list view · compliance + document tabs folded into order detail.
         </div>
       </div>
     </div>
@@ -595,7 +624,7 @@
         </ul>
       </div>
       <div class="card" style="border-color:#c2410c">
-        <div class="card-title" style="color:#fb923c">Query layer (data.ts — 2,973 lines)</div>
+        <div class="card-title" style="color:#fb923c">Query layer (data.ts — 2,984 lines)</div>
         <ul>
           <li>getDashboardData</li>
           <li>getLeadsData · getLeadProfileData</li>
@@ -604,7 +633,7 @@
           <li>getIntegrationsData</li>
           <li>lead-command-center queries</li>
         </ul>
-        <div style="margin-top:6px;font-size:10px;color:#c2410c">⚠ Target: split into per-domain query files</div>
+        <div style="margin-top:6px;font-size:10px;color:#c2410c">⚠ Still a god file — Sprint 9 target: split into per-domain query files</div>
       </div>
     </div>
   </div>
@@ -806,51 +835,98 @@
 <br>
 
 <!-- ══════════════════════════════════════════════════════════════ -->
+<!-- KNOWN GAPS — buyer-ready gap view from product-status-contract -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-box" style="border-color:#c2410c">
+    <span class="section-label" style="color:#fb923c">Buyer-Ready Gap View — from product-status-contract.ts</span>
+    <div class="grid-2" style="margin-top:8px">
+      <div>
+        <div class="phase-box" style="border-color:#166534">
+          <div class="phase-title" style="color:#4ade80">✓ Already true in deployed baseline</div>
+          <div class="sproc-list">
+            <span class="tag tag-green">Deployment proof current</span>
+            <span class="tag tag-green">Leads is quote-first</span>
+            <span class="tag tag-green">Capture → Lead → Quote → Order locked</span>
+            <span class="tag tag-green">product-contract.ts — single nav source</span>
+            <span class="tag tag-green">product-status-contract.ts — planning source of truth</span>
+            <span class="tag tag-green">Development pages aligned — Sprints 1–4 closed</span>
+            <span class="tag tag-green">Sprint 2 capture foundation reflected complete</span>
+            <span class="tag tag-green">Webpack worker fix protected</span>
+            <span class="tag tag-green">Sprint 4 quote-builder core complete — 5-step builder, remediation, checkpoint decisioning, version visibility, real submit enforcement</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="phase-box" style="border-color:#c2410c">
+          <div class="phase-title" style="color:#f87171">⚠ Still needed before buyer-facing readiness</div>
+          <div class="sproc-list">
+            <span class="tag tag-red">AI provider not wired — OpenAiProvider still returns stub error</span>
+            <span class="tag tag-red">Orders page is hardcoded mockup — no live DB query</span>
+            <span class="tag tag-red">Rate limiter is in-memory Map — will not work in serverless production</span>
+            <span class="tag tag-orange">data.ts god file — 2,984 lines, 18 domains, Sprint 9 target</span>
+            <span class="tag tag-orange">lead-drawer.tsx (1,678 lines) + leads-workspace.tsx (1,602 lines) — legacy surfaces not yet retired</span>
+            <span class="tag tag-orange">No end-to-end tests — Playwright installed but no test files</span>
+            <span class="tag tag-orange">No live integrations — email, ERP, freight, FX all planned only</span>
+            <span class="tag tag-orange">Dashboard still passive metrics — Sprint 7 action-first rebuild pending</span>
+            <span class="tag tag-orange">Font Awesome loaded from local vendor (~1MB) — should be CDN or replaced</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">▼</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
 <!-- SPRINT ROADMAP -->
 <!-- ══════════════════════════════════════════════════════════════ -->
 <div class="section">
   <div class="section-box" style="border-color:#b45309">
-    <span class="section-label" style="color:#fbbf24">Sprint Roadmap</span>
+    <span class="section-label" style="color:#fbbf24">Sprint Roadmap — Current baseline: Sprint 4 Closed · Sprint 5 Locked</span>
     <div class="grid-5" style="margin-top:8px">
       <div class="env-card" style="border-color:#4ade80">
-        <div class="env-title" style="color:#4ade80">Sprints 1–4 ✓ Done</div>
+        <div class="env-title" style="color:#4ade80">Sprints 1–4 ✓ Closed</div>
         <ul>
-          <li>Product foundation</li>
-          <li>Capture + vCard scan</li>
-          <li>Lead simplification</li>
-          <li>Quote builder core</li>
+          <li>Sprint 1 — Product foundation</li>
+          <li>Sprint 2 — Capture + vCard scan</li>
+          <li>Sprint 3 — Lead simplification</li>
+          <li>Sprint 4 — Quote builder core + full trust layer</li>
         </ul>
+        <div style="margin-top:6px;font-size:10px;color:#4ade80">All four sprints formally closed · deployment verified</div>
       </div>
-      <div class="env-card" style="border-color:#60a5fa">
-        <div class="env-title" style="color:#60a5fa">Sprint 5 — Trust layer</div>
+      <div class="env-card" style="border-color:#475569">
+        <div class="env-title" style="color:#94a3b8">Sprint 5 — Trust layer 🔒 Locked</div>
         <ul>
-          <li>Approval rules</li>
+          <li>Approval rules (full)</li>
           <li>Audit trail structure</li>
-          <li>Quote locking after send</li>
+          <li>Quote locking after send + approval</li>
         </ul>
+        <div style="margin-top:6px;font-size:10px;color:#64748b">Not started · awaiting explicit approval to open</div>
       </div>
-      <div class="env-card" style="border-color:#c084fc">
-        <div class="env-title" style="color:#c084fc">Sprint 6 — Orders</div>
+      <div class="env-card" style="border-color:#475569">
+        <div class="env-title" style="color:#94a3b8">Sprint 6 — Orders 🔒 Locked</div>
         <ul>
           <li>Orders module live data</li>
-          <li>Accepted quote snapshot</li>
-          <li>Docs + compliance in order</li>
+          <li>Accepted quote snapshot path</li>
+          <li>Docs + compliance in order detail</li>
         </ul>
       </div>
-      <div class="env-card" style="border-color:#fbbf24">
-        <div class="env-title" style="color:#fbbf24">Sprint 7 — Dashboard</div>
+      <div class="env-card" style="border-color:#475569">
+        <div class="env-title" style="color:#94a3b8">Sprint 7 — Dashboard 🔒 Locked</div>
         <ul>
           <li>Action-first rebuild</li>
           <li>Trade map + geo drill-down</li>
           <li>Remove vanity metrics</li>
         </ul>
       </div>
-      <div class="env-card" style="border-color:#f472b6">
-        <div class="env-title" style="color:#f472b6">Sprints 8–10</div>
+      <div class="env-card" style="border-color:#475569">
+        <div class="env-title" style="color:#94a3b8">Sprints 8–10 🔒 Locked</div>
         <ul>
-          <li>My Card + QR share</li>
-          <li>Architecture cleanup</li>
-          <li>Demo + release readiness</li>
+          <li>Sprint 8 — My Card + QR share</li>
+          <li>Sprint 9 — Architecture cleanup</li>
+          <li>Sprint 10 — Demo + release readiness</li>
         </ul>
       </div>
     </div>
@@ -893,7 +969,7 @@
 
 <br>
 <div style="text-align:center;font-size:11px;color:#334155;padding:16px">
-  Setu Flow Product Architecture — Sprint 4 Batch 4 baseline
+  Setu Flow Product Architecture — Sprint 4 Final baseline · Sprint 5 Trust Layer locked
 </div>
 
 </div><!-- end .diagram -->
