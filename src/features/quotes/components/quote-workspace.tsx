@@ -1594,7 +1594,7 @@ export function QuoteWorkspace({
                         Version history
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        Version visibility, exact-target remediation, checkpoint return continuity, checkpoint re-entry continuity, footer rationale, real submit enforcement, final-step submit locking, blocked-submit handoff, and caution confirmation are already live here. Sprint 4 quote-builder core remains formally closed. Sprint 5 Batch 1 has now started with a safe runtime slice here: approval gate, audit-event map, and lock posture are visible in the fast lane before deeper trust enforcement begins.
+                        Version visibility, exact-target remediation, checkpoint return continuity, checkpoint re-entry continuity, footer rationale, real submit enforcement, final-step submit locking, blocked-submit handoff, and caution confirmation are already live here. Sprint 4 quote-builder core is formally closed, and the trust layer is live: approval gate, audit-event map, and lock posture are visible in the fast lane without reopening the completed builder baseline.
                       </p>
                       <div className="mt-4 space-y-2">
                         {focusQuoteVersions.length ? (

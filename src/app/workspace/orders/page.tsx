@@ -17,8 +17,8 @@ export default function OrdersPage() {
         eyebrow="Approved rework · Orders"
         title="Orders"
         description="Create the first operational order record from an approved quote without losing buyer, SKU, pricing, or readiness context."
-        badge="Post-acceptance execution"
-        status="In progress"
+        badge="Sprint 6 complete"
+        status="Ready"
         meta={['Buyer aligned', 'Pricing snapshot locked', 'Dispatch gates visible']}
       />
 

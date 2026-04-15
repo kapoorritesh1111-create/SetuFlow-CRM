@@ -142,7 +142,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "Operating-system overview for the locked flow, current sprint status, and the next approved execution lane.",
     status: "done",
     focus:
-      "Keep the repo speaking one sprint timeline again: Sprint 3 closed, Sprint 4 closed, and Sprint 5 Batch 1 active while deeper trust enforcement remains intentionally unopened.",
+      "Keep the repo speaking one sprint timeline again: Sprint 3, Sprint 4, Sprint 5, and Sprint 6 are all closed, and Sprint 7 is clearly shown as the next approved lane.",
   },
   {
     id: "master-plan",
@@ -152,7 +152,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "Sprint roadmap for the locked flow from completed foundation work into the next product phase.",
     status: "done",
     focus:
-      "Preserve the roadmap order while showing clearly that Sprint 3 is closed, Sprint 4 is formally complete, and Sprint 5 Batch 1 is now active, but only through the first safe trust-visibility slice.",
+      "Preserve the roadmap order while showing clearly that Sprints 1 through 6 are complete and Sprint 7 Dashboard rebuild is the next approved phase.",
   },
   {
     id: "readiness",
@@ -172,7 +172,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "The gap view for what is already true, what still needs to land from the approved rework, and what must be complete before buyer-facing walkthroughs.",
     status: "done",
     focus:
-      "Keep buyer-readiness honest instead of implying the overall roadmap is finished: Sprint 4 quote-builder core is now complete, Sprint 5 trust-layer planning is now defined, and actual trust-layer proof plus later buyer-facing validation remain explicitly sequenced behind it.",
+      "Keep buyer-readiness honest instead of implying the overall roadmap is finished: quote builder, trust layer, and orders foundation are complete, while dashboard rebuild and later buyer-facing validation remain explicitly sequenced next.",
   },
   {
     id: "backlog",
@@ -252,7 +252,7 @@ export const readinessAreas: ReadinessArea[] = [
   {
     title: "Buyer readiness still has explicit post-Sprint-3 work",
     summary:
-      "The successful deployment does not mean the full rework is buyer-ready yet. Sprint 4 quote-builder core is now complete in the repo, and Sprint 5 Batch 1 now carries one safe runtime slice across the fast lane and the guided send checkpoint, while deeper trust-layer implementation, end-to-end buyer QA, and later buyer-facing proof still remain sequenced work.",
+      "The successful deployment does not mean the full product story is buyer-ready yet. Quote builder, trust layer, and Orders foundation are complete in the repo, while Dashboard rebuild, end-to-end buyer QA, and later buyer-facing proof still remain sequenced work.",
     status: "next",
   },
   {
@@ -289,8 +289,8 @@ export const checklistItems: ChecklistItem[] = [
     id: "development-pages-aligned",
     area: "Development pages",
     label:
-      "Development pages now show Sprint 3 closed and Sprint 4 formally closed",
-    note: "The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprint 3 formally closed, Sprint 4 formally closed, and Sprint 5 opened for the first safe runtime slice while deeper trust work remains intentionally unopened.",
+      "Development pages now show Sprints 1 through 6 as complete",
+    note: "The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprints 1 through 6 complete and Sprint 7 clearly marked as next.",
     status: "done",
   },
   {
@@ -319,8 +319,8 @@ export const checklistItems: ChecklistItem[] = [
     id: "sprint-3-entry",
     area: "Next phase",
     label:
-      "Sprint 5 trust-layer Batch 1 trust runtime starts through one safe slice",
-    note: "Sprint 4 remains closed, and the first Sprint 5 batch now carries one safe runtime slice across the fast lane and the guided send checkpoint: approval gate, audit-event map, and lock-state visibility stay visible without changing the closed Sprint 4 builder rules.",
+      "Sprint 7 Dashboard rebuild is the next sequenced lane",
+    note: "Sprints 4, 5, and 6 are now closed. The next execution lane is Dashboard rebuild: action-first, trade-map driven, and stripped of passive vanity metrics.",
     status: "in-progress",
   },
 ];
@@ -481,7 +481,7 @@ export const backlogSections: BacklogSection[] = [
   {
     title: "Sprint 3 · Complete",
     heading:
-      "Lead simplification is active without drifting from the locked flow",
+      "Lead simplification is complete without drifting from the locked flow",
     sprint: "Sprint 3",
     badgeLabel: "Done",
     summary:
@@ -517,15 +517,15 @@ export const backlogSections: BacklogSection[] = [
     ],
   },
   {
-    title: "Sprint 4 complete · Sprint 5 Batch 1 active",
+    title: "Sprints 4 to 6 complete · Sprint 7 next",
     heading:
-      "Quote builder core is closed, and Sprint 5 Batch 1 is now the next controlled lane",
+      "Quote builder, trust layer, and orders foundation are closed, and Dashboard rebuild is now the next controlled lane",
     sprint: "Sprints 4-6",
     badgeLabel: "Next",
     summary:
-      "Sprint 4 quote-builder core is complete, and Sprint 5 Batch 1 now carries one safe runtime slice from the quote fast lane into the guided send checkpoint.",
+      "Sprint 4 quote-builder core, Sprint 5 trust layer, and Sprint 6 Orders foundation are complete, and Sprint 7 Dashboard rebuild is now the next sequenced step.",
     description:
-      "This protects the plan from inventing extra Sprint 4 work while keeping Sprint 5 constrained to one safe visibility-first runtime slice before deeper trust enforcement begins.",
+      "This protects the plan from reopening completed sprints while keeping the next move focused on Dashboard rebuild instead of accidental side work.",
     status: "done",
     items: [
       {
@@ -962,10 +962,10 @@ export const screenPlans: ScreenPlan[] = [
     title: "Quote builder core",
     route: PRODUCT_ROUTES.app.quotes,
     summary:
-      "Sprint 4 quote-builder core is now complete: workspace guidance is visible, edit continuity is step-aware, pricing-risk cues are live, builder-side version continuity is visible, pricing-line readiness cues are live, exact-target remediation is in place, remediation return-loop continuity is live, checkpoint re-entry continuity is live, checkpoint decision contract is live with aligned continue-and-save action behavior, blocked submit now hands users into the leading exact fix target, and caution-level send posture requires explicit confirmation before save/create can continue. Sprint 5 Batch 1 has now started through a safe runtime slice in the fast lane and the guided send checkpoint, but deeper trust enforcement remains intentionally unopened.",
+      "Sprint 4 quote-builder core is now complete: workspace guidance is visible, edit continuity is step-aware, pricing-risk cues are live, builder-side version continuity is visible, pricing-line readiness cues are live, exact-target remediation is in place, remediation return-loop continuity is live, checkpoint re-entry continuity is live, checkpoint decision contract is live with aligned continue-and-save action behavior, blocked submit now hands users into the leading exact fix target, and caution-level send posture requires explicit confirmation before save/create can continue. Sprint 5 trust enforcement and Sprint 6 Orders foundation are also complete.",
     status: "done",
     primaryGoal:
-      "Keep the live quote draft stable on the approved Sprint 4 builder structure while Sprint 5 Batch 1 is active and deeper trust enforcement remains intentionally unopened.",
+      "Keep the live quote draft stable on the approved Sprint 4 builder structure now that the trust layer and Orders foundation are complete.",
     layout: [
       {
         title: "Step rail",
@@ -1085,8 +1085,8 @@ export const screenPlans: ScreenPlan[] = [
 
 export const developmentWorkspace = {
   flow: LOCKED_PRODUCT_FLOW.join(" → "),
-  activeSprint: "Sprint 3 · Complete",
-  completedSprint: "Sprint 2 · Complete",
+  activeSprint: "Sprint 6 · Complete",
+  completedSprint: "Sprint 5 · Complete",
   planningSurfaces,
   roadmapMilestones,
   backlogSections,

@@ -47,7 +47,7 @@ const checkpoints = [
 ];
 
 export function QuoteBuilderLaunchpad({
-  eyebrow = 'Sprint 4 · Quote builder core',
+  eyebrow = 'Quote builder core',
   title = 'Quote Builder',
   description = 'Start quote work from a qualified lead, then move through the guided builder structure instead of skipping straight to order conversion.',
 }: {
@@ -62,7 +62,7 @@ export function QuoteBuilderLaunchpad({
         title={title}
         description={description}
         badge="Builder core"
-        status="Sprint 4 start"
+        status="Ready"
         meta={['Guided draft flow', 'Send checkpoint visible', 'Lead-owned launch preserved']}
         actions={[
           { label: 'Open Leads', href: PRODUCT_ROUTES.app.leads },
@@ -71,9 +71,9 @@ export function QuoteBuilderLaunchpad({
       />
 
       <SectionCard
-        eyebrow="Why this batch starts here"
-        title="The next justified batch is the live guided draft flow, not downstream trust or order work"
-        description="Sprint 3 is closed. The next safe move is to make the live draft itself follow the approved builder sequence so buyer-ready work starts in order without reopening lead simplification."
+        eyebrow="Why this route stays here"
+        title="The approved guided draft flow stays here, not as an order-conversion shortcut"
+        description="Sprint 4 quote-builder core is complete. Keep the live draft following the approved builder sequence without reopening lead simplification or bypassing the lead-owned flow."
       >
         <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -97,7 +97,7 @@ export function QuoteBuilderLaunchpad({
               Start from Leads
             </Link>
             <p className="mt-3 text-xs leading-6 text-slate-500">
-              This keeps the approved Capture → Lead → Quote → Order flow intact while Sprint 4 builder depth is introduced safely.
+              This keeps the approved Capture → Lead → Quote → Order flow intact while preserving the completed quote-builder baseline.
             </p>
           </div>
         </div>
@@ -106,7 +106,7 @@ export function QuoteBuilderLaunchpad({
       <SectionCard
         eyebrow="Builder checkpoints"
         title="What this route now makes explicit"
-        description="This launchpad clarifies the approved Sprint 4 starting point and stops the Quotes route from acting like an Order-conversion shortcut."
+        description="This launchpad preserves the approved quote-builder baseline and stops the Quotes route from acting like an Order-conversion shortcut."
       >
         <div className="grid gap-4 lg:grid-cols-3">
           {checkpoints.map((item) => (
