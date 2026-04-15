@@ -88,14 +88,14 @@ export default function MasterPlanPage() {
               </p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
                 The product is still locked to one flow, and the plan now shows
-                the deployed baseline plus a formally closed Sprint 4
-                quote-builder core.
+                the deployed baseline, a formally closed Sprint 4
+                quote-builder core, and an active Sprint 5 Batch 1 trust lane.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
                 The current baseline is deployed successfully, Sprint 3 is
-                formally closed, and this plan now shows Sprint 4 quote-builder
-                core as complete while preserving the remaining roadmap in
-                order.
+                formally closed, Sprint 4 quote-builder core remains complete,
+                and this plan now opens Sprint 5 Batch 1 through one safe runtime slice while
+                preserving the remaining roadmap in order.
               </p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">

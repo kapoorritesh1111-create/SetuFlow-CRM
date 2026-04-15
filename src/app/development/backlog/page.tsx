@@ -31,8 +31,8 @@ export default function DevelopmentBacklogPage() {
               <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
                 One backlog surface inside the development workplace, with
                 Sprint 3 formally closed on a deployed baseline, Sprint 4
-                quote-builder core formally closed, and later buyer-ready work still
-                sequenced clearly behind it.
+                quote-builder core formally closed, and Sprint 5 Batch 1 trust runtime
+                now visible ahead of later buyer-ready work.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
                 Backlog stays in the HTML workplace instead of extra repo files.
@@ -49,7 +49,7 @@ export default function DevelopmentBacklogPage() {
                 If work is not on this page, it is not scheduled work.
               </p>
               <p className="mt-4 text-sm leading-7 text-white/85">
-                Sprint 3 is now closed. Sprint 4 quote-builder core is now formally complete, and buyer-ready gaps are tracked explicitly so Review/Send keep the explicit blocked-versus-caution-versus-ready checkpoint decision visible, explain the leading reason, enforce that state on the actual submit path, keep save/create locked to the Send checkpoint, reopen the leading exact fix target on blocked submit, and require explicit caution confirmation before save/create can continue without reopening closed simplification work.
+                Sprint 3 is now closed. Sprint 4 quote-builder core is now formally complete, and Sprint 5 Batch 1 is active here through one safe runtime slice: keep approval gate, audit-event map, and lock-state visibility explicit without reopening closed simplification work, changing the live builder behavior, or opening deeper trust enforcement yet.
               </p>
             </div>
           </div>

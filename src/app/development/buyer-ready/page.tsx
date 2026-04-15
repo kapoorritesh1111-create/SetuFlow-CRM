@@ -29,7 +29,8 @@ export default function BuyerReadyPage() {
               </p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
                 The build is deployed successfully, Sprint 3 is formally closed,
-                and Sprint 4 quote-builder core is now formally closed. This page
+                Sprint 4 quote-builder core remains formally closed, and
+                Sprint 5 Batch 1 is now active through one safe runtime slice. This page
                 shows what is already true, what still remains from the
                 approved roadmap, and what must land before the product is buyer
                 ready, including the now-complete guided quote-builder core with live builder
@@ -51,8 +52,9 @@ export default function BuyerReadyPage() {
               <p className="mt-3 text-2xl font-semibold leading-tight">
                 Deployment is verified. Buyer readiness is still a tracked
                 post-Sprint-3 gap, Sprint 4 quote-builder core is now complete,
-                and the next buyer-ready gaps are the still-sequenced trust
-                layer, end-to-end buyer QA, and later release-proof work.
+                Sprint 5 Batch 1 is now active through a safe runtime slice, and the next buyer-ready
+                gaps are trust-layer implementation, end-to-end buyer QA, and
+                later release-proof work.
               </p>
               <p className="mt-4 text-sm leading-7 text-white/85">
                 Keep the product locked to {sprintFocus.flow} and finish the

@@ -14,5 +14,6 @@
 - Product clarity gate
 - UX clarity gate
 - Enterprise trust gate
+- Sprint 5 Batch 1 runtime slice active (approval gate, audit-event map, lock posture visibility)
 - Demo proof gate
 - Technical cleanup gate

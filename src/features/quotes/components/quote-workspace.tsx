@@ -21,6 +21,7 @@ import {
   QuoteCreateWizardForm,
   QuoteEditWizardForm,
 } from "@/features/quotes/components/quote-wizard-form";
+import { QuoteTrustContractPreview } from "@/features/quotes/components/quote-trust-contract-preview";
 import {
   logQuoteNegotiationResponse,
   updateQuoteWorkflow,
@@ -39,6 +40,7 @@ import {
 } from "@/lib/quoteWorkflow";
 import type { SavedViewDefinition } from "@/lib/savedViews";
 import { formatDateTime } from "@/lib/utils";
+import { getQuoteTrustContract } from "@/lib/quoteTrust";
 import {
   getPricingReadinessClasses,
   getPricingReadinessLabel,
@@ -1189,6 +1191,13 @@ export function QuoteWorkspace({
         String(version.status ?? "").toLowerCase() === "approved",
     ) ?? null;
   const focusApprovalAction = focusQuote ? getApprovalAction(focusQuote) : null;
+  const focusTrustContract = focusQuoteMeta
+    ? getQuoteTrustContract({
+        status: focusQuoteMeta.status,
+        approvalRequired: focusQuoteMeta.approvalRequired,
+        approvalState: focusQuoteMeta.approvalState as any,
+      })
+    : null;
   const focusSendAction = focusQuote
     ? getSendAction(focusQuote, quoteSendGuard)
     : null;
@@ -1551,13 +1560,18 @@ export function QuoteWorkspace({
                       </p>
                     </div>
                   </div>
+                  {focusTrustContract ? (
+                    <div className="mt-4">
+                      <QuoteTrustContractPreview contract={focusTrustContract} />
+                    </div>
+                  ) : null}
                   <div className="mt-4 grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
                     <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                         Version history
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        Version visibility, exact-target remediation, checkpoint return continuity, checkpoint re-entry continuity, footer rationale, real submit enforcement, final-step submit locking, blocked-submit handoff, and caution confirmation are already live here. Sprint 4 quote-builder core is now formally closed, and Sprint 5 trust-layer work remains later and still locked.
+                        Version visibility, exact-target remediation, checkpoint return continuity, checkpoint re-entry continuity, footer rationale, real submit enforcement, final-step submit locking, blocked-submit handoff, and caution confirmation are already live here. Sprint 4 quote-builder core remains formally closed. Sprint 5 Batch 1 has now started with a safe runtime slice here: approval gate, audit-event map, and lock posture are visible in the fast lane before deeper trust enforcement begins.
                       </p>
                       <div className="mt-4 space-y-2">
                         {focusQuoteVersions.length ? (

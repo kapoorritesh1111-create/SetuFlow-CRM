@@ -50,9 +50,9 @@ Use these pages before any implementation work:
 - add version history and send checkpoints
 
 ### Sprint 5 - Trust layer
-- add approval rules
-- add audit trail structure
-- add quote locking rules after send and approval
+- Batch 1 started with a safe runtime slice: surface the approval gate contract in the quote fast lane
+- Batch 1 started with a safe runtime slice: surface the audit-event map for checkpoint, approval, send, and lock transitions
+- Batch 1 started with a safe runtime slice: surface quote lock posture after send and outcome without opening deeper enforcement
 
 ### Sprint 6 - Orders foundation
 - create Orders module and accepted quote snapshot path

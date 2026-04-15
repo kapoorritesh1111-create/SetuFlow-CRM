@@ -109,17 +109,17 @@ export type ScreenPlan = {
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
-  sprint: "Sprint 4",
-  percent: 100,
-  percentLabel: "100%",
+  sprint: "Sprint 5 batch 1",
+  percent: 12,
+  percentLabel: "12% · Send-checkpoint trust visibility live",
 };
 
 export const sprintFocus = {
-  sprint: "Sprint 4 · Closed",
+  sprint: "Sprint 5 · Batch 1 active",
   title:
-    "Sprint 3 remains formally closed on the deployed Leads baseline, and Sprint 4 quote-builder core is now formally closed too: the live Product, Pricing, Terms, Review, and Send builder is in place with edit continuity, version visibility, exact-target remediation, return-loop continuity, explicit blocked-versus-caution-versus-ready checkpoint decisions, footer rationale, real submit enforcement, final-step submit locking, blocked-submit handoff, and caution confirmation all landed without jumping ahead into Sprint 5 trust-layer work.",
+    "Sprint 3 remains formally closed on the deployed Leads baseline, and Sprint 4 quote-builder core remains formally closed too. The live Product, Pricing, Terms, Review, and Send builder is complete, and the next approved move is Sprint 5 Batch 1 trust-layer work: start the shared approval gate, audit-event map, and lock-state visibility contract in the quote fast lane, then carry that same visibility into the guided send checkpoint before any deeper enforcement or workflow expansion begins.",
   nextAction:
-    "Keep Sprint 4 formally closed in the development surfaces, preserve the build-safe baseline, and do not start Sprint 5 implementation until the next trust-layer lane is explicitly approved. The next sequenced work is Sprint 5 trust-layer planning, not another hidden Sprint 4 batch.",
+    "Keep Sprint 4 formally closed in the development surfaces, preserve the build-safe baseline, and keep Sprint 5 limited to the first safe runtime slice only: shared approval gate, audit-event map, and lock-state visibility inside the quote fast lane and the guided send checkpoint. Do not open deeper trust enforcement, approvals workflow expansion, or post-send locking yet.",
   flow: LOCKED_PRODUCT_FLOW.join(" → "),
 };
 
@@ -142,7 +142,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "Operating-system overview for the locked flow, current sprint status, and the next approved execution lane.",
     status: "done",
     focus:
-      "Keep the repo speaking one sprint timeline again: Sprint 3 closed, Sprint 4 closed, and Sprint 5 still locked.",
+      "Keep the repo speaking one sprint timeline again: Sprint 3 closed, Sprint 4 closed, and Sprint 5 Batch 1 active while deeper trust enforcement remains intentionally unopened.",
   },
   {
     id: "master-plan",
@@ -152,7 +152,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "Sprint roadmap for the locked flow from completed foundation work into the next product phase.",
     status: "done",
     focus:
-      "Preserve the roadmap order while showing clearly that Sprint 3 is closed, Sprint 4 is formally complete, and Sprint 5 remains the next locked lane.",
+      "Preserve the roadmap order while showing clearly that Sprint 3 is closed, Sprint 4 is formally complete, and Sprint 5 Batch 1 is now active, but only through the first safe trust-visibility slice.",
   },
   {
     id: "readiness",
@@ -172,7 +172,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "The gap view for what is already true, what still needs to land from the approved rework, and what must be complete before buyer-facing walkthroughs.",
     status: "done",
     focus:
-      "Keep buyer-readiness honest instead of implying the overall roadmap is finished: Sprint 4 quote-builder core is now complete, while Sprint 5 trust-layer proof and later buyer-facing validation remain explicitly sequenced behind it.",
+      "Keep buyer-readiness honest instead of implying the overall roadmap is finished: Sprint 4 quote-builder core is now complete, Sprint 5 trust-layer planning is now defined, and actual trust-layer proof plus later buyer-facing validation remain explicitly sequenced behind it.",
   },
   {
     id: "backlog",
@@ -252,7 +252,7 @@ export const readinessAreas: ReadinessArea[] = [
   {
     title: "Buyer readiness still has explicit post-Sprint-3 work",
     summary:
-      "The successful deployment does not mean the full rework is buyer-ready yet. Sprint 4 quote-builder core is now complete in the repo, while Sprint 5 trust layers, end-to-end buyer QA, and later buyer-facing proof still remain sequenced work.",
+      "The successful deployment does not mean the full rework is buyer-ready yet. Sprint 4 quote-builder core is now complete in the repo, and Sprint 5 Batch 1 now carries one safe runtime slice across the fast lane and the guided send checkpoint, while deeper trust-layer implementation, end-to-end buyer QA, and later buyer-facing proof still remain sequenced work.",
     status: "next",
   },
   {
@@ -290,7 +290,7 @@ export const checklistItems: ChecklistItem[] = [
     area: "Development pages",
     label:
       "Development pages now show Sprint 3 closed and Sprint 4 formally closed",
-    note: "The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprint 3 formally closed, Sprint 4 formally closed, and Sprint 5 still locked behind it.",
+    note: "The development hub, master plan, readiness page, backlog, buyer-ready view, and screen references now speak the same status language with Sprint 3 formally closed, Sprint 4 formally closed, and Sprint 5 opened for the first safe runtime slice while deeper trust work remains intentionally unopened.",
     status: "done",
   },
   {
@@ -319,9 +319,9 @@ export const checklistItems: ChecklistItem[] = [
     id: "sprint-3-entry",
     area: "Next phase",
     label:
-      "Sprint 4 quote-builder core is complete and visible",
-    note: "The live quote builder now carries the full Sprint 4 contract end to end: guided five-step flow, exact remediation continuity, blocked-versus-caution-versus-ready decisioning, real submit enforcement, final-step locking, blocked-submit handoff, and caution confirmation, without reopening Sprint 3 or jumping ahead to Sprint 5 implementation.",
-    status: "done",
+      "Sprint 5 trust-layer Batch 1 trust runtime starts through one safe slice",
+    note: "Sprint 4 remains closed, and the first Sprint 5 batch now carries one safe runtime slice across the fast lane and the guided send checkpoint: approval gate, audit-event map, and lock-state visibility stay visible without changing the closed Sprint 4 builder rules.",
+    status: "in-progress",
   },
 ];
 
@@ -391,15 +391,15 @@ export const roadmapMilestones: RoadmapMilestone[] = [
   {
     sprint: "Sprint 5 · Trust layer",
     summary:
-      "Add approval rules, audit trail structure, and quote locking after send and approval.",
-    badgeLabel: "Locked",
-    status: "locked",
+      "Batch 1 starts the trust layer by surfacing the approval gate, audit-event map, and quote lock-state contract inside the live quote workspace and the guided send checkpoint.",
+    badgeLabel: "Batch 1 active",
+    status: "in-progress",
     objective:
-      "Make enterprise trust visible without opening new top-level modules.",
+      "Start the trust contract through one visibility-first runtime slice without opening new top-level modules or deeper enforcement early.",
     outcomes: [
-      "Approval rules are visible and understandable.",
-      "Audit structure is explicit at sensitive moments.",
-      "Quote locking behavior is consistent after send and approval.",
+      "Approval-required, approval-pending, and approval-cleared trust posture is now visible in the fast lane and the guided send checkpoint.",
+      "Audit events for checkpoint changes, approvals, sends, and lock transitions are now surfaced as a shared preview map.",
+      "Post-send and outcome lock posture is now visible before deeper enforcement begins.",
     ],
   },
   {
@@ -511,15 +511,15 @@ export const backlogSections: BacklogSection[] = [
     ],
   },
   {
-    title: "Sprint 4 complete · Sprints 5 to 6 sequenced",
+    title: "Sprint 4 complete · Sprint 5 Batch 1 active",
     heading:
-      "Quote builder is now active, while trust layers and Orders depth remain sequenced behind it",
+      "Quote builder core is closed, and Sprint 5 Batch 1 is now the next controlled lane",
     sprint: "Sprints 4-6",
     badgeLabel: "Next",
     summary:
-      "Sprint 4 quote-builder core is now complete, and the next commercial and operational work stays visible in order behind it.",
+      "Sprint 4 quote-builder core is complete, and Sprint 5 Batch 1 now carries one safe runtime slice from the quote fast lane into the guided send checkpoint.",
     description:
-      "This protects the plan from inventing extra Sprint 4 work or skipping directly into trust-layer or order-depth implementation before Sprint 5 is intentionally opened.",
+      "This protects the plan from inventing extra Sprint 4 work while keeping Sprint 5 constrained to one safe visibility-first runtime slice before deeper trust enforcement begins.",
     status: "done",
     items: [
       {
@@ -530,9 +530,9 @@ export const backlogSections: BacklogSection[] = [
       },
       {
         title: "Sprint 5 · Trust layer",
-        note: "Approval, audit, and locking work remain sequenced after Quote builder core.",
-        stateLabel: "Locked",
-        status: "locked",
+        note: "Batch 1 is now active through a safe runtime slice: approval gate, audit-event map, and lock-state visibility in the quote fast lane and the guided send checkpoint. Deeper trust enforcement remains intentionally unopened.",
+        stateLabel: "Batch 1 active",
+        status: "in-progress",
       },
       {
         title: "Sprint 6 · Orders foundation",
@@ -807,7 +807,7 @@ export const buyerReadySections: BuyerReadySection[] = [
       },
       {
         label: "Add trust-layer proof",
-        note: "Approvals, audit visibility, and quote locking remain part of the approved rework and still need to be completed for buyer confidence.",
+        note: "Sprint 5 Batch 1 has now started through a safe runtime slice: approval gate, audit-event map, and lock-state visibility are visible in the fast lane and the guided send checkpoint. Buyer-facing trust proof still remains to be implemented after deeper trust enforcement is approved.",
         status: "next",
       },
       {
@@ -950,10 +950,10 @@ export const screenPlans: ScreenPlan[] = [
     title: "Quote builder core",
     route: PRODUCT_ROUTES.app.quotes,
     summary:
-      "Sprint 4 quote-builder core is now complete: workspace guidance is visible, edit continuity is step-aware, pricing-risk cues are live, builder-side version continuity is visible, pricing-line readiness cues are live, exact-target remediation is in place, remediation return-loop continuity is live, checkpoint re-entry continuity is live, checkpoint decision contract is live with aligned continue-and-save action behavior, blocked submit now hands users into the leading exact fix target, and caution-level send posture requires explicit confirmation before save/create can continue. Sprint 5 trust work remains later and still locked.",
+      "Sprint 4 quote-builder core is now complete: workspace guidance is visible, edit continuity is step-aware, pricing-risk cues are live, builder-side version continuity is visible, pricing-line readiness cues are live, exact-target remediation is in place, remediation return-loop continuity is live, checkpoint re-entry continuity is live, checkpoint decision contract is live with aligned continue-and-save action behavior, blocked submit now hands users into the leading exact fix target, and caution-level send posture requires explicit confirmation before save/create can continue. Sprint 5 Batch 1 has now started through a safe runtime slice in the fast lane and the guided send checkpoint, but deeper trust enforcement remains intentionally unopened.",
     status: "done",
     primaryGoal:
-      "Keep the live quote draft stable on the approved Sprint 4 builder structure while Sprint 5 remains intentionally locked.",
+      "Keep the live quote draft stable on the approved Sprint 4 builder structure while Sprint 5 Batch 1 is active and deeper trust enforcement remains intentionally unopened.",
     layout: [
       {
         title: "Step rail",

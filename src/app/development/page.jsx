@@ -70,15 +70,18 @@ export default function DevelopmentPage() {
               </p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
                 Sprint 3 is now formally closed on the deployed Leads baseline,
-                Sprint 4 quote-builder core is now formally closed, and the
-                development workplace shows the locked plan, current workflow
-                truth, and the remaining buyer-ready gap.
+                Sprint 4 quote-builder core remains formally closed, and the
+                development workplace now opens Sprint 5 Batch 1 as a
+                visibility-first runtime slice, not deeper enforcement, while
+                keeping the locked plan, workflow truth, and remaining
+                buyer-ready gap visible.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
                 This page is the operating surface for the locked sprint plan.
-                Development status, deployment proof, workflow truth, and
-                buyer-readiness gaps now move together so the repo does not
-                drift away from the shipped baseline.
+                Sprint 4 stays closed here, and Sprint 5 Batch 1 has now opened through one safe runtime slice,
+                and deployment proof, workflow truth, and buyer-readiness gaps
+                still move together so the repo does not drift away from the
+                shipped baseline.
               </p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
@@ -91,9 +94,11 @@ export default function DevelopmentPage() {
               </p>
               <p className="mt-4 text-sm leading-7 text-white/85">
                 Flow remains locked to {sprintFocus.flow}. Today’s operating
-                truth is a deployed and formally closed Sprint 3 baseline plus
-                a formally closed Sprint 4 quote-builder baseline tracked against the
-                remaining buyer-ready gap.
+                truth is a deployed and formally closed Sprint 3 baseline, a
+                formally closed Sprint 4 quote-builder baseline, and a
+                Sprint 5 Batch 1 trust lane that is now live in runtime and intentionally
+                limited to visibility-first trust cues, not deeper
+                enforcement.
               </p>
             </div>
           </div>

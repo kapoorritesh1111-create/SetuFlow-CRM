@@ -12,6 +12,7 @@ import {
   type WizardStepDefinition,
 } from "@/components/ui/wizard-shell";
 import { CommercialWizardFooter } from "@/components/ui/commercial-wizard-footer";
+import { QuoteTrustContractPreview } from "@/features/quotes/components/quote-trust-contract-preview";
 import {
   createQuote,
   updateQuoteWorkflow,
@@ -33,6 +34,9 @@ import {
   getQuoteWorkflowStatus,
   parseQuoteWorkflow,
 } from "@/lib/quoteWorkflow";
+import { getQuoteTrustContract } from "@/lib/quoteTrust";
+import type { ApprovalState } from "@/lib/approvalRouting";
+import type { QuoteStatus } from "@/lib/quoteWorkflow";
 import { formatDateTime } from "@/lib/utils";
 
 type ProductOption = {
@@ -2471,6 +2475,11 @@ export function QuoteCreateWizardForm({
   );
   const reviewDecision = getCheckpointDecision("review", reviewRecommendations);
   const sendDecision = getCheckpointDecision("send", stepRecommendations);
+  const sendStepTrustContract = getQuoteTrustContract({
+    status: status as QuoteStatus,
+    approvalRequired,
+    approvalState: approvalState as ApprovalState,
+  });
   const [sendCautionAcknowledged, setSendCautionAcknowledged] = useState(
     sendDecision.state !== "caution",
   );
@@ -3162,6 +3171,14 @@ export function QuoteCreateWizardForm({
                   <li>• Send blockers: {quoteSendGuard?.blockerCount ?? 0}</li>
                 </ul>
               </div>
+              <div className="mt-4">
+                <QuoteTrustContractPreview
+                  contract={sendStepTrustContract}
+                  title="Sprint 5 Batch 1 · Send-checkpoint trust contract"
+                  description="Keep the same approval gate, lock posture, and audit-event map visible at the actual send checkpoint without opening deeper trust enforcement."
+                  auditDescription="This keeps the approved Batch 1 runtime slice continuous between the fast lane and the guided send checkpoint."
+                />
+              </div>
               <div className="mt-4 space-y-3">
                 <RemediationCheckpointPanel
                   target={checkpointRemediationTarget}
@@ -3531,6 +3548,11 @@ export function QuoteEditWizardForm({
   );
   const reviewDecision = getCheckpointDecision("review", reviewRecommendations);
   const sendDecision = getCheckpointDecision("send", stepRecommendations);
+  const sendStepTrustContract = getQuoteTrustContract({
+    status: status as QuoteStatus,
+    approvalRequired,
+    approvalState: approvalState as ApprovalState,
+  });
   const [sendCautionAcknowledged, setSendCautionAcknowledged] = useState(
     sendDecision.state !== "caution",
   );
@@ -4304,6 +4326,14 @@ export function QuoteEditWizardForm({
                   </li>
                   <li>• Send blockers: {quoteSendGuard?.blockerCount ?? 0}</li>
                 </ul>
+              </div>
+              <div className="mt-4">
+                <QuoteTrustContractPreview
+                  contract={sendStepTrustContract}
+                  title="Sprint 5 Batch 1 · Send-checkpoint trust contract"
+                  description="Keep the same approval gate, lock posture, and audit-event map visible at the actual send checkpoint without opening deeper trust enforcement."
+                  auditDescription="This keeps the approved Batch 1 runtime slice continuous between the fast lane and the guided send checkpoint."
+                />
               </div>
               <div className="mt-4 space-y-3">
                 <RemediationCheckpointPanel
