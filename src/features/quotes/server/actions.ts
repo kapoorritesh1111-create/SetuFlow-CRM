@@ -58,7 +58,14 @@ async function insertCommunication(db: any, payload: CommunicationWritePayload) 
 async function writeQuoteAuditLog(input: {
   organizationId: string;
   actorUserId: string;
-  action: 'quote_created' | 'quote_updated' | 'quote_sent' | 'quote_send_blocked';
+  action:
+    | 'quote_created'
+    | 'quote_updated'
+    | 'quote_sent'
+    | 'quote_send_blocked'
+    | 'pricing_quote_approval_requested'
+    | 'pricing_quote_approved'
+    | 'pricing_quote_rejected';
   quoteId?: string | null;
   leadId: string;
   previous?: Record<string, unknown> | null;
@@ -685,6 +692,79 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
         mode: 'update',
       };
     }
+  }
+
+  // Sprint 5 Batch 1 — approval transition audit trail.
+  // Detect approval state transitions and write the appropriate trust-layer
+  // audit event. This turns the audit-event map preview into a real persistent
+  // trail without changing any Sprint 4 builder behaviour.
+  // We derive the previous approval state from the existing serialised notes
+  // so no extra DB round-trip is required.
+  const prevParsed = existing.notes
+    ? (() => {
+        try {
+          const p = JSON.parse(existing.notes);
+          return (p as any)?.meta?.approval ?? null;
+        } catch {
+          return null;
+        }
+      })()
+    : null;
+  const prevApprovalRequired = Boolean(prevParsed?.required);
+  const prevApprovalState = String(prevParsed?.state ?? 'not_required');
+
+  if (approvalRequired && !prevApprovalRequired) {
+    // Approval gate opened for the first time on this quote.
+    await writeQuoteAuditLog({
+      organizationId: organization.id,
+      actorUserId: currentUser.id,
+      action: 'pricing_quote_approval_requested',
+      quoteId,
+      leadId: existing.lead_id,
+      previous: { approval_required: false, approval_state: prevApprovalState },
+      next: { approval_required: true, approval_state: approvalState },
+      metadata: { source: 'updateQuoteWorkflow', trigger: 'approval_gate_opened' },
+    });
+  } else if (
+    approvalRequired &&
+    approvalState === 'approved' &&
+    prevApprovalState !== 'approved'
+  ) {
+    // Approval cleared.
+    await writeQuoteAuditLog({
+      organizationId: organization.id,
+      actorUserId: currentUser.id,
+      action: 'pricing_quote_approved',
+      quoteId,
+      leadId: existing.lead_id,
+      previous: { approval_state: prevApprovalState },
+      next: { approval_state: 'approved' },
+      metadata: {
+        source: 'updateQuoteWorkflow',
+        actor_name: currentUser.email ?? currentUser.id,
+        acted_at: new Date().toISOString(),
+      },
+    });
+  } else if (
+    approvalRequired &&
+    approvalState === 'rejected' &&
+    prevApprovalState !== 'rejected'
+  ) {
+    // Approval rejected.
+    await writeQuoteAuditLog({
+      organizationId: organization.id,
+      actorUserId: currentUser.id,
+      action: 'pricing_quote_rejected',
+      quoteId,
+      leadId: existing.lead_id,
+      previous: { approval_state: prevApprovalState },
+      next: { approval_state: 'rejected' },
+      metadata: {
+        source: 'updateQuoteWorkflow',
+        actor_name: currentUser.email ?? currentUser.id,
+        acted_at: new Date().toISOString(),
+      },
+    });
   }
 
   const notes = serializeQuoteWorkflow(plainNotes, {

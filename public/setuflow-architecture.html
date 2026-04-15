@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Setu Flow — Full Product Architecture · Sprint 4 Final</title>
+<title>Setu Flow — Full Product Architecture · Sprint 5 Batch 1</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0a0f1e; color: #e2e8f0; padding: 32px; }
@@ -98,7 +98,7 @@
 <body>
 
 <h1>Setu Flow — Full Product Architecture</h1>
-<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Sprint 4 Closed</span> &nbsp;·&nbsp; <span style="color:#64748b">Sprint 5 Trust Layer — Locked</span></p>
+<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Sprints 1–4 Closed</span> &nbsp;·&nbsp; <span style="color:#60a5fa;font-weight:600">Sprint 5 Batch 1 Active — 28%</span></p>
 <p class="stack-line">
   <code>Next.js 14</code> &nbsp;+&nbsp; <code>Supabase (Postgres + RLS)</code> &nbsp;+&nbsp;
   <code>TypeScript</code> &nbsp;+&nbsp; <code>Tailwind CSS</code> &nbsp;+&nbsp;
@@ -162,7 +162,7 @@
           <li>Sprint backlog</li>
           <li>Architecture contract</li>
           <li>UX rules &amp; buyer-ready gap view</li>
-          <li>Sprints 1–4 closed · Sprint 5 locked</li>
+          <li>Sprints 1–4 closed · Sprint 5 Batch 1 active (28%)</li>
         </ul>
       </div>
     </div>
@@ -474,9 +474,11 @@
         <ul>
           <li>provider.ts — pluggable backend</li>
           <li>config.ts — env-driven on/off</li>
-          <li>OpenAiProvider (stub → wire here)</li>
+          <li><strong style="color:#4ade80">AnthropicProvider — live ✓</strong></li>
+          <li>OpenAiProvider (deprecated stub)</li>
           <li>NoopProvider (safe fallback)</li>
-          <li><code>AI_ENABLED</code> + <code>OPENAI_API_KEY</code></li>
+          <li><code>ANTHROPIC_API_KEY</code> activates AI automatically</li>
+          <li>Model: claude-sonnet-4-20250514</li>
         </ul>
       </div>
       <div class="card" style="border-color:#0e7490">
@@ -512,8 +514,8 @@
         </ul>
       </div>
     </div>
-    <div style="margin-top:8px;font-size:10px;color:#475569">
-      ⚠ Current state: draft payloads are template-assembled (no LLM call). All infrastructure is wired — replace OpenAiProvider.invoke() with a real API call to activate AI across all features.
+    <div style="margin-top:8px;font-size:10px;color:#0f766e;border:1px solid #0f766e;border-radius:6px;padding:6px 10px">
+      ✓ Sprint 5 Batch 1: Anthropic Claude AI is live. Set <code>ANTHROPIC_API_KEY</code> in Vercel environment variables to activate LLM-refined drafts. Template fallback is built in — operators always get a reviewable draft regardless. Approval state transitions now write persistent audit events via writeQuoteAuditLog in updateQuoteWorkflow.
     </div>
   </div>
 </div>
@@ -854,6 +856,8 @@
             <span class="tag tag-green">Sprint 2 capture foundation reflected complete</span>
             <span class="tag tag-green">Webpack worker fix protected</span>
             <span class="tag tag-green">Sprint 4 quote-builder core complete — 5-step builder, remediation, checkpoint decisioning, version visibility, real submit enforcement</span>
+            <span class="tag tag-green">Sprint 5 · Approval audit trail live — pricing_quote_approval_requested / approved / rejected wired in updateQuoteWorkflow</span>
+            <span class="tag tag-green">Sprint 5 · Anthropic AI live — ANTHROPIC_API_KEY activates LLM drafts with template fallback</span>
           </div>
         </div>
       </div>
@@ -861,14 +865,14 @@
         <div class="phase-box" style="border-color:#c2410c">
           <div class="phase-title" style="color:#f87171">⚠ Still needed before buyer-facing readiness</div>
           <div class="sproc-list">
-            <span class="tag tag-red">AI provider not wired — OpenAiProvider still returns stub error</span>
-            <span class="tag tag-red">Orders page is hardcoded mockup — no live DB query</span>
+            <span class="tag tag-red">Orders page is hardcoded mockup — no live DB query (Sprint 6)</span>
             <span class="tag tag-red">Rate limiter is in-memory Map — will not work in serverless production</span>
-            <span class="tag tag-orange">data.ts god file — 2,984 lines, 18 domains, Sprint 9 target</span>
+            <span class="tag tag-orange">data.ts god file — 2,984 lines, 18 domains (Sprint 9 target)</span>
             <span class="tag tag-orange">lead-drawer.tsx (1,678 lines) + leads-workspace.tsx (1,602 lines) — legacy surfaces not yet retired</span>
             <span class="tag tag-orange">No end-to-end tests — Playwright installed but no test files</span>
             <span class="tag tag-orange">No live integrations — email, ERP, freight, FX all planned only</span>
             <span class="tag tag-orange">Dashboard still passive metrics — Sprint 7 action-first rebuild pending</span>
+            <span class="tag tag-orange">Lock-state enforcement on sent/accepted/expired quotes — Sprint 5 Batch 1 next slice</span>
             <span class="tag tag-orange">Font Awesome loaded from local vendor (~1MB) — should be CDN or replaced</span>
           </div>
         </div>
@@ -884,7 +888,7 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <div class="section">
   <div class="section-box" style="border-color:#b45309">
-    <span class="section-label" style="color:#fbbf24">Sprint Roadmap — Current baseline: Sprint 4 Closed · Sprint 5 Locked</span>
+    <span class="section-label" style="color:#fbbf24">Sprint Roadmap — Sprint 5 Batch 1 Active · 28% complete</span>
     <div class="grid-5" style="margin-top:8px">
       <div class="env-card" style="border-color:#4ade80">
         <div class="env-title" style="color:#4ade80">Sprints 1–4 ✓ Closed</div>
@@ -896,14 +900,15 @@
         </ul>
         <div style="margin-top:6px;font-size:10px;color:#4ade80">All four sprints formally closed · deployment verified</div>
       </div>
-      <div class="env-card" style="border-color:#475569">
-        <div class="env-title" style="color:#94a3b8">Sprint 5 — Trust layer 🔒 Locked</div>
+      <div class="env-card" style="border-color:#60a5fa">
+        <div class="env-title" style="color:#60a5fa">Sprint 5 — Trust layer · Batch 1 Active</div>
         <ul>
-          <li>Approval rules (full)</li>
-          <li>Audit trail structure</li>
-          <li>Quote locking after send + approval</li>
+          <li>✓ Trust visibility in fast lane + send checkpoint</li>
+          <li>✓ Approval audit trail live (requested / approved / rejected)</li>
+          <li>✓ Anthropic AI wired — LLM drafts active</li>
+          <li>→ Next: lock-state enforcement on sent/accepted quotes</li>
         </ul>
-        <div style="margin-top:6px;font-size:10px;color:#64748b">Not started · awaiting explicit approval to open</div>
+        <div style="margin-top:6px;font-size:10px;color:#60a5fa">28% · Batch 1 in progress</div>
       </div>
       <div class="env-card" style="border-color:#475569">
         <div class="env-title" style="color:#94a3b8">Sprint 6 — Orders 🔒 Locked</div>
@@ -969,7 +974,7 @@
 
 <br>
 <div style="text-align:center;font-size:11px;color:#334155;padding:16px">
-  Setu Flow Product Architecture — Sprint 4 Final baseline · Sprint 5 Trust Layer locked
+  Setu Flow Product Architecture — Sprint 5 Batch 1 · 28% · Approval audit trail + Anthropic AI live
 </div>
 
 </div><!-- end .diagram -->

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { writeAuditLog } from '@/lib/auditLog';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { CANONICAL_SUGGESTION_TYPES, getSuggestionFamily, normalizeSuggestionType } from '@/lib/ai/suggestion-types';
+import { runAiTask } from '@/lib/ai/provider';
 
 export type AiDraftRow = {
   id: string;
@@ -441,6 +442,37 @@ export async function generateAiDraft(_: AiDraftActionState | undefined, formDat
     documents: (documents.data ?? []) as DocumentContext[],
   });
 
+  // Sprint 5 Batch 1 — wire real LLM generation.
+  // Pass the template draft as context so the model refines it with the
+  // real CRM data already embedded. Fall back to the template if the
+  // provider is not configured or the API call fails — the operator
+  // always gets something reviewable regardless.
+  let finalContent = draft.content;
+  let finalBody = draft.body;
+  let finalSubject = draft.subject;
+
+  const aiResult = await runAiTask<string>('generate_draft', {
+    prompt: draft.content,
+    content: draft.content,
+    suggestionType,
+    leadName: (lead as { company_name?: string }).company_name ?? '',
+  });
+
+  if (aiResult.ok && typeof aiResult.data === 'string' && aiResult.data.trim()) {
+    const improved = aiResult.data.trim();
+    // Split subject from body if the model returned "Subject: ...\n\nBody"
+    const subjectMatch = improved.match(/^Subject:\s*(.+?)(?:\n\n|\n)([\s\S]+)$/i);
+    if (subjectMatch) {
+      finalSubject = subjectMatch[1].trim() || draft.subject;
+      finalBody = subjectMatch[2].trim() || draft.body;
+      finalContent = `Subject: ${finalSubject}\n\n${finalBody}`;
+    } else {
+      finalBody = improved;
+      finalContent = draft.subject ? `Subject: ${draft.subject}\n\n${improved}` : improved;
+    }
+  }
+  // If aiResult.ok is false we silently fall through to the template draft.
+
   const { data: inserted, error: insertError } = await db
     .from('ai_suggestions')
     .insert({
@@ -449,9 +481,9 @@ export async function generateAiDraft(_: AiDraftActionState | undefined, formDat
       suggestion_type: suggestionType,
       target_entity_type: targetEntityType,
       target_entity_id: targetEntityId,
-      content: draft.content,
-      draft_subject: draft.subject,
-      draft_body: draft.body,
+      content: finalContent,
+      draft_subject: finalSubject,
+      draft_body: finalBody,
       rationale: draft.rationale,
       prompt_context: draft.promptContext,
       status: 'generated',
