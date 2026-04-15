@@ -109,13 +109,13 @@ export type ScreenPlan = {
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
-  sprint: "Sprint 6 closed · Sprint 7 active",
-  percent: 68,
-  percentLabel: "Sprint 6 closed · Sprint 7 active · Sprint 8 seeded",
+  sprint: "Sprint 7 · Dashboard — complete",
+  percent: 100,
+  percentLabel: "Sprint 7 · Dashboard complete — geography-first trade command center",
 };
 
 export const sprintFocus = {
-  sprint: "Sprint 6 closed · Sprint 7 active",
+  sprint: "Sprint 7 · Dashboard — complete",
   title:
     "The repo now reflects the actual codebase: Capture, Leads, Quotes, Trust, and Orders are closed through Sprint 6; Dashboard already has active implementation in the repo; My Card/contact-exchange work is seeded; and the immediate job is to finish Sprint 7 while keeping the repo aligned and provable.",
   nextAction:
@@ -410,15 +410,16 @@ export const roadmapMilestones: RoadmapMilestone[] = [
   {
     sprint: "Sprint 7 · Dashboard rebuild",
     summary:
-      "Dashboard is active in code and now needs canonical action-first closure, trade-map drill-down, and copy/status cleanup.",
-    badgeLabel: "In progress",
-    status: "in-progress",
+      "Geography-first trade command center: dark map with urgency tiers, inline market drill-down panel, action queue filtered by market, passive charts removed.",
+    badgeLabel: "Done",
+    status: "done",
     objective:
-      "Make Dashboard operational instead of decorative or drift-prone.",
+      "Make Dashboard the command surface for geography-led commercial decisions.",
     outcomes: [
-      "Live dashboard routes and interactive components already exist.",
-      "Action-first behavior should become the single canonical dashboard story.",
-      "Preview/fallback wording should stop lagging behind implemented code.",
+      "World map redesigned — dark ocean background, urgency-coded market tiers (critical/active/watch), node size by lead count.",
+      "Clicking a market opens an inline three-panel panel: snapshot metrics, filtered action queue, top companies.",
+      "Passive pipeline chart removed from default view — dashboard leads with action, not counts.",
+      "Diagnostics collapsed to a toggle, no longer cluttering the main commercial view.",
     ],
   },
   {

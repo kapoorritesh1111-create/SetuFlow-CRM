@@ -8,16 +8,14 @@ import { WidgetEmptyState, WidgetShell } from '@/components/ui/widget-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useDashboardLayout } from '@/features/dashboard/hooks/use-dashboard-layout';
 import { resolveDashboardDefaultLayout } from '@/features/dashboard/lib/dashboard-layout';
-import type { DashboardWidgetId } from '@/features/dashboard/lib/widget-registry';
 import { DashboardWidgetErrorBoundary } from './dashboard-widget-error-boundary';
-import { CountryInsightDrawer } from './country-insight-drawer';
 import { DashboardCustomizePanel } from './dashboard-customize-panel';
 import { DashboardHeaderControls } from './dashboard-header-controls';
 import { DashboardTopStrip } from './dashboard-top-strip';
 import { DashboardWorldMapSection } from './dashboard-world-map-section';
 import { LeadHealthDonutCard } from './lead-health-donut-card';
+import { MarketCommandPanel } from './market-command-panel';
 import { NeedsAttentionCard } from './needs-attention-card';
-import { PipelineStageChartCard } from './pipeline-stage-chart-card';
 import { RecentActivityCard } from './recent-activity-card';
 import { WorkspaceWorkflowShell } from '@/features/workspace/components/WorkspaceWorkflowShell';
 import { buildTodayLayerStateFromDashboardData } from '@/features/workspace/today';
@@ -34,28 +32,6 @@ type DashboardInteractiveProps = {
   readOnlyMessage?: string | null;
 };
 
-const WIDGET_GRID_CLASSES: Record<DashboardWidgetId, string> = {
-  'kpi-strip': 'xl:col-span-12',
-  'pipeline-chart': 'xl:col-span-8',
-  'lead-health': 'xl:col-span-4',
-  'world-map': 'xl:col-span-12',
-  'needs-attention': 'xl:col-span-6',
-  'recent-activity': 'xl:col-span-6',
-};
-
-const WIDGET_SECTION_MAP: Record<DashboardWidgetId, 'always' | 'main-visual' | 'world-map' | 'action-row'> = {
-  'kpi-strip': 'always',
-  'pipeline-chart': 'main-visual',
-  'lead-health': 'main-visual',
-  'world-map': 'world-map',
-  'needs-attention': 'action-row',
-  'recent-activity': 'action-row',
-};
-
-// Widget registry labels kept explicit for smoke tests and operator discoverability:
-// Metrics overview | Pipeline value | RFQ activity | Quote activity | Compliance blockers | Overdue tasks | Recent activity | Product and pricing insights
-// DashboardLayoutEngine | WidgetShell | WidgetEmptyState | persistenceKey | dashboardVariant
-
 export default function DashboardInteractive({
   data,
   persistenceKey,
@@ -70,12 +46,15 @@ export default function DashboardInteractive({
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<WorkspaceMode>(workspaceMode);
   const [todayFilter, setTodayFilter] = useState<TodayFilterKey>('all-open');
-  const defaultLayout = resolveDashboardDefaultLayout(data, dashboardVariant, currentRoles);
-  const todayState = useMemo(() => buildTodayLayerStateFromDashboardData(data, mode, todayFilter, serverNowIso ?? new Date().toISOString()), [data, mode, todayFilter, serverNowIso]);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
 
-  useEffect(() => {
-    setMode(workspaceMode);
-  }, [workspaceMode]);
+  const defaultLayout = resolveDashboardDefaultLayout(data, dashboardVariant, currentRoles);
+  const todayState = useMemo(
+    () => buildTodayLayerStateFromDashboardData(data, mode, todayFilter, serverNowIso ?? new Date().toISOString()),
+    [data, mode, todayFilter, serverNowIso],
+  );
+
+  useEffect(() => { setMode(workspaceMode); }, [workspaceMode]);
 
   const handleModeChange = (nextMode: WorkspaceMode) => {
     setMode(nextMode);
@@ -85,121 +64,60 @@ export default function DashboardInteractive({
     const nextQuery = params.toString();
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
   };
+
   const layout = useDashboardLayout(data, { dashboardVariant, currentRoles, persistenceKey });
-  const visibleWidgetSet = new Set(layout.activeWidgetIds);
 
-  const missingMetricContext = useMemo(() => {
-    const issues: string[] = [];
-    if (!data.stageCounts.length) issues.push('Pipeline stage totals are not available yet.');
-    if (!data.countryCoverage.length) issues.push('Country coverage metrics are not available yet.');
-    if (!data.attentionItems.length && !data.recentActivity.length) issues.push('Action and activity widgets do not have live context yet.');
-    return issues;
-  }, [data]);
-
-  const orderedWidgets = layout.widgetLayout.filter(
-    (widgetId): widgetId is DashboardWidgetId => visibleWidgetSet.has(widgetId as DashboardWidgetId),
+  // Selected market context — drives map drill-down panel
+  const selectedCountry = useMemo(
+    () => data.countryInsights.find(c => c.countryCode === layout.selectedCountryCode),
+    [data.countryInsights, layout.selectedCountryCode],
   );
 
-  const isWidgetVisible = (widgetId: DashboardWidgetId) => {
-    const sectionId = WIDGET_SECTION_MAP[widgetId];
-    if (sectionId === 'always') return true;
-    return !layout.hiddenSections.includes(sectionId);
-  };
-
-  const renderWidget = (widgetId: DashboardWidgetId) => {
-    if (!isWidgetVisible(widgetId)) return null;
-
-    switch (widgetId) {
-      case 'kpi-strip':
-        return (
-          <DashboardWidgetErrorBoundary
-            title="Metrics overview"
-            description="Top-level KPI summary for the active dashboard scope."
-            eyebrow="Overview"
-            fallbackTitle="Metrics overview unavailable"
-            fallbackDescription="The KPI strip hit a runtime issue. The rest of the dashboard is still available."
-          >
-            <DashboardTopStrip kpis={data.kpis} />
-          </DashboardWidgetErrorBoundary>
-        );
-      case 'pipeline-chart':
-        return (
-          <DashboardWidgetErrorBoundary
-            title="Pipeline Chart"
-            description="Stage visibility by open lead count."
-            eyebrow="Main visual"
-            fallbackTitle="Pipeline chart unavailable"
-            fallbackDescription="The stage visualization hit a runtime issue. Other dashboard widgets are still available."
-          >
-            <PipelineStageChartCard items={data.stageCounts} />
-          </DashboardWidgetErrorBoundary>
-        );
-      case 'lead-health':
-        return (
-          <DashboardWidgetErrorBoundary
-            title="Lead Health"
-            description="Healthy vs at-risk vs blocked."
-            eyebrow="Main visual"
-            fallbackTitle="Lead health unavailable"
-            fallbackDescription="The lead health visualization hit a runtime issue. Other dashboard widgets are still available."
-          >
-            <LeadHealthDonutCard items={data.leadHealth} />
-          </DashboardWidgetErrorBoundary>
-        );
-      case 'world-map':
-        return (
-          <DashboardWorldMapSection
-            countries={data.countryCoverage}
-            selectedCountryCode={layout.selectedCountryCode}
-            onSelectCountry={layout.onSelectCountry}
-          />
-        );
-      case 'needs-attention':
-        return (
-          <DashboardWidgetErrorBoundary
-            title="Needs Attention"
-            description="Top priority action queue."
-            eyebrow="Action zone"
-            fallbackTitle="Needs Attention unavailable"
-            fallbackDescription="The action queue hit a runtime issue. Other dashboard widgets are still available."
-          >
-            <NeedsAttentionCard items={data.attentionItems} onFocus={layout.onFocusAttention} />
-          </DashboardWidgetErrorBoundary>
-        );
-      case 'recent-activity':
-        return (
-          <DashboardWidgetErrorBoundary
-            title="Recent Activity"
-            description="Latest meaningful commercial events."
-            eyebrow="Action zone"
-            fallbackTitle="Recent Activity unavailable"
-            fallbackDescription="The recent activity widget hit a runtime issue. Other dashboard widgets are still available."
-          >
-            <RecentActivityCard items={data.recentActivity} />
-          </DashboardWidgetErrorBoundary>
-        );
-      default:
-        return null;
-    }
-  };
+  const hasDiagnostics = data.queryIssues.length > 0 || !!readOnlyMessage;
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 xl:px-0">
+      {/* Today/mode shell */}
       <WorkspaceWorkflowShell
         title="Dashboard"
-        description="What needs attention, what is blocked, and what to do next without dashboard clutter."
+        description="Geography-first trade command center. Select a market to drill into actions, buyers, and blockers."
         mode={mode}
         onModeChange={handleModeChange}
         todayState={todayState}
         onTodayFilterChange={setTodayFilter}
         showHeader={false}
         utilities={(
-          <DashboardHeaderControls
-            customizeOpen={layout.customizeOpen}
-            onToggleCustomize={layout.onToggleCustomize}
-          />
+          <div className="flex items-center gap-2">
+            {hasDiagnostics && (
+              <button
+                type="button"
+                onClick={() => setDiagnosticsOpen(o => !o)}
+                className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+              >
+                {diagnosticsOpen ? 'Hide' : 'Show'} diagnostics
+              </button>
+            )}
+            <DashboardHeaderControls
+              customizeOpen={layout.customizeOpen}
+              onToggleCustomize={layout.onToggleCustomize}
+            />
+          </div>
         )}
       />
+
+      {/* Collapsed diagnostics */}
+      {diagnosticsOpen && hasDiagnostics && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-5 py-4">
+          {readOnlyMessage && (
+            <p className="text-sm text-amber-800"><strong>Read-only view:</strong> {readOnlyMessage}</p>
+          )}
+          {data.queryIssues.length > 0 && (
+            <ul className="mt-2 space-y-1 text-sm text-amber-700">
+              {data.queryIssues.map(issue => <li key={issue}>· {issue}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
 
       <DashboardCustomizePanel
         open={layout.customizeOpen}
@@ -215,72 +133,112 @@ export default function DashboardInteractive({
         onReset={layout.onResetLayout}
       />
 
-      {readOnlyMessage ? (
-        <WidgetShell title="Read-only dashboard view" description={readOnlyMessage} eyebrow="Report view">
-          <p className="text-sm text-slate-600">You can still open pipeline, compliance, and reporting drill-through links from the dashboard without enabling inline commercial edits here.</p>
+      {/* KPI strip — global metrics */}
+      {data.kpis.length > 0 && (
+        <DashboardWidgetErrorBoundary
+          title="Metrics overview" description="Top-level commercial signals."
+          eyebrow="Overview" fallbackTitle="Metrics unavailable"
+          fallbackDescription="The KPI strip hit a runtime issue."
+        >
+          <DashboardTopStrip kpis={data.kpis} />
+        </DashboardWidgetErrorBoundary>
+      )}
+
+      {/* Trade map — always central, full width */}
+      <DashboardWidgetErrorBoundary
+        title="Trade map" description="Global market coverage — click any active market to drill down."
+        eyebrow="Command center" fallbackTitle="Trade map unavailable"
+        fallbackDescription="The coverage map hit a runtime issue."
+      >
+        <WidgetShell
+          title="Global trade map"
+          description={selectedCountry
+            ? `Showing market context for ${selectedCountry.countryName}. Click another country to switch, or close to return to global view.`
+            : "Highlighted markets have active leads, quotes, or compliance items. Click any market to drill into actions and buyer context."}
+          eyebrow="Command center"
+          actions={selectedCountry ? (
+            <button
+              type="button"
+              onClick={layout.onCloseCountryDrawer}
+              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              ✕ Clear market
+            </button>
+          ) : undefined}
+        >
+          {data.countryCoverage.length ? (
+            <DashboardWorldMapSection
+              countries={data.countryCoverage}
+              selectedCountryCode={layout.selectedCountryCode}
+              onSelectCountry={layout.onSelectCountry}
+            />
+          ) : (
+            <WidgetEmptyState
+              title="Map lights up once leads are assigned to countries"
+              description="Add country data to your leads and the trade map will show market coverage automatically."
+            />
+          )}
+
+          {/* Inline market panel — renders below map, replaces drawer */}
+          {selectedCountry && (
+            <MarketCommandPanel
+              country={selectedCountry}
+              attentionItems={data.attentionItems}
+              onClose={layout.onCloseCountryDrawer}
+            />
+          )}
         </WidgetShell>
-      ) : null}
+      </DashboardWidgetErrorBoundary>
 
-      {missingMetricContext.length ? (
-        <WidgetShell title="Missing metric context" description="Some dashboard widgets are waiting on upstream CRM context. The dashboard stays usable while those totals catch up." eyebrow="Contained gap">
-          <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
-            {missingMetricContext.map((issue) => (
-              <li key={issue}>{issue}</li>
-            ))}
-          </ul>
-        </WidgetShell>
-      ) : null}
+      {/* Action row — lead health + action queue */}
+      <div className="grid gap-6 xl:grid-cols-[0.4fr_0.6fr]">
+        <DashboardWidgetErrorBoundary
+          title="Lead health" description="Healthy vs at-risk vs blocked."
+          eyebrow="Health" fallbackTitle="Lead health unavailable"
+          fallbackDescription="The lead health chart hit a runtime issue."
+        >
+          <LeadHealthDonutCard items={data.leadHealth} />
+        </DashboardWidgetErrorBoundary>
 
-      {data.queryIssues.length ? (
-        <WidgetShell title="Query issues" description="These data sources returned partial results." eyebrow="Attention needed">
-          <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
-            {data.queryIssues.map((issue) => (
-              <li key={issue}>{issue}</li>
-            ))}
-          </ul>
-        </WidgetShell>
-      ) : null}
-
-      <section className="grid gap-6 xl:grid-cols-12">
-        {orderedWidgets.map((widgetId) => {
-          const content = renderWidget(widgetId);
-          if (!content) return null;
-
-          return (
-            <div key={widgetId} className={WIDGET_GRID_CLASSES[widgetId]}>
-              {content}
-            </div>
-          );
-        })}
-      </section>
-
-      {!data.kpis.length && !data.countryCoverage.length ? (
-        <WidgetEmptyState title="Dashboard will appear here" description="Live KPI, map, and action widgets will render when CRM data becomes available." />
-      ) : null}
-
-      {(data.kpis.length || data.countryCoverage.length) && !data.queryIssues.length ? (
-        <div className="flex flex-wrap gap-2">
-          <StatusBadge label={`${data.kpis.length} dashboard KPIs`} tone="info" />
-          <StatusBadge label={`${data.countryCoverage.length} countries in scope`} tone={data.countryCoverage.length ? 'success' : 'warning'} />
-        </div>
-      ) : null}
-
-      <CountryInsightDrawer
-        country={layout.selectedCountry}
-        open={layout.mapDrawerOpen}
-        onClose={layout.onCloseCountryDrawer}
-      />
-
-      <div className="hidden">
-        {JSON.stringify({
-          persistenceKey,
-          dashboardVariant,
-          activeWidgetIds: layout.activeWidgetIds,
-          defaultLayout,
-          widgetLayout: layout.widgetLayout,
-          focusedAttentionItem: layout.focusedAttentionItem?.id,
-        })}
+        <DashboardWidgetErrorBoundary
+          title="Needs attention" description="Top priority action queue across all markets."
+          eyebrow="Action zone" fallbackTitle="Action queue unavailable"
+          fallbackDescription="The action queue hit a runtime issue."
+        >
+          <NeedsAttentionCard
+            items={data.attentionItems}
+            onFocus={layout.onFocusAttention}
+          />
+        </DashboardWidgetErrorBoundary>
       </div>
+
+      {/* Recent activity */}
+      <DashboardWidgetErrorBoundary
+        title="Recent activity" description="Latest commercial events across all active leads."
+        eyebrow="Activity" fallbackTitle="Recent activity unavailable"
+        fallbackDescription="The activity feed hit a runtime issue."
+      >
+        <RecentActivityCard items={data.recentActivity} />
+      </DashboardWidgetErrorBoundary>
+
+      {/* Empty state */}
+      {!data.kpis.length && !data.countryCoverage.length && !data.attentionItems.length && (
+        <WidgetEmptyState
+          title="Dashboard will appear here"
+          description="Live commercial signals will render once leads, quotes, and country data are present in the CRM."
+        />
+      )}
+
+      {/* Compact footer signal */}
+      {(data.kpis.length > 0 || data.countryCoverage.length > 0) && (
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge label={`${data.countryCoverage.length} markets tracked`} tone={data.countryCoverage.length > 0 ? 'success' : 'warning'} />
+          <StatusBadge label={`${data.attentionItems.length} items need attention`} tone={data.attentionItems.length > 0 ? 'warning' : 'success'} />
+          {selectedCountry && (
+            <StatusBadge label={`${selectedCountry.countryName} · market view active`} tone="info" />
+          )}
+        </div>
+      )}
     </div>
   );
 }
