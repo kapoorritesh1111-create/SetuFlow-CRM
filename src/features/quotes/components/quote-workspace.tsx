@@ -36,6 +36,8 @@ import {
   computeQuoteTotals,
   getQuoteStatusBadgeClasses,
   getQuoteWorkflowStatus,
+  isQuoteLocked,
+  getQuoteLockReason,
   parseQuoteWorkflow,
 } from "@/lib/quoteWorkflow";
 import type { SavedViewDefinition } from "@/lib/savedViews";
@@ -1294,6 +1296,27 @@ export function QuoteWorkspace({
 
       {focusQuote ? (
         <SectionCard className="overflow-hidden border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(248,250,252,0.98))] p-0">
+          {/* Sprint 5 Batch 1 — lock-state banner.
+              Renders a clear read-only indicator when the focused quote
+              has reached a terminal or customer-facing status. Action
+              buttons remain visible but disabled via canManageQuotes logic;
+              this banner explains why. */}
+          {focusQuote && isQuoteLocked(focusQuoteMeta?.status ?? focusQuote.status) ? (
+            <div className="flex items-start gap-3 border-b border-amber-200 bg-amber-50 px-5 py-3 sm:px-6">
+              <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold text-amber-900">
+                ⊘
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-amber-900">
+                  Quote locked —{" "}
+                  {String(focusQuoteMeta?.status ?? focusQuote.status).replaceAll("_", " ")}
+                </p>
+                <p className="mt-0.5 text-sm text-amber-800">
+                  {getQuoteLockReason(focusQuoteMeta?.status ?? focusQuote.status)}
+                </p>
+              </div>
+            </div>
+          ) : null}
           <div className="grid gap-0 xl:grid-cols-[1.15fr_0.85fr]">
             <div className="p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">

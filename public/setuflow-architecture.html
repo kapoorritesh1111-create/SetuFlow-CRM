@@ -98,7 +98,7 @@
 <body>
 
 <h1>Setu Flow — Full Product Architecture</h1>
-<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Sprints 1–4 Closed</span> &nbsp;·&nbsp; <span style="color:#60a5fa;font-weight:600">Sprint 5 Batch 1 Active — 28%</span></p>
+<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Sprints 1–4 Closed</span> &nbsp;·&nbsp; <span style="color:#60a5fa;font-weight:600">Sprint 5 Batch 1 Active — 42%</span></p>
 <p class="stack-line">
   <code>Next.js 14</code> &nbsp;+&nbsp; <code>Supabase (Postgres + RLS)</code> &nbsp;+&nbsp;
   <code>TypeScript</code> &nbsp;+&nbsp; <code>Tailwind CSS</code> &nbsp;+&nbsp;
@@ -858,6 +858,7 @@
             <span class="tag tag-green">Sprint 4 quote-builder core complete — 5-step builder, remediation, checkpoint decisioning, version visibility, real submit enforcement</span>
             <span class="tag tag-green">Sprint 5 · Approval audit trail live — pricing_quote_approval_requested / approved / rejected wired in updateQuoteWorkflow</span>
             <span class="tag tag-green">Sprint 5 · Anthropic AI live — ANTHROPIC_API_KEY activates LLM drafts with template fallback</span>
+            <span class="tag tag-green">Sprint 5 · Lock-state enforcement live — isQuoteLocked() blocks updateQuoteWorkflow mutations + read-only banner in fast lane for sent/accepted/rejected/expired</span>
           </div>
         </div>
       </div>
@@ -872,7 +873,7 @@
             <span class="tag tag-orange">No end-to-end tests — Playwright installed but no test files</span>
             <span class="tag tag-orange">No live integrations — email, ERP, freight, FX all planned only</span>
             <span class="tag tag-orange">Dashboard still passive metrics — Sprint 7 action-first rebuild pending</span>
-            <span class="tag tag-orange">Lock-state enforcement on sent/accepted/expired quotes — Sprint 5 Batch 1 next slice</span>
+            <span class="tag tag-orange">Lock badge in quote list view — Sprint 5 Batch 1 next slice</span>
             <span class="tag tag-orange">Font Awesome loaded from local vendor (~1MB) — should be CDN or replaced</span>
           </div>
         </div>
@@ -906,9 +907,10 @@
           <li>✓ Trust visibility in fast lane + send checkpoint</li>
           <li>✓ Approval audit trail live (requested / approved / rejected)</li>
           <li>✓ Anthropic AI wired — LLM drafts active</li>
-          <li>→ Next: lock-state enforcement on sent/accepted quotes</li>
+          <li>✓ Lock-state enforcement — mutations blocked + read-only banner</li>
+          <li>→ Next: lock badge in quote list view</li>
         </ul>
-        <div style="margin-top:6px;font-size:10px;color:#60a5fa">28% · Batch 1 in progress</div>
+        <div style="margin-top:6px;font-size:10px;color:#60a5fa">42% · Batch 1 in progress</div>
       </div>
       <div class="env-card" style="border-color:#475569">
         <div class="env-title" style="color:#94a3b8">Sprint 6 — Orders 🔒 Locked</div>
@@ -974,7 +976,7 @@
 
 <br>
 <div style="text-align:center;font-size:11px;color:#334155;padding:16px">
-  Setu Flow Product Architecture — Sprint 5 Batch 1 · 28% · Approval audit trail + Anthropic AI live
+  Setu Flow Product Architecture — Sprint 5 Batch 1 · 42% · Lock enforcement + Approval audit + Anthropic AI live
 </div>
 
 </div><!-- end .diagram -->

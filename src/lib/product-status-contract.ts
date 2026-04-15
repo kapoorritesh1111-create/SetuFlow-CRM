@@ -110,16 +110,16 @@ export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
   sprint: "Sprint 5 batch 1",
-  percent: 28,
-  percentLabel: "28% · Approval audit trail live · Anthropic AI wired",
+  percent: 42,
+  percentLabel: "42% · Lock-state enforcement live · Approval audit trail · Anthropic AI wired",
 };
 
 export const sprintFocus = {
   sprint: "Sprint 5 · Batch 1 active",
   title:
-    "Sprint 3 remains formally closed on the deployed Leads baseline, and Sprint 4 quote-builder core remains formally closed too. Sprint 5 Batch 1 trust-layer work has now advanced through two additional slices: approval state transitions (requested / approved / rejected) now write persistent audit events via writeQuoteAuditLog inside updateQuoteWorkflow, and the Anthropic Claude AI provider is now live — setting ANTHROPIC_API_KEY in the environment activates real LLM-refined drafts for follow-ups, cover notes, intros, and compliance steps with graceful fallback to template drafts when the key is absent.",
+    "Sprint 3 remains formally closed on the deployed Leads baseline, and Sprint 4 quote-builder core remains formally closed too. Sprint 5 Batch 1 trust-layer work has now advanced through three slices: approval state transitions write persistent audit events; Anthropic Claude AI is live with LLM-refined drafts and template fallback; and lock-state enforcement is now active — isQuoteLocked() blocks mutations in updateQuoteWorkflow and surfaces a clear read-only banner in the fast lane for sent, accepted, rejected, and expired quotes.",
   nextAction:
-    "Keep Sprint 4 formally closed. The next safe Sprint 5 Batch 1 move is lock-state enforcement: prevent edits on quotes that have reached sent / accepted / expired status, and surface a clear read-only indicator in the fast lane and builder. Do not open full approval UI expansion or post-send revision workflow yet.",
+    "Keep Sprint 4 formally closed. The next safe Sprint 5 Batch 1 move is trust-layer visibility in the quote list — surface a lock badge and muted row style on locked quotes in the quote list so operators can see lock state at a glance without opening the fast lane. Do not open revision workflow, post-send re-open paths, or full approval UI expansion yet.",
   flow: LOCKED_PRODUCT_FLOW.join(" → "),
 };
 
@@ -400,6 +400,7 @@ export const roadmapMilestones: RoadmapMilestone[] = [
       "Approval-required, approval-pending, and approval-cleared trust posture is now visible in the fast lane and the guided send checkpoint.",
       "Approval state transitions (requested / approved / rejected) now write persistent audit events in updateQuoteWorkflow via writeQuoteAuditLog.",
       "Anthropic Claude AI provider is now live — ANTHROPIC_API_KEY activates real LLM-refined drafts with graceful template fallback.",
+      "Lock-state enforcement is live — isQuoteLocked() blocks mutations in updateQuoteWorkflow for sent/accepted/rejected/expired quotes, and a clear read-only banner surfaces in the fast lane.",
       "Post-send and outcome lock posture is visible before deeper enforcement begins.",
     ],
   },
@@ -531,7 +532,7 @@ export const backlogSections: BacklogSection[] = [
       },
       {
         title: "Sprint 5 · Trust layer",
-        note: "Batch 1 is now at 28%: trust visibility live in fast lane and send checkpoint; approval audit trail wired in updateQuoteWorkflow; Anthropic AI provider live with LLM drafts. Next slice: lock-state enforcement on sent/accepted/expired quotes.",
+        note: "Batch 1 is now at 42%: trust visibility live in fast lane and send checkpoint; approval audit trail wired; Anthropic AI live; lock-state enforcement active — mutations blocked on locked quotes, read-only banner in fast lane. Next: lock badge in quote list.",
         stateLabel: "Batch 1 active",
         status: "in-progress",
       },
@@ -808,7 +809,7 @@ export const buyerReadySections: BuyerReadySection[] = [
       },
       {
         label: "Add trust-layer proof",
-        note: "Sprint 5 Batch 1 is now at 28%: approval gate and lock-state visibility are live in the fast lane and send checkpoint; approval state transitions (requested / approved / rejected) now write persistent audit events; Anthropic AI is wired with LLM-refined drafts and graceful template fallback. Next: lock-state enforcement (prevent edits on sent/accepted/expired quotes).",
+        note: "Sprint 5 Batch 1 is now at 42%: approval audit trail wired; Anthropic AI live with LLM drafts; lock-state enforcement active — isQuoteLocked() blocks mutations and surfaces a read-only banner for sent/accepted/rejected/expired quotes. Next: lock badge in quote list view.",
         status: "in-progress",
       },
       {

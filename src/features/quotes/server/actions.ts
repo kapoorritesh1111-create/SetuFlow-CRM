@@ -599,6 +599,36 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
   if (existingError) return { error: existingError.message };
   if (!existing) return { error: 'Quote not found.' };
 
+  // Sprint 5 Batch 1 — lock-state enforcement.
+  // Prevent mutations on quotes that have reached a terminal or
+  // customer-facing status. This check runs before any formData
+  // parsing so locked quotes are refused early without unnecessary
+  // work. An explicit revision path (Sprint 5 later batch) will open
+  // a controlled bypass when needed.
+  const existingStatus = String(existing.status ?? '');
+  if (['sent', 'accepted', 'rejected', 'expired'].includes(existingStatus)) {
+    await writeQuoteAuditLog({
+      organizationId: organization.id,
+      actorUserId: currentUser.id,
+      action: 'quote_updated',
+      quoteId,
+      leadId: existing.lead_id,
+      previous: { status: existingStatus },
+      next: { status: existingStatus },
+      metadata: {
+        source: 'updateQuoteWorkflow',
+        blocked_reason: 'quote_locked',
+        locked_status: existingStatus,
+      },
+    });
+    return {
+      error: `This quote is locked (${existingStatus.replace(/_/g, ' ')}) and cannot be edited. ${
+        existingStatus === 'sent'
+          ? 'Open the full editor to record a revision or outcome.'
+          : 'The commercial record is now closed.'
+      }`,
+    };
+  }
   const status = String(formData.get('status') ?? 'draft').trim() || 'draft';
   const currency = normalizeCurrencyCode(String(formData.get('currency') ?? '').trim());
   const templateId = String(formData.get('template_id') ?? '').trim() || null;

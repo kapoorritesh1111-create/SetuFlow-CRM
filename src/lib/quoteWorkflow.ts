@@ -52,6 +52,45 @@ export function getQuoteWorkflowStatus(
   return getQuoteApprovalState(approval) === 'pending' ? 'pending_approval' : 'draft';
 }
 
+/**
+ * Sprint 5 Batch 1 — lock-state enforcement.
+ *
+ * Returns true when a quote has reached a terminal or customer-facing
+ * status that should prevent further commercial edits. Locked quotes
+ * may still be read and used for audit or context, but the workflow
+ * action buttons and the updateQuoteWorkflow server action should both
+ * refuse mutations unless an explicit revision path is opened (Sprint
+ * 5 later batch).
+ *
+ * Statuses that lock:
+ *  - sent      — quote is now customer-facing; edits must be deliberate
+ *  - accepted  — commercial outcome is closed
+ *  - rejected  — commercial outcome is closed
+ *  - expired   — quote validity window has passed
+ */
+export function isQuoteLocked(status: QuoteStatus | string): boolean {
+  return ['sent', 'accepted', 'rejected', 'expired'].includes(status);
+}
+
+/**
+ * Returns a human-readable lock reason for display in the fast lane
+ * banner and any server-side error messages.
+ */
+export function getQuoteLockReason(status: QuoteStatus | string): string {
+  switch (status) {
+    case 'sent':
+      return 'This quote is customer-facing. Open the full editor to record a revision or outcome.';
+    case 'accepted':
+      return 'This quote has been accepted. The commercial record is now closed.';
+    case 'rejected':
+      return 'This quote has been rejected. The commercial record is now closed.';
+    case 'expired':
+      return 'This quote has expired. Create a new quote or revise this one to continue.';
+    default:
+      return 'This quote is locked and cannot be edited in its current state.';
+  }
+}
+
 export function getQuoteStatusBadgeClasses(status: QuoteStatus) {
   switch (status) {
     case 'accepted':
