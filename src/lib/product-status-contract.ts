@@ -109,13 +109,13 @@ export type ScreenPlan = {
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
-  sprint: "Sprint 7 · Dashboard — complete",
-  percent: 100,
-  percentLabel: "Sprint 7 · Dashboard complete — geography-first trade command center",
+  sprint: "Sprint 7 · Active",
+  percent: 92,
+  percentLabel: "Sprint 6 closed · Sprint 7 active — buyer-ready dashboard hardening in progress",
 };
 
 export const sprintFocus = {
-  sprint: "Sprint 7 · Dashboard — complete",
+  sprint: "Sprint 7 · Active",
   title:
     "The repo now reflects the actual codebase: Capture, Leads, Quotes, Trust, and Orders are closed through Sprint 6; Dashboard already has active implementation in the repo; My Card/contact-exchange work is seeded; and the immediate job is to finish Sprint 7 while keeping the repo aligned and provable.",
   nextAction:

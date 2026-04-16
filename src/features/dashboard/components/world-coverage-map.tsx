@@ -63,6 +63,7 @@ export function WorldCoverageMap({
   className,
 }: WorldCoverageMapProps) {
   const [worldMap, setWorldMap] = useState<WorldMapData | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const fetchedRef = useRef(false);
 
   // Lazy load map data only once
@@ -72,7 +73,10 @@ export function WorldCoverageMap({
     const ctrl = new AbortController();
     fetch('/world-map-data.json', { signal: ctrl.signal })
       .then(r => r.json())
-      .then((d: WorldMapData) => setWorldMap(d))
+      .then((d: WorldMapData) => {
+        setWorldMap(d);
+        window.setTimeout(() => setMapReady(true), 140);
+      })
       .catch(err => { if (!ctrl.signal.aborted) console.error('[map]', err); });
     return () => ctrl.abort();
   }, []);
@@ -130,7 +134,7 @@ export function WorldCoverageMap({
   if (!worldMap) {
     return (
       <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-700/60 bg-[#0a1628] p-4', className)}>
-        <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <span className="h-6 w-32 animate-pulse rounded-full bg-slate-800" />
           <div className="flex gap-1.5">
             {[1,2,3].map(i => <span key={i} className="h-8 w-10 animate-pulse rounded-full bg-slate-800" />)}
@@ -149,8 +153,8 @@ export function WorldCoverageMap({
   return (
     <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-700/60 bg-[#0a1628] p-4 shadow-[0_24px_64px_rgba(0,0,0,0.5)]', className)}>
       {/* Header bar */}
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {selectedCountryCode ? (
             <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
               {coverageMap.get(selectedCountryCode)?.countryName ?? selectedCountryCode} · selected
@@ -160,17 +164,19 @@ export function WorldCoverageMap({
               {modeLabel} · {countries.length} market{countries.length !== 1 ? 's' : ''}
             </span>
           )}
+          <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Fast map · role aware</span>
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${mapReady ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>{mapReady ? 'Ready' : 'Loading'}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <button type="button" onClick={onZoomOut} aria-label="Zoom out" className="rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-sm font-medium text-slate-300 hover:bg-slate-700">−</button>
-          <button type="button" onClick={onZoomIn}  aria-label="Zoom in"  className="rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-sm font-medium text-slate-300 hover:bg-slate-700">+</button>
-          <button type="button" onClick={onResetView} className="rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-sm font-medium text-slate-300 hover:bg-slate-700">Reset</button>
+        <div className="flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          <button type="button" onClick={onZoomOut} aria-label="Zoom out" className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">−</button>
+          <button type="button" onClick={onZoomIn}  aria-label="Zoom in"  className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">+</button>
+          <button type="button" onClick={onResetView} className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">Reset</button>
         </div>
       </div>
 
       {/* Map container */}
       <div
-        className={cn('relative h-[420px] overflow-hidden rounded-[1.4rem] bg-[#0d1f3a]', dragging ? 'cursor-grabbing' : 'cursor-grab')}
+        className={cn('relative h-[420px] overflow-hidden rounded-[1.4rem] bg-[#0d1f3a] transition-opacity duration-300', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onPointerLeave={onPointerLeave}
       >
@@ -221,6 +227,14 @@ export function WorldCoverageMap({
                 {hovered.activeLeadCount}L
               </span>
             </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="rounded-full bg-sky-950/70 px-2 py-1 text-[9px] font-semibold text-sky-200">
+                Buyers {hovered.buyerLeadCount ?? 0}
+              </span>
+              <span className="rounded-full bg-purple-950/70 px-2 py-1 text-[9px] font-semibold text-purple-200">
+                Suppliers {hovered.supplierLeadCount ?? 0}
+              </span>
+            </div>
             <div className="mt-2.5 grid grid-cols-2 gap-1.5">
               {[
                 ['Quotes', hovered.openQuoteCount],
@@ -258,7 +272,7 @@ export function WorldCoverageMap({
           </>
         )}
         <LegendDot color="bg-white/90" label="Selected" />
-        <span className="ml-auto text-[10px] text-slate-600">Click any market to drill down</span>
+        <span className="ml-auto rounded-full border border-slate-700/70 bg-slate-900/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Click any market to drill down</span>
       </div>
     </div>
   );

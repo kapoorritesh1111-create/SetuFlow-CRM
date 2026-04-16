@@ -1,44 +1,116 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import type { WorkspaceMode } from '@/features/workspace/types';
 
 export type DashboardFilters = {
   mode: WorkspaceMode;
-  marketCode: string;      // '' = all markets
-  stageFilter: string;     // '' = all stages
-  statusFilter: string;    // '' = all statuses
+  marketCode: string;
+  productName: string;
+  stageFilter: string;
+  statusFilter: string;
 };
 
 type DashboardControlBarProps = {
   filters: DashboardFilters;
   onFiltersChange: (next: DashboardFilters) => void;
   availableMarkets: Array<{ code: string; name: string }>;
+  availableProducts: Array<{ id: string; name: string }>;
+  availableStages: Array<{ id: string; name: string }>;
+  availableStatuses: Array<{ value: string; label: string }>;
   customizeOpen: boolean;
   onToggleCustomize: () => void;
+  resultSummary?: string;
 };
 
-const MODE_OPTIONS: Array<{ value: WorkspaceMode; label: string; desc: string }> = [
-  { value: 'all',       label: 'All',       desc: 'Buyers + suppliers' },
-  { value: 'buyers',    label: 'Buyers',    desc: 'Import-side leads' },
-  { value: 'suppliers', label: 'Suppliers', desc: 'Supply-side leads' },
+const MODE_OPTIONS: Array<{ value: WorkspaceMode; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'buyers', label: 'Buyers' },
+  { value: 'suppliers', label: 'Suppliers' },
 ];
 
-const STATUS_OPTIONS = [
-  { value: '',         label: 'All statuses' },
-  { value: 'active',   label: 'Active' },
-  { value: 'blocked',  label: 'Blocked' },
-  { value: 'at-risk',  label: 'At risk' },
-  { value: 'hot',      label: 'Hot' },
+const VIEW_PRESETS = [
+  {
+    id: 'all-pipeline',
+    label: 'All pipeline',
+    description: 'Wide commercial view',
+    patch: { mode: 'all', statusFilter: '', marketCode: '', stageFilter: '' } as Partial<DashboardFilters>,
+  },
+  {
+    id: 'hot-conversion',
+    label: 'Hot conversions',
+    description: 'Prioritize closeable work',
+    patch: { statusFilter: 'hot' } as Partial<DashboardFilters>,
+  },
+  {
+    id: 'blocked-execution',
+    label: 'Blocked execution',
+    description: 'Clear blockers first',
+    patch: { statusFilter: 'blocked' } as Partial<DashboardFilters>,
+  },
 ];
 
-function SettingsIcon({ open }: { open: boolean }) {
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24"
-      className={`h-4 w-4 transition-transform ${open ? 'rotate-45' : ''}`}
-      fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3.25" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8.58 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.26 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8.58a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8.92 4.26a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.74 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-    </svg>
+    <label className="group flex min-w-[132px] shrink-0 flex-col gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm transition hover:border-slate-300">
+      <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</span>
+      <div className="flex items-center gap-2">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none bg-transparent text-sm font-medium text-slate-900 outline-none"
+          aria-label={`Filter by ${label.toLowerCase()}`}
+        >
+          {children}
+        </select>
+        <span aria-hidden="true" className="text-xs text-slate-400 transition group-hover:text-slate-600">▾</span>
+      </div>
+    </label>
+  );
+}
+
+function summaryLabel(filters: DashboardFilters, refs: {
+  markets: Array<{ code: string; name: string }>;
+  stages: Array<{ id: string; name: string }>;
+  statuses: Array<{ value: string; label: string }>;
+}) {
+  const parts: string[] = [];
+  parts.push(filters.mode === 'buyers' ? 'Buyers' : filters.mode === 'suppliers' ? 'Suppliers' : 'All');
+  if (filters.marketCode) parts.push(refs.markets.find((m) => m.code === filters.marketCode)?.name ?? filters.marketCode);
+  if (filters.productName) parts.push(filters.productName);
+  if (filters.stageFilter) parts.push(refs.stages.find((s) => s.id === filters.stageFilter)?.name ?? filters.stageFilter);
+  if (filters.statusFilter) parts.push(refs.statuses.find((s) => s.value === filters.statusFilter)?.label ?? filters.statusFilter);
+  return parts.join(' • ');
+}
+
+function ActiveChip({ label, tone = 'slate', onClear }: { label: string; tone?: 'slate' | 'sky' | 'emerald' | 'indigo' | 'amber'; onClear: () => void }) {
+  const tones = {
+    slate: 'border-slate-200 bg-slate-50 text-slate-700',
+    sky: 'border-sky-200 bg-sky-50 text-sky-700',
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    indigo: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+    amber: 'border-amber-200 bg-amber-50 text-amber-800',
+  } as const;
+
+  return (
+    <button
+      type="button"
+      onClick={onClear}
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition hover:brightness-[0.98] ${tones[tone]}`}
+    >
+      <span>{label}</span>
+      <span aria-hidden="true">×</span>
+    </button>
   );
 }
 
@@ -46,102 +118,87 @@ export function DashboardControlBar({
   filters,
   onFiltersChange,
   availableMarkets,
+  availableProducts,
+  availableStages,
+  availableStatuses,
   customizeOpen,
   onToggleCustomize,
+  resultSummary,
 }: DashboardControlBarProps) {
-  const set = (patch: Partial<DashboardFilters>) =>
-    onFiltersChange({ ...filters, ...patch });
+  const set = (patch: Partial<DashboardFilters>) => onFiltersChange({ ...filters, ...patch });
+  const reset = () => onFiltersChange({ mode: 'all', marketCode: '', productName: '', stageFilter: '', statusFilter: '' });
+  const summary = summaryLabel(filters, { markets: availableMarkets, stages: availableStages, statuses: availableStatuses });
+  const hasActive = Boolean(filters.mode !== 'all' || filters.marketCode || filters.productName || filters.stageFilter || filters.statusFilter);
+  const productFilterEnabled = availableProducts.length > 0;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.02]">
-      {/* Buyer / Supplier / All toggle — always visible */}
-      <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1" role="group" aria-label="View mode">
-        {MODE_OPTIONS.map(opt => {
-          const active = filters.mode === opt.value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => set({ mode: opt.value })}
-              aria-pressed={active}
-              title={opt.desc}
-              className={[
-                'rounded-lg px-3.5 py-1.5 text-xs font-semibold transition',
-                active
-                  ? 'bg-[#1F487C] text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-white hover:text-slate-900',
-              ].join(' ')}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
+    <section className="rounded-[1.2rem] border border-slate-200/85 bg-white/95 px-3 py-2.5 shadow-[0_12px_24px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.02]">
+      <div className="flex min-h-[48px] flex-wrap items-center gap-2 xl:flex-nowrap xl:gap-2.5">
+        <span className="shrink-0 text-sm font-semibold text-slate-950">Viewing: {summary}</span>
 
-      {/* Divider */}
-      <div className="h-6 w-px bg-slate-200" aria-hidden />
+        <div className="inline-flex shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+          {MODE_OPTIONS.map((opt) => {
+            const active = filters.mode === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => set({ mode: opt.value })}
+                aria-pressed={active}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${active ? 'bg-[#1F487C] text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Market filter */}
-      {availableMarkets.length > 0 && (
-        <select
-          value={filters.marketCode}
-          onChange={e => set({ marketCode: e.target.value })}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm focus:border-slate-400 focus:outline-none"
-          aria-label="Filter by market"
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 xl:flex-nowrap xl:overflow-x-auto">
+          <FilterSelect label="Market" value={filters.marketCode} onChange={(marketCode) => set({ marketCode })}>
+            <option value="">All markets</option>
+            {availableMarkets.map((market) => <option key={market.code} value={market.code}>{market.name}</option>)}
+          </FilterSelect>
+          {productFilterEnabled ? (
+            <FilterSelect label="Product" value={filters.productName} onChange={(productName) => set({ productName })}>
+              <option value="">All products</option>
+              {availableProducts.map((product) => <option key={product.id} value={product.name}>{product.name}</option>)}
+            </FilterSelect>
+          ) : null}
+          <FilterSelect label="Stage" value={filters.stageFilter} onChange={(stageFilter) => set({ stageFilter })}>
+            <option value="">All stages</option>
+            {availableStages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
+          </FilterSelect>
+          <FilterSelect label="Status" value={filters.statusFilter} onChange={(statusFilter) => set({ statusFilter })}>
+            {availableStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
+          </FilterSelect>
+        </div>
+
+        {hasActive ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5 xl:flex-nowrap">
+            {filters.mode !== 'all' ? <ActiveChip label={filters.mode === 'buyers' ? 'Buyers' : 'Suppliers'} tone="sky" onClear={() => set({ mode: 'all' })} /> : null}
+            {filters.marketCode ? <ActiveChip label={availableMarkets.find((m) => m.code === filters.marketCode)?.name ?? filters.marketCode} tone="amber" onClear={() => set({ marketCode: '' })} /> : null}
+            {filters.productName ? <ActiveChip label={filters.productName} tone="emerald" onClear={() => set({ productName: '' })} /> : null}
+            {filters.stageFilter ? <ActiveChip label={availableStages.find((s) => s.id === filters.stageFilter)?.name ?? 'Stage'} tone="indigo" onClear={() => set({ stageFilter: '' })} /> : null}
+            {filters.statusFilter ? <ActiveChip label={availableStatuses.find((s) => s.value === filters.statusFilter)?.label ?? filters.statusFilter} tone="slate" onClear={() => set({ statusFilter: '' })} /> : null}
+          </div>
+        ) : null}
+
+        {resultSummary ? <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700">{resultSummary}</span> : null}
+        <button
+          type="button"
+          onClick={reset}
+          className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
         >
-          <option value="">All markets</option>
-          {availableMarkets.map(m => (
-            <option key={m.code} value={m.code}>{m.name}</option>
-          ))}
-        </select>
-      )}
-
-      {/* Status filter */}
-      <select
-        value={filters.statusFilter}
-        onChange={e => set({ statusFilter: e.target.value })}
-        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm focus:border-slate-400 focus:outline-none"
-        aria-label="Filter by status"
-      >
-        {STATUS_OPTIONS.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-
-      {/* Active filter pills */}
-      <div className="flex flex-wrap gap-1.5">
-        {filters.mode !== 'all' && (
-          <span className="flex items-center gap-1 rounded-full bg-[#1F487C]/10 px-2.5 py-1 text-[11px] font-semibold text-[#1F487C]">
-            {filters.mode === 'buyers' ? 'Buyers only' : 'Suppliers only'}
-            <button type="button" onClick={() => set({ mode: 'all' })} className="ml-0.5 text-[#1F487C] hover:text-[#193769]" aria-label="Clear mode filter">×</button>
-          </span>
-        )}
-        {filters.marketCode && (
-          <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800">
-            {availableMarkets.find(m => m.code === filters.marketCode)?.name ?? filters.marketCode}
-            <button type="button" onClick={() => set({ marketCode: '' })} className="ml-0.5 text-amber-700 hover:text-amber-900" aria-label="Clear market filter">×</button>
-          </span>
-        )}
-        {filters.statusFilter && (
-          <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
-            {STATUS_OPTIONS.find(s => s.value === filters.statusFilter)?.label}
-            <button type="button" onClick={() => set({ statusFilter: '' })} className="ml-0.5 text-slate-500 hover:text-slate-700" aria-label="Clear status filter">×</button>
-          </span>
-        )}
-      </div>
-
-      {/* Settings — pushed right */}
-      <div className="ml-auto">
+          Clear all
+        </button>
         <button
           type="button"
           onClick={onToggleCustomize}
-          aria-label="Customize dashboard"
-          aria-pressed={customizeOpen}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-800"
+          className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${customizeOpen ? 'border-[#1F487C] bg-[#1F487C] text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
         >
-          <SettingsIcon open={customizeOpen} />
+          {customizeOpen ? 'Close layout' : 'Customize'}
         </button>
       </div>
-    </div>
+    </section>
   );
 }

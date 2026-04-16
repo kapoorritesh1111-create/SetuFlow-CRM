@@ -131,8 +131,17 @@ export function useDashboardLayout(data: DashboardData, options: UseDashboardLay
     setMapDrawerOpen(false);
   };
 
+  const onClearSelectedCountry = () => {
+    setSelectedCountryCode(undefined);
+    setMapDrawerOpen(false);
+  };
+
   const onFocusAttention = (item: AttentionItem) => {
     setFocusedAttentionItem(item);
+  };
+
+  const onCloseFocusedAttention = () => {
+    setFocusedAttentionItem(null);
   };
 
   const onResetLayout = () => {
@@ -177,7 +186,9 @@ export function useDashboardLayout(data: DashboardData, options: UseDashboardLay
     onToggleCustomize,
     onSelectCountry,
     onCloseCountryDrawer,
+    onClearSelectedCountry,
     onFocusAttention,
+    onCloseFocusedAttention,
     onResetLayout,
     onSaveView,
     onApplySavedView,

@@ -4,6 +4,8 @@ export type DashboardScope = 'all' | 'buyer' | 'supplier';
 export type DashboardTrendDirection = 'up' | 'down' | 'neutral';
 export type DashboardIntent = 'default' | 'warning' | 'danger' | 'success';
 
+export type DashboardStatusTag = 'active' | 'blocked' | 'at-risk' | 'hot' | 'overdue';
+
 export type DashboardKpi = {
   id: 'open-leads' | 'overdue-followups' | 'active-quotes' | 'compliance-blockers' | 'pipeline-value';
   label: string;
@@ -45,6 +47,8 @@ export type CountryCoverageDatum = {
   lastActivityAt: string | null;
   openRfqCount: number;
   openQuoteCount: number;
+  buyerLeadCount?: number;
+  supplierLeadCount?: number;
   topAccounts: CountryCoverageTopAccount[];
 };
 
@@ -64,7 +68,10 @@ export type CountryInsight = {
   topCompanies: Array<{
     leadId: string;
     companyName: string;
+    stageId?: string | null;
     stageName?: string | null;
+    leadType?: LeadJourney | null;
+    productNames?: string[];
   }>;
   recentActivity: Array<{
     id: string;
@@ -87,6 +94,13 @@ export type AttentionItem = {
   leadId?: string;
   companyName?: string;
   dueAt?: string | null;
+  leadType?: LeadJourney | null;
+  marketCode?: string | null;
+  stageId?: string | null;
+  stageName?: string | null;
+  statusTag?: DashboardStatusTag | null;
+  productNames?: string[];
+  valueImpact?: number | null;
 };
 
 export type RecentActivityItem = {
@@ -98,6 +112,17 @@ export type RecentActivityItem = {
   href?: string;
   leadId?: string;
   companyName?: string;
+  leadType?: LeadJourney | null;
+  marketCode?: string | null;
+  stageId?: string | null;
+  stageName?: string | null;
+  statusTag?: DashboardStatusTag | null;
+  productNames?: string[];
+};
+
+export type DashboardFilterProduct = {
+  id: string;
+  name: string;
 };
 
 export type DashboardWidgetDefaults = {
@@ -115,5 +140,6 @@ export type DashboardViewData = {
   countryInsights: CountryInsight[];
   attentionItems: AttentionItem[];
   recentActivity: RecentActivityItem[];
+  availableProducts?: DashboardFilterProduct[];
   widgetDefaults: DashboardWidgetDefaults;
 };

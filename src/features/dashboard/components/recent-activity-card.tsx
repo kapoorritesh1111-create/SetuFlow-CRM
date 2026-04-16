@@ -26,7 +26,7 @@ type Props = {
 
 export function RecentActivityCard({ items, mode = 'all', marketCode }: Props) {
   const filtered = items.filter(item => {
-    const role = typeConfig[item.type]?.role ?? 'both';
+    const role = item.leadType ?? typeConfig[item.type]?.role ?? 'both';
     if (mode === 'buyers'    && role === 'supplier') return false;
     if (mode === 'suppliers' && role === 'buyer')    return false;
     return true;
@@ -44,7 +44,7 @@ export function RecentActivityCard({ items, mode = 'all', marketCode }: Props) {
         <div className="space-y-2">
           {filtered.slice(0, 8).map(item => {
             const cfg = typeConfig[item.type] ?? { icon: '•', role: 'both' as const };
-            const chip = roleChip[cfg.role];
+            const chip = roleChip[item.leadType ?? cfg.role];
             return (
               <div key={item.id} className="flex items-start gap-3 rounded-[1.2rem] border border-slate-200/70 bg-white px-4 py-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 text-base">
@@ -54,6 +54,8 @@ export function RecentActivityCard({ items, mode = 'all', marketCode }: Props) {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <p className="text-xs font-medium text-slate-900">{item.message}</p>
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${chip.cls}`}>{chip.label}</span>
+                    {item.stageName ? <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">{item.stageName}</span> : null}
+                    {item.productNames?.[0] ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{item.productNames[0]}</span> : null}
                   </div>
                   <p className="mt-0.5 text-[11px] text-slate-400">{formatDateTime(item.timestamp)}</p>
                 </div>

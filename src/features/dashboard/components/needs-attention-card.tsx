@@ -41,7 +41,7 @@ type Props = {
 export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }: Props) {
   // Filter by mode — buyers see buyer + both, suppliers see supplier + both
   const filtered = items.filter(item => {
-    const role = typeToRole[item.type] ?? 'both';
+    const role = item.leadType ?? typeToRole[item.type] ?? 'both';
     if (mode === 'buyers'    && role === 'supplier') return false;
     if (mode === 'suppliers' && role === 'buyer')    return false;
     return true;
@@ -60,7 +60,7 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
         <div className="space-y-2.5">
           {filtered.map(item => {
             const sev = item.severity;
-            const role = typeToRole[item.type] ?? 'both';
+            const role = item.leadType ?? typeToRole[item.type] ?? 'both';
             const chip = roleChip[role];
             const sl = severityLabel[sev];
             return (
@@ -73,6 +73,8 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
                     <div className="flex flex-wrap items-center gap-1.5">
                       <p className="text-sm font-semibold text-slate-950">{item.title}</p>
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${chip.cls}`}>{chip.label}</span>
+                      {item.stageName ? <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 border border-indigo-200">{item.stageName}</span> : null}
+                      {item.productNames?.[0] ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">{item.productNames[0]}</span> : null}
                     </div>
                     <p className="mt-1 text-xs leading-5 text-slate-600">{item.reason}</p>
                   </div>
@@ -82,23 +84,36 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
                   <span className="text-[11px] text-slate-400">
                     {item.dueAt ? `Due ${formatDate(item.dueAt)}` : 'No due date'}
                   </span>
-                  {item.ctaHref ? (
-                    <Link
-                      href={item.ctaHref}
-                      onClick={() => onFocus?.(item)}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
-                    >
-                      {item.ctaLabel}
-                    </Link>
-                  ) : (
+                  {typeof item.valueImpact === 'number' && item.valueImpact > 0 ? (
+                    <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                      ${Math.round(item.valueImpact).toLocaleString()} impact
+                    </span>
+                  ) : null}
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => onFocus?.(item)}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                     >
-                      {item.ctaLabel}
+                      Review
                     </button>
-                  )}
+                    {item.ctaHref ? (
+                      <Link
+                        href={item.ctaHref}
+                        className="rounded-full bg-[#1F487C] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#193769]"
+                      >
+                        {item.ctaLabel}
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onFocus?.(item)}
+                        className="rounded-full bg-[#1F487C] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#193769]"
+                      >
+                        {item.ctaHref ? item.ctaLabel : 'Open detail'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

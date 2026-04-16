@@ -139,7 +139,7 @@ export function MarketCommandPanel({ country, attentionItems, mode = 'all', onCl
           ) : (
             <div className="mt-3 space-y-2.5">
               {marketItems.slice(0, 5).map(item => {
-                const role = typeToRole[item.type] ?? 'both';
+                const role = item.leadType ?? typeToRole[item.type] ?? 'both';
                 const chip = roleChip[role];
                 return (
                   <div key={item.id} className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
@@ -149,6 +149,8 @@ export function MarketCommandPanel({ country, attentionItems, mode = 'all', onCl
                         <div className="flex flex-wrap items-center gap-1.5">
                           <p className="text-xs font-semibold text-slate-900">{item.title}</p>
                           <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${chip.cls}`}>{chip.label}</span>
+                          {item.stageName ? <span className="rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[9px] font-semibold text-indigo-700">{item.stageName}</span> : null}
+                          {item.productNames?.[0] ? <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700">{item.productNames[0]}</span> : null}
                         </div>
                         <p className="mt-0.5 text-[11px] text-slate-500">{item.reason}</p>
                       </div>
@@ -188,8 +190,14 @@ export function MarketCommandPanel({ country, attentionItems, mode = 'all', onCl
               <Link key={co.leadId} href={`${PRODUCT_ROUTES.app.leads}/${co.leadId}`}
                 className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 hover:border-slate-300 hover:bg-slate-50">
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold text-slate-900">{co.companyName}</p>
-                  {co.stageName && <p className="text-[10px] text-slate-500">{co.stageName}</p>}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="truncate text-xs font-semibold text-slate-900">{co.companyName}</p>
+                    {co.leadType ? <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${roleChip[co.leadType].cls}`}>{roleChip[co.leadType].label}</span> : null}
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                    {co.stageName && <p className="text-[10px] text-slate-500">{co.stageName}</p>}
+                    {co.productNames?.[0] ? <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700">{co.productNames[0]}</span> : null}
+                  </div>
                 </div>
                 <span className="flex-shrink-0 text-[10px] text-slate-400">→</span>
               </Link>
@@ -211,8 +219,8 @@ export function MarketCommandPanel({ country, attentionItems, mode = 'all', onCl
           )}
 
           <div className="mt-4 flex gap-2">
-            <Link href={PRODUCT_ROUTES.app.leads}  className="flex-1 rounded-xl bg-[#1F487C] px-3 py-2 text-center text-xs font-semibold text-white hover:bg-[#193769]">Open Leads</Link>
-            <Link href={PRODUCT_ROUTES.app.quotes} className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">Open Quotes</Link>
+            <Link href={PRODUCT_ROUTES.app.leads}  className="flex-1 rounded-xl bg-[#1F487C] px-3 py-2 text-center text-xs font-semibold text-white hover:bg-[#193769]">Open leads</Link>
+            <Link href={PRODUCT_ROUTES.app.quotes} className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">Open quotes</Link>
           </div>
         </div>
       </div>

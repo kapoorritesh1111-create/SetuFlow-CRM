@@ -15,6 +15,7 @@ import type {
   RecentActivityItem,
   DashboardKpi,
   DashboardScope,
+  DashboardStatusTag,
 } from '@/features/dashboard/types';
 
 type LeadRow = Database['public']['Tables']['leads']['Row'];
@@ -1172,6 +1173,16 @@ function normalizeAttentionSeverity(
   }
 }
 
+function normalizeDashboardStatusTag(value: string | null | undefined): DashboardStatusTag {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return 'active';
+  if (normalized in {'overdue':1,'late':1,'past_due':1,'past due':1}) return 'overdue';
+  if (normalized in {'blocked':1,'blocker':1,'on_hold':1,'on hold':1,'pending_approval':1,'pending approval':1,'failed':1}) return 'blocked';
+  if (normalized in {'at-risk':1,'at risk':1,'risk':1,'stalled':1,'stale':1,'delayed':1}) return 'at-risk';
+  if (normalized in {'hot':1,'urgent':1,'priority':1}) return 'hot';
+  return 'active';
+}
+
 export async function getDashboardData(
   organizationId: string,
   scope: DashboardScope = 'all'
@@ -1303,6 +1314,38 @@ export async function getDashboardData(
   const now = Date.now();
   const scopedLeadRows = leadRows.filter((lead) => matchesDashboardScope(lead.lead_type, scope));
   const scopedLeadIds = new Set(scopedLeadRows.map((lead) => lead.id));
+
+  const scopedLeadIdList = Array.from(scopedLeadIds);
+  const [leadProductsResult, productsResult] = scopedLeadIdList.length
+    ? await Promise.all([
+        supabase
+          .from('lead_product_interests')
+          .select('lead_id, product_id')
+          .in('lead_id', scopedLeadIdList),
+        supabase
+          .from('products')
+          .select('id, name')
+          .eq('organization_id', organizationId)
+          .limit(400),
+      ])
+    : [{ data: [], error: null }, { data: [], error: null }];
+
+  addIssue(issues, 'dashboard lead product interests', (leadProductsResult as any).error);
+  addIssue(issues, 'dashboard products', (productsResult as any).error);
+
+  const leadProductRows = rows((leadProductsResult as any).data) as Array<Pick<LeadProductInterestRow, 'lead_id' | 'product_id'>>;
+  const productRows = rows((productsResult as any).data) as Array<Pick<ProductRow, 'id' | 'name'>>;
+  const productNameById = new Map(productRows.map((product) => [product.id, product.name] as const));
+  const productNamesByLeadId = new Map<string, string[]>();
+  for (const item of leadProductRows) {
+    if (!item.lead_id || !item.product_id) continue;
+    const productName = productNameById.get(item.product_id);
+    if (!productName) continue;
+    const existing = productNamesByLeadId.get(item.lead_id) ?? [];
+    if (!existing.includes(productName)) existing.push(productName);
+    productNamesByLeadId.set(item.lead_id, existing);
+  }
+
   const scopedFollowUpRows = filterRowsByLeadIds(followUpRows, (item) => item.lead_id, scopedLeadIds);
   const scopedActivityRows = filterRowsByLeadIds(activityRows, (item) => item.lead_id, scopedLeadIds);
   const scopedRfqRows = filterRowsByLeadIds(rfqRows, (item) => item.lead_id, scopedLeadIds);
@@ -1352,7 +1395,7 @@ export async function getDashboardData(
   const kpis: DashboardKpi[] = [
     {
       id: 'open-leads',
-      label: 'Open Leads',
+      label: 'Active Buyers',
       value: summaryMetrics.openLeadCount,
       rawValue: summaryMetrics.openLeadCount,
       href: '/pipeline',
@@ -1362,7 +1405,7 @@ export async function getDashboardData(
     },
     {
       id: 'overdue-followups',
-      label: 'Overdue Follow-ups',
+      label: 'Silent Quotes',
       value: summaryMetrics.overdueFollowUpCount,
       rawValue: summaryMetrics.overdueFollowUpCount,
       href: PRODUCT_ROUTES.app.leads,
@@ -1459,10 +1502,14 @@ export async function getDashboardData(
         lastActivityAt: null,
         openRfqCount: 0,
         openQuoteCount: 0,
+        buyerLeadCount: 0,
+        supplierLeadCount: 0,
         topAccounts: [],
       };
 
     existing.activeLeadCount += 1;
+    if (lead.lead_type === 'supplier') existing.supplierLeadCount = (existing.supplierLeadCount ?? 0) + 1;
+    else existing.buyerLeadCount = (existing.buyerLeadCount ?? 0) + 1;
 
     const latestActivity =
       (activityByLead.get(lead.id) ?? [])[0]?.occurred_at ?? lead.last_contacted_at ?? lead.updated_at;
@@ -1521,17 +1568,25 @@ export async function getDashboardData(
       topCompanies: relatedLeads.slice(0, 5).map((lead) => ({
         leadId: lead.id,
         companyName: lead.company_name,
+        stageId: lead.stage_id ?? null,
         stageName: lead.stage_id ? (stageById.get(lead.stage_id)?.name ?? null) : null,
+        leadType: lead.lead_type === 'supplier' ? 'supplier' : 'buyer',
+        productNames: productNamesByLeadId.get(lead.id) ?? [],
       })),
       recentActivity: scopedActivityRows
         .filter((activity) => !!activity.lead_id && relatedLeadIds.has(activity.lead_id))
         .slice(0, 5)
-        .map((activity) => ({
+        .map((activity) => {
+          const lead = activity.lead_id ? leadById.get(activity.lead_id) : null;
+          return ({
           id: activity.id,
           type: activity.kind,
           message: activity.message,
           occurredAt: activity.occurred_at,
-        })),
+          leadType: lead?.lead_type === 'supplier' ? 'supplier' : 'buyer',
+          productNames: lead ? (productNamesByLeadId.get(lead.id) ?? []) : [],
+        });
+        }),
     };
   });
 
@@ -1557,6 +1612,13 @@ export async function getDashboardData(
           leadId: lead?.id,
           companyName: lead?.company_name,
           dueAt: followUp.scheduled_at,
+          leadType: lead?.lead_type === 'supplier' ? 'supplier' : 'buyer',
+          marketCode: lead?.country_id ? countryById.get(lead.country_id)?.iso2_code ?? null : countryBySlug.get(slugifyDashboardCountry(lead?.country))?.iso2_code ?? null,
+          stageId: lead?.stage_id ?? null,
+          stageName: lead?.stage_id ? stageById.get(lead.stage_id)?.name ?? null : null,
+          statusTag: normalizeDashboardStatusTag('overdue'),
+          productNames: lead ? (productNamesByLeadId.get(lead.id) ?? []) : [],
+          valueImpact: lead?.deal_value ?? null,
         } satisfies AttentionItem,
       ];
     }),
@@ -1580,6 +1642,13 @@ export async function getDashboardData(
           leadId: lead?.id,
           companyName: lead?.company_name,
           dueAt: item.due_at,
+          leadType: lead?.lead_type === 'supplier' ? 'supplier' : 'buyer',
+          marketCode: lead?.country_id ? countryById.get(lead.country_id)?.iso2_code ?? null : countryBySlug.get(slugifyDashboardCountry(lead?.country))?.iso2_code ?? null,
+          stageId: lead?.stage_id ?? null,
+          stageName: lead?.stage_id ? stageById.get(lead.stage_id)?.name ?? null : null,
+          statusTag: normalizeDashboardStatusTag('blocked'),
+          productNames: lead ? (productNamesByLeadId.get(lead.id) ?? []) : [],
+          valueImpact: lead?.deal_value ?? null,
         } satisfies AttentionItem,
       ];
     }),
@@ -1604,6 +1673,13 @@ export async function getDashboardData(
           leadId: lead.id,
           companyName: lead.company_name,
           dueAt: lead.next_follow_up_at,
+          leadType: lead.lead_type === 'supplier' ? 'supplier' : 'buyer',
+          marketCode: lead.country_id ? countryById.get(lead.country_id)?.iso2_code ?? null : countryBySlug.get(slugifyDashboardCountry(lead.country))?.iso2_code ?? null,
+          stageId: lead.stage_id ?? null,
+          stageName: lead.stage_id ? stageById.get(lead.stage_id)?.name ?? null : null,
+          statusTag: normalizeDashboardStatusTag('at-risk'),
+          productNames: productNamesByLeadId.get(lead.id) ?? [],
+          valueImpact: lead.deal_value ?? null,
         } satisfies AttentionItem,
       ];
     }),
@@ -1631,6 +1707,13 @@ export async function getDashboardData(
           leadId: lead?.id,
           companyName: lead?.company_name,
           dueAt: quote.updated_at,
+          leadType: lead?.lead_type === 'supplier' ? 'supplier' : 'buyer',
+          marketCode: lead?.country_id ? countryById.get(lead.country_id)?.iso2_code ?? null : countryBySlug.get(slugifyDashboardCountry(lead?.country))?.iso2_code ?? null,
+          stageId: lead?.stage_id ?? null,
+          stageName: lead?.stage_id ? stageById.get(lead.stage_id)?.name ?? null : null,
+          statusTag: normalizeDashboardStatusTag(quote.status === 'draft' ? 'active' : quote.status),
+          productNames: lead ? (productNamesByLeadId.get(lead.id) ?? []) : [],
+          valueImpact: lead?.deal_value ?? null,
         } satisfies AttentionItem,
       ];
     }),
@@ -1654,6 +1737,12 @@ export async function getDashboardData(
         href: activity.lead_id ? `/leads/${activity.lead_id}` : undefined,
         leadId: activity.lead_id ?? undefined,
         companyName: lead?.company_name,
+        leadType: lead?.lead_type === 'supplier' ? 'supplier' : 'buyer',
+        marketCode: lead?.country_id ? countryById.get(lead.country_id)?.iso2_code ?? null : countryBySlug.get(slugifyDashboardCountry(lead?.country))?.iso2_code ?? null,
+        stageId: lead?.stage_id ?? null,
+        stageName: lead?.stage_id ? stageById.get(lead.stage_id)?.name ?? null : null,
+        statusTag: normalizeDashboardStatusTag('active'),
+        productNames: lead ? (productNamesByLeadId.get(lead.id) ?? []) : [],
       };
     }),
     ...scopedQuoteRows.slice(0, 3).map((quote) => {
@@ -1667,6 +1756,12 @@ export async function getDashboardData(
         href: quote.lead_id ? `/leads/${quote.lead_id}/quote` : undefined,
         leadId: quote.lead_id ?? undefined,
         companyName: lead?.company_name,
+        leadType: lead?.lead_type === 'supplier' ? 'supplier' : 'buyer',
+        marketCode: lead?.country_id ? countryById.get(lead.country_id)?.iso2_code ?? null : countryBySlug.get(slugifyDashboardCountry(lead?.country))?.iso2_code ?? null,
+        stageId: lead?.stage_id ?? null,
+        stageName: lead?.stage_id ? stageById.get(lead.stage_id)?.name ?? null : null,
+        statusTag: normalizeDashboardStatusTag(quote.status),
+        productNames: lead ? (productNamesByLeadId.get(lead.id) ?? []) : [],
       };
     }),
     ...scopedTaskRows.slice(0, 3).map((task) => {
@@ -1680,9 +1775,19 @@ export async function getDashboardData(
         href: task.lead_id ? `/leads/${task.lead_id}` : '/tasks',
         leadId: task.lead_id ?? undefined,
         companyName: lead?.company_name,
+        leadType: lead?.lead_type === 'supplier' ? 'supplier' : 'buyer',
+        marketCode: lead?.country_id ? countryById.get(lead.country_id)?.iso2_code ?? null : countryBySlug.get(slugifyDashboardCountry(lead?.country))?.iso2_code ?? null,
+        stageId: lead?.stage_id ?? null,
+        stageName: lead?.stage_id ? stageById.get(lead.stage_id)?.name ?? null : null,
+        statusTag: normalizeDashboardStatusTag(task.status),
+        productNames: lead ? (productNamesByLeadId.get(lead.id) ?? []) : [],
       };
     }),
   ].sort((a, b) => (b.timestamp ?? '').localeCompare(a.timestamp ?? '')).slice(0, 10) as RecentActivityItem[];
+
+  const availableProducts = productRows
+    .map((product) => ({ id: product.id, name: product.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return {
     queryIssues: issues,
@@ -1693,6 +1798,7 @@ export async function getDashboardData(
     countryInsights,
     attentionItems,
     recentActivity,
+    availableProducts,
     widgetDefaults: {
       activeWidgetIds: [
         'kpi-strip',
