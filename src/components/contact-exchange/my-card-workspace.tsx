@@ -8,7 +8,7 @@ import {
   toCardSettingsInput,
   type MyCardSettingsInput,
   type MyCardSettingsRow,
-} from '@/lib/contact-exchange/my-card-settings';
+} from '@/lib/contact-exchange/my-card-settings-shared';
 import type { PublicCardIdentity } from '@/lib/contact-exchange/public-card';
 
 type MyCardWorkspaceProps = {

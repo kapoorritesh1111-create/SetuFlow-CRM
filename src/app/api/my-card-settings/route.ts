@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import {
-  EMPTY_CARD_SETTINGS,
-  getMyCardSettingsForUser,
-  toCardSettingsInput,
-  upsertMyCardSettingsForUser,
-  type MyCardSettingsInput,
-} from '@/lib/contact-exchange/my-card-settings';
+import { getMyCardSettingsForUser, upsertMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
+import { EMPTY_CARD_SETTINGS, toCardSettingsInput, type MyCardSettingsInput } from '@/lib/contact-exchange/my-card-settings-shared';
 
 export async function GET() {
   const supabase = await createClient();

@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic';
 import { WorkspaceShell } from '@/components/previews/workspace-shell';
 import { PreviewPanel } from '@/components/previews/ui';
 import { MyCardWorkspace } from '@/components/contact-exchange/my-card-workspace';
-import { getMyCardSettingsForUser, mergeIdentityWithCardSettings } from '@/lib/contact-exchange/my-card-settings';
+import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
+import { mergeIdentityWithCardSettings } from '@/lib/contact-exchange/my-card-settings-shared';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName } from '@/lib/workspace/roles';
 
