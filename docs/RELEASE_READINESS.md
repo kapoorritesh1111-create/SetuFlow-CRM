@@ -1,16 +1,16 @@
 # Setu Flow Release Readiness
 
 ## Current status
-**Repo aligned, proof refresh pending.**
+**Sprint 7 closed, Sprint 8 ready, proof refresh recommended at kickoff.**
 
-The codebase now reflects a closed Sprint 6 baseline, active Sprint 7 dashboard work, and seeded Sprint 8 contact-exchange work. What is still missing is a **fresh verification run on this cleaned baseline** after dependencies are installed.
+The codebase now reflects a closed Sprint 7 baseline, with Sprint 8 outward-share work ready as the next lane in development. The main remaining release task is to refresh verification on this updated baseline after dependencies are installed.
 
 ## What is already true in code
 - Capture -> Lead -> Quote -> Order remains the locked commercial flow.
 - Leads, Quotes, Orders, Dashboard, Admin, Products, Contracts, Compliance, Trade Events, and Contact Exchange all exist as live repo surfaces.
 - Orders already carry documents, compliance, contract status, and dispatch-readiness context.
-- Dashboard has active implementation in the repo rather than being a blank future-only sprint.
-- My Card / digital vCard / scan-contact surfaces are seeded in code and linked into the broader workflow.
+- Dashboard closure is now part of the repo baseline rather than a future-only sprint.
+- My Card / digital vCard / scan-contact surfaces are present in code and ready for Sprint 8 execution inside the broader workflow.
 
 ## What this repo still needs before release confidence is claimed
 1. **Fresh proof refresh**
@@ -18,8 +18,8 @@ The codebase now reflects a closed Sprint 6 baseline, active Sprint 7 dashboard 
    - run `npm run typecheck`
    - run `npm test`
    - run `npm run build`
-2. **Dashboard closure**
-   - finish canonical action-first dashboard behavior and remove lingering preview/fallback drift
+2. **Sprint 8 outward-share execution**
+   - finish My Card, QR/public card, save-contact, and quote-request flows on top of the closed Sprint 7 baseline
 3. **Architecture cleanup**
    - split the largest quote/query files and keep route ownership clearer
 4. **Buyer-proof assets**

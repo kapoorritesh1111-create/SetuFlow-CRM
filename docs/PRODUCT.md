@@ -32,8 +32,8 @@ These are real parts of the repo, but they should stay subordinate to the main f
 
 ## Current baseline truth
 - Sprints 1 through 6 are effectively present in the codebase.
-- Sprint 7 Dashboard rebuild is active in the repo.
-- Sprint 8 My Card / outward share is seeded in the repo.
+- Sprint 7 Dashboard rebuild is closed in the repo.
+- Sprint 8 My Card / outward share is ready in the repo.
 - Sprint 9 cleanup is still required because the implementation is ahead of the repo hygiene.
 
 ## Product rules

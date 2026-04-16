@@ -8,8 +8,8 @@ Capture -> Lead -> Quote -> Order
 
 ## Current repo baseline
 - **Closed baseline:** Sprints 1 through 6 are reflected in live code.
-- **Active lane:** Sprint 7 Dashboard rebuild is already in progress in the repo and should now be treated as the active product lane.
-- **Seeded lane:** Sprint 8 My Card / contact-exchange work exists in code, but it stays subordinate to Sprint 7 until the dashboard lane is stabilized.
+- **Closed lane:** Sprint 7 Dashboard rebuild is now closed in the repo and should be treated as baseline truth.
+- **Ready lane:** Sprint 8 My Card / contact-exchange work exists in code and is now the next development lane.
 - **Cleanup lane:** Sprint 9 architecture cleanup remains necessary because large quote/query files and legacy route duplication still exist.
 
 ## What this cleanup pass changes
@@ -18,7 +18,7 @@ This repo pass is about **alignment before more feature depth**:
 - replace stale markdown that still described Sprint 2 or Sprint 3 as current
 - remove legacy duplicate files that were no longer imported
 - restore repo-backed smoke tests and lightweight validation scripts
-- make readiness language honest: code is ahead of the old docs, but fresh proof still needs a new verify run after install
+- make readiness language honest: Sprint 7 is closed, Sprint 8 is ready, and fresh proof should be refreshed from this new baseline
 
 ## Operating pages
 Use these pages before implementation work:
@@ -71,12 +71,12 @@ Use these pages before implementation work:
 - canonicalize the dashboard around actions first
 - keep trade-map and geographic drill-down meaningful
 - remove passive/fallback reporting language and duplicate preview drift
-- status: active in repo
+- status: complete
 
-### Sprint 8 - My Card and outbound share
-- finish the outward contact-exchange story already seeded in code
+### Sprint 8 - My Card and outbound share (ready)
+- finish the outward contact-exchange story already present in code
 - keep QR, preview, public-card, and request-quote flows subordinate to the core workflow
-- status: seeded, not the primary lane
+- status: ready in development
 
 ### Sprint 9 - Architecture cleanup
 - split large quote/query files
@@ -94,11 +94,9 @@ Use these pages before implementation work:
 1. **Alignment and hygiene**
    - keep docs, development pages, and repo scripts consistent with the checked-in code
    - remove stale artifacts and dead duplicates
-2. **Sprint 7 closure**
-   - finish the canonical action-first dashboard story and its drill-down behavior
-3. **Sprint 8 closure**
+2. **Sprint 8 execution**
    - finish My Card / contact-exchange outward sharing without creating a detached product lane
-4. **Proof refresh**
+3. **Proof refresh**
    - reinstall dependencies and run typecheck, smoke tests, and production build on the cleaned baseline
 5. **Architecture cleanup**
    - break up the largest files only after product/status truth is stable again

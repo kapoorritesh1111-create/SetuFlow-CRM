@@ -90,7 +90,7 @@ export default function DevelopmentPage() {
           <div className="space-y-5">
             <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Sprint roadmap</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Delivered sprints closed. Current baseline tracked. Upcoming work sequenced.</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Sprints 1-7 closed. Sprint 8 is the next ready development lane.</h2>
               <div className="mt-6 space-y-4">
                 {roadmapMilestones.map((milestone) => (
                   <div key={milestone.sprint} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">

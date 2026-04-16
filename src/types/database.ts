@@ -45,6 +45,8 @@ type SavedViewRow = { id: string; organization_id: string; entity_type: string; 
 type ViewPreferenceRow = { id: string; organization_id: string; organization_member_id: string; entity_type: string; saved_view_id: string | null; built_in_view_key: string | null; created_at: string; updated_at: string };
 type OrganizationInvitationRow = { id: string; organization_id: string; email: string; role_id: string | null; invited_by_membership_id: string; status: string; token_hash: string | null; expires_at: string | null; last_sent_at: string | null; accepted_at: string | null; revoked_at: string | null; metadata: Json; created_at: string; updated_at: string };
 
+type MyCardSettingsRow = { id: string; user_id: string; organization_id: string | null; share_slug: string; primary_phone: string | null; secondary_phone: string | null; website: string | null; address: string | null; booking_url: string | null; quote_url: string | null; linkedin_url: string | null; instagram_url: string | null; facebook_url: string | null; tiktok_url: string | null; is_public: boolean; created_at: string; updated_at: string };
+
 // --- Additional tables derived from the Supabase schema ---
 
 /**
@@ -335,6 +337,7 @@ export type Database = {
       saved_views: Table<SavedViewRow>;
       view_preferences: Table<ViewPreferenceRow>;
       organization_invitations: Table<OrganizationInvitationRow>;
+      my_card_settings: Table<MyCardSettingsRow>;
 
       /**
        * AI suggestions linked to leads.  Each suggestion includes a type, content,
