@@ -20,7 +20,7 @@ export default function DevelopmentBacklogPage() {
                 Every scheduled item in one place — sequenced, tracked, and tied to the commercial flow.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
-                Work is sequenced along the {sprintFocus.flow} path. Items not on this page are not scheduled. Sprints 1-7 are now closed, Sprint 8 is ready in development, and cleanup/release work remains sequenced behind that order.
+                Work is sequenced along the {sprintFocus.flow} path. Items not on this page are not scheduled. Sprints 1-8 are now closed, Sprint 9 is the active cleanup/hardening lane, and Sprint 10 remains the final demo/release proof lane before April 21.
               </p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">

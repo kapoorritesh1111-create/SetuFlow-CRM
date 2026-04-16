@@ -37,7 +37,7 @@ export default async function WorkspaceMyCardPage() {
       title="My Card is now a premium digital vCard and QR share lane"
       description="Any signed-in user can publish a polished digital card from their profile identity, add booking/request-quote destinations, social links, and share a QR or public page that routes inbound contacts back into the CRM."
     >
-      <PreviewPanel title="Sprint 8 working surface" subtitle="Professional digital vCard + capture flow." badge="Outbound identity + inbound CRM capture">
+      <PreviewPanel title="Sprint 8 closed baseline" subtitle="Professional digital vCard + capture flow." badge="Outbound identity + inbound CRM capture">
         <MyCardWorkspace
           identity={identity}
           organizationId={workspace.organization?.id ?? null}

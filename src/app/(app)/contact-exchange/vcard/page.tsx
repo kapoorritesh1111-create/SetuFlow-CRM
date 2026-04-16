@@ -26,7 +26,7 @@ export default async function DigitalVCardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Global contact exchange · outbound" title="My Digital vCard" description="Professional digital vCard, QR share, request-quote, and appointment entry point for any signed-in user. The public share page is designed to feel premium while feeding captured buyer or supplier details back into the CRM." badge="Sprint 8 active" actions={[{ label: 'Open workspace mirror', href: '/workspace/my-card' }, { label: 'Go to leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' }]} />
+      <PageHeader eyebrow="Global contact exchange · outbound" title="My Digital vCard" description="Professional digital vCard, QR share, request-quote, and appointment entry point for any signed-in user. The public share page is designed to feel premium while feeding captured buyer or supplier details back into the CRM." badge="Sprint 8 closed baseline" actions={[{ label: 'Open workspace mirror', href: '/workspace/my-card' }, { label: 'Go to leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' }]} />
 
       <SectionCard>
         <div className="grid gap-4 lg:grid-cols-3">

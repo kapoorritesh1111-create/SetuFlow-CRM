@@ -109,28 +109,28 @@ export type ScreenPlan = {
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 
 export const sprintProgress = {
-  sprint: "Sprint 8 · Ready",
-  percent: 92,
-  percentLabel: "Sprints 1-7 closed · Sprint 8 ready in development",
+  sprint: "Sprint 9 · Active",
+  percent: 96,
+  percentLabel: "Sprints 1-8 closed · Sprint 9 cleanup/hardening active · Sprint 10 demo/release proof next",
 };
 
 export const sprintFocus = {
-  sprint: "Sprint 8 · Ready",
+  sprint: "Sprint 9 · Active",
   title:
-    "The repo now reflects a closed Sprint 7 baseline: Capture, Leads, Quotes, Trust, Orders, and the Dashboard command center are all closed through Sprint 7, and My Card/contact-exchange is the next sequenced lane to deepen in Sprint 8.",
+    "The repo now reflects a closed Sprint 8 baseline: Capture, Leads, Quotes, Trust, Orders, Dashboard, and My Card/contact-exchange are closed through Sprint 8, and Sprint 9 is the active cleanup and hardening lane ahead of Sprint 10 demo/release proof.",
   nextAction:
-    "Begin Sprint 8 by finishing the outward-share loop around My Card, QR/public card journeys, save-contact conversion, and workflow handoff back into Leads, Quotes, and Orders.",
+    "Execute Sprint 9 by tightening architecture, reducing large file risk, rerunning fresh proof, and hardening the repo for the buyer/demo push that must land before April 21.",
   flow: LOCKED_PRODUCT_FLOW.join(" → "),
 };
 
 export const readinessSummary = {
-  status: "Sprint 7 closed · Sprint 8 ready",
+  status: "Sprints 7-8 closed · Sprint 9 active · Sprint 10 queued",
   buildStatus:
-    "Use Sprint 8 kickoff to rerun install, typecheck, smoke tests, and production build on the closed Sprint 7 baseline.",
+    "Use Sprint 9 hardening to rerun install, typecheck, smoke tests, and production build on the closed Sprint 8 baseline.",
   driftRisk:
-    "Low — docs, development pages, package scripts, and repo artifacts now match the checked-in code and Sprint 8 plan.",
+    "Low — docs, development pages, package scripts, and repo artifacts now match the checked-in code and the Sprint 9 → Sprint 10 plan.",
   blockers:
-    "Sprint 8 should start with a fresh verify run. Large quote/query files remain Sprint 9 cleanup targets.",
+    "Sprint 9 must close architecture cleanup, verification refresh, and demo-hardening before the Sprint 10 buyer/release proof push ahead of April 21.",
 };
 
 export const planningSurfaces: PlanningSurface[] = [
@@ -142,7 +142,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "Operating-system overview for the locked flow, current sprint state, and the active cleanup/execution lane.",
     status: "done",
     focus:
-      "Keep the repo speaking one timeline: Sprints 1-7 are closed, and Sprint 8 is the next ready lane in development.",
+      "Keep the repo speaking one timeline: Sprints 1-8 are closed, Sprint 9 is active, and Sprint 10 remains the final demo/release proof lane.",
   },
   {
     id: "master-plan",
@@ -152,7 +152,7 @@ export const planningSurfaces: PlanningSurface[] = [
       "Roadmap from the closed baseline into the active dashboard and cleanup sequence.",
     status: "done",
     focus:
-      "Preserve roadmap order while making Sprint 7 closure explicit and Sprint 8 readiness visible.",
+      "Preserve roadmap order while making Sprint 8 closure explicit and Sprint 9/Sprint 10 sequencing visible.",
   },
   {
     id: "readiness",
@@ -179,10 +179,10 @@ export const planningSurfaces: PlanningSurface[] = [
     title: PRODUCT_ROUTES.development.backlog,
     href: PRODUCT_ROUTES.development.backlog,
     summary:
-      "Repo-backed backlog showing Sprints 1-7 closed, Sprint 8 ready, and queued cleanup beyond it.",
+      "Repo-backed backlog showing Sprints 1-8 closed, Sprint 9 active, and Sprint 10 queued behind the hardening plan.",
     status: "done",
     focus:
-      "Keep future work sequenced behind Sprint 8 without pretending later cleanup/release work is already closed.",
+      "Keep future work sequenced behind Sprint 9 without pretending later cleanup/release work is already closed.",
   },
   {
     id: "product",
@@ -244,21 +244,21 @@ export const readinessAreas: ReadinessArea[] = [
     status: "done",
   },
   {
-    title: "Sprint 8 outward-share work is ready to execute",
+    title: "Sprint 8 outward-share work is now closed in the baseline",
     summary:
-      "My Card, digital vCard preview, QR/share actions, and inbound scan-contact surfaces already exist in code and now become the next sequenced development lane.",
-    status: "next",
+      "My Card, digital vCard preview, QR/public card journeys, save-contact, and CRM capture now exist as closed Sprint 8 baseline work.",
+    status: "done",
   },
   {
-    title: "Proof refresh should happen at Sprint 8 kickoff",
+    title: "Proof refresh is the first Sprint 9 hardening gate",
     summary:
-      "Use the updated baseline to rerun install, typecheck, smoke tests, and production build as part of Sprint 8 execution discipline.",
-    status: "next",
+      "Use the updated baseline to rerun install, typecheck, smoke tests, and production build as part of Sprint 9 hardening discipline.",
+    status: "in-progress",
   },
   {
-    title: "Buyer-facing assets now shift to Sprint 8 support",
+    title: "Buyer-facing assets now shift to Sprint 10 demo/release proof",
     summary:
-      "The dashboard story is closed through Sprint 7, and outward-share demo journeys now need the same proof, walkthrough, and validation depth.",
+      "Dashboard and outward-share stories are now closed through Sprint 8, and Sprint 10 must package them into a buyer-proof demo and release narrative before April 21.",
     status: "next",
   },
 ];
@@ -288,8 +288,8 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: "development-pages-aligned",
     area: "Development pages",
-    label: "Development pages describe Sprints 1-7 closed and Sprint 8 ready in development",
-    note: "The development hub, master plan, readiness page, backlog, and buyer-ready view now match the checked-in code rather than stale markdown history.",
+    label: "Development pages describe Sprints 1-8 closed with Sprint 9 active and Sprint 10 next",
+    note: "The development hub, master plan, readiness page, backlog, and buyer-ready view now match the checked-in code rather than stale markdown history, and they sequence Sprint 9 and Sprint 10 clearly.",
     status: "done",
   },
   {
@@ -316,8 +316,8 @@ export const checklistItems: ChecklistItem[] = [
   {
     id: "fresh-verify",
     area: "Validation",
-    label: "Fresh verify run is still required on the cleaned baseline",
-    note: "Install dependencies and rerun typecheck, smoke tests, and build before claiming refreshed release proof.",
+    label: "Fresh verify run is required during Sprint 9 hardening",
+    note: "Install dependencies and rerun typecheck, smoke tests, and build before claiming Sprint 10 demo/release proof.",
     status: "next",
   },
 ];
@@ -425,14 +425,14 @@ export const roadmapMilestones: RoadmapMilestone[] = [
   {
     sprint: "Sprint 8 · My Card and outbound share",
     summary:
-      "Outward contact-exchange work is ready in the repo and should be executed as Sprint 8 on top of the closed dashboard baseline.",
-    badgeLabel: "Seeded",
-    status: "next",
+      "Outward contact-exchange work is now closed in the repo and forms part of the Sprint 8 baseline on top of the closed dashboard command center.",
+    badgeLabel: "Done",
+    status: "done",
     objective:
       "Turn contact exchange into a clean supporting loop for the core workflow.",
     outcomes: [
-      "Digital vCard, preview, QR/share actions, and inbound scan-contact routes exist.",
-      "Public/share surfaces should feed back into the commercial workflow.",
+      "Digital vCard, preview, QR/public card actions, persistent card settings, and inbound scan-contact routes exist."
+      "Public/share surfaces now feed back into leads, quote requests, and CRM capture workflows."
       "The lane stays subordinate to the core operating flow rather than becoming a detached product story.",
     ],
   },
@@ -440,9 +440,9 @@ export const roadmapMilestones: RoadmapMilestone[] = [
     sprint: "Sprint 9 · Architecture cleanup",
     summary:
       "Break up the biggest files, tighten route ownership, and keep proof tooling lightweight and real.",
-    badgeLabel: "Queued",
-    status: "next",
-    objective: "Reduce codebase friction only after status and product truth are stable again.",
+    badgeLabel: "Active",
+    status: "in-progress",
+    objective: "Reduce codebase friction, refresh proof, and harden the repo for the pre-April-21 demo window.",
     outcomes: [
       "Large quote/query files are split by responsibility.",
       "Preview/demo overlap is reduced.",
@@ -504,70 +504,70 @@ export const backlogSections: BacklogSection[] = [
     ],
   },
   {
-    title: "Sprint 8 · Ready",
+    title: "Sprint 9 · Active",
     heading:
-      "Dashboard closure and repo proof refresh are the active execution lane",
-    sprint: "Sprint 7",
-    badgeLabel: "In progress",
+      "Architecture cleanup, proof refresh, and demo hardening are the active execution lane",
+    sprint: "Sprint 9",
+    badgeLabel: "Active",
     summary:
-      "Dashboard code is already present. The active job is to finish the canonical action-first story and refresh proof on the cleaned baseline.",
+      "Sprint 7 dashboard work and Sprint 8 outward-share work are now baseline truth. The active job is to harden the repo, reduce large-file risk, and refresh proof before the April 21 demo window.",
     description:
-      "Do not treat Dashboard as untouched future work. It exists now, so the work is to normalize it, connect its drill-down logic, and keep the repo truthful and verifiable.",
+      "Do not reopen closed Dashboard or My Card scope. Sprint 9 should tighten architecture, verification confidence, and demo polish while keeping the commercial workflow stable.",
     status: "in-progress",
     items: [
       {
-        title: "Canonicalize dashboard narrative",
-        note: "Align live pages, architecture HTML, and development status language around one action-first dashboard story.",
+        title: "Refresh proof on the current baseline",
+        note: "Run install, typecheck, smoke tests, and production build on the current repo and keep the result honest in the development pages.",
         stateLabel: "Active",
         status: "in-progress",
       },
       {
-        title: "Finish map and drill-down posture",
-        note: "Keep geographic context meaningful and tied back to leads, quotes, and orders.",
+        title: "Reduce architecture risk in the largest files",
+        note: "Split the biggest quote/query files and remove remaining route overlap without destabilizing the closed baseline.",
         stateLabel: "Active",
         status: "in-progress",
       },
       {
-        title: "Refresh proof on cleaned baseline",
-        note: "Run install, typecheck, smoke tests, and build after alignment work lands.",
+        title: "Polish demo-critical surfaces",
+        note: "Tighten final demo-facing trust, copy, and workflow quality ahead of Sprint 10 proof closure.",
         stateLabel: "Next",
         status: "next",
       },
       {
         title: "Protect closed workflow lanes",
-        note: "Do not reopen older sprint work while dashboard closure is underway.",
+        note: "Do not reopen older sprint work while Sprint 9 hardening is underway.",
         stateLabel: "Guardrail",
         status: "done",
       },
     ],
   },
   {
-    title: "Sprint 8-10 · Queued",
+    title: "Sprint 10 · Next",
     heading:
-      "Outward share completion, architecture cleanup, and final release proof remain sequenced behind the closed Sprint 7 baseline",
-    sprint: "Sprints 8-10",
+      "Buyer demo, release proof, and final readiness remain sequenced behind the active Sprint 9 hardening lane",
+    sprint: "Sprint 10",
     badgeLabel: "Queued",
     summary:
-      "Later work is visible and real, but it stays behind the active dashboard + proof lane.",
+      "Later work is visible and real, but it stays behind the active Sprint 9 proof and cleanup lane.",
     description:
-      "Sprint 8 is ready, Sprint 9 is necessary cleanup, and Sprint 10 is release-proof closure. Keep them visible without flattening the sequence.",
+      "Sprint 10 is the final buyer/demo/release proof lane and should culminate in a demo-ready product before April 21.",
     status: "next",
     items: [
       {
         title: "Sprint 8 · My Card and contact exchange",
-        note: "Finish the outward-share loop that is already present in code on top of the closed Sprint 7 baseline.",
-        stateLabel: "Queued",
-        status: "next",
+        note: "Closed baseline: outward-share, public card, QR, save-contact, and CRM capture now exist in the repo.",
+        stateLabel: "Done",
+        status: "done",
       },
       {
-        title: "Sprint 9 · Architecture cleanup",
-        note: "Split the biggest files and reduce route/preview overlap only after product/status truth is stable.",
-        stateLabel: "Queued",
-        status: "next",
+        title: "Sprint 9 · Architecture cleanup and hardening",
+        note: "Split the biggest files, reduce route overlap, and refresh proof before the buyer/demo window.",
+        stateLabel: "Active",
+        status: "in-progress",
       },
       {
         title: "Sprint 10 · Demo and release proof",
-        note: "Refresh walkthroughs and end-to-end evidence from the stabilized baseline.",
+        note: "Refresh walkthroughs, end-to-end evidence, and release signoff material from the stabilized baseline before April 21.",
         stateLabel: "Upcoming",
         status: "locked",
       },
@@ -641,7 +641,7 @@ export const productTracks: ProductTrack[] = [
     title: "Dashboard awareness layer",
     summary:
       "Dashboard rebuild is closed in the repo and now serves as the stable command-center baseline.",
-    status: "in-progress",
+    status: "done",
     scope: [
       "Today actions",
       "Market command view",
@@ -654,13 +654,15 @@ export const productTracks: ProductTrack[] = [
     id: "my-card",
     title: "My Card sharing loop",
     summary:
-      "My Card and contact-exchange work are already present and now become the next Sprint 8 execution lane.",
+      "My Card and contact-exchange work are now closed through Sprint 8 and form the outbound-share support lane for the locked workflow."
     status: "next",
     scope: [
       "QR share",
       "Contact save",
       "Public card view",
       "Request quote call-to-action",
+      "Persistent card settings",
+      "CRM lead capture",
     ],
   },
 ];
@@ -705,7 +707,7 @@ export const architectureLanes: ArchitectureLane[] = [
     title: "Repo truth and proof hygiene",
     summary:
       "Package scripts, docs, and checked-in validation must stay as real as the code itself.",
-    status: "in-progress",
+    status: "done",
     target:
       "Avoid hidden drift between implementation, docs, and proof claims.",
   },
@@ -783,8 +785,8 @@ export const buyerReadySections: BuyerReadySection[] = [
         status: "done",
       },
       {
-        label: "Contact-exchange work is ready",
-        note: "Digital vCard, preview, QR/share, and scan-contact routes already exist and should stay sequenced as support work.",
+        label: "Contact-exchange work is closed through Sprint 8",
+        note: "Digital vCard, preview, QR/public card, save-contact, CRM capture, and scan-contact routes now exist and should stay sequenced as support work.",
         status: "done",
       },
     ],
@@ -792,13 +794,13 @@ export const buyerReadySections: BuyerReadySection[] = [
   {
     title: "Still needed before buyer-facing proof",
     summary:
-      "The codebase is substantial, and Sprint 8 should now deepen the outward-share loop on top of the closed Sprint 7 baseline.",
+      "The codebase is substantial, and Sprint 9 now needs to harden architecture, refresh proof, and finish demo polish on top of the closed Sprint 8 baseline before April 21.",
     status: "in-progress",
     items: [
       {
         label: "Sprint 7 dashboard closure is complete",
         note: "The action-first, geography-led dashboard command surface is now part of the closed product baseline.",
-        status: "in-progress",
+        status: "done",
       },
       {
         label: "Refresh technical proof on the cleaned baseline",
@@ -813,19 +815,19 @@ export const buyerReadySections: BuyerReadySection[] = [
     ],
   },
   {
-    title: "Release-proof closure still remains later",
+    title: "Sprint 9-10 closeout still remains",
     summary:
-      "Architecture cleanup and formal release/demo proof stay sequenced after the active dashboard and proof-refresh lane.",
+      "Architecture cleanup, proof refresh, and final buyer/demo proof stay sequenced after the now-closed Sprint 8 baseline.",
     status: "next",
     items: [
       {
         label: "Sprint 8 outward-share execution",
-        note: "Finish My Card / contact-exchange outward share and route every save/share path back into the commercial workflow.",
-        status: "next",
+        note: "Closed baseline: My Card/contact-exchange outward share now routes save/share paths back into the commercial workflow.",
+        status: "done",
       },
       {
         label: "Sprint 9 architecture cleanup",
-        note: "Split the biggest files and reduce route overlap only after product/status truth is stable again.",
+        note: "Split the biggest files, reduce route overlap, and harden proof before the April 21 demo window.",
         status: "next",
       },
       {
@@ -945,10 +947,10 @@ export const screenPlans: ScreenPlan[] = [
     title: "My Card / Share Contact",
     route: PRODUCT_ROUTES.workspace.myCard,
     summary:
-      "Outbound contact exchange is ready in the repo and should now be deepened in Sprint 8 while feeding back into the locked workflow instead of forming a detached story.",
-    status: "next",
+      "Outbound contact exchange is now closed through Sprint 8 and feeds back into the locked workflow instead of forming a detached story.",
+    status: "done",
     primaryGoal:
-      "Turn contact exchange into a clean supporting loop for follow-up and quote creation.",
+      "Keep contact exchange as a clean supporting loop for follow-up and quote creation while Sprint 9 hardens the baseline.",
     layout: [
       {
         title: "Identity-first card",
@@ -967,8 +969,8 @@ export const screenPlans: ScreenPlan[] = [
 ];
 
 export const sprintSummary = {
-  activeSprint: "Sprint 8 · Ready",
-  completedSprint: "Sprint 7 · Closed baseline",
+  activeSprint: "Sprint 9 · Active",
+  completedSprint: "Sprint 8 · Closed baseline",
   roadmapMilestones,
   backlogSections,
   planningSurfaces,

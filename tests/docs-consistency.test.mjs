@@ -10,6 +10,6 @@ test("docs and status contract describe the same current baseline", () => {
   assert.match(masterPlan, /Sprint 6/i);
   assert.match(masterPlan, /Sprint 7/i);
   assert.match(masterPlan, /Sprint 8/i);
-  assert.match(releaseReadiness, /Sprint 7 closed, Sprint 8 ready/i);
-  assert.match(statusContract, /Sprints 1-7 closed · Sprint 8 ready in development/i);
+  assert.match(releaseReadiness, /Sprints 7-8 closed, Sprint 9 active/i);
+  assert.match(statusContract, /Sprints 1-8 closed · Sprint 9 cleanup\/hardening active/i);
 });

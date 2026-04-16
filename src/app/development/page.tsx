@@ -19,7 +19,7 @@ const pinned = [
   { title: "Master plan", href: PRODUCT_ROUTES.development.masterPlan, body: "Sprint roadmap and completion status — the single source of truth for what has shipped, what is active, and what comes next." },
   { title: "Readiness", href: PRODUCT_ROUTES.development.readiness, body: "Live deployment status, build confidence, and the honest signal for when a sprint is ready for signoff." },
   { title: "Buyer ready", href: PRODUCT_ROUTES.development.buyerReady, body: "Gap analysis between what has shipped and what must land before the product is ready for buyer-facing walkthroughs and leadership signoff." },
-  { title: "Sprint backlog", href: PRODUCT_ROUTES.development.backlog, body: "The in-product backlog showing the closed Sprint 6 baseline and the next sequenced sprint work tied to the locked commercial flow." },
+  { title: "Sprint backlog", href: PRODUCT_ROUTES.development.backlog, body: "The in-product backlog showing the closed Sprint 8 baseline and the next sequenced Sprint 9 → Sprint 10 work tied to the locked commercial flow." },
   { title: "Screen specifications", href: PRODUCT_ROUTES.development.screens, body: "Desktop, tablet, and mobile layout specifications for the Leads and Capture surfaces." },
   { title: "Live product", href: PRODUCT_ROUTES.workspace.leads, body: "The active Leads, Quotes, Orders, Dashboard, and supporting workspaces in the current repo baseline." },
 ];
@@ -90,7 +90,7 @@ export default function DevelopmentPage() {
           <div className="space-y-5">
             <section className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_20px_60px_rgba(31,72,124,0.08)]">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">Sprint roadmap</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Sprints 1-7 closed. Sprint 8 is the next ready development lane.</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Sprints 1-8 are closed. Sprint 9 is active and Sprint 10 is the final demo/release lane.</h2>
               <div className="mt-6 space-y-4">
                 {roadmapMilestones.map((milestone) => (
                   <div key={milestone.sprint} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">

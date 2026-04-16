@@ -40,7 +40,7 @@ export default function MasterPlanPage() {
                 Sprint-by-sprint delivery toward a buyer-ready trade execution system.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
-                Setu Flow is built in disciplined sprints, each one deepening the core commercial flow without adding scope outside it. Closed baseline work stays closed. The repo is now aligned to Sprints 1-7 closed, Sprint 8 ready in development, and queued cleanup/release work behind that sequence.
+                Setu Flow is built in disciplined sprints, each one deepening the core commercial flow without adding scope outside it. Closed baseline work stays closed. The repo is now aligned to Sprints 1-8 closed, Sprint 9 active in development, and Sprint 10 queued as the final demo/release proof lane before April 21.
               </p>
             </div>
             <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] p-6 text-white lg:max-w-sm">
