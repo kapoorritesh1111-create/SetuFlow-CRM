@@ -112,8 +112,8 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings }: M
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">My card settings</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Professional digital vCard details</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">These details are now saved in the database, so your public card, QR share, and save-contact experience stay consistent across devices.</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Professional digital vCard details and share controls</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">These details are saved in the database so your public card, QR share, and save-contact experience stay consistent across devices. Use the share actions below or the global Share card button in the product header.</p>
             </div>
             <div className="text-right">
               <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Database-backed</span>

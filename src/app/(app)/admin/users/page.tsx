@@ -237,7 +237,8 @@ export default async function AdminUsersPage({
         description="Review active members, pending invitations, and access controls from one workspace management screen."
         actions={[
           { label: 'Organization', href: '/admin/organization' },
-          { label: 'Invitations', href: '/admin/invitations', type: 'primary' },
+          { label: 'Invitations', href: '/admin/invitations' },
+          { label: 'My Card settings', href: '/workspace/my-card', type: 'primary' },
         ]}
       />
 

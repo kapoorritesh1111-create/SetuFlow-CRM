@@ -1088,6 +1088,14 @@ export function LeadsWorkspace({
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">One execution queue driven by today, search, and next action.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <ToolbarActionButton
+              type="button"
+              tone="secondary"
+              onClick={() => router.push(PRODUCT_ROUTES.workspace.myCard)}
+              className="min-h-11 rounded-[1rem] px-4 py-2"
+            >
+              Share my card
+            </ToolbarActionButton>
             <ToolbarActionButton type="button" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">
               + Quick Lead
             </ToolbarActionButton>

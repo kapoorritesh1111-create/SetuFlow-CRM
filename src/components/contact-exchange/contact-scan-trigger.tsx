@@ -70,7 +70,7 @@ function buildExtractionMessage(extraction: ContactServerExtractionResult) {
     return `Live OCR extracted this ${humanizeProfile(extraction.sourceProfile)} on the server. ${lowConfidenceCount ? `Review ${lowConfidenceCount} lower-confidence field${lowConfidenceCount > 1 ? 's' : ''} before applying.` : 'Review the mapped values, confirm, and then apply them back into the lead form.'}`;
   }
   if (extraction.boundary === 'server_image_ocr_ready') {
-    return 'Server boundary accepted the image. Configure the OCR provider or use assist text, then review the prefilled values before applying them.';
+    return 'Server boundary accepted the image. If live AI OCR is unavailable the system falls back to local OCR, then you can review and apply the mapped values.';
   }
   if (extraction.boundary === 'server_pdf_ocr_ready') {
     return 'Server boundary accepted the PDF. Configure the OCR provider for scan-PDF extraction, or add assist text and review the values before applying them.';
