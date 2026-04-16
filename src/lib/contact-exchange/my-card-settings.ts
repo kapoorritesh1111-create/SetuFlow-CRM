@@ -82,7 +82,7 @@ export async function upsertMyCardSettingsForUser(args: {
 
 export async function getPublicCardByShareSlug(shareSlug: string) {
   const admin = createAdminSupabaseClient();
-  if (!admin) throw new Error('Service role is not configured for public card lookup.');
+  if (!admin) return null;
 
   const { data: settings, error } = await admin
     .from('my_card_settings')
