@@ -228,66 +228,6 @@ function normalizeDraft(input: unknown): ContactOcrProviderDraft {
 
 
 
-function inferProfileFromMimeType(fileType: string): ContactSourceProfile {
-  if (fileType === 'application/pdf') return 'scan_pdf';
-  if (fileType.startsWith('image/')) return 'business_card';
-  return 'generic';
-}
-
-async function callLocalTesseractFallback(args: ExtractContactWithOcrArgs): Promise<ContactOcrProviderDraft | null> {
-  try {
-    const { createWorker } = await import('tesseract.js');
-    const worker = await createWorker('eng');
-    const buffer = Buffer.from(await args.source.arrayBuffer());
-    const result = await worker.recognize(buffer);
-    await worker.terminate();
-
-    const rawText = String(result?.data?.text ?? '').trim();
-    if (!rawText) return null;
-
-    const parsed = parseContactText(rawText, {
-      filename: args.filename,
-      sourceMode: args.sourceMode,
-      fileType: args.fileType,
-    });
-
-    const profile = inferProfileFromMimeType(String(args.fileType ?? '').trim());
-    const low: 'low' = 'low';
-    const medium: 'medium' = 'medium';
-
-    return {
-      contactName: parsed.draft.contactName,
-      companyName: parsed.draft.companyName,
-      jobTitle: parsed.draft.jobTitle,
-      emails: parsed.draft.email ? [parsed.draft.email] : [],
-      phones: [parsed.draft.phone, parsed.draft.phoneSecondary].filter(Boolean),
-      websites: parsed.draft.website ? [parsed.draft.website] : [],
-      address: '',
-      notes: parsed.draft.notes,
-      rawText,
-      confidence: rawText.length > 40 ? 'medium' : 'low',
-      sourceProfile: profile,
-      fieldConfidence: {
-        contactName: parsed.draft.contactName ? medium : low,
-        companyName: parsed.draft.companyName ? medium : low,
-        jobTitle: parsed.draft.jobTitle ? medium : low,
-        email: parsed.draft.email ? medium : low,
-        phone: parsed.draft.phone ? medium : low,
-        phoneSecondary: parsed.draft.phoneSecondary ? low : low,
-        website: parsed.draft.website ? low : low,
-        address: low,
-        notes: rawText ? medium : low,
-      },
-      warnings: [
-        'Local OCR fallback was used because the live vision provider is not configured.',
-        'Review OCR-derived values carefully before applying them.',
-      ],
-    };
-  } catch {
-    return null;
-  }
-}
-
 async function callOpenAiResponsesApi(args: ExtractContactWithOcrArgs, dataUrl: string) {
   const apiKey = getAiProviderKey();
   if (!apiKey) throw new Error('OpenAI key is not configured for contact scan OCR.');
@@ -334,13 +274,7 @@ export async function extractContactWithOcrProvider(args: ExtractContactWithOcrA
   const fileType = String(args.fileType ?? '').trim();
   if (!fileType || (!fileType.startsWith('image/') && fileType !== 'application/pdf')) return null;
   if (!isOpenAiVisionConfigured()) {
-    const fallbackDraft = await callLocalTesseractFallback(args);
-    if (!fallbackDraft) return null;
-    return {
-      provider: 'openai',
-      model: 'tesseract-fallback',
-      draft: fallbackDraft,
-    };
+    return null;
   }
 
   const buffer = Buffer.from(await args.source.arrayBuffer());
