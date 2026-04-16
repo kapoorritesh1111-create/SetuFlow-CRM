@@ -1,36 +1,30 @@
 # Setu Flow Release Readiness
 
 ## Current status
-**Sprints 7-8 closed, Sprint 9 active, Sprint 10 queued for demo/release proof before April 21.**
+**Buyer-demo hardening interstitial applied on top of the locked baseline.**
 
-The codebase now reflects a closed Sprint 8 baseline. The main remaining work is Sprint 9 cleanup/hardening plus Sprint 10 demo/release proof, with the product needing to be demo ready before April 21.
+This repo now removes public pathways into development pages, redirects workspace preview routes back to their canonical product routes, and hardens the My Card / public card / scan surfaces for safer buyer demos.
 
-## What is already true in code
-- Capture -> Lead -> Quote -> Order remains the locked commercial flow.
-- Leads, Quotes, Orders, Dashboard, Admin, Products, Contracts, Compliance, Trade Events, and Contact Exchange all exist as live repo surfaces.
-- Orders already carry documents, compliance, contract status, and dispatch-readiness context.
-- Dashboard closure is now part of the repo baseline rather than a future-only sprint.
-- My Card / digital vCard / scan-contact surfaces are present in code as closed Sprint 8 baseline work inside the broader workflow.
+## What changed in this hardening pass
+- Removed the homepage CTA that exposed development pages.
+- Added route protection and redirects for `/development/*` and `/workspace/*`.
+- Removed sprint and deadline language from the main buyer-facing app surfaces touched in this pass.
+- Replaced third-party QR generation with local QR rendering.
+- Fixed My Card defaults, buttons, brand styling, and public-card action behavior.
+- Removed fake scan-page extraction content and simplified the scan experience to review-first messaging.
 
-## What this repo still needs before release confidence is claimed
-1. **Fresh proof refresh**
-   - run `npm ci`
-   - run `npm run typecheck`
-   - run `npm test`
-   - run `npm run build`
-2. **Sprint 9 cleanup and hardening**
-   - split the largest quote/query files, tighten route ownership, and remove remaining drift or trust issues
-3. **Sprint 10 buyer-proof assets**
-   - refresh demo walkthroughs, proof points, and release narrative from the cleaned baseline before April 21
+## Verification completed on this baseline
+- `npm install`
+- `npm run typecheck` ✅
+- `npm test` ✅
 
-## Readiness gates
-- Product clarity gate
-- Workflow trust gate
-- Orders execution gate
-- Dashboard usefulness gate
-- Repo alignment gate
-- Fresh verification gate
-- Demo / buyer-proof gate
+## Remaining verification / blockers
+1. **Fresh production build completion proof**
+   - `npm run build` was started in this environment and reached the production-build phase, but did not emit a final completion line before the container session ended. Re-run once in the target environment to capture the final proof artifact for this exact baseline.
+2. **Sprint 9 work still not started**
+   - large-file cleanup, deeper architecture refactors, and broader route ownership cleanup remain for the next sprint.
+3. **Optional polish still available**
+   - broader copy cleanup in internal-only development assets and any remaining secondary preview components can be handled later because the public pathways are already closed.
 
 ## Honesty rule
-Do not describe the repo as fully release-ready until the cleaned baseline has passed a fresh verify run. Historical build logs are helpful context, but they are not the same thing as current proof for this exact repo state.
+Do not describe this repo as fully release-ready until a fresh production build completes on this exact hardened baseline.

@@ -1,5 +1,5 @@
 /**
- * Orders — Sprint 6 · Orders foundation
+ * Orders — execution workspace
  *
  * Live Supabase query: accepted and sent quotes with documents,
  * compliance items, and contract status per order card.
@@ -262,7 +262,7 @@ export default async function OrdersPage() {
         eyebrow="Orders"
         title="Orders"
         description="Accepted and sent quotes with full execution context — documents, compliance, and contract status visible per order."
-        badge="Sprint 6 · Live"
+        badge="Live"
         status={`${orders.length} active`}
         meta={[`${accepted.length} accepted`, `${sent.length} sent`, 'Execution context visible']}
         actions={[{ label: 'Go to Leads', href: PRODUCT_ROUTES.app.leads }]}

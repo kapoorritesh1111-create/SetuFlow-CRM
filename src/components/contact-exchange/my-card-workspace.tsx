@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import QRCode from 'qrcode';
 import { ProfessionalDigitalCard } from '@/components/contact-exchange/professional-digital-card';
 import {
   EMPTY_CARD_SETTINGS,
@@ -42,6 +43,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings }: M
   const [isSaving, setIsSaving] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>('idle');
   const [shareSlug, setShareSlug] = useState<string | null>(initialSettings?.share_slug ?? null);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
 
   const cardIdentity = useMemo<PublicCardIdentity>(
     () => mergeIdentityWithCardSettings(identity, {
@@ -67,6 +69,33 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings }: M
   useEffect(() => {
     if (typeof window !== 'undefined') setOrigin(window.location.origin);
   }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function buildQrCode() {
+      if (!publicCardUrl) {
+        if (isActive) setQrCodeDataUrl('');
+        return;
+      }
+
+      try {
+        const dataUrl = await QRCode.toDataURL(publicCardUrl, {
+          width: 180,
+          margin: 1,
+          color: { dark: '#1F487C', light: '#FFFFFF' },
+        });
+        if (isActive) setQrCodeDataUrl(dataUrl);
+      } catch {
+        if (isActive) setQrCodeDataUrl('');
+      }
+    }
+
+    void buildQrCode();
+    return () => {
+      isActive = false;
+    };
+  }, [publicCardUrl]);
 
   async function persistSettings(nextOverrides = overrides) {
     try {
@@ -149,9 +178,9 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings }: M
           <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Public card, QR share, and save contact</h3>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <a href={publicCardUrl || '#'} target="_blank" rel="noreferrer" className={`inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] px-4 py-3 text-sm font-semibold ${shareSlug ? 'bg-slate-950 text-white' : 'pointer-events-none bg-slate-300 text-white'}`}>Open public card</a>
-            <button type="button" onClick={() => copy(publicCardUrl, 'link')} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'link' ? 'Link copied' : 'Copy share link'}</button>
-            <button type="button" onClick={() => copy(`Save ${cardIdentity.fullName} · ${cardIdentity.roleLabel}\n${publicCardUrl}`, 'summary')} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'summary' ? 'Intro copied' : 'Copy intro'}</button>
-            <a href={publicVcfUrl || '#'} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700" aria-disabled={!shareSlug}>Download .vcf</a>
+            <button type="button" onClick={() => copy(publicCardUrl, 'link')} disabled={!shareSlug} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">{copied === 'link' ? 'Link copied' : 'Copy share link'}</button>
+            <button type="button" onClick={() => copy(`Save ${cardIdentity.fullName} · ${cardIdentity.roleLabel}\n${publicCardUrl}`, 'summary')} disabled={!shareSlug} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">{copied === 'summary' ? 'Intro copied' : 'Copy intro'}</button>
+            <a href={publicVcfUrl || '#'} className={`inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 ${shareSlug ? '' : 'pointer-events-none opacity-50'}`} aria-disabled={!shareSlug}>Download .vcf</a>
           </div>
           <div className="mt-5 rounded-[1.6rem] border border-slate-200 bg-slate-50 p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -159,8 +188,8 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings }: M
                 <p className="text-sm font-semibold text-slate-900">Live QR / share destination</p>
                 <p className="mt-2 break-all text-sm leading-6 text-slate-600">{shareSlug && publicCardUrl ? publicCardUrl : 'Save card settings to generate your persistent share link.'}</p>
               </div>
-              {shareSlug ? (
-                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(publicCardUrl)}`} alt="QR code for digital vCard share" className="h-40 w-40 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm" />
+              {shareSlug && qrCodeDataUrl ? (
+                <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-40 w-40 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm" />
               ) : null}
             </div>
           </div>
@@ -171,9 +200,9 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings }: M
         identity={cardIdentity}
         mode="workspace"
         saveContactHref={publicVcfUrl || undefined}
-        primaryActionHref={publicCardPath ? `${publicCardPath}#request-quote` : null}
+        primaryActionHref={cardIdentity.quoteUrl?.trim() || (publicCardPath ? `${publicCardPath}#request-quote` : null)}
         primaryActionLabel="Request quote"
-        secondaryActionHref={publicCardPath ? `${publicCardPath}#book-appointment` : null}
+        secondaryActionHref={cardIdentity.bookingUrl?.trim() || (publicCardPath ? `${publicCardPath}#book-appointment` : null)}
         secondaryActionLabel="Book appointment"
       />
     </div>

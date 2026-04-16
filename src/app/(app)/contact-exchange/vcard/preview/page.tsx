@@ -16,7 +16,7 @@ export default async function DigitalVCardPreviewPage() {
     organizationName: workspace.organization?.name || 'SETU Flow',
     avatarUrl: workspace.profile?.avatar_url,
     logoUrl: workspace.organization?.logo_url,
-    primaryPhone: 'Add phone in card settings',
+    primaryPhone: '',
     organizationId: workspace.organization?.id,
   });
   redirect(`/card?${params.toString()}`);

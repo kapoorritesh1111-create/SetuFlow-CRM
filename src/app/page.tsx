@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 import Link from 'next/link';
-import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { SiteShell } from '@/components/marketing/site-shell';
 
 const platformCards = [
@@ -47,9 +46,6 @@ export default function HomePage() {
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link href="/client-login" className="rounded-full bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(31,72,124,0.24)] transition hover:translate-y-[-1px]">
                   Client login
-                </Link>
-                <Link href={PRODUCT_ROUTES.development.home} className="rounded-full border border-[#1F487C]/15 bg-white px-6 py-3 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">
-                  View development work and plans
                 </Link>
               </div>
               <div className="mt-10 grid gap-4 sm:grid-cols-3">

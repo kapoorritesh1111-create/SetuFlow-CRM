@@ -1,6 +1,249 @@
 'use client';
+
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { parseContactText, type ExtractedField } from '@/lib/contact-exchange/contact-parser';
-type ReviewState = { fileName: string; fileType: string; previewUrl: string; assistText: string; fields: ExtractedField[]; notes: string[]; };
-export function ContactIntakeReview() { const [selectedFile, setSelectedFile] = useState<File | null>(null); const [previewUrl, setPreviewUrl] = useState(''); const [assistText, setAssistText] = useState(''); const [reviewState, setReviewState] = useState<ReviewState | null>(null); const previewKind = useMemo(() => { if (!reviewState?.fileType) return 'empty'; if (reviewState.fileType.startsWith('image/')) return 'image'; if (reviewState.fileType === 'application/pdf') return 'pdf'; return 'file'; }, [reviewState]); async function onFileChange(event: ChangeEvent<HTMLInputElement>) { const nextFile = event.target.files?.[0] ?? null; setSelectedFile(nextFile); setReviewState(null); if (!nextFile) { setPreviewUrl(''); return; } const objectUrl = URL.createObjectURL(nextFile); setPreviewUrl(objectUrl); if (nextFile.type.startsWith('text/')) { const text = await nextFile.text(); setAssistText((current) => current || text); } } function runReview() { const parsed = parseContactText(assistText); setReviewState({ fileName: selectedFile?.name ?? 'No file selected', fileType: selectedFile?.type ?? 'manual-text-review', previewUrl, assistText, fields: parsed.fields, notes: parsed.notes }); }
-return <div className="space-y-6"><div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]"><section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Live intake</p><h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Upload source and review</h3></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">No auto-save</span></div><label className="mt-5 flex cursor-pointer flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center"><span className="text-sm font-semibold text-slate-900">Choose image, PDF, or text file</span><span className="mt-2 text-sm text-slate-600">Best current path: upload the source, then paste any visible contact text to improve extraction.</span><input type="file" accept="image/*,application/pdf,text/plain" className="sr-only" onChange={onFileChange} /></label><div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"><p><strong className="text-slate-900">Selected source:</strong> {selectedFile ? `${selectedFile.name} (${selectedFile.type || 'unknown type'})` : 'No file chosen yet'}</p></div><label className="mt-4 block"><span className="text-sm font-semibold text-slate-900">Assist text for review-only extraction</span><textarea value={assistText} onChange={(event) => setAssistText(event.target.value)} placeholder={'Paste any visible text from the card, catalog back, PDF, or image here to drive review-only extraction in this batch.'} className="mt-2 min-h-[160px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100" /></label><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={runReview} className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">Run review extraction</button><button type="button" onClick={() => { setAssistText(''); setSelectedFile(null); setPreviewUrl(''); setReviewState(null); }} className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Reset</button></div></section><section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Source review</p><h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Keep the source beside the extracted fields</h3><div className="mt-5 min-h-[360px] rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-4">{!reviewState ? <div className="flex h-full min-h-[320px] items-center justify-center text-center text-sm text-slate-500">Upload a file and run review extraction to open the review state.</div> : previewKind === 'image' ? <img src={reviewState.previewUrl} alt={reviewState.fileName} className="max-h-[460px] w-full rounded-2xl border border-slate-200 object-contain bg-white" /> : previewKind === 'pdf' ? <iframe src={reviewState.previewUrl} title={reviewState.fileName} className="h-[420px] w-full rounded-2xl border border-slate-200 bg-white" /> : reviewState.fileName !== 'No file selected' ? <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 text-center text-sm text-slate-600"><div><p className="font-semibold text-slate-900">{reviewState.fileName}</p><p className="mt-2">Preview is not available for this file type in-browser, but the review extraction result remains visible and unsaved.</p></div></div> : <div className="flex h-full min-h-[320px] items-center justify-center text-center text-sm text-slate-500">No file selected. Manual text review can still be used.</div>}</div></section></div><section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Review-only extraction result</p><h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Prefill before any lead/contact write</h3></div><span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-700">Guarded downstream actions</span></div><div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200"><table className="min-w-full text-sm"><thead className="bg-slate-50 text-left text-[11px] uppercase tracking-[0.16em] text-slate-500"><tr><th className="px-4 py-3">Field</th><th className="px-4 py-3">Prefill value</th><th className="px-4 py-3">Confidence</th></tr></thead><tbody>{(reviewState?.fields ?? []).map((field) => <tr key={field.label} className="border-t border-slate-100 bg-white"><td className="px-4 py-3 font-medium text-slate-900">{field.label}</td><td className="px-4 py-3 text-slate-600">{field.value || '—'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${field.confidence === 'High' ? 'bg-emerald-50 text-emerald-700' : field.confidence === 'Medium' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>{field.confidence}</span></td></tr>)}{!reviewState ? <tr className="border-t border-slate-100 bg-white"><td className="px-4 py-6 text-sm text-slate-500" colSpan={3}>No review result yet. Run extraction to populate the table.</td></tr> : null}</tbody></table></div><div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr,0.9fr]"><div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"><p className="font-semibold text-slate-900">Review notes</p><ul className="mt-3 space-y-2">{(reviewState?.notes ?? ['This review surface stays empty until the user explicitly runs extraction.']).map((note) => <li key={note}>{note}</li>)}</ul></div><div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"><p className="font-semibold text-slate-900">Downstream actions stay guarded</p><ul className="mt-3 space-y-2"><li>Create lead — staged</li><li>Add contact to existing account — staged</li><li>Create follow-up task — staged</li><li>Auto-save or dedupe — intentionally off</li></ul></div></div></section></div>; }
+
+type ReviewState = {
+  fileName: string;
+  fileType: string;
+  previewUrl: string;
+  assistText: string;
+  fields: ExtractedField[];
+  notes: string[];
+};
+
+export function ContactIntakeReview() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [assistText, setAssistText] = useState('');
+  const [reviewState, setReviewState] = useState<ReviewState | null>(null);
+
+  const previewKind = useMemo(() => {
+    if (!reviewState?.fileType) return 'empty';
+    if (reviewState.fileType.startsWith('image/')) return 'image';
+    if (reviewState.fileType === 'application/pdf') return 'pdf';
+    return 'file';
+  }, [reviewState]);
+
+  async function onFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const nextFile = event.target.files?.[0] ?? null;
+    setSelectedFile(nextFile);
+    setReviewState(null);
+
+    if (!nextFile) {
+      setPreviewUrl('');
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(nextFile);
+    setPreviewUrl(objectUrl);
+
+    if (nextFile.type.startsWith('text/')) {
+      const text = await nextFile.text();
+      setAssistText((current) => current || text);
+    }
+  }
+
+  function runReview() {
+    const parsed = parseContactText(assistText);
+    setReviewState({
+      fileName: selectedFile?.name ?? 'No file selected',
+      fileType: selectedFile?.type ?? 'manual-text-review',
+      previewUrl,
+      assistText,
+      fields: parsed.fields,
+      notes: parsed.notes,
+    });
+  }
+
+  function resetReview() {
+    setAssistText('');
+    setSelectedFile(null);
+    setPreviewUrl('');
+    setReviewState(null);
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+        <section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Live intake</p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Upload source and review</h3>
+            </div>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
+              Review first
+            </span>
+          </div>
+
+          <label className="mt-5 flex cursor-pointer flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center">
+            <span className="text-sm font-semibold text-slate-900">Choose image, PDF, or text file</span>
+            <span className="mt-2 text-sm text-slate-600">
+              Upload the source, then add any visible text to improve extraction quality before import.
+            </span>
+            <input
+              type="file"
+              accept="image/*,application/pdf,text/plain"
+              className="sr-only"
+              onChange={onFileChange}
+            />
+          </label>
+
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            <p>
+              <strong className="text-slate-900">Selected source:</strong>{' '}
+              {selectedFile
+                ? `${selectedFile.name} (${selectedFile.type || 'unknown type'})`
+                : 'No file chosen yet'}
+            </p>
+          </div>
+
+          <label className="mt-4 block">
+            <span className="text-sm font-semibold text-slate-900">Assist text</span>
+            <textarea
+              value={assistText}
+              onChange={(event) => setAssistText(event.target.value)}
+              placeholder="Paste any visible text from the card, PDF, image, or shared document to improve the review result."
+              className="mt-2 min-h-[160px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+            />
+          </label>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={runReview}
+              className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              Run review extraction
+            </button>
+            <button
+              type="button"
+              onClick={resetReview}
+              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              Reset
+            </button>
+          </div>
+        </section>
+
+        <section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Source review</p>
+          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+            Keep the source beside the extracted fields
+          </h3>
+          <div className="mt-5 min-h-[360px] rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-4">
+            {!reviewState ? (
+              <div className="flex h-full min-h-[320px] items-center justify-center text-center text-sm text-slate-500">
+                Upload a file and run review extraction to open the review state.
+              </div>
+            ) : previewKind === 'image' ? (
+              <img
+                src={reviewState.previewUrl}
+                alt={reviewState.fileName}
+                className="max-h-[460px] w-full rounded-2xl border border-slate-200 object-contain bg-white"
+              />
+            ) : previewKind === 'pdf' ? (
+              <iframe
+                src={reviewState.previewUrl}
+                title={reviewState.fileName}
+                className="h-[420px] w-full rounded-2xl border border-slate-200 bg-white"
+              />
+            ) : reviewState.fileName !== 'No file selected' ? (
+              <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 text-center text-sm text-slate-600">
+                <div>
+                  <p className="font-semibold text-slate-900">{reviewState.fileName}</p>
+                  <p className="mt-2">
+                    Preview is not available for this file type in-browser, but the review result remains visible.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-[320px] items-center justify-center text-center text-sm text-slate-500">
+                No file selected. Manual text review can still be used.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">
+              Extraction result
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+              Review extracted fields before import
+            </h3>
+          </div>
+          <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">
+            Manual confirmation
+          </span>
+        </div>
+
+        <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-left text-[11px] uppercase tracking-[0.16em] text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Field</th>
+                <th className="px-4 py-3">Prefill value</th>
+                <th className="px-4 py-3">Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(reviewState?.fields ?? []).map((field) => (
+                <tr key={field.label} className="border-t border-slate-100 bg-white">
+                  <td className="px-4 py-3 font-medium text-slate-900">{field.label}</td>
+                  <td className="px-4 py-3 text-slate-600">{field.value || '—'}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                        field.confidence === 'High'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : field.confidence === 'Medium'
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {field.confidence}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {!reviewState ? (
+                <tr className="border-t border-slate-100 bg-white">
+                  <td className="px-4 py-6 text-sm text-slate-500" colSpan={3}>
+                    No review result yet. Run extraction to populate the table.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr,0.9fr]">
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            <p className="font-semibold text-slate-900">Review notes</p>
+            <ul className="mt-3 space-y-2">
+              {(reviewState?.notes ?? [
+                'Use this surface to verify the extracted details before you move the information into the CRM.',
+              ]).map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            <p className="font-semibold text-slate-900">Next step</p>
+            <ul className="mt-3 space-y-2">
+              <li>Confirm the key fields against the source.</li>
+              <li>Capture missing notes before import.</li>
+              <li>Continue the approved record into Leads.</li>
+              <li>Keep the source available for auditability.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

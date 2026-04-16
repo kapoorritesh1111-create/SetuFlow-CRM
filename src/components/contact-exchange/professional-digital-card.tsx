@@ -10,23 +10,62 @@ type ProfessionalDigitalCardProps = {
   secondaryActionLabel?: string;
 };
 
-function SocialIcon({ label }: { label: string }) {
-  return <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-700">{label}</span>;
+type SocialLabel = 'Facebook' | 'Instagram' | 'TikTok' | 'LinkedIn';
+
+function SocialIcon({ label }: { label: SocialLabel }) {
+  switch (label) {
+    case 'Facebook':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+          <path d="M14 8h3V4h-3c-2.8 0-5 2.2-5 5v3H6v4h3v4h4v-4h3.2l.8-4H13V9c0-.6.4-1 1-1Z" />
+        </svg>
+      );
+    case 'Instagram':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+          <circle cx="12" cy="12" r="4" />
+          <circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'TikTok':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+          <path d="M14 4c.6 2 2 3.4 4 4v2.8c-1.5-.1-2.9-.6-4-1.4V15a5 5 0 1 1-5-5" />
+        </svg>
+      );
+    case 'LinkedIn':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+          <path d="M8 10v7" />
+          <path d="M8 7.2v.1" />
+          <path d="M12 17v-4a2.5 2.5 0 0 1 5 0v4" />
+          <path d="M12 10v7" />
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+        </svg>
+      );
+  }
 }
 
-function SocialButton({ href, label }: { href?: string | null; label: string }) {
+function SocialButton({ href, label }: { href?: string | null; label: SocialLabel }) {
   if (!href) return null;
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
+      className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#1F487C]/12 bg-white text-[#1F487C] shadow-sm transition hover:-translate-y-0.5 hover:border-[#1F487C]/30 hover:bg-[#F5F9FF]"
       aria-label={label}
+      title={label}
     >
-      <SocialIcon label={label.slice(0, 2)} />
+      <SocialIcon label={label} />
     </a>
   );
+}
+
+function cleanDetail(value?: string | null) {
+  const trimmed = String(value ?? '').trim();
+  return trimmed.length ? trimmed : null;
 }
 
 export function ProfessionalDigitalCard({
@@ -39,64 +78,83 @@ export function ProfessionalDigitalCard({
   secondaryActionLabel = 'Book appointment',
 }: ProfessionalDigitalCardProps) {
   const details = [
-    identity.primaryPhone,
-    identity.address,
-    identity.email,
-    identity.website,
-  ].filter((value): value is string => Boolean(value && value.trim()));
+    cleanDetail(identity.primaryPhone),
+    cleanDetail(identity.address),
+    cleanDetail(identity.email),
+    cleanDetail(identity.website),
+  ].filter((value): value is string => Boolean(value));
+
+  const hasActions = Boolean(primaryActionHref || secondaryActionHref);
 
   return (
-    <div className="overflow-hidden rounded-[2.6rem] border border-slate-200 bg-white shadow-[0_32px_80px_rgba(15,23,42,0.12)]">
-      <div className="relative overflow-hidden bg-[linear-gradient(180deg,#f7f7f7_0%,#ececec_100%)] px-6 pb-10 pt-8 sm:px-10">
-        <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_center,_rgba(15,23,42,0.08),_transparent_38%),linear-gradient(120deg,transparent_0%,rgba(15,23,42,0.05)_28%,transparent_56%),linear-gradient(60deg,transparent_0%,rgba(15,23,42,0.04)_28%,transparent_56%)]" />
+    <div className="overflow-hidden rounded-[2.6rem] border border-[#1F487C]/10 bg-white shadow-[0_32px_80px_rgba(15,23,42,0.12)]">
+      <div className="relative overflow-hidden bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-6 pb-10 pt-8 text-white sm:px-10">
+        <div className="absolute inset-0 opacity-20 [background:radial-gradient(circle_at_top_right,_rgba(255,255,255,0.55),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(255,255,255,0.25),_transparent_30%)]" />
         <div className="relative flex flex-col items-center text-center">
-          <div className="h-52 w-52 overflow-hidden rounded-full border border-white/70 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.1)] sm:h-60 sm:w-60">
+          <div className="h-52 w-52 overflow-hidden rounded-full border border-white/35 bg-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.15)] backdrop-blur sm:h-60 sm:w-60">
             {identity.avatarUrl ? (
               <img src={identity.avatarUrl} alt={identity.fullName} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,#ffffff_0%,#e5e7eb_100%)] text-6xl font-semibold text-slate-700">
+              <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0.12)_100%)] text-6xl font-semibold text-white">
                 {identity.fullName.slice(0, 1).toUpperCase()}
               </div>
             )}
           </div>
-          <p className="mt-8 text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">{identity.roleLabel}</p>
-          <h1 className="mt-4 text-5xl font-light tracking-[-0.08em] text-slate-950 sm:text-6xl">{identity.fullName}</h1>
-          <p className="mt-3 text-2xl font-light italic tracking-[-0.05em] text-slate-700">{identity.organizationName}</p>
+          <p className="mt-8 text-xs font-semibold uppercase tracking-[0.32em] text-white/75">{identity.roleLabel}</p>
+          <h1 className="mt-4 text-5xl font-semibold tracking-[-0.06em] text-white sm:text-6xl">{identity.fullName}</h1>
+          <p className="mt-3 text-2xl font-medium tracking-[-0.03em] text-white/85">{identity.organizationName}</p>
         </div>
       </div>
 
-      <div className="space-y-8 bg-[linear-gradient(180deg,#ffffff_0%,#faf7f4_100%)] px-6 pb-8 pt-6 sm:px-10">
-        <div className="space-y-3 rounded-[1.8rem] bg-white/80 p-5 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
-          {details.map((detail) => (
-            <div key={detail} className="flex items-center gap-4 text-slate-800">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ede7df] text-xs">•</span>
-              <span className="text-sm tracking-[0.18em] text-slate-700 sm:text-base">{detail}</span>
-            </div>
-          ))}
-        </div>
+      <div className="space-y-8 bg-[linear-gradient(180deg,#ffffff_0%,#F7FBFC_100%)] px-6 pb-8 pt-6 sm:px-10">
+        {details.length > 0 ? (
+          <div className="space-y-3 rounded-[1.8rem] border border-[#1F487C]/10 bg-white/90 p-5 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+            {details.map((detail) => (
+              <div key={detail} className="flex items-center gap-4 text-slate-800">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EAF5F3] text-sm font-semibold text-[#359F91]">•</span>
+                <span className="text-sm tracking-[0.08em] text-slate-700 sm:text-base">{detail}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
-        <div className="text-center">
-          <p className="text-4xl font-light tracking-[-0.06em] text-slate-900">Bookings Now Available</p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {primaryActionHref ? (
-              <a href={primaryActionHref} className="inline-flex min-h-[58px] items-center justify-center rounded-[1.4rem] bg-[#d9d0c4] px-5 py-4 text-lg font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-[#cbc0b1]">
-                {primaryActionLabel}
-              </a>
-            ) : null}
-            {secondaryActionHref ? (
-              <a href={secondaryActionHref} className="inline-flex min-h-[58px] items-center justify-center rounded-[1.4rem] border border-slate-300 bg-white px-5 py-4 text-lg font-semibold uppercase tracking-[0.22em] text-slate-700 transition hover:border-slate-400 hover:bg-slate-50">
-                {secondaryActionLabel}
+        {hasActions ? (
+          <div className="text-center">
+            <p className="text-3xl font-semibold tracking-[-0.04em] text-slate-900">Connect with {identity.fullName.split(' ')[0] || 'our team'}</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {primaryActionHref ? (
+                <a
+                  href={primaryActionHref}
+                  target={primaryActionHref.startsWith('http') ? '_blank' : undefined}
+                  rel={primaryActionHref.startsWith('http') ? 'noreferrer' : undefined}
+                  className="inline-flex min-h-[58px] items-center justify-center rounded-[1.4rem] bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-5 py-4 text-lg font-semibold uppercase tracking-[0.18em] text-white transition hover:opacity-95"
+                >
+                  {primaryActionLabel}
+                </a>
+              ) : null}
+              {secondaryActionHref ? (
+                <a
+                  href={secondaryActionHref}
+                  target={secondaryActionHref.startsWith('http') ? '_blank' : undefined}
+                  rel={secondaryActionHref.startsWith('http') ? 'noreferrer' : undefined}
+                  className="inline-flex min-h-[58px] items-center justify-center rounded-[1.4rem] border border-[#1F487C]/16 bg-white px-5 py-4 text-lg font-semibold uppercase tracking-[0.18em] text-[#1F487C] transition hover:border-[#1F487C]/35 hover:bg-[#F5F9FF]"
+                >
+                  {secondaryActionLabel}
+                </a>
+              ) : null}
+            </div>
+            {saveContactHref ? (
+              <a href={saveContactHref} className="mt-4 inline-flex min-h-[50px] items-center justify-center rounded-[1.2rem] bg-slate-950 px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-slate-800">
+                Save contact
               </a>
             ) : null}
           </div>
-          {saveContactHref ? (
-            <a href={saveContactHref} className="mt-4 inline-flex min-h-[50px] items-center justify-center rounded-[1.2rem] bg-slate-950 px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-slate-800">
-              Save contact
-            </a>
-          ) : null}
-        </div>
+        ) : null}
 
-        {(identity.socials?.linkedin || identity.socials?.instagram || identity.socials?.facebook || identity.socials?.tiktok) ? (
+        {(identity.socials?.linkedin ||
+          identity.socials?.instagram ||
+          identity.socials?.facebook ||
+          identity.socials?.tiktok) ? (
           <div className="flex items-center justify-center gap-3">
             <SocialButton href={identity.socials?.facebook} label="Facebook" />
             <SocialButton href={identity.socials?.instagram} label="Instagram" />
@@ -106,7 +164,9 @@ export function ProfessionalDigitalCard({
         ) : null}
 
         {mode === 'workspace' ? (
-          <p className="text-center text-sm leading-6 text-slate-500">This card is generated from signed-in user identity, organization branding, and share settings so any team member can send a polished digital vCard with QR, save-contact, request quote, and appointment actions.</p>
+          <p className="text-center text-sm leading-6 text-slate-500">
+            This card is generated from your signed-in profile, organization branding, and saved share settings.
+          </p>
         ) : null}
       </div>
     </div>

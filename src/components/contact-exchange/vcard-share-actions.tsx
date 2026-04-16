@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import QRCode from 'qrcode';
 
 function ActionButton({ href, label, primary = false, download, onClick }: { href?: string; label: string; primary?: boolean; download?: boolean; onClick?: () => void | Promise<void> }) {
   const className = primary
@@ -62,16 +63,10 @@ export function VCardShareActions({
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [shareSupported, setShareSupported] = useState(false);
   const [shareState, setShareState] = useState<'idle' | 'shared' | 'fallback'>('idle');
+  const [qrImageUrl, setQrImageUrl] = useState('');
 
   const previewUrl = useMemo(() => (origin ? `${origin}${previewPath}` : previewPath), [origin, previewPath]);
   const downloadUrl = useMemo(() => (origin ? `${origin}${downloadPath}` : downloadPath), [origin, downloadPath]);
-  const qrImageUrl = useMemo(
-    () =>
-      previewUrl
-        ? `https://api.qrserver.com/v1/create-qr-code/?size=224x224&margin=8&data=${encodeURIComponent(previewUrl)}`
-        : '',
-    [previewUrl],
-  );
   const shareText = useMemo(
     () => `Save ${fullName} · ${roleLabel}\n${organizationName}\nDirect contact: ${email}${primaryPhone ? ` · ${primaryPhone}` : ''}\nOpen the premium identity page: ${previewUrl}`,
     [email, fullName, organizationName, previewUrl, primaryPhone, roleLabel],
@@ -83,6 +78,32 @@ export function VCardShareActions({
       setShareSupported(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
     }
   }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function buildQr() {
+      if (!previewUrl) {
+        if (isActive) setQrImageUrl('');
+        return;
+      }
+      try {
+        const dataUrl = await QRCode.toDataURL(previewUrl, {
+          width: 224,
+          margin: 1,
+          color: { dark: '#1F487C', light: '#FFFFFF' },
+        });
+        if (isActive) setQrImageUrl(dataUrl);
+      } catch {
+        if (isActive) setQrImageUrl('');
+      }
+    }
+
+    void buildQr();
+    return () => {
+      isActive = false;
+    };
+  }, [previewUrl]);
 
   async function copyPreviewLink() {
     try {
@@ -130,18 +151,18 @@ export function VCardShareActions({
       <div className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand-700">Apple layout share system</p>
-            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Calm sharing around one premium destination</h3>
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand-700">Share system</p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">One clean destination for every share</h3>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-              Batch 12 trims the share layer down to the essentials. Preview remains the hero, native share and intro copy sit beside it, and everything else supports the same save-first identity story instead of acting like separate utilities.
+              Lead with the public card preview, then support it with native share, QR handoff, and a downloadable contact file.
             </p>
           </div>
-          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">vCard ROI batch 12</span>
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Live</span>
         </div>
 
         <div className="mt-6 rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] sm:p-5">
           <p className="text-sm font-semibold text-slate-900">Primary share actions</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Lead with the preview. Everything else helps someone pass along the same premium identity page with the right context intact.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">Open the card, share it, copy the intro, or download the contact file.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <ActionButton href={previewUrl} label="Open preview" primary />
             <ActionButton label={shareSupported ? 'Share now' : 'Copy share link'} onClick={handleNativeShare} />
@@ -159,7 +180,7 @@ export function VCardShareActions({
                 ? 'Shared through native share sheet.'
                 : shareState === 'fallback'
                   ? 'Native share unavailable, so the preview link was copied instead.'
-                  : 'Ready to send as a calm, save-first identity destination.'}
+                  : 'Ready to send as a polished digital identity page.'}
           </p>
 
           <div className="mt-4 rounded-[1.4rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -169,7 +190,7 @@ export function VCardShareActions({
 
           <div className="mt-4 rounded-[1.4rem] border border-slate-200 px-4 py-2">
             <DetailRow label="Preview URL" value={previewUrl} />
-            <DetailRow label="Identity layer" value="Verified, contextual, and save-first" />
+            <DetailRow label="Identity layer" value="Verified and save-first" />
             <DetailRow label="Recipient flow" value="Open → trust → save → contact" />
           </div>
         </div>
@@ -179,7 +200,7 @@ export function VCardShareActions({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-slate-900">QR as a premium handoff</p>
-            <p className="mt-1 text-sm text-slate-600">The QR lands on the same calm destination, so the story remains consistent across in-person and remote sharing.</p>
+            <p className="mt-1 text-sm text-slate-600">The QR lands on the same public card, so the experience stays consistent across in-person and remote sharing.</p>
           </div>
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Live</span>
         </div>
@@ -190,8 +211,8 @@ export function VCardShareActions({
           </div>
 
           <div className="mt-4 space-y-3">
-            <QrHint title="Why it works" detail="The scan does not open a utility surface. It opens the same premium identity card, with the same save-contact dominance and same trust cues." />
-            <QrHint title="What to look for" detail="On mobile, the first visible action should still be save contact. QR simply changes how the person arrives, not what they feel when they land." />
+            <QrHint title="Why it works" detail="The scan lands on the same public card, with the same save-contact and response actions." />
+            <QrHint title="What to look for" detail="On mobile, the first visible actions should still feel clear, credible, and easy to trust." />
           </div>
         </div>
       </div>

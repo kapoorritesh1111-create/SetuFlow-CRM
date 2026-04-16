@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import type { PublicCardIdentity } from '@/lib/contact-exchange/public-card';
 
 type PublicCardCaptureFormProps = {
@@ -43,6 +43,21 @@ export function PublicCardCaptureForm({ identity }: PublicCardCaptureFormProps) 
   const [prefillState, setPrefillState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle');
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    function syncDesiredActionFromHash() {
+      const hash = window.location.hash;
+      if (hash === '#book-appointment') {
+        setForm((current) => ({ ...current, desiredAction: 'book_appointment' }));
+      } else if (hash === '#request-quote') {
+        setForm((current) => ({ ...current, desiredAction: 'request_quote' }));
+      }
+    }
+
+    syncDesiredActionFromHash();
+    window.addEventListener('hashchange', syncDesiredActionFromHash);
+    return () => window.removeEventListener('hashchange', syncDesiredActionFromHash);
+  }, []);
 
   async function handlePrefill() {
     if (!file) return;
