@@ -6,7 +6,7 @@ import { backlogSections, readinessSummary, sprintFocus, sprintProgress } from "
 import { PRODUCT_ROUTES } from "@/lib/product-contract";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-const toneMap = { done: "success", "in-progress": "info", next: "warning", locked: "neutral" } as const;
+const toneMap = { done: "success", current: "info", planned: "warning", locked: "neutral" } as const;
 
 export default function DevelopmentBacklogPage() {
   return (

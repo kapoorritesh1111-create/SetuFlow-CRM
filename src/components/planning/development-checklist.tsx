@@ -3,8 +3,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 
 const STATUS_META: Record<ChecklistStatus, { label: string; tone: 'success' | 'warning' | 'info' | 'neutral' }> = {
   done: { label: 'Done', tone: 'success' },
-  'in-progress': { label: 'In progress', tone: 'info' },
-  next: { label: 'Next', tone: 'warning' },
+  current: { label: 'Current', tone: 'info' },
+  planned: { label: 'Planned', tone: 'warning' },
   locked: { label: 'Locked', tone: 'neutral' },
 };
 

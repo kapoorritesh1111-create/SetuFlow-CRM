@@ -24,7 +24,7 @@ const pinned = [
   { title: "Live product", href: PRODUCT_ROUTES.workspace.leads, body: "The active Leads, Quotes, Orders, Dashboard, and supporting workspaces in the current repo baseline." },
 ];
 
-const roadmapTone = { done: "success", "in-progress": "info", next: "warning", locked: "neutral" } as const;
+const roadmapTone = { done: "success", current: "info", planned: "warning", locked: "neutral" } as const;
 
 export default function DevelopmentPage() {
   return (

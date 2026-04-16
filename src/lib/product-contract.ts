@@ -23,10 +23,31 @@ export const PRODUCT_ROUTES = {
     capture: '/contact-exchange/scan',
     myCard: '/contact-exchange/vcard',
   },
+  workspace: {
+    home: '/workspace',
+    leads: '/workspace/leads',
+    quotes: '/workspace/quotes',
+    orders: '/workspace/orders',
+    dashboard: '/workspace/dashboard',
+    capture: '/workspace/capture',
+    myCard: '/workspace/my-card',
+  },
+  development: {
+    home: '/development',
+    masterPlan: '/development/master-plan',
+    readiness: '/development/readiness',
+    buyerReady: '/development/buyer-ready',
+    backlog: '/development/backlog',
+    product: '/development/product',
+    architecture: '/development/architecture',
+    uxRules: '/development/ux-rules',
+    screens: '/development/screens/leads-capture',
+  },
 } as const;
 
 export const PRODUCT_SHELL_LABELS = {
   productShell: 'Product shell',
+  previewBadge: 'Preview workspace',
   ritualHeading: 'Working rules',
   ritualBeforeCoding: 'Keep canonical routes as the only routes users can navigate to.',
   ritualDuringCoding: 'Update visible navigation in the same change as workflow updates.',
@@ -47,6 +68,15 @@ export const primaryAppShellNav: ProductNavLink[] = [
   { href: PRODUCT_ROUTES.app.admin, label: PRODUCT_ROUTE_LABELS.admin },
 ];
 
+export const primaryWorkspacePreviewNav: ProductNavLink[] = [
+  { href: PRODUCT_ROUTES.workspace.leads, label: PRODUCT_ROUTE_LABELS.leads, exact: true },
+  { href: PRODUCT_ROUTES.workspace.quotes, label: PRODUCT_ROUTE_LABELS.quotes },
+  { href: PRODUCT_ROUTES.workspace.orders, label: PRODUCT_ROUTE_LABELS.orders },
+  { href: PRODUCT_ROUTES.workspace.dashboard, label: PRODUCT_ROUTE_LABELS.dashboard },
+  { href: PRODUCT_ROUTES.workspace.capture, label: PRODUCT_ROUTE_LABELS.capture },
+  { href: PRODUCT_ROUTES.workspace.myCard, label: PRODUCT_ROUTE_LABELS.myCard },
+];
+
 export const hiddenFromPrimaryNav = [
   'Pipeline',
   'Products',
@@ -62,6 +92,6 @@ export const hiddenFromPrimaryNav = [
 
 export const driftGuardrails = [
   'Define product shell links once and import them everywhere.',
-    'Treat demoted routes as support surfaces, not primary destinations.',
+  'Treat demoted routes as support surfaces, not primary destinations.',
   'Promote only routes that match the approved Capture → Lead → Quote → Order story.',
 ] as const;

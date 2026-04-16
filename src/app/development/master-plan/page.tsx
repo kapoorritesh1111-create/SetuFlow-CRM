@@ -26,7 +26,7 @@ const references = [
   { href: PRODUCT_ROUTES.workspace.leads, label: "Live product", body: "The active Leads, Quotes, and Orders workspaces." },
 ];
 
-const toneMap = { done: "success", "in-progress": "info", next: "warning", locked: "neutral" } as const;
+const toneMap = { done: "success", current: "info", planned: "warning", locked: "neutral" } as const;
 
 export default function MasterPlanPage() {
   return (

@@ -6,7 +6,7 @@ import { buyerReadySections, readinessSummary, sprintFocus } from "@/components/
 import { PRODUCT_ROUTES } from "@/lib/product-contract";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-const toneMap = { done: "success", "in-progress": "info", next: "warning", locked: "neutral" } as const;
+const toneMap = { done: "success", current: "info", planned: "warning", locked: "neutral" } as const;
 
 export default function BuyerReadyPage() {
   return (
@@ -52,17 +52,17 @@ export default function BuyerReadyPage() {
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#359F91]">{section.title}</p>
                   <p className="mt-2 text-lg font-semibold text-slate-950">{section.summary}</p>
                 </div>
-                <StatusBadge label={section.status === "done" ? "Complete" : section.status === "in-progress" ? "In progress" : section.status === "locked" ? "Upcoming" : "Next"} tone={toneMap[section.status]} className="shrink-0" />
+                <StatusBadge label={section.status === "done" ? "Complete" : section.status === "current" ? "Active" : section.status === "locked" ? "Locked" : "Planned"} tone={toneMap[section.status]} className="shrink-0" />
               </div>
               <div className="mt-6 space-y-3">
                 {section.items.map((item) => (
                   <div key={item.label} className="flex items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
-                    <div className={`mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 ${item.status === "done" ? "border-emerald-400 bg-emerald-400" : item.status === "in-progress" ? "border-sky-400 bg-sky-100" : item.status === "next" ? "border-amber-400 bg-amber-50" : "border-slate-300 bg-white"}`} />
+                    <div className={`mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 ${item.status === "done" ? "border-emerald-400 bg-emerald-400" : item.status === "current" ? "border-sky-400 bg-sky-100" : item.status === "planned" ? "border-amber-400 bg-amber-50" : "border-slate-300 bg-white"}`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-900">{item.label}</p>
                       <p className="mt-1 text-sm leading-6 text-slate-600">{item.note}</p>
                     </div>
-                    <StatusBadge label={item.status === "done" ? "Done" : item.status === "in-progress" ? "Active" : item.status === "next" ? "Next" : "Upcoming"} tone={toneMap[item.status]} className="shrink-0" />
+                    <StatusBadge label={item.status === "done" ? "Done" : item.status === "current" ? "Active" : item.status === "planned" ? "Planned" : "Locked"} tone={toneMap[item.status]} className="shrink-0" />
                   </div>
                 ))}
               </div>
