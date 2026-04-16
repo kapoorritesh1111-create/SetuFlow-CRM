@@ -34,8 +34,21 @@ export async function getMyCardSettingsForUser(userId: string): Promise<MyCardSe
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') {
-    throw new Error(error.message || 'Unable to load My Card settings.');
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+
+    const message = String(error.message || 'Unable to load My Card settings.');
+    const lowerMessage = message.toLowerCase();
+    if (
+      lowerMessage.includes('my_card_settings') ||
+      lowerMessage.includes('relation') ||
+      lowerMessage.includes('schema cache') ||
+      lowerMessage.includes('permission denied')
+    ) {
+      return null;
+    }
+
+    throw new Error(message);
   }
 
   return (data as MyCardSettingsRow | null) ?? null;

@@ -47,7 +47,16 @@ export default async function DigitalVCardPage() {
     'email-not-available@setu.flow';
   const primaryRole = getPrimaryWorkspaceRole(workspace.currentRoles) || 'member';
   const roleLabel = getWorkspaceRoleDisplayName(primaryRole);
-  const initialSettings = workspace.user?.id ? await getMyCardSettingsForUser(workspace.user.id) : null;
+  let initialSettings = null;
+  let loadWarning: string | null = null;
+
+  if (workspace.user?.id) {
+    try {
+      initialSettings = await getMyCardSettingsForUser(workspace.user.id);
+    } catch (error) {
+      loadWarning = error instanceof Error ? error.message : 'My Card settings could not be loaded yet. You can still open the page and save your details again.';
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -58,6 +67,15 @@ export default async function DigitalVCardPage() {
         badge={initialSettings?.share_slug ? 'Ready to share' : 'Setup needed'}
         actions={[{ label: 'Go to leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' }]}
       />
+
+      {loadWarning ? (
+        <SectionCard>
+          <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-800">
+            <p className="font-semibold text-amber-900">My Card loaded in recovery mode</p>
+            <p className="mt-1 leading-6">{loadWarning}</p>
+          </div>
+        </SectionCard>
+      ) : null}
 
       <SectionCard>
         <div className="grid gap-4 lg:grid-cols-3">

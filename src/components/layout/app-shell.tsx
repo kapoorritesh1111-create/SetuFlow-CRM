@@ -1,6 +1,7 @@
 // UPDATED FILE
 'use client';
 
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppLogo } from '@/components/branding/app-logo';
@@ -921,16 +922,16 @@ export function AppShell({
                       <span>Search pages and actions...</span>
                       <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-400 shadow-sm">Ctrl/Cmd + K</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => router.push(PRODUCT_ROUTES.app.myCard)}
+                    <Link
+                      href={PRODUCT_ROUTES.app.myCard}
+                      prefetch={false}
                       className="inline-flex min-h-11 items-center gap-2 rounded-[1rem] border border-brand-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,245,249,0.96))] px-4 py-2 text-sm font-semibold text-brand-700 shadow-[0_10px_24px_rgba(15,23,42,0.06)] hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-slate-700 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(30,41,59,0.94))] dark:text-sky-200 dark:hover:bg-slate-800"
                       aria-label="Share my card"
                       title="Share my card"
                     >
                       <FaIcon icon="address-card-o" fixedWidth className="text-sm" />
                       <span className="hidden xl:inline">Share card</span>
-                    </button>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => setShortcutsOpen(true)}

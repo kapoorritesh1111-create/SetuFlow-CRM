@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState, useTransition, type KeyboardEvent, type SVGProps } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { LeadDrawer, type LeadDrawerSavePayload } from '@/features/leads/components/lead-drawer';
@@ -1088,14 +1089,13 @@ export function LeadsWorkspace({
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">One execution queue driven by today, search, and next action.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <ToolbarActionButton
-              type="button"
-              tone="secondary"
-              onClick={() => router.push(PRODUCT_ROUTES.app.myCard)}
-              className="min-h-11 rounded-[1rem] px-4 py-2"
+            <Link
+              href={PRODUCT_ROUTES.app.myCard}
+              prefetch={false}
+              className="inline-flex min-h-11 items-center justify-center rounded-[1rem] px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 border border-slate-200 bg-slate-100/90 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.05)] hover:bg-white dark:border-slate-700 dark:bg-slate-800/78 dark:text-slate-200"
             >
               Share my card
-            </ToolbarActionButton>
+            </Link>
             <ToolbarActionButton type="button" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">
               + Quick Lead
             </ToolbarActionButton>
