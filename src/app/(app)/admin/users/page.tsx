@@ -238,7 +238,7 @@ export default async function AdminUsersPage({
         actions={[
           { label: 'Organization', href: '/admin/organization' },
           { label: 'Invitations', href: '/admin/invitations' },
-          { label: 'My Card settings', href: '/workspace/my-card', type: 'primary' },
+          { label: 'My Card settings', href: '/contact-exchange/vcard', type: 'primary' },
         ]}
       />
 

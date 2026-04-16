@@ -12,8 +12,7 @@
     "test:release-readiness": "npm test",
     "check:dashboard": "node scripts/check-dashboard-freeze.mjs",
     "verify": "npm run typecheck && npm run check:dashboard && npm test && npm run build",
-    "release:proof": "npm run verify",
-    "vercel-build": "next build"
+    "release:proof": "npm run verify"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -35,8 +34,7 @@
     "typescript": "^5.8.2"
   },
   "engines": {
-    "node": ">=22.16.0 <23",
-    "npm": ">=10.9.2 <11"
-  },
-  "packageManager": "npm@10.9.7"
+    "node": "22.x",
+    "npm": "10.x"
+  }
 }

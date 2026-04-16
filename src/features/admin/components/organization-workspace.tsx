@@ -172,7 +172,7 @@ export function OrganizationWorkspace({
               <p className="text-sm font-semibold text-slate-900">Invitations</p>
               <p className="mt-1 text-sm text-slate-600">Create, resend, revoke, and monitor open invites without leaving the admin lane.</p>
             </Link>
-            <Link href="/workspace/my-card" className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
+            <Link href="/contact-exchange/vcard" className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
               <p className="text-sm font-semibold text-slate-900">My Card settings</p>
               <p className="mt-1 text-sm text-slate-600">Update the digital vCard, social links, QR destination, and public share details used by signed-in workspace users.</p>
             </Link>
