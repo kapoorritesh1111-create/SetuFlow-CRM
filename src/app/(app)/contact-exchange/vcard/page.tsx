@@ -50,6 +50,7 @@ export default async function DigitalVCardPage() {
           primaryPhone: 'Add phone in card settings',
           organizationId: workspace.organization.id,
         }}
+        organizationId={workspace.organization.id}
       />
     </div>
   );
