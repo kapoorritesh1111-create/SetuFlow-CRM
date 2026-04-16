@@ -654,7 +654,7 @@ export const productTracks: ProductTrack[] = [
     id: "my-card",
     title: "My Card sharing loop",
     summary:
-      "My Card and contact-exchange work are now closed through Sprint 8 and form the outbound-share support lane for the locked workflow."
+      "My Card and contact-exchange work are now closed through Sprint 8 and form the outbound-share support lane for the locked workflow.",
     status: "next",
     scope: [
       "QR share",
