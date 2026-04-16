@@ -431,8 +431,8 @@ export const roadmapMilestones: RoadmapMilestone[] = [
     objective:
       "Turn contact exchange into a clean supporting loop for the core workflow.",
     outcomes: [
-      "Digital vCard, preview, QR/public card actions, persistent card settings, and inbound scan-contact routes exist."
-      "Public/share surfaces now feed back into leads, quote requests, and CRM capture workflows."
+      "Digital vCard, preview, QR/public card actions, persistent card settings, and inbound scan-contact routes exist.",
+      "Public/share surfaces now feed back into leads, quote requests, and CRM capture workflows.",
       "The lane stays subordinate to the core operating flow rather than becoming a detached product story.",
     ],
   },
