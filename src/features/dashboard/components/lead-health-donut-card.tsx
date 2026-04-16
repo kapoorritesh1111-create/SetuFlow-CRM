@@ -19,7 +19,7 @@ export function LeadHealthDonutCard({ items }: { items: DashboardLeadHealthDatum
   let angle = 0;
 
   return (
-    <WidgetShell title="Lead Health" description="Healthy vs at-risk vs blocked." eyebrow="Main visual">
+    <WidgetShell title="Market Health" description="Healthy vs at-risk vs blocked opportunities." eyebrow="Supporting visual">
       {total ? (
         <div className="space-y-5">
           <div className="relative mx-auto flex h-56 w-56 items-center justify-center">
@@ -34,7 +34,7 @@ export function LeadHealthDonutCard({ items }: { items: DashboardLeadHealthDatum
             </svg>
             <div className="absolute text-center">
               <div className="text-3xl font-semibold tracking-tight text-slate-950">{total}</div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Open leads</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Active buyers</div>
             </div>
           </div>
           <div className="space-y-3">
@@ -48,7 +48,7 @@ export function LeadHealthDonutCard({ items }: { items: DashboardLeadHealthDatum
           </div>
         </div>
       ) : (
-        <WidgetEmptyState title="No lead health signals yet" description="Lead health appears once open leads and follow-ups exist." />
+        <WidgetEmptyState title="No market health signals yet" description="Market health appears once buyer activity and follow-ups exist." />
       )}
     </WidgetShell>
   );

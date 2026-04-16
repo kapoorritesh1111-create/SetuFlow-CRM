@@ -106,7 +106,7 @@ export function AttentionDetailDrawer({
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Recommended move</p>
-                <p className="mt-1 text-sm font-semibold text-slate-950">Confirm the context, then continue the workflow.</p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">{item.ctaLabel ?? (fallbackHref ? 'Open the related record' : 'Review and close this item')}</p>
               </div>
               {acknowledged ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">Reviewed</span> : null}
             </div>
@@ -126,11 +126,11 @@ export function AttentionDetailDrawer({
           </div>
 
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Checklist</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Next actions</p>
             <ul className="mt-3 space-y-2 text-sm text-slate-700">
-              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#1F487C]" />Confirm company, market, and stage details.</li>
-              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#1F487C]" />Open the linked record or related lead.</li>
-              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#1F487C]" />Mark the item reviewed or snooze it for tomorrow.</li>
+              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#1F487C]" />Check company, market, and stage.</li>
+              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#1F487C]" />Open the related record and continue the workflow.</li>
+              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#1F487C]" />Mark reviewed or snooze for tomorrow.</li>
             </ul>
           </div>
         </div>
@@ -146,14 +146,14 @@ export function AttentionDetailDrawer({
                 Mark reviewed
               </button>
             )}
-            <button type="button" onClick={persistReviewed} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Mark reviewed</button>
-            <button type="button" onClick={persistSnooze} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Snooze 24h</button>
             {fallbackHref && item.ctaHref ? (
               <Link href={fallbackHref} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 Open lead
               </Link>
             ) : null}
-            <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Done</button>
+            <button type="button" onClick={persistReviewed} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Mark reviewed</button>
+            <button type="button" onClick={persistSnooze} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Snooze 24h</button>
+            <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Close</button>
           </div>
         </div>
       </aside>

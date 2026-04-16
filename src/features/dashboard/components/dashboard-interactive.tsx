@@ -81,11 +81,6 @@ export default function DashboardInteractive({
     setReviewedMap((current) => ({ ...current, [itemId]: { at: Date.now() } }));
   }, []);
 
-  const handleSnooze = useCallback((itemId: string) => {
-    setSnoozedMap((current) => ({ ...current, [itemId]: { until: Date.now() + 86400000 } }));
-    layout.onCloseFocusedAttention();
-  }, [layout]);
-
   // Sync workspaceMode prop into filter state when it changes from outside
   useEffect(() => {
     setFilters(f => ({ ...f, mode: workspaceMode }));
@@ -105,6 +100,11 @@ export default function DashboardInteractive({
   }, [pathname, router, searchParams]);
 
   const layout = useDashboardLayout(data, { dashboardVariant, currentRoles, persistenceKey });
+
+  const handleSnooze = useCallback((itemId: string) => {
+    setSnoozedMap((current) => ({ ...current, [itemId]: { until: Date.now() + 86400000 } }));
+    layout.onCloseFocusedAttention();
+  }, [layout]);
 
   const handleSelectCountry = useCallback((countryCode: string) => {
     layout.onSelectCountry(countryCode);

@@ -219,7 +219,7 @@ export function MarketCommandPanel({ country, attentionItems, mode = 'all', onCl
           )}
 
           <div className="mt-4 flex gap-2">
-            <Link href={PRODUCT_ROUTES.app.leads}  className="flex-1 rounded-xl bg-[#1F487C] px-3 py-2 text-center text-xs font-semibold text-white hover:bg-[#193769]">Open leads</Link>
+            <Link href={PRODUCT_ROUTES.app.leads}  className="flex-1 rounded-xl bg-[#1F487C] px-3 py-2 text-center text-xs font-semibold text-white hover:bg-[#193769]">Open buyers</Link>
             <Link href={PRODUCT_ROUTES.app.quotes} className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">Open quotes</Link>
           </div>
         </div>
