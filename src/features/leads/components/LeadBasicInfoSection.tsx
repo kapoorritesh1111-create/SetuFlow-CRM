@@ -214,7 +214,13 @@ export default function LeadBasicInfoSection({
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Global contact exchange</p>
           <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">Capture their contact without leaving Quick Add Lead</h3>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Use the small scan trigger for upload or camera capture, then apply the one-screen review block back into this lead form.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Use the scan trigger for upload or camera capture, review everything on one screen, then apply the values back into this lead form. Your own vCard can be opened separately whenever you need to share your details back.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/contact-exchange/vcard" className="inline-flex items-center rounded-2xl border border-sky-200 bg-white px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
+              Open My Digital vCard
+            </Link>
+            <span className="inline-flex items-center rounded-2xl border border-white/70 bg-white/70 px-3 py-2 text-xs font-medium text-slate-600">Manual lead save still happens after review</span>
+          </div>
         </div>
         <ContactScanTrigger
           currentLeadId={currentLeadId}

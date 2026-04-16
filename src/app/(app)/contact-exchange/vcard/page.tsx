@@ -2,9 +2,10 @@ import { MyCardWorkspace } from '@/components/contact-exchange/my-card-workspace
 import { PageHeader } from '@/components/ui/page-header';
 import { SectionCard } from '@/components/ui/section-card';
 import { WorkspaceState } from '@/components/ui/workspace-state';
-import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName } from '@/lib/workspace/roles';
-import { requireWorkspace } from '@/lib/workspace/auth';
+import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
+import { requireWorkspace } from '@/lib/workspace/auth';
+import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName } from '@/lib/workspace/roles';
 
 const setupNotes = [
   {
@@ -46,6 +47,7 @@ export default async function DigitalVCardPage() {
     'email-not-available@setu.flow';
   const primaryRole = getPrimaryWorkspaceRole(workspace.currentRoles) || 'member';
   const roleLabel = getWorkspaceRoleDisplayName(primaryRole);
+  const initialSettings = workspace.user?.id ? await getMyCardSettingsForUser(workspace.user.id) : null;
 
   return (
     <div className="space-y-6">
@@ -53,7 +55,7 @@ export default async function DigitalVCardPage() {
         eyebrow="Global contact exchange"
         title="My Digital vCard"
         description="Create a polished digital business card with QR sharing, downloadable contact details, and trusted follow-through for quotes or appointments."
-        badge="Live"
+        badge={initialSettings?.share_slug ? 'Ready to share' : 'Setup needed'}
         actions={[{ label: 'Go to leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' }]}
       />
 
@@ -80,6 +82,7 @@ export default async function DigitalVCardPage() {
           organizationId: workspace.organization.id,
         }}
         organizationId={workspace.organization.id}
+        initialSettings={initialSettings}
       />
     </div>
   );

@@ -81,6 +81,43 @@ function buildExtractionMessage(extraction: ContactServerExtractionResult) {
   return `Extraction complete for this ${humanizeProfile(extraction.sourceProfile)}. ${lowConfidenceCount ? `Review ${lowConfidenceCount} lower-confidence field${lowConfidenceCount > 1 ? 's' : ''} before applying.` : 'Review the prefilled values before applying them.'}`;
 }
 
+function hasMeaningfulDraft(draft: ContactScanDraft) {
+  return Boolean(
+    draft.contactName.trim() ||
+      draft.companyName.trim() ||
+      draft.email.trim() ||
+      draft.phone.trim() ||
+      draft.phoneSecondary.trim() ||
+      draft.website.trim() ||
+      draft.notes.trim(),
+  );
+}
+
+function buildApplyStatus(args: {
+  selectedSource: File | null;
+  assistText: string;
+  extraction: ContactServerExtractionResult | null;
+  reviewConfirmed: boolean;
+  draft: ContactScanDraft;
+}) {
+  const hasInput = Boolean(args.selectedSource || args.assistText.trim());
+  const hasDraftValues = hasMeaningfulDraft(args.draft);
+
+  if (!hasInput && !hasDraftValues) {
+    return 'Add a source, paste assist text, or type the contact details before applying them to the lead form.';
+  }
+  if (!args.reviewConfirmed) {
+    return 'Confirm that you reviewed the contact values on this screen before applying them.';
+  }
+  if (args.extraction) {
+    return 'Reviewed extraction is ready. Apply it back into the lead form.';
+  }
+  if (hasDraftValues) {
+    return 'Manual review is complete. Apply these contact values back into the lead form.';
+  }
+  return 'Apply is ready once your review is confirmed.';
+}
+
 export function ContactScanTrigger(props: ContactScanTriggerProps) {
   const [open, setOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState<File | null>(null);
@@ -217,7 +254,8 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
   };
 
   const canRunExtraction = Boolean(selectedSource || assistText.trim());
-  const canApply = reviewConfirmed && Boolean(extraction || assistText.trim() || selectedSource);
+  const canApply = reviewConfirmed && Boolean(selectedSource || assistText.trim() || extraction || hasMeaningfulDraft(draft));
+  const applyStatus = buildApplyStatus({ selectedSource, assistText, extraction, reviewConfirmed, draft });
 
   return (
     <>
@@ -226,55 +264,93 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
         Scan contact
       </button>
       {open ? (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/55 px-4 py-6">
-          <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.28)]">
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/95 px-6 py-5 backdrop-blur">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Quick entry · inbound capture</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Quick entry · inbound capture</p>
                 <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Scan Contact Info</h3>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Upload or capture a source, let the live OCR-capable server extraction boundary prefill the contact block, then review and apply it back into Quick Add Lead on the same screen.</p>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Upload or capture a source, let the live OCR-capable server extraction boundary prefill the contact block, then review and apply it back into Quick Add Lead on the same screen.</p>
               </div>
-              <button type="button" onClick={() => setOpen(false)} className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">Close</button>
+              <button type="button" onClick={() => setOpen(false)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Close</button>
             </div>
-            <div className="space-y-6 px-6 py-6">
-              <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
-                <p className="font-semibold">One-screen review stays intact.</p>
-                <p className="mt-2 leading-6">This flow still keeps extraction, editable review, and apply on one screen. After apply, Quick Add Lead can show guarded duplicate/contact-match suggestions and follow-up prompts, but the final save remains manual.</p>
-              </div>
 
-              <div className="grid gap-6 xl:grid-cols-[1.02fr,1.1fr]">
+            <div className="border-b border-slate-200 bg-slate-50/80 px-6 py-4">
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className={`rounded-[1.25rem] border px-4 py-3 text-sm ${selectedSource || assistText.trim() ? 'border-sky-200 bg-sky-50 text-sky-900' : 'border-slate-200 bg-white text-slate-600'}`}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Step 1</p>
+                  <p className="mt-1 font-semibold">Choose source</p>
+                  <p className="mt-1 text-xs leading-5">Upload a file, use the camera, or paste visible text.</p>
+                </div>
+                <div className={`rounded-[1.25rem] border px-4 py-3 text-sm ${extraction || isExtracting ? 'border-sky-200 bg-sky-50 text-sky-900' : 'border-slate-200 bg-white text-slate-600'}`}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Step 2</p>
+                  <p className="mt-1 font-semibold">Review prefill</p>
+                  <p className="mt-1 text-xs leading-5">Check extracted fields or finish them manually on one screen.</p>
+                </div>
+                <div className={`rounded-[1.25rem] border px-4 py-3 text-sm ${reviewConfirmed ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-slate-200 bg-white text-slate-600'}`}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Step 3</p>
+                  <p className="mt-1 font-semibold">Confirm and apply</p>
+                  <p className="mt-1 text-xs leading-5">Unlock the apply button only after your review is explicitly confirmed.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto px-6 py-6">
+              <div className="grid gap-6 xl:grid-cols-[0.94fr_1.06fr]">
                 <section className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Source intake</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Source intake</p>
                       <h4 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Upload or camera, still small and fast</h4>
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">No heavy dashboard</span>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">Dashboard</span>
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <button type="button" onClick={() => { setSourceMode('upload'); uploadInputRef.current?.click(); }} className={`rounded-[1.5rem] border px-4 py-4 text-left transition ${sourceMode === 'upload' ? 'border-sky-300 bg-sky-50 text-sky-700' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'}`}>
-                      <p className="text-sm font-semibold">Upload source</p>
-                      <p className="mt-1 text-sm text-slate-500">Image, PDF, text, or shared asset</p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSourceMode('upload');
+                        setExtractionMessage('Choose an image, PDF, or text file to continue.');
+                        uploadInputRef.current?.click();
+                      }}
+                      className={`rounded-[1.35rem] border px-4 py-4 text-left transition ${sourceMode === 'upload' ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                    >
+                      <p className="text-sm font-semibold text-sky-700">Upload source</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">Image, PDF, text, or shared asset</p>
                     </button>
-                    <button type="button" onClick={() => { setSourceMode('camera'); cameraInputRef.current?.click(); }} className={`rounded-[1.5rem] border px-4 py-4 text-left transition ${sourceMode === 'camera' ? 'border-sky-300 bg-sky-50 text-sky-700' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'}`}>
-                      <p className="text-sm font-semibold">Use camera</p>
-                      <p className="mt-1 text-sm text-slate-500">Capture a business card or live contact source</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSourceMode('camera');
+                        setExtractionMessage('Use the camera to capture a card or contact source.');
+                        cameraInputRef.current?.click();
+                      }}
+                      className={`rounded-[1.35rem] border px-4 py-4 text-left transition ${sourceMode === 'camera' ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                    >
+                      <p className="text-sm font-semibold text-sky-700">Use camera</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">Capture a business card or live contact source</p>
                     </button>
                   </div>
 
-                  <input ref={uploadInputRef} type="file" accept="image/*,application/pdf,text/*,application/json" className="hidden" onChange={(event) => void handleFileSelected(event.target.files?.[0] ?? null, 'upload')} />
+                  <input ref={uploadInputRef} type="file" accept="image/*,.pdf,text/plain,.txt" className="hidden" onChange={(event) => void handleFileSelected(event.target.files?.[0] ?? null, 'upload')} />
                   <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => void handleFileSelected(event.target.files?.[0] ?? null, 'camera')} />
 
-                  <div className="mt-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-white px-4 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Selected source</p>
-                    <p className="mt-2 text-sm font-medium text-slate-900">{sourceLabel}</p>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">{selectedSource ? (sourceMode === 'camera' ? 'Camera capture is attached to the same review surface and routed through the server extraction boundary.' : 'Upload is attached to the same review surface and routed through the server extraction boundary.') : 'Choose upload or camera to anchor this one-screen scan flow inside Quick Add Lead.'}</p>
+                  <div className="mt-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-700">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Selected source</p>
+                    <p className="mt-2 font-semibold text-slate-900">{sourceLabel}</p>
+                    <p className="mt-3 leading-6 text-slate-600">
+                      {selectedSource
+                        ? sourceMode === 'camera'
+                          ? 'Camera capture is attached to the same review surface and routed through the server extraction boundary.'
+                          : 'Uploaded source is attached to the same review surface and routed through the server extraction boundary.'
+                        : 'Pick a file or use the camera to begin. The chosen source stays in this review flow only.'}
+                    </p>
                   </div>
 
                   <label className="mt-4 block">
-                    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Assist text for extraction</span>
-                    <textarea value={assistText} onChange={(event) => { setAssistText(event.target.value); setReviewConfirmed(false); }} className="mt-2 min-h-[132px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Paste visible text from a screenshot, card, PDF, catalog back, or email signature to strengthen extraction when confidence is low or when the OCR provider is not configured." />
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Assist text for extraction</span>
+                    <textarea value={assistText} onChange={(event) => setAssistText(event.target.value)} className="mt-2 min-h-[120px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Paste visible text from a screenshot, card, PDF, catalog back, or email signature to strengthen extraction when confidence is low or when the OCR provider is not configured." />
                   </label>
 
                   <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -284,12 +360,12 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                   {extractionError ? <p className="mt-3 text-sm font-medium text-rose-600">{extractionError}</p> : null}
 
                   <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 text-sm text-slate-600">
-                    <p className="font-semibold text-slate-900">Target interaction</p>
+                    <p className="font-semibold text-slate-900">How this flow works</p>
                     <ol className="mt-3 space-y-2 leading-6">
-                      <li>1. Tap the small scan trigger from Quick Add Lead.</li>
-                      <li>2. Upload a source or open the camera.</li>
-                      <li>3. Run server extraction and review the same-screen prefill.</li>
-                      <li>4. Confirm review, apply the mapped values, then review guarded duplicate and follow-up assist back in Quick Add Lead before the final manual save.</li>
+                      <li>1. Pick a source or paste visible text.</li>
+                      <li>2. Run extraction only when you want a prefill suggestion.</li>
+                      <li>3. Review or manually edit the contact fields on the right.</li>
+                      <li>4. Confirm review, then apply everything back into Quick Add Lead. Final lead save still happens from the lead form.</li>
                     </ol>
                   </div>
                 </section>
@@ -325,7 +401,11 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                         {extraction.notes.map((note) => <li key={note}>{note}</li>)}
                       </ul>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="mt-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
+                      No extraction payload yet. You can still fill these fields manually and apply them after review.
+                    </div>
+                  )}
 
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
                     <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Full name</span><input value={draft.contactName} onChange={(event) => updateField('contactName', event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="e.g. Alex Morgan" /></label>
@@ -338,18 +418,23 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                     <label className="space-y-2 md:col-span-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes / context</span><textarea value={draft.notes} onChange={(event) => updateField('notes', event.target.value)} className="min-h-[120px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Add context from the scanned source or sales conversation." /></label>
                   </div>
 
-                  <label className="mt-5 flex items-start gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                  <label className={`mt-5 flex items-start gap-3 rounded-[1.5rem] border px-4 py-4 text-sm ${reviewConfirmed ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
                     <input type="checkbox" checked={reviewConfirmed} onChange={(event) => setReviewConfirmed(event.target.checked)} className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-300" />
-                    <span><strong className="text-slate-900">Review confirmed.</strong> I have checked the extracted values on this screen before applying them back into the lead form.</span>
+                    <span><strong className="text-slate-900">Review confirmed.</strong> I have checked the extracted or manually edited values on this screen before applying them back into the lead form.</span>
                   </label>
                 </section>
               </div>
             </div>
-            <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
-              <p className="text-sm text-slate-500">Applying now maps the reviewed fields into the standard lead save payload and stamps the source as a contact scan. After apply, Quick Add Lead can show guarded duplicate hints and follow-up prompts, but the final save still happens only from the lead form.</p>
-              <div className="flex flex-wrap gap-3">
-                <button type="button" onClick={() => setOpen(false)} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
-                <button type="button" onClick={() => void handleApply()} disabled={!canApply || isApplying} className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{isApplying ? 'Applying with assist…' : 'Apply to lead form'}</button>
+            <div className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">{applyStatus}</p>
+                  <p className="mt-1 text-sm text-slate-500">Applying maps the reviewed fields into the standard lead payload, stamps the source as a contact scan, and can surface duplicate or follow-up assist back in Quick Add Lead. Final lead save still happens from the lead form.</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <button type="button" onClick={() => setOpen(false)} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
+                  <button type="button" onClick={() => void handleApply()} disabled={!canApply || isApplying} className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{isApplying ? 'Applying with assist…' : 'Apply to lead form'}</button>
+                </div>
               </div>
             </div>
           </div>
