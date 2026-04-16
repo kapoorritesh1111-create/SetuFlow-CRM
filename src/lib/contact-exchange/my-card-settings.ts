@@ -3,7 +3,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 import type { PublicCardIdentity } from '@/lib/contact-exchange/public-card';
-import { mergeIdentityWithCardSettings, toCardSettingsInput, type MyCardSettingsInput, type MyCardSettingsRow, EMPTY_CARD_SETTINGS } from '@/lib/contact-exchange/my-card-settings-shared';
+import { mergeIdentityWithCardSettings, type MyCardSettingsInput, type MyCardSettingsRow } from '@/lib/contact-exchange/my-card-settings-shared';
 
 function sanitizeText(value?: string | null) {
   return String(value ?? '').trim();
@@ -26,7 +26,7 @@ function buildShareSlug(seed: string) {
   return `${base}-${randomUUID().slice(0, 8)}`;
 }
 
-export async function getMyCardSettingsForUser(userId: string) {
+export async function getMyCardSettingsForUser(userId: string): Promise<MyCardSettingsRow | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('my_card_settings')
@@ -38,7 +38,7 @@ export async function getMyCardSettingsForUser(userId: string) {
     throw new Error(error.message || 'Unable to load My Card settings.');
   }
 
-  return data ?? null;
+  return (data as MyCardSettingsRow | null) ?? null;
 }
 
 export async function upsertMyCardSettingsForUser(args: {
@@ -47,7 +47,7 @@ export async function upsertMyCardSettingsForUser(args: {
   fullName: string;
   email: string;
   input: MyCardSettingsInput;
-}) {
+}): Promise<MyCardSettingsRow> {
   const supabase = await createClient();
   const existing = await getMyCardSettingsForUser(args.userId);
   const shareSlug = existing?.share_slug || buildShareSlug(args.fullName || args.email);
@@ -77,7 +77,7 @@ export async function upsertMyCardSettingsForUser(args: {
     .single();
 
   if (error) throw new Error(error.message || 'Unable to save My Card settings.');
-  return data;
+  return data as MyCardSettingsRow;
 }
 
 export async function getPublicCardByShareSlug(shareSlug: string) {

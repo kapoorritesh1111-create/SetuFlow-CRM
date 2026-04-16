@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getMyCardSettingsForUser, upsertMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
-import { EMPTY_CARD_SETTINGS, toCardSettingsInput, type MyCardSettingsInput } from '@/lib/contact-exchange/my-card-settings-shared';
+import { EMPTY_CARD_SETTINGS, toCardSettingsInput, type MyCardSettingsInput, type MyCardSettingsRow } from '@/lib/contact-exchange/my-card-settings-shared';
 
 export async function GET() {
   const supabase = await createClient();
@@ -9,7 +9,7 @@ export async function GET() {
   const user = auth.user;
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const settings = await getMyCardSettingsForUser(user.id);
+  const settings: MyCardSettingsRow | null = await getMyCardSettingsForUser(user.id);
   return NextResponse.json({
     settings: toCardSettingsInput(settings, EMPTY_CARD_SETTINGS),
     shareSlug: settings?.share_slug ?? null,
@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Missing settings payload.' }, { status: 400 });
   }
 
-  const saved = await upsertMyCardSettingsForUser({
+  const saved: MyCardSettingsRow = await upsertMyCardSettingsForUser({
     userId: user.id,
     organizationId,
     fullName,
