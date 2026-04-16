@@ -98,7 +98,7 @@
 <body>
 
 <h1>Setu Flow — Full Product Architecture</h1>
-<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Hardened buyer-demo baseline</span> &nbsp;·&nbsp; <span style="color:#60a5fa;font-weight:600">Workspace and public-card trust improvements applied</span></p>
+<p class="subtitle">Trade execution system for import-export sales teams &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600">Hardened buyer-demo current state</span> &nbsp;·&nbsp; <span style="color:#60a5fa;font-weight:600">Workspace and public-card trust improvements applied</span></p>
 <p class="stack-line">
   <code>Next.js 14</code> &nbsp;+&nbsp; <code>Supabase (Postgres + RLS)</code> &nbsp;+&nbsp;
   <code>TypeScript</code> &nbsp;+&nbsp; <code>Tailwind CSS</code> &nbsp;+&nbsp;
@@ -159,10 +159,10 @@
         <ul>
           <li><code>/development</code> — master plan</li>
           <li>Readiness board</li>
-          <li>Sprint backlog</li>
+          <li>Milestone backlog</li>
           <li>Architecture contract</li>
           <li>UX rules &amp; buyer-ready gap view</li>
-          <li>Sprints 1–8 closed · Sprint 9 hardening active · Sprint 10 buyer/release proof next</li>
+          <li>Milestones 1–8 closed · Milestone 9 stability work active · Milestone 10 buyer/release proof next</li>
         </ul>
       </div>
     </div>
@@ -272,7 +272,7 @@
         <div class="grid-3">
           <div class="metric-card">
             <div class="mc-title" style="color:#60a5fa">Lead command center</div>
-            <div class="mc-note">Full-page lead profile (refactored Sprint 3/4)</div>
+            <div class="mc-note">Full-page lead profile (refactored Milestone 3/4)</div>
             <div class="mc-detail">16 components: Header, Tabs, StageStrip, ContextRail, RightRail, StickyActionBar, TodayContextBar, WorkflowTab, QuotesTab, ActivityTab, panels (Qualification, Coverage, FollowUp, Commercial)</div>
           </div>
           <div class="metric-card">
@@ -371,7 +371,7 @@
       </div>
       <div style="margin-top:6px;font-size:10px;color:#475569">
         Pricing engine: 25+ files — repositories (quote-pricing, freight-profile, exchange-rate, negotiation) · services (compilation, FX-resolution, freight-calculation, override, approval, render, version, document) · mappers · types ·
-        quote-wizard-form.tsx: <strong style="color:#fb923c">4,466 lines</strong> (was 856 — Sprint 4 full trust layer) · quote-workspace.tsx: <strong style="color:#fb923c">2,564 lines</strong> (was 1,085)
+        quote-wizard-form.tsx: <strong style="color:#fb923c">4,466 lines</strong> (was 856 — Milestone 4 full trust layer) · quote-workspace.tsx: <strong style="color:#fb923c">2,564 lines</strong> (was 1,085)
       </div>
     </div>
 
@@ -381,7 +381,7 @@
     <div class="stage">
       <span class="stage-num">4</span>
       <span class="stage-title">Orders</span>
-      <span class="stage-time">Accepted + sent quotes — live Supabase data ✓ · Sprint 6 adds document checklist + dispatch gates</span>
+      <span class="stage-time">Accepted + sent quotes — live Supabase data ✓ · Milestone 6 adds document checklist + dispatch gates</span>
       <div style="margin-top:8px">
         <div class="grid-3">
           <div class="metric-card">
@@ -398,7 +398,7 @@
           </div>
         </div>
         <div style="margin-top:8px;font-size:10px;color:#0f766e;border:1px solid #0f766e;border-radius:6px;padding:6px 10px">
-            <span class="tag tag-green">Sprint 6 · Orders foundation complete — documents, compliance, and contract status per order card</span>
+            <span class="tag tag-green">Milestone 6 · Orders foundation complete — documents, compliance, and contract status per order card</span>
         </div>
       </div>
     </div>
@@ -515,7 +515,7 @@
       </div>
     </div>
     <div style="margin-top:8px;font-size:10px;color:#0f766e;border:1px solid #0f766e;border-radius:6px;padding:6px 10px">
-      ✓ Sprint 5 Batch 1: Anthropic Claude AI is live. Set <code>ANTHROPIC_API_KEY</code> in Vercel environment variables to activate LLM-refined drafts. Template fallback is built in — operators always get a reviewable draft regardless. Approval state transitions now write persistent audit events via writeQuoteAuditLog in updateQuoteWorkflow.
+      ✓ Milestone 5 Batch 1: Anthropic Claude AI is live. Set <code>ANTHROPIC_API_KEY</code> in Vercel environment variables to activate LLM-refined drafts. Template fallback is built in — operators always get a reviewable draft regardless. Approval state transitions now write persistent audit events via writeQuoteAuditLog in updateQuoteWorkflow.
     </div>
   </div>
 </div>
@@ -536,7 +536,7 @@
           <li>leads · pipelines · pipeline_stages · stage_history</li>
           <li>quotes · quote_versions · quote_line_items</li>
           <li>rfqs · rfq_line_items</li>
-          <li>orders (Sprint 6 target)</li>
+          <li>orders (Milestone 6 target)</li>
           <li>contracts · contract_line_items</li>
         </ul>
       </div>
@@ -635,7 +635,7 @@
           <li>getIntegrationsData</li>
           <li>lead-command-center queries</li>
         </ul>
-        <div style="margin-top:6px;font-size:10px;color:#c2410c">⚠ Still a god file — Sprint 9 target: split into per-domain query files</div>
+        <div style="margin-top:6px;font-size:10px;color:#c2410c">⚠ Still a god file — Milestone 9 target: split into per-domain query files</div>
       </div>
     </div>
   </div>
@@ -648,7 +648,7 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <div class="section">
   <div class="section-box" style="border-color:#1F487C">
-    <span class="section-label" style="color:#60a5fa">Dashboard (Sprint 7 — complete)</span>
+    <span class="section-label" style="color:#60a5fa">Dashboard (Milestone 7 — complete)</span>
     <div class="grid-4" style="margin-top:6px">
       <div class="card">
         <div class="card-title" style="color:#60a5fa">KPI strip</div>
@@ -845,23 +845,23 @@
     <div class="grid-2" style="margin-top:8px">
       <div>
         <div class="phase-box" style="border-color:#166534">
-          <div class="phase-title" style="color:#4ade80">✓ Already true in current repo baseline</div>
+          <div class="phase-title" style="color:#4ade80">✓ Already true in current repo current state</div>
           <div class="sproc-list">
             <span class="tag tag-green">Deployment proof current</span>
             <span class="tag tag-green">Leads is quote-first</span>
             <span class="tag tag-green">Capture → Lead → Quote → Order locked</span>
             <span class="tag tag-green">product-contract.ts — single nav source</span>
             <span class="tag tag-green">product-status-contract.ts — planning source of truth</span>
-            <span class="tag tag-green">Development pages aligned — Sprints 1–4 closed</span>
-            <span class="tag tag-green">Sprint 2 capture foundation reflected complete</span>
+            <span class="tag tag-green">Development pages aligned — Milestones 1–4 closed</span>
+            <span class="tag tag-green">Milestone 2 capture foundation reflected complete</span>
             <span class="tag tag-green">Webpack worker fix protected</span>
-            <span class="tag tag-green">Sprint 4 quote-builder core complete — 5-step builder, remediation, checkpoint decisioning, version visibility, real submit enforcement</span>
-            <span class="tag tag-green">Sprint 5 · Approval audit trail live — pricing_quote_approval_requested / approved / rejected wired in updateQuoteWorkflow</span>
-            <span class="tag tag-green">Sprint 5 · Anthropic AI live — ANTHROPIC_API_KEY activates LLM drafts with template fallback</span>
-            <span class="tag tag-green">Sprint 5 · Lock-state enforcement live — isQuoteLocked() blocks updateQuoteWorkflow mutations + read-only banner in fast lane for sent/accepted/rejected/expired</span>
-            <span class="tag tag-green">Sprint 5 · Lock badge in quote list — ⊘ badge and muted row style on locked quotes in both selector and full list</span>
-            <span class="tag tag-green">Sprint 5 · Rate limiter fixed — Supabase-backed persistence replaces in-memory Map (was silently broken in serverless)</span>
-            <span class="tag tag-green">Sprint 5 · Orders page live — real Supabase query for accepted and sent quotes joined to lead context, no hardcoded data</span>
+            <span class="tag tag-green">Milestone 4 quote-builder core complete — 5-step builder, remediation, checkpoint decisioning, version visibility, real submit enforcement</span>
+            <span class="tag tag-green">Milestone 5 · Approval audit trail live — pricing_quote_approval_requested / approved / rejected wired in updateQuoteWorkflow</span>
+            <span class="tag tag-green">Milestone 5 · Anthropic AI live — ANTHROPIC_API_KEY activates LLM drafts with template fallback</span>
+            <span class="tag tag-green">Milestone 5 · Lock-state enforcement live — isQuoteLocked() blocks updateQuoteWorkflow mutations + read-only banner in fast lane for sent/accepted/rejected/expired</span>
+            <span class="tag tag-green">Milestone 5 · Lock badge in quote list — ⊘ badge and muted row style on locked quotes in both selector and full list</span>
+            <span class="tag tag-green">Milestone 5 · Rate limiter fixed — Supabase-backed persistence replaces in-memory Map (was silently broken in serverless)</span>
+            <span class="tag tag-green">Milestone 5 · Orders page live — real Supabase query for accepted and sent quotes joined to lead context, no hardcoded data</span>
           </div>
         </div>
       </div>
@@ -869,8 +869,8 @@
         <div class="phase-box" style="border-color:#c2410c">
           <div class="phase-title" style="color:#f87171">⚠ Still needed before buyer-facing readiness</div>
           <div class="sproc-list">
-            <span class="tag tag-red">Sprint 9 — Cleanup, hardening, and proof refresh · Active</span>
-            <span class="tag tag-orange">data.ts god file — 2,984 lines, 18 domains (Sprint 9 target)</span>
+            <span class="tag tag-red">Milestone 9 — Cleanup, stability work, and proof refresh · Active</span>
+            <span class="tag tag-orange">data.ts god file — 2,984 lines, 18 domains (Milestone 9 target)</span>
             <span class="tag tag-orange">lead-drawer.tsx (1,678 lines) + leads-workspace.tsx (1,602 lines) — legacy surfaces not yet retired</span>
             <span class="tag tag-orange">No end-to-end tests — Playwright installed but no test files</span>
             <span class="tag tag-orange">No live integrations — email, ERP, freight, FX all planned only</span>
@@ -890,20 +890,20 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <div class="section">
   <div class="section-box" style="border-color:#b45309">
-    <span class="section-label" style="color:#fbbf24">Sprint Roadmap — Sprints 1–8 Closed · Sprint 9 Hardening — Active</span>
+    <span class="section-label" style="color:#fbbf24">Milestone Roadmap — Milestones 1–8 Closed · Milestone 9 Hardening — Active</span>
     <div class="grid-5" style="margin-top:8px">
       <div class="env-card" style="border-color:#4ade80">
-        <div class="env-title" style="color:#4ade80">Sprints 1–4 ✓ Closed</div>
+        <div class="env-title" style="color:#4ade80">Milestones 1–4 ✓ Closed</div>
         <ul>
-          <li>Sprint 1 — Product foundation</li>
-          <li>Sprint 2 — Capture + vCard scan</li>
-          <li>Sprint 3 — Lead simplification</li>
-          <li>Sprint 4 — Quote builder core + full trust layer</li>
+          <li>Milestone 1 — Product foundation</li>
+          <li>Milestone 2 — Capture + vCard scan</li>
+          <li>Milestone 3 — Lead simplification</li>
+          <li>Milestone 4 — Quote builder core + full trust layer</li>
         </ul>
         <div style="margin-top:6px;font-size:10px;color:#4ade80">All four sprints formally closed · deployment verified</div>
       </div>
       <div class="env-card" style="border-color:#4ade80">
-        <div class="env-title" style="color:#4ade80">Sprint 5 — Trust layer ✓ Closed</div>
+        <div class="env-title" style="color:#4ade80">Milestone 5 — Trust layer ✓ Closed</div>
         <ul>
           <li>✓ Trust visibility — fast lane + send checkpoint</li>
           <li>✓ Approval audit trail (requested / approved / rejected)</li>
@@ -915,7 +915,7 @@
         <div style="margin-top:6px;font-size:10px;color:#4ade80">100% · Formally closed</div>
       </div>
       <div class="env-card" style="border-color:#4ade80">
-        <div class="env-title" style="color:#4ade80">Sprint 6 — Orders foundation ✓ Complete</div>
+        <div class="env-title" style="color:#4ade80">Milestone 6 — Orders foundation ✓ Complete</div>
         <ul>
           <li>✓ Orders page — live accepted/sent data</li>
           <li>✓ Documents per order</li>
@@ -927,7 +927,7 @@
         <div style="margin-top:6px;font-size:10px;color:#4ade80">100% · Formally closed</div>
       </div>
       <div class="env-card" style="border-color:#60a5fa">
-        <div class="env-title" style="color:#60a5fa">Sprint 7 — Dashboard rebuild · Closed</div>
+        <div class="env-title" style="color:#60a5fa">Milestone 7 — Dashboard rebuild · Closed</div>
         <ul>
           <li>Action-first layout — dominant next action always visible</li>
           <li>Trade map with geographic drill-down</li>
@@ -937,11 +937,11 @@
         <div style="margin-top:6px;font-size:10px;color:#4ade80">100% · Formally closed</div>
       </div>
       <div class="env-card" style="border-color:#475569">
-        <div class="env-title" style="color:#94a3b8">Sprint 8 ✓ Closed · Sprint 9 Active · Sprint 10 Next</div>
+        <div class="env-title" style="color:#94a3b8">Milestone 8 ✓ Closed · Milestone 9 Active · Milestone 10 Next</div>
         <ul>
-          <li>Sprint 8 — My Card + QR share ✓</li>
-          <li>Sprint 9 — Architecture cleanup + hardening</li>
-          <li>Sprint 10 — Demo + release readiness before April 21</li>
+          <li>Milestone 8 — My Card + QR share ✓</li>
+          <li>Milestone 9 — Architecture cleanup + stability work</li>
+          <li>Milestone 10 — Demo + release readiness before target date</li>
         </ul>
       </div>
     </div>
@@ -984,7 +984,7 @@
 
 <br>
 <div style="text-align:center;font-size:11px;color:#334155;padding:16px">
-  Setu Flow Product Architecture — Sprints 1–8 Closed · Sprint 9 Hardening — Active
+  Setu Flow Product Architecture — Milestones 1–8 Closed · Milestone 9 Hardening — Active
 </div>
 
 </div><!-- end .diagram -->

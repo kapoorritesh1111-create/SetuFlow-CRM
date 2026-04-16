@@ -67,10 +67,10 @@ export default function HomePage() {
             <div className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_28px_80px_rgba(31,72,124,0.12)] sm:p-8">
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Setu Flow workspace preview</p>
+                  <p className="text-sm font-semibold text-slate-900">Setu Flow workspace overview</p>
                   <p className="text-sm text-slate-500">A cleaner commercial operating system for global trade teams</p>
                 </div>
-                <span className="rounded-full bg-[#359F91]/10 px-3 py-1 text-xs font-semibold text-[#279491]">Live product direction</span>
+                <span className="rounded-full bg-[#359F91]/10 px-3 py-1 text-xs font-semibold text-[#279491]">Live product</span>
               </div>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">

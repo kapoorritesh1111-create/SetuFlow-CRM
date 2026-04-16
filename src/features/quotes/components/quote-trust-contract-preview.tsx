@@ -14,10 +14,10 @@ function getTrustToneClasses(tone: TrustTone) {
 
 export function QuoteTrustContractPreview({
   contract,
-  title = "Sprint 5 Batch 1 · Trust contract",
+  title = "Quote trust contract",
   description = "The first runtime trust slice is now live here: make approval gate, lock posture, and the audit map visible before stronger enforcement work starts.",
-  auditTitle = "Audit-event map preview",
-  auditDescription = "This is the first trust-layer runtime preview only. It defines what the later audit trail must capture without changing the closed Sprint 4 builder rules.",
+  auditTitle = "Audit-event map",
+  auditDescription = "This view defines what the audit trail must capture without changing the approved quote-builder rules.",
 }: {
   contract: QuoteTrustContract;
   title?: string;

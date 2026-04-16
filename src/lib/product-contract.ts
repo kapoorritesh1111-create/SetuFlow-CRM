@@ -1,7 +1,7 @@
 export const LOCKED_PRODUCT_FLOW = ['Capture', 'Lead', 'Quote', 'Order'] as const;
 
-export const APPROVED_REWORK_PHASE = 'Phase 1 active';
-export const APPROVED_REWORK_TITLE = 'Shell alignment in progress';
+export const APPROVED_REWORK_PHASE = 'Canonical routes only';
+export const APPROVED_REWORK_TITLE = 'Operational alignment';
 
 export const PRODUCT_ROUTE_LABELS = {
   leads: 'Leads',
@@ -11,7 +11,6 @@ export const PRODUCT_ROUTE_LABELS = {
   admin: 'Admin',
   capture: 'Capture',
   myCard: 'My Card',
-  development: 'Admin / Plan',
 } as const;
 
 export const PRODUCT_ROUTES = {
@@ -21,36 +20,17 @@ export const PRODUCT_ROUTES = {
     orders: '/orders',
     dashboard: '/dashboard',
     admin: '/admin/users',
-  },
-  workspace: {
-    home: '/workspace',
-    leads: '/workspace/leads',
-    capture: '/workspace/capture',
-    quotes: '/workspace/quotes',
-    orders: '/workspace/orders',
-    dashboard: '/workspace/dashboard',
-    myCard: '/workspace/my-card',
-  },
-  development: {
-    home: '/development',
-    readiness: '/development/readiness',
-    backlog: '/development/backlog',
-    masterPlan: '/development/master-plan',
-    product: '/development/product',
-    architecture: '/development/architecture',
-    uxRules: '/development/ux-rules',
-    screens: '/development/screens/leads-capture',
-    buyerReady: '/development/buyer-ready',
+    capture: '/contact-exchange/scan',
+    myCard: '/contact-exchange/vcard',
   },
 } as const;
 
 export const PRODUCT_SHELL_LABELS = {
-  previewBadge: 'Approved workspace preview',
   productShell: 'Product shell',
-  ritualHeading: 'Non-negotiable ritual',
-  ritualBeforeCoding: 'Before coding: check /development and confirm the visible shell still matches the approved rework contract before touching deeper features.',
-  ritualDuringCoding: 'During coding: update the shared shell contract in the same PR as any visible navigation or workflow change.',
-  ritualAfterCoding: 'After coding: update readiness and workspace previews inside the repo so the next session starts from what the product actually shows.',
+  ritualHeading: 'Working rules',
+  ritualBeforeCoding: 'Keep canonical routes as the only routes users can navigate to.',
+  ritualDuringCoding: 'Update visible navigation in the same change as workflow updates.',
+  ritualAfterCoding: 'Refresh tests and readiness notes when user-facing behavior changes.',
 } as const;
 
 export type ProductNavLink = {
@@ -58,15 +38,6 @@ export type ProductNavLink = {
   label: string;
   exact?: boolean;
 };
-
-export const primaryWorkspacePreviewNav: ProductNavLink[] = [
-  { href: PRODUCT_ROUTES.workspace.leads, label: PRODUCT_ROUTE_LABELS.leads },
-  { href: PRODUCT_ROUTES.workspace.quotes, label: PRODUCT_ROUTE_LABELS.quotes },
-  { href: PRODUCT_ROUTES.workspace.orders, label: PRODUCT_ROUTE_LABELS.orders },
-  { href: PRODUCT_ROUTES.workspace.dashboard, label: PRODUCT_ROUTE_LABELS.dashboard },
-  { href: PRODUCT_ROUTES.workspace.myCard, label: PRODUCT_ROUTE_LABELS.myCard },
-  { href: PRODUCT_ROUTES.development.home, label: PRODUCT_ROUTE_LABELS.development },
-];
 
 export const primaryAppShellNav: ProductNavLink[] = [
   { href: PRODUCT_ROUTES.app.leads, label: PRODUCT_ROUTE_LABELS.leads, exact: true },
@@ -86,12 +57,11 @@ export const hiddenFromPrimaryNav = [
   'Tasks',
   'Integrations',
   'AI assist',
-  'Contact exchange as a standalone area',
+  'Contact exchange',
 ] as const;
 
 export const driftGuardrails = [
   'Define product shell links once and import them everywhere.',
-  'Update /development status in the same PR as visible workflow changes.',
-  'Treat demoted routes as support surfaces, not primary destinations.',
+    'Treat demoted routes as support surfaces, not primary destinations.',
   'Promote only routes that match the approved Capture → Lead → Quote → Order story.',
 ] as const;

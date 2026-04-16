@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 NEXT_TELEMETRY_DISABLED=1 next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -12,7 +12,8 @@
     "test:release-readiness": "npm test",
     "check:dashboard": "node scripts/check-dashboard-freeze.mjs",
     "verify": "npm run typecheck && npm run check:dashboard && npm test && npm run build",
-    "release:proof": "npm run verify"
+    "release:proof": "npm run verify",
+    "vercel-build": "NODE_OPTIONS=--max-old-space-size=4096 NEXT_TELEMETRY_DISABLED=1 next build"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -24,7 +25,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@playwright/test": "^1.42.0",
     "@types/node": "^22.13.10",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.18",
@@ -35,8 +35,8 @@
     "typescript": "^5.8.2"
   },
   "engines": {
-    "node": "22.x",
-    "npm": "10.x"
+    "node": "22.16.x",
+    "npm": "10.9.2"
   },
   "packageManager": "npm@10.9.2"
 }

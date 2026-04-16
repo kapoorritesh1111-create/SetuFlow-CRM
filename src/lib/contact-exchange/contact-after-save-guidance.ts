@@ -159,7 +159,7 @@ function inferRoleLens(args: {
       summary: 'Role-aware next touch: keep the follow-up practical and qualification-led so supplier context is captured without making the workflow heavy.',
       preferredChannel: args.hasDirectContactMethod ? 'Email first' : 'Verification step before outreach',
       recommendedOwner: ownerLabel,
-      reason: 'Lead is currently staged as supplier-facing and no stronger role signal was detected.',
+      reason: 'Lead is currently marked as supplier-facing and no stronger role signal was detected.',
     };
   }
 
@@ -303,7 +303,7 @@ function buildContactReuseHooks(args: { lead: ContactScanSavedLead; hasDirectCon
       title: 'Use the public-ready share preview',
       detail: 'Preview the exact card the contact will see so the first-touch handoff stays polished, especially when the lead is hot and the response window is short.',
       actionLabel: 'Open share preview',
-      href: '/contact-exchange/vcard/preview',
+      href: '/card',
       timing: 'Same session as save',
       reason: 'Previewing the premium share surface keeps outbound quality high without adding another workflow.',
     },
@@ -352,7 +352,7 @@ function buildVCardIntegrationMoments(args: { hasDirectContactMethod: boolean; d
       title: 'Follow-up preview moment',
       detail: 'Use the preview route before sending a QR or share link so the handoff stays premium even when the outreach itself is lightweight.',
       actionLabel: 'Preview shared vCard',
-      href: '/contact-exchange/vcard/preview',
+      href: '/card',
       timing: 'Before sending QR or share link',
       reason: 'The preview lets the operator verify the exact premium share surface without leaving the workflow family.',
     },

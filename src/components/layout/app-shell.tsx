@@ -565,7 +565,7 @@ export function AppShell({
       description: 'Open My Card settings, QR share, and public digital vCard actions',
       keywords: ['my card', 'vcard', 'share card', 'qr', 'contact exchange'],
       group: 'Actions',
-      action: () => router.push(PRODUCT_ROUTES.workspace.myCard),
+      action: () => router.push(PRODUCT_ROUTES.app.myCard),
     });
 
     items.push({
@@ -923,7 +923,7 @@ export function AppShell({
                     </button>
                     <button
                       type="button"
-                      onClick={() => router.push(PRODUCT_ROUTES.workspace.myCard)}
+                      onClick={() => router.push(PRODUCT_ROUTES.app.myCard)}
                       className="inline-flex min-h-11 items-center gap-2 rounded-[1rem] border border-brand-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,245,249,0.96))] px-4 py-2 text-sm font-semibold text-brand-700 shadow-[0_10px_24px_rgba(15,23,42,0.06)] hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-slate-700 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(30,41,59,0.94))] dark:text-sky-200 dark:hover:bg-slate-800"
                       aria-label="Share my card"
                       title="Share my card"

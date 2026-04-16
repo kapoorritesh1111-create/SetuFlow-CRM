@@ -1091,7 +1091,7 @@ export function LeadsWorkspace({
             <ToolbarActionButton
               type="button"
               tone="secondary"
-              onClick={() => router.push(PRODUCT_ROUTES.workspace.myCard)}
+              onClick={() => router.push(PRODUCT_ROUTES.app.myCard)}
               className="min-h-11 rounded-[1rem] px-4 py-2"
             >
               Share my card

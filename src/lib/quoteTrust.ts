@@ -70,7 +70,7 @@ export function getQuoteTrustContract({
       trustState: "outcome_locked",
       stateLabel: "Outcome locked",
       stateDetail:
-        "The quote now has a terminal commercial outcome. Sprint 5 lock-state work should treat this as a closed trust state.",
+        "The quote now has a terminal commercial outcome and should be treated as a closed trust state.",
       stateTone: "success",
       approvalLabel: approvalRequired ? `Approval ${approvalState}` : "No approval gate",
       approvalDetail:
@@ -91,7 +91,7 @@ export function getQuoteTrustContract({
       trustState: "sent_locked",
       stateLabel: "Sent lock state",
       stateDetail:
-        "The current version is already customer-facing. Sprint 5 should treat this as send-locked unless a deliberate revision path reopens it.",
+        "The current version is already customer-facing and should be treated as send-locked unless a deliberate revision path reopens it.",
       stateTone: "success",
       approvalLabel: approvalRequired ? `Approval ${approvalState}` : "No approval gate",
       approvalDetail:
@@ -99,7 +99,7 @@ export function getQuoteTrustContract({
       approvalTone: approvalRequired ? "success" : "neutral",
       editorModeLabel: "Controlled edit only",
       editorModeDetail:
-        "The guided builder can still explain the quote, but Sprint 5 lock work should treat post-send edits as deliberate exceptions.",
+        "The guided builder can still explain the quote, but post-send edits should be treated as deliberate exceptions.",
       sendActionLabel: "Send complete",
       sendActionDetail:
         "The send checkpoint is complete for this version and should now feed revision, outcome, and audit handling instead.",
@@ -141,7 +141,7 @@ export function getQuoteTrustContract({
       approvalTone: "success",
       editorModeLabel: "Builder still available",
       editorModeDetail:
-        "The builder remains available, but Sprint 5 trust work should treat approved quotes as controlled rather than casually open.",
+        "The builder remains available, but approved quotes should be treated as controlled rather than casually open.",
       sendActionLabel: "Ready for controlled send",
       sendActionDetail:
         "The next trust event should be a deliberate send or a deliberate revision, not an ambiguous middle state.",

@@ -6,7 +6,7 @@ import { parseContactText, type ExtractedField } from '@/lib/contact-exchange/co
 type ReviewState = {
   fileName: string;
   fileType: string;
-  previewUrl: string;
+  publicCardUrl: string;
   assistText: string;
   fields: ExtractedField[];
   notes: string[];
@@ -14,7 +14,7 @@ type ReviewState = {
 
 export function ContactIntakeReview() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState('');
+  const [publicCardUrl, setPreviewUrl] = useState('');
   const [assistText, setAssistText] = useState('');
   const [reviewState, setReviewState] = useState<ReviewState | null>(null);
 
@@ -49,7 +49,7 @@ export function ContactIntakeReview() {
     setReviewState({
       fileName: selectedFile?.name ?? 'No file selected',
       fileType: selectedFile?.type ?? 'manual-text-review',
-      previewUrl,
+      publicCardUrl,
       assistText,
       fields: parsed.fields,
       notes: parsed.notes,
@@ -139,13 +139,13 @@ export function ContactIntakeReview() {
               </div>
             ) : previewKind === 'image' ? (
               <img
-                src={reviewState.previewUrl}
+                src={reviewState.publicCardUrl}
                 alt={reviewState.fileName}
                 className="max-h-[460px] w-full rounded-2xl border border-slate-200 object-contain bg-white"
               />
             ) : previewKind === 'pdf' ? (
               <iframe
-                src={reviewState.previewUrl}
+                src={reviewState.publicCardUrl}
                 title={reviewState.fileName}
                 className="h-[420px] w-full rounded-2xl border border-slate-200 bg-white"
               />
@@ -154,7 +154,7 @@ export function ContactIntakeReview() {
                 <div>
                   <p className="font-semibold text-slate-900">{reviewState.fileName}</p>
                   <p className="mt-2">
-                    Preview is not available for this file type in-browser, but the review result remains visible.
+                    A browser view is not available for this file type, but the review result remains visible.
                   </p>
                 </div>
               </div>

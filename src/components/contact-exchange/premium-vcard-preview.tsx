@@ -13,7 +13,7 @@ type PremiumVCardPreviewProps = {
   website?: string | null;
   address?: string | null;
   linkedIn?: string | null;
-  mode?: 'workspace' | 'preview';
+  mode?: 'workspace' | 'publicCard';
   verificationLabel?: string;
   sourceContext?: string;
   memoryLine?: string;
@@ -172,7 +172,7 @@ export function PremiumVCardPreview({
 
       <aside className="space-y-4 rounded-[2.4rem] border border-slate-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">{mode === 'preview' ? 'Apple layout preview' : 'Apple layout guidance'}</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">{mode === 'publicCard' ? 'Digital card layout' : 'Apple layout guidance'}</p>
           <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">One calm screen with one decision path</h3>
           <p className="mt-3 text-sm leading-6 text-slate-600">
             Batch 12 removes the last traces of dashboard energy. The page now behaves like a calm digital identity card: large human presence, one dominant save moment, two obvious action tiles, and only the lightest supporting context.
@@ -192,7 +192,7 @@ export function PremiumVCardPreview({
           </ol>
         </div>
 
-        {mode === 'preview' ? (
+        {mode === 'publicCard' ? (
           <div className="rounded-[1.6rem] border border-emerald-200 bg-emerald-50/80 px-5 py-5 text-sm text-emerald-950">
             <p className="font-semibold">Leadership/demo callout</p>
             <p className="mt-2 leading-6">This now demos like a finished identity product: minimal, deliberate, and obviously save-first without looking like a workflow tool.</p>
@@ -200,10 +200,10 @@ export function PremiumVCardPreview({
         ) : (
           <div className="rounded-[1.6rem] border border-slate-200 bg-white px-5 py-5 text-sm text-slate-600 shadow-[0_12px_36px_rgba(15,23,42,0.05)]">
             <p className="font-semibold text-slate-900">Operator launch notes</p>
-            <p className="mt-2 leading-6">Use preview when you want recipients or leadership to experience the final Apple-level layout. The engine remains locked while the front-end now feels calmer, clearer, and more demo-ready.</p>
+            <p className="mt-2 leading-6">Use the public card when you want recipients to experience the final layout. The front-end now feels calmer, clearer, and more demo-ready.</p>
             <div className="mt-4 flex flex-wrap gap-3">
-              <Link href="/contact-exchange/vcard/preview" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
-                Open preview
+              <Link href="/card" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
+                Open public card
               </Link>
               <Link href={PRODUCT_ROUTES.app.leads} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">
                 Back to leads

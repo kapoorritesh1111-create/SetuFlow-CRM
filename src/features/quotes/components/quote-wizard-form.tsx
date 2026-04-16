@@ -3174,7 +3174,7 @@ export function QuoteCreateWizardForm({
               <div className="mt-4">
                 <QuoteTrustContractPreview
                   contract={sendStepTrustContract}
-                  title="Sprint 5 Batch 1 · Send-checkpoint trust contract"
+                  title="Send-checkpoint trust contract"
                   description="Keep the same approval gate, lock posture, and audit-event map visible at the actual send checkpoint without opening deeper trust enforcement."
                   auditDescription="This keeps the approved Batch 1 runtime slice continuous between the fast lane and the guided send checkpoint."
                 />
@@ -4330,7 +4330,7 @@ export function QuoteEditWizardForm({
               <div className="mt-4">
                 <QuoteTrustContractPreview
                   contract={sendStepTrustContract}
-                  title="Sprint 5 Batch 1 · Send-checkpoint trust contract"
+                  title="Send-checkpoint trust contract"
                   description="Keep the same approval gate, lock posture, and audit-event map visible at the actual send checkpoint without opening deeper trust enforcement."
                   auditDescription="This keeps the approved Batch 1 runtime slice continuous between the fast lane and the guided send checkpoint."
                 />

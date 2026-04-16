@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 
@@ -13,7 +12,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
           </Link>
           <nav className="hidden items-center gap-8 md:flex">
             <Link href="/" className="text-sm font-medium text-slate-700 transition hover:text-[#1F487C]">Home</Link>
-            <Link href={PRODUCT_ROUTES.development.home} className="text-sm font-medium text-slate-700 transition hover:text-[#1F487C]">Development work</Link>
             <Link href="/client-login" className="rounded-full border border-[#1F487C]/15 px-4 py-2 text-sm font-semibold text-[#1F487C] transition hover:border-[#1F487C] hover:bg-[#1F487C]/5">Client login</Link>
           </nav>
         </div>
@@ -27,7 +25,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex flex-wrap gap-5">
             <Link href="/">Home</Link>
-            <Link href={PRODUCT_ROUTES.development.home}>Development work</Link>
             <Link href="/client-login">Client login</Link>
             <Link href="/login">Workspace sign in</Link>
           </div>

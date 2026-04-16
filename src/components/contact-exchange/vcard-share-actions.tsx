@@ -42,7 +42,7 @@ function QrHint({ title, detail }: { title: string; detail: string }) {
 }
 
 export function VCardShareActions({
-  previewPath,
+  publicCardPath,
   downloadPath,
   fullName,
   organizationName,
@@ -50,7 +50,7 @@ export function VCardShareActions({
   email,
   primaryPhone,
 }: {
-  previewPath: string;
+  publicCardPath: string;
   downloadPath: string;
   fullName: string;
   organizationName: string;
@@ -65,11 +65,11 @@ export function VCardShareActions({
   const [shareState, setShareState] = useState<'idle' | 'shared' | 'fallback'>('idle');
   const [qrImageUrl, setQrImageUrl] = useState('');
 
-  const previewUrl = useMemo(() => (origin ? `${origin}${previewPath}` : previewPath), [origin, previewPath]);
+  const publicCardUrl = useMemo(() => (origin ? `${origin}${publicCardPath}` : publicCardPath), [origin, publicCardPath]);
   const downloadUrl = useMemo(() => (origin ? `${origin}${downloadPath}` : downloadPath), [origin, downloadPath]);
   const shareText = useMemo(
-    () => `Save ${fullName} · ${roleLabel}\n${organizationName}\nDirect contact: ${email}${primaryPhone ? ` · ${primaryPhone}` : ''}\nOpen the premium identity page: ${previewUrl}`,
-    [email, fullName, organizationName, previewUrl, primaryPhone, roleLabel],
+    () => `Save ${fullName} · ${roleLabel}\n${organizationName}\nDirect contact: ${email}${primaryPhone ? ` · ${primaryPhone}` : ''}\nOpen the premium identity page: ${publicCardUrl}`,
+    [email, fullName, organizationName, publicCardUrl, primaryPhone, roleLabel],
   );
 
   useEffect(() => {
@@ -83,12 +83,12 @@ export function VCardShareActions({
     let isActive = true;
 
     async function buildQr() {
-      if (!previewUrl) {
+      if (!publicCardUrl) {
         if (isActive) setQrImageUrl('');
         return;
       }
       try {
-        const dataUrl = await QRCode.toDataURL(previewUrl, {
+        const dataUrl = await QRCode.toDataURL(publicCardUrl, {
           width: 224,
           margin: 1,
           color: { dark: '#1F487C', light: '#FFFFFF' },
@@ -103,11 +103,11 @@ export function VCardShareActions({
     return () => {
       isActive = false;
     };
-  }, [previewUrl]);
+  }, [publicCardUrl]);
 
   async function copyPreviewLink() {
     try {
-      await navigator.clipboard.writeText(previewUrl);
+      await navigator.clipboard.writeText(publicCardUrl);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -137,7 +137,7 @@ export function VCardShareActions({
       await navigator.share({
         title: `${fullName} · SETU Flow digital vCard`,
         text: `${fullName} · ${roleLabel} · ${organizationName}`,
-        url: previewUrl,
+        url: publicCardUrl,
       });
       setShareState('shared');
       window.setTimeout(() => setShareState('idle'), 2200);
@@ -154,7 +154,7 @@ export function VCardShareActions({
             <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand-700">Share system</p>
             <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">One clean destination for every share</h3>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-              Lead with the public card preview, then support it with native share, QR handoff, and a downloadable contact file.
+              Lead with the public card, then support it with native share, QR handoff, and a downloadable contact file.
             </p>
           </div>
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Live</span>
@@ -164,7 +164,7 @@ export function VCardShareActions({
           <p className="text-sm font-semibold text-slate-900">Primary share actions</p>
           <p className="mt-2 text-sm leading-6 text-slate-600">Open the card, share it, copy the intro, or download the contact file.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <ActionButton href={previewUrl} label="Open preview" primary />
+            <ActionButton href={publicCardUrl} label="Open public card" primary />
             <ActionButton label={shareSupported ? 'Share now' : 'Copy share link'} onClick={handleNativeShare} />
             <ActionButton label={copiedSummary ? 'Intro copied' : 'Copy intro'} onClick={copyIntroSummary} />
             <ActionButton href={downloadUrl} label="Download .vcf" download />
@@ -175,11 +175,11 @@ export function VCardShareActions({
           <p className="text-sm font-semibold text-slate-900">Share state</p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {copied
-              ? 'Preview link copied.'
+              ? 'Public card link copied.'
               : shareState === 'shared'
                 ? 'Shared through native share sheet.'
                 : shareState === 'fallback'
-                  ? 'Native share unavailable, so the preview link was copied instead.'
+                  ? 'Native share unavailable, so the public card link was copied instead.'
                   : 'Ready to send as a polished digital identity page.'}
           </p>
 
@@ -189,7 +189,7 @@ export function VCardShareActions({
           </div>
 
           <div className="mt-4 rounded-[1.4rem] border border-slate-200 px-4 py-2">
-            <DetailRow label="Preview URL" value={previewUrl} />
+            <DetailRow label="Public card URL" value={publicCardUrl} />
             <DetailRow label="Identity layer" value="Verified and save-first" />
             <DetailRow label="Recipient flow" value="Open → trust → save → contact" />
           </div>
@@ -207,7 +207,7 @@ export function VCardShareActions({
 
         <div className="mt-5 rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
           <div className="flex min-h-[244px] items-center justify-center rounded-[1.6rem] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4">
-            {qrImageUrl ? <img src={qrImageUrl} alt="QR code for digital vCard preview" className="h-56 w-56 rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <p className="max-w-xs text-center text-sm text-slate-500">Preparing QR for the durable preview URL…</p>}
+            {qrImageUrl ? <img src={qrImageUrl} alt="QR code for digital card" className="h-56 w-56 rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <p className="max-w-xs text-center text-sm text-slate-500">Preparing QR for the public card URL…</p>}
           </div>
 
           <div className="mt-4 space-y-3">
