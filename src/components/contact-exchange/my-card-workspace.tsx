@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { StateMessage } from '@/components/ui/state-message';
 import QRCode from 'qrcode';
 import { ProfessionalDigitalCard } from '@/components/contact-exchange/professional-digital-card';
 import {
@@ -16,6 +17,17 @@ type MyCardWorkspaceProps = {
   identity: PublicCardIdentity;
   organizationId: string | null;
   initialSettings?: Partial<MyCardSettingsRow> | null;
+  insights?: {
+    quoteRequestCount: number;
+    appointmentCount: number;
+    recentLeads: Array<{
+      id: string;
+      company_name: string | null;
+      contact_name: string | null;
+      source_label: string | null;
+      created_at: string | null;
+    }>;
+  };
 };
 
 type CopyKind = 'link' | 'summary' | null;
@@ -41,7 +53,17 @@ function buildDefaults(identity: PublicCardIdentity) {
   } satisfies Partial<MyCardSettingsInput>;
 }
 
-export function MyCardWorkspace({ identity, organizationId, initialSettings }: MyCardWorkspaceProps) {
+function formatRecency(value: string | null) {
+  if (!value) return 'recent';
+  const diffMs = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(diffMs)) return 'recent';
+  const hours = Math.max(1, Math.round(diffMs / 3600000));
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
+}
+
+export function MyCardWorkspace({ identity, organizationId, initialSettings, insights }: MyCardWorkspaceProps) {
   const defaults = useMemo(() => buildDefaults(identity), [identity]);
   const initialOverrides = useMemo(() => toCardSettingsInput(initialSettings, defaults), [initialSettings, defaults]);
 
@@ -246,7 +268,68 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings }: M
             <p className="text-sm text-slate-500">{isDirty ? 'Save to refresh the public card, QR code, and vCard download with your latest details.' : shareSlug ? 'Your saved public card is ready to open, share, copy, and download.' : 'Save once to generate the permanent slug. Until then, the fallback share link below still opens your card.'}</p>
             <button type="button" onClick={() => void persistSettings()} disabled={isSaving} className="inline-flex min-h-[50px] items-center justify-center rounded-[1.2rem] bg-slate-950 px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">{isSaving ? 'Saving…' : shareSlug ? 'Save card settings' : 'Save and generate share slug'}</button>
           </div>
-          {saveMessage ? <div className={`mt-4 rounded-[1.2rem] px-4 py-3 text-sm ${saveState === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{saveMessage}</div> : null}
+          <StateMessage
+            className="mt-4"
+            title="What to do next with My Card"
+            description={shareSlug
+              ? 'Save changes, copy or share the public link, then use the public card to test Request Quote and Book Appointment end to end.'
+              : 'Save this card once to lock the permanent share link, then test the public card flow from the buyer side.'}
+            tone="neutral"
+          />
+
+          {saveMessage ? <StateMessage className="mt-4" title={saveState === 'error' ? 'My Card save failed' : 'My Card updated'} description={saveMessage} tone={saveState === 'error' ? 'danger' : 'success'} /> : null}
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-soft">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Conversion visibility</p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">What your public card is bringing into the CRM</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">These are operator-facing outcomes, not vanity metrics. Review the request mix, then open the captured lead record and move it into qualification or quote work.</p>
+            </div>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Source-attributed</span>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Quote requests</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{insights?.quoteRequestCount ?? 0}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Public-card visitors who raised commercial demand and should be qualified into quote-ready pipeline.</p>
+            </div>
+            <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Appointments</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{insights?.appointmentCount ?? 0}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Booked follow-up requests that now exist inside the CRM for the team to action.</p>
+            </div>
+            <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Captured leads</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{insights?.recentLeads.length ?? 0}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Recent CRM records linked back to your card share so operators can verify the funnel is working.</p>
+            </div>
+          </div>
+
+          <StateMessage
+            className="mt-4"
+            title="What to do next with card responses"
+            description="Open the latest captured lead, verify the source label from Public Card, then qualify serious demand into Quote without leaving the CRM."
+            tone="neutral"
+          />
+
+          <div className="mt-5 space-y-3">
+            {(insights?.recentLeads?.length ?? 0) ? insights!.recentLeads.slice(0, 5).map((item) => (
+              <div key={item.id} className="flex flex-col gap-3 rounded-[1.3rem] border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{item.company_name || item.contact_name || 'Public card lead'}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600">{item.source_label || 'Public Card'} · {formatRecency(item.created_at)}</p>
+                </div>
+                <a href={`/leads/${item.id}`} className="inline-flex min-h-[42px] items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">Open lead</a>
+              </div>
+            )) : (
+              <div className="rounded-[1.3rem] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-4 text-sm leading-6 text-slate-500">
+                Public-card requests and appointments will appear here once shared-card traffic starts creating CRM records.
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-soft">
@@ -263,7 +346,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings }: M
             <button type="button" onClick={() => void copy(shareIntro, 'summary')} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'summary' ? 'Intro copied' : 'Copy intro'}</button>
             <a href={publicVcfUrl} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Download .vcf</a>
           </div>
-          <div className="mt-4 rounded-[1.2rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">{shareStateCopy}</div>
+          <StateMessage className="mt-4" title="Share readiness" description={shareStateCopy} tone={shareState === 'error' ? 'danger' : shareState === 'shared' || shareState === 'copied' ? 'success' : 'neutral'} />
           <div className="mt-5 rounded-[1.6rem] border border-slate-200 bg-slate-50 p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>

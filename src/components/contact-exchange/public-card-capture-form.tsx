@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { StateMessage } from '@/components/ui/state-message';
 import type { PublicCardIdentity } from '@/lib/contact-exchange/public-card';
 
 type PublicCardCaptureFormProps = {
@@ -179,7 +180,15 @@ export function PublicCardCaptureForm({ identity }: PublicCardCaptureFormProps) 
           <input type="file" accept="image/*,application/pdf,text/plain" className="mt-4 block w-full text-sm text-slate-700" onChange={(event: ChangeEvent<HTMLInputElement>) => setFile(event.target.files?.[0] ?? null)} />
         </div>
 
-        {message ? <div className={`rounded-2xl px-4 py-3 text-sm ${submitState === 'done' || prefillState === 'done' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{message}</div> : null}
+        <StateMessage
+          title="What happens next"
+          description={form.desiredAction === 'request_quote'
+            ? 'Submitting this form creates a real internal CRM record marked as Public Card so the team can qualify the request and move it into Quote.'
+            : 'Submitting this form creates a real internal appointment intake record in the CRM marked as Public Card so the team can follow up from one place.'}
+          tone="neutral"
+        />
+
+        {message ? <StateMessage title={submitState === 'done' ? 'Request captured' : prefillState === 'done' ? 'AI prefill ready' : 'Action needs attention'} description={message} tone={submitState === 'done' || prefillState === 'done' ? 'success' : 'warning'} /> : null}
 
         <button type="submit" disabled={submitState === 'submitting'} className="inline-flex min-h-[56px] items-center justify-center rounded-[1.35rem] bg-slate-950 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
           {submitState === 'submitting' ? 'Sending…' : form.desiredAction === 'request_quote' ? 'Send quote request' : 'Book appointment'}

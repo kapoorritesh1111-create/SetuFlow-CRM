@@ -1079,7 +1079,7 @@ export function QuoteWorkspace({
           });
 
           if (normalizedStatus === "accepted") {
-            window.location.assign(`/orders`);
+            window.location.assign(`/orders?notice=quote-accepted`);
             return;
           }
         })

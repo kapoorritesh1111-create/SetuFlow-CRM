@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -108,7 +109,7 @@ function dispatchGate(docs: DocRow[], compliance: ComplianceRow[]): { label: str
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default async function OrdersPage() {
+export default async function OrdersPage({ searchParams }: { searchParams?: { notice?: string | string[] } }) {
   const workspace = await getWorkspaceAccess();
 
   if (!workspace.membership || !workspace.organization) {
@@ -132,6 +133,12 @@ export default async function OrdersPage() {
   const supabase = await createClient();
   const db = supabase as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   const orgId = workspace.organization.id;
+  const normalizedRoles = new Set((workspace.currentRoles ?? []).map((role) => String(role).trim().toLowerCase()).filter(Boolean));
+  const primaryOperationalContext = normalizedRoles.has('sourcing') || normalizedRoles.has('procurement')
+    ? 'supplier'
+    : normalizedRoles.has('sales')
+      ? 'buyer'
+      : 'mixed';
 
   // 1. Fetch accepted quotes only — orders should represent won commercial work
   const { data: rawQuotes, error: quotesError } = await db
@@ -156,6 +163,11 @@ export default async function OrdersPage() {
   if (quotes.length === 0) {
     return (
       <div className="space-y-6 p-4 sm:p-6">
+        <StateMessage
+          title={primaryOperationalContext === 'supplier' ? 'Supplier execution context is active' : primaryOperationalContext === 'buyer' ? 'Buyer execution context is active' : 'Mixed execution context is active'}
+          description={primaryOperationalContext === 'supplier' ? 'Orders is now the execution workspace for supplier-side fulfilment. The primary action is to open one accepted record and clear blockers.' : primaryOperationalContext === 'buyer' ? 'Orders is now the execution workspace for buyer-side fulfilment. The primary action is to open one accepted record and keep execution moving.' : 'Orders is showing accepted work across buyer and supplier activity. Focus on one accepted record at a time and clear blockers first.'}
+          tone="neutral"
+        />
         <PageHeader
           eyebrow="Orders"
           title="Orders"
@@ -255,8 +267,18 @@ export default async function OrdersPage() {
 
   const accepted = orders.filter(o => o.quoteStatus === 'accepted');
 
+  const noticeKey = Array.isArray(searchParams?.notice) ? searchParams?.notice[0] ?? null : searchParams?.notice ?? null;
+  const notice = noticeKey === 'quote-accepted'
+    ? { title: 'Quote moved into Orders', description: 'The accepted quote is now visible in the order workspace so the team can verify documents, compliance, and execution readiness.', tone: 'success' as const }
+    : null;
+
   return (
     <div className="space-y-6 p-4 sm:p-6">
+      <StateMessage
+        title={primaryOperationalContext === 'supplier' ? 'Supplier execution context is active' : primaryOperationalContext === 'buyer' ? 'Buyer execution context is active' : 'Mixed execution context is active'}
+        description={primaryOperationalContext === 'supplier' ? 'Orders is now the execution workspace for supplier-side fulfilment. The primary action is to open one accepted record and clear blockers.' : primaryOperationalContext === 'buyer' ? 'Orders is now the execution workspace for buyer-side fulfilment. The primary action is to open one accepted record and keep execution moving.' : 'Orders is showing accepted work across buyer and supplier activity. Focus on one accepted record at a time and clear blockers first.'}
+        tone="neutral"
+      />
       <PageHeader
         eyebrow="Orders"
         title="Orders"
@@ -265,6 +287,14 @@ export default async function OrdersPage() {
         status={`${orders.length} active`}
         meta={[`${accepted.length} accepted`, 'Execution context visible', 'Order-ready only']}
         actions={[{ label: 'Go to Leads', href: PRODUCT_ROUTES.app.leads }]}
+      />
+
+      {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
+
+      <StateMessage
+        title="What to do next in Orders"
+        description="Orders only represent accepted commercial work. Review blockers first, then open the linked quote if pricing or acceptance context still needs operator confirmation."
+        tone="neutral"
       />
 
       {accepted.length > 0 && (

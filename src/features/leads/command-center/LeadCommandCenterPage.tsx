@@ -19,6 +19,7 @@ import { LeadStickyActionBar } from './LeadStickyActionBar'
 import { WorkflowTab } from './workflow/WorkflowTab'
 import { QuotesTab } from './quotes/QuotesTab'
 import { ActivityTab } from './activity/ActivityTab'
+import { StateMessage } from '@/components/ui/state-message'
 
 type Option = { id: string; name: string; categoryName?: string | null }
 
@@ -539,7 +540,14 @@ export default function LeadCommandCenterPage({
         </div>
       </section>
 
-      {quoteMessage ? <p className="text-sm text-slate-600">{quoteMessage}</p> : null}
+      {quoteMessage ? <StateMessage title="Lead workflow update" description={quoteMessage} tone={quoteMessage.toLowerCase().includes('could not') || quoteMessage.toLowerCase().includes('error') ? 'danger' : 'success'} /> : null}
+      <StateMessage
+        title="What to do next from this lead"
+        description={hasActiveQuoteRecord
+          ? 'The lead already has a live quote workspace. Open it to revise pricing, send the quote, or record the accepted outcome that hands work into Orders.'
+          : 'Complete qualification and coverage, then use Open quote to create the first commercial draft from this lead.'}
+        tone="neutral"
+      />
       {todayContext ? <LeadTodayContextBar todayContext={todayContext} /> : null}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px] xl:gap-6">

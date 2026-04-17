@@ -17,6 +17,7 @@ import {
 import type { LeadQualificationStatus } from '@/lib/lead-workflow'
 import { navigateToLeadCommandCenter } from '@/lib/lead-command-center-navigation'
 import { formatDateTime } from '@/lib/utils'
+import { StateMessage } from '@/components/ui/state-message'
 
 type ProductOption = { id: string; name: string; categoryName?: string | null }
 type MarketOption = { id: string; name: string }

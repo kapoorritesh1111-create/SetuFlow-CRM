@@ -5,7 +5,43 @@ import { WorkspaceState } from '@/components/ui/workspace-state';
 import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { createClient } from '@/lib/supabase/server';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName } from '@/lib/workspace/roles';
+
+
+
+type MyCardInsightItem = {
+  id: string;
+  company_name: string | null;
+  contact_name: string | null;
+  source_label: string | null;
+  created_at: string | null;
+};
+
+type MyCardInsights = {
+  quoteRequestCount: number;
+  appointmentCount: number;
+  recentLeads: MyCardInsightItem[];
+};
+
+async function getMyCardInsights(organizationId: string, repName: string): Promise<MyCardInsights> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('leads')
+    .select('id, company_name, contact_name, source_label, created_at')
+    .eq('organization_id', organizationId)
+    .eq('source_type', 'public_card')
+    .ilike('source_label', `%${repName}%`)
+    .order('created_at', { ascending: false })
+    .limit(8);
+
+  const recentLeads = (data ?? []) as MyCardInsightItem[];
+  return {
+    quoteRequestCount: recentLeads.filter((item) => String(item.source_label ?? '').toLowerCase().includes('request quote')).length,
+    appointmentCount: recentLeads.filter((item) => String(item.source_label ?? '').toLowerCase().includes('book appointment')).length,
+    recentLeads,
+  };
+}
 
 const setupNotes = [
   {
@@ -49,10 +85,16 @@ export default async function DigitalVCardPage() {
   const roleLabel = getWorkspaceRoleDisplayName(primaryRole);
   let initialSettings = null;
   let loadWarning: string | null = null;
+  let insights: MyCardInsights = { quoteRequestCount: 0, appointmentCount: 0, recentLeads: [] };
 
   if (workspace.user?.id) {
     try {
-      initialSettings = await getMyCardSettingsForUser(workspace.user.id);
+      const [settings, cardInsights] = await Promise.all([
+        getMyCardSettingsForUser(workspace.user.id),
+        getMyCardInsights(workspace.organization.id, fullName),
+      ]);
+      initialSettings = settings;
+      insights = cardInsights;
     } catch (error) {
       loadWarning = error instanceof Error ? error.message : 'My Card settings could not be loaded yet. You can still open the page and save your details again.';
     }
@@ -101,6 +143,7 @@ export default async function DigitalVCardPage() {
         }}
         organizationId={workspace.organization.id}
         initialSettings={initialSettings}
+        insights={insights}
       />
     </div>
   );

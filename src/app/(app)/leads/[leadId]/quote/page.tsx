@@ -216,6 +216,13 @@ export default async function QuotePage({ params, searchParams }: { params: { le
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 p-4 md:space-y-6">
+      <StateMessage
+        title={lead.lead_type === 'supplier' ? 'Supplier quote context is active' : 'Buyer quote context is active'}
+        description={lead.lead_type === 'supplier'
+          ? 'This quote workspace is being used from the supplier side. Keep the primary action on building commercially usable coverage, then move accepted work into Orders.'
+          : 'This quote workspace is being used from the buyer side. Keep the primary action on finishing the live quote, sending it cleanly, and moving accepted work into Orders.'}
+        tone="neutral"
+      />
       <PageHeader
         className="rounded-[12px] px-5 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:px-6 sm:py-[18px]"
         eyebrow="Quote workspace"
@@ -226,6 +233,16 @@ export default async function QuotePage({ params, searchParams }: { params: { le
           { label: 'Quote AI review', href: `/ai-suggestions?family=quote&leadId=${leadId}` },
           { label: 'Open orders', href: '/orders', type: 'primary' },
         ]}
+      />
+
+      <StateMessage
+        title="What to do next in Quote"
+        description={acceptedQuoteCount > 0
+          ? 'At least one quote is accepted. Open Orders to confirm execution readiness, documents, and compliance before treating the work as operational.'
+          : openQuoteCount > 0
+            ? 'Finish pricing, clear blockers, send the quote, and only move to Orders after the customer accepts.'
+            : 'Create or reopen a quote draft, then move through Product, Pricing, Terms, Review, and Send from this workspace.'}
+        tone={acceptedQuoteCount > 0 ? 'success' : 'neutral'}
       />
 
       <div className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">

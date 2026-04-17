@@ -130,6 +130,11 @@ export default async function AdminInvitationsPage({
       />
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone ?? 'neutral'} /> : null}
+      <StateMessage
+        title="What to do next in Invitations"
+        description="Create the invite, send or resend the secure link, then verify the status change here before treating onboarding as complete. Accepted invites should be checked in Users."
+        tone="neutral"
+      />
 
       {!currentRoles.includes('owner') ? (
         <StateMessage

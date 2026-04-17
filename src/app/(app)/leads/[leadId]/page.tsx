@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/ui/empty-state'
+import { StateMessage } from '@/components/ui/state-message'
 import { notFound } from 'next/navigation'
 import { hasSupabaseEnv } from '@/lib/env'
 import { getLeadProfileData } from '@/lib/queries/leads'
@@ -147,30 +148,39 @@ export default async function Page({ params, searchParams }: { params: { leadId:
     .slice(0, 8)
 
   return (
-    <LeadCommandCenterPage
-      snapshot={snapshot}
-      availableProducts={data.products.map((product) => ({ id: product.id, name: product.name }))}
-      availableMarkets={data.markets.map((market) => ({ id: market.id, name: market.name }))}
-      selectedProductIds={selectedProductIds}
-      selectedMarketIds={selectedMarketIds}
-      initialOpsHistory={initialOpsHistory}
-      latestQuoteId={latestQuote?.id ?? null}
-      pendingFollowUpId={pendingFollowUp?.id ?? null}
-      aiReviewHref={aiReviewHref}
-      leadQueue={leadQueue}
-      initialTab={requestedTab}
-      todayContext={{
-        mode: effectiveMode,
-        activeFilter: todayState.activeFilter,
-        urgency: todayState.items[0]?.urgency ?? 'normal',
-        nextActionAt: snapshot.nextAction.dueAt ?? data.lead.next_follow_up_at ?? null,
-        nextActionLabel: snapshot.nextAction.title,
-        blockedReason: todayState.items[0]?.blockedReason ?? null,
-        backHref: `/leads?mode=${effectiveMode}`,
-        pipelineHref,
-        queueHref: `/tasks?mode=${effectiveMode}`,
-      }}
-    />
+    <div className="space-y-4">
+      <StateMessage
+        title={leadType === 'supplier' ? 'Supplier command mode is active' : 'Buyer command mode is active'}
+        description={leadType === 'supplier'
+          ? 'This command center is operating on a supplier record. Keep the main action on qualification, coverage, and quote readiness before pushing work downstream.'
+          : 'This command center is operating on a buyer record. Keep the main action on qualification, quote preparation, and a clean move into Orders once the quote is accepted.'}
+        tone="neutral"
+      />
+      <LeadCommandCenterPage
+        snapshot={snapshot}
+        availableProducts={data.products.map((product) => ({ id: product.id, name: product.name }))}
+        availableMarkets={data.markets.map((market) => ({ id: market.id, name: market.name }))}
+        selectedProductIds={selectedProductIds}
+        selectedMarketIds={selectedMarketIds}
+        initialOpsHistory={initialOpsHistory}
+        latestQuoteId={latestQuote?.id ?? null}
+        pendingFollowUpId={pendingFollowUp?.id ?? null}
+        aiReviewHref={aiReviewHref}
+        leadQueue={leadQueue}
+        initialTab={requestedTab}
+        todayContext={{
+          mode: effectiveMode,
+          activeFilter: todayState.activeFilter,
+          urgency: todayState.items[0]?.urgency ?? 'normal',
+          nextActionAt: snapshot.nextAction.dueAt ?? data.lead.next_follow_up_at ?? null,
+          nextActionLabel: snapshot.nextAction.title,
+          blockedReason: todayState.items[0]?.blockedReason ?? null,
+          backHref: `/leads?mode=${effectiveMode}`,
+          pipelineHref,
+          queueHref: `/tasks?mode=${effectiveMode}`,
+        }}
+      />
+    </div>
   )
 }
 

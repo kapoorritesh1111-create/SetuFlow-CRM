@@ -5,6 +5,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { buildContactPostApplyAssist, type ContactAssistLeadCandidate, type ContactPostApplyAssistDraft, type ContactPostApplyAssistResult } from '@/lib/contact-exchange/contact-post-apply-assist';
 import { extractContactSource, extractPdfTextLayer, type ContactServerExtractionResult } from '@/lib/contact-exchange/contact-extraction';
+import { saveLead } from '@/features/leads/server/actions';
 import type { ContactSourceProfile } from '@/lib/contact-exchange/contact-parser';
 
 export type ContactScanActionState = {
@@ -140,4 +141,75 @@ export async function suggestContactScanPostApplyAssist(formData: FormData): Pro
   } catch {
     return buildContactPostApplyAssist({ draft, lookupMode: 'heuristic' });
   }
+}
+
+
+export type ContactScanCreateLeadResult = {
+  error?: string;
+  success?: string;
+  lead?: {
+    id: string;
+    company_name: string;
+    source_label: string | null;
+  };
+};
+
+function buildDefaultFollowUpAt() {
+  return new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+}
+
+function mergeLeadNotes(...values: Array<string | null | undefined>) {
+  return values
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+export async function createLeadFromContactScanReview(formData: FormData): Promise<ContactScanCreateLeadResult> {
+  const companyName = String(formData.get('company_name') ?? '').trim() || String(formData.get('contact_name') ?? '').trim() || 'Scanned contact';
+  const contactName = String(formData.get('contact_name') ?? '').trim();
+  const jobTitle = String(formData.get('job_title') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim();
+  const phone = String(formData.get('phone') ?? '').trim();
+  const phoneSecondary = String(formData.get('phone_secondary') ?? '').trim();
+  const website = String(formData.get('website') ?? '').trim();
+  const notes = String(formData.get('notes') ?? '').trim();
+  const leadType = String(formData.get('lead_type') ?? '').trim() === 'supplier' ? 'supplier' : 'buyer';
+  const sourceProfile = String(formData.get('source_profile') ?? '').trim() || 'generic';
+  const extractionBoundary = String(formData.get('extraction_boundary') ?? '').trim() || 'server_manual_text';
+  const rawSourceLabel = String(formData.get('source_label') ?? '').trim() || 'Contact scan review';
+  const sourceLabel = rawSourceLabel.startsWith('Contact Scan') ? rawSourceLabel : `Contact Scan Review · ${rawSourceLabel}`;
+
+  const leadFormData = new FormData();
+  leadFormData.set('lead_type', leadType);
+  leadFormData.set('company_name', companyName);
+  leadFormData.set('contact_name', contactName);
+  leadFormData.set('job_title', jobTitle);
+  leadFormData.set('email', email);
+  leadFormData.set('phone', phone);
+  leadFormData.set('phone_secondary', phoneSecondary);
+  leadFormData.set('website', website);
+  leadFormData.set('source_type', 'contact_scan_review');
+  leadFormData.set('source_label', sourceLabel);
+  leadFormData.set('notes', mergeLeadNotes(
+    notes,
+    `Captured from contact scan review.`,
+    `Source profile: ${sourceProfile.replace(/_/g, ' ')}`,
+    `Extraction boundary: ${extractionBoundary.replace(/_/g, ' ')}`
+  ));
+  leadFormData.set('next_follow_up_at', buildDefaultFollowUpAt());
+  leadFormData.set('intro_sent', 'false');
+
+  const result = await saveLead(undefined, leadFormData);
+  if (result.error) return { error: result.error };
+  if (!result.lead?.id) return { error: 'Lead save completed without a CRM record.' };
+
+  return {
+    success: 'Reviewed scan confirmed and created as a lead.',
+    lead: {
+      id: result.lead.id,
+      company_name: result.lead.company_name,
+      source_label: result.lead.source_label ?? sourceLabel,
+    },
+  };
 }

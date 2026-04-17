@@ -334,6 +334,7 @@ const LeadCard = ({
                 </div>
                 <p className="mt-1 truncate text-[13px] text-slate-700 dark:text-slate-200">{lead.contact_name ?? 'No contact assigned'}</p>
                 <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{lead.country ?? 'No country'} · {ownerLabel}</p>
+                {lead.source_label ? <p className="mt-1 truncate text-[11px] font-medium text-brand-700 dark:text-brand-200">{lead.source_label}</p> : null}
               </div>
             </div>
           </div>

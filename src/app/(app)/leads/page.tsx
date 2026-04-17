@@ -1,6 +1,7 @@
 // UPDATED FILE
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
+import { StateMessage } from '@/components/ui/state-message';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
 import { parseWorkspaceMode, workspaceModeToLeadJourney } from '@/features/workspace/mode';
 import { buildTodayLayerState } from '@/features/workspace/today';
@@ -59,6 +60,19 @@ export default async function LeadsPage({
   return (
     <div className="space-y-4">
       <QueryIssuesAlert issues={data.queryIssues} />
+      <StateMessage
+        title={workspaceMode === 'buyers'
+          ? 'Buyer mode is active in Leads'
+          : workspaceMode === 'suppliers'
+            ? 'Supplier mode is active in Leads'
+            : 'Combined buyer and supplier view is active in Leads'}
+        description={workspaceMode === 'buyers'
+          ? 'Keep the primary action on qualification and progression. The next commercial move is to open one lead, tighten details, and advance it toward Quote.'
+          : workspaceMode === 'suppliers'
+            ? 'Keep the primary action on supplier qualification and coverage readiness. Move one supplier record forward rather than spreading attention across the board.'
+            : 'This workspace mixes buyer and supplier records. Pick one priority record, open the command center, and move it cleanly through the locked flow.'}
+        tone="neutral"
+      />
 
       <LeadsWorkspace
         currentUserId={workspace.user?.id ?? ''}
