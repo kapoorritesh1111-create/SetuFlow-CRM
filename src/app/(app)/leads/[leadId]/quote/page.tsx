@@ -220,11 +220,11 @@ export default async function QuotePage({ params, searchParams }: { params: { le
         className="rounded-[12px] px-5 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:px-6 sm:py-[18px]"
         eyebrow="Quote workspace"
         title={lead.company_name}
-        description="Stay in the same lead workflow here. Review pricing, clear blockers, send the quote, and move accepted commercial work into contracts."
+        description="Stay in the same lead workflow here. Review pricing, clear blockers, send the quote, and move accepted commercial work into the order workspace."
         actions={[
           { label: 'Back to lead', href: leadCommandHref },
           { label: 'Quote AI review', href: `/ai-suggestions?family=quote&leadId=${leadId}` },
-          { label: 'Open contracts', href: '/contracts', type: 'primary' },
+          { label: 'Open orders', href: '/orders', type: 'primary' },
         ]}
       />
 
@@ -234,7 +234,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
             <div className="max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Quote command lane</p>
               <h2 className="mt-2 text-xl font-semibold text-slate-900">Move through Product, Pricing, Terms, Review, and Send inside one commercial surface</h2>
-              <p className="mt-2 text-sm text-slate-600">Stay anchored to the lead command center while moving the current quote through Product, Pricing, Terms, Review, and Send. Surface blockers once, keep one quote in focus, and move accepted work straight into contracts.</p>
+              <p className="mt-2 text-sm text-slate-600">Stay anchored to the lead command center while moving the current quote through Product, Pricing, Terms, Review, and Send. Surface blockers once, keep one quote in focus, and move accepted work straight into the order workspace.</p>
             </div>
             <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getPricingReadinessClasses(pricingSnapshot.pricingReadiness)}`}>
               {getPricingReadinessLabel(pricingSnapshot.pricingReadiness)}
@@ -251,7 +251,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
 
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href={leadCommandHref} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Lead command center</Link>
-            <Link href="/contracts" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Contracts workspace</Link>
+            <Link href="/orders" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Orders workspace</Link>
           </div>
         </div>
 
@@ -311,13 +311,13 @@ export default async function QuotePage({ params, searchParams }: { params: { le
         <div className="mt-4 rounded-[10px] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Contract handoff</p>
-              <p className="mt-1 text-sm text-slate-600">Accepted quotes seed contract records automatically so operators can continue signature, activation, and completion from the contracts workspace.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Order handoff</p>
+              <p className="mt-1 text-sm text-slate-600">Accepted quotes seed order records automatically so operators can continue execution, signature, activation, and completion from the order workspace.</p>
             </div>
-            <Link href="/contracts" className="rounded-2xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100">Open contracts workspace</Link>
+            <Link href="/orders" className="rounded-2xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100">Open orders workspace</Link>
           </div>
           <p className="mt-3 text-sm text-slate-600">
-            {contracts.length ? `${contracts.length} contract workspace${contracts.length === 1 ? '' : 's'} already linked to this lead.` : 'No contract has been seeded for this lead yet. Once a quote is accepted, the contract workspace will populate automatically.'}
+            {contracts.length ? `${contracts.length} order workspace${contracts.length === 1 ? '' : 's'} already linked to this lead.` : 'No contract has been seeded for this lead yet. Once a quote is accepted, the order workspace will populate automatically.'}
           </p>
         </div>
 

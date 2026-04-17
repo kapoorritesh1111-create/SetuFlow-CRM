@@ -1,7 +1,7 @@
 /**
  * Orders — execution workspace
  *
- * Live Supabase query: accepted and sent quotes with documents,
+ * Live Supabase query: accepted quotes with documents,
  * compliance items, and contract status per order card.
  */
 
@@ -133,12 +133,12 @@ export default async function OrdersPage() {
   const db = supabase as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   const orgId = workspace.organization.id;
 
-  // 1. Fetch accepted and sent quotes
+  // 1. Fetch accepted quotes only — orders should represent won commercial work
   const { data: rawQuotes, error: quotesError } = await db
     .from('quotes')
     .select('id, status, currency, updated_at, lead_id')
     .eq('organization_id', orgId)
-    .in('status', ['accepted', 'sent'])
+    .in('status', ['accepted'])
     .order('updated_at', { ascending: false })
     .limit(50);
 
@@ -159,15 +159,15 @@ export default async function OrdersPage() {
         <PageHeader
           eyebrow="Orders"
           title="Orders"
-          description="Accepted and sent quotes with execution readiness — documents, compliance, and contract status in one place."
+          description="Accepted quotes become operational orders here with documents, compliance, and execution status in one place."
           badge="Live"
           status="No orders yet"
           actions={[{ label: 'Go to Leads', href: PRODUCT_ROUTES.app.leads }]}
         />
         <SectionCard
           eyebrow="No orders yet"
-          title="Orders appear here when quotes are accepted or sent"
-          description="Move a quote to accepted or sent status from the Lead quote workspace and it will appear here with its full execution context."
+          title="Orders appear here when quotes are accepted"
+          description="Accept a quote from the lead quote workspace and it will appear here with its full execution context."
         >
           <Link
             href={PRODUCT_ROUTES.app.leads}
@@ -254,17 +254,16 @@ export default async function OrdersPage() {
   });
 
   const accepted = orders.filter(o => o.quoteStatus === 'accepted');
-  const sent = orders.filter(o => o.quoteStatus === 'sent');
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
       <PageHeader
         eyebrow="Orders"
         title="Orders"
-        description="Accepted and sent quotes with full execution context — documents, compliance, and contract status visible per order."
+        description="Accepted quotes become live orders here with documents, compliance, and contract status visible per order."
         badge="Live"
         status={`${orders.length} active`}
-        meta={[`${accepted.length} accepted`, `${sent.length} sent`, 'Execution context visible']}
+        meta={[`${accepted.length} accepted`, 'Execution context visible', 'Order-ready only']}
         actions={[{ label: 'Go to Leads', href: PRODUCT_ROUTES.app.leads }]}
       />
 
@@ -277,20 +276,6 @@ export default async function OrdersPage() {
           <div className="space-y-6">
             {accepted.map(order => (
               <OrderCard key={order.quoteId} order={order} tone="accepted" />
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {sent.length > 0 && (
-        <SectionCard
-          eyebrow="Sent — awaiting acceptance"
-          title="Sent quotes"
-          description="Customer-facing. Will move to accepted orders once the buyer confirms."
-        >
-          <div className="space-y-6">
-            {sent.map(order => (
-              <OrderCard key={order.quoteId} order={order} tone="sent" />
             ))}
           </div>
         </SectionCard>

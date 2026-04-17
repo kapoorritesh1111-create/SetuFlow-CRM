@@ -852,7 +852,11 @@ export function LeadDrawer({
             return [result.version as QuoteVersion, ...withoutCurrent];
           });
         }
-        if (result?.quoteId) setSelectedQuoteId(result.quoteId);
+        if (result?.quoteId) {
+          setSelectedQuoteId(result.quoteId);
+          router.push(`/leads/${lead.id}/quote?quoteId=${result.quoteId}`);
+          return;
+        }
         router.refresh();
       });
     });

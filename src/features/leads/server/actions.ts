@@ -835,7 +835,7 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
     revalidatePath(`/leads/${leadId}/quote`);
     revalidateLeadSurfaces(leadId);
     return {
-      success: 'Opened existing quote workspace.',
+      success: 'Lead is already in quote workflow. Opened the active quote workspace.',
       quoteId: existingQuote.id,
       quote: { ...existingQuote, current_version_id: ensured.version?.id ?? existingQuote.current_version_id ?? null, lineItems: seeded.lineItems },
       version: ensured.version ?? undefined,
@@ -907,7 +907,7 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
   revalidatePath(`/leads/${leadId}/quote`);
   revalidateLeadSurfaces(leadId);
   return {
-    success: 'Quote draft created.',
+    success: 'Lead converted to quote workflow. Draft quote created.',
     quoteId: quote.id,
     quote: { ...quote, current_version_id: ensured.version?.id ?? quote.current_version_id ?? null, lineItems: seeded.lineItems },
     version: ensured.version ?? undefined,

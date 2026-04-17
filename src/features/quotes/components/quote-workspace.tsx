@@ -612,7 +612,7 @@ function getOutcomeAction(
     label: outcome === "accepted" ? "Mark accepted" : "Mark rejected",
     description:
       outcome === "accepted"
-        ? "Record the customer win and move the commercial flow toward contracts."
+        ? "Record the customer win and move the commercial flow into the order workspace."
         : "Log a lost or declined quote without digging through the full editor.",
     run: {
       status: outcome,
@@ -660,7 +660,7 @@ function getNegotiationComposerCopy(mode: NegotiationComposerMode) {
       return {
         title: "Confirm accepted outcome",
         description:
-          "Record the accepted outcome with a short operator note so contract handoff stays obvious.",
+          "Record the accepted outcome with a short operator note so order handoff stays obvious.",
         cta: "Confirm accepted",
       };
     case "rejected":
@@ -1064,13 +1064,24 @@ export function QuoteWorkspace({
           if (result?.record) upsertQuoteRecord(result.record as QuoteRecord);
           setComposer(null);
           setComposerNote("");
+          const normalizedStatus = String(action.run?.status ?? "").trim().toLowerCase();
+          const successDescription =
+            result?.success ??
+            `${action.label} completed for quote ${quote.id.slice(0, 8)}.`;
+
           setWorkflowNotice({
             tone: "success",
             title: action.label,
             description:
-              result?.success ??
-              `${action.label} completed for quote ${quote.id.slice(0, 8)}.`,
+              normalizedStatus === "accepted"
+                ? `${successDescription} Opening the order workspace for execution follow-through.`
+                : successDescription,
           });
+
+          if (normalizedStatus === "accepted") {
+            window.location.assign(`/orders`);
+            return;
+          }
         })
         .catch((error) => {
           setWorkflowNotice({
