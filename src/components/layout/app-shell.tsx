@@ -4,9 +4,24 @@ import { ReactNode } from 'react';
 
 type AppShellProps = {
   children: ReactNode;
+  profile?: unknown;
+  organization?: unknown;
+  membership?: unknown;
+  currentRoles?: unknown;
 };
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({
+  children,
+  profile,
+  organization,
+  membership,
+  currentRoles,
+}: AppShellProps) {
+  void profile;
+  void organization;
+  void membership;
+  void currentRoles;
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="flex items-center justify-between border-b bg-white px-6 py-4">
