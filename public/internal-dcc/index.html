@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setu Flow CRM — Internal Development Command Center</title>
+  <style>
+    :root {
+      --bg: #08111f; --panel: #10192c; --panel2: #16233b; --border: #2a3a5f; --text: #ebf2ff; --muted: #9eb0d3;
+      --good: #22c55e; --warn: #f59e0b; --bad: #ef4444; --blue: #60a5fa; --cyan: #22d3ee; --shadow: 0 12px 30px rgba(0,0,0,.28);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--text); background: linear-gradient(180deg, #08111f 0%, #0d1628 100%); }
+    .shell { display: grid; grid-template-columns: 290px 1fr; min-height: 100vh; }
+    .sidebar { padding: 20px; border-right: 1px solid var(--border); background: rgba(8,17,31,.9); position: sticky; top: 0; height: 100vh; overflow: auto; }
+    .main { padding: 24px; }
+    .brand { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .logo { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #22d3ee); box-shadow: var(--shadow); }
+    .brand h1 { margin: 0; font-size: 16px; }
+    .brand p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+    .meta, .card { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); }
+    .meta { padding: 14px; margin-bottom: 18px; }
+    .meta .row { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--muted); margin: 6px 0; }
+    .meta strong { color: var(--text); }
+    .nav { display: grid; gap: 8px; }
+    .nav button { text-align: left; border: 1px solid transparent; background: transparent; color: var(--muted); padding: 10px 12px; border-radius: 12px; cursor: pointer; }
+    .nav button.active, .nav button:hover { background: var(--panel); border-color: var(--border); color: var(--text); }
+    .hero { padding: 22px; border-radius: 22px; border: 1px solid var(--border); background: linear-gradient(135deg, rgba(59,130,246,.18), rgba(34,211,238,.08)); box-shadow: var(--shadow); }
+    .hero h2 { margin: 0 0 8px; font-size: 28px; }
+    .hero p { margin: 0; color: #d7e4ff; max-width: 1000px; }
+    .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .tag { font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; color: #dbe6ff; background: rgba(255,255,255,.03); }
+    .grid { display: grid; gap: 16px; margin-top: 18px; }
+    .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card { padding: 18px; }
+    .card h3 { margin: 0 0 12px; font-size: 16px; }
+    .metric-value { font-size: 30px; font-weight: 800; }
+    .metric-sub { margin-top: 4px; font-size: 12px; color: var(--muted); }
+    .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .table th, .table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,.06); text-align: left; vertical-align: top; }
+    .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .good { background: rgba(34,197,94,.16); color: #a7f3d0; }
+    .warn { background: rgba(245,158,11,.16); color: #fde68a; }
+    .bad { background: rgba(239,68,68,.16); color: #fecaca; }
+    .bar { height: 10px; border-radius: 999px; overflow: hidden; background: #09111f; border: 1px solid var(--border); }
+    .bar > span { display: block; height: 100%; background: linear-gradient(90deg, #3b82f6, #22d3ee); }
+    .progress-row { display: grid; grid-template-columns: 170px 1fr 60px; align-items: center; gap: 12px; margin: 10px 0; }
+    .code { background: #0b1424; border: 1px solid var(--border); border-radius: 14px; padding: 14px; white-space: pre-wrap; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: #c7d6f4; }
+    .svg-wrap { background: #0b1424; border: 1px solid var(--border); border-radius: 14px; padding: 10px; overflow: auto; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .note { margin-top: 14px; padding: 12px 14px; border-left: 4px solid var(--good); border-radius: 12px; background: rgba(34,197,94,.09); color: #d1fae5; }
+    .warnbox { margin-top: 14px; padding: 12px 14px; border-left: 4px solid var(--warn); border-radius: 12px; background: rgba(245,158,11,.09); color: #fdecc8; }
+    ul { margin: 0; padding-left: 18px; }
+    li { margin: 8px 0; color: #dfe8fb; }
+    @media (max-width: 1100px) { .shell { grid-template-columns: 1fr; } .sidebar { position: relative; height: auto; } .metrics, .two, .three { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo"></div><div><h1>Setu Flow CRM DCC</h1><p>Internal engineering system</p></div></div>
+      <div class="meta">
+        <div class="row"><span>Baseline</span><strong>SetuFlow-CRM-main-24-DCC(1)</strong></div>
+        <div class="row"><span>Assessed</span><strong>2026-04-20</strong></div>
+        <div class="row"><span>Overall readiness</span><strong>63%</strong></div>
+        <div class="row"><span>Repo drift</span><strong>24 / 100</strong></div>
+        <div class="row"><span>Risk</span><strong>Elevated</strong></div>
+        <div class="row"><span>PR progress</span><strong>1 / 10</strong></div>
+      </div>
+      <nav id="nav" class="nav"></nav>
+    </aside>
+    <main class="main">
+      <header class="hero">
+        <h2>Development Command Center</h2>
+        <p>PR-01 is complete in this baseline. Legacy development, workspace, preview, and planning surfaces have been removed from the shipped app baseline, root artifact clutter has been purged, and the DCC now serves as the internal planning and readiness source of truth.</p>
+        <div class="tags">
+          <span class="tag">PR-01 complete</span>
+          <span class="tag">Canonical cleanup complete</span>
+          <span class="tag">DCC is source of truth</span>
+          <span class="tag">PR-02 next</span>
+          <span class="tag">Quotes still unresolved</span>
+        </div>
+      </header>
+
+      <section id="overview" class="section active">
+        <div class="grid metrics">
+          <div class="card"><h3>Overall readiness</h3><div class="metric-value">63%</div><div class="metric-sub">Trust improved after PR-01; architecture still needs hardening</div></div>
+          <div class="card"><h3>Risk level</h3><div class="metric-value">Elevated</div><div class="metric-sub">Cleanup done, core refactors remain</div></div>
+          <div class="card"><h3>Repo drift</h3><div class="metric-value">24</div><div class="metric-sub">Major route and artifact drift removed</div></div>
+          <div class="card"><h3>PR progress</h3><div class="metric-value">1 / 10</div><div class="metric-sub">PR-01 merged in baseline</div></div>
+        </div>
+        <div class="grid two">
+          <div class="card">
+            <h3>Module heatmap</h3>
+            <table class="table">
+              <tr><th>Module</th><th>Readiness</th><th>Heat</th><th>Summary</th></tr>
+              <tr><td>Leads</td><td>74%</td><td><span class="pill warn">Unstable</span></td><td>Strongest core area, but too large and dense</td></tr>
+              <tr><td>Pipeline</td><td>69%</td><td><span class="pill warn">Unstable</span></td><td>Still needs primary-nav and clarity pass</td></tr>
+              <tr><td>Quotes</td><td>56%</td><td><span class="pill bad">Critical</span></td><td>Top-level module still not product-resolved</td></tr>
+              <tr><td>Orders</td><td>69%</td><td><span class="pill warn">Unstable</span></td><td>Good intent, page orchestration cleanup needed</td></tr>
+              <tr><td>Dashboard</td><td>63%</td><td><span class="pill warn">Unstable</span></td><td>Needs action-first redesign</td></tr>
+              <tr><td>Contact Exchange</td><td>72%</td><td><span class="pill warn">Unstable</span></td><td>Differentiated and intact after cleanup</td></tr>
+              <tr><td>Settings/Admin</td><td>72%</td><td><span class="pill warn">Unstable</span></td><td>Reasonably mature</td></tr>
+              <tr><td>Trade workflow</td><td>64%</td><td><span class="pill warn">Unstable</span></td><td>Good skeleton, still needs deeper operational states</td></tr>
+              <tr><td>AI intelligence</td><td>46%</td><td><span class="pill bad">Critical</span></td><td>Mainly heuristics + drafting</td></tr>
+              <tr><td>Integrations</td><td>33%</td><td><span class="pill bad">Critical</span></td><td>Monitoring shell, not connector platform</td></tr>
+              <tr><td>Documentation</td><td>66%</td><td><span class="pill warn">Unstable</span></td><td>Truth improved; README and demo scripts still missing</td></tr>
+              <tr><td>Repo hygiene</td><td>81%</td><td><span class="pill good">Healthy</span></td><td>Artifacts and legacy routes removed</td></tr>
+            </table>
+          </div>
+          <div class="card">
+            <h3>Program health</h3>
+            <div class="progress-row"><div>Architecture cleanup</div><div class="bar"><span style="width:43%"></span></div><div>43%</div></div>
+            <div class="progress-row"><div>UI/UX cleanup</div><div class="bar"><span style="width:64%"></span></div><div>64%</div></div>
+            <div class="progress-row"><div>Trade workflow</div><div class="bar"><span style="width:64%"></span></div><div>64%</div></div>
+            <div class="progress-row"><div>AI maturity</div><div class="bar"><span style="width:46%"></span></div><div>46%</div></div>
+            <div class="progress-row"><div>Integrations</div><div class="bar"><span style="width:33%"></span></div><div>33%</div></div>
+            <div class="progress-row"><div>Documentation</div><div class="bar"><span style="width:66%"></span></div><div>66%</div></div>
+            <div class="progress-row"><div>Sprint progress</div><div class="bar"><span style="width:10%"></span></div><div>10%</div></div>
+            <div class="note">Removed in PR-01: <strong>src/app/development</strong>, <strong>src/app/workspace</strong>, <strong>src/components/previews</strong>, <strong>src/components/planning</strong>, and root build/typecheck artifacts.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture" class="section">
+        <div class="grid two">
+          <div class="card">
+            <h3>Architecture diagram</h3>
+            <div class="svg-wrap">
+              <svg width="960" height="380" viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg">
+                <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#60a5fa"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+                <rect x="380" y="20" width="200" height="54" rx="14" fill="url(#g)"/><text x="480" y="52" fill="#08111f" font-size="20" font-family="Arial" text-anchor="middle" font-weight="700">App Shell</text>
+                <g fill="#10192c" stroke="#2a3a5f">
+                  <rect x="40" y="110" width="120" height="52" rx="12"/><rect x="190" y="110" width="120" height="52" rx="12"/><rect x="340" y="110" width="120" height="52" rx="12"/><rect x="490" y="110" width="120" height="52" rx="12"/><rect x="640" y="110" width="120" height="52" rx="12"/><rect x="790" y="110" width="120" height="52" rx="12"/>
+                  <rect x="300" y="220" width="360" height="54" rx="12"/><rect x="140" y="310" width="180" height="44" rx="12"/><rect x="390" y="310" width="180" height="44" rx="12"/><rect x="640" y="310" width="180" height="44" rx="12"/>
+                </g>
+                <g fill="#ebf2ff" font-size="16" font-family="Arial" text-anchor="middle">
+                  <text x="100" y="141">Dashboard</text><text x="250" y="141">Leads</text><text x="400" y="141">Pipeline</text><text x="550" y="141">Quotes</text><text x="700" y="141">Orders</text><text x="850" y="141">Admin</text>
+                  <text x="480" y="252">Domain loaders / server actions / view models</text>
+                  <text x="230" y="338">Trade workflow</text><text x="480" y="338">AI intelligence</text><text x="730" y="338">Integrations</text>
+                </g>
+                <g stroke="#44618e" stroke-width="2"><line x1="480" y1="74" x2="100" y2="110"/><line x1="480" y1="74" x2="250" y2="110"/><line x1="480" y1="74" x2="400" y2="110"/><line x1="480" y1="74" x2="550" y2="110"/><line x1="480" y1="74" x2="700" y2="110"/><line x1="480" y1="74" x2="850" y2="110"/><line x1="480" y1="162" x2="480" y2="220"/><line x1="480" y1="274" x2="230" y2="310"/><line x1="480" y1="274" x2="480" y2="310"/><line x1="480" y1="274" x2="730" y2="310"/></g>
+              </svg>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Oversized file list</h3>
+            <table class="table">
+              <tr><th>File</th><th>Problem</th></tr>
+              <tr><td>quote-wizard-form.tsx</td><td>Monolithic quote form</td></tr>
+              <tr><td>src/lib/queries/data.ts</td><td>Overloaded query layer</td></tr>
+              <tr><td>quote-workspace.tsx</td><td>Too much workspace logic in one file</td></tr>
+              <tr><td>leads/server/actions.ts</td><td>Server action sprawl</td></tr>
+              <tr><td>lead-drawer.tsx</td><td>Drawer became a mini-product</td></tr>
+              <tr><td>leads-workspace.tsx</td><td>Too much responsibility</td></tr>
+              <tr><td>pipeline-board.tsx</td><td>Board logic and UI coupled</td></tr>
+              <tr><td>app-shell.tsx</td><td>Shell owns too many responsibilities</td></tr>
+            </table>
+            <div class="warnbox">PR-01 removed route drift, but it did not solve decomposition risk. PR-02 through PR-05 remain mandatory.</div>
+          </div>
+        </div>
+        <div class="grid two">
+          <div class="card"><h3>Decomposition map</h3><div class="code">features/leads/
+  ui/
+  logic/
+  server/
+  types/
+  mappers/
+
+features/pipeline/
+  ui/
+  logic/
+  server/
+  types/
+
+features/quotes/
+  ui/
+  logic/
+  server/
+  pricing/
+  types/
+  mappers/
+
+components/layout/
+  shell/
+  nav/
+  user-menu/
+  header/
+  theme/</div></div>
+          <div class="card"><h3>Route manifest status</h3><ul><li>Canonical shipped routes remain in <code>src/app/(app)</code>.</li><li>Legacy development/workspace mirrors are removed.</li><li>Internal program truth now points to <code>/public/internal-dcc/index.html</code>.</li><li>Next step: formalize a single route manifest used by shell, tests, and contracts.</li></ul></div>
+        </div>
+      </section>
+
+      <section id="product" class="section"><div class="card"><h3>Product Surface Command Center</h3><table class="table"><tr><th>Module</th><th>Readiness</th><th>Blockers</th><th>Next actions</th><th>PRs</th></tr><tr><td>Leads</td><td>74%</td><td>Oversized workspace and drawer</td><td>Split list/detail/drawer/action surfaces</td><td>PR-03, PR-06</td></tr><tr><td>Pipeline</td><td>69%</td><td>Secondary-positioned, bulky board</td><td>Move to primary nav and simplify stage model</td><td>PR-02, PR-04</td></tr><tr><td>Quotes</td><td>56%</td><td>Launchpad-like top route, giant files</td><td>Replace with full list/detail/builder/history workspace</td><td>PR-05, PR-07</td></tr><tr><td>Orders</td><td>69%</td><td>Page orchestration drift</td><td>Move mapping logic into loaders/view models</td><td>PR-03, PR-07</td></tr><tr><td>Dashboard</td><td>63%</td><td>Action hierarchy too soft</td><td>Prioritize delayed, blocked, and today actions</td><td>PR-06</td></tr><tr><td>Contact Exchange</td><td>72%</td><td>Trust-language polish</td><td>Clean wording and normalize route/server code</td><td>PR-06, PR-10</td></tr><tr><td>Settings/Admin</td><td>72%</td><td>Not core buyer story</td><td>Keep stable while core modules harden</td><td>PR-02, PR-10</td></tr></table></div></section>
+
+      <section id="workflow" class="section"><div class="grid two"><div class="card"><h3>Trade workflow readiness</h3><div class="progress-row"><div>Incoterms support</div><div class="bar"><span style="width:40%"></span></div><div>40%</div></div><div class="progress-row"><div>Freight readiness</div><div class="bar"><span style="width:35%"></span></div><div>35%</div></div><div class="progress-row"><div>Compliance blockers</div><div class="bar"><span style="width:61%"></span></div><div>61%</div></div><div class="progress-row"><div>Dispatch readiness</div><div class="bar"><span style="width:38%"></span></div><div>38%</div></div><div class="progress-row"><div>Buyer/Supplier clarity</div><div class="bar"><span style="width:52%"></span></div><div>52%</div></div><div class="progress-row"><div>Quote → Order → Execution</div><div class="bar"><span style="width:58%"></span></div><div>58%</div></div></div><div class="card"><h3>Workflow diagram</h3><div class="code">Lead Capture
+  -> card / RFQ / trade document
+Qualification
+  -> buyer vs supplier
+  -> product fit / compliance needs
+Pipeline
+  -> new / qualified / RFQ active / quote in progress / decision pending
+Quote Workspace
+  -> line items / pricing / incoterms / documents / risk checks
+Accepted Quote
+  -> order conversion
+Order Workspace
+  -> compliance blockers / freight readiness / dispatch readiness
+Integration Handoff
+  -> freight connector / ERP connector</div></div></div></section>
+
+      <section id="ai" class="section"><div class="grid two"><div class="card"><h3>AI intelligence readiness</h3><table class="table"><tr><th>Capability</th><th>Readiness</th><th>Need</th></tr><tr><td>Lead prioritization</td><td>49%</td><td>Use activity, age, stagnation, value, blockers</td></tr><tr><td>Quote risk scoring</td><td>34%</td><td>Add expiry, revisions, missing terms, send delays</td></tr><tr><td>Order delay prediction</td><td>28%</td><td>Add docs, approvals, dispatch/freight signals</td></tr><tr><td>Daily insights relevance</td><td>55%</td><td>Rank by business risk, not just rule hits</td></tr></table></div><div class="card"><h3>AI architecture</h3><div class="code">Current:
+Workflow signals -> rules + heuristics -> assistive UI
+
+Target:
+Workflow signals + history + risk factors
+  -> scoring / prioritization layer
+  -> lead priority score
+  -> quote risk score
+  -> order delay probability
+  -> ranked daily action list</div></div></div></section>
+
+      <section id="integrations" class="section"><div class="grid two"><div class="card"><h3>Integrations readiness</h3><table class="table"><tr><th>Capability</th><th>Readiness</th></tr><tr><td>Connector architecture</td><td>31%</td></tr><tr><td>Mapping layer</td><td>26%</td></tr><tr><td>Webhook handlers</td><td>24%</td></tr><tr><td>Sync logs</td><td>42%</td></tr><tr><td>Retry logic</td><td>22%</td></tr><tr><td>Freight mock connector</td><td>18%</td></tr><tr><td>ERP mock connector</td><td>17%</td></tr></table></div><div class="card"><h3>Target connector flow</h3><div class="code">Connector config
+  -> connector interface
+  -> webhook handler / sync runner / manual retry
+  -> mapping layer
+  -> sync logs + failure handling
+  -> Setu Flow domain objects</div></div></div></section>
+
+      <section id="docs" class="section"><div class="card"><h3>Documentation Command Center</h3><table class="table"><tr><th>Area</th><th>Status</th><th>Readiness</th></tr><tr><td>Root README</td><td>Missing</td><td>5%</td></tr><tr><td>Architecture doc</td><td>Exists</td><td>71%</td></tr><tr><td>Workflow doc</td><td>Partial</td><td>54%</td></tr><tr><td>Demo script</td><td>Missing</td><td>0%</td></tr><tr><td>Trade-show script</td><td>Missing</td><td>0%</td></tr><tr><td>Release checklist</td><td>Refreshed</td><td>74%</td></tr><tr><td>DCC source of truth</td><td>Active</td><td>100%</td></tr></table><ul><li><code>docs/RELEASE_READINESS.md</code> now points to PR-01-clean truth.</li><li><code>docs/master-plan.md</code> and <code>docs/REWORK_PLAN.md</code> now redirect to the DCC.</li><li>Next documentation step is a real root README and demo scripts in PR-10.</li></ul></div></section>
+
+      <section id="hygiene" class="section"><div class="grid two"><div class="card"><h3>Repo Hygiene & Drift Monitor</h3><table class="table"><tr><th>Check</th><th>Status</th><th>Notes</th></tr><tr><td>Legacy dev routes</td><td><span class="pill good">Removed</span></td><td><code>src/app/development</code> deleted</td></tr><tr><td>Workspace mirror routes</td><td><span class="pill good">Removed</span></td><td><code>src/app/workspace</code> deleted</td></tr><tr><td>Preview components</td><td><span class="pill good">Removed</span></td><td><code>src/components/previews</code> deleted</td></tr><tr><td>Planning components</td><td><span class="pill good">Removed</span></td><td><code>src/components/planning</code> deleted</td></tr><tr><td>Root artifact files</td><td><span class="pill good">Removed</span></td><td>build/typecheck/install logs purged</td></tr><tr><td>Route truth</td><td><span class="pill warn">Improved</span></td><td>Tests/contracts updated; route manifest still needed</td></tr><tr><td>Contract drift</td><td><span class="pill warn">Reduced</span></td><td>product-status contract now matches repo cleanup</td></tr></table></div><div class="card"><h3>PR-01 deleted surfaces</h3><div class="code">src/app/development/*
+src/app/workspace/*
+src/components/previews/*
+src/components/planning/*
+build.out
+build_batch6.out
+build_batch6b.out
+npm-ci.out
+npm-install.out
+npm_ci_batch6.out
+typecheck.out
+typecheck_batch6.out</div></div></div></section>
+
+      <section id="prs" class="section"><div class="card"><h3>PR Tracker</h3><table class="table"><tr><th>PR</th><th>Status</th><th>%</th><th>Next step</th></tr><tr><td>PR-01 Canonical Surface Cleanup</td><td><span class="pill good">Complete</span></td><td>100%</td><td>Baseline cleaned and DCC refreshed</td></tr><tr><td>PR-02 Route Truth + Shell Hardening</td><td><span class="pill warn">Next</span></td><td>0%</td><td>Create route manifest and split shell responsibilities</td></tr><tr><td>PR-03 Leads Workspace Refactor</td><td><span class="pill warn">Planned</span></td><td>0%</td><td>Decompose leads workspace and drawer</td></tr><tr><td>PR-04 Pipeline Core Rework</td><td><span class="pill warn">Planned</span></td><td>0%</td><td>Promote pipeline and simplify stage board</td></tr><tr><td>PR-05 Quotes Workspace Rebuild</td><td><span class="pill bad">Critical</span></td><td>0%</td><td>Replace launchpad with real workspace</td></tr><tr><td>PR-06 Dashboard Action-First Pass</td><td><span class="pill warn">Planned</span></td><td>0%</td><td>Redesign around blockers and action queues</td></tr><tr><td>PR-07 Trade Workflow Upgrade</td><td><span class="pill warn">Planned</span></td><td>0%</td><td>Add incoterms, freight, dispatch states</td></tr><tr><td>PR-08 AI Intelligence Pass</td><td><span class="pill warn">Planned</span></td><td>0%</td><td>Add scoring and prioritization</td></tr><tr><td>PR-09 Integrations + Mock Connectors</td><td><span class="pill warn">Planned</span></td><td>0%</td><td>Build connector layer + mocks</td></tr><tr><td>PR-10 Documentation + Demo Readiness</td><td><span class="pill warn">Planned</span></td><td>0%</td><td>README, demo scripts, release checklist</td></tr></table></div></section>
+
+      <section id="sprint" class="section"><div class="grid two"><div class="card"><h3>Sprint Tracker</h3><ul><li>Sprint goal: establish truth, remove drift, and lock the internal DCC as source of truth.</li><li>Completed: route cleanup, artifact cleanup, contract/test/doc refresh, DCC refresh.</li><li>Next sprint target: PR-02 route manifest and shell hardening.</li></ul><div class="progress-row"><div>Sprint completion</div><div class="bar"><span style="width:10%"></span></div><div>10%</div></div><div class="progress-row"><div>PR plan completion</div><div class="bar"><span style="width:10%"></span></div><div>10%</div></div></div><div class="card"><h3>Burndown</h3><div class="code">Execution plan tasks
+Done : #--------- 1/10 PRs
+Left : #########- 9/10 PRs</div></div></div></section>
+
+      <section id="weekly" class="section"><div class="card"><h3>Weekly Executive Summary</h3><ul><li><strong>Improved:</strong> repo truth is now materially cleaner; major legacy route drift is removed.</li><li><strong>Regressed:</strong> nothing in code quality regressed, but the DCC now makes remaining architecture debt more visible.</li><li><strong>Risks:</strong> shell ownership, quotes ambiguity, giant files, weak integrations/AI maturity.</li><li><strong>Blockers:</strong> no route manifest yet, quotes workspace unresolved, dashboard still not action-first.</li><li><strong>Demo readiness:</strong> improved to guided-internal-demo level after cleanup, but not trade-show ready.</li><li><strong>Investor readiness:</strong> still not ready; trust improved, but core product hardening remains.</li></ul></div></section>
+
+      <section id="daily" class="section"><div class="card"><h3>Daily Engineering Summary</h3><ul><li><strong>Changed in repo:</strong> PR-01 cleanup executed directly on this baseline.</li><li><strong>Needs attention:</strong> route manifest, shell hardening, quotes rebuild, pipeline positioning.</li><li><strong>What is drifting:</strong> mostly architecture ownership now, not route clutter.</li><li><strong>Failing tests:</strong> route-presence truth should now align; full verification run still pending.</li><li><strong>Incomplete:</strong> README, demo scripts, integrations architecture, AI scoring layer.</li><li><strong>Ready for PR:</strong> PR-02 Route Truth + Shell Hardening.</li></ul></div></section>
+
+      <section id="actions" class="section"><div class="grid two"><div class="card"><h3>Next actions</h3><ol><li>Execute PR-02 Route Truth + Shell Hardening</li><li>Create single route manifest shared by shell, tests, and contracts</li><li>Promote Pipeline to primary nav with cleaner stage clarity</li><li>Replace Quotes launchpad with full workspace architecture</li><li>Start Leads decomposition</li></ol></div><div class="card"><h3>Blockers, risks, completed</h3><ul><li><strong>Blockers:</strong> no route manifest yet; quotes and dashboard still unresolved.</li><li><strong>Risks:</strong> oversized files slow safe refactors; AI/integration story still weak.</li><li><strong>Completed:</strong> PR-01 cleanup, DCC refresh, truth docs/test updates, artifact purge.</li></ul></div></div></section>
+    </main>
+  </div>
+  <script>
+    const tabs = [
+      ['overview', 'Overview Dashboard'],
+      ['architecture', 'Architecture'],
+      ['product', 'Product Surfaces'],
+      ['workflow', 'Trade Workflow'],
+      ['ai', 'AI Intelligence'],
+      ['integrations', 'Integrations'],
+      ['docs', 'Documentation'],
+      ['hygiene', 'Repo Hygiene'],
+      ['prs', 'PR Tracker'],
+      ['sprint', 'Sprint Tracker'],
+      ['weekly', 'Weekly Summary'],
+      ['daily', 'Daily Summary'],
+      ['actions', 'Next Actions'],
+    ];
+    const nav = document.getElementById('nav');
+    const sections = Object.fromEntries([...document.querySelectorAll('.section')].map(el => [el.id, el]));
+    function activate(id) {
+      Object.values(sections).forEach(s => s.classList.remove('active'));
+      sections[id].classList.add('active');
+      [...nav.querySelectorAll('button')].forEach(btn => btn.classList.toggle('active', btn.dataset.target === id));
+    }
+    tabs.forEach(([id, label], index) => {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      btn.dataset.target = id;
+      if (index === 0) btn.classList.add('active');
+      btn.addEventListener('click', () => activate(id));
+      nav.appendChild(btn);
+    });
+  </script>
+</body>
+</html>

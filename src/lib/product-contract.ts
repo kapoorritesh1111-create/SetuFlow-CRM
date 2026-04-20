@@ -1,13 +1,15 @@
 export const LOCKED_PRODUCT_FLOW = ['Capture', 'Lead', 'Quote', 'Order'] as const;
 
-export const APPROVED_REWORK_PHASE = 'Canonical routes only';
-export const APPROVED_REWORK_TITLE = 'Operational alignment';
+export const INTERNAL_DCC_PATH = '/internal-dcc/';
+export const APPROVED_REWORK_PHASE = 'Canonical cleanup complete';
+export const APPROVED_REWORK_TITLE = 'Single-source route truth';
 
 export const PRODUCT_ROUTE_LABELS = {
+  dashboard: 'Dashboard',
   leads: 'Leads',
+  pipeline: 'Pipeline',
   quotes: 'Quotes',
   orders: 'Orders',
-  dashboard: 'Dashboard',
   admin: 'Admin',
   capture: 'Capture',
   myCard: 'My Card',
@@ -15,43 +17,26 @@ export const PRODUCT_ROUTE_LABELS = {
 
 export const PRODUCT_ROUTES = {
   app: {
+    dashboard: '/dashboard',
     leads: '/leads',
+    pipeline: '/pipeline',
     quotes: '/quotes',
     orders: '/orders',
-    dashboard: '/dashboard',
     admin: '/admin/users',
     capture: '/contact-exchange/scan',
     myCard: '/contact-exchange/vcard',
   },
-  workspace: {
-    home: '/workspace',
-    leads: '/workspace/leads',
-    quotes: '/workspace/quotes',
-    orders: '/workspace/orders',
-    dashboard: '/workspace/dashboard',
-    capture: '/workspace/capture',
-    myCard: '/workspace/my-card',
-  },
-  development: {
-    home: '/development',
-    masterPlan: '/development/master-plan',
-    readiness: '/development/readiness',
-    buyerReady: '/development/buyer-ready',
-    backlog: '/development/backlog',
-    product: '/development/product',
-    architecture: '/development/architecture',
-    uxRules: '/development/ux-rules',
-    screens: '/development/screens/leads-capture',
+  internal: {
+    dcc: INTERNAL_DCC_PATH,
   },
 } as const;
 
 export const PRODUCT_SHELL_LABELS = {
   productShell: 'Product shell',
-  previewBadge: 'Preview workspace',
   ritualHeading: 'Working rules',
-  ritualBeforeCoding: 'Keep canonical routes as the only routes users can navigate to.',
-  ritualDuringCoding: 'Update visible navigation in the same change as workflow updates.',
-  ritualAfterCoding: 'Refresh tests and readiness notes when user-facing behavior changes.',
+  ritualBeforeCoding: 'Preserve canonical product routes and keep internal planning surfaces out of the shipped app.',
+  ritualDuringCoding: 'Update navigation and route tests in the same change as any route-level product work.',
+  ritualAfterCoding: 'Refresh the internal DCC when readiness, drift, or route truth changes.',
 } as const;
 
 export type ProductNavLink = {
@@ -61,24 +46,15 @@ export type ProductNavLink = {
 };
 
 export const primaryAppShellNav: ProductNavLink[] = [
+  { href: PRODUCT_ROUTES.app.dashboard, label: PRODUCT_ROUTE_LABELS.dashboard, exact: true },
   { href: PRODUCT_ROUTES.app.leads, label: PRODUCT_ROUTE_LABELS.leads, exact: true },
+  { href: PRODUCT_ROUTES.app.pipeline, label: PRODUCT_ROUTE_LABELS.pipeline, exact: true },
   { href: PRODUCT_ROUTES.app.quotes, label: PRODUCT_ROUTE_LABELS.quotes },
   { href: PRODUCT_ROUTES.app.orders, label: PRODUCT_ROUTE_LABELS.orders },
-  { href: PRODUCT_ROUTES.app.dashboard, label: PRODUCT_ROUTE_LABELS.dashboard, exact: true },
   { href: PRODUCT_ROUTES.app.admin, label: PRODUCT_ROUTE_LABELS.admin },
 ];
 
-export const primaryWorkspacePreviewNav: ProductNavLink[] = [
-  { href: PRODUCT_ROUTES.workspace.leads, label: PRODUCT_ROUTE_LABELS.leads, exact: true },
-  { href: PRODUCT_ROUTES.workspace.quotes, label: PRODUCT_ROUTE_LABELS.quotes },
-  { href: PRODUCT_ROUTES.workspace.orders, label: PRODUCT_ROUTE_LABELS.orders },
-  { href: PRODUCT_ROUTES.workspace.dashboard, label: PRODUCT_ROUTE_LABELS.dashboard },
-  { href: PRODUCT_ROUTES.workspace.capture, label: PRODUCT_ROUTE_LABELS.capture },
-  { href: PRODUCT_ROUTES.workspace.myCard, label: PRODUCT_ROUTE_LABELS.myCard },
-];
-
 export const hiddenFromPrimaryNav = [
-  'Pipeline',
   'Products',
   'Documents',
   'Compliance',
@@ -92,6 +68,6 @@ export const hiddenFromPrimaryNav = [
 
 export const driftGuardrails = [
   'Define product shell links once and import them everywhere.',
-  'Treat demoted routes as support surfaces, not primary destinations.',
-  'Promote only routes that match the approved Capture → Lead → Quote → Order story.',
+  'Do not reintroduce development, workspace mirror, or preview routes into the shipped app.',
+  'Treat the internal DCC as the planning and readiness source of truth.',
 ] as const;

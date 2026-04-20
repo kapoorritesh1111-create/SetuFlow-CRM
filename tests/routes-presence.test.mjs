@@ -3,16 +3,28 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 
 const requiredRoutes = [
-  'src/app/(app)/orders/page.tsx',
   'src/app/(app)/dashboard/page.tsx',
+  'src/app/(app)/leads/page.tsx',
+  'src/app/(app)/pipeline/page.tsx',
+  'src/app/(app)/quotes/page.tsx',
+  'src/app/(app)/orders/page.tsx',
   'src/app/(app)/contact-exchange/vcard/page.tsx',
   'src/app/(app)/contact-exchange/scan/page.tsx',
+  'public/internal-dcc/index.html',
   'src/app/page.tsx',
 ];
 
-test('canonical buyer-facing routes exist', () => {
+const forbiddenPaths = [
+  'src/app/development',
+  'src/app/workspace',
+  'src/components/previews',
+  'src/components/planning',
+];
+
+test('canonical product routes and internal DCC exist', () => {
   requiredRoutes.forEach((route) => assert.equal(existsSync(route), true, `${route} should exist`));
-  assert.equal(existsSync('src/app/development'), false);
-  assert.equal(existsSync('src/app/workspace'), false);
-  assert.equal(existsSync('src/components/previews'), false);
+});
+
+test('forbidden internal legacy surfaces are absent', () => {
+  forbiddenPaths.forEach((path) => assert.equal(existsSync(path), false, `${path} should be absent`));
 });
