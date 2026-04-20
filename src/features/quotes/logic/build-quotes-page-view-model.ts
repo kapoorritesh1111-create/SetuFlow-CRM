@@ -1,0 +1,170 @@
+import type { QuoteHistoryItem, QuoteWorkspaceListItem, QuotesWorkspaceViewModel } from '@/features/quotes/types/workspace';
+
+type LeadRow = { id: string; company_name: string | null; contact_name: string | null; lead_type?: 'buyer' | 'supplier' | null };
+type QuoteRow = {
+  id: string;
+  lead_id: string;
+  status: string | null;
+  currency: string | null;
+  notes: string | null;
+  quote_number: string | null;
+  created_at: string;
+  updated_at: string;
+  current_version_id: string | null;
+};
+type QuoteVersionRow = {
+  id: string;
+  quote_id: string | null;
+  version_no: number | null;
+  status: string | null;
+  created_at: string | null;
+  approved_at: string | null;
+  sent_at: string | null;
+};
+type NegotiationRow = {
+  id: string;
+  quote_id: string;
+  event_type: string | null;
+  message: string | null;
+  created_at: string | null;
+  actor_name: string | null;
+};
+type CommunicationRow = {
+  id: string;
+  quote_id: string | null;
+  subject: string | null;
+  summary: string | null;
+  status: string | null;
+  created_at: string;
+};
+type ContractRow = {
+  id: string;
+  quote_id: string | null;
+  status: string | null;
+  signed_at: string | null;
+  starts_on: string | null;
+};
+
+function lower(value: string | null | undefined) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function buildHistory(
+  quoteId: string,
+  versions: QuoteVersionRow[],
+  negotiations: NegotiationRow[],
+  communications: CommunicationRow[],
+): QuoteHistoryItem[] {
+  const versionHistory = versions
+    .filter((row) => row.quote_id === quoteId)
+    .map((row) => ({
+      id: `version-${row.id}`,
+      label: `Version ${row.version_no ?? 'draft'}`,
+      detail: `Status: ${row.status ?? 'unknown'}${row.sent_at ? ' • sent' : row.approved_at ? ' • approved' : ''}`,
+      happenedAt: row.sent_at ?? row.approved_at ?? row.created_at,
+    }));
+
+  const negotiationHistory = negotiations
+    .filter((row) => row.quote_id === quoteId)
+    .map((row) => ({
+      id: `negotiation-${row.id}`,
+      label: row.event_type ? row.event_type.replaceAll('_', ' ') : 'Negotiation update',
+      detail: row.message ?? `Updated by ${row.actor_name ?? 'team'}`,
+      happenedAt: row.created_at,
+    }));
+
+  const communicationHistory = communications
+    .filter((row) => row.quote_id === quoteId)
+    .map((row) => ({
+      id: `communication-${row.id}`,
+      label: row.subject ?? 'Quote communication',
+      detail: row.summary ?? `Status: ${row.status ?? 'draft'}`,
+      happenedAt: row.created_at,
+    }));
+
+  return [...versionHistory, ...negotiationHistory, ...communicationHistory].sort((a, b) => {
+    const aTime = a.happenedAt ? Date.parse(a.happenedAt) : 0;
+    const bTime = b.happenedAt ? Date.parse(b.happenedAt) : 0;
+    return bTime - aTime;
+  });
+}
+
+export function buildQuotesPageViewModel({
+  quotes,
+  leads,
+  versions,
+  negotiations,
+  communications,
+  contracts,
+  selectedQuoteId,
+}: {
+  quotes: QuoteRow[];
+  leads: LeadRow[];
+  versions: QuoteVersionRow[];
+  negotiations: NegotiationRow[];
+  communications: CommunicationRow[];
+  contracts: ContractRow[];
+  selectedQuoteId: string | null;
+}): QuotesWorkspaceViewModel {
+  const leadMap = new Map(leads.map((lead) => [lead.id, lead]));
+  const versionCounts = new Map<string, number>();
+  const negotiationCounts = new Map<string, number>();
+  const communicationCounts = new Map<string, number>();
+  const contractQuoteIds = new Set(
+    contracts.filter((row) => row.quote_id).map((row) => String(row.quote_id)),
+  );
+
+  for (const row of versions) {
+    if (!row.quote_id) continue;
+    versionCounts.set(row.quote_id, (versionCounts.get(row.quote_id) ?? 0) + 1);
+  }
+  for (const row of negotiations) {
+    negotiationCounts.set(row.quote_id, (negotiationCounts.get(row.quote_id) ?? 0) + 1);
+  }
+  for (const row of communications) {
+    if (!row.quote_id) continue;
+    communicationCounts.set(row.quote_id, (communicationCounts.get(row.quote_id) ?? 0) + 1);
+  }
+
+  const items: QuoteWorkspaceListItem[] = quotes.map((quote) => {
+    const lead = leadMap.get(quote.lead_id);
+    const quoteNegotiations = negotiations.filter((row) => row.quote_id === quote.id);
+    const leadType: QuoteWorkspaceListItem['leadType'] = lead?.lead_type === 'buyer' || lead?.lead_type === 'supplier' ? lead.lead_type : 'mixed';
+    return {
+      id: quote.id,
+      leadId: quote.lead_id,
+      companyName: lead?.company_name ?? 'Unknown company',
+      leadType,
+      contactName: lead?.contact_name ?? null,
+      status: lower(quote.status) || 'draft',
+      currency: quote.currency,
+      quoteNumber: quote.quote_number,
+      notes: quote.notes,
+      createdAt: quote.created_at,
+      updatedAt: quote.updated_at,
+      currentVersionId: quote.current_version_id,
+      totalVersions: versionCounts.get(quote.id) ?? 0,
+      negotiationCount: negotiationCounts.get(quote.id) ?? 0,
+      historyCount: (versionCounts.get(quote.id) ?? 0) + (negotiationCounts.get(quote.id) ?? 0) + (communicationCounts.get(quote.id) ?? 0),
+      hasAcceptedContract: contractQuoteIds.has(quote.id),
+      lastNegotiationMessage: quoteNegotiations.sort((a, b) => Date.parse(b.created_at ?? '') - Date.parse(a.created_at ?? ''))[0]?.message ?? null,
+    };
+  }).sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+
+  const selectedItem = items.find((item) => item.id === selectedQuoteId) ?? items[0] ?? null;
+  const selectedHistory = selectedItem ? buildHistory(selectedItem.id, versions, negotiations, communications) : [];
+  const activeStatuses = new Set(['draft', 'review', 'review_requested', 'pending_approval', 'approved', 'sent', 'negotiating']);
+  const acceptedQuotes = items.filter((item) => item.status === 'accepted').length;
+
+  return {
+    items,
+    selectedItem,
+    selectedHistory,
+    summary: {
+      totalQuotes: items.length,
+      activeQuotes: items.filter((item) => activeStatuses.has(item.status)).length,
+      acceptedQuotes,
+      contractReadyQuotes: items.filter((item) => item.hasAcceptedContract || item.status === 'accepted').length,
+    },
+  };
+}

@@ -3,13 +3,10 @@ import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
-import { parseWorkspaceMode, workspaceModeToLeadJourney } from '@/features/workspace/mode';
-import { buildTodayLayerState } from '@/features/workspace/today';
 import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
-import { normalizeQuoteRecords } from '@/lib/normalizers/quote-normalizer';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
+import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page-view-model';
 
 export default async function LeadsPage({
   searchParams,
@@ -44,41 +41,30 @@ export default async function LeadsPage({
     );
   }
 
-  const normalizedQuotes = normalizeQuoteRecords(data.quotes);
-  const canManageLeads = hasWorkspaceCapability(workspace.currentRoles, 'lead.manage');
-  const readOnlyMessage = getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage');
-  const isWorkspaceEmpty = data.leads.length === 0;
-  const workspaceMode = parseWorkspaceMode(searchParams?.mode);
-  const todayState = buildTodayLayerState({
-    mode: workspaceMode,
-    nowIso: new Date().toISOString(),
-    leads: data.leads,
-    activities: data.activities,
-    complianceItems: data.complianceItems,
-  });
+  const viewModel = buildLeadsPageViewModel({ workspace, data, searchParams });
 
   return (
     <div className="space-y-4">
       <QueryIssuesAlert issues={data.queryIssues} />
       <StateMessage
-        title={workspaceMode === 'buyers'
+        title={viewModel.workspaceMode === 'buyers'
           ? 'Buyer mode is active in Leads'
-          : workspaceMode === 'suppliers'
+          : viewModel.workspaceMode === 'suppliers'
             ? 'Supplier mode is active in Leads'
             : 'Combined buyer and supplier view is active in Leads'}
-        description={workspaceMode === 'buyers'
+        description={viewModel.workspaceMode === 'buyers'
           ? 'Keep the primary action on qualification and progression. The next commercial move is to open one lead, tighten details, and advance it toward Quote.'
-          : workspaceMode === 'suppliers'
+          : viewModel.workspaceMode === 'suppliers'
             ? 'Keep the primary action on supplier qualification and coverage readiness. Move one supplier record forward rather than spreading attention across the board.'
             : 'This workspace mixes buyer and supplier records. Pick one priority record, open the command center, and move it cleanly through the locked flow.'}
         tone="neutral"
       />
 
       <LeadsWorkspace
-        currentUserId={workspace.user?.id ?? ''}
-        canManageLeads={canManageLeads}
-        readOnlyMessage={readOnlyMessage}
-        isWorkspaceEmpty={isWorkspaceEmpty}
+        currentUserId={viewModel.currentUserId}
+        canManageLeads={viewModel.canManageLeads}
+        readOnlyMessage={viewModel.readOnlyMessage}
+        isWorkspaceEmpty={viewModel.isWorkspaceEmpty}
         leads={data.leads.map((lead) => ({ ...lead, intro_sent: lead.intro_sent ?? false }))}
         stages={data.stages}
         pipelines={data.pipelines}
@@ -95,7 +81,7 @@ export default async function LeadsPage({
         activities={data.activities}
         stageHistory={data.stageHistory}
         rfqs={data.rfqs}
-        quotes={normalizedQuotes}
+        quotes={viewModel.normalizedQuotes}
         quoteVersions={data.quoteVersions}
         complianceItems={data.complianceItems}
         complianceDefinitions={data.complianceDefinitions}
@@ -103,9 +89,9 @@ export default async function LeadsPage({
         documentRequirementRules={data.documentRequirementRules}
         variants={data.variants}
         prices={data.prices} pricingRules={data.pricingRules}
-        initialMode={workspaceMode}
-        initialLeadType={workspaceModeToLeadJourney(workspaceMode)}
-        initialTodayState={todayState}
+        initialMode={viewModel.workspaceMode}
+        initialLeadType={viewModel.initialLeadType}
+        initialTodayState={viewModel.todayState}
       />
     </div>
   );

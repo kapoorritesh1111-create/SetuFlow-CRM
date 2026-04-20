@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState, useTransition, type KeyboardEvent, type SVGProps } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LeadDrawer, type LeadDrawerSavePayload } from '@/features/leads/components/lead-drawer';
+import { LeadDrawer } from '@/features/leads/components/lead-drawer';
 import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
 import { SavedViewsBar, ToolbarActionButton, ToolbarSearchInput, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
@@ -21,6 +21,8 @@ import { AlertTriangle, ArrowUpRight, BadgeCheck, CalendarCheck, CheckCircle, Cl
 import { WorkspaceWorkflowShell } from '@/features/workspace/components/WorkspaceWorkflowShell';
 import { workspaceInsetClass, workspaceTableShellClass } from '@/components/ui/workspace-surfaces';
 import { buildTodayLayerState } from '@/features/workspace/today';
+import { LeadTableRow, type LeadTableRowProps } from '@/features/leads/ui/lead-table-row';
+import type { LeadDrawerSavePayload, LeadsWorkspaceProps } from '@/features/leads/types/workspace';
 import type {
   TodayFilterKey,
   TodayLayerState,
@@ -86,149 +88,6 @@ type SavedView = 'all' | 'mine' | 'overdue' | 'today' | 'trade-event' | 'buyers'
 type SortMode = 'follow-up' | 'created' | 'company' | 'health';
 type DrawerMode = 'quick' | 'full';
 type LeadOpenStep = 'basics' | 'workflow' | 'coverage' | 'quotes';
-
-interface LeadTableRowProps {
-  lead: LeadRow;
-  selected: boolean;
-  isSpotlight: boolean;
-  toggleSelect: (id: string) => void;
-  setSpotlightLead: (id: string) => void;
-  stageMap: Map<string, string>;
-  nextStepMap: Map<string, string>;
-  ownerMap: Map<string, string>;
-  safeFormatDateTime: (value?: string | null) => string;
-  activityMap: Map<string, string>;
-  stageHistoryMap: Map<string, string>;
-  stageMetaMap: Map<string, { sortOrder: number; stageCount: number; isClosed: boolean }>;
-  readinessMap: Map<string, LeadCommercialReadiness>;
-}
-
-function LeadTableRow({
-  lead,
-  selected,
-  isSpotlight,
-  stageMap,
-  nextStepMap,
-  ownerMap,
-  safeFormatDateTime,
-  readinessMap,
-}: LeadTableRowProps) {
-  const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
-  const readiness = readinessMap.get(lead.id);
-  const commandCenterHref = getLeadCommandCenterHref(lead.id);
-  const router = useRouter();
-  const stageName = stageMap.get(lead.stage_id ?? '') ?? 'Unstaged';
-  const nextStepName = nextStepMap.get(lead.next_step_id ?? '') ?? 'Review next step';
-  const ownerLabel = ownerMap.get(lead.owner_user_id ?? '') ?? 'Unassigned';
-  const statusLabel =
-    (readiness?.blockerCount ?? 0) > 0
-      ? 'Blocked'
-      : followUpState === 'overdue'
-        ? 'Overdue'
-        : followUpState === 'today'
-          ? 'Due today'
-          : followUpState === 'upcoming'
-            ? 'Upcoming'
-            : 'Waiting';
-  const statusClasses =
-    (readiness?.blockerCount ?? 0) > 0
-      ? 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200'
-      : followUpState === 'overdue'
-        ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/45 dark:text-rose-200'
-        : followUpState === 'today'
-          ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/45 dark:text-amber-200'
-          : followUpState === 'upcoming'
-            ? 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
-            : 'border-blue-200 bg-blue-50 text-blue-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200';
-  const dueLabel =
-    followUpState === 'today'
-      ? 'Today'
-      : lead.next_follow_up_at
-        ? safeFormatDateTime(lead.next_follow_up_at)
-        : 'No due date';
-  const avatarLabel = getLeadInitials(lead.company_name) || 'L';
-  const secondaryBadge =
-    (readiness?.blockerCount ?? 0) > 0
-      ? `${readiness?.blockerCount ?? 0} blocker${(readiness?.blockerCount ?? 0) === 1 ? '' : 's'}`
-      : typeof lead.deal_value === 'number' && lead.deal_value > 0
-        ? 'High value'
-        : null;
-
-  return (
-    <article
-      key={lead.id}
-      role="link"
-      tabIndex={0}
-      className={[
-        'group grid cursor-pointer gap-4 border-b border-slate-200 px-5 py-3.5 transition hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 dark:border-slate-700/70 dark:hover:bg-slate-800/70 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.95fr)_140px_132px]',
-        selected || isSpotlight ? 'bg-brand-50/35 dark:bg-sky-500/10' : 'bg-white dark:bg-slate-900/70',
-      ].join(' ')}
-      onClick={(event) => {
-        if (shouldIgnoreLeadNavigationTarget(event.target)) return;
-        openLeadCommandCenter(router, commandCenterHref);
-      }}
-      onKeyDown={(event) => {
-        if (shouldIgnoreLeadNavigationTarget(event.target)) return;
-        handleLeadCommandCenterKeyDown(event, router, commandCenterHref);
-      }}
-    >
-      <div className="min-w-0">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-            {avatarLabel}
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate text-[15px] font-semibold text-slate-950 dark:text-slate-50">{lead.company_name}</h3>
-              {secondaryBadge ? (
-                <span className="inline-flex items-center rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
-                  {secondaryBadge}
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              {[lead.contact_name ?? 'No primary contact', lead.job_title, lead.country].filter(Boolean).join(' · ')}
-            </p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{stageName} · {ownerLabel}</p>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Use Open on any row to move into `/leads/[leadId]` command center. Quick Lead is the fastest entry point, while New Lead opens the full capture flow.</p>
-        </div>
-      </div>
-
-      <div className={`min-w-0 px-4 py-3 ${workspaceInsetClass}`}>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Next action</p>
-        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{nextStepName}</p>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {lead.source_label ?? lead.source_type ?? ownerLabel}
-        </p>
-      </div>
-
-      <div className="flex flex-col justify-center lg:items-end">
-        <p className={`text-sm font-semibold ${followUpState === 'overdue' ? 'text-rose-600 dark:text-rose-300' : followUpState === 'today' ? 'text-amber-600 dark:text-amber-300' : 'text-slate-900 dark:text-slate-50'}`}>
-          {dueLabel}
-        </p>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Due</p>
-        <span className={`mt-3 inline-flex w-fit items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses}`}>
-          {statusLabel}
-        </span>
-      </div>
-
-      <div className="flex items-center lg:justify-end">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            openLeadCommandCenter(router, commandCenterHref);
-          }}
-          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(16,185,129,0.18)] transition hover:bg-emerald-600 dark:border-emerald-400/30 dark:bg-emerald-400 dark:text-slate-950 dark:hover:bg-emerald-300"
-        >
-          Open
-          <ExternalLink className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </article>
-  );
-}
 
 type SignalTone = 'slate' | 'blue' | 'emerald' | 'amber' | 'rose' | 'violet';
 type IconComponent = (props: SVGProps<SVGSVGElement>) => JSX.Element;
@@ -393,41 +252,7 @@ export function LeadsWorkspace({
   canManageLeads = true,
   readOnlyMessage = null,
   isWorkspaceEmpty = false,
-}: {
-  currentUserId: string;
-  canManageLeads?: boolean;
-  readOnlyMessage?: string | null;
-  isWorkspaceEmpty?: boolean;
-  leads: LeadRow[];
-  stages: Stage[];
-  pipelines: Pipeline[];
-  nextSteps: Option[];
-  tradeEvents: Option[];
-  productCategories: ProductCategory[];
-  products: Product[];
-  markets: Option[];
-  profiles: Profile[];
-  countries: Country[];
-  leadMarkets: Array<{ lead_id: string; market_id: string }>;
-  leadProductInterests: Array<{ lead_id: string; product_id: string }>;
-  followUps: FollowUp[];
-  activities: Activity[];
-  stageHistory?: StageHistory[];
-  rfqs?: Rfq[];
-  quotes?: Quote[];
-  quoteVersions?: QuoteVersion[];
-  complianceItems?: ComplianceItem[];
-  complianceDefinitions?: ComplianceDefinition[];
-  documents?: LeadDocument[];
-  documentRequirementRules?: DocumentRequirementRule[];
-  variants?: Variant[];
-  prices?: Price[];
-  pricingRules?: PricingRule[];
-  initialLeadType?: '' | LeadJourney;
-  initialMode?: WorkspaceMode;
-  initialTodayState?: TodayLayerState;
-  storageKey?: string;
-}) {
+}: LeadsWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -553,6 +378,7 @@ export function LeadsWorkspace({
   const activityMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const item of activities) {
+      if (!item.lead_id) continue;
       const current = map.get(item.lead_id);
       if (!current || item.occurred_at > current) map.set(item.lead_id, item.occurred_at);
     }
@@ -562,6 +388,7 @@ export function LeadsWorkspace({
   const stageHistoryMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const item of stageHistory) {
+      if (!item.lead_id) continue;
       const current = map.get(item.lead_id);
       if (!current || item.changed_at > current) map.set(item.lead_id, item.changed_at);
     }
@@ -601,7 +428,7 @@ export function LeadsWorkspace({
           complianceStatuses: complianceItems.filter((item) => item.lead_id === lead.id).map((item) => item.status),
         });
         const documentState = buildLeadDocumentRequirementState({
-          rules: documentRequirementRules,
+          rules: documentRequirementRules as DocumentRequirementRule[],
           leadType: lead.lead_type,
           marketIds: linkedMarketIds,
           productIds: Array.from(linkedProductIds),
@@ -1128,6 +955,10 @@ export function LeadsWorkspace({
                 stageHistoryMap={stageHistoryMap}
                 stageMetaMap={stageMetaMap}
                 readinessMap={readinessByLeadId}
+                getLeadCommandCenterHref={getLeadCommandCenterHref}
+                openLeadCommandCenter={openLeadCommandCenter}
+                shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
+                handleLeadCommandCenterKeyDown={handleLeadCommandCenterKeyDown}
               />
             ))
           ) : (

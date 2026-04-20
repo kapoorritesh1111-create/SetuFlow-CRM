@@ -16,6 +16,8 @@ import { DashboardWidgetErrorBoundary } from './dashboard-widget-error-boundary'
 import { MarketCommandPanel } from './market-command-panel';
 import { NeedsAttentionCard } from './needs-attention-card';
 import { RecentActivityCard } from './recent-activity-card';
+import { ActionPriorityPanel } from '@/features/dashboard/ui/action-priority-panel';
+import { buildDashboardPriorityBuckets } from '@/features/dashboard/logic/action-priorities';
 import { WorkspaceWorkflowShell } from '@/features/workspace/components/WorkspaceWorkflowShell';
 import { buildTodayLayerStateFromDashboardData } from '@/features/workspace/today';
 import type { TodayFilterKey, WorkspaceMode } from '@/features/workspace/types';
@@ -230,6 +232,7 @@ export default function DashboardInteractive({
   const blockedValue = Math.round(filteredAttentionItems.filter((item) => item.statusTag === 'blocked').reduce((sum, item) => sum + (item.valueImpact ?? 0), 0));
   const atRiskValue = Math.round(filteredAttentionItems.filter((item) => item.statusTag === 'at-risk' || item.statusTag === 'overdue').reduce((sum, item) => sum + (item.valueImpact ?? 0), 0));
   const hotCount = filteredAttentionItems.filter((item) => item.statusTag === 'hot').length;
+  const priorityBuckets = useMemo(() => buildDashboardPriorityBuckets(filteredAttentionItems), [filteredAttentionItems]);
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 px-4 pb-10 pt-5 sm:px-6 xl:px-0">
@@ -285,6 +288,8 @@ export default function DashboardInteractive({
         onDeleteSavedView={layout.onDeleteSavedView}
         onReset={layout.onResetLayout}
       />
+
+      <ActionPriorityPanel buckets={priorityBuckets} />
 
       {/* KPI strip — role-filtered */}
       {data.kpis.length > 0 && (

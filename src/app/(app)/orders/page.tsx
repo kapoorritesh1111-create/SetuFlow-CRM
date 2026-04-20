@@ -16,6 +16,10 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { formatDateTime } from '@/lib/utils';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
+import { inferOrderTradeWorkflow } from '@/features/trade-workflow/logic';
+import { predictOrderDelay } from '@/features/ai/logic/intelligence';
+import { AIInsightCard, AIOrderDelayPanel } from '@/features/ai/ui/intelligence-panels';
+import { TradeSignalGrid } from '@/features/trade-workflow/ui';
 
 // ─── Explicit row types (avoids Supabase generic inference issues) ────────────
 
@@ -34,6 +38,7 @@ type LeadRow = {
   country: string | null;
   deal_value: number | null;
   deal_currency: string | null;
+  lead_type: 'buyer' | 'supplier' | null;
 };
 
 type DocRow = {
@@ -75,6 +80,7 @@ type OrderRecord = {
   country: string | null;
   dealValue: number | null;
   dealCurrency: string | null;
+  leadType: 'buyer' | 'supplier' | 'mixed';
   documents: DocRow[];
   complianceItems: ComplianceRow[];
   contract: ContractRow | null;
@@ -198,7 +204,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   // 2–5. Parallel fetch: leads, documents, compliance, contracts
   const [leadsResult, docsResult, complianceResult, contractsResult] = await Promise.all([
     db.from('leads')
-      .select('id, company_name, contact_name, country, deal_value, deal_currency')
+      .select('id, company_name, contact_name, country, deal_value, deal_currency, lead_type')
       .eq('organization_id', orgId)
       .in('id', leadIds),
 
@@ -259,6 +265,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       country: lead?.country ?? null,
       dealValue: lead?.deal_value ?? null,
       dealCurrency: lead?.deal_currency ?? null,
+      leadType: lead?.lead_type === 'buyer' || lead?.lead_type === 'supplier' ? lead.lead_type : 'mixed',
       documents: docsByQuote.get(q.id) ?? [],
       complianceItems: complianceByLead.get(q.lead_id) ?? [],
       contract: contractByQuote.get(q.id) ?? null,
@@ -297,6 +304,39 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         tone="neutral"
       />
 
+      {accepted.length > 0 ? (
+        <TradeSignalGrid
+          title="Trade execution readiness"
+          signals={[
+            { label: 'Buyer / supplier clarity', value: primaryOperationalContext === 'mixed' ? 'Mixed mode' : primaryOperationalContext === 'supplier' ? 'Supplier mode' : 'Buyer mode', tone: 'neutral', detail: 'Orders keeps execution lanes visible so trade work does not collapse into a generic CRM state.' },
+            { label: 'Freight readiness', value: `${accepted.filter((order) => order.contract && order.documents.every((doc) => ['approved', 'complete', 'ready'].includes(doc.status.toLowerCase()))).length}/${accepted.length} ready`, tone: accepted.every((order) => order.contract) ? 'warning' : 'danger', detail: 'Freight handoff now depends on contract posture and document clearance, not commercial acceptance alone.' },
+            { label: 'Compliance blockers', value: String(accepted.reduce((sum, order) => sum + order.complianceItems.filter((item) => !['approved', 'complete'].includes(item.status.toLowerCase())).length, 0)), tone: accepted.some((order) => order.complianceItems.some((item) => !['approved', 'complete'].includes(item.status.toLowerCase()))) ? 'warning' : 'success', detail: 'Open compliance items remain visible as execution blockers in the order lane.' },
+            { label: 'Dispatch readiness', value: `${accepted.filter((order) => dispatchGate(order.documents, order.complianceItems).tone === 'success').length}/${accepted.length} ready`, tone: accepted.some((order) => dispatchGate(order.documents, order.complianceItems).tone !== 'success') ? 'warning' : 'success', detail: 'Dispatch readiness now combines contract, document, and compliance signals in one execution view.' },
+          ]}
+        />
+      ) : null}
+
+      {accepted.length > 0 ? (
+        <section className="grid gap-4 md:grid-cols-3">
+          {accepted
+            .map((order) => predictOrderDelay({
+              quoteId: order.quoteId,
+              companyName: order.companyName,
+              leadType: order.leadType,
+              quoteStatus: order.quoteStatus,
+              updatedAt: order.updatedAt,
+              documentBlockers: order.documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
+              complianceBlockers: order.complianceItems.filter((item) => !['approved', 'complete'].includes(item.status.toLowerCase())).length,
+              hasContract: Boolean(order.contract),
+            }))
+            .sort((left, right) => right.score - left.score)
+            .slice(0, 3)
+            .map((prediction) => (
+              <AIInsightCard key={prediction.quoteId} title={`${prediction.companyName} · ${prediction.label}`} score={prediction.score} level={prediction.level} reasons={prediction.reasons} />
+            ))}
+        </section>
+      ) : null}
+
       {accepted.length > 0 && (
         <SectionCard
           eyebrow="Commercially accepted"
@@ -318,8 +358,25 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
 function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'sent' }) {
   const gate = dispatchGate(order.documents, order.complianceItems);
+  const tradeWorkflow = inferOrderTradeWorkflow({
+    leadType: order.leadType,
+    documentBlockers: order.documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
+    complianceBlockers: order.complianceItems.filter((item) => !['approved', 'complete'].includes(item.status.toLowerCase())).length,
+    hasContract: Boolean(order.contract),
+    quoteStatus: order.quoteStatus,
+  });
   const borderClass = tone === 'accepted' ? 'border-emerald-100' : 'border-amber-100';
   const bgClass = tone === 'accepted' ? 'bg-emerald-50/40' : 'bg-amber-50/30';
+  const orderDelayPrediction = predictOrderDelay({
+    quoteId: order.quoteId,
+    companyName: order.companyName,
+    leadType: order.leadType,
+    quoteStatus: order.quoteStatus,
+    updatedAt: order.updatedAt,
+    documentBlockers: order.documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
+    complianceBlockers: order.complianceItems.filter((item) => !['approved', 'complete'].includes(item.status.toLowerCase())).length,
+    hasContract: Boolean(order.contract),
+  });
 
   return (
     <div className={`rounded-2xl border ${borderClass} ${bgClass} p-4`}>
@@ -338,6 +395,7 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
             {order.contactName && <span>{order.contactName}</span>}
             {order.country && <span>{order.country}</span>}
             <span>Updated {formatDateTime(order.updatedAt)}</span>
+            <span>{tradeWorkflow.journeyLabel}</span>
             <span className="font-mono text-slate-400">ref {order.quoteId.slice(0, 8)}</span>
             {order.dealValue != null && (
               <span className="font-semibold text-slate-700">
@@ -357,6 +415,22 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
         >
           View quote
         </Link>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        {[
+          tradeWorkflow.freightReadiness,
+          tradeWorkflow.complianceReadiness,
+          tradeWorkflow.dispatchReadiness,
+          tradeWorkflow.handoffVisibility,
+        ].map((signal) => (
+          <div key={signal.label} className={`rounded-xl border p-3 ${statusClasses(signal.tone === 'success' ? 'ready' : signal.tone === 'warning' ? 'pending_review' : signal.tone === 'danger' ? 'missing' : 'draft')}`}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">{signal.label}</p>
+            <p className="mt-2 text-sm font-semibold">{signal.value}</p>
+            <p className="mt-1 text-xs opacity-90">{signal.detail}</p>
+          </div>
+        ))}
+        <AIOrderDelayPanel prediction={orderDelayPrediction} />
       </div>
 
       {/* Three-panel grid: Documents · Compliance · Contract */}

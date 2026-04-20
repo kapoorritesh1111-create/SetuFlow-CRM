@@ -6,7 +6,6 @@ import {
   useMemo,
   useState,
   useTransition,
-  type ReactNode,
 } from "react";
 import { GenerateQuoteCoverNoteButton } from "@/features/ai/components/ai-draft-controls";
 import RightDrawer from "@/components/RightDrawer";
@@ -22,6 +21,8 @@ import {
   QuoteEditWizardForm,
 } from "@/features/quotes/components/quote-wizard-form";
 import { QuoteTrustContractPreview } from "@/features/quotes/components/quote-trust-contract-preview";
+import { FilterField } from "@/features/quotes/ui/filter-field";
+import { formatQuoteMoney } from "@/features/quotes/logic/formatting";
 import {
   logQuoteNegotiationResponse,
   updateQuoteWorkflow,
@@ -180,21 +181,6 @@ type QuoteQuickAction = {
   };
 };
 
-function FilterField({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <label className="block text-sm text-slate-600">
-      <span className="mb-2 block font-medium text-slate-700">{label}</span>
-      {children}
-    </label>
-  );
-}
-
 function getProductCatalogFallback(
   item: NonNullable<QuoteRecord["lineItems"]>[number],
   products: ProductOption[],
@@ -206,15 +192,6 @@ function getProductCatalogFallback(
     ) ??
     null
   );
-}
-
-function formatQuoteMoney(
-  value: number | null | undefined,
-  currency: string | null | undefined,
-) {
-  if (typeof value !== "number") return "—";
-  const normalizedCurrency = (currency ?? "").trim().toUpperCase() || "USD";
-  return `${normalizedCurrency} ${value.toFixed(2)}`;
 }
 
 function getQuoteApprovalStateValue(quote: QuoteRecord) {

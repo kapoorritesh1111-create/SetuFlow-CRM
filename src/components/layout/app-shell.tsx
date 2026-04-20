@@ -1,4 +1,3 @@
-// UPDATED FILE
 'use client';
 
 import Link from 'next/link';
@@ -6,26 +5,27 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppLogo } from '@/components/branding/app-logo';
 import { FaIcon } from '@/components/ui/fa-icon';
+import { ShellNavigation } from '@/components/layout/shell/navigation';
+import { getRouteMeta } from '@/components/layout/shell/route-meta';
+import type { NavSection } from '@/components/layout/shell/types';
+import {
+  formatShortcutLabel,
+  getWorkspaceBasePath,
+  getWorkspaceModeFromLocation,
+  isNavItemActive,
+  isTypingTarget,
+  normalizeSearchValue,
+  withWorkspaceMode,
+  withWorkspaceModePreservedParams,
+} from '@/components/layout/shell/utils';
+import { canonicalShellSections, PRODUCT_ROUTES } from '@/lib/product-contract';
 import { cn, getInitials } from '@/lib/utils';
-import { PRODUCT_ROUTES, PRODUCT_SHELL_LABELS, primaryAppShellNav } from '@/lib/product-contract';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 import type { Database } from '@/types/database';
 
 type Profile = Database['public']['Tables']['profiles']['Row'] | null;
 type Organization = Database['public']['Tables']['organizations']['Row'] | null;
 type Membership = Database['public']['Tables']['organization_members']['Row'] | null;
-
-type NavItem = { href: string; label: string; exact?: boolean };
-type NavSection = { id: string; label: string; icon: string; items: NavItem[] };
-type ContextTab = { href: string; label: string; exact?: boolean };
-
-type RouteMeta = {
-  title: string;
-  description: string;
-  tabs?: ContextTab[];
-  backHref?: string;
-  backLabel?: string;
-};
 
 type CommandItem = {
   id: string;
@@ -41,43 +41,6 @@ type ShortcutDefinition = {
   description: string;
 };
 
-const PRODUCT_SHELL_TABS: ContextTab[] = primaryAppShellNav.map((item) => ({ href: item.href, label: item.label, exact: item.exact }));
-
-const ADMIN_TABS: ContextTab[] = [
-  { href: '/admin/organization', label: 'Organization', exact: true },
-  { href: '/admin/users', label: 'Users', exact: true },
-  { href: '/admin/invitations', label: 'Invitations', exact: true },
-  { href: '/admin/audit', label: 'Audit log', exact: true },
-  { href: '/admin/ai-analytics', label: 'AI analytics', exact: true },
-];
-
-const navSections: NavSection[] = [
-  {
-    id: 'product-shell',
-    label: PRODUCT_SHELL_LABELS.productShell,
-    icon: '◫',
-    items: primaryAppShellNav.map((item) => ({ href: item.href, label: item.label, exact: item.exact })),
-  },
-];
-
-const adminSection: NavSection = {
-  id: 'admin',
-  label: 'Admin',
-  icon: 'A',
-  items: [
-    { href: '/admin/organization', label: 'Organization' },
-    { href: '/admin/users', label: 'Users' },
-    { href: '/admin/invitations', label: 'Invitations' },
-    { href: '/admin/audit', label: 'Audit log' },
-    { href: '/admin/ai-analytics', label: 'AI analytics' },
-  ],
-};
-
-function isNavItemActive(pathname: string, item: NavItem | ContextTab) {
-  if (item.exact) return pathname === item.href;
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
-}
-
 function getPrimaryRole(roleNames: string[]) {
   return getPrimaryWorkspaceRole(roleNames) ?? 'member';
 }
@@ -86,400 +49,12 @@ function toRoleLabel(value: string) {
   return getWorkspaceRoleDisplayName(value);
 }
 
-function getSectionIcon(icon: string) {
-  const map: Record<string, string> = {
-    '◫': 'th-large',
-    B: 'briefcase',
-    S: 'truck',
-    O: 'cogs',
-    C: 'address-card-o',
-    A: 'building-o',
-  };
-  return map[icon] ?? 'circle-o';
-}
-
-function getNavItemIcon(href: string) {
-  if (href.includes(PRODUCT_ROUTES.app.dashboard)) return 'dashboard';
-  if (href.includes(PRODUCT_ROUTES.app.leads)) return 'users';
-  if (href.includes(PRODUCT_ROUTES.app.quotes)) return 'file-text-o';
-  if (href.includes(PRODUCT_ROUTES.app.orders)) return 'shopping-bag';
-  if (href.includes('/admin/users')) return 'building-o';
-  if (href.includes('/pipeline')) return 'random';
-  if (href.includes('/products')) return 'archive';
-  if (href.includes('/documents')) return 'file-text-o';
-  if (href.includes('/trade-events')) return 'calendar';
-  if (href.includes('/tasks')) return 'check-square-o';
-  if (href.includes('/contact-exchange/vcard')) return 'address-card-o';
-  if (href.includes('/contact-exchange/scan')) return 'camera';
-  if (href.includes('/contracts')) return 'file-text';
-  if (href.includes('/compliance')) return 'shield';
-  if (href.includes('/settings')) return 'sliders';
-  if (href.includes('/integrations')) return 'plug';
-  if (href.includes('/ai-suggestions')) return 'magic';
-  if (href.includes('/admin/organization')) return 'building-o';
-  if (href.includes('/admin/users')) return 'user-circle-o';
-  if (href.includes('/admin/invitations')) return 'envelope-open-o';
-  if (href.includes('/admin/audit')) return 'history';
-  if (href.includes('/admin/ai-analytics')) return 'line-chart';
-  return 'circle-o';
-}
-
-function formatShortcutLabel(keys: string[]) {
-  return keys.join(' ');
-}
-
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-  const tagName = target.tagName.toLowerCase();
-  return (
-    target.isContentEditable ||
-    tagName === 'input' ||
-    tagName === 'textarea' ||
-    tagName === 'select' ||
-    target.getAttribute('role') === 'textbox'
-  );
-}
-
-function normalizeSearchValue(value: string) {
-  return value.trim().toLowerCase();
-}
-
 function matchesCommand(command: CommandItem, query: string) {
   const normalizedQuery = normalizeSearchValue(query);
   if (!normalizedQuery) return true;
 
-  const haystack = [
-    command.label,
-    command.description,
-    command.group,
-    ...command.keywords,
-  ]
-    .join(' ')
-    .toLowerCase();
-
+  const haystack = [command.label, command.description, command.group, ...command.keywords].join(' ').toLowerCase();
   return normalizedQuery.split(/\s+/).every((token) => haystack.includes(token));
-}
-
-function getRouteMeta(pathname: string): RouteMeta {
-  if (pathname.startsWith('/admin/')) {
-    return {
-      title: pathname.startsWith('/admin/invitations')
-        ? 'Invitations'
-        : pathname.startsWith('/admin/audit')
-          ? 'Audit log'
-          : pathname.startsWith('/admin/ai-analytics')
-            ? 'AI analytics'
-            : pathname.startsWith('/admin/organization')
-            ? 'Organization'
-            : 'Users',
-      description:
-        'Manage organization overview, workspace access, invitations, and audit visibility without leaving the admin area.',
-      tabs: ADMIN_TABS,
-    };
-  }
-
-  if (pathname === '/contracts' || pathname.startsWith('/contracts/')) {
-    return {
-      title: 'Contracts',
-      description: 'Track signed commitments, linked quotes, files, and open blockers from one progression desk.',
-      tabs: PRODUCT_SHELL_TABS,
-    };
-  }
-
-  if (pathname === PRODUCT_ROUTES.app.dashboard || pathname.startsWith(`${PRODUCT_ROUTES.app.dashboard}/`)) {
-    return {
-      title: 'Dashboard',
-      description:
-        'Get to the most important buyer and supplier metrics first, then move into focused operating lanes.',
-      tabs: PRODUCT_SHELL_TABS,
-    };
-  }
-
-  if (pathname === PRODUCT_ROUTES.app.leads || pathname.startsWith(`${PRODUCT_ROUTES.app.leads}/`)) {
-    if (/^\/leads\/[^/]+\/quote/.test(pathname)) {
-      return {
-        title: 'Quotes',
-        description:
-          'Review commercial output, approvals, and pricing details for this lead.',
-        backHref: pathname.replace(/\/quote.*/, ''),
-        backLabel: 'Back to lead profile',
-      };
-    }
-    if (/^\/leads\/[^/]+\/rfq/.test(pathname)) {
-      return {
-        title: 'RFQs',
-        description:
-          'Create and manage RFQs for the selected lead without leaving the workflow.',
-        backHref: pathname.replace(/\/rfq.*/, ''),
-        backLabel: 'Back to lead profile',
-      };
-    }
-    if (/^\/leads\/[^/]+$/.test(pathname)) {
-      return {
-        title: 'Lead profile',
-        description:
-          'Stay inside one lead context for stage movement, follow-ups, RFQs, quotes, and activity history.',
-        tabs: PRODUCT_SHELL_TABS,
-        backHref: PRODUCT_ROUTES.app.leads,
-        backLabel: 'Back to leads',
-      };
-    }
-    return {
-      title: 'Leads',
-      description:
-        'Find the right lead quickly, act in bulk when needed, and open existing leads in the command center route.',
-      tabs: PRODUCT_SHELL_TABS,
-    };
-  }
-
-
-  if (pathname === PRODUCT_ROUTES.app.quotes || pathname.startsWith(`${PRODUCT_ROUTES.app.quotes}/`)) {
-    return {
-      title: 'Quotes',
-      description:
-        'Review commercial fit, confirm approval state, and move into order creation only when the gate is clear.',
-      tabs: PRODUCT_SHELL_TABS,
-    };
-  }
-
-  if (pathname === PRODUCT_ROUTES.app.orders || pathname.startsWith(`${PRODUCT_ROUTES.app.orders}/`)) {
-    return {
-      title: 'Orders',
-      description:
-        'Carry accepted commercial truth into operational readiness without hiding blockers or required follow-through.',
-      tabs: PRODUCT_SHELL_TABS,
-    };
-  }
-
-  if (pathname === '/pipeline' || pathname.startsWith('/pipeline/')) {
-    return {
-      title: 'Pipeline',
-      description:
-        'Keep stage movement visible, actionable, and easy to scan across the full workspace.',
-      tabs: PRODUCT_SHELL_TABS,
-    };
-  }
-
-  if (pathname.startsWith('/products')) {
-    return {
-      title: 'Products',
-      description: 'Manage shared commercial reference data for daily execution.',
-
-    };
-  }
-
-  if (pathname.startsWith('/trade-events')) {
-    return {
-      title: 'Trade events',
-      description: 'Maintain trade event records used across lead and pipeline workflows.',
-
-    };
-  }
-
-  if (pathname.startsWith('/settings/lists')) {
-    return {
-      title: 'Settings lists',
-      description: 'Update shared option lists that power forms throughout the app.',
-
-    };
-  }
-
-  if (pathname.startsWith('/integrations')) {
-    return {
-      title: 'Integrations',
-      description: 'Review external systems connected to this workspace.',
-
-    };
-  }
-
-  if (pathname.startsWith('/ai-suggestions')) {
-    return {
-      title: 'AI assist',
-      description: 'Review explainable summaries and next-best-action suggestions anchored to workspace data.',
-
-    };
-  }
-
-  if (pathname.startsWith('/contact-exchange/vcard')) {
-    return {
-      title: 'My Digital vCard',
-      description: 'Share your professional contact identity through one review-first surface before QR, link, and VCF automation ships.',
-      tabs: PRODUCT_SHELL_TABS,
-    };
-  }
-
-  if (pathname.startsWith('/contact-exchange/scan')) {
-    return {
-      title: 'Scan Contact Info',
-      description: 'Capture inbound contact details through one AI-assisted review surface without forcing save automation yet.',
-      tabs: PRODUCT_SHELL_TABS,
-    };
-  }
-
-  if (pathname.startsWith('/tasks')) {
-    return {
-      title: 'Tasks',
-      description: 'Track outstanding work tied to the commercial operating flow.',
-
-    };
-  }
-
-  if (pathname.startsWith('/documents')) {
-    return {
-      title: 'Documents',
-      description: 'Review deal-linked files, version posture, expiry, and approvals without leaving the operations lane.',
-
-    };
-  }
-
-  if (pathname.startsWith('/compliance')) {
-    return {
-      title: 'Compliance',
-      description: 'Keep required compliance tasks, reviews, and lead blockers visible alongside commercial work.',
-
-    };
-  }
-
-  return {
-    title: 'Workspace',
-    description: 'Operate daily work from a cleaner, more consistent application shell.',
-  };
-}
-
-function getWorkspaceModeFromLocation(_pathname: string, _modeParam: string | null) {
-  return 'all' as const;
-}
-
-function getWorkspaceBasePath(pathname: string) {
-  if (pathname.startsWith(PRODUCT_ROUTES.app.dashboard)) return PRODUCT_ROUTES.app.dashboard;
-  if (pathname.startsWith(PRODUCT_ROUTES.app.leads)) return PRODUCT_ROUTES.app.leads;
-  return null;
-}
-
-function withWorkspaceMode(href: string, _mode: 'all' | 'buyers' | 'suppliers') {
-  return href;
-}
-
-function withWorkspaceModePreservedParams(
-  href: string,
-  _mode: 'all' | 'buyers' | 'suppliers',
-  _currentParams?: string,
-) {
-  return href;
-}
-
-function ShellNavigation({
-  pathname,
-  canAccessAdmin,
-  workspaceMode,
-  compact = false,
-  onNavigate,
-}: {
-  pathname: string;
-  canAccessAdmin: boolean;
-  workspaceMode: 'all' | 'buyers' | 'suppliers';
-  compact?: boolean;
-  onNavigate?: () => void;
-}) {
-  const sections = canAccessAdmin ? [...navSections, adminSection] : navSections;
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(
-      sections.map((section) => [
-        section.id,
-        compact ? section.items.some((item) => isNavItemActive(pathname, item)) : true,
-      ]),
-    ),
-  );
-
-  useEffect(() => {
-    setExpandedSections((current) => {
-      const next = { ...current };
-      sections.forEach((section) => {
-        if (!(section.id in next)) {
-          next[section.id] = compact ? section.items.some((item) => isNavItemActive(pathname, item)) : true;
-        }
-        if (section.items.some((item) => isNavItemActive(pathname, item))) {
-          next[section.id] = true;
-        }
-      });
-      return next;
-    });
-  }, [compact, pathname, sections]);
-
-  return (
-    <nav className={cn('mt-6', compact ? 'space-y-3' : 'space-y-4')} aria-label="Primary navigation">
-      {sections.map((section) => {
-        const isExpanded = expandedSections[section.id] ?? true;
-        return (
-          <div key={section.id} className="rounded-[1.6rem] border border-white/85 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.96))] p-2 shadow-[0_18px_38px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.03]">
-            <button
-              type="button"
-              onClick={() => setExpandedSections((current) => ({ ...current, [section.id]: !isExpanded }))}
-              className={cn(
-                'flex w-full items-center rounded-[1.2rem] px-3 py-2 text-left transition duration-200 hover:bg-white/80',
-                compact ? 'justify-center' : 'justify-between gap-3',
-              )}
-              aria-expanded={isExpanded}
-            >
-              <div className={cn('flex items-center gap-3', compact ? 'justify-center' : '')}>
-                <span className="flex h-9 w-9 items-center justify-center rounded-[1rem] border border-white/90 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.98),rgba(224,231,255,0.98)_42%,rgba(191,219,254,0.92)_78%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(237,242,250,0.95))] text-sm font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_14px_28px_rgba(15,23,42,0.12)]">
-                  <FaIcon icon={getSectionIcon(section.icon)} fixedWidth className="text-sm" />
-                </span>
-                {!compact ? (
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{section.label}</p>
-                  </div>
-                ) : null}
-              </div>
-              {!compact ? <FaIcon icon={isExpanded ? 'minus' : 'plus'} fixedWidth className="text-xs text-slate-400" /> : null}
-            </button>
-
-            {isExpanded ? (
-              <div className={cn('mt-2 space-y-1.5', compact ? 'px-0' : 'px-1')}>
-                {section.items.map((item) => {
-                  const active = isNavItemActive(pathname, item);
-                  return (
-                    <a
-                      key={item.href}
-                      href={withWorkspaceMode(item.href, workspaceMode)}
-                      onClick={onNavigate}
-                      aria-current={active ? 'page' : undefined}
-                      title={compact ? item.label : undefined}
-                      className={cn(
-                        'group flex items-center rounded-[1.2rem] text-sm font-medium transition focus:outline-none',
-                        compact ? 'justify-center px-2 py-3' : 'justify-between px-4 py-3',
-                        active
-                          ? 'bg-[linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-white shadow-[0_18px_38px_rgba(15,23,42,0.22)] ring-1 ring-white/10'
-                          : 'text-slate-600 hover:bg-white/85 hover:text-slate-900',
-                      )}
-                    >
-                      {compact ? (
-                        <FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />
-                      ) : (
-                        <>
-                          <span className="flex items-center gap-3">
-                            <span className={cn('inline-flex h-8 w-8 items-center justify-center rounded-xl border transition', active ? 'border-white/15 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.22),rgba(255,255,255,0.06)_38%,rgba(255,255,255,0.04)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]' : 'border-white/90 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.98),rgba(219,234,254,0.98)_44%,rgba(191,219,254,0.92)_82%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,245,249,0.96))] text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_12px_26px_rgba(15,23,42,0.08)] group-hover:border-sky-200 group-hover:text-slate-900') }>
-                              <FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />
-                            </span>
-                            <span>{item.label}</span>
-                          </span>
-                          <FaIcon
-                            icon="angle-right"
-                            fixedWidth
-                            className={cn('text-xs transition', active ? 'text-white/70' : 'text-slate-300 group-hover:text-slate-500')}
-                          />
-                        </>
-                      )}
-                    </a>
-                  );
-                })}
-              </div>
-            ) : null}
-          </div>
-        );
-      })}
-    </nav>
-  );
 }
 
 export function AppShell({
@@ -516,7 +91,7 @@ export function AppShell({
     if (!workspaceBasePath) return pathname;
     return withWorkspaceModePreservedParams(workspaceBasePath, mode, searchParams.toString());
   };
-  const navCommandSections = canAccessAdmin ? [...navSections, adminSection] : navSections;
+  const navCommandSections = useMemo<NavSection[]>(() => canonicalShellSections.filter((section) => canAccessAdmin || section.id !== 'admin') as NavSection[], [canAccessAdmin]);
 
   const openCommandPalette = () => {
     setMobileNavOpen(false);
@@ -621,9 +196,9 @@ export function AppShell({
     const runChordNavigation = (key: string) => {
       if (key === 'd') router.push(PRODUCT_ROUTES.app.dashboard);
       if (key === 'l') router.push(PRODUCT_ROUTES.app.leads);
-      if (key === 'p') router.push('/pipeline');
+      if (key === 'p') router.push(PRODUCT_ROUTES.app.pipeline);
       if (key === 'o') router.push('/products');
-      if (key === 'a' && canAccessAdmin) router.push('/admin/users');
+      if (key === 'a' && canAccessAdmin) router.push(PRODUCT_ROUTES.app.admin);
     };
 
     const onKeyDown = (event: KeyboardEvent) => {

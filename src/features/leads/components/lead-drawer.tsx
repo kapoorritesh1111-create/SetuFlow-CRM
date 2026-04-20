@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import type { LeadDrawerLead, LeadDrawerProps, LeadDrawerSavePayload, LeadWizardStepId } from '@/features/leads/types/workspace';
 import RightDrawer from '@/components/RightDrawer';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -20,52 +21,7 @@ import { parseQuoteWorkflow } from '@/lib/quoteWorkflow';
 import type { ContactPostApplyAssistResult } from '@/lib/contact-exchange/contact-post-apply-assist';
 import { buildContactScanAfterSaveGuidance, type ContactAfterSaveGuidanceResult } from '@/lib/contact-exchange/contact-after-save-guidance';
 
-export type LeadDrawerLead = Omit<
-  Pick<
-    Database['public']['Tables']['leads']['Row'],
-    | 'id'
-    | 'company_name'
-    | 'contact_name'
-    | 'job_title'
-    | 'email'
-    | 'phone'
-    | 'phone_secondary'
-    | 'lead_type'
-    | 'country'
-    | 'country_id'
-    | 'source_type'
-    | 'source_label'
-    | 'next_follow_up_at'
-    | 'created_at'
-    | 'updated_at'
-    | 'last_contacted_at'
-    | 'stage_id'
-    | 'next_step_id'
-    | 'owner_user_id'
-    | 'trade_event_id'
-    | 'notes'
-    | 'website'
-    | 'social_handle'
-    | 'deal_value'
-    | 'deal_currency'
-    | 'pipeline_id'
-    | 'intro_sent'
-    | 'phone_country_code'
-    | 'phone_secondary_country_code'
-  >,
-  'created_at' | 'updated_at'
-> & {
-  created_at: string | null;
-  updated_at: string | null;
-};
-
 type LeadFormState = { error?: string; success?: string; lead?: LeadDrawerLead; selectedMarketIds?: string[]; selectedProductIds?: string[] };
-export type LeadDrawerSavePayload = {
-  resetForNextLead: boolean;
-  lead?: LeadDrawerLead;
-  selectedMarketIds?: string[];
-  selectedProductIds?: string[];
-};
 type Stage = { id: string; name: string; pipeline_id: string; sort_order?: number };
 type Pipeline = { id: string; name: string; lead_type: 'buyer' | 'supplier' | 'both'; is_default: boolean };
 type Option = { id: string; name: string };
@@ -190,8 +146,6 @@ function buildCoverageSelectionKey(categoryId = '', seed = 0) {
 }
 
 
-type LeadWizardStepId = 'basics' | 'workflow' | 'coverage' | 'quotes';
-
 
 function normalizeLeadFormValues(values: Record<string, unknown>) {
   return JSON.stringify(values);
@@ -263,44 +217,7 @@ export function LeadDrawer({
   onNavigateNext,
   navigationMeta,
   initialStepId,
-}: {
-  lead?: LeadDrawerLead;
-  stages: Stage[];
-  pipelines: Pipeline[];
-  nextSteps: Option[];
-  tradeEvents: Option[];
-  productCategories?: ProductCategory[];
-  products: Product[];
-  markets: Market[];
-  variants?: Variant[];
-  prices?: Price[];
-  pricingRules?: PricingRule[];
-  profiles: Profile[];
-  countries: Country[];
-  followUps?: FollowUp[];
-  activities?: Activity[];
-  stageHistory?: StageHistory[];
-  rfqs?: Rfq[];
-  quotes?: Quote[];
-  quoteVersions?: QuoteVersion[];
-  documents?: LeadDocument[];
-  complianceItems?: ComplianceItem[];
-  complianceDefinitions?: ComplianceDefinition[];
-  selectedMarketIds?: string[];
-  selectedProductIds?: string[];
-  currentUserId?: string;
-  open?: boolean;
-  onClose?: () => void;
-  onSaved?: (result: LeadDrawerSavePayload) => void;
-  mode?: 'quick' | 'full';
-  title?: string;
-  canNavigatePrev?: boolean;
-  canNavigateNext?: boolean;
-  onNavigatePrev?: () => void;
-  onNavigateNext?: () => void;
-  navigationMeta?: string;
-  initialStepId?: LeadWizardStepId;
-}) {
+}: LeadDrawerProps) {
   const router = useRouter();
   const [state, setState] = useState<LeadFormState>({});
   const [isPending, startTransition] = useTransition();

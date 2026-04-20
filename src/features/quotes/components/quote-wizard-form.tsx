@@ -38,6 +38,7 @@ import { getQuoteTrustContract } from "@/lib/quoteTrust";
 import type { ApprovalState } from "@/lib/approvalRouting";
 import type { QuoteStatus } from "@/lib/quoteWorkflow";
 import { formatDateTime } from "@/lib/utils";
+import { QUOTE_CREATE_STEPS } from "@/features/quotes/logic/wizard-config";
 
 type ProductOption = {
   id: string;
@@ -193,44 +194,6 @@ type CheckpointDecision = {
   blockerRecommendations: StepRecommendation[];
   warningRecommendations: StepRecommendation[];
 };
-
-const QUOTE_CREATE_STEPS: WizardStepDefinition[] = [
-  {
-    id: "product",
-    title: "Product context",
-    shortLabel: "Product",
-    description:
-      "Choose RFQ linkage, template, basis, and currency before drafting commercial detail.",
-  },
-  {
-    id: "pricing",
-    title: "Pricing lines",
-    shortLabel: "Pricing",
-    description:
-      "Keep product and price linkage inside the same commercial flow.",
-  },
-  {
-    id: "terms",
-    title: "Terms and posture",
-    shortLabel: "Terms",
-    description:
-      "Set workflow status, approval posture, and internal terms without leaving the builder.",
-  },
-  {
-    id: "review",
-    title: "Review draft",
-    shortLabel: "Review",
-    description:
-      "Confirm totals, workflow posture, and draft structure before the send checkpoint.",
-  },
-  {
-    id: "send",
-    title: "Send checkpoint",
-    shortLabel: "Send",
-    description:
-      "Make blockers and approval requirements explicit before the quote can move out.",
-  },
-];
 
 const QUOTE_EDIT_STEPS: WizardStepDefinition[] = [
   {

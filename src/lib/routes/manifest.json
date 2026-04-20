@@ -1,0 +1,197 @@
+{
+  "internalDccPath": "/internal-dcc/",
+  "lockedProductFlow": [
+    "Capture",
+    "Lead",
+    "Quote",
+    "Order"
+  ],
+  "approvedReworkPhase": "Documentation and demo readiness complete",
+  "approvedReworkTitle": "Canonical routes + product-ready documentation",
+  "routeLabels": {
+    "dashboard": "Dashboard",
+    "leads": "Leads",
+    "pipeline": "Pipeline",
+    "quotes": "Quotes",
+    "orders": "Orders",
+    "admin": "Admin",
+    "capture": "Capture",
+    "myCard": "My Card"
+  },
+  "routes": {
+    "app": {
+      "dashboard": "/dashboard",
+      "leads": "/leads",
+      "pipeline": "/pipeline",
+      "quotes": "/quotes",
+      "orders": "/orders",
+      "admin": "/admin/users",
+      "capture": "/contact-exchange/scan",
+      "myCard": "/contact-exchange/vcard"
+    },
+    "internal": {
+      "dcc": "/internal-dcc/"
+    }
+  },
+  "productShellLabels": {
+    "productShell": "Product shell",
+    "ritualHeading": "Working rules",
+    "ritualBeforeCoding": "Preserve canonical product routes and keep internal planning surfaces out of the shipped app.",
+    "ritualDuringCoding": "Update navigation and route tests in the same change as any route-level product work.",
+    "ritualAfterCoding": "Refresh the internal DCC when readiness, drift, or route truth changes."
+  },
+  "primaryNav": [
+    {
+      "href": "/dashboard",
+      "label": "Dashboard",
+      "exact": true
+    },
+    {
+      "href": "/leads",
+      "label": "Leads",
+      "exact": true
+    },
+    {
+      "href": "/pipeline",
+      "label": "Pipeline",
+      "exact": true
+    },
+    {
+      "href": "/quotes",
+      "label": "Quotes"
+    },
+    {
+      "href": "/orders",
+      "label": "Orders"
+    },
+    {
+      "href": "/admin/users",
+      "label": "Admin"
+    }
+  ],
+  "adminTabs": [
+    {
+      "href": "/admin/organization",
+      "label": "Organization",
+      "exact": true
+    },
+    {
+      "href": "/admin/users",
+      "label": "Users",
+      "exact": true
+    },
+    {
+      "href": "/admin/invitations",
+      "label": "Invitations",
+      "exact": true
+    },
+    {
+      "href": "/admin/audit",
+      "label": "Audit log",
+      "exact": true
+    },
+    {
+      "href": "/admin/ai-analytics",
+      "label": "AI analytics",
+      "exact": true
+    }
+  ],
+  "shellSections": [
+    {
+      "id": "product-shell",
+      "label": "Product shell",
+      "icon": "\u25eb",
+      "items": [
+        {
+          "href": "/dashboard",
+          "label": "Dashboard",
+          "exact": true
+        },
+        {
+          "href": "/leads",
+          "label": "Leads",
+          "exact": true
+        },
+        {
+          "href": "/pipeline",
+          "label": "Pipeline",
+          "exact": true
+        },
+        {
+          "href": "/quotes",
+          "label": "Quotes"
+        },
+        {
+          "href": "/orders",
+          "label": "Orders"
+        },
+        {
+          "href": "/admin/users",
+          "label": "Admin"
+        }
+      ]
+    },
+    {
+      "id": "admin",
+      "label": "Admin",
+      "icon": "A",
+      "items": [
+        {
+          "href": "/admin/organization",
+          "label": "Organization"
+        },
+        {
+          "href": "/admin/users",
+          "label": "Users"
+        },
+        {
+          "href": "/admin/invitations",
+          "label": "Invitations"
+        },
+        {
+          "href": "/admin/audit",
+          "label": "Audit log"
+        },
+        {
+          "href": "/admin/ai-analytics",
+          "label": "AI analytics"
+        }
+      ]
+    }
+  ],
+  "hiddenFromPrimaryNav": [
+    "Products",
+    "Documents",
+    "Compliance",
+    "Contracts",
+    "Trade events",
+    "Tasks",
+    "Integrations",
+    "AI assist",
+    "Contact exchange"
+  ],
+  "driftGuardrails": [
+    "Define product shell links once and import them everywhere.",
+    "Do not reintroduce development, workspace mirror, preview, or planning routes into the shipped app.",
+    "Treat the internal DCC as the planning and readiness source of truth."
+  ],
+  "tests": {
+    "requiredFiles": [
+      "src/app/(app)/dashboard/page.tsx",
+      "src/app/(app)/leads/page.tsx",
+      "src/app/(app)/pipeline/page.tsx",
+      "src/app/(app)/quotes/page.tsx",
+      "src/app/(app)/orders/page.tsx",
+      "src/app/(app)/contact-exchange/vcard/page.tsx",
+      "src/app/(app)/contact-exchange/scan/page.tsx",
+      "public/internal-dcc/index.html",
+      "src/app/page.tsx"
+    ],
+    "forbiddenPaths": [
+      "src/app/development",
+      "src/app/workspace",
+      "src/components/previews",
+      "src/components/planning"
+    ]
+  }
+}

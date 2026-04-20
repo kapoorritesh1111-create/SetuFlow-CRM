@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="150" viewBox="0 0 880 150">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#0ea5e9"/></marker></defs>
+<text x="20" y="28" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#0f172a">Pipeline Workflow</text>
+<rect x="20" y="56" width="150" height="56" rx="12" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.5"/>
+<text x="95.0" y="80" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a">Review lane</text>
+<line x1="170" y1="84.0" x2="182" y2="84.0" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="188" y="56" width="150" height="56" rx="12" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.5"/>
+<text x="263.0" y="80" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a">Inspect blockers</text>
+<line x1="338" y1="84.0" x2="350" y2="84.0" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="356" y="56" width="150" height="56" rx="12" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.5"/>
+<text x="431.0" y="80" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a">Choose action</text>
+<line x1="506" y1="84.0" x2="518" y2="84.0" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="524" y="56" width="150" height="56" rx="12" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.5"/>
+<text x="599.0" y="80" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a">Move stage</text>
+<line x1="674" y1="84.0" x2="686" y2="84.0" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="692" y="56" width="150" height="56" rx="12" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.5"/>
+<text x="767.0" y="80" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a">Confirm readiness</text>
+</svg>

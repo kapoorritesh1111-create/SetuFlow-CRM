@@ -1,12 +1,9 @@
 import dynamic from 'next/dynamic';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
-import { parseWorkspaceMode, workspaceModeToLeadJourney } from '@/features/workspace/mode';
-import { buildTodayLayerState } from '@/features/workspace/today';
-import { normalizeQuoteRecords } from '@/lib/normalizers/quote-normalizer';
+import { buildPipelinePageViewModel } from '@/features/pipeline/logic/build-pipeline-page-view-model';
 import { getPipelinePageData } from '@/lib/queries/pipeline';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 const PipelineBoard = dynamic(
@@ -50,27 +47,24 @@ export default async function PipelinePage({
     );
   }
 
-  const workspaceMode = parseWorkspaceMode(searchParams?.mode);
-  const normalizedQuotes = normalizeQuoteRecords(data.quotes);
-  const canManageLeads = hasWorkspaceCapability(workspace.currentRoles, 'lead.manage');
-  const readOnlyMessage = getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage');
-  const isWorkspaceEmpty = data.leads.length === 0;
-  const isStageConfigurationEmpty = data.stages.length === 0 || data.pipelines.length === 0;
-  const todayState = buildTodayLayerState({
-    mode: workspaceMode,
-    nowIso: new Date().toISOString(),
+  const pipelineView = buildPipelinePageViewModel({
+    searchMode: searchParams?.mode,
+    workspaceCurrentRoles: workspace.currentRoles,
     leads: data.leads,
     activities: data.activities,
     complianceItems: data.complianceItems,
+    quotes: data.quotes,
   });
+  const isWorkspaceEmpty = data.leads.length === 0;
+  const isStageConfigurationEmpty = data.stages.length === 0 || data.pipelines.length === 0;
 
   return (
     <div className="space-y-4">
       <QueryIssuesAlert issues={data.queryIssues} />
       <PipelineBoard
         currentUserId={workspace.user?.id ?? ''}
-        canManageLeads={canManageLeads}
-        readOnlyMessage={readOnlyMessage}
+        canManageLeads={pipelineView.canManageLeads}
+        readOnlyMessage={pipelineView.readOnlyMessage}
         isWorkspaceEmpty={isWorkspaceEmpty}
         isStageConfigurationEmpty={isStageConfigurationEmpty}
         stages={data.stages}
@@ -89,7 +83,7 @@ export default async function PipelinePage({
         activities={data.activities}
         stageHistory={data.stageHistory}
         rfqs={data.rfqs}
-        quotes={normalizedQuotes}
+        quotes={pipelineView.normalizedQuotes}
         complianceItems={data.complianceItems}
         complianceDefinitions={data.complianceDefinitions}
         documents={data.documents}
@@ -97,9 +91,9 @@ export default async function PipelinePage({
         variants={data.variants}
         prices={data.prices}
         pricingRules={data.pricingRules}
-        initialMode={workspaceMode}
-        initialLeadType={workspaceModeToLeadJourney(workspaceMode)}
-        initialTodayState={todayState}
+        initialMode={pipelineView.workspaceMode}
+        initialLeadType={pipelineView.initialLeadType}
+        initialTodayState={pipelineView.todayState}
       />
     </div>
   );

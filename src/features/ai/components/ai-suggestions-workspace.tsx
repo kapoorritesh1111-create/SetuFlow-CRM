@@ -3,9 +3,36 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { GenerateComplianceEvidenceButton, GenerateComplianceNextStepButton, GenerateDraftButton, GenerateLeadDraftControls, SuggestionDecisionControls } from '@/features/ai/components/ai-draft-controls';
+import { buildAIWorkspaceSnapshot } from '@/features/ai/logic/intelligence';
+import { AIDailyInsightsList, AILeadPriorityList, AIQuoteRiskList } from '@/features/ai/ui/intelligence-panels';
 import type { AISuggestionsData } from '@/lib/queries/data';
-import { CANONICAL_SUGGESTION_TYPES, getSuggestionBadgeClasses, getSuggestionFamily, getSuggestionFamilyLabel, getSuggestionLabel, normalizeSuggestionType } from '@/lib/ai/suggestion-types';
+import { getSuggestionBadgeClasses, getSuggestionFamily, getSuggestionFamilyLabel, getSuggestionLabel, normalizeSuggestionType } from '@/lib/ai/suggestion-types';
 import { formatDate } from '@/lib/utils';
+
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  reviewed: 'Reviewed',
+  approved: 'Approved',
+  dismissed: 'Dismissed',
+  applied: 'Applied',
+};
+
+function getStatusClasses(status: string) {
+  switch (status) {
+    case 'approved':
+    case 'applied': return 'bg-emerald-100 text-emerald-700';
+    case 'dismissed': return 'bg-rose-100 text-rose-700';
+    case 'reviewed': return 'bg-amber-100 text-amber-800';
+    default: return 'bg-slate-100 text-slate-700';
+  }
+}
+
+function getOwnerLabel(ownerId: string | null | undefined, profiles: Array<{ id: string; full_name?: string | null; username?: string | null }>) {
+  if (!ownerId) return 'Unassigned';
+  const profile = profiles.find((item) => item.id === ownerId);
+  return profile?.full_name?.trim() || profile?.username?.trim() || 'Assigned owner';
+}
 
 type Props = {
   data: AISuggestionsData;
@@ -16,145 +43,6 @@ type Props = {
     leadId?: string;
   };
 };
-
-type Suggestion = {
-  leadId: string | null;
-  title: string;
-  summary: string;
-  reason: string;
-  priority: 'high' | 'medium' | 'low';
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  generated: 'Generated',
-  reviewed: 'Reviewed',
-  approved: 'Approved',
-  dismissed: 'Dismissed',
-  applied: 'Applied',
-  pending: 'Pending',
-  accepted: 'Accepted',
-  rejected: 'Rejected',
-};
-
-function getOwnerLabel(userId: string | null | undefined, profiles: AISuggestionsData['profiles']) {
-  if (!userId) return 'Unassigned';
-  const profile = profiles.find((item) => item.id === userId);
-  return profile?.full_name || profile?.username || 'Assigned';
-}
-
-function getStatusClasses(status: string) {
-  switch (status) {
-    case 'approved':
-    case 'accepted':
-      return 'bg-emerald-50 text-emerald-700';
-    case 'dismissed':
-    case 'rejected':
-      return 'bg-rose-50 text-rose-700';
-    case 'applied':
-      return 'bg-brand-50 text-brand-800';
-    case 'reviewed':
-      return 'bg-amber-50 text-amber-700';
-    default:
-      return 'bg-slate-100 text-slate-700';
-  }
-}
-
-function getPriorityClasses(priority: Suggestion['priority']) {
-  return priority === 'high'
-    ? 'bg-rose-50 text-rose-700'
-    : priority === 'medium'
-      ? 'bg-amber-50 text-amber-700'
-      : 'bg-slate-100 text-slate-600';
-}
-
-function buildSuggestions(data: AISuggestionsData): Suggestion[] {
-  const now = Date.now();
-  const suggestions: Suggestion[] = [];
-  const followUpsByLead = new Map<string, AISuggestionsData['followUps']>();
-  data.followUps.forEach((item) => {
-    if (!item.lead_id) return;
-    const bucket = followUpsByLead.get(item.lead_id) ?? [];
-    bucket.push(item);
-    followUpsByLead.set(item.lead_id, bucket);
-  });
-  const complianceByLead = new Map<string, AISuggestionsData['complianceItems']>();
-  data.complianceItems.forEach((item) => {
-    const bucket = complianceByLead.get(item.lead_id) ?? [];
-    bucket.push(item);
-    complianceByLead.set(item.lead_id, bucket);
-  });
-  const quotesByLead = new Map<string, AISuggestionsData['quotes']>();
-  data.quotes.forEach((item) => {
-    const bucket = quotesByLead.get(item.lead_id) ?? [];
-    bucket.push(item);
-    quotesByLead.set(item.lead_id, bucket);
-  });
-  const rfqsByLead = new Map<string, AISuggestionsData['rfqs']>();
-  data.rfqs.forEach((item) => {
-    if (!item.lead_id) return;
-    const bucket = rfqsByLead.get(item.lead_id) ?? [];
-    bucket.push(item);
-    rfqsByLead.set(item.lead_id, bucket);
-  });
-  const tasksByLead = new Map<string, AISuggestionsData['tasks']>();
-  data.tasks.forEach((item) => {
-    if (!item.lead_id) return;
-    const bucket = tasksByLead.get(item.lead_id) ?? [];
-    bucket.push(item);
-    tasksByLead.set(item.lead_id, bucket);
-  });
-
-  for (const lead of data.leads.slice(0, 60)) {
-    const followUps = followUpsByLead.get(lead.id) ?? [];
-    const overdueFollowUps = followUps.filter((item) => item.status !== 'completed' && item.scheduled_at && new Date(item.scheduled_at).getTime() < now);
-    if (overdueFollowUps.length) {
-      suggestions.push({
-        leadId: lead.id,
-        title: `Follow up with ${lead.company_name}`,
-        summary: `${overdueFollowUps.length} follow-up item${overdueFollowUps.length === 1 ? '' : 's'} overdue.`,
-        reason: 'Overdue follow-up is the clearest next-best action for preserving deal momentum.',
-        priority: 'high',
-      });
-      continue;
-    }
-
-    const openCompliance = (complianceByLead.get(lead.id) ?? []).filter((item) => !['approved', 'completed'].includes(String(item.status).toLowerCase()));
-    if (openCompliance.length) {
-      suggestions.push({
-        leadId: lead.id,
-        title: `Clear blockers for ${lead.company_name}`,
-        summary: `${openCompliance.length} compliance blocker${openCompliance.length === 1 ? '' : 's'} still open.`,
-        reason: 'Compliance blockers prevent downstream commercial progression, so resolving them has the highest operational leverage.',
-        priority: 'high',
-      });
-      continue;
-    }
-
-    const quoteCount = (quotesByLead.get(lead.id) ?? []).length;
-    const rfqCount = (rfqsByLead.get(lead.id) ?? []).length;
-    const leadTasks = tasksByLead.get(lead.id) ?? [];
-    if (rfqCount && !quoteCount) {
-      suggestions.push({
-        leadId: lead.id,
-        title: `Prepare commercial communication for ${lead.company_name}`,
-        summary: 'RFQ exists, but no quote-linked customer communication is visible yet.',
-        reason: 'This is a good fit for intro or follow-up drafting while the commercial team completes quote readiness checks.',
-        priority: leadTasks.length ? 'medium' : 'low',
-      });
-    }
-  }
-
-  return suggestions.slice(0, 6);
-}
-
-function EmptyTabState({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center">
-      <p className="text-base font-semibold text-slate-900">{title}</p>
-      <p className="mt-2 text-sm text-slate-500">{description}</p>
-    </div>
-  );
-}
 
 export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
   const aiSuggestions = data.aiSuggestions ?? [];
@@ -180,7 +68,7 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
   const [appliedFilter, setAppliedFilter] = useState<'all' | 'linked' | 'unlinked'>('all');
   const [sortBy, setSortBy] = useState<'created_desc' | 'lead' | 'status' | 'owner'>('created_desc');
 
-  const smartSuggestions = useMemo(() => buildSuggestions(data), [data]);
+  const intelligence = useMemo(() => buildAIWorkspaceSnapshot(data), [data]);
 
   const summary = useMemo(() => {
     const generated = aiSuggestions.length;
@@ -237,7 +125,7 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setActiveTab('review')} className={`rounded-2xl border px-4 py-2 text-sm font-medium ${activeTab === 'review' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}>Review queue</button>
-            <button type="button" onClick={() => setActiveTab('candidates')} className={`rounded-2xl border px-4 py-2 text-sm font-medium ${activeTab === 'candidates' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}>Suggested opportunities</button>
+            <button type="button" onClick={() => setActiveTab('candidates')} className={`rounded-2xl border px-4 py-2 text-sm font-medium ${activeTab === 'candidates' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}>Priority insights</button>
           </div>
         </div>
       </section>
@@ -251,35 +139,26 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
       </div>
 
       {activeTab === 'candidates' ? (
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-soft">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Suggested opportunities</p>
-              <h2 className="mt-2 text-xl font-semibold text-slate-900">High-signal leads for AI assistance</h2>
+        <section className="space-y-4">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">AI intelligence posture</p>
+            <h2 className="mt-2 text-xl font-semibold text-slate-900">Priority insights by operating risk</h2>
+            <p className="mt-2 text-sm text-slate-600">These ranked insights stay assistive. They do not auto-change records, pricing, compliance state, or communications.</p>
+          </div>
+          <div className="grid gap-4 xl:grid-cols-3">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Lead priorities</p>
+              <div className="mt-4"><AILeadPriorityList items={intelligence.leadPriorities} /></div>
             </div>
-            <Link href="/admin/ai-analytics" className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Open analytics</Link>
+            <div className="rounded-3xl border border-slate-200 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Quote risk</p>
+              <div className="mt-4"><AIQuoteRiskList items={intelligence.quoteRisks} /></div>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Daily insights</p>
+              <div className="mt-4"><AIDailyInsightsList items={intelligence.dailyInsights} /></div>
+            </div>
           </div>
-          <div className="mt-5 grid gap-4 xl:grid-cols-2">
-            {smartSuggestions.length ? smartSuggestions.map((item) => (
-              <article key={`${item.leadId}-${item.title}`} className="rounded-3xl border border-slate-200 p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-lg font-semibold text-slate-900">{item.title}</p>
-                    <p className="mt-2 text-sm text-slate-600">{item.summary}</p>
-                  </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getPriorityClasses(item.priority)}`}>{item.priority}</span>
-                </div>
-                <p className="mt-4 text-sm text-slate-500">{item.reason}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {item.leadId ? <GenerateDraftButton leadId={item.leadId} suggestionType={CANONICAL_SUGGESTION_TYPES.FOLLOW_UP} label="Draft follow-up" busyLabel="Drafting…" compact /> : null}
-                  {item.leadId ? <GenerateComplianceNextStepButton leadId={item.leadId} compact /> : null}
-                  {item.leadId ? <GenerateComplianceEvidenceButton leadId={item.leadId} compact /> : null}
-                  {item.leadId ? <Link href={`/leads/${item.leadId}`} className="inline-flex rounded-2xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Open lead</Link> : null}
-                </div>
-              </article>
-            )) : <EmptyTabState title="No AI opportunities found" description="As lead activity and blockers accumulate, operator-relevant AI opportunities will appear here." />}
-          </div>
-          <div className="mt-5"><GenerateLeadDraftControls leadId={data.leads[0]?.id ?? ''} /></div>
         </section>
       ) : null}
 
