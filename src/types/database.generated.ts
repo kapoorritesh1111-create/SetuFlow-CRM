@@ -217,35 +217,65 @@ export type Database = {
       }
       contract_line_items: {
         Row: {
+          catalog_price_amount: number | null
+          catalog_price_currency: string | null
+          catalog_price_id: string | null
+          continuity_snapshot: Json
           contract_id: string
           created_at: string
           currency: string | null
           id: string
+          is_price_overridden: boolean | null
           notes: string | null
+          override_reason: string | null
+          overridden_at: string | null
+          overridden_by: string | null
           product_id: string | null
+          product_variant_id: string | null
           quantity: number
+          source_quote_line_item_id: string | null
           unit_price: number | null
           updated_at: string
         }
         Insert: {
+          catalog_price_amount?: number | null
+          catalog_price_currency?: string | null
+          catalog_price_id?: string | null
+          continuity_snapshot?: Json
           contract_id: string
           created_at?: string
           currency?: string | null
           id?: string
+          is_price_overridden?: boolean | null
           notes?: string | null
+          override_reason?: string | null
+          overridden_at?: string | null
+          overridden_by?: string | null
           product_id?: string | null
+          product_variant_id?: string | null
           quantity: number
+          source_quote_line_item_id?: string | null
           unit_price?: number | null
           updated_at?: string
         }
         Update: {
+          catalog_price_amount?: number | null
+          catalog_price_currency?: string | null
+          catalog_price_id?: string | null
+          continuity_snapshot?: Json
           contract_id?: string
           created_at?: string
           currency?: string | null
           id?: string
+          is_price_overridden?: boolean | null
           notes?: string | null
+          override_reason?: string | null
+          overridden_at?: string | null
+          overridden_by?: string | null
           product_id?: string | null
+          product_variant_id?: string | null
           quantity?: number
+          source_quote_line_item_id?: string | null
           unit_price?: number | null
           updated_at?: string
         }
@@ -268,39 +298,90 @@ export type Database = {
       }
       contracts: {
         Row: {
+          accepted_at: string | null
+          approval_required: boolean
+          approval_state: string
+          approved_at: string | null
+          commercial_lock_state: string | null
+          commercial_snapshot: Json
+          completed_at: string | null
           created_at: string
+          dispatched_at: string | null
           ends_on: string | null
+          execution_blockers: Json
+          execution_snapshot: Json
+          execution_state: string
           id: string
           lead_id: string
+          locked_at: string | null
           notes: string | null
           organization_id: string
+          pricing_basis: string | null
+          quote_currency: string | null
           quote_id: string
+          ready_at: string | null
+          released_at: string | null
+          sent_at: string | null
           signed_at: string | null
           starts_on: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
+          approval_required?: boolean
+          approval_state?: string
+          approved_at?: string | null
+          commercial_lock_state?: string | null
+          commercial_snapshot?: Json
+          completed_at?: string | null
           created_at?: string
+          dispatched_at?: string | null
           ends_on?: string | null
+          execution_blockers?: Json
+          execution_snapshot?: Json
+          execution_state?: string
           id?: string
           lead_id: string
+          locked_at?: string | null
           notes?: string | null
           organization_id: string
+          pricing_basis?: string | null
+          quote_currency?: string | null
           quote_id: string
+          ready_at?: string | null
+          released_at?: string | null
+          sent_at?: string | null
           signed_at?: string | null
           starts_on?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
+          approval_required?: boolean
+          approval_state?: string
+          approved_at?: string | null
+          commercial_lock_state?: string | null
+          commercial_snapshot?: Json
+          completed_at?: string | null
           created_at?: string
+          dispatched_at?: string | null
           ends_on?: string | null
+          execution_blockers?: Json
+          execution_snapshot?: Json
+          execution_state?: string
           id?: string
           lead_id?: string
+          locked_at?: string | null
           notes?: string | null
           organization_id?: string
+          pricing_basis?: string | null
+          quote_currency?: string | null
           quote_id?: string
+          ready_at?: string | null
+          released_at?: string | null
+          sent_at?: string | null
           signed_at?: string | null
           starts_on?: string | null
           status?: string
@@ -1056,23 +1137,29 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          interest_type: string
           label: string | null
           lead_id: string
           product_id: string | null
+          source_context: Json | null
         }
         Insert: {
           created_at?: string
           id?: string
+          interest_type?: string
           label?: string | null
           lead_id: string
           product_id?: string | null
+          source_context?: Json | null
         }
         Update: {
           created_at?: string
           id?: string
+          interest_type?: string
           label?: string | null
           lead_id?: string
           product_id?: string | null
+          source_context?: Json | null
         }
         Relationships: [
           {
@@ -1860,25 +1947,76 @@ export type Database = {
       }
       product_variants: {
         Row: {
+          country_of_origin: string | null
           created_at: string
+          export_metadata: Json | null
           hs_code_id: string | null
+          hsn_code: string | null
           id: string
+          is_active: boolean | null
+          is_quoteable: boolean | null
           name: string
+          net_weight_kg: number | null
+          organization_id: string | null
+          pack_label: string | null
+          packaging_type: string | null
+          packaging_unit: string | null
+          pricing_mode_default: string | null
           product_id: string
+          shipment_attributes: Json | null
+          shipment_notes: string | null
+          sku_code: string | null
+          sort_order: number | null
+          source_payload: Json | null
+          units_per_case: number | null
         }
         Insert: {
+          country_of_origin?: string | null
           created_at?: string
+          export_metadata?: Json | null
           hs_code_id?: string | null
+          hsn_code?: string | null
           id?: string
+          is_active?: boolean | null
+          is_quoteable?: boolean | null
           name: string
+          net_weight_kg?: number | null
+          organization_id?: string | null
+          pack_label?: string | null
+          packaging_type?: string | null
+          packaging_unit?: string | null
+          pricing_mode_default?: string | null
           product_id: string
+          shipment_attributes?: Json | null
+          shipment_notes?: string | null
+          sku_code?: string | null
+          sort_order?: number | null
+          source_payload?: Json | null
+          units_per_case?: number | null
         }
         Update: {
+          country_of_origin?: string | null
           created_at?: string
+          export_metadata?: Json | null
           hs_code_id?: string | null
+          hsn_code?: string | null
           id?: string
+          is_active?: boolean | null
+          is_quoteable?: boolean | null
           name?: string
+          net_weight_kg?: number | null
+          organization_id?: string | null
+          pack_label?: string | null
+          packaging_type?: string | null
+          packaging_unit?: string | null
+          pricing_mode_default?: string | null
           product_id?: string
+          shipment_attributes?: Json | null
+          shipment_notes?: string | null
+          sku_code?: string | null
+          sort_order?: number | null
+          source_payload?: Json | null
+          units_per_case?: number | null
         }
         Relationships: [
           {

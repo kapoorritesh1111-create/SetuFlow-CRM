@@ -8,7 +8,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { leadSchema } from '@/features/leads/schemas/lead';
 import { parseNullableNumber, uniqueTrimmed } from '@/lib/utils';
-import { deriveProductMappingStatus, parseLeadWorkflow, serializeLeadWorkflow, type LeadQualificationStatus } from '@/lib/lead-workflow';
+import { deriveProductMappingStatus, parseLeadWorkflow, serializeLeadWorkflow, type LeadQualificationStatus, type LeadCoverageSelection } from '@/lib/lead-workflow';
 import { createImportIssuePayload } from '@/lib/import-issues';
 import { type ActionState, type LeadRecord, type QuoteDraftActionState, normalizeLeadEmail, normalizeLeadInputText, normalizeLeadOptionalText } from '@/features/leads/server/shared';
 
@@ -19,6 +19,7 @@ type ExistingLeadSnapshot = {
   trade_event_id: string | null;
   next_follow_up_at: string | null;
   notes: string | null;
+  source_label?: string | null;
   country_id?: string | null;
 };
 
@@ -295,14 +296,17 @@ async function appendLeadWorkflowState(db: any, params: {
   workflowSnapshot: LeadWorkflowSnapshot;
   productIds?: string[];
   marketIds?: string[];
+  coverageSelections?: LeadCoverageSelection[];
 }) {
   const nextProductIds = Array.from(new Set((params.productIds ?? []).filter(Boolean)));
   const nextMarketIds = Array.from(new Set((params.marketIds ?? []).filter(Boolean)));
+  const nextCoverageSelections = Array.isArray(params.coverageSelections) ? params.coverageSelections : params.workflowSnapshot.workflow.coverageSelections ?? [];
   const nextWorkflow = {
     ...params.workflowSnapshot.workflow,
     mappedProductIds: nextProductIds,
     mappedMarketIds: nextMarketIds,
-    productMappingStatus: deriveProductMappingStatus(nextProductIds, nextMarketIds),
+    coverageSelections: nextCoverageSelections,
+    productMappingStatus: deriveProductMappingStatus(nextProductIds, nextMarketIds, nextCoverageSelections),
     productMappingUpdatedAt: new Date().toISOString(),
   };
 
@@ -1033,7 +1037,7 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     const [{ data: leadRow, error: leadError }, { data: productRows, error: productError }, { data: marketRows, error: marketError }] = await Promise.all([
       db
         .from('leads')
-        .select('id, company_name, stage_id, trade_event_id, next_follow_up_at, notes, country_id')
+        .select('id, company_name, stage_id, trade_event_id, next_follow_up_at, notes, source_label, country_id')
         .eq('id', parsed.data.lead_id)
         .eq('organization_id', organization.id)
         .maybeSingle(),
@@ -1139,6 +1143,7 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     workflowSnapshot: existingWorkflow,
     productIds,
     marketIds,
+    coverageSelections,
   });
   if (workflowWrite.error?.message) return { error: workflowWrite.error.message };
   payload.notes = workflowWrite.notes;
@@ -1449,6 +1454,23 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
 
   const marketIds = marketMapping.marketIds;
   const productIds = productInterestMapping.productIds;
+  const productCategoryRows = productIds.length
+    ? (((await db.from('products').select('id, category_id').eq('organization_id', organization.id).in('id', productIds)).data) ?? []) as Array<{ id: string; category_id: string | null }>
+    : [];
+  const categoryByProductId = new Map(productCategoryRows.map((row) => [row.id, row.category_id]));
+  const contactSourceContext = {
+    sourceType: existingLead.source_label ? 'contact_exchange_or_lead' : null,
+    sourceLabel: existingLead.source_label ?? null,
+  };
+  const coverageSelections = requestedCategoryIds.map((categoryId) => {
+    const scopedProducts = productIds.filter((productId) => categoryByProductId.get(productId) === categoryId);
+    return {
+      categoryId,
+      productIds: scopedProducts,
+      interestType: scopedProducts.length ? 'confirmed_product' : 'category_only',
+      sourceContext: contactSourceContext,
+    } as LeadCoverageSelection;
+  });
 
   const { error: updatedByError } = await db
     .from('leads')
@@ -1471,7 +1493,7 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
   if (deleteProductsError) return { error: deleteProductsError.message };
 
   if (productIds.length > 0) {
-    const productInsertRows = productIds.map((productId) => ({ lead_id: leadId, product_id: productId }));
+    const productInsertRows = productIds.map((productId) => ({ lead_id: leadId, product_id: productId, interest_type: 'confirmed_product', source_context: contactSourceContext, label: JSON.stringify({ categoryId: categoryByProductId.get(productId) ?? null, interestType: 'confirmed_product', sourceContext: contactSourceContext }) }));
     const { error: insertProductsError } = await db.from('lead_product_interests').insert(productInsertRows);
     if (insertProductsError) return { error: insertProductsError.message };
   }
@@ -1484,6 +1506,7 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
     workflowSnapshot: existingWorkflow,
     productIds,
     marketIds,
+    coverageSelections,
   });
 
   if (workflowWrite.error?.message) return { error: workflowWrite.error.message };

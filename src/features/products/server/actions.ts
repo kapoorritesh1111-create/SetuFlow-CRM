@@ -10,6 +10,7 @@ import { hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { parseBoolean, parseNullableNumber } from '@/lib/utils';
 import { buildSingleProductViewModel, type ProductViewModel } from '@/features/products/view-model';
+import { mergeTradeAttributesIntoSourcePayload, mergeTradeAttributesIntoStructuredFields } from '@/lib/trade-attributes';
 
 type ActionState = { error?: string; success?: string; product?: ProductViewModel | null; deletedId?: string; deletedPriceId?: string };
 
@@ -172,6 +173,91 @@ async function syncCompatibilityProductPrices(db: any, input: CompatibilityProdu
   };
 }
 
+
+async function ensurePrimaryVariantTradeAttributes(db: any, input: {
+  organizationId: string;
+  productId: string;
+  actorUserId: string;
+  productName: string;
+  hsnCode?: string | null;
+  packSize?: string | null;
+  pricingModeDefault?: string | null;
+  unitsPerCase?: number | null;
+  netWeightKg?: number | null;
+  countryOfOrigin?: string | null;
+  exportMetadata?: string | null;
+  packagingType?: string | null;
+  packagingUnit?: string | null;
+  shipmentNotes?: string | null;
+}) {
+  const { data: existingVariant, error: existingVariantError } = await db
+    .from('product_variants')
+    .select('id, source_payload')
+    .eq('organization_id', input.organizationId)
+    .eq('product_id', input.productId)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (existingVariantError) return { error: existingVariantError.message };
+
+  const tradeFieldRecord = mergeTradeAttributesIntoStructuredFields(existingVariant ?? null, {
+    countryOfOrigin: input.countryOfOrigin,
+    exportMetadata: input.exportMetadata,
+    packagingType: input.packagingType,
+    packagingUnit: input.packagingUnit,
+    unitsPerCase: input.unitsPerCase ?? null,
+    netWeightKg: input.netWeightKg ?? null,
+    shipmentNotes: input.shipmentNotes,
+    unitOfMeasure: (input.pricingModeDefault as 'case' | 'unit' | 'kg' | null) ?? null,
+  });
+
+  const sourcePayload = mergeTradeAttributesIntoSourcePayload(existingVariant?.source_payload ?? null, {
+    countryOfOrigin: input.countryOfOrigin,
+    exportMetadata: input.exportMetadata,
+    packagingType: input.packagingType,
+    packagingUnit: input.packagingUnit,
+    unitsPerCase: input.unitsPerCase ?? null,
+    netWeightKg: input.netWeightKg ?? null,
+    shipmentNotes: input.shipmentNotes,
+    unitOfMeasure: (input.pricingModeDefault as 'case' | 'unit' | 'kg' | null) ?? null,
+  });
+
+  const variantPayload = {
+    organization_id: input.organizationId,
+    product_id: input.productId,
+    name: input.packagingType?.trim() || input.productName,
+    sku_code: null,
+    pack_label: input.packagingType?.trim() || input.packSize || input.productName,
+    units_per_case: input.unitsPerCase ?? null,
+    pricing_mode_default: input.pricingModeDefault ?? 'unit',
+    net_weight_kg: input.netWeightKg ?? null,
+    hsn_code: input.hsnCode ?? null,
+    country_of_origin: tradeFieldRecord.country_of_origin ?? null,
+    export_metadata: tradeFieldRecord.export_metadata ?? {},
+    packaging_type: tradeFieldRecord.packaging_type ?? null,
+    packaging_unit: tradeFieldRecord.packaging_unit ?? null,
+    shipment_notes: tradeFieldRecord.shipment_notes ?? null,
+    shipment_attributes: tradeFieldRecord.shipment_attributes ?? {},
+    source_payload: sourcePayload,
+    updated_by: input.actorUserId,
+    is_quoteable: true,
+    is_active: true,
+  };
+
+  if (existingVariant?.id) {
+    const { error } = await db.from('product_variants').update(variantPayload).eq('id', existingVariant.id);
+    return { error: error?.message ?? null };
+  }
+
+  const { error } = await db.from('product_variants').insert({
+    ...variantPayload,
+    created_by: input.actorUserId,
+    sort_order: 0,
+  });
+  return { error: error?.message ?? null };
+}
+
 async function loadAuthoritativeProductViewModel(organizationId: string, productId: string): Promise<ProductViewModel | null> {
   const workspaceData = await getProductsData(organizationId);
   if (!workspaceData) return null;
@@ -202,6 +288,17 @@ export async function saveProduct(_: ActionState | undefined, formData: FormData
   const db = supabase as any;
   const id = String(formData.get('id') ?? '').trim() || null;
   const organization_id = workspace.organization.id;
+
+  const tradeAttributes = {
+    country_of_origin: String(formData.get('country_of_origin') ?? '').trim() || null,
+    export_metadata: String(formData.get('export_metadata') ?? '').trim() || null,
+    packaging_type: String(formData.get('packaging_type') ?? '').trim() || null,
+    packaging_unit: String(formData.get('packaging_unit') ?? '').trim() || null,
+    units_per_case: parseNullableNumber(formData.get('units_per_case')),
+    net_weight_kg: parseNullableNumber(formData.get('net_weight_kg')),
+    shipment_notes: String(formData.get('shipment_notes') ?? '').trim() || null,
+    pricing_mode_default: String(formData.get('pricing_mode_default') ?? '').trim() || 'unit',
+  };
 
   const payload = {
     organization_id,
@@ -306,6 +403,24 @@ export async function saveProduct(_: ActionState | undefined, formData: FormData
   const savedProduct = Array.isArray(savedProductResult) ? savedProductResult[0] : savedProductResult;
   const savedProductId = typeof savedProduct?.product_id === 'string' ? savedProduct.product_id : id;
   if (!savedProductId) return { error: 'Unable to determine saved product ID.' };
+
+  const variantSync = await ensurePrimaryVariantTradeAttributes(db, {
+    organizationId: organization_id,
+    productId: savedProductId,
+    actorUserId: workspace.user.id,
+    productName: payload.name,
+    hsnCode: payload.hsn_code,
+    packSize: payload.pack_size,
+    pricingModeDefault: tradeAttributes.pricing_mode_default,
+    unitsPerCase: tradeAttributes.units_per_case,
+    netWeightKg: tradeAttributes.net_weight_kg,
+    countryOfOrigin: tradeAttributes.country_of_origin,
+    exportMetadata: tradeAttributes.export_metadata,
+    packagingType: tradeAttributes.packaging_type,
+    packagingUnit: tradeAttributes.packaging_unit,
+    shipmentNotes: tradeAttributes.shipment_notes,
+  });
+  if (variantSync.error) return { error: variantSync.error };
 
   revalidatePath('/products');
   revalidatePath('/leads');

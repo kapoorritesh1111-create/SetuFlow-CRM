@@ -58,6 +58,14 @@ type ProductDraft = {
   hsn_code: string;
   short_code: string;
   supplier_name: string;
+  country_of_origin: string;
+  export_metadata: string;
+  packaging_type: string;
+  packaging_unit: string;
+  units_per_case: string;
+  net_weight_kg: string;
+  shipment_notes: string;
+  pricing_mode_default: string;
 };
 
 type CatalogPricingDraft = {
@@ -107,6 +115,14 @@ function createDraft(product?: ProductViewModel): ProductDraft {
     hsn_code: product?.hsnCode ?? '',
     short_code: product?.shortCode ?? '',
     supplier_name: product?.supplierName ?? '',
+    country_of_origin: product?.tradeAttributes?.countryOfOrigin ?? '',
+    export_metadata: product?.tradeAttributes?.exportMetadata ?? '',
+    packaging_type: product?.tradeAttributes?.packagingType ?? product?.variants?.[0]?.packLabel ?? '',
+    packaging_unit: product?.tradeAttributes?.packagingUnit ?? '',
+    units_per_case: product?.tradeAttributes?.unitsPerCase != null ? String(product.tradeAttributes.unitsPerCase) : '',
+    net_weight_kg: product?.tradeAttributes?.netWeightKg != null ? String(product.tradeAttributes.netWeightKg) : '',
+    shipment_notes: product?.tradeAttributes?.shipmentNotes ?? '',
+    pricing_mode_default: product?.tradeAttributes?.unitOfMeasure ?? product?.variants?.[0]?.unitOfMeasure ?? 'unit',
   };
 }
 
@@ -141,6 +157,14 @@ function normalizeDraft(draft: ProductDraft) {
     hsn_code: draft.hsn_code.trim(),
     short_code: draft.short_code.trim(),
     supplier_name: draft.supplier_name.trim(),
+    country_of_origin: draft.country_of_origin.trim(),
+    export_metadata: draft.export_metadata.trim(),
+    packaging_type: draft.packaging_type.trim(),
+    packaging_unit: draft.packaging_unit.trim(),
+    units_per_case: draft.units_per_case.trim(),
+    net_weight_kg: draft.net_weight_kg.trim(),
+    shipment_notes: draft.shipment_notes.trim(),
+    pricing_mode_default: draft.pricing_mode_default.trim(),
   });
 }
 
@@ -1096,6 +1120,24 @@ export function ProductsManager({
         >
           <input type="hidden" name="id" value={draft.id} />
           <input type="hidden" name="is_active" value={String(draft.is_active)} />
+          <input type="hidden" name="name" value={draft.name} />
+          <input type="hidden" name="category_id" value={draft.category_id} />
+          <input type="hidden" name="description" value={draft.description} />
+          <input type="hidden" name="sku" value={draft.sku} />
+          <input type="hidden" name="sku_code" value={draft.sku_code || draft.sku} />
+          <input type="hidden" name="brand_name" value={draft.brand_name} />
+          <input type="hidden" name="pack_size" value={draft.pack_size} />
+          <input type="hidden" name="hsn_code" value={draft.hsn_code} />
+          <input type="hidden" name="short_code" value={draft.short_code} />
+          <input type="hidden" name="supplier_name" value={draft.supplier_name} />
+          <input type="hidden" name="country_of_origin" value={draft.country_of_origin} />
+          <input type="hidden" name="export_metadata" value={draft.export_metadata} />
+          <input type="hidden" name="packaging_type" value={draft.packaging_type} />
+          <input type="hidden" name="packaging_unit" value={draft.packaging_unit} />
+          <input type="hidden" name="units_per_case" value={draft.units_per_case} />
+          <input type="hidden" name="net_weight_kg" value={draft.net_weight_kg} />
+          <input type="hidden" name="shipment_notes" value={draft.shipment_notes} />
+          <input type="hidden" name="pricing_mode_default" value={draft.pricing_mode_default} />
           <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-3 shadow-soft">
             <WizardShell
               steps={PRODUCT_WIZARD_STEPS}
@@ -1226,6 +1268,38 @@ export function ProductsManager({
                         className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Country of origin</label>
+                      <input value={draft.country_of_origin} onChange={(event) => handleDraftChange('country_of_origin', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Export / trade metadata</label>
+                      <input value={draft.export_metadata} onChange={(event) => handleDraftChange('export_metadata', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Packaging type</label>
+                      <input value={draft.packaging_type} onChange={(event) => handleDraftChange('packaging_type', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Packaging unit</label>
+                      <input value={draft.packaging_unit} onChange={(event) => handleDraftChange('packaging_unit', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Units per case</label>
+                      <input value={draft.units_per_case} onChange={(event) => handleDraftChange('units_per_case', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Net weight (kg)</label>
+                      <input value={draft.net_weight_kg} onChange={(event) => handleDraftChange('net_weight_kg', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Unit of measure</label>
+                      <select value={draft.pricing_mode_default} onChange={(event) => handleDraftChange('pricing_mode_default', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm"><option value="unit">Unit</option><option value="case">Case</option><option value="kg">Kg</option></select>
+                    </div>
+                    <div className="space-y-2 lg:col-span-2">
+                      <label className="text-sm font-medium text-slate-700">Shipment-relevant notes</label>
+                      <textarea value={draft.shipment_notes} onChange={(event) => handleDraftChange('shipment_notes', event.target.value)} className="min-h-[96px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
                   </div>
                 </WizardStepBody>
               ) : null}
@@ -1257,6 +1331,10 @@ export function ProductsManager({
                       <p className="mt-3 text-sm text-slate-700">SKU: {draft.sku || '—'}</p>
                       <p className="mt-1 text-sm text-slate-700">Brand: {draft.brand_name || '—'}</p>
                       <p className="mt-1 text-sm text-slate-700">Supplier: {draft.supplier_name || '—'}</p>
+                      <p className="mt-1 text-sm text-slate-700">Origin: {draft.country_of_origin || '—'}</p>
+                      <p className="mt-1 text-sm text-slate-700">Export metadata: {draft.export_metadata || '—'}</p>
+                      <p className="mt-1 text-sm text-slate-700">Packaging: {draft.packaging_type || draft.pack_size || '—'} {draft.packaging_unit ? `· ${draft.packaging_unit}` : ''}</p>
+                      <p className="mt-1 text-sm text-slate-700">UOM / case: {draft.pricing_mode_default || 'unit'}{draft.units_per_case ? ` · ${draft.units_per_case} per case` : ''}</p>
                       <p className="mt-1 text-sm text-slate-700">Pricing rows: manage in Catalog pricing mode</p>
                     </div>
                   </div>

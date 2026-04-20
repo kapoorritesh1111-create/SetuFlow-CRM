@@ -86,6 +86,7 @@ export interface LeadCardProps {
   moveReadiness: StageMoveReadiness;
   moveOptions: LeadCardMoveOption[];
   countryCode?: string | null;
+  coverageSummary?: string;
 }
 
 export interface PipelineBoardProps {

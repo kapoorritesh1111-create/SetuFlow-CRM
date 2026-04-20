@@ -90,7 +90,12 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   const qualificationStatus = String(workflow.qualificationStatus ?? 'not_started');
   const mappedProductCount = Array.isArray(data.linkedProducts) ? data.linkedProducts.length : 0;
   const mappedMarketCount = Array.isArray(data.linkedMarkets) ? data.linkedMarkets.length : 0;
+  const coverageSelections = Array.isArray((workflow as any).coverageSelections) ? (workflow as any).coverageSelections : [];
+  const categoryOnlyInterestCount = coverageSelections.filter((item: any) => item?.interestType === 'category_only').length;
+  const confirmedInterestCount = coverageSelections.filter((item: any) => item?.interestType === 'confirmed_product').length;
   const contracts = Array.isArray(data.contracts) ? data.contracts : [];
+  const mappingNote = typeof workflow.productMappingNotes === 'string' ? workflow.productMappingNotes : '';
+
   const canManageQuotes = hasWorkspaceCapability(workspace.currentRoles, 'lead.manage');
   const canSendQuotes = hasWorkspaceCapability(workspace.currentRoles, 'quote.send');
   const readOnlyMessage = getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage');
@@ -102,7 +107,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
     return (
       <EmptyState
         title="Qualification required"
-        description="This lead must be qualified before the quote workspace can be opened. Update qualification on the lead profile and return here."
+        description="This lead must be qualified before the quote workspace can be opened. Update qualification and confirm product/category interest on the lead profile, then return here."
       />
     );
   }
@@ -111,7 +116,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
     return (
       <EmptyState
         title="Product mapping required"
-        description="Link at least one structured product to this qualified lead before entering the quote workspace."
+        description="Link at least one structured product or category-backed product interest to this qualified lead before entering the quote workspace."
       />
     );
   }
@@ -234,6 +239,8 @@ export default async function QuotePage({ params, searchParams }: { params: { le
           { label: 'Open orders', href: '/orders', type: 'primary' },
         ]}
       />
+
+      {mappingNote ? <StateMessage title="Lead continuity is active" description={mappingNote} tone="neutral" /> : null}
 
       <StateMessage
         title="What to do next in Quote"

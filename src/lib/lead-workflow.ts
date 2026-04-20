@@ -1,6 +1,13 @@
 export type LeadQualificationStatus = 'not_started' | 'in_review' | 'qualified' | 'disqualified';
 export type LeadProductMappingStatus = 'pending' | 'in_progress' | 'ready';
 
+export type LeadCoverageSelection = {
+  categoryId: string;
+  productIds: string[];
+  interestType: 'category_only' | 'confirmed_product';
+  sourceContext?: { sourceType?: string | null; sourceLabel?: string | null } | null;
+};
+
 export type LeadWorkflowState = {
   qualificationStatus: LeadQualificationStatus;
   qualificationNotes: string | null;
@@ -9,6 +16,7 @@ export type LeadWorkflowState = {
   productMappingStatus: LeadProductMappingStatus;
   mappedProductIds: string[];
   mappedMarketIds: string[];
+  coverageSelections: LeadCoverageSelection[];
   productMappingUpdatedAt: string | null;
   productMappingNotes: string | null;
 };
@@ -29,6 +37,7 @@ export const DEFAULT_LEAD_WORKFLOW: LeadWorkflowState = {
   productMappingStatus: 'pending',
   mappedProductIds: [],
   mappedMarketIds: [],
+  coverageSelections: [],
   productMappingUpdatedAt: null,
   productMappingNotes: null,
 };
@@ -51,6 +60,25 @@ function sanitizeProductMappingStatus(value: unknown): LeadProductMappingStatus 
   return value === 'in_progress' || value === 'ready' ? value : 'pending';
 }
 
+function sanitizeCoverageSelections(value: unknown): LeadCoverageSelection[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+      const record = entry as Record<string, unknown>;
+      const categoryId = sanitizeString(record.categoryId);
+      if (!categoryId) return null;
+      const productIds = sanitizeStringArray(record.productIds);
+      const interestType = productIds.length ? 'confirmed_product' : 'category_only';
+      const sourceContext = record.sourceContext && typeof record.sourceContext === 'object' && !Array.isArray(record.sourceContext) ? {
+        sourceType: sanitizeString((record.sourceContext as Record<string, unknown>).sourceType),
+        sourceLabel: sanitizeString((record.sourceContext as Record<string, unknown>).sourceLabel),
+      } : null;
+      return { categoryId, productIds, interestType, sourceContext } as LeadCoverageSelection;
+    })
+    .filter((entry): entry is LeadCoverageSelection => Boolean(entry));
+}
+
 export function normalizeLeadWorkflowState(value: Partial<LeadWorkflowState> | null | undefined): LeadWorkflowState {
   return {
     qualificationStatus: sanitizeQualificationStatus(value?.qualificationStatus),
@@ -60,6 +88,7 @@ export function normalizeLeadWorkflowState(value: Partial<LeadWorkflowState> | n
     productMappingStatus: sanitizeProductMappingStatus(value?.productMappingStatus),
     mappedProductIds: sanitizeStringArray(value?.mappedProductIds),
     mappedMarketIds: sanitizeStringArray(value?.mappedMarketIds),
+    coverageSelections: sanitizeCoverageSelections(value?.coverageSelections),
     productMappingUpdatedAt: sanitizeString(value?.productMappingUpdatedAt),
     productMappingNotes: sanitizeString(value?.productMappingNotes),
   };
@@ -107,7 +136,18 @@ export function serializeLeadWorkflow(plainNotes: string | null | undefined, wor
   return safeNotes ? `${safeNotes}\n\n${marker}` : marker;
 }
 
-export function deriveProductMappingStatus(productIds: string[], marketIds: string[]): LeadProductMappingStatus {
-  if (!productIds.length) return 'pending';
+export function deriveProductMappingStatus(productIds: string[], marketIds: string[], coverageSelections: LeadCoverageSelection[] = []): LeadProductMappingStatus {
+  if (!productIds.length && !coverageSelections.length) return 'pending';
+  if (!productIds.length && coverageSelections.length) return 'in_progress';
   return marketIds.length ? 'ready' : 'in_progress';
+}
+
+
+export function summarizeLeadCoverageSelections(selections: LeadCoverageSelection[] = []) {
+  return selections.map((item) => {
+    const source = item.sourceContext?.sourceLabel ? ` via ${item.sourceContext.sourceLabel}` : '';
+    return item.interestType === 'category_only'
+      ? `Category-only interest${source}`
+      : `Confirmed product interest (${item.productIds.length})${source}`;
+  });
 }

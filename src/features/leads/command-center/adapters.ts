@@ -114,7 +114,8 @@ function buildPipelineStageItems(data: LeadProfileData, pricingReadiness: LeadPr
         targetStageIsWon: (stage as any).is_won,
         targetStageIsLost: (stage as any).is_lost,
         qualificationStatus: qualification.status,
-        mappingComplete: mapping.isComplete,
+        hasConfirmedProductInterest: mapping.hasConfirmedProductInterest,
+        hasMarketCoverage: mapping.hasMarketCoverage,
         complianceGate: compliance.gate,
         overdueFollowUpCount: tasks.overdueCount,
         pricingReadiness,
@@ -204,6 +205,22 @@ function buildNextActionSummary(data: LeadProfileData): NextActionSummary {
     }
   }
 
+  if (!mapping.hasConfirmedProductInterest || !mapping.hasMarketCoverage) {
+    return {
+      id: 'next-action-coverage',
+      kind: 'reengage_lead',
+      title: 'Resolve pipeline coverage blockers',
+      summary: !mapping.hasConfirmedProductInterest
+        ? 'Forward movement is blocked until category interest becomes confirmed product linkage.'
+        : 'Forward movement is blocked until market coverage is explicitly mapped.',
+      urgency: tasks.urgency,
+      primaryLabel: 'Open coverage',
+      secondaryLabels: ['Confirm product linkage', 'Map market coverage'],
+      aiDraftAvailable: false,
+      workflowPanel: 'coverage',
+    }
+  }
+
   if (quote?.id) {
     return {
       id: quote.id,
@@ -246,16 +263,28 @@ function buildWorkflowActionCards(data: LeadProfileData): WorkflowActionCardStat
       label: 'Qualification',
       stateLabel: qualification.status.replace(/_/g, ' '),
       helperText: qualification.missingFields.length
-        ? `${qualification.missingFields.length} inputs still need attention`
+        ? `${qualification.missingFields.length} inputs still need attention before stage movement can continue`
         : 'Buyer fit and operator readiness look current',
       badge: qualification.missingFields.length ? `${qualification.missingFields.length} missing` : 'Ready',
+      blocked: qualification.status !== 'qualified',
+      blockedReason: qualification.status !== 'qualified' ? 'Qualification still needs an explicit approved decision for forward stage movement.' : null,
     },
     {
       key: 'coverage',
       label: 'Coverage',
       stateLabel: `${mapping.productCount} products · ${mapping.marketCount} markets`,
-      helperText: mapping.isComplete ? 'Mapped coverage is ready for commercial work' : 'Map at least one product and market',
-      badge: mapping.isComplete ? 'Mapped' : 'Needs mapping',
+      helperText: mapping.isComplete
+        ? 'Confirmed product linkage and market coverage are ready for governed stage movement'
+        : !mapping.hasConfirmedProductInterest
+          ? 'Convert category-only interest into confirmed product linkage before pushing the lead forward'
+          : 'Map at least one active market before pushing the lead forward',
+      badge: mapping.isComplete ? 'Mapped' : !mapping.hasConfirmedProductInterest ? 'Confirm product' : 'Add market',
+      blocked: !mapping.isComplete,
+      blockedReason: !mapping.hasConfirmedProductInterest
+        ? 'Confirmed product linkage is still missing for pipeline progression.'
+        : !mapping.hasMarketCoverage
+          ? 'Market coverage is still missing for pipeline progression.'
+          : null,
     },
     {
       key: 'commercial',
@@ -263,17 +292,25 @@ function buildWorkflowActionCards(data: LeadProfileData): WorkflowActionCardStat
       stateLabel: quote?.quote_number ?? 'No quote yet',
       helperText: pricingBasis ? `${pricingBasis.replace(/_/g, ' ')} basis is carrying the current commercial lane` : 'Create or review the current quote and pricing basis',
       badge: quote?.status ?? null,
-      blocked: compliance.gate === 'BLOCKED',
-      blockedReason: compliance.gate === 'BLOCKED' ? 'Compliance blockers still affect commercial movement.' : null,
+      blocked: compliance.gate === 'BLOCKED' || String(quote?.status ?? '').toLowerCase() === 'draft',
+      blockedReason: compliance.gate === 'BLOCKED'
+        ? 'Compliance blockers still affect commercial movement.'
+        : String(quote?.status ?? '').toLowerCase() === 'draft'
+          ? 'Quote readiness still needs operator completion before later-stage movement.'
+          : null,
     },
     {
       key: 'follow_up',
       label: 'Follow-up',
       stateLabel: tasks.nextFollowUpAt ? 'Scheduled' : tasks.openFollowUpCount > 0 ? 'Open' : 'Not scheduled',
-      helperText: tasks.nextFollowUpAt
-        ? `Next follow-up is ${new Date(tasks.nextFollowUpAt).toLocaleDateString()}`
-        : 'Keep the next communication visible and reviewable',
+      helperText: tasks.overdueCount > 0
+        ? 'Overdue follow-ups now block forward stage progression until the operator closes the drift.'
+        : tasks.nextFollowUpAt
+          ? `Next follow-up is ${new Date(tasks.nextFollowUpAt).toLocaleDateString()}`
+          : 'Keep the next communication visible and reviewable',
       badge: tasks.overdueCount > 0 ? `${tasks.overdueCount} overdue` : tasks.dueSoonCount > 0 ? 'Due soon' : null,
+      blocked: tasks.overdueCount > 0,
+      blockedReason: tasks.overdueCount > 0 ? 'Overdue follow-ups are blocking forward stage movement.' : null,
     },
   ]
 }

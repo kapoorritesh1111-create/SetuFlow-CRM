@@ -66,7 +66,7 @@ function getQuickMoveLabel(label: string) {
   return 'Advance';
 }
 
-export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, state, history, nextStepMap, handleMove, handleAddNote, handleScheduleFollowUp, isPending, commandCenterHref, setDraggedLeadId, setDragOverStageId, safeFormatDateTime, health, ownerLabel, blockerCount, pricingLabel, pricingClassName, blockerSummary, openRfqCount, activeQuoteCount, agingLabel, moveReadiness, moveOptions, countryCode }: LeadCardProps) {
+export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, state, history, nextStepMap, handleMove, handleAddNote, handleScheduleFollowUp, isPending, commandCenterHref, setDraggedLeadId, setDragOverStageId, safeFormatDateTime, health, ownerLabel, blockerCount, pricingLabel, pricingClassName, blockerSummary, openRfqCount, activeQuoteCount, agingLabel, moveReadiness, moveOptions, countryCode, coverageSummary }: LeadCardProps) {
   const router = useRouter();
   const stageAccent = getStageAccent(stageLabel);
   const FollowUpIcon = getStatusIcon(getFollowUpStatus(state));
@@ -83,6 +83,8 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
     return (leftDirectionPenalty + leftDistance) - (rightDirectionPenalty + rightDistance);
   })[0];
   const quickMoveLabel = quickMoveOption ? getQuickMoveLabel(quickMoveOption.label) : 'Open lead';
+  const visibleReadinessReasons = (moveReadiness.blockers.length ? moveReadiness.blockers : moveReadiness.warnings).slice(0, 2);
+  const visibleActionItems = moveReadiness.actionItems.slice(0, 2);
   const metaSignals = [blockerCount ? `${blockerCount} blocked` : '', activeQuoteCount ? `${activeQuoteCount} quote${activeQuoteCount === 1 ? '' : 's'}` : '', openRfqCount ? `${openRfqCount} RFQ` : '', agingLabel !== '—' ? `Aging ${agingLabel}` : ''].filter(Boolean);
   const secondaryMeta = [metaSignals[1], metaSignals[2]].filter(Boolean);
   const [moveMenuOpen, setMoveMenuOpen] = useState(false);
@@ -160,12 +162,12 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
           </div>
           <p className="mt-1 text-[11px] font-medium">{nextActionSummary}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/85 px-3 py-2 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300">{suggestedAction}</div>
+        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/85 px-3 py-2 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300">{suggestedAction}</div>{visibleReadinessReasons.length ? <div className="rounded-2xl border border-rose-200/80 bg-rose-50/70 px-3 py-2 text-[11px] text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/35 dark:text-rose-200"><p className="font-semibold">Stage blockers</p><ul className="mt-1 list-disc pl-4">{visibleReadinessReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div> : null}{visibleActionItems.length ? <div className="flex flex-wrap gap-1.5">{visibleActionItems.map((item) => <span key={item} className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">{item}</span>)}</div> : null}{coverageSummary ? <div className="rounded-2xl border border-sky-200/80 bg-sky-50/70 px-3 py-2 text-[11px] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-200">{coverageSummary}</div> : null}
         {cardMessage ? <StateMessage title={cardMessage} tone="neutral" description="The lead card reflects the latest action result." /> : null}
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2" onClick={(event) => event.stopPropagation()}>
-        {quickMoveOption && canManageLeads ? <button type="button" disabled={isPending} onClick={() => handleMove(lead.id, quickMoveOption.stageId)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">{quickMoveLabel}</button> : null}
+        {quickMoveOption && canManageLeads ? <button type="button" disabled={isPending || moveReadiness.status === 'blocked'} onClick={() => handleMove(lead.id, quickMoveOption.stageId)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">{quickMoveLabel}</button> : null}
         <button type="button" onClick={() => setNoteOpen((value) => !value)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Add note</button>
         <button type="button" onClick={() => setNextActionOpen((value) => !value)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Next action</button>
         <button type="button" onClick={() => setMoveMenuOpen((value) => !value)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Move</button>

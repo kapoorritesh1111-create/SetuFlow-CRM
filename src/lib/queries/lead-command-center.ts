@@ -156,11 +156,19 @@ export function getMappingState(data: LeadProfileData) {
   const mappedMarketNames = workflow.mappedMarketIds
     .map((marketId) => data.markets.find((market) => market.id === marketId)?.name)
     .filter((value): value is string => Boolean(value))
+  const confirmedSelections = workflow.coverageSelections.filter((item) => item.interestType === 'confirmed_product' && item.productIds.length > 0)
+  const categoryOnlySelections = workflow.coverageSelections.filter((item) => item.interestType === 'category_only' || item.productIds.length === 0)
+  const hasConfirmedProductInterest = confirmedSelections.length > 0 || workflow.mappedProductIds.length > 0
+  const hasMarketCoverage = workflow.mappedMarketIds.length > 0
 
   return {
     productCount: workflow.mappedProductIds.length,
     marketCount: workflow.mappedMarketIds.length,
-    isComplete: workflow.mappedProductIds.length > 0,
+    confirmedProductCount: confirmedSelections.length,
+    categoryOnlyCount: categoryOnlySelections.length,
+    hasConfirmedProductInterest,
+    hasMarketCoverage,
+    isComplete: hasConfirmedProductInterest && hasMarketCoverage,
     productNames: mappedProductNames,
     marketNames: mappedMarketNames,
     status: workflow.productMappingStatus,
@@ -176,7 +184,8 @@ export function getStageProgressionReadiness(data: LeadProfileData): Explainable
   const tasks = getTaskStatus(data)
 
   if (qualification.status !== 'qualified') blockers.push('Qualification is not approved')
-  if (!mapping.isComplete) blockers.push('At least one product must be linked')
+  if (!mapping.hasConfirmedProductInterest) blockers.push('Confirmed product linkage is still missing')
+  if (!mapping.hasMarketCoverage) blockers.push('Market coverage is still missing')
   if (compliance.gate === 'BLOCKED') blockers.push('Compliance blockers must be cleared')
   if (tasks.overdueCount > 0) blockers.push('There are overdue follow-ups')
 
@@ -194,7 +203,8 @@ export function getQuoteSendReadiness(data: LeadProfileData): ExplainableReadine
   const mapping = getMappingState(data)
 
   if (qualification.status !== 'qualified') blockers.push('Qualification must be approved before quote send')
-  if (!mapping.isComplete) blockers.push('At least one product must be linked')
+  if (!mapping.hasConfirmedProductInterest) blockers.push('Confirmed product linkage is still missing')
+  if (!mapping.hasMarketCoverage) blockers.push('Market coverage is still missing')
   if (!data.quotes.length) blockers.push('Quote draft does not exist')
   if (pricing === 'missing') blockers.push('Pricing is not commercially ready')
   if (compliance.gate === 'BLOCKED') blockers.push('Compliance is blocking quote send')

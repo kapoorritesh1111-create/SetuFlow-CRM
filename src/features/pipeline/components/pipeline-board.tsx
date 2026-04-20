@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { moveLeadToStage } from '@/features/pipeline/server';
 import { addLeadNote, scheduleLeadFollowUp } from '@/features/leads/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
-import { parseLeadWorkflow } from '@/lib/lead-workflow';
+import { parseLeadWorkflow, summarizeLeadCoverageSelections } from '@/lib/lead-workflow';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
 import { isPipelineInJourney, type LeadJourney } from '@/lib/journey';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
@@ -193,7 +193,16 @@ export function PipelineBoard({
 
   const getLeadBlockerCount = (leadId: string) => readinessByLeadId.get(leadId)?.blockerCount ?? 0;
   const getLeadBlockerSummary = (leadId: string) => readinessByLeadId.get(leadId)?.blockerReasons[0] ?? 'No active blockers';
+  const getLeadCoverageActionSummary = (lead: Lead) => {
+    const workflow = parseLeadWorkflow(lead.notes).workflow;
+    const hasConfirmedProduct = workflow.coverageSelections.some((item) => item.interestType === 'confirmed_product' && item.productIds.length > 0) || workflow.mappedProductIds.length > 0;
+    const hasMarketCoverage = workflow.mappedMarketIds.length > 0;
+    if (!hasConfirmedProduct) return 'Action: confirm product linkage before stage progression';
+    if (!hasMarketCoverage) return 'Action: map market coverage before stage progression';
+    return summarizeLeadCoverageSelections(workflow.coverageSelections)[0] ?? 'Structured product/category interest is present';
+  };
   const getLeadPricingReadiness = (leadId: string) => readinessByLeadId.get(leadId)?.pricingReadiness ?? 'missing';
+  const getLeadCoverageSummary = (lead: Lead) => summarizeLeadCoverageSelections(parseLeadWorkflow(lead.notes).workflow.coverageSelections)[0] ?? 'No structured product/category interest';
 
   const getLeadOpenRfqCount = (leadId: string) => rfqs.filter((item) => item.lead_id === leadId && !['won', 'lost', 'closed', 'cancelled'].includes(item.status)).length;
 
@@ -221,7 +230,8 @@ export function PipelineBoard({
       targetStageIsWon: targetStage.is_won,
       targetStageIsLost: targetStage.is_lost,
       qualificationStatus: workflow.qualificationStatus,
-      mappingComplete: workflow.productMappingStatus === 'ready' && workflow.mappedProductIds.length > 0 && workflow.mappedMarketIds.length > 0,
+      hasConfirmedProductInterest: workflow.coverageSelections.some((item) => item.interestType === 'confirmed_product' && item.productIds.length > 0) || workflow.mappedProductIds.length > 0,
+      hasMarketCoverage: workflow.mappedMarketIds.length > 0,
       complianceGate: complianceStatuses.some((status) => ['blocked', 'missing', 'rejected', 'overdue', 'pending'].includes(status)) ? 'BLOCKED' : 'CLEAR',
       overdueFollowUpCount,
       pricingReadiness: getLeadPricingReadiness(lead.id),
@@ -567,9 +577,10 @@ export function PipelineBoard({
                 const currentStage = lead.stage_id ? stageById.get(lead.stage_id) : null;
                 return currentStage
                   ? getStageMoveReadinessForLead(lead, currentStage)
-                  : { status: 'ready', summary: 'Stage movement is ready under the current governed workflow.', blockers: [], warnings: [], canMove: true };
+                  : { status: 'ready', summary: 'Stage movement is ready under the current governed workflow.', blockers: [], warnings: [], actionItems: ['Advance stage'], canMove: true };
               })()}
               countryCode={lead.country_id ? (countryById.get(lead.country_id)?.iso2_code ?? null) : (lead.country ? (countryCodeByName.get(lead.country.trim().toLowerCase()) ?? null) : null)}
+              coverageSummary={`${getLeadCoverageSummary(lead)} · ${getLeadCoverageActionSummary(lead)}`}
               moveOptions={filteredStageGroups
                 .map((stageGroup) => {
                   const targetStage = stageGroup.stages.find((stage) => stage.pipeline_id === lead.pipeline_id);

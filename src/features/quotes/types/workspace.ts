@@ -15,6 +15,12 @@ export type QuoteWorkspaceListItem = {
   negotiationCount: number;
   historyCount: number;
   hasAcceptedContract: boolean;
+  contract: {
+    id: string;
+    status: string | null;
+    commercial_lock_state?: string | null;
+    commercial_snapshot?: unknown;
+  } | null;
   lastNegotiationMessage: string | null;
 };
 

@@ -241,7 +241,7 @@ async function getScopedPricingTables(
   if (shouldBackfillVariants) {
     const { data, error } = await admin
       .from('product_variants')
-      .select('id, name, product_id, is_quoteable, units_per_case, pricing_mode_default, sku_code, pack_label, moq_cases, moq_kg')
+      .select('id, name, product_id, is_quoteable, units_per_case, pricing_mode_default, sku_code, pack_label, moq_cases, moq_kg, source_payload, net_weight_kg, hsn_code, country_of_origin, export_metadata, packaging_type, packaging_unit, shipment_notes, shipment_attributes')
       .in('product_id', productIds)
       .order('created_at', { ascending: false });
     addIssue(issues, `${labelPrefix} product variants(admin)`, error);
@@ -908,13 +908,13 @@ export type ReportsData = QueryIssuePayload & {
 export type ContractsWorkspaceData = QueryIssuePayload & {
   contracts: Pick<
     ContractRow,
-    'id' | 'lead_id' | 'quote_id' | 'status' | 'signed_at' | 'starts_on' | 'ends_on' | 'created_at' | 'updated_at' | 'notes'
+    'id' | 'lead_id' | 'quote_id' | 'status' | 'signed_at' | 'starts_on' | 'ends_on' | 'created_at' | 'updated_at' | 'notes' | 'commercial_lock_state' | 'quote_currency' | 'pricing_basis' | 'approval_required' | 'approval_state' | 'approved_at' | 'sent_at' | 'accepted_at' | 'locked_at' | 'commercial_snapshot'
   >[];
   leads: Pick<LeadRow, 'id' | 'company_name' | 'owner_user_id' | 'updated_at'>[];
-  quotes: Pick<QuoteRow, 'id' | 'status' | 'updated_at'>[];
+  quotes: Pick<QuoteRow, 'id' | 'status' | 'updated_at' | 'currency' | 'notes'>[];
   contractLineItems: Pick<
     ContractLineItemRow,
-    'id' | 'contract_id' | 'product_id' | 'quantity' | 'unit_price' | 'currency' | 'is_price_overridden'
+    'id' | 'contract_id' | 'product_id' | 'product_variant_id' | 'quantity' | 'unit_price' | 'currency' | 'is_price_overridden' | 'catalog_price_amount' | 'catalog_price_currency' | 'override_reason' | 'notes' | 'source_quote_line_item_id' | 'continuity_snapshot'
   >[];
   documents: Pick<DocumentRow, 'id' | 'related_entity' | 'related_id' | 'status' | 'file_name' | 'uploaded_at'>[];
   complianceItems: Pick<LeadComplianceItemRow, 'id' | 'lead_id' | 'status' | 'severity' | 'due_at'>[];
@@ -2068,7 +2068,7 @@ export async function getLeadsPageData(organizationId: string): Promise<LeadsPag
     interestedProductIds.size
       ? supabase
           .from('product_variants')
-          .select('id, name, product_id, is_quoteable, units_per_case, pricing_mode_default, sku_code, pack_label, moq_cases, moq_kg')
+          .select('id, name, product_id, is_quoteable, units_per_case, pricing_mode_default, sku_code, pack_label, moq_cases, moq_kg, source_payload, net_weight_kg, hsn_code, country_of_origin, export_metadata, packaging_type, packaging_unit, shipment_notes, shipment_attributes')
           .in('product_id', Array.from(interestedProductIds))
           .order('created_at', { ascending: false })
       : Promise.resolve({ data: [], error: null })
@@ -2260,7 +2260,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     supabase.from('lead_activities').select('id, lead_id, kind, message, occurred_at, created_at').eq('organization_id', organizationId).eq('lead_id', leadId).order('occurred_at', { ascending: false }),
     supabase.from('lead_stage_history').select('id, from_stage_id, to_stage_id, changed_at, note').eq('organization_id', organizationId).eq('lead_id', leadId).order('changed_at', { ascending: false }),
     supabase.from('lead_markets').select('lead_id, market_id').eq('lead_id', leadId),
-    supabase.from('lead_product_interests').select('lead_id, product_id').eq('lead_id', leadId),
+    supabase.from('lead_product_interests').select('lead_id, product_id, label, interest_type, source_context').eq('lead_id', leadId),
     supabase.from('rfqs').select('id, lead_id, status, currency, validity_date, created_at, updated_at, notes').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
     supabase.from('quotes').select('id, lead_id, rfq_id, status, currency, pricing_basis, created_at, updated_at, notes, quote_number, current_version_id').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
     supabase.from('lead_compliance_items').select('id, lead_id, compliance_item_id, document_id, status, created_at, submitted_at, approved_at, due_at, severity, reviewed_at').eq('lead_id', leadId).order('created_at', { ascending: false }),
@@ -2452,7 +2452,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
   >(marketRows.map((item) => [item.id, item]));
 
   const linkedProductIds = Array.from(new Set([
-    ...(rows(leadProductsResult.data) as Array<any>).map((item) => item.product_id).filter(Boolean),
+    ...(rows(leadProductsResult.data) as Array<any>).filter((item) => item.interest_type !== 'category_only').map((item) => item.product_id).filter(Boolean),
     ...mergedQuoteLineItems.map((item) => item.product_id).filter(Boolean),
   ]));
   const linkedProducts = linkedProductIds
@@ -2460,6 +2460,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     .filter((item): item is LeadProfileData['linkedProducts'][number] => Boolean(item));
 
   const parsedLeadWorkflow = parseLeadWorkflow((leadResult.data as any)?.notes ?? null);
+  const leadInterestRows = rows(leadProductsResult.data) as Array<any>;
   const sanitizedLead = leadResult.data
     ? ({ ...(leadResult.data as any), notes: parsedLeadWorkflow.plainNotes } as LeadProfileData['lead'])
     : null;
@@ -2510,7 +2511,15 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     pricingRules: scopedProfilePricing.rules as LeadProfileData['pricingRules'],
     communications: rows(communicationsResult.data) as LeadProfileData['communications'],
     contracts: rows(contractsResult.data) as LeadProfileData['contracts'],
-    workflow: parsedLeadWorkflow.workflow,
+    workflow: {
+      ...parsedLeadWorkflow.workflow,
+      productMappingNotes: parsedLeadWorkflow.workflow.productMappingNotes ?? leadInterestRows.map((item: any) => {
+        const label = typeof item?.label === 'string' ? item.label : '';
+        const context = item?.source_context && typeof item.source_context === 'object' ? item.source_context : null;
+        const sourceLabel = typeof context?.sourceLabel === 'string' ? context.sourceLabel : '';
+        return sourceLabel ? `${item.interest_type === 'category_only' ? 'Category-only' : 'Confirmed-product'} linkage via ${sourceLabel}` : null;
+      }).filter(Boolean).join(' · ') || null,
+    },
   };
 }
 
@@ -2681,7 +2690,7 @@ export async function getProductsData(organizationId: string): Promise<ProductsD
       .limit(PRODUCTS_QUERY_LIMIT),
     supabase
       .from('product_variants')
-      .select('id, name, product_id, is_quoteable, units_per_case, pricing_mode_default, sku_code, pack_label, moq_cases, moq_kg, products!inner(organization_id)')
+      .select('id, name, product_id, is_quoteable, units_per_case, pricing_mode_default, sku_code, pack_label, moq_cases, moq_kg, source_payload, pack_size_value, pack_size_unit, net_weight_kg, hsn_code, country_of_origin, export_metadata, packaging_type, packaging_unit, shipment_notes, shipment_attributes, products!inner(organization_id)')
       .eq('products.organization_id', organizationId)
       .order('created_at', { ascending: false })
       .limit(PRODUCT_VARIANTS_QUERY_LIMIT),
@@ -2717,7 +2726,7 @@ export async function getProductsData(organizationId: string): Promise<ProductsD
     'products',
     { allowCompatibilityFallback: true },
   );
-  const normalizedVariants = scopedPricing.variants.map((variant: any) => ({ id: variant.id, name: variant.name, product_id: variant.product_id, is_quoteable: variant.is_quoteable ?? true }));
+  const normalizedVariants = scopedPricing.variants.map((variant: any) => ({ id: variant.id, name: variant.name, product_id: variant.product_id, is_quoteable: variant.is_quoteable ?? true, units_per_case: variant.units_per_case ?? null, pricing_mode_default: variant.pricing_mode_default ?? null, sku_code: variant.sku_code ?? null, pack_label: variant.pack_label ?? null, moq_cases: variant.moq_cases ?? null, moq_kg: variant.moq_kg ?? null, source_payload: variant.source_payload ?? null, net_weight_kg: variant.net_weight_kg ?? null, hsn_code: variant.hsn_code ?? null, country_of_origin: variant.country_of_origin ?? null, export_metadata: variant.export_metadata ?? null, packaging_type: variant.packaging_type ?? null, packaging_unit: variant.packaging_unit ?? null, shipment_notes: variant.shipment_notes ?? null, shipment_attributes: variant.shipment_attributes ?? null }));
   const normalizedPrices = scopedPricing.prices.map((price: any) => ({ id: price.id, product_variant_id: price.product_variant_id, market_id: price.market_id, price: price.price, currency: price.currency, effective_from: price.effective_from, effective_to: price.effective_to }));
   const pricingRuleRows = scopedPricing.rules as Array<any>;
   const syntheticPrices = synthesizeCatalogPricesFromRules({ rules: pricingRuleRows, markets: rows(markets) as Array<any>, variants: normalizedVariants as Array<any> });
@@ -2971,10 +2980,10 @@ export async function getContractsWorkspaceData(organizationId: string): Promise
   const supabase = await createClient();
 
   const [contracts, leads, quotes, contractLineItems, documents, complianceItems, communications, negotiationEvents, auditEvents] = await Promise.all([
-    supabase.from('contracts').select('id, lead_id, quote_id, status, signed_at, starts_on, ends_on, created_at, updated_at, notes').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(120),
+    supabase.from('contracts').select('id, lead_id, quote_id, status, signed_at, starts_on, ends_on, created_at, updated_at, notes, commercial_lock_state, quote_currency, pricing_basis, approval_required, approval_state, approved_at, sent_at, accepted_at, locked_at, commercial_snapshot').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(120),
     supabase.from('leads').select('id, company_name, owner_user_id, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(240),
-    supabase.from('quotes').select('id, status, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(240),
-    supabase.from('contract_line_items').select('id, contract_id, product_id, quantity, unit_price, currency, is_price_overridden, contracts!inner(organization_id)').eq('contracts.organization_id', organizationId).limit(480),
+    supabase.from('quotes').select('id, status, updated_at, currency, notes').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(240),
+    supabase.from('contract_line_items').select('id, contract_id, product_id, product_variant_id, quantity, unit_price, currency, is_price_overridden, catalog_price_amount, catalog_price_currency, override_reason, notes, source_quote_line_item_id, continuity_snapshot, contracts!inner(organization_id)').eq('contracts.organization_id', organizationId).limit(480),
     supabase.from('documents').select('id, related_entity, related_id, status, file_name, uploaded_at').eq('organization_id', organizationId).in('related_entity', ['contract', 'quote']).order('uploaded_at', { ascending: false }).limit(240),
     supabase.from('lead_compliance_items').select('id, lead_id, status, severity, due_at, leads!inner(organization_id)').eq('leads.organization_id', organizationId).order('created_at', { ascending: false }).limit(240),
     (supabase as any).from('communications').select('id, lead_id, quote_id, related_entity, related_id, communication_type, subject, summary, status, created_at, sent_at').eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(240),

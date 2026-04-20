@@ -143,7 +143,8 @@ export default async function AdminOrganizationPage() {
         actions={[
           { label: 'Users', href: '/admin/users' },
           { label: 'Invitations', href: '/admin/invitations' },
-          { label: 'Settings lists', href: '/settings/lists', type: 'primary' },
+          { label: 'Settings lists', href: '/settings/lists' },
+          { label: 'Product management', href: '/admin/product-management', type: 'primary' },
         ]}
       />
 

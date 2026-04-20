@@ -1,13 +1,14 @@
 {
   "internalDccPath": "/internal-dcc/",
   "lockedProductFlow": [
-    "Capture",
     "Lead",
-    "Quote",
-    "Order"
+    "Product / Category Interest",
+    "Quote (catalog price with approved overrides)",
+    "Order",
+    "Execution"
   ],
-  "approvedReworkPhase": "Documentation and demo readiness complete",
-  "approvedReworkTitle": "Canonical routes + product-ready documentation",
+  "approvedReworkPhase": "Post-PR10 reassessment in progress",
+  "approvedReworkTitle": "Product-catalog workflow alignment and demo-readiness gap closure",
   "routeLabels": {
     "dashboard": "Dashboard",
     "leads": "Leads",
@@ -94,6 +95,16 @@
       "href": "/admin/ai-analytics",
       "label": "AI analytics",
       "exact": true
+    },
+    {
+      "href": "/admin/product-management",
+      "label": "Product management",
+      "exact": true
+    },
+    {
+      "href": "/products",
+      "label": "Product catalog",
+      "exact": true
     }
   ],
   "shellSections": [
@@ -155,6 +166,14 @@
         {
           "href": "/admin/ai-analytics",
           "label": "AI analytics"
+        },
+        {
+          "href": "/admin/product-management",
+          "label": "Product management"
+        },
+        {
+          "href": "/products",
+          "label": "Product catalog"
         }
       ]
     }
@@ -173,7 +192,9 @@
   "driftGuardrails": [
     "Define product shell links once and import them everywhere.",
     "Do not reintroduce development, workspace mirror, preview, or planning routes into the shipped app.",
-    "Treat the internal DCC as the planning and readiness source of truth."
+    "Treat the internal DCC as the planning and readiness source of truth.",
+    "Keep the canonical commercial flow lead -> product/category interest -> quote -> order -> execution aligned across admin, leads, quotes, and orders.",
+    "Catalog base price is the system default; manual quote price overrides require explicit approval and an auditable reason."
   ],
   "tests": {
     "requiredFiles": [

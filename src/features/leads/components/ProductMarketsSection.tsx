@@ -85,8 +85,8 @@ export default function ProductMarketsSection({
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Coverage setup</p>
-                <p className="mt-1 text-sm text-slate-600">Choose one or more categories, then optionally tag only the products that matter under each category.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Product/category interest</p>
+                <p className="mt-1 text-sm text-slate-600">Choose one or more categories, then optionally tag the exact products that should bridge this lead into catalog-led quoting.</p>
               </div>
               <button
                 type="button"
@@ -109,7 +109,7 @@ export default function ProductMarketsSection({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Category group {index + 1}</p>
-                      <p className="mt-1 text-sm text-slate-600">Products stay optional. Leave the product list untouched to keep the group category-only.</p>
+                      <p className="mt-1 text-sm text-slate-600">Products stay optional. Leave the product list untouched when the lead is still category-qualified but not product-confirmed yet.</p>
                     </div>
                     {coverageSelections.length > 1 ? (
                       <button
@@ -140,13 +140,13 @@ export default function ProductMarketsSection({
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-3">
                         <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Products</label>
-                        <span className="text-xs text-slate-500">Optional</span>
+                        <span className="text-xs text-slate-500">Optional line refinement</span>
                       </div>
                       <div className="rounded-2xl border border-slate-200 p-3">
                         {!selection.categoryId ? (
                           <p className="text-sm text-slate-500">Select a category first to narrow the product list.</p>
                         ) : scopedProducts.length === 0 ? (
-                          <p className="text-sm text-slate-500">No products exist under this category yet.</p>
+                          <p className="text-sm text-slate-500">No products exist under this category yet. Add them in Admin → Product Management before quoting from this interest.</p>
                         ) : (
                           <div className="grid gap-2 sm:grid-cols-2">
                             {scopedProducts.map((product) => {

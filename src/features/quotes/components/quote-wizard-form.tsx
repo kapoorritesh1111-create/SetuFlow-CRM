@@ -527,7 +527,7 @@ function QuoteLineTable({
                     (issue) => issue.id === "missing-product",
                   ) ? (
                     <p className="mt-2 text-xs font-medium text-rose-700">
-                      Select a product to unlock catalog-linked pricing.
+                      Select a catalog product from the lead interest bridge to unlock catalog-linked pricing.
                     </p>
                   ) : null}
                 </td>
@@ -547,7 +547,7 @@ function QuoteLineTable({
                       {product?.moqDisplay ?? "1"}
                     </div>
                     <div className="mt-1 text-xs text-slate-500">
-                      Default baseline
+                      Lead-to-quote baseline
                     </div>
                   </div>
                   {lineIssues.find((issue) => issue.id === "below-moq") &&
@@ -616,7 +616,7 @@ function QuoteLineTable({
                     (issue) => issue.id === "missing-catalog-baseline",
                   ) ? (
                     <p className="mt-2 text-xs font-medium text-amber-700">
-                      No catalog baseline is linked for this basis yet.
+                      No catalog baseline is linked for this basis yet. Add base pricing in Admin → Product Management before sending this quote.
                     </p>
                   ) : null}
                 </td>
@@ -797,7 +797,7 @@ function getPricingLineIssues(
       id: "missing-override-reason",
       label: "Add override reason",
       detail:
-        "Explain why final quote pricing differs from the catalog baseline.",
+        "Explain why final quote pricing differs from the catalog baseline. Approval remains required for this override.",
       tone: "danger",
     });
   }

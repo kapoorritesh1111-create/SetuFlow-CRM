@@ -1,3 +1,4 @@
+import { parseTradeAttributes, type ProductTradeAttributes } from '@/lib/trade-attributes';
 export type ProductDrawerTab = 'overview' | 'pricing' | 'attributes' | 'history';
 export type ProductBaselineStatus = 'covered' | 'partial' | 'missing';
 
@@ -14,6 +15,10 @@ export type ProductCategoryViewModel = {
 export type ProductVariantViewModel = {
   id: string;
   name: string;
+  unitsPerCase: number | null;
+  packLabel: string | null;
+  unitOfMeasure: ProductTradeAttributes['unitOfMeasure'];
+  tradeAttributes: ProductTradeAttributes;
 };
 
 export type ProductMarketPriceViewModel = {
@@ -46,6 +51,7 @@ export type ProductViewModel = {
   packSize: string | null;
   supplierName: string | null;
   shortCode: string | null;
+  tradeAttributes: ProductTradeAttributes;
   tabs: ProductDrawerTab[];
   variants: ProductVariantViewModel[];
   variantCount: number;
@@ -101,6 +107,17 @@ type ProductVariantRecord = {
   id?: unknown;
   name?: unknown;
   product_id?: unknown;
+  units_per_case?: unknown;
+  pack_label?: unknown;
+  source_payload?: unknown;
+  pricing_mode_default?: unknown;
+  net_weight_kg?: unknown;
+  country_of_origin?: unknown;
+  export_metadata?: unknown;
+  packaging_type?: unknown;
+  packaging_unit?: unknown;
+  shipment_notes?: unknown;
+  shipment_attributes?: unknown;
 };
 
 type ProductPriceRecord = {
@@ -164,6 +181,7 @@ export function toProductViewModel(product: ProductRecord): Omit<ProductViewMode
     packSize: asOptionalString(product.pack_size),
     supplierName: asOptionalString(product.supplier_name),
     shortCode: asOptionalString(product.short_code),
+    tradeAttributes: parseTradeAttributes(null),
     tabs: ['overview', 'pricing', 'attributes', 'history'],
   };
 }
@@ -193,8 +211,22 @@ function normalizeVariants(data: ProductVariantRecord[]) {
       id: asOptionalString(variant.id),
       name: asRequiredString(variant.name, 'Variant'),
       productId: asOptionalString(variant.product_id),
+      unitsPerCase: typeof variant.units_per_case === 'number' && Number.isFinite(variant.units_per_case) ? variant.units_per_case : null,
+      packLabel: asOptionalString(variant.pack_label),
+      tradeAttributes: parseTradeAttributes({
+        source_payload: variant.source_payload,
+        pricing_mode_default: variant.pricing_mode_default,
+        units_per_case: variant.units_per_case,
+        net_weight_kg: variant.net_weight_kg,
+        country_of_origin: variant.country_of_origin,
+        export_metadata: variant.export_metadata,
+        packaging_type: variant.packaging_type,
+        packaging_unit: variant.packaging_unit,
+        shipment_notes: variant.shipment_notes,
+        shipment_attributes: variant.shipment_attributes,
+      }),
     }))
-    .filter((variant): variant is { id: string; name: string; productId: string } => Boolean(variant.id && variant.productId));
+    .filter((variant): variant is { id: string; name: string; productId: string; unitsPerCase: number | null; packLabel: string | null; tradeAttributes: ProductTradeAttributes } => Boolean(variant.id && variant.productId));
 }
 
 function normalizePrices(data: ProductPriceRecord[]) {
@@ -253,9 +285,9 @@ export function buildProductsViewModel(data: {
   const markets = normalizeMarkets(data.markets);
   const targetMarketIds = (markets.filter((market) => market.isActive).map((market) => market.id).length ? markets.filter((market) => market.isActive).map((market) => market.id) : markets.map((market) => market.id));
   const marketMap = new Map(markets.map((market) => [market.id, market.name]));
-  const variantsByProduct = new Map<string, { id: string; name: string; productId: string }[]>();
+  const variantsByProduct = new Map<string, ReturnType<typeof normalizeVariants>>();
   for (const variant of variants) {
-    const current: { id: string; name: string; productId: string }[] = variantsByProduct.get(variant.productId) ?? [];
+    const current: ReturnType<typeof normalizeVariants> = variantsByProduct.get(variant.productId) ?? [];
     current.push(variant);
     variantsByProduct.set(variant.productId, current);
   }
@@ -301,7 +333,7 @@ export function buildProductsViewModel(data: {
         categoryName: categoryMeta.categoryName,
         categoryPath: categoryMeta.categoryPath,
         rootCategoryName: categoryMeta.rootCategoryName,
-        variants: productVariants.map((variant) => ({ id: variant.id, name: variant.name })),
+        variants: productVariants.map((variant) => ({ id: variant.id, name: variant.name, unitsPerCase: variant.unitsPerCase, packLabel: variant.packLabel, unitOfMeasure: variant.tradeAttributes.unitOfMeasure, tradeAttributes: variant.tradeAttributes })),
         variantCount: productVariants.length,
         priceCount: sortedPricingEntries.length,
         marketCount: new Set(sortedPricingEntries.map((entry) => entry.marketId)).size,

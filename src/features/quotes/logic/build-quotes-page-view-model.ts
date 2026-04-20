@@ -43,6 +43,8 @@ type ContractRow = {
   status: string | null;
   signed_at: string | null;
   starts_on: string | null;
+  commercial_lock_state?: string | null;
+  commercial_snapshot?: unknown;
 };
 
 function lower(value: string | null | undefined) {
@@ -110,9 +112,8 @@ export function buildQuotesPageViewModel({
   const versionCounts = new Map<string, number>();
   const negotiationCounts = new Map<string, number>();
   const communicationCounts = new Map<string, number>();
-  const contractQuoteIds = new Set(
-    contracts.filter((row) => row.quote_id).map((row) => String(row.quote_id)),
-  );
+  const contractByQuoteId = new Map(contracts.filter((row) => row.quote_id).map((row) => [String(row.quote_id), row]));
+  const contractQuoteIds = new Set(contractByQuoteId.keys());
 
   for (const row of versions) {
     if (!row.quote_id) continue;
@@ -147,6 +148,7 @@ export function buildQuotesPageViewModel({
       negotiationCount: negotiationCounts.get(quote.id) ?? 0,
       historyCount: (versionCounts.get(quote.id) ?? 0) + (negotiationCounts.get(quote.id) ?? 0) + (communicationCounts.get(quote.id) ?? 0),
       hasAcceptedContract: contractQuoteIds.has(quote.id),
+      contract: contractByQuoteId.get(quote.id) ?? null,
       lastNegotiationMessage: quoteNegotiations.sort((a, b) => Date.parse(b.created_at ?? '') - Date.parse(a.created_at ?? ''))[0]?.message ?? null,
     };
   }).sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));

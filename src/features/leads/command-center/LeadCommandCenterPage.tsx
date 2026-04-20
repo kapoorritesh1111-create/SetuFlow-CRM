@@ -386,7 +386,7 @@ export default function LeadCommandCenterPage({
       marketCount: mappingState.marketCount,
       productNames: mappingState.productNames,
       marketNames: mappingState.marketNames,
-      isComplete: mappingState.productCount > 0,
+      isComplete: mappingState.productCount > 0 && mappingState.marketCount > 0,
     },
     commercial: {
       ...snapshot.commercial,

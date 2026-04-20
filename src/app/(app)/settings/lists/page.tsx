@@ -90,6 +90,16 @@ export default async function SettingsListsPage() {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-3xl border border-brand-200 bg-brand-50/70 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Admin-owned commercial source of truth</p>
+            <h3 className="mt-2 text-xl font-semibold text-slate-900">Reference lists feed Product Management</h3>
+            <p className="mt-2 max-w-3xl text-sm text-slate-600">Categories stay editable here, while the full product system of record for catalog pricing, packaging, trade attributes, and override policy now lives in Admin → Product Management.</p>
+          </div>
+          <a href="/admin/product-management" className="inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Open Product Management</a>
+        </div>
+      </div>
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Settings lists</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Reference data administration</h2>

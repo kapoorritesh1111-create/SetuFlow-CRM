@@ -12,6 +12,7 @@ import { scoreQuoteRisk } from '@/features/ai/logic/intelligence';
 import { AIInsightCard } from '@/features/ai/ui/intelligence-panels';
 import { QuoteListItem } from '@/features/quotes/ui/quote-list-item';
 import { QuoteHistoryList } from '@/features/quotes/ui/quote-history-list';
+import { getCommercialLockStateLabel, parseContractCommercialSnapshot } from '@/lib/contract-lock';
 import { inferQuoteTradeWorkflow, journeyLabel } from '@/features/trade-workflow/logic';
 import { TradeSignalGrid } from '@/features/trade-workflow/ui';
 
@@ -77,7 +78,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     db.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at').in('quote_id', quoteIds).order('created_at', { ascending: false }),
     db.from('quote_negotiation_events').select('id, quote_id, event_type, message, created_at, actor_name').in('quote_id', quoteIds).order('created_at', { ascending: false }),
     db.from('communications').select('id, quote_id, subject, summary, status, created_at').in('quote_id', quoteIds).order('created_at', { ascending: false }),
-    db.from('contracts').select('id, quote_id, status, signed_at, starts_on').eq('organization_id', organizationId).in('quote_id', quoteIds),
+    db.from('contracts').select('id, quote_id, status, signed_at, starts_on, commercial_lock_state, commercial_snapshot').eq('organization_id', organizationId).in('quote_id', quoteIds),
   ]);
 
   const viewModel = buildQuotesPageViewModel({
@@ -95,6 +96,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const selectedTrade = selected
     ? inferQuoteTradeWorkflow({ leadType: selected.leadType, notes: selected.notes, hasAcceptedContract: selected.hasAcceptedContract })
     : null;
+  const selectedContractSnapshot = selected?.contract ? parseContractCommercialSnapshot((selected.contract as any).commercial_snapshot) : null;
   const selectedQuoteRisk = selected
     ? scoreQuoteRisk({
         quoteId: selected.id,
@@ -173,9 +175,10 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                     <p className="mt-1">{selected.negotiationCount} negotiation updates and {selected.totalVersions} recorded versions.</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Quote to order handoff</p>
-                    <p className="mt-2 text-slate-900">{selected.hasAcceptedContract ? 'An order-side handoff already exists for this quote.' : 'No order-side handoff exists yet for this quote.'}</p>
-                    <p className="mt-1">Accepted work should move into Orders only after commercial acceptance is real, the incoterm is explicit, and operator ownership is clear.</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Quote to contract handoff</p>
+                    <p className="mt-2 text-slate-900">{selected.hasAcceptedContract ? 'A contract-grade handoff already exists for this quote.' : 'No contract-grade handoff exists yet for this quote.'}</p>
+                    <p className="mt-1">Accepted work should move forward only after commercial acceptance is real, the incoterm is explicit, and operator ownership is clear.</p>
+                    {selectedContractSnapshot ? <p className="mt-2 text-xs text-slate-500">{getCommercialLockStateLabel((selected.contract as any).commercial_lock_state ?? selectedContractSnapshot.lockState)} · {selectedContractSnapshot.pricingBasis ?? 'pricing basis pending'} · {selectedContractSnapshot.lineCount ?? 0} locked lines</p> : null}
                   </div>
                 </div>
                 {selectedQuoteRisk ? <AIInsightCard title={selectedQuoteRisk.label} score={selectedQuoteRisk.score} level={selectedQuoteRisk.level} reasons={selectedQuoteRisk.reasons} /> : null}

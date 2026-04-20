@@ -11,6 +11,7 @@ import { QUOTE_STATUSES, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
 import { normalizeCurrencyCode, validateOrganizationProductIds } from '@/lib/catalog-pricing-model';
 import { getLeadProgressionGuard } from '@/lib/document-requirements';
 import { parseLeadWorkflow } from '@/lib/lead-workflow';
+import { buildLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
 import { writeAuditLog } from '@/lib/auditLog';
 
 export type QuoteActionState = { error?: string; success?: string; record?: any; mode?: 'create' | 'update' };
@@ -308,6 +309,34 @@ function revalidateCommercialViews(leadId?: string) {
   }
 }
 
+
+async function buildTradeAttributesByVariantId(db: any, organizationId: string, variantIds: string[]) {
+  if (!variantIds.length) return new Map<string, ReturnType<typeof parseTradeAttributes>>();
+  const { data, error } = await db
+    .from('product_variants')
+    .select('id, source_payload, products!inner(organization_id)')
+    .eq('products.organization_id', organizationId)
+    .in('id', variantIds);
+  if (error) return { error: error.message, map: new Map<string, ReturnType<typeof parseTradeAttributes>>() };
+  return {
+    error: null as string | null,
+    map: new Map((Array.isArray(data) ? data : []).map((row: any) => [row.id, parseTradeAttributes(row.source_payload)])),
+  };
+}
+
+async function withContinuityNotes(db: any, organizationId: string, lineItems: ParsedLineItem[]) {
+  const variantIds = Array.from(new Set(lineItems.map((item) => item.product_variant_id).filter(Boolean) as string[]));
+  const result = await buildTradeAttributesByVariantId(db, organizationId, variantIds);
+  if (result.error) return { error: result.error, lineItems };
+  return {
+    error: null as string | null,
+    lineItems: lineItems.map((item) => ({
+      ...item,
+      notes: buildLineContinuityNote(item.product_variant_id ? result.map.get(item.product_variant_id) : null, item.notes ?? null) ?? undefined,
+    })),
+  };
+}
+
 async function normalizeLineItemsForSave(
   db: any,
   organizationId: string,
@@ -374,6 +403,10 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
   const normalizedResult = await normalizeLineItemsForSave(db, organization.id, lineItems);
   if (normalizedResult.error) return { error: normalizedResult.error };
   lineItems = normalizedResult.lineItems;
+
+  const continuityResult = await withContinuityNotes(db, organization.id, lineItems);
+  if (continuityResult.error) return { error: continuityResult.error };
+  lineItems = continuityResult.lineItems;
 
   const readiness = await ensureLeadCommercialReadiness(db, organization.id, leadId);
   if (!readiness.ok) return { error: readiness.error };
@@ -659,6 +692,10 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
   const normalizedResult = await normalizeLineItemsForSave(db, organization.id, lineItems);
   if (normalizedResult.error) return { error: normalizedResult.error };
   lineItems = normalizedResult.lineItems;
+
+  const continuityResult = await withContinuityNotes(db, organization.id, lineItems);
+  if (continuityResult.error) return { error: continuityResult.error };
+  lineItems = continuityResult.lineItems;
 
   const readiness = await ensureLeadCommercialReadiness(db, organization.id, existing.lead_id);
   if (!readiness.ok) return { error: readiness.error };

@@ -107,6 +107,8 @@ CREATE TABLE public.contract_line_items (
   override_reason text,
   overridden_by uuid,
   overridden_at timestamp with time zone,
+  source_quote_line_item_id uuid,
+  continuity_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT contract_line_items_pkey PRIMARY KEY (id),
   CONSTRAINT contract_line_items_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES public.contracts(id),
   CONSTRAINT contract_line_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
@@ -126,6 +128,23 @@ CREATE TABLE public.contracts (
   notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  commercial_lock_state text,
+  quote_currency text,
+  pricing_basis text,
+  approval_required boolean NOT NULL DEFAULT false,
+  approval_state text NOT NULL DEFAULT 'not_required'::text,
+  approved_at timestamp with time zone,
+  sent_at timestamp with time zone,
+  accepted_at timestamp with time zone,
+  locked_at timestamp with time zone,
+  commercial_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
+  execution_state text NOT NULL DEFAULT 'draft'::text,
+  execution_blockers jsonb NOT NULL DEFAULT '[]'::jsonb,
+  execution_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ready_at timestamp with time zone,
+  released_at timestamp with time zone,
+  dispatched_at timestamp with time zone,
+  completed_at timestamp with time zone,
   CONSTRAINT contracts_pkey PRIMARY KEY (id),
   CONSTRAINT contracts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
   CONSTRAINT contracts_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id),
@@ -581,6 +600,28 @@ CREATE TABLE public.markets (
   market_code text,
   CONSTRAINT markets_pkey PRIMARY KEY (id),
   CONSTRAINT markets_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+);
+CREATE TABLE public.my_card_settings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE,
+  organization_id uuid,
+  share_slug text NOT NULL UNIQUE,
+  primary_phone text,
+  secondary_phone text,
+  website text,
+  address text,
+  booking_url text,
+  quote_url text,
+  linkedin_url text,
+  instagram_url text,
+  facebook_url text,
+  tiktok_url text,
+  is_public boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT my_card_settings_pkey PRIMARY KEY (id),
+  CONSTRAINT my_card_settings_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
+  CONSTRAINT my_card_settings_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.next_steps (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -1099,6 +1140,12 @@ CREATE TABLE public.quotes (
   CONSTRAINT quotes_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.profiles(id),
   CONSTRAINT quotes_accepted_version_id_fkey FOREIGN KEY (accepted_version_id) REFERENCES public.quote_versions(id),
   CONSTRAINT quotes_import_run_id_fkey FOREIGN KEY (import_run_id) REFERENCES public.import_runs(id)
+);
+CREATE TABLE public.rate_limit_hits (
+  key text NOT NULL,
+  count integer NOT NULL DEFAULT 1,
+  window_start timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT rate_limit_hits_pkey PRIMARY KEY (key)
 );
 CREATE TABLE public.rfq_line_items (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

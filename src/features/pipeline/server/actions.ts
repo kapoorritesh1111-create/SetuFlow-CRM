@@ -111,7 +111,8 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
     targetStageIsWon: targetStage.is_won,
     targetStageIsLost: targetStage.is_lost,
     qualificationStatus: qualification.status,
-    mappingComplete: mapping.isComplete,
+    hasConfirmedProductInterest: mapping.hasConfirmedProductInterest,
+    hasMarketCoverage: mapping.hasMarketCoverage,
     complianceGate: compliance.gate,
     overdueFollowUpCount: tasks.overdueCount,
     pricingReadiness,
@@ -121,7 +122,7 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
     contractCount: leadProfile.contracts.length,
   });
 
-  if (!stageReadiness.canMove) return { error: stageReadiness.blockers[0] ?? stageReadiness.summary };
+  if (!stageReadiness.canMove) return { error: `${stageReadiness.summary} Next actions: ${stageReadiness.actionItems.join(' · ')}. Blockers: ${stageReadiness.blockers.join('; ')}` };
 
   const occurredAt = new Date().toISOString();
   const { data: moveResult, error: moveError } = await db.rpc('app_move_lead_stage_tx', {
