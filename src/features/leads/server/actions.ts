@@ -379,7 +379,7 @@ async function queueGovernedCommunicationDelivery(params: {
   if (error) return { queued: false as const, provider, reason: error.message };
 
   return {
-    queued: params.gate.allowed as const,
+    queued: params.gate.allowed,
     provider,
     eventId: eventRow?.id ?? null,
     deliveryState: status,
