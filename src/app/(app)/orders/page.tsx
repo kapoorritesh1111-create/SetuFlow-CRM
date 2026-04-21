@@ -282,12 +282,12 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
           tone="neutral"
         />
         <PageHeader
-          eyebrow="Orders"
-          title="Orders"
+          eyebrow="Orders / Execution"
+          title="Orders / Execution"
           description="Accepted quotes become operational orders here with documents, compliance, and execution status in one place."
           badge="Live"
           status="No orders yet"
-          actions={[{ label: 'Go to Leads', href: PRODUCT_ROUTES.app.leads }]}
+          actions={[{ label: 'Go to Follow-up', href: PRODUCT_ROUTES.app.leads }]}
         />
         <SectionCard
           eyebrow="No orders yet"
@@ -522,13 +522,13 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         tone="neutral"
       />
       <PageHeader
-        eyebrow="Orders"
-        title="Orders"
-        description="Accepted quotes become live orders here with contract-grade continuity, compliance requirements, document controls, and dispatch evidence visible per order."
+        eyebrow="Orders / Execution"
+        title="Orders / Execution"
+        description="Accepted quotes become live execution records here with contract-grade continuity, compliance requirements, document controls, and dispatch evidence visible per order."
         badge="Live"
         status={`${orders.length} active`}
         meta={[`${accepted.length} accepted`, 'Execution context visible', 'Order-ready only']}
-        actions={[{ label: 'Go to Leads', href: PRODUCT_ROUTES.app.leads }]}
+        actions={[{ label: 'Go to Follow-up', href: PRODUCT_ROUTES.app.leads }]}
       />
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}

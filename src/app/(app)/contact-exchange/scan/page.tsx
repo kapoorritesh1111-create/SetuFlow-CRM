@@ -38,11 +38,11 @@ export default async function ScanContactInfoPage() {
   if (!workspace.membership || !workspace.organization) {
     return (
       <WorkspaceState
-        eyebrow="Global contact exchange"
+        eyebrow="Capture"
         title="Workspace membership needed"
         description="Your account is signed in, but no active organization membership could be loaded. Restore workspace access before reviewing inbound contact capture surfaces."
         primaryActionHref={PRODUCT_ROUTES.app.dashboard}
-        primaryActionLabel="Go to dashboard"
+        primaryActionLabel="Go to Overview"
       />
     );
   }
@@ -50,13 +50,13 @@ export default async function ScanContactInfoPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Global contact exchange"
-        title="Scan Contact Info"
-        description="Review inbound contact details from cards, screenshots, and shared documents before routing them into CRM follow-up."
+        eyebrow="Capture"
+        title="Capture"
+        description="Review inbound contact details from cards, screenshots, and shared documents before routing them into follow-up."
         badge="Live"
         actions={[
           { label: 'My Digital vCard', href: '/contact-exchange/vcard' },
-          { label: 'Go to leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' },
+          { label: 'Go to Follow-up', href: PRODUCT_ROUTES.app.leads, type: 'primary' },
         ]}
       />
 

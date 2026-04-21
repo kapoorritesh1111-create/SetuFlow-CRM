@@ -10,11 +10,11 @@ export default async function IntegrationsPage() {
   if (!workspace.membership || !workspace.organization) {
     return (
       <WorkspaceState
-        eyebrow="Integrations workspace"
+        eyebrow="Approval / Send"
         title="Workspace membership needed"
-        description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization membership is active before reviewing connected systems."
+        description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization membership is active before reviewing send-readiness and connected systems."
         primaryActionHref="/dashboard"
-        primaryActionLabel="Go to dashboard"
+        primaryActionLabel="Go to Overview"
       />
     );
   }
@@ -23,11 +23,11 @@ export default async function IntegrationsPage() {
   if (!data) {
     return (
       <WorkspaceState
-        eyebrow="Integrations workspace"
-        title="Integrations unavailable"
-        description="The integrations workspace could not load because the data layer is unavailable in this environment."
+        eyebrow="Approval / Send"
+        title="Approval / Send unavailable"
+        description="The Approval / Send surface could not load because the data layer is unavailable in this environment."
         primaryActionHref="/dashboard"
-        primaryActionLabel="Return to dashboard"
+        primaryActionLabel="Return to Overview"
       />
     );
   }

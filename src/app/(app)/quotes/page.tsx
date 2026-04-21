@@ -58,13 +58,13 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     return (
       <div className="space-y-6 p-4 sm:p-6">
         <PageHeader
-          eyebrow="Quotes"
-          title="Quotes workspace"
-          description="Quotes is now a real operating workspace. Start commercial work from a qualified lead, then monitor draft, review, history, and order handoff here."
-          actions={[{ label: 'Open Leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' }, { label: 'Open Orders', href: PRODUCT_ROUTES.app.orders }]}
+          eyebrow="Quote"
+          title="Quote desk"
+          description="Quote is now a core operating desk. Start governed commercial work from a qualified lead, then monitor draft, review, history, and order handoff here."
+          actions={[{ label: 'Open Follow-up', href: PRODUCT_ROUTES.app.leads, type: 'primary' }, { label: 'Open Orders / Execution', href: PRODUCT_ROUTES.app.orders }]}
         />
         <SectionCard eyebrow="No quotes yet" title="Create the first live quote from a qualified lead" description="This workspace will show quote list, detail, history, and order handoff once commercial work starts.">
-          <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Go to leads</Link>
+          <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Go to Follow-up</Link>
         </SectionCard>
       </div>
     );
@@ -121,12 +121,12 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
       />
 
       <PageHeader
-        eyebrow="Quotes"
-        title="Quotes workspace"
-        description="Monitor live quote activity across the organization with list, detail, builder access, history, and order handoff visibility in one route."
+        eyebrow="Quote"
+        title="Quote desk"
+        description="Monitor live quote activity with list, detail, governed pricing context, history, and order handoff visibility in one route."
         actions={[
-          { label: 'Open Leads', href: PRODUCT_ROUTES.app.leads },
-          { label: 'Open Orders', href: PRODUCT_ROUTES.app.orders },
+          { label: 'Open Follow-up', href: PRODUCT_ROUTES.app.leads },
+          { label: 'Open Orders / Execution', href: PRODUCT_ROUTES.app.orders },
           { label: 'Open full builder', href: selectedLeadHref, type: 'primary' },
         ]}
       />

@@ -14,7 +14,16 @@ test('forbidden internal legacy surfaces are absent', () => {
   forbiddenPaths.forEach((path) => assert.equal(existsSync(path), false, `${path} should be absent`));
 });
 
-test('canonical manifest keeps pipeline in primary navigation', () => {
-  assert.equal(primaryNav.includes('/pipeline'), true, 'pipeline should remain in primary navigation');
-  assert.equal(primaryNav[2], '/pipeline', 'pipeline should stay visible near the core commercial routes');
+test('canonical manifest keeps the operator path visible in primary navigation', () => {
+  assert.deepEqual(primaryNav.slice(0, 6), [
+    '/contact-exchange/scan',
+    '/leads',
+    '/quotes',
+    '/integrations',
+    '/orders',
+    '/pipeline',
+  ]);
+  assert.equal(primaryNav.includes('/products'), true, 'catalog should remain in primary navigation');
+  assert.equal(primaryNav.includes('/settings/lists'), true, 'settings should remain in primary navigation');
+  assert.equal(primaryNav.at(-1), '/dashboard', 'overview should be present but demoted to the end');
 });

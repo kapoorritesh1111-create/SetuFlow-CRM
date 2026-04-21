@@ -57,6 +57,15 @@ function matchesCommand(command: CommandItem, query: string) {
   return normalizedQuery.split(/\s+/).every((token) => haystack.includes(token));
 }
 
+function filterSections(canAccessAdmin: boolean) {
+  return canonicalShellSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => canAccessAdmin || !item.requiresAdmin),
+    }))
+    .filter((section) => section.items.length > 0) as NavSection[];
+}
+
 export function AppShell({
   children,
   profile,
@@ -91,7 +100,7 @@ export function AppShell({
     if (!workspaceBasePath) return pathname;
     return withWorkspaceModePreservedParams(workspaceBasePath, mode, searchParams.toString());
   };
-  const navCommandSections = useMemo<NavSection[]>(() => canonicalShellSections.filter((section) => canAccessAdmin || section.id !== 'admin') as NavSection[], [canAccessAdmin]);
+  const navCommandSections = useMemo<NavSection[]>(() => filterSections(canAccessAdmin), [canAccessAdmin]);
 
   const openCommandPalette = () => {
     setMobileNavOpen(false);
@@ -116,8 +125,8 @@ export function AppShell({
         items.push({
           id: key,
           label: item.label,
-          description: `Open ${item.label}`,
-          keywords: [item.href, section.label, item.label.toLowerCase()],
+          description: item.description ?? `Open ${item.label}`,
+          keywords: [item.href, section.label, item.label.toLowerCase(), ...(item.aliases ?? [])],
           group: section.label,
           action: () => router.push(withWorkspaceMode(item.href, workspaceMode)),
         });
@@ -154,7 +163,7 @@ export function AppShell({
     });
 
     return items;
-  }, [navCommandSections, routeMeta.backHref, routeMeta.backLabel, router]);
+  }, [navCommandSections, routeMeta.backHref, routeMeta.backLabel, router, workspaceMode]);
 
   const filteredCommandItems = useMemo(
     () => commandItems.filter((item) => matchesCommand(item, commandQuery)),
@@ -175,13 +184,16 @@ export function AppShell({
       { keys: ['Cmd', 'K'], description: 'Open the command palette on macOS' },
       { keys: ['Ctrl', '/'], description: 'Open keyboard shortcuts' },
       { keys: ['Cmd', '/'], description: 'Open keyboard shortcuts on macOS' },
-      { keys: ['G', 'D'], description: 'Go to dashboard' },
-      { keys: ['G', 'L'], description: 'Go to leads' },
-      { keys: ['G', 'P'], description: 'Go to pipeline' },
-      { keys: ['G', 'O'], description: 'Go to products' },
-      ...(canAccessAdmin
-        ? [{ keys: ['G', 'A'], description: 'Go to admin users' }]
-        : []),
+      { keys: ['G', 'C'], description: 'Go to Capture' },
+      { keys: ['G', 'F'], description: 'Go to Follow-up' },
+      { keys: ['G', 'Q'], description: 'Go to Quote' },
+      { keys: ['G', 'S'], description: 'Go to Approval / Send' },
+      { keys: ['G', 'O'], description: 'Go to Orders / Execution' },
+      { keys: ['G', 'X'], description: 'Go to Exceptions / Risks' },
+      { keys: ['G', 'K'], description: 'Go to Catalog' },
+      { keys: ['G', 'T'], description: 'Go to Settings' },
+      { keys: ['G', 'D'], description: 'Go to Overview' },
+      ...(canAccessAdmin ? [{ keys: ['G', 'A'], description: 'Go to Admin' }] : []),
       { keys: ['Esc'], description: 'Close the palette, shortcuts, or mobile navigation' },
     ],
     [canAccessAdmin],
@@ -194,10 +206,15 @@ export function AppShell({
 
   useEffect(() => {
     const runChordNavigation = (key: string) => {
+      if (key === 'c') router.push(PRODUCT_ROUTES.app.capture);
+      if (key === 'f') router.push(PRODUCT_ROUTES.app.leads);
+      if (key === 'q') router.push(PRODUCT_ROUTES.app.quotes);
+      if (key === 's') router.push(PRODUCT_ROUTES.app.integrations);
+      if (key === 'o') router.push(PRODUCT_ROUTES.app.orders);
+      if (key === 'x') router.push(PRODUCT_ROUTES.app.pipeline);
+      if (key === 'k') router.push(PRODUCT_ROUTES.app.products);
+      if (key === 't') router.push(PRODUCT_ROUTES.app.settings);
       if (key === 'd') router.push(PRODUCT_ROUTES.app.dashboard);
-      if (key === 'l') router.push(PRODUCT_ROUTES.app.leads);
-      if (key === 'p') router.push(PRODUCT_ROUTES.app.pipeline);
-      if (key === 'o') router.push('/products');
       if (key === 'a' && canAccessAdmin) router.push(PRODUCT_ROUTES.app.admin);
     };
 
@@ -238,7 +255,7 @@ export function AppShell({
       }
 
       if (chordRef.current?.key === 'g' && now - chordRef.current.startedAt < 1200) {
-        if (['d', 'l', 'p', 'o', 'a'].includes(key)) {
+        if (['c', 'f', 'q', 's', 'o', 'x', 'k', 't', 'd', 'a'].includes(key)) {
           event.preventDefault();
           setMobileNavOpen(false);
           setShortcutsOpen(false);
@@ -280,7 +297,7 @@ export function AppShell({
                 <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold">
                   {toRoleLabel(currentRole)}
                 </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Daily workspace</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Operating shell</span>
               </div>
             </div>
             <ShellNavigation
@@ -360,7 +377,7 @@ export function AppShell({
                 <div className="rounded-[1.75rem] border border-dashed border-slate-200 px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-900/70">
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">No matching commands</p>
                   <p className="mt-2 text-sm text-slate-500">
-                    Try searching for dashboard, leads, products, admin, or shortcuts.
+                    Try searching for capture, follow-up, quote, approval, orders, risks, catalog, or admin.
                   </p>
                 </div>
               )}
@@ -481,7 +498,7 @@ export function AppShell({
                       <span aria-hidden="true">☰</span>
                     </button>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">SETU Flow workspace</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{routeMeta.sectionLabel ?? 'SETU Flow workspace'}</p>
                       <h1 className="truncate text-xl font-semibold text-slate-900 dark:text-slate-50 sm:text-2xl">{routeMeta.title}</h1>
                       <p className="hidden max-w-2xl text-sm text-slate-500 dark:text-slate-300 lg:block">{routeMeta.description}</p>
                     </div>

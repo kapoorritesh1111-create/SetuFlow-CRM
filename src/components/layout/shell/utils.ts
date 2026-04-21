@@ -14,20 +14,26 @@ export function getSectionIcon(icon: string) {
     O: 'cogs',
     C: 'address-card-o',
     A: 'building-o',
+    exchange: 'exchange',
+    shield: 'shield',
+    database: 'database',
+    wrench: 'wrench',
   };
-  return map[icon] ?? 'circle-o';
+  return map[icon] ?? icon ?? 'circle-o';
 }
 
 export function getNavItemIcon(href: string) {
-  if (href.includes(PRODUCT_ROUTES.app.dashboard)) return 'dashboard';
+  if (href.includes(PRODUCT_ROUTES.app.capture)) return 'camera';
   if (href.includes(PRODUCT_ROUTES.app.leads)) return 'users';
   if (href.includes(PRODUCT_ROUTES.app.quotes)) return 'file-text-o';
+  if (href.includes(PRODUCT_ROUTES.app.integrations)) return 'paper-plane-o';
   if (href.includes(PRODUCT_ROUTES.app.orders)) return 'shopping-bag';
-  if (href.includes('/pipeline')) return 'random';
-  if (href.includes('/products')) return 'archive';
+  if (href.includes('/pipeline')) return 'warning';
+  if (href.includes(PRODUCT_ROUTES.app.products)) return 'archive';
+  if (href.includes(PRODUCT_ROUTES.app.settings)) return 'sliders';
+  if (href.includes(PRODUCT_ROUTES.app.dashboard)) return 'dashboard';
   if (href.includes('/trade-events')) return 'calendar';
   if (href.includes('/contact-exchange/vcard')) return 'address-card-o';
-  if (href.includes('/contact-exchange/scan')) return 'camera';
   if (href.includes('/admin/organization')) return 'building-o';
   if (href.includes('/admin/users')) return 'user-circle-o';
   if (href.includes('/admin/invitations')) return 'envelope-open-o';
@@ -37,8 +43,6 @@ export function getNavItemIcon(href: string) {
   if (href.includes('/compliance')) return 'shield';
   if (href.includes('/contracts')) return 'file-text';
   if (href.includes('/tasks')) return 'check-square-o';
-  if (href.includes('/settings')) return 'sliders';
-  if (href.includes('/integrations')) return 'plug';
   if (href.includes('/ai-suggestions')) return 'magic';
   return 'circle-o';
 }

@@ -15,11 +15,24 @@ export type ProductNavLink = {
   href: string;
   label: string;
   exact?: boolean;
+  description?: string;
+  aliases?: string[];
+  navKey?: string;
+  requiresAdmin?: boolean;
 };
 
-export const primaryAppShellNav: ProductNavLink[] = manifest.primaryNav;
-export const adminAppShellTabs: ProductNavLink[] = manifest.adminTabs;
+export type ProductNavSection = {
+  id: string;
+  label: string;
+  icon: string;
+  description?: string;
+  tone?: 'primary' | 'support' | 'utility';
+  items: ProductNavLink[];
+};
+
+export const primaryAppShellNav = manifest.primaryNav as ProductNavLink[];
+export const adminAppShellTabs = manifest.adminTabs as ProductNavLink[];
 export const hiddenFromPrimaryNav = manifest.hiddenFromPrimaryNav;
 export const driftGuardrails = manifest.driftGuardrails;
-export const canonicalShellSections = manifest.shellSections;
+export const canonicalShellSections = manifest.shellSections as ProductNavSection[];
 export const routeManifest = manifest;

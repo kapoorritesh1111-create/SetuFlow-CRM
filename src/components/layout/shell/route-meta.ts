@@ -1,7 +1,12 @@
 import type { ContextTab, RouteMeta } from '@/components/layout/shell/types';
 import { adminAppShellTabs, primaryAppShellNav, PRODUCT_ROUTES } from '@/lib/product-contract';
 
-const PRODUCT_SHELL_TABS: ContextTab[] = primaryAppShellNav.map((item) => ({ href: item.href, label: item.label, exact: item.exact }));
+const PRODUCT_SHELL_TABS: ContextTab[] = primaryAppShellNav.map((item) => ({
+  href: item.href,
+  label: item.label,
+  exact: item.exact,
+  description: item.description,
+}));
 const ADMIN_TABS: ContextTab[] = adminAppShellTabs.map((item) => ({ href: item.href, label: item.label, exact: item.exact }));
 
 export function getRouteMeta(pathname: string): RouteMeta {
@@ -15,48 +20,129 @@ export function getRouteMeta(pathname: string): RouteMeta {
             ? 'AI analytics'
             : pathname.startsWith('/admin/organization')
               ? 'Organization'
-              : 'Users',
-      description: 'Manage organization overview, workspace access, invitations, and audit visibility without leaving the admin area.',
+              : pathname.startsWith('/admin/product-management')
+                ? 'Product management'
+                : 'Admin',
+      description: 'Manage governed workspace controls, access, audit visibility, and product administration without polluting the daily operating lanes.',
+      sectionLabel: 'Catalog / Admin / Settings',
       tabs: ADMIN_TABS,
     };
   }
 
   if (pathname === '/contracts' || pathname.startsWith('/contracts/')) {
-    return { title: 'Contracts', description: 'Track signed commitments, linked quotes, files, and open blockers from one progression desk.', tabs: PRODUCT_SHELL_TABS };
+    return {
+      title: 'Contracts',
+      description: 'Keep signed commitments and commercial lock visibility close to the operating flow.',
+      sectionLabel: 'Risk and control',
+      tabs: PRODUCT_SHELL_TABS,
+    };
   }
+
   if (pathname === PRODUCT_ROUTES.app.dashboard || pathname.startsWith(`${PRODUCT_ROUTES.app.dashboard}/`)) {
-    return { title: 'Dashboard', description: 'Get to the most important buyer and supplier metrics first, then move into focused operating lanes.', tabs: PRODUCT_SHELL_TABS };
+    return {
+      title: 'Overview',
+      description: 'Use the watchtower to triage queue health, blocked work, and execution drift. Do not treat it as the main place to do the job.',
+      sectionLabel: 'Risk and control',
+      tabs: PRODUCT_SHELL_TABS,
+    };
   }
+
+  if (pathname === PRODUCT_ROUTES.app.capture || pathname.startsWith(`${PRODUCT_ROUTES.app.capture}/`)) {
+    return {
+      title: 'Capture',
+      description: 'Review inbound contact detail first, then push clean records into follow-up without forcing blind automation.',
+      sectionLabel: 'Primary operating flow',
+      tabs: PRODUCT_SHELL_TABS,
+    };
+  }
+
   if (pathname === PRODUCT_ROUTES.app.leads || pathname.startsWith(`${PRODUCT_ROUTES.app.leads}/`)) {
     if (/^\/leads\/[^/]+\/quote/.test(pathname)) {
-      return { title: 'Quotes', description: 'Review commercial output, approvals, and pricing details for this lead.', backHref: pathname.replace(/\/quote.*/, ''), backLabel: 'Back to lead profile' };
+      return {
+        title: 'Quote',
+        description: 'Review commercial output, approvals, and pricing detail for this lead without losing the surrounding follow-up context.',
+        sectionLabel: 'Primary operating flow',
+        backHref: pathname.replace(/\/quote.*/, ''),
+        backLabel: 'Back to follow-up',
+      };
     }
     if (/^\/leads\/[^/]+\/rfq/.test(pathname)) {
-      return { title: 'RFQs', description: 'Create and manage RFQs for the selected lead without leaving the workflow.', backHref: pathname.replace(/\/rfq.*/, ''), backLabel: 'Back to lead profile' };
+      return {
+        title: 'RFQs',
+        description: 'Manage RFQ work for the selected lead without breaking the lead-owned operating sequence.',
+        sectionLabel: 'Primary operating flow',
+        backHref: pathname.replace(/\/rfq.*/, ''),
+        backLabel: 'Back to follow-up',
+      };
     }
     if (/^\/leads\/[^/]+$/.test(pathname)) {
-      return { title: 'Lead profile', description: 'Stay inside one lead context for stage movement, follow-ups, RFQs, quotes, and activity history.', tabs: PRODUCT_SHELL_TABS, backHref: PRODUCT_ROUTES.app.leads, backLabel: 'Back to leads' };
+      return {
+        title: 'Follow-up',
+        description: 'Stay inside one record for qualification, blockers, quote readiness, and activity history.',
+        sectionLabel: 'Primary operating flow',
+        tabs: PRODUCT_SHELL_TABS,
+        backHref: PRODUCT_ROUTES.app.leads,
+        backLabel: 'Back to follow-up list',
+      };
     }
-    return { title: 'Leads', description: 'Find the right lead quickly, act in bulk when needed, and open existing leads in the command center route.', tabs: PRODUCT_SHELL_TABS };
+    return {
+      title: 'Follow-up',
+      description: 'Work owners, next actions, and qualification state before anything graduates into governed quote work.',
+      sectionLabel: 'Primary operating flow',
+      tabs: PRODUCT_SHELL_TABS,
+    };
   }
+
   if (pathname === PRODUCT_ROUTES.app.quotes || pathname.startsWith(`${PRODUCT_ROUTES.app.quotes}/`)) {
-    return { title: 'Quotes', description: 'Review commercial fit, confirm approval state, and move into order creation only when the gate is clear.', tabs: PRODUCT_SHELL_TABS };
+    return {
+      title: 'Quote',
+      description: 'Build commercial truth from catalog defaults, keep override reasons explicit, and move forward only when approval state is clean.',
+      sectionLabel: 'Primary operating flow',
+      tabs: PRODUCT_SHELL_TABS,
+    };
   }
+
+  if (pathname === PRODUCT_ROUTES.app.integrations || pathname.startsWith(`${PRODUCT_ROUTES.app.integrations}/`)) {
+    return {
+      title: 'Approval / Send',
+      description: 'Review governed outbound state, sync readiness, and communication continuity without letting send posture outrun commercial truth.',
+      sectionLabel: 'Primary operating flow',
+      tabs: PRODUCT_SHELL_TABS,
+    };
+  }
+
   if (pathname === PRODUCT_ROUTES.app.orders || pathname.startsWith(`${PRODUCT_ROUTES.app.orders}/`)) {
-    return { title: 'Orders', description: 'Carry accepted commercial truth into operational readiness without hiding blockers or required follow-through.', tabs: PRODUCT_SHELL_TABS };
+    return {
+      title: 'Orders / Execution',
+      description: 'Carry accepted quote truth into operational readiness while keeping blockers, documentary posture, and milestones visible.',
+      sectionLabel: 'Primary operating flow',
+      tabs: PRODUCT_SHELL_TABS,
+    };
   }
+
   if (pathname === PRODUCT_ROUTES.app.pipeline || pathname.startsWith(`${PRODUCT_ROUTES.app.pipeline}/`)) {
-    return { title: 'Pipeline', description: 'Keep stage movement visible, actionable, and easy to scan across the full workspace.', tabs: PRODUCT_SHELL_TABS };
+    return {
+      title: 'Exceptions / Risks',
+      description: 'Scan stalled, blocked, or fragile work quickly, then route the operator back into the right execution lane.',
+      sectionLabel: 'Risk and control',
+      tabs: PRODUCT_SHELL_TABS,
+    };
   }
-  if (pathname.startsWith('/products')) return { title: 'Products', description: 'Manage shared commercial reference data for daily execution.' };
-  if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Maintain trade event records used across lead and pipeline workflows.' };
-  if (pathname.startsWith('/settings/lists')) return { title: 'Settings lists', description: 'Update shared option lists that power forms throughout the app.' };
-  if (pathname.startsWith('/integrations')) return { title: 'Integrations', description: 'Review external systems connected to this workspace.' };
-  if (pathname.startsWith('/ai-suggestions')) return { title: 'AI assist', description: 'Review explainable summaries and next-best-action suggestions anchored to workspace data.' };
-  if (pathname.startsWith('/contact-exchange/vcard')) return { title: 'My Digital vCard', description: 'Share your professional contact identity through one review-first surface before QR, link, and VCF automation ships.', tabs: PRODUCT_SHELL_TABS };
-  if (pathname.startsWith('/contact-exchange/scan')) return { title: 'Scan Contact Info', description: 'Capture inbound contact details through one AI-assisted review surface without forcing save automation yet.', tabs: PRODUCT_SHELL_TABS };
-  if (pathname.startsWith('/tasks')) return { title: 'Tasks', description: 'Track outstanding work tied to the commercial operating flow.' };
-  if (pathname.startsWith('/documents')) return { title: 'Documents', description: 'Review deal-linked files, version posture, expiry, and approvals without leaving the operations lane.' };
-  if (pathname.startsWith('/compliance')) return { title: 'Compliance', description: 'Keep required compliance tasks, reviews, and lead blockers visible alongside commercial work.' };
-  return { title: 'Workspace', description: 'Operate daily work from a cleaner, more consistent application shell.' };
+
+  if (pathname.startsWith('/products')) {
+    return {
+      title: 'Catalog',
+      description: 'Maintain products and baseline pricing without weakening the governed override contract.',
+      sectionLabel: 'Catalog / Admin / Settings',
+      tabs: PRODUCT_SHELL_TABS,
+    };
+  }
+  if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Useful capture support, intentionally demoted from the main daily shell.', sectionLabel: 'Demoted side tools' };
+  if (pathname.startsWith('/settings/lists')) return { title: 'Settings', description: 'Update workspace defaults and shared lists that support the main operating flow.', sectionLabel: 'Catalog / Admin / Settings', tabs: PRODUCT_SHELL_TABS };
+  if (pathname.startsWith('/ai-suggestions')) return { title: 'AI assist', description: 'Keep AI helpful and bounded. It should support the workflow, not become its own destination.', sectionLabel: 'Demoted side tools' };
+  if (pathname.startsWith('/contact-exchange/vcard')) return { title: 'My Card', description: 'Personal sharing tool, intentionally secondary to the trade operating spine.', sectionLabel: 'Demoted side tools' };
+  if (pathname.startsWith('/tasks')) return { title: 'Tasks', description: 'Supporting work tracker that should not outrank the core trade flow.', sectionLabel: 'Demoted side tools' };
+  if (pathname.startsWith('/documents')) return { title: 'Documents', description: 'Review files, documentary completeness, expiry, and evidence gaps close to the core workflow.', sectionLabel: 'Risk and control' };
+  if (pathname.startsWith('/compliance')) return { title: 'Compliance', description: 'Keep compliance blockers visible before commercial or execution moves go too far.', sectionLabel: 'Risk and control' };
+  return { title: 'Workspace', description: 'Operate daily work from a cleaner shell that matches the trade operator mental model.', sectionLabel: 'SETU Flow workspace' };
 }

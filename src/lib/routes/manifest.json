@@ -1,22 +1,25 @@
 {
   "internalDccPath": "/internal-dcc/",
   "lockedProductFlow": [
-    "Lead",
-    "Product / Category Interest",
-    "Quote (catalog price with approved overrides)",
-    "Order",
-    "Execution"
+    "Capture",
+    "Follow-up",
+    "Quote (catalog price with reasoned overrides)",
+    "Approval / Send",
+    "Orders / Execution"
   ],
-  "approvedReworkPhase": "PR-29 release-gate baseline complete",
-  "approvedReworkTitle": "Governed workflow release candidate with aligned DCC, docs, and verification gate",
+  "approvedReworkPhase": "PR-UX-01 complete",
+  "approvedReworkTitle": "Navigation reset + information architecture cleanup",
   "routeLabels": {
-    "dashboard": "Dashboard",
-    "leads": "Leads",
-    "pipeline": "Pipeline",
-    "quotes": "Quotes",
-    "orders": "Orders",
-    "admin": "Admin",
+    "overview": "Overview",
     "capture": "Capture",
+    "followUp": "Follow-up",
+    "quote": "Quote",
+    "approvalSend": "Approval / Send",
+    "ordersExecution": "Orders / Execution",
+    "exceptionsRisks": "Exceptions / Risks",
+    "catalog": "Catalog",
+    "settings": "Settings",
+    "admin": "Admin",
     "myCard": "My Card"
   },
   "routes": {
@@ -26,6 +29,9 @@
       "pipeline": "/pipeline",
       "quotes": "/quotes",
       "orders": "/orders",
+      "integrations": "/integrations",
+      "products": "/products",
+      "settings": "/settings/lists",
       "admin": "/admin/users",
       "capture": "/contact-exchange/scan",
       "myCard": "/contact-exchange/vcard"
@@ -35,39 +41,84 @@
     }
   },
   "productShellLabels": {
-    "productShell": "Product shell",
-    "ritualHeading": "Working rules",
-    "ritualBeforeCoding": "Preserve canonical product routes and keep internal planning surfaces out of the shipped app.",
-    "ritualDuringCoding": "Update navigation and route tests in the same change as any route-level product work.",
-    "ritualAfterCoding": "Refresh the internal DCC when readiness, drift, or route truth changes."
+    "productShell": "Operating shell",
+    "ritualHeading": "Workflow guardrails",
+    "ritualBeforeCoding": "Keep the shell organized around the operator's job, not the repo's module list.",
+    "ritualDuringCoding": "Expose the critical flow plainly: capture, follow-up, quote, approval/send, orders/execution, exceptions/risks, catalog/settings.",
+    "ritualAfterCoding": "Update the DCC whenever readiness, workflow direction, or shell truth changes."
   },
   "primaryNav": [
     {
-      "href": "/dashboard",
-      "label": "Dashboard",
-      "exact": true
+      "href": "/contact-exchange/scan",
+      "label": "Capture",
+      "exact": true,
+      "description": "Review inbound contact details before anything enters CRM.",
+      "aliases": ["scan", "intake", "card capture", "contact intake"],
+      "navKey": "c"
     },
     {
       "href": "/leads",
-      "label": "Leads",
-      "exact": true
-    },
-    {
-      "href": "/pipeline",
-      "label": "Pipeline",
-      "exact": true
+      "label": "Follow-up",
+      "exact": true,
+      "description": "Own next actions, qualification, and record progression.",
+      "aliases": ["leads", "follow up", "command center"],
+      "navKey": "f"
     },
     {
       "href": "/quotes",
-      "label": "Quotes"
+      "label": "Quote",
+      "exact": true,
+      "description": "Build governed commercial truth from the catalog baseline.",
+      "aliases": ["quote desk", "pricing", "builder"],
+      "navKey": "q"
+    },
+    {
+      "href": "/integrations",
+      "label": "Approval / Send",
+      "exact": true,
+      "description": "Check approval-adjacent outbound queues and delivery continuity.",
+      "aliases": ["approval", "send", "outbound", "communications"],
+      "navKey": "s"
     },
     {
       "href": "/orders",
-      "label": "Orders"
+      "label": "Orders / Execution",
+      "exact": true,
+      "description": "Carry accepted quote truth into operational handoff and execution.",
+      "aliases": ["orders", "execution", "handoff"],
+      "navKey": "o"
     },
     {
-      "href": "/admin/users",
-      "label": "Admin"
+      "href": "/pipeline",
+      "label": "Exceptions / Risks",
+      "exact": true,
+      "description": "Scan blocked, aging, or fragile work before it slips.",
+      "aliases": ["pipeline", "risks", "exceptions", "blockers"],
+      "navKey": "x"
+    },
+    {
+      "href": "/products",
+      "label": "Catalog",
+      "exact": true,
+      "description": "Maintain products, pricing baselines, and reusable commercial reference data.",
+      "aliases": ["products", "catalog", "pricing baseline"],
+      "navKey": "k"
+    },
+    {
+      "href": "/settings/lists",
+      "label": "Settings",
+      "exact": true,
+      "description": "Update shared workspace defaults and reference lists.",
+      "aliases": ["settings", "lists", "reference data"],
+      "navKey": "t"
+    },
+    {
+      "href": "/dashboard",
+      "label": "Overview",
+      "exact": true,
+      "description": "Use the watchtower to triage, not to do the work itself.",
+      "aliases": ["dashboard", "overview", "triage"],
+      "navKey": "d"
     }
   ],
   "adminTabs": [
@@ -103,98 +154,194 @@
     },
     {
       "href": "/products",
-      "label": "Product catalog",
+      "label": "Catalog",
       "exact": true
     }
   ],
   "shellSections": [
     {
-      "id": "product-shell",
-      "label": "Product shell",
-      "icon": "\u25eb",
+      "id": "operating-flow",
+      "label": "Primary operating flow",
+      "icon": "exchange",
+      "description": "Run live work in order. These are the places an operator should understand instantly.",
+      "tone": "primary",
       "items": [
         {
-          "href": "/dashboard",
-          "label": "Dashboard",
-          "exact": true
+          "href": "/contact-exchange/scan",
+          "label": "Capture",
+          "exact": true,
+          "description": "Turn messy inbound details into reviewed CRM-ready records.",
+          "aliases": ["scan", "intake", "capture"],
+          "navKey": "c"
         },
         {
           "href": "/leads",
-          "label": "Leads",
-          "exact": true
-        },
-        {
-          "href": "/pipeline",
-          "label": "Pipeline",
-          "exact": true
+          "label": "Follow-up",
+          "exact": true,
+          "description": "Work qualification, ownership, next actions, and lead-owned context.",
+          "aliases": ["leads", "follow up", "next actions"],
+          "navKey": "f"
         },
         {
           "href": "/quotes",
-          "label": "Quotes"
+          "label": "Quote",
+          "exact": true,
+          "description": "Build and review governed pricing, overrides, and order readiness.",
+          "aliases": ["quote", "pricing", "commercial"],
+          "navKey": "q"
+        },
+        {
+          "href": "/integrations",
+          "label": "Approval / Send",
+          "exact": true,
+          "description": "Review send-readiness, outbound continuity, and governed communication state.",
+          "aliases": ["approval", "send", "delivery", "outbound"],
+          "navKey": "s"
         },
         {
           "href": "/orders",
-          "label": "Orders"
-        },
-        {
-          "href": "/admin/users",
-          "label": "Admin"
+          "label": "Orders / Execution",
+          "exact": true,
+          "description": "Take accepted commercial truth into execution without losing blockers or docs.",
+          "aliases": ["orders", "execution", "dispatch"],
+          "navKey": "o"
         }
       ]
     },
     {
-      "id": "admin",
-      "label": "Admin",
-      "icon": "A",
+      "id": "risk-control",
+      "label": "Risk and control",
+      "icon": "shield",
+      "description": "Use these lanes when work is blocked, aging, or needs corroborating evidence.",
+      "tone": "support",
       "items": [
         {
-          "href": "/admin/organization",
-          "label": "Organization"
+          "href": "/pipeline",
+          "label": "Exceptions / Risks",
+          "exact": true,
+          "description": "Make stalled deals, blockers, and rescue actions obvious.",
+          "aliases": ["pipeline", "risk", "exceptions", "blocked"],
+          "navKey": "x"
+        },
+        {
+          "href": "/documents",
+          "label": "Documents",
+          "exact": true,
+          "description": "Check files, versions, expiry, and documentary completeness.",
+          "aliases": ["files", "evidence", "documents"]
+        },
+        {
+          "href": "/compliance",
+          "label": "Compliance",
+          "exact": true,
+          "description": "Review gating requirements before quote, send, or execution moves ahead.",
+          "aliases": ["compliance", "requirements", "blockers"]
+        },
+        {
+          "href": "/contracts",
+          "label": "Contracts",
+          "exact": true,
+          "description": "Keep signed commitments and commercial lock state visible.",
+          "aliases": ["contracts", "commercial lock", "signed"]
+        },
+        {
+          "href": "/dashboard",
+          "label": "Overview",
+          "exact": true,
+          "description": "Triage queue health and priority drift. Do not treat this as the main work surface.",
+          "aliases": ["dashboard", "overview", "watchtower"],
+          "navKey": "d"
+        }
+      ]
+    },
+    {
+      "id": "governance-setup",
+      "label": "Catalog / Admin / Settings",
+      "icon": "database",
+      "description": "Reference truth and governed workspace controls. Important, but not the first stop for daily execution.",
+      "tone": "support",
+      "items": [
+        {
+          "href": "/products",
+          "label": "Catalog",
+          "exact": true,
+          "description": "Own default products and baseline pricing without weakening override control.",
+          "aliases": ["products", "catalog", "price lists"],
+          "navKey": "k"
+        },
+        {
+          "href": "/settings/lists",
+          "label": "Settings",
+          "exact": true,
+          "description": "Maintain shared lists and workspace defaults.",
+          "aliases": ["settings", "lists", "defaults"],
+          "navKey": "t"
         },
         {
           "href": "/admin/users",
-          "label": "Users"
+          "label": "Admin",
+          "description": "Manage users, invitations, audit surfaces, and product governance.",
+          "aliases": ["admin", "users", "audit", "organization"],
+          "navKey": "a",
+          "requiresAdmin": true
+        }
+      ]
+    },
+    {
+      "id": "side-tools",
+      "label": "Demoted side tools",
+      "icon": "wrench",
+      "description": "Useful supporting surfaces, intentionally not promoted as part of the core trade loop.",
+      "tone": "utility",
+      "items": [
+        {
+          "href": "/tasks",
+          "label": "Tasks",
+          "exact": true,
+          "description": "Track supporting work that does not deserve a top-level lane yet.",
+          "aliases": ["tasks", "to do"]
         },
         {
-          "href": "/admin/invitations",
-          "label": "Invitations"
+          "href": "/trade-events",
+          "label": "Trade events",
+          "exact": true,
+          "description": "Manage trade-show support without bloating the daily core shell.",
+          "aliases": ["events", "trade show"]
         },
         {
-          "href": "/admin/audit",
-          "label": "Audit log"
+          "href": "/ai-suggestions",
+          "label": "AI assist",
+          "exact": true,
+          "description": "Helpful analysis, but still secondary to contextual in-flow guidance.",
+          "aliases": ["ai", "assist", "suggestions"]
         },
         {
-          "href": "/admin/ai-analytics",
-          "label": "AI analytics"
-        },
-        {
-          "href": "/admin/product-management",
-          "label": "Product management"
-        },
-        {
-          "href": "/products",
-          "label": "Product catalog"
+          "href": "/contact-exchange/vcard",
+          "label": "My Card",
+          "exact": true,
+          "description": "Personal sharing tool. Useful, but not part of the main operating spine.",
+          "aliases": ["vcard", "my card", "share card"]
         }
       ]
     }
   ],
   "hiddenFromPrimaryNav": [
-    "Products",
     "Documents",
     "Compliance",
     "Contracts",
-    "Trade events",
+    "Admin",
     "Tasks",
-    "Integrations",
+    "Trade events",
     "AI assist",
-    "Contact exchange"
+    "My Card"
   ],
   "driftGuardrails": [
-    "Define product shell links once and import them everywhere.",
-    "Do not reintroduce development, workspace mirror, preview, or planning routes into the shipped app.",
-    "Treat the internal DCC as the planning and readiness source of truth.",
-    "Keep the canonical commercial flow lead -> product/category interest -> quote -> order -> execution aligned across admin, leads, quotes, and orders.",
-    "Catalog base price is the system default; manual quote price overrides require explicit approval and an auditable reason."
+    "Define the operator shell once and import it everywhere.",
+    "Do not let the repo module list decide the user-facing navigation.",
+    "Keep the DCC as the single source of truth for readiness, PR-UX status, and workflow direction.",
+    "Catalog base price remains the system default; manual overrides require an auditable reason.",
+    "Approval remains mandatory when the configured threshold is met, and send surfaces must not outrun that truth.",
+    "Orders and execution must continue from accepted commercial truth rather than branching into parallel realities."
   ],
   "tests": {
     "requiredFiles": [

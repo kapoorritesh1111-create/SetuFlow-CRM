@@ -8,11 +8,11 @@ export default async function ProductsPage() {
   if (!workspace.membership || !workspace.organization) {
     return (
       <WorkspaceState
-        eyebrow="Products workspace"
+        eyebrow="Catalog"
         title="Workspace membership needed"
         description="Your account is signed in, but no active organization membership could be loaded."
         primaryActionHref="/dashboard"
-        primaryActionLabel="Go to dashboard"
+        primaryActionLabel="Go to Overview"
       />
     );
   }
