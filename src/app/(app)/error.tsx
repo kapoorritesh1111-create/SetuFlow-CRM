@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { ErrorBoundaryView } from '@/components/app/error-boundary-view';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 export default function RouteError({
   error,
@@ -16,11 +17,11 @@ export default function RouteError({
 
   return (
     <ErrorBoundaryView
-      title="<route-specific title>"
-      description="<route-specific description>"
+      title="Workspace route unavailable"
+      description="SETU Flow hit an unexpected issue while rendering this workspace route. Try again, then return to Dashboard / Overview if you need a stable recovery point."
       reset={reset}
-      homeHref="<route home>"
-      homeLabel="<route home label>"
+      homeHref={PRODUCT_ROUTES.app.dashboard}
+      homeLabel="Go to Dashboard / Overview"
     />
   );
 }

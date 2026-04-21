@@ -83,7 +83,8 @@ function getVisibleLeadTabs(snapshot: LeadProfileSnapshot, hasActiveQuote: boole
   return snapshot.tabs
     .filter((tab) => hasActiveQuote || tab.key !== 'quotes')
     .map((tab) => {
-      if (tab.key === 'workflow') return { ...tab, label: 'Quote prep' }
+      if (tab.key === 'workflow') return { ...tab, label: 'Command center' }
+      if (tab.key === 'quotes') return { ...tab, label: 'Quote record' }
       if (tab.key === 'activity') return { ...tab, label: 'Lead log' }
       return tab
     })
@@ -542,10 +543,10 @@ export default function LeadCommandCenterPage({
 
       {quoteMessage ? <StateMessage title="Lead workflow update" description={quoteMessage} tone={quoteMessage.toLowerCase().includes('could not') || quoteMessage.toLowerCase().includes('error') ? 'danger' : 'success'} /> : null}
       <StateMessage
-        title="What to do next from this lead"
+        title="Explicit next move from this lead"
         description={hasActiveQuoteRecord
-          ? 'The lead already has a live quote workspace. Open it to revise pricing, send the quote, or record the accepted outcome that hands work into Orders.'
-          : 'Complete qualification and coverage, then use Open quote to create the first commercial draft from this lead.'}
+          ? 'The lead already has a live quote. Keep the working set compressed: continue the quote for pricing or approval work, then move to Orders only after accepted commercial truth is real.'
+          : 'Stay in this command center until qualification, coverage, and next action are explicit. Then create the first governed quote from here instead of route-switching early.'}
         tone="neutral"
       />
       {todayContext ? <LeadTodayContextBar todayContext={todayContext} /> : null}

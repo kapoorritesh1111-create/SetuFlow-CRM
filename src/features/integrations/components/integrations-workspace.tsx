@@ -8,85 +8,107 @@ import { SyncLogList } from '@/features/integrations/ui/sync-log-list';
 import { IntegrationReplayButton } from '@/features/integrations/components/integration-replay-button';
 import { IntegrationQueueSyncButton } from '@/features/integrations/components/integration-queue-sync-button';
 
+function toneClass(value: 'green' | 'yellow' | 'red') {
+  if (value === 'green') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+  if (value === 'yellow') return 'border-amber-200 bg-amber-50 text-amber-800';
+  return 'border-rose-200 bg-rose-50 text-rose-800';
+}
+
 type Props = { data: IntegrationsWorkspaceData };
 
 export function IntegrationsWorkspace({ data }: Props) {
   const view = buildIntegrationsViewModel(data);
+  const blockedCount = view.outboundCandidates.filter((candidate) => candidate.readiness === 'blocked').length;
+  const readyCount = view.outboundCandidates.filter((candidate) => candidate.readiness === 'ready').length;
+  const latestSync = view.syncLogs[0] ?? null;
+  const latestRetry = view.retryQueue[0] ?? null;
+  const approvalTruth = blockedCount === 0 ? 'green' : readyCount > 0 ? 'yellow' : 'red';
+  const outboundTruth = latestRetry ? 'yellow' : latestSync ? 'green' : 'red';
+  const deskSummary = [
+    {
+      title: 'Approval truth',
+      tone: approvalTruth,
+      body: blockedCount
+        ? `${blockedCount} governed payload${blockedCount === 1 ? '' : 's'} are still blocked. A quote existing is not enough.`
+        : readyCount
+          ? `${readyCount} governed payload${readyCount === 1 ? '' : 's'} are clear enough to move forward.`
+          : 'No governed payload is ready yet. Keep approval and contract posture in view.',
+    },
+    {
+      title: 'Send readiness',
+      tone: readyCount > 0 ? 'green' : blockedCount > 0 ? 'yellow' : 'red',
+      body: readyCount
+        ? 'There is at least one safe-to-sync path visible from approved commercial or execution truth.'
+        : blockedCount
+          ? 'The desk is correctly withholding outbound movement until blockers clear.'
+          : 'Nothing is ready to send yet, which is safer than pretending outbound is clear.',
+    },
+    {
+      title: 'Latest outbound action',
+      tone: outboundTruth,
+      body: latestSync
+        ? `${latestSync.label} · ${latestSync.status} · ${latestSync.createdAt ? formatDate(latestSync.createdAt) : 'Pending timestamp'}`
+        : 'No outbound event is visible yet.',
+    },
+    {
+      title: 'Resend / revision posture',
+      tone: latestRetry ? 'yellow' : blockedCount ? 'red' : 'green',
+      body: latestRetry
+        ? `${latestRetry.label} is the live retry candidate. Do not resend blindly; reconcile the continuity key and blocker reason first.`
+        : blockedCount
+          ? 'Revision or approval cleanup is still a better next move than resend.'
+          : 'No replay pressure is visible right now. The desk is in a cleaner outbound posture.',
+    },
+  ] as const;
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+      <section className="grid gap-4 lg:grid-cols-[1.45fr_1fr]">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Integrations control desk</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Validated connectors, governed sync payloads, and continuity-aware retries</h2>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Approval / Send desk</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">One operator desk for approval truth, send blockers, and outbound continuity</h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-600">
-            This surface now treats integrations as a governed control system instead of a simple event monitor. Operators can validate inbound payloads,
-            queue safe outbound continuity syncs, review retry posture, and confirm that external status never outruns contract, compliance, or execution truth.
+            This route should never imply that a quote is safe to send just because it exists. Keep approval truth, gated send readiness, latest outbound action,
+            and resend or revision posture in one place before anything customer-facing moves.
           </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-4 xl:grid-cols-8">
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Connected</p><p className="mt-2 text-2xl font-semibold text-slate-900">{view.overview.connectedCount}</p></div>
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Active</p><p className="mt-2 text-2xl font-semibold text-slate-900">{view.overview.activeCount}</p></div>
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Mocks</p><p className="mt-2 text-2xl font-semibold text-slate-900">{view.overview.mockConnectorCount}</p></div>
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Sync logs</p><p className="mt-2 text-2xl font-semibold text-slate-900">{view.overview.recentEventCount}</p></div>
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Retry queue</p><p className="mt-2 text-2xl font-semibold text-amber-700">{view.overview.retryQueueCount}</p></div>
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Validation gaps</p><p className="mt-2 text-2xl font-semibold text-rose-700">{view.overview.validationFailureCount}</p></div>
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Outbound queued</p><p className="mt-2 text-2xl font-semibold text-slate-900">{view.overview.queuedOutboundCount}</p></div>
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Blocked syncs</p><p className="mt-2 text-2xl font-semibold text-amber-700">{view.overview.blockedSyncCount}</p></div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {deskSummary.map((item) => (
+              <div key={item.title} className={`rounded-2xl border p-4 ${toneClass(item.tone)}`}>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em]">{item.title}</p>
+                <p className="mt-3 text-sm leading-6">{item.body}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href="/quotes" className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Back to Quote</Link>
+            <Link href="/contracts" className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Contracts</Link>
+            <Link href="/orders" className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Open Orders / Execution</Link>
           </div>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Connector rules</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Desk rules</p>
           <ul className="mt-4 space-y-3 text-sm text-slate-600">
-            <li>• Every inbound connector must validate payloads before workflow effects are considered safe.</li>
-            <li>• Every outbound sync must carry governed commercial or execution continuity.</li>
-            <li>• Retry posture must retain continuity keys, attempt counts, and operator review visibility.</li>
-            <li>• External status must never outrun contract lock, compliance controls, or dispatch evidence.</li>
+            <li>• A quote is not safe to send until approval truth and continuity blockers are visibly clear.</li>
+            <li>• Retry or resend must preserve continuity keys, latest action context, and operator review visibility.</li>
+            <li>• Outbound posture must never outrun the governed commercial contract.</li>
+            <li>• Technical connector health matters only after the operator can answer: send, revise, or hold?</li>
           </ul>
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Connector state</p>
-            <h3 className="mt-1 text-xl font-semibold text-slate-900">Configured providers, validation posture, and continuity health</h3>
-          </div>
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            {view.connectors.length ? view.connectors.map((connector) => (
-              <ConnectorCard
-                key={connector.integrationId}
-                connector={connector}
-                retryAction={connector.syncLogs[0] ? (
-                  <IntegrationReplayButton
-                    integrationId={connector.integrationId}
-                    eventId={connector.syncLogs[0].id}
-                    provider={connector.provider}
-                    reason={`Retry requested from ${connector.label} card.`}
-                  />
-                ) : undefined}
-              />
-            )) : <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-sm text-slate-500">No integrations are active yet. Start with freight or ERP connectors to validate mapping, status continuity, and retry architecture.</div>}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Retry queue</p>
-            <div className="mt-4"><RetryQueue items={view.retryQueue} /></div>
-          </div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Webhook pattern</p>
-            <p className="mt-3 text-sm text-slate-600">Inbound provider events follow a connector registry and provider-specific entry pattern under <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">/api/integrations/webhooks/[provider]</code>, with validation, continuity keys, and governed impact summaries persisted into the sync log.</p>
-          </div>
-        </div>
+      <section className="grid gap-4 md:grid-cols-4">
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Connected</p><p className="mt-2 text-2xl font-semibold text-slate-900">{view.overview.connectedCount}</p></div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Ready outbound</p><p className="mt-2 text-2xl font-semibold text-emerald-700">{readyCount}</p></div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Blocked outbound</p><p className="mt-2 text-2xl font-semibold text-amber-700">{blockedCount}</p></div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Retry pressure</p><p className="mt-2 text-2xl font-semibold text-slate-900">{view.overview.retryQueueCount}</p></div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.25fr_1fr]">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Governed outbound queue</p>
-              <h3 className="mt-1 text-xl font-semibold text-slate-900">Safe-to-sync commercial and execution payloads</h3>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Governed send queue</p>
+              <h3 className="mt-1 text-xl font-semibold text-slate-900">What is actually ready, blocked, or waiting for revision</h3>
             </div>
           </div>
           <div className="mt-4 space-y-3">
@@ -97,25 +119,49 @@ export function IntegrationsWorkspace({ data }: Props) {
                     <p className="text-sm font-semibold text-slate-900">{candidate.title}</p>
                     <p className="mt-1 text-sm text-slate-600">{candidate.reason}</p>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${candidate.readiness === 'ready' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{candidate.readiness === 'ready' ? 'Ready to sync' : 'Blocked'}</span>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${candidate.readiness === 'ready' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{candidate.readiness === 'ready' ? 'Safe to move' : 'Hold / revise first'}</span>
                 </div>
                 <p className="mt-2 text-xs text-slate-500">{candidate.payloadHint} · execution {candidate.stageLabel}</p>
                 {candidate.readiness === 'ready' ? (
                   <div className="mt-3">
-                    <IntegrationQueueSyncButton
-                      integrationId={candidate.integrationId}
-                      provider={candidate.provider}
-                      targetType={candidate.targetType}
-                      targetId={candidate.targetId}
-                      reason={candidate.reason}
-                    />
+                    <IntegrationQueueSyncButton integrationId={candidate.integrationId} provider={candidate.provider} targetType={candidate.targetType} targetId={candidate.targetId} reason={candidate.reason} />
                   </div>
                 ) : null}
               </article>
-            )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No governed outbound payloads are waiting right now.</div>}
+            )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No governed send candidates are waiting right now.</div>}
           </div>
         </div>
 
+        <div className="space-y-4">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Replay / resend pressure</p>
+            <div className="mt-4"><RetryQueue items={view.retryQueue} /></div>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Latest outbound action</p>
+            <div className="mt-4"><SyncLogList items={view.syncLogs.slice(0, 4)} /></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Connector posture</p>
+            <h3 className="mt-1 text-xl font-semibold text-slate-900">Technical surfaces, now subordinate to the operator desk</h3>
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            {view.connectors.length ? view.connectors.map((connector) => (
+              <ConnectorCard
+                key={connector.integrationId}
+                connector={connector}
+                retryAction={connector.syncLogs[0] ? (
+                  <IntegrationReplayButton integrationId={connector.integrationId} eventId={connector.syncLogs[0].id} provider={connector.provider} reason={`Retry requested from ${connector.label} card.`} />
+                ) : undefined}
+              />
+            )) : <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-sm text-slate-500">No integrations are active yet. That is a technical fact, not a reason to blur operator send truth.</div>}
+          </div>
+        </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Governance alerts</p>
           <div className="mt-4 space-y-3">
@@ -123,29 +169,13 @@ export function IntegrationsWorkspace({ data }: Props) {
               <article key={alert.id} className={`rounded-2xl border p-4 ${alert.severity === 'high' ? 'border-rose-200 bg-rose-50/40' : 'border-amber-200 bg-amber-50/40'}`}>
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-slate-900">{alert.title}</p>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${alert.severity === 'high' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{alert.severity === 'high' ? 'High' : 'Medium'}</span>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${alert.severity === 'high' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{alert.severity === 'high' ? 'High risk' : 'Medium risk'}</span>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">{alert.reason}</p>
-                <Link href={alert.ctaHref} className="mt-3 inline-flex rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-700">{alert.ctaLabel}</Link>
+                <Link href={alert.ctaHref} className="mt-3 inline-flex rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">{alert.ctaLabel}</Link>
               </article>
-            )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No governed sync alerts are currently visible.</div>}
+            )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No governance alerts are visible right now.</div>}
           </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Sync log timeline</p>
-          <div className="mt-4"><SyncLogList items={view.syncLogs} /></div>
-        </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Latest processed connector</p>
-          <p className="mt-3 text-sm text-slate-600">
-            {view.connectors.find((item) => item.lastProcessedAt)?.label ?? 'No processed connector yet'}
-          </p>
-          <p className="mt-2 text-xs text-slate-500">
-            {view.connectors.find((item) => item.lastProcessedAt)?.lastProcessedAt ? formatDate(view.connectors.find((item) => item.lastProcessedAt)?.lastProcessedAt ?? '') : 'Awaiting first processed event'}
-          </p>
         </div>
       </section>
     </div>

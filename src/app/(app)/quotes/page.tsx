@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
-import { PageHeader } from '@/components/ui/page-header';
 import { SectionCard } from '@/components/ui/section-card';
-import { StateMessage } from '@/components/ui/state-message';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
@@ -18,6 +16,17 @@ import { TradeSignalGrid } from '@/features/trade-workflow/ui';
 
 function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+function labelizeStatus(value: string) {
+  return value.replaceAll('_', ' ');
+}
+
+function nextStepToneClasses(tone: 'quote' | 'approval' | 'orders' | 'follow_up') {
+  if (tone === 'orders') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+  if (tone === 'approval') return 'border-amber-200 bg-amber-50 text-amber-900';
+  if (tone === 'follow_up') return 'border-sky-200 bg-sky-50 text-sky-800';
+  return 'border-slate-200 bg-slate-50 text-slate-800';
 }
 
 export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string | string[] } }) {
@@ -57,14 +66,11 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   if (!quotes.length) {
     return (
       <div className="space-y-6 p-4 sm:p-6">
-        <PageHeader
-          eyebrow="Quote"
-          title="Quote desk"
-          description="Quote is now a core operating desk. Start governed commercial work from a qualified lead, then monitor draft, review, history, and order handoff here."
-          actions={[{ label: 'Open Follow-up', href: PRODUCT_ROUTES.app.leads, type: 'primary' }, { label: 'Open Orders / Execution', href: PRODUCT_ROUTES.app.orders }]}
-        />
-        <SectionCard eyebrow="No quotes yet" title="Create the first live quote from a qualified lead" description="This workspace will show quote list, detail, history, and order handoff once commercial work starts.">
-          <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Go to Follow-up</Link>
+        <SectionCard eyebrow="Quote command center" title="No quotes yet" description="Start the first governed commercial thread from Follow-up once the lead is qualified and commercially coherent.">
+          <div className="flex flex-wrap gap-3">
+            <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Open Follow-up</Link>
+            <Link href={PRODUCT_ROUTES.app.orders} className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Orders / Execution</Link>
+          </div>
         </SectionCard>
       </div>
     );
@@ -114,22 +120,52 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
-      <StateMessage
-        tone="neutral"
-        title="Quotes is now a core operating workspace"
-        description="Use the list to select a live commercial record, review detail and history in one place, and jump into the full lead-owned builder only when deeper pricing or send work is required."
-      />
+      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Quote command center</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Keep Follow-up and Quote in one governed working set</h1>
+            <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">This route keeps one governed commercial record in focus. Quote should inherit catalog baseline truth first, make override posture visible second, and only hand off into Approval / Send when the quote is actually safe to send rather than merely present.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Follow-up</Link>
+            <Link href={selectedLeadHref} className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Open lead-owned builder</Link>
+            <Link href={PRODUCT_ROUTES.app.integrations} className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Approval / Send desk</Link>
+          </div>
+        </div>
 
-      <PageHeader
-        eyebrow="Quote"
-        title="Quote desk"
-        description="Monitor live quote activity with list, detail, governed pricing context, history, and order handoff visibility in one route."
-        actions={[
-          { label: 'Open Follow-up', href: PRODUCT_ROUTES.app.leads },
-          { label: 'Open Orders / Execution', href: PRODUCT_ROUTES.app.orders },
-          { label: 'Open full builder', href: selectedLeadHref, type: 'primary' },
-        ]}
-      />
+        {selected ? (
+          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,.85fr)]">
+            <div className={`rounded-[24px] border p-5 ${nextStepToneClasses(selected.nextStep.tone)}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">Next move</span>
+                <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">{labelizeStatus(selected.status)}</span>
+                {selected.quoteNumber ? <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">{selected.quoteNumber}</span> : null}
+              </div>
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{selected.nextStep.label}</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-700">{selected.nextStep.detail}</p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link href={selected.nextStep.href} className="inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Go to next move</Link>
+                <Link href={selectedLeadHref} className="inline-flex rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50">Open lead-owned builder</Link>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Active quotes</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">{viewModel.summary.activeQuotes}</p>
+              </div>
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Accepted handoffs</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">{viewModel.summary.contractReadyQuotes}</p>
+              </div>
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Total queue</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">{viewModel.summary.totalQuotes}</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
 
       {selectedTrade ? (
         <TradeSignalGrid
@@ -142,35 +178,36 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
         />
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-4">
-        <SectionCard eyebrow="Queue" title="Quote list" description="Pick one active commercial record to review.">
+      <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)_320px]">
+        <SectionCard eyebrow="Queue" title="Live quote queue" description="Pick one commercial record and keep the next move obvious.">
           <div className="space-y-3">
             {viewModel.items.map((item) => <QuoteListItem key={item.id} item={item} selected={selected?.id === item.id} />)}
           </div>
         </SectionCard>
 
-        <div className="xl:col-span-2 space-y-4">
-          <SectionCard eyebrow="Detail" title={selected ? selected.companyName : 'No quote selected'} description="Commercial posture, current state, and builder handoff stay visible together.">
+        <div className="space-y-4">
+          <SectionCard eyebrow="Focused record" title={selected ? selected.companyName : 'No quote selected'} description="One stronger command-center pattern: current state, next move, history, and handoff truth together.">
             {selected ? (
               <div className="space-y-4 text-sm text-slate-600">
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="rounded-2xl bg-slate-50 p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Current quote</p>
                     <p className="mt-2 text-lg font-semibold text-slate-900">{selected.quoteNumber ?? selected.id.slice(0, 8)}</p>
-                    <p className="mt-1">Status: <span className="font-medium text-slate-900">{selected.status.replaceAll('_', ' ')}</span></p>
+                    <p className="mt-1">Status: <span className="font-medium text-slate-900">{labelizeStatus(selected.status)}</span></p>
                     <p className="mt-1">Currency: <span className="font-medium text-slate-900">{selected.currency ?? 'Not set'}</span></p>
                     <p className="mt-1">Mode: <span className="font-medium text-slate-900">{journeyLabel(selected.leadType)}</span></p>
                     <p className="mt-1">Incoterm: <span className="font-medium text-slate-900">{selectedTrade?.incotermLabel ?? 'Not set'}</span></p>
                   </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Builder access</p>
-                    <p className="mt-2">Use the full lead-owned builder when pricing lines, send gate, approval posture, or revision detail need deeper edits.</p>
-                    <Link href={selectedLeadHref} className="mt-3 inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Open builder</Link>
+                  <div className={`rounded-2xl border p-4 ${nextStepToneClasses(selected.nextStep.tone)}`}>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Explicit operator path</p>
+                    <p className="mt-2 text-lg font-semibold text-slate-900">{selected.nextStep.label}</p>
+                    <p className="mt-2">{selected.nextStep.detail}</p>
+                    <Link href={selected.nextStep.href} className="mt-3 inline-flex rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100">Go there now</Link>
                   </div>
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">History</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">History and response pressure</p>
                     <p className="mt-2 text-slate-900">{selected.historyCount} timeline events across versions, negotiation, and communications.</p>
                     <p className="mt-1">{selected.negotiationCount} negotiation updates and {selected.totalVersions} recorded versions.</p>
                   </div>
@@ -187,29 +224,38 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
             ) : <p className="text-sm text-slate-500">Choose a quote from the list to review detail.</p>}
           </SectionCard>
 
-          <SectionCard eyebrow="History" title="Version and negotiation history" description="Keep commercial movement visible before jumping into the full builder.">
+          <SectionCard eyebrow="Record history" title="Version and negotiation history" description="History stays under the focused record instead of becoming a competing summary surface.">
             <QuoteHistoryList items={viewModel.selectedHistory} />
           </SectionCard>
         </div>
 
         <div className="space-y-4">
-          <SectionCard eyebrow="Workspace summary" title="Commercial posture" description="The quotes route now acts as an operating surface, not a launchpad.">
-            <div className="space-y-3 text-sm text-slate-600">
-              <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Total quotes</p><p className="mt-2 text-2xl font-semibold text-slate-900">{viewModel.summary.totalQuotes}</p></div>
-              <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Active quotes</p><p className="mt-2 text-2xl font-semibold text-slate-900">{viewModel.summary.activeQuotes}</p></div>
-              <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Accepted quotes</p><p className="mt-2 text-2xl font-semibold text-slate-900">{viewModel.summary.acceptedQuotes}</p></div>
-              <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Order handoff visible</p><p className="mt-2 text-2xl font-semibold text-slate-900">{viewModel.summary.contractReadyQuotes}</p></div>
+          <SectionCard eyebrow="Command-center rule" title="When this route should win" description="Quote stays close to Follow-up, but it should not behave like a detached product.">
+            <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
+              <li>Use this desk to keep one live commercial record in focus.</li>
+              <li>Use the lead-owned builder only when pricing lines, revisions, or send posture need deeper edits.</li>
+              <li>Push accepted work into Orders instead of lingering here.</li>
+              <li>Push rejected or stalled work back into explicit Follow-up action.</li>
+            </ul>
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Commercial truth reminder</p>
+              <p className="mt-2 text-sm text-slate-700">Catalog/base pricing stays the default. Override requires an explicit reason. Threshold approvals still govern risky moves. AI can explain pressure and missing context, but it does not approve, send, or lock commercial terms.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link href={PRODUCT_ROUTES.app.products} className="inline-flex rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Catalog</Link>
+                <Link href="/ai-suggestions?family=quote" className="inline-flex rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open AI guidance</Link>
+              </div>
             </div>
           </SectionCard>
 
-          <SectionCard eyebrow="Operating rule" title="When to use this route" description="Review and triage here. Edit deeply from the lead-owned builder.">
-            <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
-              <li>Use the list to keep one live quote in focus.</li>
-              <li>Use detail to review status, history, and handoff readiness.</li>
-              <li>Use the full builder for pricing, send-gate, and revision work.</li>
-              <li>Use Orders only after accepted commercial work is real.</li>
-            </ul>
-          </SectionCard>
+          {selected ? (
+            <SectionCard eyebrow="Governed contract" title="Commercial guardrails remain intact" description="PR-UX-02 compresses the workflow without weakening commercial governance.">
+              <div className="space-y-3 text-sm text-slate-600">
+                <div className="rounded-2xl bg-slate-50 p-4">Catalog/base pricing remains the default source of truth.</div>
+                <div className="rounded-2xl bg-slate-50 p-4">Any override still requires an explicit reason.</div>
+                <div className="rounded-2xl bg-slate-50 p-4">Approval still remains mandatory once the configured threshold is met.</div>
+              </div>
+            </SectionCard>
+          ) : null}
         </div>
       </div>
     </div>

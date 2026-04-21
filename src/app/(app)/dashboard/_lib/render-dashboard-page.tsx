@@ -141,10 +141,10 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
             ? 'Supplier mode is active on this dashboard'
             : 'Mixed buyer and supplier view is active on this dashboard'}
         description={resolvedScope === 'buyer'
-          ? 'This view is prioritizing buyer-side commercial movement with evidence-backed order forcing and bounded AI routing. The primary action is to create or qualify the next lead, then clear the next governed blocker.'
+          ? 'This view is prioritizing buyer-side commercial movement with evidence-backed order forcing and bounded AI routing. The primary action is to identify what needs intervention now, then clear the next governed blocker.'
           : resolvedScope === 'supplier'
-            ? 'This view is prioritizing supplier-side sourcing movement with compliance and dispatch evidence visible and bounded AI routing available. The primary action is to progress the next supplier record until its blockers are cleared.'
-            : 'This view combines buyer and supplier activity. Use the primary capture action first, then route the record through Lead to Quote and finally into governed order execution, with AI only recommending safe next actions from repo truth.'}
+            ? 'This view is prioritizing supplier-side sourcing movement with compliance and dispatch evidence visible and bounded AI routing available. The primary action is to identify what needs intervention now, then progress the next supplier record until its blockers are cleared.'
+            : 'This view combines buyer and supplier activity. Use it as a geo-first leadership watchtower to see what needs intervention now, then route records through Capture, Follow-up, Quote, and governed order execution without losing market context.'}
         tone="neutral"
       />
 
@@ -154,9 +154,31 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
           description={`${actionSummary.pendingActionCount} items need movement before they can become revenue or execution progress.`}
           tone="neutral"
         />
-        <Link href={PRODUCT_ROUTES.app.capture} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Capture new contact</Link>
-        <Link href={PRODUCT_ROUTES.app.leads} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open leads queue</Link>
+        <Link href={PRODUCT_ROUTES.app.pipeline} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open rescue board</Link>
+        <Link href={PRODUCT_ROUTES.app.leads} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open follow-up command center</Link>
         <Link href={PRODUCT_ROUTES.app.orders} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open execution workspace</Link>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <StateMessage
+          title="What leadership should check first"
+          description={`${actionSummary.overdueFollowUpCount} follow-ups are overdue and ${actionSummary.draftQuoteCount} quotes are still in governed motion. Use this as the fast intervention surface before drilling into individual workspaces.`}
+          tone={actionSummary.pendingActionCount > 0 ? 'warning' : 'success'}
+        />
+        <StateMessage
+          title="Geo / market / country view remains a differentiator"
+          description="Leadership can stay geo-first here, then drop into the rescue board only when a country, market, or stage starts to drift."
+          tone="neutral"
+        />
+        <StateMessage
+          title="Perspective lens stays real"
+          description={resolvedScope === 'all'
+            ? 'All mode is active, so this dashboard is combining buyer and supplier movement on purpose.'
+            : resolvedScope === 'buyer'
+              ? 'Buyer mode is narrowing this dashboard to buyer-side commercial intervention only.'
+              : 'Supplier mode is narrowing this dashboard to supplier-side sourcing and execution intervention only.'}
+          tone="neutral"
+        />
       </div>
 
       <DashboardInteractive

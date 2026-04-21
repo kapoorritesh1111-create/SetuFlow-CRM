@@ -119,7 +119,7 @@ export function LeadCommandHeader({
       </div>
 
       <div className="rounded-[10px] bg-neutral-50/90 px-4 py-2 text-sm text-neutral-600" style={{ borderLeft: `3px solid ${getStageAccent(currentStageLabel)}` }}>
-        <span className="font-semibold text-neutral-900">Commercial focus:</span> {nextActionSummary}
+        <span className="font-semibold text-neutral-900">Next move:</span> {nextActionSummary}
       </div>
     </div>
   )

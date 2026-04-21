@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { ErrorBoundaryView } from '@/components/app/error-boundary-view';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 export default function RouteError({
   error,
@@ -11,16 +12,16 @@ export default function RouteError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('ai-suggestions route error', error);
+    console.error('Contextual AI guidance route failed to render.', error);
   }, [error]);
 
   return (
     <ErrorBoundaryView
-      title="<route-specific title>"
-      description="<route-specific description>"
+      title="Contextual AI guidance unavailable"
+      description="We could not load draft guidance, review state, or workflow suggestions for this workspace. Try again, then return to Follow-up or Quote if you need a stable operating route."
       reset={reset}
-      homeHref="<route home>"
-      homeLabel="<route home label>"
+      homeHref={PRODUCT_ROUTES.app.leads}
+      homeLabel="Return to Follow-up"
     />
   );
 }

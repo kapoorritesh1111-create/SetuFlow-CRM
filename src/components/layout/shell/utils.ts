@@ -47,26 +47,49 @@ export function getNavItemIcon(href: string) {
   return 'circle-o';
 }
 
-export function getWorkspaceModeFromLocation(_pathname: string, _modeParam: string | null) {
+export function getWorkspaceModeFromLocation(_pathname: string, modeParam: string | null) {
+  if (modeParam === 'buyers' || modeParam === 'suppliers') return modeParam;
   return 'all' as const;
 }
 
 export function getWorkspaceBasePath(pathname: string) {
-  if (pathname.startsWith(PRODUCT_ROUTES.app.dashboard)) return PRODUCT_ROUTES.app.dashboard;
-  if (pathname.startsWith(PRODUCT_ROUTES.app.leads)) return PRODUCT_ROUTES.app.leads;
-  return null;
+  if (!pathname.startsWith('/')) return null;
+  const supportedRoots = [
+    PRODUCT_ROUTES.app.dashboard,
+    PRODUCT_ROUTES.app.capture,
+    PRODUCT_ROUTES.app.leads,
+    PRODUCT_ROUTES.app.quotes,
+    PRODUCT_ROUTES.app.integrations,
+    PRODUCT_ROUTES.app.orders,
+    PRODUCT_ROUTES.app.pipeline,
+    PRODUCT_ROUTES.app.products,
+    PRODUCT_ROUTES.app.settings,
+    PRODUCT_ROUTES.app.admin,
+  ];
+  const matched = supportedRoots.find((root) => pathname === root || pathname.startsWith(`${root}/`));
+  return matched ?? pathname;
 }
 
-export function withWorkspaceMode(href: string, _mode: 'all' | 'buyers' | 'suppliers') {
-  return href;
+export function withWorkspaceMode(href: string, mode: 'all' | 'buyers' | 'suppliers') {
+  const [base, hash] = href.split('#');
+  const [pathname, query = ''] = base.split('?');
+  const params = new URLSearchParams(query);
+  if (mode === 'all') params.delete('mode');
+  else params.set('mode', mode);
+  const nextQuery = params.toString();
+  return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`;
 }
 
 export function withWorkspaceModePreservedParams(
   href: string,
-  _mode: 'all' | 'buyers' | 'suppliers',
-  _currentParams?: string,
+  mode: 'all' | 'buyers' | 'suppliers',
+  currentParams?: string,
 ) {
-  return href;
+  const params = new URLSearchParams(currentParams ?? '');
+  if (mode === 'all') params.delete('mode');
+  else params.set('mode', mode);
+  const nextQuery = params.toString();
+  return `${href}${nextQuery ? `?${nextQuery}` : ''}`;
 }
 
 export function formatShortcutLabel(keys: string[]) {

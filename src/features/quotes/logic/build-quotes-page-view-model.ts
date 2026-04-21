@@ -1,4 +1,5 @@
 import type { QuoteHistoryItem, QuoteWorkspaceListItem, QuotesWorkspaceViewModel } from '@/features/quotes/types/workspace';
+import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 type LeadRow = { id: string; company_name: string | null; contact_name: string | null; lead_type?: 'buyer' | 'supplier' | null };
 type QuoteRow = {
@@ -51,12 +52,7 @@ function lower(value: string | null | undefined) {
   return String(value ?? '').trim().toLowerCase();
 }
 
-function buildHistory(
-  quoteId: string,
-  versions: QuoteVersionRow[],
-  negotiations: NegotiationRow[],
-  communications: CommunicationRow[],
-): QuoteHistoryItem[] {
+function buildHistory(quoteId: string, versions: QuoteVersionRow[], negotiations: NegotiationRow[], communications: CommunicationRow[]): QuoteHistoryItem[] {
   const versionHistory = versions
     .filter((row) => row.quote_id === quoteId)
     .map((row) => ({
@@ -91,15 +87,61 @@ function buildHistory(
   });
 }
 
-export function buildQuotesPageViewModel({
-  quotes,
-  leads,
-  versions,
-  negotiations,
-  communications,
-  contracts,
-  selectedQuoteId,
-}: {
+function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status: string; hasAcceptedContract: boolean; leadId: string; quoteId: string }) {
+  if (hasAcceptedContract || status === 'accepted') {
+    return {
+      label: 'Move into Orders / Execution',
+      detail: 'Commercial truth is accepted. The next move is operational handoff, not more quoting.',
+      href: PRODUCT_ROUTES.app.orders,
+      tone: 'orders' as const,
+    };
+  }
+
+  if (status === 'pending_approval') {
+    return {
+      label: 'Resolve approval before send',
+      detail: 'Approval is the blocker. The quote should not advance into outbound communication until that gate clears.',
+      href: PRODUCT_ROUTES.app.integrations,
+      tone: 'approval' as const,
+    };
+  }
+
+  if (status === 'approved') {
+    return {
+      label: 'Send governed quote',
+      detail: 'Commercial review is clear. The next move is outbound send with operator-visible continuity.',
+      href: PRODUCT_ROUTES.app.integrations,
+      tone: 'approval' as const,
+    };
+  }
+
+  if (status === 'sent' || status === 'negotiating') {
+    return {
+      label: 'Drive response from Follow-up',
+      detail: 'The quote is live. Move the operator back to the follow-up lane to handle buyer response and next action.',
+      href: `/leads/${leadId}?tab=workflow`,
+      tone: 'follow_up' as const,
+    };
+  }
+
+  if (status === 'rejected' || status === 'expired') {
+    return {
+      label: 'Requalify or close from Follow-up',
+      detail: 'The commercial thread is no longer healthy. Put the lead back into an explicit follow-up decision.',
+      href: `/leads/${leadId}?tab=workflow`,
+      tone: 'follow_up' as const,
+    };
+  }
+
+  return {
+    label: 'Finish quote build',
+    detail: 'Keep the working set compressed around the quote builder until pricing, terms, and readiness are explicit.',
+    href: `/leads/${leadId}/quote?quoteId=${quoteId}`,
+    tone: 'quote' as const,
+  };
+}
+
+export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations, communications, contracts, selectedQuoteId }: {
   quotes: QuoteRow[];
   leads: LeadRow[];
   versions: QuoteVersionRow[];
@@ -131,13 +173,16 @@ export function buildQuotesPageViewModel({
     const lead = leadMap.get(quote.lead_id);
     const quoteNegotiations = negotiations.filter((row) => row.quote_id === quote.id);
     const leadType: QuoteWorkspaceListItem['leadType'] = lead?.lead_type === 'buyer' || lead?.lead_type === 'supplier' ? lead.lead_type : 'mixed';
+    const status = lower(quote.status) || 'draft';
+    const hasAcceptedContract = contractQuoteIds.has(quote.id);
+
     return {
       id: quote.id,
       leadId: quote.lead_id,
       companyName: lead?.company_name ?? 'Unknown company',
       leadType,
       contactName: lead?.contact_name ?? null,
-      status: lower(quote.status) || 'draft',
+      status,
       currency: quote.currency,
       quoteNumber: quote.quote_number,
       notes: quote.notes,
@@ -147,7 +192,8 @@ export function buildQuotesPageViewModel({
       totalVersions: versionCounts.get(quote.id) ?? 0,
       negotiationCount: negotiationCounts.get(quote.id) ?? 0,
       historyCount: (versionCounts.get(quote.id) ?? 0) + (negotiationCounts.get(quote.id) ?? 0) + (communicationCounts.get(quote.id) ?? 0),
-      hasAcceptedContract: contractQuoteIds.has(quote.id),
+      hasAcceptedContract,
+      nextStep: getNextStep({ status, hasAcceptedContract, leadId: quote.lead_id, quoteId: quote.id }),
       contract: contractByQuoteId.get(quote.id) ?? null,
       lastNegotiationMessage: quoteNegotiations.sort((a, b) => Date.parse(b.created_at ?? '') - Date.parse(a.created_at ?? ''))[0]?.message ?? null,
     };

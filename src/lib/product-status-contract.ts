@@ -6,33 +6,33 @@ export type ChecklistItem = { id: string; area: string; label: string; note: str
 
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 export const sprintProgress = {
-  sprint: 'PR-UX-01 complete',
-  percent: 81,
+  sprint: 'PR-UX-03 complete',
+  percent: 88,
   percentLabel:
-    'Navigation and information architecture now reflect the operator path, but the modules themselves still need compression before the product can honestly claim 96%+ readiness.',
+    'Approval truth, send readiness, and outbound continuity now read as one operator desk, but Orders / Execution and final in-flow guidance still block 96%+ readiness.',
 };
 export const sprintFocus = {
   sprint: 'PR-UX stack in progress',
   title:
-    'The shell now tells the truth. The next work should compress follow-up, quote, send, and execution into fewer and clearer operating decisions without weakening governed commercial controls.',
+    'The shell now tells the truth and the approval/send desk is materially clearer. The next work should unify orders and execution proof without reopening governed commercial controls.',
   nextAction:
-    'Keep the DCC as the first truth surface, keep the operator shell stable, and attack module-level friction rather than reopening shell drift.',
+    'Keep the DCC as the first truth surface, keep the workflow map stable, and attack the orders/execution break instead of reopening solved shell arguments.',
   flow: LOCKED_PRODUCT_FLOW.join(' -> '),
 };
 export const readinessSummary = {
-  status: 'Overall readiness 81%, PR-UX stack active',
+  status: 'Overall readiness 88%, PR-UX stack active',
   buildStatus:
-    'Demoable and materially clearer, but still not buyer-finished because approval/send, orders/execution, and contextual next-step guidance remain split across multiple surfaces.',
+    'Demoable and materially stronger, but still not buyer-finished because orders/execution, catalog explanation, and contextual next-step guidance remain split or underpowered.',
   driftRisk:
     'Low in shell truth, medium in module cohesion, medium in production operations because infrastructure-scale controls remain outside repo-only proof.',
   blockers:
-    'No shell blocker remains from PR-UX-01; the remaining blockers are module compression, stronger next-step guidance, and final 96% polish.',
+    'No shell blocker remains; the remaining blockers are orders/execution unification, stronger rescue guidance, and final 96% polish.',
 };
 export const readinessAreas: ReadinessArea[] = [
   { title: 'Capture', summary: 'Understandable in the shell, but still needs tighter handoff into follow-up.', status: 'current' },
   { title: 'Follow-up', summary: 'Strong operating spine, but still too cognitively dense.', status: 'current' },
   { title: 'Quote', summary: 'Governed commercial truth remains the strongest differentiator.', status: 'done' },
-  { title: 'Approval / Send', summary: 'Now visible, but the route still behaves too much like an integrations surface.', status: 'current' },
+  { title: 'Approval / Send', summary: 'Now behaves more like one governed operator desk, but still needs stronger customer-confidence framing.', status: 'done' },
   { title: 'Orders / Execution', summary: 'Commercial continuity is strong; execution posture still feels fragmented.', status: 'current' },
   { title: 'Exceptions / Risks', summary: 'Better positioned and easier to understand, but rescue guidance still needs work.', status: 'current' },
   { title: 'Catalog / Settings / Admin', summary: `Governed setup truth is clearer and remains downstream of ${INTERNAL_DCC_PATH}.`, status: 'current' },
@@ -47,6 +47,6 @@ export const checklistItems: ChecklistItem[] = [
   { id: 'communications', area: 'Communications', label: 'Send surfaces stay governed', note: 'Outbound communication cannot outrun approval or accepted commercial truth.', status: 'done' },
   { id: 'risk', area: 'Workflow', label: 'Risk review remains visible', note: 'Exceptions / Risks must continue to expose blockers, aging work, and rescue decisions.', status: 'current' },
   { id: 'ai-provider', area: 'AI', label: 'AI posture stays explicit', note: 'AI remains assistive and bounded, with no autonomous approval or execution authority.', status: 'done' },
-  { id: 'module-compression', area: 'UX', label: 'Module compression is the next priority', note: 'The next PR-UX passes must reduce route switching and summary duplication inside live work surfaces.', status: 'current' },
+  { id: 'module-compression', area: 'UX', label: 'Module compression remains the priority', note: 'The next PR-UX passes must keep reducing route switching and disconnected proof surfaces inside live work.', status: 'current' },
   { id: 'ops-gap', area: 'Operations', label: 'Production controls are still called out honestly', note: 'Secrets rotation, WAF, alerting, and external audits remain outside repo-only proof.', status: 'current' },
 ];

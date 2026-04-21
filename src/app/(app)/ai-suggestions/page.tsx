@@ -10,9 +10,9 @@ export default async function AISuggestionsPage({ searchParams }: { searchParams
   if (!workspace.membership || !workspace.organization) {
     return (
       <WorkspaceState
-        eyebrow="AI assistive workspace"
+        eyebrow="Contextual AI guidance"
         title="Workspace membership needed"
-        description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization membership is active before reviewing AI summaries."
+        description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization membership is active before reviewing AI guidance that should route work back into Follow-up, Quote, Approval / Send, or Orders."
         primaryActionHref="/dashboard"
         primaryActionLabel="Go to dashboard"
       />
@@ -23,9 +23,9 @@ export default async function AISuggestionsPage({ searchParams }: { searchParams
   if (!data) {
     return (
       <WorkspaceState
-        eyebrow="AI assistive workspace"
-        title="AI suggestions unavailable"
-        description="The AI assistive workspace could not load because the data layer is unavailable in this environment."
+        eyebrow="Contextual AI guidance"
+        title="Contextual AI guidance unavailable"
+        description="The contextual AI guidance workspace could not load because the data layer is unavailable in this environment."
         primaryActionHref="/dashboard"
         primaryActionLabel="Return to dashboard"
       />

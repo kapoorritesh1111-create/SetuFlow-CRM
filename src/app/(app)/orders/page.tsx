@@ -222,7 +222,7 @@ function decodeNotice(noticeKey: string | null) {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default async function OrdersPage({ searchParams }: { searchParams?: { notice?: string | string[] } }) {
+export default async function OrdersPage({ searchParams }: { searchParams?: { notice?: string | string[]; mode?: string | string[] } }) {
   const workspace = await getWorkspaceAccess();
 
   if (!workspace.membership || !workspace.organization) {
@@ -513,6 +513,10 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
   const noticeKey = Array.isArray(searchParams?.notice) ? searchParams?.notice[0] ?? null : searchParams?.notice ?? null;
   const notice = decodeNotice(noticeKey);
+  const modeParam = Array.isArray(searchParams?.mode) ? searchParams?.mode[0] ?? 'all' : searchParams?.mode ?? 'all';
+  const perspectiveMode = modeParam === 'buyers' || modeParam === 'suppliers' ? modeParam : 'all';
+  const perspectiveAccepted = accepted.filter((order) => perspectiveMode === 'all' ? true : perspectiveMode === 'buyers' ? order.leadType === 'buyer' : order.leadType === 'supplier');
+  const perspectiveOrders = orders.filter((order) => perspectiveMode === 'all' ? true : perspectiveMode === 'buyers' ? order.leadType === 'buyer' : order.leadType === 'supplier');
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -526,12 +530,47 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         title="Orders / Execution"
         description="Accepted quotes become live execution records here with contract-grade continuity, compliance requirements, document controls, and dispatch evidence visible per order."
         badge="Live"
-        status={`${orders.length} active`}
-        meta={[`${accepted.length} accepted`, 'Execution context visible', 'Order-ready only']}
+        status={`${perspectiveOrders.length} active`}
+        meta={[`${perspectiveAccepted.length} accepted`, perspectiveMode === 'all' ? 'All workspace' : perspectiveMode === 'buyers' ? 'Buyer perspective' : 'Supplier perspective', 'Execution ready only']}
         actions={[{ label: 'Go to Follow-up', href: PRODUCT_ROUTES.app.leads }]}
       />
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Execution desk perspective</p>
+            <h3 className="mt-1 text-xl font-semibold text-slate-900">Accepted quote truth is not execution truth</h3>
+            <p className="mt-2 max-w-3xl text-sm text-slate-600">Filter the desk by All, Buyers, or Suppliers without leaving the workflow. Orders now has to prove commercial lock, documentary readiness, release posture, and dispatch evidence before the operator can trust execution.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'buyers', label: 'Buyers' },
+              { key: 'suppliers', label: 'Suppliers' },
+            ].map((option) => {
+              const active = perspectiveMode === option.key;
+              const href = option.key === 'all' ? PRODUCT_ROUTES.app.orders : `${PRODUCT_ROUTES.app.orders}?mode=${option.key}`;
+              return (
+                <Link
+                  key={option.key}
+                  href={href}
+                  className={active ? 'rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white' : 'rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50'}
+                >
+                  {option.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Visible orders</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveOrders.length}</p></div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Execution ready</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveAccepted.filter((order) => dispatchGate(order.operationalControls).tone === 'success').length}</p></div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Blocked records</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length}</p></div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Next-action pressure</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveAccepted.reduce((sum, order) => sum + order.executionActionItems.length, 0)}</p></div>
+        </div>
+      </section>
 
       <StateMessage
         title="What to do next in Orders"
@@ -539,21 +578,21 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         tone="neutral"
       />
 
-      {accepted.length > 0 ? (
+      {perspectiveAccepted.length > 0 ? (
         <TradeSignalGrid
           title="Trade execution readiness"
           signals={[
             { label: 'Buyer / supplier clarity', value: primaryOperationalContext === 'mixed' ? 'Mixed mode' : primaryOperationalContext === 'supplier' ? 'Supplier mode' : 'Buyer mode', tone: 'neutral', detail: 'Orders keeps execution lanes visible so trade work does not collapse into a generic CRM state.' },
-            { label: 'Freight readiness', value: `${accepted.filter((order) => order.operationalControls.documentRequirementSummary.blockerCount === 0 && order.operationalControls.releaseArtifactReasons.length === 0).length}/${accepted.length} ready`, tone: accepted.some((order) => order.operationalControls.documentRequirementSummary.blockerCount > 0 || order.operationalControls.releaseArtifactReasons.length > 0) ? 'warning' : 'success', detail: 'Release now depends on required compliance documents and release artifacts, not commercial acceptance alone.' },
-            { label: 'Compliance blockers', value: String(accepted.reduce((sum, order) => sum + order.operationalControls.complianceSummary.openCount, 0)), tone: accepted.some((order) => order.operationalControls.complianceSummary.openCount > 0) ? 'warning' : 'success', detail: 'Open compliance items stay visible and now feed explicit execution-stage blocker reasons.' },
-            { label: 'Dispatch readiness', value: `${accepted.filter((order) => dispatchGate(order.operationalControls).tone === 'success').length}/${accepted.length} ready`, tone: accepted.some((order) => dispatchGate(order.operationalControls).tone !== 'success') ? 'warning' : 'success', detail: 'Dispatch readiness now combines contract, document, compliance, and order-state progression in one execution view.' },
+            { label: 'Freight readiness', value: `${perspectiveAccepted.filter((order) => order.operationalControls.documentRequirementSummary.blockerCount === 0 && order.operationalControls.releaseArtifactReasons.length === 0).length}/${perspectiveAccepted.length} ready`, tone: perspectiveAccepted.some((order) => order.operationalControls.documentRequirementSummary.blockerCount > 0 || order.operationalControls.releaseArtifactReasons.length > 0) ? 'warning' : 'success', detail: 'Release now depends on required compliance documents and release artifacts, not commercial acceptance alone.' },
+            { label: 'Compliance blockers', value: String(perspectiveAccepted.reduce((sum, order) => sum + order.operationalControls.complianceSummary.openCount, 0)), tone: perspectiveAccepted.some((order) => order.operationalControls.complianceSummary.openCount > 0) ? 'warning' : 'success', detail: 'Open compliance items stay visible and now feed explicit execution-stage blocker reasons.' },
+            { label: 'Dispatch readiness', value: `${perspectiveAccepted.filter((order) => dispatchGate(order.operationalControls).tone === 'success').length}/${perspectiveAccepted.length} ready`, tone: perspectiveAccepted.some((order) => dispatchGate(order.operationalControls).tone !== 'success') ? 'warning' : 'success', detail: 'Dispatch readiness now combines contract, document, compliance, and order-state progression in one execution view.' },
           ]}
         />
       ) : null}
 
-      {accepted.length > 0 ? (
+      {perspectiveAccepted.length > 0 ? (
         <section className="grid gap-4 md:grid-cols-3">
-          {accepted
+          {perspectiveAccepted
             .map((order) => predictOrderDelay({
               quoteId: order.quoteId,
               companyName: order.companyName,
@@ -568,14 +607,14 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         </section>
       ) : null}
 
-      {accepted.length > 0 && (
+      {perspectiveAccepted.length > 0 && (
         <SectionCard
           eyebrow="Commercially accepted"
-          title="Accepted orders"
-          description="Confirmed quote lines are locked here for execution. Operators can now progress draft, ready, release, dispatch, and completion posture with explicit compliance-document and dispatch-evidence requirements on each order."
+          title="Execution desk"
+          description="Confirmed quote lines are shown as one execution desk. Operators can now prove commercial lock, clear blockers, and progress draft, ready, release, dispatch, and completion posture with explicit evidence requirements on each order."
         >
           <div className="space-y-6">
-            {accepted.map(order => (
+            {perspectiveAccepted.map(order => (
               <OrderCard key={order.quoteId} order={order} tone="accepted" />
             ))}
           </div>

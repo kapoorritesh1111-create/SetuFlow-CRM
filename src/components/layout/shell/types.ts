@@ -31,4 +31,5 @@ export type RouteMeta = {
   tabs?: ContextTab[];
   backHref?: string;
   backLabel?: string;
+  showWorkspaceModeSwitch?: boolean;
 };

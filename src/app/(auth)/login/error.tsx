@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { ErrorBoundaryView } from '@/components/app/error-boundary-view';
 
-export default function RouteError({
+export default function LoginError({
   error,
   reset,
 }: {
@@ -16,11 +16,11 @@ export default function RouteError({
 
   return (
     <ErrorBoundaryView
-      title="<route-specific title>"
-      description="<route-specific description>"
+      title="Sign-in unavailable"
+      description="We could not load the sign-in flow. Try again, then check your workspace configuration if the problem continues."
       reset={reset}
-      homeHref="<route home>"
-      homeLabel="<route home label>"
+      homeHref="/"
+      homeLabel="Back to home"
     />
   );
 }

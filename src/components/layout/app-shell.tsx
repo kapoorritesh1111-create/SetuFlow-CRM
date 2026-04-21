@@ -95,7 +95,7 @@ export function AppShell({
   const routeMeta = getRouteMeta(pathname);
   const workspaceMode = getWorkspaceModeFromLocation(pathname, searchParams.get('mode'));
   const workspaceBasePath = getWorkspaceBasePath(pathname);
-  const showWorkspaceModeSwitch = false;
+  const showWorkspaceModeSwitch = routeMeta.showWorkspaceModeSwitch ?? true;
   const currentWorkspaceModeHref = (mode: 'all' | 'buyers' | 'suppliers') => {
     if (!workspaceBasePath) return pathname;
     return withWorkspaceModePreservedParams(workspaceBasePath, mode, searchParams.toString());
@@ -140,7 +140,7 @@ export function AppShell({
         description: 'Return to the previous workspace context',
         keywords: ['back', 'return', routeMeta.backHref],
         group: 'Navigation',
-        action: () => router.push(routeMeta.backHref!),
+        action: () => router.push(withWorkspaceMode(routeMeta.backHref!, workspaceMode)),
       });
     }
 
@@ -189,10 +189,10 @@ export function AppShell({
       { keys: ['G', 'Q'], description: 'Go to Quote' },
       { keys: ['G', 'S'], description: 'Go to Approval / Send' },
       { keys: ['G', 'O'], description: 'Go to Orders / Execution' },
-      { keys: ['G', 'X'], description: 'Go to Exceptions / Risks' },
+      { keys: ['G', 'X'], description: 'Go to Pipeline / Risks' },
       { keys: ['G', 'K'], description: 'Go to Catalog' },
-      { keys: ['G', 'T'], description: 'Go to Settings' },
-      { keys: ['G', 'D'], description: 'Go to Overview' },
+      { keys: ['G', 'T'], description: 'Go to Settings / Lists' },
+      { keys: ['G', 'D'], description: 'Go to Dashboard / Overview' },
       ...(canAccessAdmin ? [{ keys: ['G', 'A'], description: 'Go to Admin' }] : []),
       { keys: ['Esc'], description: 'Close the palette, shortcuts, or mobile navigation' },
     ],
@@ -206,16 +206,16 @@ export function AppShell({
 
   useEffect(() => {
     const runChordNavigation = (key: string) => {
-      if (key === 'c') router.push(PRODUCT_ROUTES.app.capture);
-      if (key === 'f') router.push(PRODUCT_ROUTES.app.leads);
-      if (key === 'q') router.push(PRODUCT_ROUTES.app.quotes);
-      if (key === 's') router.push(PRODUCT_ROUTES.app.integrations);
-      if (key === 'o') router.push(PRODUCT_ROUTES.app.orders);
-      if (key === 'x') router.push(PRODUCT_ROUTES.app.pipeline);
-      if (key === 'k') router.push(PRODUCT_ROUTES.app.products);
-      if (key === 't') router.push(PRODUCT_ROUTES.app.settings);
-      if (key === 'd') router.push(PRODUCT_ROUTES.app.dashboard);
-      if (key === 'a' && canAccessAdmin) router.push(PRODUCT_ROUTES.app.admin);
+      if (key === 'c') router.push(withWorkspaceMode(PRODUCT_ROUTES.app.capture, workspaceMode));
+      if (key === 'f') router.push(withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode));
+      if (key === 'q') router.push(withWorkspaceMode(PRODUCT_ROUTES.app.quotes, workspaceMode));
+      if (key === 's') router.push(withWorkspaceMode(PRODUCT_ROUTES.app.integrations, workspaceMode));
+      if (key === 'o') router.push(withWorkspaceMode(PRODUCT_ROUTES.app.orders, workspaceMode));
+      if (key === 'x') router.push(withWorkspaceMode(PRODUCT_ROUTES.app.pipeline, workspaceMode));
+      if (key === 'k') router.push(withWorkspaceMode(PRODUCT_ROUTES.app.products, workspaceMode));
+      if (key === 't') router.push(withWorkspaceMode(PRODUCT_ROUTES.app.settings, workspaceMode));
+      if (key === 'd') router.push(withWorkspaceMode(PRODUCT_ROUTES.app.dashboard, workspaceMode));
+      if (key === 'a' && canAccessAdmin) router.push(withWorkspaceMode(PRODUCT_ROUTES.app.admin, workspaceMode));
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -297,7 +297,7 @@ export function AppShell({
                 <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold">
                   {toRoleLabel(currentRole)}
                 </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Operating shell</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Operating shell · {workspaceMode === 'all' ? 'All' : workspaceMode === 'buyers' ? 'Buyers' : 'Suppliers'}</span>
               </div>
             </div>
             <ShellNavigation
@@ -410,7 +410,7 @@ export function AppShell({
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
                   Use these shortcuts outside form inputs to move through SETU Flow without
-                  leaving the current workspace shell.
+                  leaving the current workspace shell or losing the All / Buyers / Suppliers lens.
                 </p>
               </div>
               <button
@@ -475,7 +475,7 @@ export function AppShell({
                 {toRoleLabel(currentRole)}
               </span>
               {!sidebarCollapsed && membership ? (
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">Active member</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">{workspaceMode === 'all' ? 'All' : workspaceMode === 'buyers' ? 'Buyers' : 'Suppliers'} lens</span>
               ) : null}
             </div>
           </div>
@@ -549,7 +549,7 @@ export function AppShell({
                   </div>
                 </div>
 
-                {routeMeta.tabs?.length || routeMeta.backHref ? (
+                {routeMeta.tabs?.length || routeMeta.backHref || showWorkspaceModeSwitch ? (
                   <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                     <div className="flex flex-wrap items-center gap-2">
                       {routeMeta.tabs?.map((tab) => {
@@ -597,7 +597,7 @@ export function AppShell({
                       ) : null}
                       {routeMeta.backHref ? (
                         <a
-                          href={routeMeta.backHref}
+                          href={withWorkspaceMode(routeMeta.backHref, workspaceMode)}
                           className="text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-sky-300 dark:hover:text-sky-200"
                         >
                           {routeMeta.backLabel ?? 'Back'}

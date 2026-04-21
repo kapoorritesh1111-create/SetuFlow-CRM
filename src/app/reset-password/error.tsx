@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { ErrorBoundaryView } from '@/components/app/error-boundary-view';
 
-export default function RouteError({
+export default function ResetPasswordError({
   error,
   reset,
 }: {
@@ -16,11 +16,11 @@ export default function RouteError({
 
   return (
     <ErrorBoundaryView
-      title="<route-specific title>"
-      description="<route-specific description>"
+      title="Password reset unavailable"
+      description="We could not load the password reset flow. Try again, or request a new reset link if this one may have expired."
       reset={reset}
-      homeHref="<route home>"
-      homeLabel="<route home label>"
+      homeHref="/login"
+      homeLabel="Go to sign in"
     />
   );
 }

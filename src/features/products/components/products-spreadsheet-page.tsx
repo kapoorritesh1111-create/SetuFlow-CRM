@@ -160,11 +160,10 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
       <div className={cn('p-6', workspaceHeroClass)}>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">Catalog and pricing readiness</div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">Products command center</h1>
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">Governed commercial source of truth</div>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">Catalog command center</h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-              Manage product variants, pricing-rule coverage, quoteability, and catalog gaps from one operator workspace.
-              This page keeps the product catalog ready for qualification, RFQ creation, and quote compilation.
+              Use Catalog as the governed commercial source of truth. Baseline pricing starts here, quoteability is proven here, and downstream confidence in Quote and Orders only exists when this surface is coherent.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -196,6 +195,38 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
           </div>
         </div>
       </div>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,.85fr)]">
+        <div className={workspacePanelClass}>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Catalog truth</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">Why this page matters to Quote, Approval, and Orders</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Catalog is not just product maintenance. It sets the default commercial baseline that Quote should inherit, frames when an override becomes exceptional, and protects order confidence by making sure the commercial record starts from governed product truth.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/quotes" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Open Quote</Link>
+              <Link href="/ai-suggestions?family=quote" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>Open AI guidance</Link>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/70"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">Base price truth</p><p className="mt-2 text-sm text-slate-700 dark:text-slate-200">Catalog/base pricing remains the default starting point for governed quoting.</p></div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">Override posture</p><p className="mt-2 text-sm text-amber-900 dark:text-amber-100">Any commercial override should read as an exception to baseline truth and requires an explicit reason.</p></div>
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/60 dark:bg-rose-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-700 dark:text-rose-200">Approval threshold</p><p className="mt-2 text-sm text-rose-900 dark:text-rose-100">Threshold approvals still gate risky commercial moves even after a quote exists.</p></div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">Order confidence</p><p className="mt-2 text-sm text-emerald-900 dark:text-emerald-100">Orders should inherit confidence from clean catalog truth, not from ad hoc pricing cleanup later.</p></div>
+          </div>
+        </div>
+        <aside className={workspacePanelClass}>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Contextual AI guidance</p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">AI should explain, not decide</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Use AI to surface missing pricing coverage, quoteability gaps, and where a commercial record is drifting from governed baseline truth. It should route the operator back into the real workflow instead of replacing approval, override reasoning, or order release judgment.</p>
+          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600 dark:text-slate-300">
+            <li>Find quote-linked guidance fast.</li>
+            <li>Keep approvals and overrides human-owned.</li>
+            <li>Push the next safe action back into Quote, Approval / Send, or Orders.</li>
+          </ul>
+        </aside>
+      </section>
 
       {!canManageCatalog && readOnlyMessage ? <StateMessage title="Read-only mode is active" tone="warning" description={readOnlyMessage} /> : null}
       {error ? <StateMessage title="Products refresh failed" tone="danger" description={error} /> : null}

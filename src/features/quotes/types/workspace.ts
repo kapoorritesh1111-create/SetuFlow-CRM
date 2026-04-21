@@ -1,3 +1,10 @@
+export type QuoteWorkspaceNextStep = {
+  label: string;
+  detail: string;
+  href: string;
+  tone: 'quote' | 'approval' | 'orders' | 'follow_up';
+};
+
 export type QuoteWorkspaceListItem = {
   id: string;
   leadId: string;
@@ -15,6 +22,7 @@ export type QuoteWorkspaceListItem = {
   negotiationCount: number;
   historyCount: number;
   hasAcceptedContract: boolean;
+  nextStep: QuoteWorkspaceNextStep;
   contract: {
     id: string;
     status: string | null;
@@ -30,7 +38,6 @@ export type QuoteHistoryItem = {
   detail: string;
   happenedAt: string | null;
 };
-
 
 export type QuoteWorkspaceSummary = {
   totalQuotes: number;

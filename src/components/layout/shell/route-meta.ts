@@ -15,17 +15,20 @@ export function getRouteMeta(pathname: string): RouteMeta {
       title: pathname.startsWith('/admin/invitations')
         ? 'Invitations'
         : pathname.startsWith('/admin/audit')
-          ? 'Audit log'
+          ? 'Audit trail'
           : pathname.startsWith('/admin/ai-analytics')
-            ? 'AI analytics'
+            ? 'AI review'
             : pathname.startsWith('/admin/organization')
-              ? 'Organization'
+              ? 'Organization setup'
               : pathname.startsWith('/admin/product-management')
-                ? 'Product management'
-                : 'Admin',
-      description: 'Manage governed workspace controls, access, audit visibility, and product administration without polluting the daily operating lanes.',
-      sectionLabel: 'Catalog / Admin / Settings',
+                ? 'Catalog admin'
+                : pathname.startsWith('/admin/users')
+                  ? 'People & access'
+                  : 'Admin / Organization',
+      description: 'Use admin for governed workspace setup: organization defaults, people access, invitations, audit proof, and admin-only control surfaces. This is not the daily trade workflow.',
+      sectionLabel: 'Governed workspace setup',
       tabs: ADMIN_TABS,
+      showWorkspaceModeSwitch: false,
     };
   }
 
@@ -33,15 +36,15 @@ export function getRouteMeta(pathname: string): RouteMeta {
     return {
       title: 'Contracts',
       description: 'Keep signed commitments and commercial lock visibility close to the operating flow.',
-      sectionLabel: 'Risk and control',
+      sectionLabel: 'Leadership / overview',
       tabs: PRODUCT_SHELL_TABS,
     };
   }
 
   if (pathname === PRODUCT_ROUTES.app.dashboard || pathname.startsWith(`${PRODUCT_ROUTES.app.dashboard}/`)) {
     return {
-      title: 'Overview',
-      description: 'Use the watchtower to triage queue health, blocked work, and execution drift. Do not treat it as the main place to do the job.',
+      title: 'Dashboard / Overview',
+      description: 'Use the geo-first leadership watchtower to see market, country, queue health, execution drift, and what needs intervention now. This is a support surface, but it should feel operational rather than passive.',
       sectionLabel: 'Risk and control',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -78,7 +81,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
     if (/^\/leads\/[^/]+$/.test(pathname)) {
       return {
         title: 'Follow-up',
-        description: 'Stay inside one record for qualification, blockers, quote readiness, and activity history.',
+        description: 'Work one compressed command center for qualification, blockers, next step, and quote motion without bouncing between products.',
         sectionLabel: 'Primary operating flow',
         tabs: PRODUCT_SHELL_TABS,
         backHref: PRODUCT_ROUTES.app.leads,
@@ -87,7 +90,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
     }
     return {
       title: 'Follow-up',
-      description: 'Work owners, next actions, and qualification state before anything graduates into governed quote work.',
+      description: 'Run the follow-up command center where qualification and quote motion stay in one working set with explicit next steps.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -96,7 +99,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === PRODUCT_ROUTES.app.quotes || pathname.startsWith(`${PRODUCT_ROUTES.app.quotes}/`)) {
     return {
       title: 'Quote',
-      description: 'Build commercial truth from catalog defaults, keep override reasons explicit, and move forward only when approval state is clean.',
+      description: 'Use the quote command center to finish governed pricing and then hand off cleanly into Approval / Send without pretending a quote is already safe to send.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -105,7 +108,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === PRODUCT_ROUTES.app.integrations || pathname.startsWith(`${PRODUCT_ROUTES.app.integrations}/`)) {
     return {
       title: 'Approval / Send',
-      description: 'Review governed outbound state, sync readiness, and communication continuity without letting send posture outrun commercial truth.',
+      description: 'Review approval truth, send blockers, latest outbound action, and resend posture without letting send posture outrun commercial truth.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -114,7 +117,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === PRODUCT_ROUTES.app.orders || pathname.startsWith(`${PRODUCT_ROUTES.app.orders}/`)) {
     return {
       title: 'Orders / Execution',
-      description: 'Carry accepted quote truth into operational readiness while keeping blockers, documentary posture, and milestones visible.',
+      description: 'Use one execution desk to prove release readiness, dispatch evidence, blockers, and next action so accepted quote truth is never mistaken for execution readiness.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -122,8 +125,8 @@ export function getRouteMeta(pathname: string): RouteMeta {
 
   if (pathname === PRODUCT_ROUTES.app.pipeline || pathname.startsWith(`${PRODUCT_ROUTES.app.pipeline}/`)) {
     return {
-      title: 'Exceptions / Risks',
-      description: 'Scan stalled, blocked, or fragile work quickly, then route the operator back into the right execution lane.',
+      title: 'Pipeline / Risks',
+      description: 'Use the explicit pipeline rescue board to spot stalled work, blockers, and next intervention fast without hiding the actual pipeline view behind softer language.',
       sectionLabel: 'Risk and control',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -132,14 +135,14 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname.startsWith('/products')) {
     return {
       title: 'Catalog',
-      description: 'Maintain products and baseline pricing without weakening the governed override contract.',
-      sectionLabel: 'Catalog / Admin / Settings',
+      description: 'Use Catalog as governed commercial truth: start from the baseline price, require a reason for overrides, and keep threshold approvals explicit before quote or order confidence is implied.',
+      sectionLabel: 'Catalog / Settings / Admin',
       tabs: PRODUCT_SHELL_TABS,
     };
   }
-  if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Useful capture support, intentionally demoted from the main daily shell.', sectionLabel: 'Demoted side tools' };
-  if (pathname.startsWith('/settings/lists')) return { title: 'Settings', description: 'Update workspace defaults and shared lists that support the main operating flow.', sectionLabel: 'Catalog / Admin / Settings', tabs: PRODUCT_SHELL_TABS };
-  if (pathname.startsWith('/ai-suggestions')) return { title: 'AI assist', description: 'Keep AI helpful and bounded. It should support the workflow, not become its own destination.', sectionLabel: 'Demoted side tools' };
+  if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Useful capture support, intentionally demoted from the main daily shell.', sectionLabel: 'Demoted side tools', showWorkspaceModeSwitch: false };
+  if (pathname.startsWith('/settings/lists')) return { title: 'Settings / Lists', description: 'Maintain shared lists, defaults, pipelines, and stage vocabulary that support the workflow. This page is governed setup, not the workflow itself.', sectionLabel: 'Governed workspace setup', tabs: PRODUCT_SHELL_TABS, showWorkspaceModeSwitch: false };
+  if (pathname.startsWith('/ai-suggestions')) return { title: 'Contextual AI guidance', description: 'Keep AI guidance contextual and bounded. It should route the operator to the next safe action inside Follow-up, Quote, Approval / Send, or Orders rather than becoming its own product.', sectionLabel: 'Demoted side tools' };
   if (pathname.startsWith('/contact-exchange/vcard')) return { title: 'My Card', description: 'Personal sharing tool, intentionally secondary to the trade operating spine.', sectionLabel: 'Demoted side tools' };
   if (pathname.startsWith('/tasks')) return { title: 'Tasks', description: 'Supporting work tracker that should not outrank the core trade flow.', sectionLabel: 'Demoted side tools' };
   if (pathname.startsWith('/documents')) return { title: 'Documents', description: 'Review files, documentary completeness, expiry, and evidence gaps close to the core workflow.', sectionLabel: 'Risk and control' };

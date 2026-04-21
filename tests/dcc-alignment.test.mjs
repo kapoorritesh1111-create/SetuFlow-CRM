@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const dcc = readFileSync('public/internal-dcc/index.html', 'utf8');
 
-test('dcc aligns to PR-UX-01 truth and active stack', () => {
-  assert.match(dcc, /PR-UX-01 complete/i);
-  assert.match(dcc, /Navigation reset \+ information architecture cleanup/i);
-  assert.match(dcc, /0 modules at the 96% bar/i);
-  assert.match(dcc, /Buyer readiness<\/span><strong>79%<\/strong>/i);
+test('dcc aligns to PR-UX-08 truth and final release framing', () => {
+  assert.match(dcc, /PR-UX-08 completed/i);
+  assert.match(dcc, /96% finish pass \+ empty\/loading\/success lock/i);
+  assert.match(dcc, /Buyer readiness<\/span><strong>94%<\/strong>/i);
+  assert.match(dcc, /release candidate for internal review \/ guided demos/i);
 });

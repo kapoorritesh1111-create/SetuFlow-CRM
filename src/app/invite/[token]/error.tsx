@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { ErrorBoundaryView } from '@/components/app/error-boundary-view';
 
-export default function RouteError({
+export default function InviteError({
   error,
   reset,
 }: {
@@ -11,16 +11,16 @@ export default function RouteError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('invite-token route error', error);
+    console.error('invite route error', error);
   }, [error]);
 
   return (
     <ErrorBoundaryView
-      title="<route-specific title>"
-      description="<route-specific description>"
+      title="Invitation unavailable"
+      description="We could not load this invitation. Try again, or ask the workspace owner to resend it if the link may have expired."
       reset={reset}
-      homeHref="<route home>"
-      homeLabel="<route home label>"
+      homeHref="/login"
+      homeLabel="Go to sign in"
     />
   );
 }

@@ -33,19 +33,19 @@ const VIEW_PRESETS = [
   {
     id: 'all-pipeline',
     label: 'All pipeline',
-    description: 'Wide commercial view',
+    description: 'Leadership watchtower',
     patch: { mode: 'all', statusFilter: '', marketCode: '', stageFilter: '' } as Partial<DashboardFilters>,
   },
   {
     id: 'hot-conversion',
     label: 'Hot conversions',
-    description: 'Prioritize closeable work',
+    description: 'Intervene on closeable work',
     patch: { statusFilter: 'hot' } as Partial<DashboardFilters>,
   },
   {
     id: 'blocked-execution',
     label: 'Blocked execution',
-    description: 'Clear blockers first',
+    description: 'Rescue blocked work first',
     patch: { statusFilter: 'blocked' } as Partial<DashboardFilters>,
   },
 ];
@@ -134,7 +134,7 @@ export function DashboardControlBar({
   return (
     <section className="rounded-[1.2rem] border border-slate-200/85 bg-white/95 px-3 py-2.5 shadow-[0_12px_24px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.02]">
       <div className="flex min-h-[48px] flex-wrap items-center gap-2 xl:flex-nowrap xl:gap-2.5">
-        <span className="shrink-0 text-sm font-semibold text-slate-950">Viewing: {summary}</span>
+        <span className="shrink-0 text-sm font-semibold text-slate-950">Leadership lens: {summary}</span>
 
         <div className="inline-flex shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-0.5">
           {MODE_OPTIONS.map((opt) => {

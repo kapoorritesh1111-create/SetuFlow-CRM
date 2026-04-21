@@ -646,7 +646,7 @@ export function PipelineBoard({
     <div className="space-y-4">
       <WorkspaceWorkflowShell
         title="Pipeline"
-        description="Keep stage movement visible, actionable, and easy to scan across the full workspace."
+        description="Use the explicit pipeline rescue board to see stalled work, blockers, and the next intervention without letting the pipeline collapse into passive analytics."
         mode={workspaceMode}
         onModeChange={(nextMode) => {
           setWorkspaceMode(nextMode);
@@ -690,6 +690,27 @@ export function PipelineBoard({
               : 'The pipeline board reflects the latest confirmed change.'}
           />
         ) : null}
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-3">
+        <StateMessage
+          title="What needs intervention now"
+          tone={overdueCount || atRiskCount ? 'warning' : 'success'}
+          description={`${overdueCount} overdue follow-ups, ${atRiskCount} at-risk leads, and ${filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0)} commercially blocked records need rescue attention before pipeline movement can be trusted.`}
+        />
+        <StateMessage
+          title="Pipeline stays explicit"
+          tone="neutral"
+          description="This page stays a true pipeline board. Rescue posture is layered on top of the board, not used as an excuse to hide stage movement."
+        />
+        <div className={cn('flex flex-col gap-3 p-4', workspacePanelClass)}>
+          <p className="text-sm font-semibold text-slate-950">Move fast without losing continuity</p>
+          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <a href={PRODUCT_ROUTES.app.dashboard} className={workspaceSecondaryButtonClass}>Open dashboard</a>
+            <a href={PRODUCT_ROUTES.app.leads} className={workspaceSecondaryButtonClass}>Open follow-up</a>
+            <a href={PRODUCT_ROUTES.app.orders} className={workspacePrimaryButtonClass}>Open execution</a>
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Pipeline summary metrics">
