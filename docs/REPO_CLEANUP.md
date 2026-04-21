@@ -1,31 +1,36 @@
 # Repo Cleanup Recommendations
 
-This file lists what to delete, archive, or keep after the current review.
+This file lists what to delete, archive, or keep after PR-35.
 
 ## Delete now
 
-These files appear to be one-off patch scripts and should not remain in the canonical product repo:
+These files are generated or one-off patch artifacts and should not remain in the canonical repo baseline:
 
 - `pr26_update.py`
 - `update_batch6.py`
+- `tsconfig.tsbuildinfo`
+- `*.out`
+- transient install/build/test logs
 
 ## Archive or consolidate soon
 
-These are likely historical planning/reference files. They should not compete with the internal DCC and current docs as active truth surfaces:
+These are useful historical references, but they should not compete with the DCC and current release docs as active truth surfaces:
 
-- `docs/master-plan.md`
-- `docs/REWORK_PLAN.md`
-- `docs/PRODUCT.md`
 - `docs/Current Schema.md`
+- `docs/ARCHITECTURE_DIAGRAM.md` if it duplicates `docs/ARCHITECTURE.md` and the DCC
+- older planning files in `docs/Archive/`
+- any superseded release note or readiness memo that says less than:
+  - `public/internal-dcc/index.html`
+  - `docs/RELEASE_READINESS.md`
+  - `docs/PR_TRACKER.md`
 
 Recommended action:
 
-- either move them into an `/archive` folder
-- or merge any still-useful content into `README.md`, `docs/ARCHITECTURE.md`, and `public/internal-dcc/index.html`
+- archive historical planning and superseded snapshots under a clearly labeled archive path
+- keep one current architecture explanation, one current readiness explanation, and one current buyer/investor readiness surface
+- avoid leaving generated artifacts checked in unless they are intentionally part of release proof
 
-## Keep
-
-These should stay and remain actively maintained:
+## Keep and actively maintain
 
 - `README.md`
 - `public/internal-dcc/index.html`
@@ -33,19 +38,21 @@ These should stay and remain actively maintained:
 - `docs/ARCHITECTURE.md`
 - `docs/RELEASE_READINESS.md`
 - `docs/BUYER_DEMO_SCRIPT.md`
-- `docs/DEMO_DATA_AUDIT.md`
+- `docs/BUYER_JOURNEY_VERIFICATION.md`
+- `docs/INTEGRATION_PROOF.md`
+- `docs/AI_GUARDRAILS.md`
+- `docs/SECURITY_HARDENING.md`
 - `NEXT_PROMPT.md`
-- `docs/SOP_RUNBOOK_INDEX.md`
-- `docs/RELEASE_PROOF.md`
 
 ## Cleanup principle
 
 The repo should have:
 
 - one internal readiness truth surface
-- one current workflow document
-- one current architecture document
-- one current release-readiness document
-- one current buyer/investor demo script
+- one current workflow explanation
+- one current architecture explanation
+- one current release-readiness explanation
+- one current buyer/investor demo explanation
+- one current security-hardening explanation
 
-Anything else should be either archived or explicitly labeled as historical.
+Anything else should be either archived, deleted, or explicitly labeled as historical.

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Show Setu Flow as a disciplined trade workflow system with real demo data, while staying honest about what is already proven and what still needs strengthening.
+Show Setu Flow as a disciplined trade workflow system with real commercial continuity, governed customer messaging, and one buyer journey that can now be explained from lead to order without engineering narration.
 
 ## Demo length
 
@@ -10,103 +10,95 @@ Show Setu Flow as a disciplined trade workflow system with real demo data, while
 
 ## Opening line
 
-> Setu Flow helps import-export teams move from captured demand to governed quoting and execution without losing pricing discipline or downstream continuity.
+> Setu Flow helps import-export teams move from captured demand to governed quoting and into order execution without losing pricing discipline, communication control, or downstream continuity.
 
-## Live-data context you can say out loud
+## Positioning line for this pass
 
-> This workspace currently includes 35 buyers, 10 suppliers, 21 products, 31 variants, 8 quotes, and 3 contracts, so this is not an empty UI demo. fileciteturn3file0
+> The strongest story to show now is the verified buyer path: a qualified lead becomes a governed quote, quote changes stay reasoned and approval-aware, customer messaging cannot outrun approval truth, and only accepted work becomes order and contract truth.
 
-## Golden walkthrough
+## Verified buyer walkthrough
 
 ### 1. Dashboard
 Say:
 
-> The point of the dashboard is operational clarity, not decorative reporting.
+> The dashboard is there to direct the operator through the next commercial step, not just decorate reporting.
 
-Show:
-
-- what needs attention now
-- blocker visibility
-- quote/order follow-through posture
-
-### 2. Lead
-Open a real buyer lead.
-
-Recommended lead characteristics:
-
-- clear company name
-- product need populated
-- pipeline stage present
-- next step visible
-
-Good examples in the live data include buyers such as Atlas Grocery Group, Metro Pantry UK, Pacific Wellness Foods, Dubai Gourmet Souq, and Sahara Fine Foods. fileciteturn3file0
+### 2. Lead qualification
+Open a buyer lead with clear company context and visible demand.
 
 Say:
 
-> Leads in Setu Flow are commercial working records, not just contact cards.
+> Leads in Setu Flow are working commercial records. Qualification, product linkage, market coverage, and compliance readiness are what make a lead eligible to move forward.
 
-### 3. Product / Category Interest
-Show the attached need or confirmed product interest.
-
-Say:
-
-> The workflow stays close to real trade work by keeping category demand and product interest tied to the opportunity.
-
-### 4. Quote
-Open one of the seeded quotes.
-
+### 3. Quote draft
 Show:
 
 - quote number
-- validity window
-- current version
-- pricing basis or missing basis where applicable
-- current commercial posture
+- currency and validity window
+- baseline pricing posture
+- approval posture
 
 Say:
 
-> Quotes are where commercial discipline starts to matter. Catalog pricing is the default posture, and overrides should stay governed.
+> Quotes start from catalog baseline so pricing has a system of record before anyone manually changes terms.
 
-### 5. Pricing integrity
+### 4. Override governance
 Say explicitly:
 
-> The product rule is that base catalog price is the default. If price is overridden, it must carry reason and approval policy. The policy is configured to require approval for override with a 5% threshold. fileciteturn3file11
+> If quote pricing moves away from the catalog baseline, the system treats that as a governed event. The override needs a reason, and when policy threshold is met it also needs approval.
 
-Important honesty note:
-
-- the policy is visible in the data
-- the strongest live approval-required demo record is **not yet surfaced cleanly in the current export**
-
-### 6. Contract / Order continuity
-Show one of the contracts that carries continuity information.
+### 5. Communication governance
+Show a quote message through the lead operations surface.
 
 Say:
 
-> The product is designed to preserve quote continuity into the downstream contract/order record.
+> Customer messaging is downstream of commercial truth. Email and WhatsApp can carry governed state, but the system does not let a final quote message go out if approval is still pending.
 
-Use examples where continuity snapshots show:
+Point out:
 
-- source quote line item id
-- catalog price amount
-- final unit price
-- product variant linkage fileciteturn3file6turn3file15
+- governed channels are email and WhatsApp
+- delivery context is logged
+- communication evidence sits beside the quote instead of redefining it
 
-### 7. Execution posture
-Show execution state carefully.
+### 6. Accepted quote becomes order truth
+Move into Orders.
 
 Say:
 
-> Execution is structurally present, but I want to be precise: the currently visible contract examples are still sitting in draft execution posture, so this is an area we are still tightening for proof quality. fileciteturn3file3turn3file12
+> Orders in Setu Flow are not a loose list of every quote. They are the execution workspace for accepted commercial work.
+
+### 7. Contract / execution continuity
+Say:
+
+> The design goal is to preserve what was commercially agreed, not re-key it downstream. Accepted quotes hand off into contracts and execution controls with continuity intact.
+
+### 8. Sync evidence
+Close by showing the integrations workspace or DCC.
+
+Say:
+
+> External integrations and customer-facing messaging are both evidence layers. They reflect approved commercial state; they do not redefine it.
+
+## What is proven and safe to say
+
+- qualified leads can be assessed for quote readiness
+- catalog pricing is the baseline commercial source of truth
+- quote overrides are governed rather than silent
+- approval posture is explicit when policy requires it
+- approval-aware communication can block unsafe outbound quote messaging
+- accepted quotes are the handoff into orders
+- order and contract continuity are real design commitments in the product
+- communication and integration evidence can be shown without weakening the commercial contract
 
 ## What to avoid saying
 
 Do **not** say:
 
 - “Everything is complete.”
-- “Integrations are already live and proven.”
-- “AI is making autonomous decisions.”
-- “Approval logic is fully proven in today’s demo data.”
+- “Every provider is production-proven.”
+- “Every workflow is demonstrated with one perfect sample record.”
+- “AI is operating autonomously.”
 
 ## Best close
 
-> Setu Flow is already a credible trade workflow product with real commercial data, but we are still tightening proof quality around approval, accepted-state reconciliation, and downstream execution so buyers and investors can trust every claim.
+> Setu Flow now shows a credible governed buyer journey with real commercial continuity, governed outbound communication, and supporting sync evidence. The next proof step is AI boundary completion and hardening, not a rewrite of the core product story.

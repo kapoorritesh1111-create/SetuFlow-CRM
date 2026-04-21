@@ -25,6 +25,63 @@ interface AiProvider {
   invoke<T>(task: AiTaskType, payload: unknown): Promise<AiProviderResult<T>>;
 }
 
+export type AiProviderTaskState = 'supported' | 'fallback' | 'not_implemented';
+export type AiGuardrailBoundary = {
+  id: string;
+  title: string;
+  summary: string;
+};
+
+export const AI_PROVIDER_CAPABILITIES: Record<string, Record<AiTaskType, AiProviderTaskState>> = {
+  noop: {
+    [AiTaskType.Enrichment]: 'fallback',
+    [AiTaskType.FollowUp]: 'fallback',
+    [AiTaskType.Summarisation]: 'fallback',
+    [AiTaskType.DraftGeneration]: 'fallback',
+  },
+  none: {
+    [AiTaskType.Enrichment]: 'fallback',
+    [AiTaskType.FollowUp]: 'fallback',
+    [AiTaskType.Summarisation]: 'fallback',
+    [AiTaskType.DraftGeneration]: 'fallback',
+  },
+  anthropic: {
+    [AiTaskType.Enrichment]: 'supported',
+    [AiTaskType.FollowUp]: 'supported',
+    [AiTaskType.Summarisation]: 'supported',
+    [AiTaskType.DraftGeneration]: 'supported',
+  },
+  openai: {
+    [AiTaskType.Enrichment]: 'not_implemented',
+    [AiTaskType.FollowUp]: 'not_implemented',
+    [AiTaskType.Summarisation]: 'not_implemented',
+    [AiTaskType.DraftGeneration]: 'not_implemented',
+  },
+};
+
+export const AI_GUARDRAIL_BOUNDARIES: AiGuardrailBoundary[] = [
+  {
+    id: 'no-autonomous-state-change',
+    title: 'No autonomous state changes',
+    summary: 'AI can recommend or draft, but it cannot advance pipeline stages, approve work, mutate quote state, or complete execution on its own.',
+  },
+  {
+    id: 'no-pricing-authority',
+    title: 'No pricing authority',
+    summary: 'AI cannot invent pricing, approve overrides, or bypass catalog/base-price truth and approval thresholds.',
+  },
+  {
+    id: 'no-compliance-clearance',
+    title: 'No compliance clearance',
+    summary: 'AI cannot clear compliance blockers, document blockers, dispatch holds, or release orders without operator action.',
+  },
+  {
+    id: 'operator-reviewed-output',
+    title: 'Operator-reviewed output',
+    summary: 'AI output is bounded to operator-review workflows such as follow-ups, introductions, summaries, and cover-note drafts.',
+  },
+];
+
 /**
  * Mock provider used when AI is disabled or no provider is
  * configured.  It returns empty results immediately.  This allows
@@ -61,11 +118,6 @@ class AnthropicProvider implements AiProvider {
     }
 
     const input = payload as Record<string, unknown>;
-    // The payload shape sent by buildDraftPayload includes a `content`
-    // field that already has the full operator-ready draft text. For
-    // generation tasks we forward that as the user prompt so the model
-    // can refine or expand it. For other task types we serialize the
-    // payload as context.
     const userMessage =
       typeof input?.prompt === 'string' && input.prompt.trim()
         ? input.prompt.trim()
@@ -77,6 +129,7 @@ class AnthropicProvider implements AiProvider {
       'You are a precise commercial writing assistant for an import-export trade team. ' +
       'Produce concise, professional operator-ready drafts. ' +
       'Never add new commercial terms, pricing figures, or compliance claims that were not in the original context. ' +
+      'Do not claim approvals, dispatch readiness, contract acceptance, or buyer commitments unless they are already present in the input. ' +
       'Return only the requested draft text — no explanations, no preamble, no markdown fencing.';
 
     try {
@@ -132,23 +185,19 @@ class AnthropicProvider implements AiProvider {
 /**
  * @deprecated Use AnthropicProvider. Kept for backward compatibility with
  * any callers that reference the 'openai' provider name via environment
- * variable. Will be removed in Sprint 9 architecture cleanup.
+ * variable. Will be removed in PR-35 hygiene cleanup unless an actual
+ * implementation is added.
  */
 class OpenAiProvider implements AiProvider {
   name = 'openai';
   async invoke<T>(_task: AiTaskType, _payload: unknown): Promise<AiProviderResult<T>> {
     return {
       ok: false,
-      error: 'OpenAI provider not implemented — set AI_PROVIDER=anthropic and ANTHROPIC_API_KEY to activate AI.',
+      error: 'OpenAI provider not implemented — the repo only proves Anthropic-backed assistive workflows today.',
     };
   }
 }
 
-/**
- * Map of available providers keyed by name.  Register new providers
- * here when implementing them.  Provider names should match
- * environment variable values used in `getAiProviderName()`.
- */
 const providers: Record<string, AiProvider> = {
   noop: new NoopProvider(),
   none: new NoopProvider(),
@@ -156,38 +205,44 @@ const providers: Record<string, AiProvider> = {
   anthropic: new AnthropicProvider(),
 };
 
-/**
- * Returns the active provider instance based on configuration.  If
- * AI is disabled or the provider cannot be found, the noop provider
- * is returned.
- */
 export function getAiProvider(): AiProvider {
   if (!isAiEnabled()) return new NoopProvider();
   const name = getAiProviderName().toLowerCase();
   return providers[name] ?? new NoopProvider();
 }
 
-/**
- * Execute an AI task using the active provider.  This helper
- * centralises error handling and ensures the returned result is
- * normalised.  Callers should not throw from this function; instead
- * inspect the returned `ok` flag and `error` message.
- *
- * @param task The type of AI task to run (e.g. enrichment, followUp).
- * @param payload The serialisable payload to send to the provider.
- */
+export function getAiOperationalState() {
+  const enabled = isAiEnabled();
+  const requestedProvider = getAiProviderName().toLowerCase();
+  const activeProvider = enabled && providers[requestedProvider] ? requestedProvider : enabled ? 'noop' : 'none';
+  const capabilities = AI_PROVIDER_CAPABILITIES[activeProvider] ?? AI_PROVIDER_CAPABILITIES.none;
+  const supportedTasks = Object.entries(capabilities)
+    .filter(([, state]) => state === 'supported')
+    .map(([task]) => task as AiTaskType);
+  const limitedTasks = Object.entries(capabilities)
+    .filter(([, state]) => state !== 'supported')
+    .map(([task]) => task as AiTaskType);
+
+  return {
+    enabled,
+    requestedProvider,
+    activeProvider,
+    supportedTasks,
+    limitedTasks,
+    guardrails: AI_GUARDRAIL_BOUNDARIES,
+    modeLabel: enabled && activeProvider === 'anthropic'
+      ? 'Assistive AI with live provider support and mandatory operator review.'
+      : 'Guarded fallback mode with no live provider-backed generation.',
+  };
+}
+
 export async function runAiTask<T>(task: AiTaskType, payload: unknown): Promise<AiProviderResult<T>> {
   const provider = getAiProvider();
   try {
     const result = await provider.invoke<T>(task, payload);
     return result;
   } catch (error: unknown) {
-    // Catch unexpected errors so the caller always receives a result
-    // object rather than a rejected promise.  Log to the console in
-    // development to aid debugging; in production we may integrate
-    // with a more sophisticated logging system.
     if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
       console.error('AI provider invoke error:', error);
     }
     return { ok: false, error: (error as Error).message };

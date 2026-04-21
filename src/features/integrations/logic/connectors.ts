@@ -22,6 +22,26 @@ export const CONNECTOR_DEFINITIONS: ConnectorDefinition[] = [
     retryMode: 'retry queue with governed outbound requeue',
     statusHint: 'Use for invoice posture, payment continuity, commercial holds, and governed contract snapshots.',
   },
+  {
+    id: 'email-outbound',
+    provider: 'email_outbound',
+    label: 'Email delivery connector',
+    domain: 'other',
+    mappingLabel: 'governed quote message -> outbound email delivery log',
+    webhookPattern: '/api/integrations/webhooks/email_outbound',
+    retryMode: 'governed queue with delivery-state replay',
+    statusHint: 'Use for buyer quote-share emails and delivery-state continuity without letting messaging outrun approval truth.',
+  },
+  {
+    id: 'whatsapp-outbound',
+    provider: 'whatsapp_outbound',
+    label: 'WhatsApp delivery connector',
+    domain: 'other',
+    mappingLabel: 'template event -> outbound WhatsApp delivery log',
+    webhookPattern: '/api/integrations/webhooks/whatsapp_outbound',
+    retryMode: 'governed queue with template-aware replay',
+    statusHint: 'Use for governed buyer updates where template, delivery state, and commercial object continuity must stay visible.',
+  },
 ];
 
 function providerLabel(value: string) {

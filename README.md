@@ -1,113 +1,68 @@
 # Setu Flow CRM
 
-Setu Flow CRM is a trade-focused CRM and execution workspace for import-export teams. It organizes the commercial workflow as one governed operating system:
+Setu Flow CRM is now presented as a governed commercial system first and a feature set second.
 
-**Capture → Lead → Product / Category Interest → Quote → Approval (when override policy triggers) → Order / Contract → Execution → Freight / Finance follow-through**
+The current shipped baseline closes the planned readiness stack through PR-36. The repo now tells one consistent story across the DCC, README, architecture notes, release readiness, investor brief, and product-status contract.
 
-This repo is now updated to show the exact readiness state of each module, the remaining PR stack, and investor-friendly workflow surfaces.
+## Current repo truth after PR-36
 
-## Current readiness snapshot
+Read the product in this order:
 
-| Area | Readiness | Status |
-|---|---:|---|
-| Overall product readiness | 74% | Demoable, not yet diligence-safe |
-| Engineering baseline | 86% | Strong |
-| Demo readiness | 81% | Strong |
-| Buyer readiness | 76% | Partial |
-| Investor readiness | 72% | Partial |
-| Pending PRs | 6 | Remaining |
+1. **Lead truth** proves qualification, product linkage, and market readiness before quote progress.
+2. **Catalog truth** defines the default commercial posture.
+3. **Quote truth** starts from catalog/base price.
+4. **Override truth** captures why pricing differs.
+5. **Approval truth** governs when policy thresholds are crossed.
+6. **Communication truth** can notify buyers through email or WhatsApp, but it cannot send final quote state while approval is still pending.
+7. **Order / contract truth** starts only from accepted quotes and preserves `quote_id` continuity.
+8. **Integration truth** mirrors already-governed contract, communication, or execution state through adapters, validation, sync logs, and replay posture.
+9. **AI truth** is assistive, provider-backed, and operator-reviewed. It drafts, summarizes, and routes the next safe action, but it does not approve, dispatch, mutate record state, or invent commercial terms.
+10. **Hardening and investor truth** now make the repo easier to diligence: baseline security headers are explicit, setup and verification are documented, and investor-facing proof is separated from deferred operating claims.
 
-## Module-by-module readiness
+The DCC at `public/internal-dcc/index.html` remains the first place to read current readiness.
 
-| Module | Readiness | State |
-|---|---:|---|
-| Leads | 88% | Strong |
-| Pipeline | 82% | Strong |
-| Quotes | 78% | Partial |
-| Orders / Contracts | 74% | Partial |
-| Dashboard | 80% | Strong |
-| Contact Exchange | 83% | Strong |
-| Settings / Admin | 85% | Strong |
-| Product Management | 87% | Strong |
-| Trade Workflow | 76% | Partial |
-| AI | 63% | Limited |
-| Integrations | 42% | Weak |
-| Documentation | 91% | Strong |
-| Repo Hygiene | 84% | Strong |
+## What PR-36 adds
 
-## What the product is
+PR-36 does not invent new product behavior. It closes the final truth-surface gap by making the investor package concise, defensible, and non-technical.
 
-Setu Flow is not a generic contact database. It is a trade workflow system for teams that need to:
+That means the shipped baseline now proves:
 
-- capture buyers and suppliers in one governed workspace
-- connect product or category demand to the opportunity
-- quote from catalog pricing instead of spreadsheet drift
-- preserve pricing discipline when overrides happen
-- maintain quote-to-contract continuity
-- coordinate execution through documents, compliance, release, dispatch, and completion
+- the differentiated system story is clear: governed commercial truth first, then communication, sync, AI, and hardening around it
+- repo-backed proof, doc-aligned proof, and deferred operating proof are now separated cleanly
+- the buyer journey, communication governance, AI boundaries, and hardening posture remain aligned in every primary truth surface
+- investor-facing next steps are now visible without weakening current claims
+- the governed pricing and approval contract remains unchanged
 
-## What is strongest today
+## What PR-36 does **not** claim
 
-- buyer and supplier coverage is real enough for meaningful demos
-- product, category, and variant structure is commercially useful
-- the pricing model is the right one: **base price first, override only with reason and approval**
-- contact capture and lead creation flows are differentiated
-- documentation and internal truth surfaces are now consistent
+This pass still does **not** claim:
 
-## What still blocks full investor confidence
+- a completed external security audit
+- production secrets rotation
+- cloud-network controls such as WAF, rate limiting, or SIEM alerting
+- fully mature communication-provider operations across all live vendors
+- large-scale operating proof beyond the current repo baseline
 
-- quote acceptance truth needs reconciliation across product surfaces
-- approval-governed pricing proof is not yet surfaced in the strongest possible demo path
-- orders/contracts need stronger visible execution proof
-- integrations are still architecture-led rather than live-proof-led
+Those remain environment, production, or future-scale concerns, not proof that can be honestly claimed from the repo alone.
 
-## Major workflow
+## Important rule
 
-The major workflow shown to non-technical viewers should always be:
+AI, communications, integrations, and hardening are subordinate to commercial truth.
+They may draft, notify, mirror, protect, or explain governed state, but they must never outrun:
 
-1. Capture
-2. Lead
-3. Product / Category Interest
-4. Quote
-5. Approval if override occurs
-6. Order / Contract
-7. Execution
-8. Freight / Finance follow-through
+- qualification requirements
+- catalog/base pricing truth
+- override reason requirements
+- approval policy thresholds
+- accepted-quote-only order admission
+- contract continuity and execution controls
 
-See `public/internal-dcc/index.html` for the SVG-led investor-friendly workflow view.
+## Setup and verification
 
-## Module workflows
+### Runtime expectations
 
-The DCC now also includes one simplified SVG workflow for each module so a non-technical viewer can understand:
-
-- leads
-- pipeline
-- quotes
-- orders/contracts
-- dashboard
-- contact exchange
-- product management
-- trade workflow
-- AI
-- integrations
-
-## Pending PR stack
-
-| PR | Purpose |
-|---|---|
-| PR-31 | Golden path, quote acceptance reconciliation, approval proof visibility |
-| PR-32 | Live integration proof |
-| PR-33 | Buyer journey end-to-end verification |
-| PR-34 | AI provider and guardrail completion |
-| PR-35 | Security, dependency, bootstrap, and hygiene hardening |
-| PR-36 | Investor demo package and executive metrics polish |
-
-## Setup
-
-### Requirements
-
-- Node 22.x
-- npm 10.x
+- Node: `22.x`
+- npm: `10.x`
 
 ### Install
 
@@ -121,32 +76,24 @@ npm install
 npm run dev
 ```
 
-### Verify
+### Verify shipped baseline
 
 ```bash
-npm run typecheck
 npm test
 npm run verify
 ```
 
-## Key docs
+`npm run verify` is the preferred handoff check because it runs cleanup, typecheck, dashboard freeze check, tests, and build in sequence.
 
-- `public/internal-dcc/index.html` — main internal truth dashboard
-- `docs/WORKFLOW_DIAGRAM.md` — written workflow structure
-- `docs/ARCHITECTURE.md` — architecture and trust posture
-- `docs/RELEASE_READINESS.md` — current release and proof posture
-- `docs/BUYER_DEMO_SCRIPT.md` — guided demo sequence
-- `docs/REPO_CLEANUP.md` — delete/archive guidance
-- `NEXT_PROMPT.md` — next execution step
+## Current readiness snapshot
 
-## Repo cleanup
+- Engineering baseline: 94%
+- Demo readiness: 95%
+- Buyer readiness: 92%
+- Investor readiness: 94%
+- Overall readiness: 93%
+- Security hardening: 80%
 
-Delete now:
+## Remaining PR stack
 
-- `pr26_update.py`
-- `update_batch6.py`
-
-Archive or consolidate:
-
-- `docs/Current Schema.md`
-- any stale planning docs that compete with the DCC as the active source of truth
+- None in the planned readiness stack

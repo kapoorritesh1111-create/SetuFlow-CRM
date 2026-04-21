@@ -224,6 +224,7 @@ async function insertActivity(db: any, payload: ActivityPayload) {
     .insert({ ...payload, occurred_at: new Date().toISOString() });
 }
 
+
 async function insertCommunication(db: any, payload: CommunicationPayload) {
   const nowIso = new Date().toISOString();
   return db.from('communications').insert({
@@ -249,6 +250,141 @@ async function insertCommunication(db: any, payload: CommunicationPayload) {
     provider_payload: payload.provider_payload ?? {},
     metadata: payload.metadata ?? {},
   });
+}
+
+type QuoteCommunicationGate = {
+  allowed: boolean;
+  reason?: string;
+  quoteStatus?: string | null;
+  approvalRequired?: boolean;
+  approvalState?: string | null;
+};
+
+async function getQuoteCommunicationGate(db: any, organizationId: string, quoteId?: string | null): Promise<QuoteCommunicationGate> {
+  if (!quoteId) return { allowed: true, quoteStatus: null, approvalRequired: false, approvalState: null };
+
+  const { data: quote, error } = await db
+    .from('quotes')
+    .select('id, status, approval_required, approval_state')
+    .eq('organization_id', organizationId)
+    .eq('id', quoteId)
+    .maybeSingle();
+
+  if (error) return { allowed: false, reason: error.message };
+  if (!quote?.id) return { allowed: false, reason: 'Quote not found for governed communication.' };
+
+  const approvalRequired = Boolean(quote.approval_required);
+  const approvalState = typeof quote.approval_state === 'string' ? quote.approval_state : null;
+  if (approvalRequired && approvalState !== 'approved') {
+    return {
+      allowed: false,
+      reason: 'Quote communication is blocked until approval is completed.',
+      quoteStatus: quote.status ?? null,
+      approvalRequired,
+      approvalState,
+    };
+  }
+
+  return {
+    allowed: true,
+    quoteStatus: quote.status ?? null,
+    approvalRequired,
+    approvalState,
+  };
+}
+
+async function queueGovernedCommunicationDelivery(params: {
+  db: any;
+  organizationId: string;
+  leadId: string;
+  leadCompanyName: string;
+  leadEmail?: string | null;
+  leadPhone?: string | null;
+  quoteId?: string | null;
+  subject: string;
+  body: string;
+  channel: 'email' | 'whatsapp';
+  actorUserId: string;
+  gate: QuoteCommunicationGate;
+}) {
+  const provider = params.channel === 'email' ? 'email_outbound' : 'whatsapp_outbound';
+  const target = params.channel === 'email'
+    ? (typeof params.leadEmail === 'string' && params.leadEmail.trim() ? params.leadEmail.trim() : null)
+    : (typeof params.leadPhone === 'string' && params.leadPhone.trim() ? params.leadPhone.trim() : null);
+
+  if (!target) {
+    return { queued: false as const, provider, reason: `${params.channel === 'email' ? 'Lead email' : 'Lead phone'} is missing.` };
+  }
+
+  const { data: integration, error: integrationError } = await params.db
+    .from('integrations')
+    .select('id, provider, is_active')
+    .eq('organization_id', params.organizationId)
+    .eq('provider', provider)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (integrationError) return { queued: false as const, provider, reason: integrationError.message };
+  if (!integration?.id) return { queued: false as const, provider, reason: `${provider} integration is not configured for this workspace.` };
+
+  const eventPayload = {
+    delivery: {
+      channel: params.channel,
+      target,
+      target_label: params.channel === 'email' ? 'lead email' : 'lead WhatsApp',
+      state: 'queued',
+      template: params.channel === 'email' ? 'quote_share_email_v1' : 'quote_share_whatsapp_v1',
+    },
+    communication: {
+      subject: params.subject,
+      body: params.body,
+      lead_id: params.leadId,
+      quote_id: params.quoteId ?? null,
+      company_name: params.leadCompanyName,
+    },
+    continuity: {
+      key: params.quoteId ? `quote:${params.quoteId}:${provider}` : `lead:${params.leadId}:${provider}`,
+      attempt_count: 1,
+    },
+    impact: {
+      safeToApply: params.gate.allowed,
+      summary: params.gate.allowed
+        ? `${params.channel === 'email' ? 'Email' : 'WhatsApp'} delivery queued from governed quote truth.`
+        : 'Communication was blocked before provider delivery.',
+      blockedReasons: params.gate.allowed ? [] : [params.gate.reason ?? 'Governed communication blocked.'],
+    },
+    metadata: {
+      target_key: params.quoteId ? `quote:${params.quoteId}:${provider}` : `lead:${params.leadId}:${provider}`,
+      received_from: 'application',
+      attempt_count: 1,
+      commercial_object: params.quoteId ? 'quote' : 'lead',
+      actor_user_id: params.actorUserId,
+    },
+  };
+
+  const status = params.gate.allowed ? 'queued' : 'needs_review';
+  const { data: eventRow, error } = await params.db
+    .from('integration_events')
+    .insert({
+      integration_id: integration.id,
+      direction: 'outbound',
+      event_type: params.channel === 'email' ? 'quote_email_delivery' : 'quote_whatsapp_delivery',
+      status,
+      payload: eventPayload,
+      processed_at: new Date().toISOString(),
+    })
+    .select('id')
+    .maybeSingle();
+
+  if (error) return { queued: false as const, provider, reason: error.message };
+
+  return {
+    queued: params.gate.allowed as const,
+    provider,
+    eventId: eventRow?.id ?? null,
+    deliveryState: status,
+    target,
+  };
 }
 
 function formatCommunicationDate(value?: string | null) {
@@ -2184,13 +2320,39 @@ export async function recordLeadCommunicationSent(input: {
   const db = supabase as any;
   const { data: lead, error: leadError } = await db
     .from('leads')
-    .select('id, company_name')
+    .select('id, company_name, email, phone')
     .eq('id', leadId)
     .eq('organization_id', organization.id)
     .maybeSingle();
   if (leadError || !lead) return { error: leadError?.message ?? 'Lead not found.' };
 
+  const governedChannel = channel === 'email' || channel === 'whatsapp';
+  const gate = communicationType === 'quote_message' && governedChannel
+    ? await getQuoteCommunicationGate(db, organization.id, input.quoteId ?? null)
+    : { allowed: true, quoteStatus: null, approvalRequired: false, approvalState: null };
+
+  if (!gate.allowed) {
+    return { error: gate.reason ?? 'Quote communication is blocked until approval is complete.' };
+  }
+
   const sentAt = new Date().toISOString();
+  const deliveryQueue = governedChannel
+    ? await queueGovernedCommunicationDelivery({
+        db,
+        organizationId: organization.id,
+        leadId,
+        leadCompanyName: lead.company_name,
+        leadEmail: lead.email,
+        leadPhone: lead.phone,
+        quoteId: input.quoteId ?? null,
+        subject,
+        body,
+        channel,
+        actorUserId: currentUser.id,
+        gate,
+      })
+    : null;
+
   const [{ error: communicationError }, { error: activityError }] = await Promise.all([
     insertCommunication(db, {
       organization_id: organization.id,
@@ -2208,7 +2370,18 @@ export async function recordLeadCommunicationSent(input: {
       status: 'sent',
       sent_at: sentAt,
       created_by: currentUser.id,
-      metadata: { source: 'recordLeadCommunicationSent', test_mode: true },
+      provider_payload: governedChannel ? {
+        delivery_state: deliveryQueue?.deliveryState ?? 'pending_connector',
+        provider: deliveryQueue?.provider ?? (channel === 'email' ? 'email_outbound' : 'whatsapp_outbound'),
+        event_id: deliveryQueue?.eventId ?? null,
+        target: deliveryQueue?.target ?? null,
+      } : {},
+      metadata: {
+        source: 'recordLeadCommunicationSent',
+        test_mode: true,
+        governed_delivery: governedChannel,
+        delivery_queue_state: deliveryQueue?.deliveryState ?? null,
+      },
     }),
     insertActivity(db, {
       organization_id: organization.id,
@@ -2223,7 +2396,9 @@ export async function recordLeadCommunicationSent(input: {
 
   revalidateLeadSurfaces(leadId);
   return {
-    success: 'Marked as sent.',
+    success: deliveryQueue && !deliveryQueue.queued
+      ? `Marked as sent, but ${channel} delivery is still pending connector setup.`
+      : 'Marked as sent.',
     item: {
       kind: 'sent',
       label: subject,

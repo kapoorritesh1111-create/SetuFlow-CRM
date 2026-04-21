@@ -1,212 +1,396 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Setu Flow CRM — Development Command Center</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setu Flow Internal DCC</title>
 <style>
 :root{
-  --bg:#07111f;--panel:#0f1b31;--panel2:#152544;--panel3:#0c1628;--border:#294162;
-  --text:#eaf1ff;--muted:#9fb3d8;--blue:#60a5fa;--cyan:#22d3ee;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;
-  --shadow:0 18px 40px rgba(0,0,0,.28);
+  --bg:#07111f;--bg2:#0b1627;--panel:#0f1c2e;--card:#13243b;--ink:#e8f1fb;--muted:#9fb3c8;--line:#28415f;
+  --good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--accent:#22d3ee;--major:#60a5fa;--shadow:0 16px 40px rgba(0,0,0,.24)
 }
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(180deg,var(--bg),#0a1527 45%,#08111f);color:var(--text);font-family:Inter,system-ui,sans-serif}
-.shell{display:grid;grid-template-columns:320px 1fr;min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:20px;background:rgba(7,17,31,.96);border-right:1px solid var(--border)}.main{padding:24px 24px 64px}
-.brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--cyan));box-shadow:var(--shadow)}.brand h1{margin:0;font-size:17px}.brand p{margin:4px 0 0;color:var(--muted);font-size:12px}
-.meta,.card,.hero{background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}.meta{padding:14px;margin-bottom:18px}.meta .row{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin:7px 0}.meta strong{color:var(--text)}
-.nav a{display:block;padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--muted);border:1px solid transparent;margin-bottom:6px}.nav a:hover,.nav a.active{background:var(--panel2);color:var(--text);border-color:var(--border)}
-.hero{padding:20px;margin-bottom:18px;background:linear-gradient(180deg,#142847,#0f1b31)}.hero h2{margin:0 0 8px;font-size:30px}.hero p{margin:0;color:var(--muted);max-width:980px}.hero-grid,.grid{display:grid;gap:16px}.hero-grid{grid-template-columns:1.5fr 1fr}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
-.card{padding:18px}.card h3{margin:0 0 12px;font-size:17px}.card h4{margin:0 0 10px;font-size:14px}.muted{color:var(--muted)}.tiny{font-size:12px;color:var(--muted)}
-.kpi{font-size:32px;font-weight:800;line-height:1}.label{font-size:12px;color:var(--muted);margin-top:8px}.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;letter-spacing:.02em}.good{background:rgba(34,197,94,.15);color:#8ff0b2}.warn{background:rgba(245,158,11,.15);color:#ffd48d}.bad{background:rgba(239,68,68,.15);color:#ffaaaa}.info{background:rgba(96,165,250,.15);color:#abd1ff}
-.bar{width:100%;height:10px;border-radius:999px;background:var(--panel3);border:1px solid var(--border);overflow:hidden}.bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))}
-.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;font-size:13px}.table th{color:#cfe0ff;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
-.list{margin:0;padding-left:18px}.list li{margin:8px 0}.section{margin-top:20px}.section h2{margin:0 0 12px;font-size:24px}
-.svg-shell{background:var(--panel3);border:1px solid var(--border);border-radius:16px;padding:14px;overflow:auto}.svg-caption{margin-top:10px;color:var(--muted);font-size:12px}
-svg{max-width:100%;height:auto}.wf text{fill:var(--text);font-size:12px;font-family:Inter,system-ui,sans-serif}.wf .node{fill:#101d36;stroke:#3a5278;stroke-width:1.5}.wf .major{fill:#142847;stroke:#67b0ff}.wf .warn{fill:#31240f;stroke:#f59e0b}.wf .bad{fill:#321719;stroke:#ef4444}.wf .arrow{stroke:#22d3ee;stroke-width:2.2;fill:none}.wf .soft{stroke:#5d789f;stroke-dasharray:6 5;fill:none}.workflow-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.footer-note{padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:#0c1628;color:var(--muted);font-size:12px}
-@media (max-width:1180px){.shell{grid-template-columns:1fr}.sidebar{position:static;height:auto}.hero-grid,.grid.two,.grid.three,.grid.four,.workflow-grid{grid-template-columns:1fr}}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),var(--bg2) 35%,#0a1321);color:var(--ink)}
+img{max-width:100%;height:auto}
+.wrapper{max-width:1320px;margin:0 auto;padding:24px}
+.hero,.card,.band,.legend,.summary-strip{background:rgba(15,28,46,.94);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+.hero{padding:26px;margin-bottom:18px}
+.band{padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+.summary-strip{padding:16px 18px;margin:18px 0}
+.hero-grid,.grid.two,.grid.three,.grid.four,.workflow-grid,.module-grid,.proof-grid{display:grid;gap:16px}
+.hero-grid{grid-template-columns:2.2fr 1.1fr}
+.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.workflow-grid{grid-template-columns:1.25fr .95fr}
+.module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.proof-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:1080px){.hero-grid,.grid.two,.grid.three,.grid.four,.workflow-grid,.module-grid,.proof-grid{grid-template-columns:1fr}}
+h1,h2,h3,h4{margin:0 0 8px} h1{font-size:34px;line-height:1.1} h2{font-size:25px} h3{font-size:18px} h4{font-size:15px}
+p{margin:0 0 10px;color:var(--muted);line-height:1.55}
+.section{margin:18px 0}.card{padding:18px}
+.logo-row{display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.logo-mark{width:180px;min-width:140px;padding:10px 14px;background:#fff;border-radius:18px;border:1px solid rgba(255,255,255,.2)}
+.logo-copy small,.caption{display:block;color:var(--muted);font-size:13px}
+.kpi{font-size:34px;font-weight:800;color:#fff}.label{color:var(--muted);font-size:14px}
+.bar{height:10px;background:#0a1321;border-radius:999px;overflow:hidden;margin-top:10px}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--major))}
+.list{margin:0;padding-left:18px;color:var(--muted);line-height:1.6}
+.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.table th{color:#cde2fb;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.pill,.status-dot,.mini-pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;font-size:12px;font-weight:800}
+.pill{padding:7px 11px}.mini-pill{padding:5px 9px}.good{background:rgba(34,197,94,.14);color:#9ff0b8}.warn{background:rgba(245,158,11,.14);color:#ffd28a}.bad{background:rgba(239,68,68,.14);color:#ffb4b4}.majorTxt{background:rgba(96,165,250,.14);color:#bfdbfe}.mutedPill{background:rgba(159,179,200,.14);color:#d7e2ee}
+.status-dot{width:12px;height:12px;padding:0;border-radius:999px}.status-dot.good{background:var(--good)}.status-dot.warn{background:var(--warn)}.status-dot.bad{background:var(--bad)}
+.footer-note{color:#8fa8c0;font-size:13px}
+.svg-shell{background:#0a1321;border:1px solid var(--line);border-radius:18px;padding:10px}
+.wf{width:100%;height:auto}.wf text{fill:#e8f1fb;font-size:14px;font-weight:700}.wf .sub{fill:#9fb3c8;font-size:12px;font-weight:600}.wf .arrow{stroke:#22d3ee;stroke-width:3;fill:none}.wf .node{fill:#102338;stroke:#3b82f6;stroke-width:2}.wf .major{fill:#142a43;stroke:#22d3ee;stroke-width:2}.wf .goodNode{fill:#123323;stroke:#22c55e;stroke-width:2}.wf .warnNode{fill:#39280c;stroke:#f59e0b;stroke-width:2}.wf .badNode{fill:#3d1414;stroke:#ef4444;stroke-width:2}.wf .halo{fill:none;stroke:#36597e;stroke-width:2;stroke-dasharray:8 7}
+.metric-row{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 0}.metric{background:#0a1321;border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-width:178px}.metric span{display:block;font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:24px;margin-top:4px}
+.legend{padding:14px 16px}.legend-grid{display:flex;gap:16px;flex-wrap:wrap}.legend-item{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:14px}
+.module-card{padding:18px;border-radius:20px;border:1px solid var(--line);background:rgba(19,36,59,.94);box-shadow:var(--shadow)}
+.module-card.goodCard{border-color:rgba(34,197,94,.4);background:linear-gradient(180deg,rgba(19,51,35,.55),rgba(19,36,59,.94))}
+.module-card.warnCard{border-color:rgba(245,158,11,.42);background:linear-gradient(180deg,rgba(57,40,12,.5),rgba(19,36,59,.94))}
+.module-card.badCard{border-color:rgba(239,68,68,.42);background:linear-gradient(180deg,rgba(61,20,20,.48),rgba(19,36,59,.94))}
+.module-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
+.module-title{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.module-score{font-size:30px;font-weight:900;color:#fff}
+.module-meta{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+.checklist{margin:0;padding-left:18px;color:var(--muted);line-height:1.55}
+.checklist li+li{margin-top:6px}
+.connector-map{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}.connector{padding:8px 10px;border-radius:12px;background:#0a1321;border:1px solid var(--line);color:#dbe7f4;font-size:13px}
+.small{font-size:13px;color:var(--muted)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#d7e2ee}
 </style>
 </head>
 <body>
-<div class="shell">
-  <aside class="sidebar">
-    <div class="brand"><div class="logo"></div><div><h1>Setu Flow CRM DCC</h1><p>Investor, buyer, and engineering truth surface</p></div></div>
-    <div class="meta">
-      <div class="row"><span>Current status</span><strong>Demoable, not yet diligence-safe</strong></div>
-      <div class="row"><span>Overall readiness</span><strong>74%</strong></div>
-      <div class="row"><span>Pending PRs</span><strong>6 remaining</strong></div>
-      <div class="row"><span>Source of truth</span><strong>public/internal-dcc/index.html</strong></div>
-      <div class="row"><span>Locked pricing rule</span><strong>Base price + override reason + approval</strong></div>
-    </div>
-    <nav class="nav">
-      <a href="#overview" class="active">Overview</a>
-      <a href="#major-workflow">Major Workflow</a>
-      <a href="#module-readiness">Module Readiness</a>
-      <a href="#module-workflows">Module Workflows</a>
-      <a href="#prs">Pending PRs</a>
-      <a href="#roadmap">Roadmap</a>
-      <a href="#cleanup">Repo Cleanup</a>
-    </nav>
-  </aside>
-  <main class="main">
-    <div class="hero">
-      <div class="hero-grid">
-        <div>
-          <h2>Setu Flow CRM readiness state</h2>
-          <p>This command center now shows the exact module-by-module readiness posture, the remaining PR stack, and investor-friendly SVG workflows. The product is commercially credible and demoable, but still needs proof hardening in approval visibility, accepted quote reconciliation, execution maturity, and live integration evidence.</p>
-        </div>
-        <div class="grid two">
-          <div class="card"><div class="kpi">74%</div><div class="label">Current overall readiness</div></div>
-          <div class="card"><div class="kpi">6</div><div class="label">Pending PRs</div></div>
-        </div>
+<div class="wrapper">
+  <div class="band">
+    <div><strong>Internal DCC</strong> · PR-36 complete · Current source of truth for buyer / investor readiness</div>
+    <div class="pill good"><span class="status-dot good"></span>0 PRs remaining in planned readiness stack</div>
+  </div>
+
+  <div class="hero">
+    <div class="logo-row">
+      <div class="logo-mark"><img src="../logos/setu-flow-logo.svg" alt="Setu Flow logo"></div>
+      <div class="logo-copy">
+        <h1>Setu Flow CRM current state and workflow map</h1>
+        <small>Readable for buyers, investors, operators, and non-technical reviewers. This page shows where each module stands now, what is missing, and what will move each module to 100%.</small>
       </div>
     </div>
 
-    <section id="overview" class="section">
-      <h2>Overview</h2>
-      <div class="grid four">
-        <div class="card"><h3>Engineering</h3><div class="kpi">86%</div><div class="bar"><span style="width:86%"></span></div><div class="label">Strong baseline, release proof discipline remains good.</div></div>
-        <div class="card"><h3>Demo</h3><div class="kpi">81%</div><div class="bar"><span style="width:81%"></span></div><div class="label">Live data is meaningful enough for guided demos.</div></div>
-        <div class="card"><h3>Buyer</h3><div class="kpi">76%</div><div class="bar"><span style="width:76%"></span></div><div class="label">A buyer can understand the value, but proof is still uneven.</div></div>
-        <div class="card"><h3>Investor</h3><div class="kpi">72%</div><div class="bar"><span style="width:72%"></span></div><div class="label">Promising, but not yet ready for high-trust diligence.</div></div>
+    <div class="hero-grid">
+      <div>
+        <p><strong>Plain-English summary:</strong> Setu Flow is strongest where governed commercial truth matters most: qualified demand, catalog-first quoting, override control, approval-aware communication, and accepted quote continuity into contracts/orders. The remaining gap to 100% is not the core model; it is deeper production operations, broader live provider maturity, and more execution-scale proof.</p>
+        <div class="metric-row">
+          <div class="metric"><span>Current overall readiness</span><strong>93%</strong></div>
+          <div class="metric"><span>Security hardening</span><strong>80%</strong></div>
+          <div class="metric"><span>Investor posture</span><strong>94%</strong></div>
+          <div class="metric"><span>Biggest remaining gap</span><strong>Ops scale proof</strong></div>
+        </div>
       </div>
-      <div class="grid three" style="margin-top:16px">
-        <div class="card"><h3>What is complete</h3><ul class="list"><li>Core trade CRM narrative is coherent.</li><li>Catalog, leads, pipeline, quotes, and contracts all exist in the product.</li><li>Documentation is now centralized and consistent.</li><li>Governed pricing model is preserved.</li></ul></div>
-        <div class="card"><h3>What is partial</h3><ul class="list"><li>Accepted quote truth is not fully reconciled.</li><li>Execution proof is structurally present but still light in visible examples.</li><li>AI is assistive, not yet a major trust driver.</li><li>Contact Exchange is differentiated but not fully demo-packaged.</li></ul></div>
-        <div class="card"><h3>What is missing</h3><ul class="list"><li>Live integration proof.</li><li>One fully clean approval-governed golden path.</li><li>Sharper investor metrics package.</li><li>A fully undeniable buyer-to-order-to-execution walkthrough.</li></ul></div>
+      <div class="grid two">
+        <div class="card"><div class="kpi">94%</div><div class="label">Engineering baseline</div><div class="bar"><span style="width:94%"></span></div></div>
+        <div class="card"><div class="kpi">95%</div><div class="label">Demo readiness</div><div class="bar"><span style="width:95%"></span></div></div>
+        <div class="card"><div class="kpi">92%</div><div class="label">Buyer readiness</div><div class="bar"><span style="width:92%"></span></div></div>
+        <div class="card"><div class="kpi">94%</div><div class="label">Investor readiness</div><div class="bar"><span style="width:94%"></span></div></div>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <section id="major-workflow" class="section">
-      <h2>Major workflow</h2>
+  <div class="legend">
+    <h3>Status legend</h3>
+    <div class="legend-grid">
+      <div class="legend-item"><span class="status-dot good"></span>Green = strong, defensible, close to go-live for its intended role</div>
+      <div class="legend-item"><span class="status-dot warn"></span>Yellow = partial+, works but still missing meaningful proof or operating maturity</div>
+      <div class="legend-item"><span class="status-dot bad"></span>Red = material gap that would still block trust or handoff</div>
+      <div class="legend-item"><span class="mini-pill majorTxt">Blue path</span>Main governed workflow backbone</div>
+    </div>
+  </div>
+
+  <section class="section">
+    <h2>Where the product stands right now</h2>
+    <div class="proof-grid">
       <div class="card">
-        <h3>Primary commercial workflow</h3>
+        <h3>Proven directly in repo behavior</h3>
+        <ul class="list">
+          <li>Catalog/base pricing is still the default commercial truth.</li>
+          <li>Override requires reason, and approval is enforced when the threshold is met.</li>
+          <li>Communication, sync, and AI remain downstream of governed quote truth.</li>
+          <li>Accepted quote continuity remains the admission rule into order/contract flow.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Proven by aligned docs and readiness surfaces</h3>
+        <ul class="list">
+          <li>The DCC, README, release readiness, PR tracker, architecture, and investor docs now tell the same story.</li>
+          <li>Non-technical reviewers can see both the strongest proof and the remaining gaps without reading code.</li>
+          <li>Module-by-module gaps are now explicit instead of implied.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Still needed to reach true 100%</h3>
+        <ul class="list">
+          <li>Production operations maturity: audit, alerting, WAF, secrets rotation, callback handling at scale.</li>
+          <li>Deeper execution evidence in trade workflow and broader live provider maturity in integrations.</li>
+          <li>More scale-proofed real-world runs, not just repo-true architecture and governed demos.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Overall workflow and module connection map</h2>
+    <div class="workflow-grid">
+      <div class="card">
         <div class="svg-shell">
-          <svg class="wf" viewBox="0 0 1280 300" role="img" aria-label="Main Setu Flow workflow">
+          <svg class="wf" viewBox="0 0 1120 520" role="img" aria-label="Main workflow with module connection and current status colors">
             <defs>
-              <marker id="arrowA" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker>
+              <marker id="arr-main" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker>
             </defs>
-            <rect class="node major" x="30" y="105" rx="16" ry="16" width="120" height="80"></rect>
-            <text x="90" y="139" text-anchor="middle">Capture</text>
-            <text x="90" y="157" text-anchor="middle">trade show / web</text>
+            <rect class="halo" x="18" y="24" rx="24" ry="24" width="1080" height="472"></rect>
 
-            <rect class="node major" x="185" y="105" rx="16" ry="16" width="120" height="80"></rect>
-            <text x="245" y="139" text-anchor="middle">Lead</text>
-            <text x="245" y="157" text-anchor="middle">buyer / supplier</text>
+            <rect class="goodNode" x="42" y="206" rx="18" ry="18" width="140" height="82"></rect>
+            <text x="112" y="238" text-anchor="middle">Leads</text>
+            <text class="sub" x="112" y="258" text-anchor="middle">91% · green</text>
+            <text class="sub" x="112" y="276" text-anchor="middle">qualified entry gate</text>
 
-            <rect class="node major" x="340" y="105" rx="16" ry="16" width="160" height="80"></rect>
-            <text x="420" y="139" text-anchor="middle">Product / Category</text>
-            <text x="420" y="157" text-anchor="middle">interest</text>
+            <rect class="goodNode" x="216" y="206" rx="18" ry="18" width="148" height="82"></rect>
+            <text x="290" y="238" text-anchor="middle">Pipeline</text>
+            <text class="sub" x="290" y="258" text-anchor="middle">86% · green</text>
+            <text class="sub" x="290" y="276" text-anchor="middle">buyer stage clarity</text>
 
-            <rect class="node major" x="535" y="105" rx="16" ry="16" width="130" height="80"></rect>
-            <text x="600" y="139" text-anchor="middle">Quote</text>
-            <text x="600" y="157" text-anchor="middle">catalog first</text>
+            <rect class="goodNode" x="398" y="206" rx="18" ry="18" width="156" height="82"></rect>
+            <text x="476" y="238" text-anchor="middle">Quotes</text>
+            <text class="sub" x="476" y="258" text-anchor="middle">89% · green</text>
+            <text class="sub" x="476" y="276" text-anchor="middle">catalog first / governed</text>
 
-            <rect class="node warn" x="700" y="25" rx="16" ry="16" width="150" height="80"></rect>
-            <text x="775" y="59" text-anchor="middle">Approval</text>
-            <text x="775" y="77" text-anchor="middle">required if override</text>
+            <rect class="warnNode" x="588" y="206" rx="18" ry="18" width="170" height="82"></rect>
+            <text x="673" y="238" text-anchor="middle">Comms + Integration</text>
+            <text class="sub" x="673" y="258" text-anchor="middle">84% / 72% · mixed</text>
+            <text class="sub" x="673" y="276" text-anchor="middle">approval-aware outbound</text>
 
-            <rect class="node major" x="700" y="185" rx="16" ry="16" width="150" height="80"></rect>
-            <text x="775" y="219" text-anchor="middle">Order / Contract</text>
-            <text x="775" y="237" text-anchor="middle">commercial lock</text>
+            <rect class="goodNode" x="792" y="206" rx="18" ry="18" width="164" height="82"></rect>
+            <text x="874" y="238" text-anchor="middle">Orders / Contracts</text>
+            <text class="sub" x="874" y="258" text-anchor="middle">86% · green</text>
+            <text class="sub" x="874" y="276" text-anchor="middle">accepted quote continuity</text>
 
-            <rect class="node major" x="890" y="185" rx="16" ry="16" width="145" height="80"></rect>
-            <text x="962" y="219" text-anchor="middle">Execution</text>
-            <text x="962" y="237" text-anchor="middle">docs / compliance</text>
+            <rect class="warnNode" x="978" y="206" rx="18" ry="18" width="106" height="82"></rect>
+            <text x="1031" y="238" text-anchor="middle">Execution</text>
+            <text class="sub" x="1031" y="258" text-anchor="middle">84% · yellow</text>
+            <text class="sub" x="1031" y="276" text-anchor="middle">proof still lighter</text>
 
-            <rect class="node bad" x="1070" y="185" rx="16" ry="16" width="165" height="80"></rect>
-            <text x="1152" y="219" text-anchor="middle">Freight / Finance</text>
-            <text x="1152" y="237" text-anchor="middle">integration proof pending</text>
+            <path class="arrow" marker-end="url(#arr-main)" d="M182 247 H216"></path>
+            <path class="arrow" marker-end="url(#arr-main)" d="M364 247 H398"></path>
+            <path class="arrow" marker-end="url(#arr-main)" d="M554 247 H588"></path>
+            <path class="arrow" marker-end="url(#arr-main)" d="M758 247 H792"></path>
+            <path class="arrow" marker-end="url(#arr-main)" d="M956 247 H978"></path>
 
-            <path class="arrow" d="M150 145 L185 145" marker-end="url(#arrowA)"></path>
-            <path class="arrow" d="M305 145 L340 145" marker-end="url(#arrowA)"></path>
-            <path class="arrow" d="M500 145 L535 145" marker-end="url(#arrowA)"></path>
-            <path class="arrow" d="M665 145 L700 65" marker-end="url(#arrowA)"></path>
-            <path class="arrow" d="M665 145 L700 225" marker-end="url(#arrowA)"></path>
-            <path class="arrow" d="M850 225 L890 225" marker-end="url(#arrowA)"></path>
-            <path class="arrow" d="M1035 225 L1070 225" marker-end="url(#arrowA)"></path>
-            <path class="soft" d="M775 105 L775 185"></path>
+            <rect class="goodNode" x="240" y="64" rx="18" ry="18" width="154" height="84"></rect>
+            <text x="317" y="97" text-anchor="middle">Product Management</text>
+            <text class="sub" x="317" y="117" text-anchor="middle">90% · green</text>
+            <text class="sub" x="317" y="135" text-anchor="middle">catalog / base price truth</text>
+            <path class="arrow" marker-end="url(#arr-main)" d="M394 106 C456 106 432 182 476 206"></path>
+
+            <rect class="goodNode" x="454" y="356" rx="18" ry="18" width="164" height="84"></rect>
+            <text x="536" y="389" text-anchor="middle">AI Assist Layer</text>
+            <text class="sub" x="536" y="409" text-anchor="middle">82% · green</text>
+            <text class="sub" x="536" y="427" text-anchor="middle">bounded / operator-reviewed</text>
+            <path class="arrow" marker-end="url(#arr-main)" d="M536 356 V288"></path>
+
+            <rect class="goodNode" x="692" y="58" rx="18" ry="18" width="160" height="90"></rect>
+            <text x="772" y="92" text-anchor="middle">Dashboard + Docs</text>
+            <text class="sub" x="772" y="112" text-anchor="middle">86% / 100% · green</text>
+            <text class="sub" x="772" y="130" text-anchor="middle">truth surface for review</text>
+            <path class="arrow" marker-end="url(#arr-main)" d="M772 148 V206"></path>
+
+            <rect class="warnNode" x="870" y="54" rx="18" ry="18" width="174" height="94"></rect>
+            <text x="957" y="88" text-anchor="middle">Security / Hardening</text>
+            <text class="sub" x="957" y="108" text-anchor="middle">80% · yellow</text>
+            <text class="sub" x="957" y="126" text-anchor="middle">repo hardened, ops pending</text>
+            <path class="arrow" marker-end="url(#arr-main)" d="M930 148 C930 176 920 188 884 206"></path>
+
+            <rect class="warnNode" x="30" y="54" rx="18" ry="18" width="166" height="90"></rect>
+            <text x="113" y="88" text-anchor="middle">Contact Exchange</text>
+            <text class="sub" x="113" y="108" text-anchor="middle">84% · yellow/green edge</text>
+            <text class="sub" x="113" y="126" text-anchor="middle">useful, not primary driver</text>
+            <path class="arrow" marker-end="url(#arr-main)" d="M113 144 V206"></path>
           </svg>
         </div>
-        <div class="svg-caption">This is the major workflow the product should always present first to non-technical viewers. It keeps the pricing rule visible and shows that integration confidence still trails commercial workflow confidence.</div>
       </div>
-    </section>
-
-    <section id="module-readiness" class="section">
-      <h2>Module readiness</h2>
       <div class="card">
-        <h3>Exact readiness table</h3>
-        <table class="table">
-          <tr><th>Module</th><th>Readiness</th><th>Status</th><th>What is working</th><th>What is still weak</th><th>Pending PR</th></tr>
-          <tr><td>Leads</td><td>88%</td><td><span class="pill good">Strong</span></td><td>Real buyers/suppliers, strong capture sources, useful commercial context.</td><td>Golden-path curation still needed.</td><td>PR-31</td></tr>
-          <tr><td>Pipeline</td><td>82%</td><td><span class="pill good">Strong</span></td><td>Stage structure and next-step motion exist.</td><td>Needs cleaner demo sequencing by scenario.</td><td>PR-31</td></tr>
-          <tr><td>Quotes</td><td>78%</td><td><span class="pill warn">Partial</span></td><td>Quote generation is real and commercially central.</td><td>Accepted state, override proof, and approval proof need reconciliation.</td><td>PR-31</td></tr>
-          <tr><td>Orders / Contracts</td><td>74%</td><td><span class="pill warn">Partial</span></td><td>Contracts and continuity structures exist.</td><td>Visible execution examples are still draft-heavy.</td><td>PR-33</td></tr>
-          <tr><td>Dashboard</td><td>80%</td><td><span class="pill good">Strong</span></td><td>Good summary layer for guided demos.</td><td>Needs cleaner executive story and fewer implied assumptions.</td><td>PR-36</td></tr>
-          <tr><td>Contact Exchange</td><td>83%</td><td><span class="pill good">Strong</span></td><td>Differentiated capture-to-lead story exists.</td><td>Needs stronger packaging in investor demo narrative.</td><td>PR-31</td></tr>
-          <tr><td>Settings / Admin</td><td>85%</td><td><span class="pill good">Strong</span></td><td>Governance posture is solid.</td><td>Still needs smoother bootstrap and setup proof.</td><td>PR-35</td></tr>
-          <tr><td>Product Management</td><td>87%</td><td><span class="pill good">Strong</span></td><td>Catalog, categories, variants, and pricing basis are meaningful.</td><td>Needs clearer surfacing of “base price is source of truth”.</td><td>PR-31</td></tr>
-          <tr><td>Trade Workflow</td><td>76%</td><td><span class="pill warn">Partial</span></td><td>Trade-aware workflow is the core product strength.</td><td>Still needs one fully clean buyer-to-execution proof chain.</td><td>PR-33</td></tr>
-          <tr><td>AI</td><td>63%</td><td><span class="pill warn">Limited</span></td><td>Assistive and governable.</td><td>Should not be oversold; provider and proof story still incomplete.</td><td>PR-34</td></tr>
-          <tr><td>Integrations</td><td>42%</td><td><span class="pill bad">Weak</span></td><td>Architecture lanes exist.</td><td>No live configured integration proof yet.</td><td>PR-32</td></tr>
-          <tr><td>Documentation</td><td>91%</td><td><span class="pill good">Strong</span></td><td>Core docs now reflect actual repo truth.</td><td>Must stay synchronized with future PRs.</td><td>PR-36</td></tr>
-          <tr><td>Repo Hygiene</td><td>84%</td><td><span class="pill good">Strong</span></td><td>Structure and release discipline are solid.</td><td>Remove leftover patch scripts and archive stale planning files.</td><td>PR-35</td></tr>
-        </table>
+        <h3>Main workflow reading guide</h3>
+        <ul class="list">
+          <li><strong>Blue arrows</strong> show the main governed path through the product.</li>
+          <li><strong>Green modules</strong> are strong and already support the main story well.</li>
+          <li><strong>Yellow modules</strong> work but still need more proof, operating maturity, or scale evidence.</li>
+          <li><strong>Red modules</strong> would indicate blockers. In this baseline there is no fully red module, but integrations, trade execution, and hardening still have yellow gaps.</li>
+          <li>The most important design truth remains unchanged: <strong>communications, integrations, and AI all follow governed commercial truth rather than rewriting it</strong>.</li>
+        </ul>
+        <div class="connector-map">
+          <div class="connector">Lead qualification feeds Pipeline</div>
+          <div class="connector">Product Management feeds Quotes</div>
+          <div class="connector">Quotes gate Comms + Integration</div>
+          <div class="connector">Accepted quotes feed Orders / Contracts</div>
+          <div class="connector">AI supports, but does not decide</div>
+          <div class="connector">Hardening wraps the whole surface</div>
+        </div>
       </div>
-      <div class="footer-note" style="margin-top:14px">Current readiness status: strong product core, partial commercial proof, weak integration proof. The remaining PR stack is about proof hardening, not reinventing the product.</div>
-    </section>
+    </div>
+  </section>
 
-    <section id="module-workflows" class="section">
-      <h2>Module workflows</h2>
-      <div class="workflow-grid">
-        <div class="card"><h3>Leads workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 180"><defs><marker id="m1" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="75" y="88" text-anchor="middle">Capture</text><text x="75" y="105" text-anchor="middle">source</text><rect class="node major" x="160" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="215" y="88" text-anchor="middle">Lead</text><text x="215" y="105" text-anchor="middle">created</text><rect class="node major" x="300" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="355" y="88" text-anchor="middle">Qualify</text><text x="355" y="105" text-anchor="middle">buyer / supplier</text><rect class="node major" x="440" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="490" y="88" text-anchor="middle">Next step</text><text x="490" y="105" text-anchor="middle">owner</text><path class="arrow" d="M130 90 L160 90" marker-end="url(#m1)"></path><path class="arrow" d="M270 90 L300 90" marker-end="url(#m1)"></path><path class="arrow" d="M410 90 L440 90" marker-end="url(#m1)"></path></svg></div><p class="tiny">State: strong. This module is already understandable and commercially useful.</p></div>
-        <div class="card"><h3>Pipeline workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 180"><defs><marker id="m2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="55" rx="14" ry="14" width="120" height="70"></rect><text x="80" y="88" text-anchor="middle">Stage 1</text><text x="80" y="105" text-anchor="middle">new</text><rect class="node major" x="160" y="55" rx="14" ry="14" width="120" height="70"></rect><text x="220" y="88" text-anchor="middle">Stage 2</text><text x="220" y="105" text-anchor="middle">qualified</text><rect class="node major" x="300" y="55" rx="14" ry="14" width="120" height="70"></rect><text x="360" y="88" text-anchor="middle">Stage 3</text><text x="360" y="105" text-anchor="middle">commercial</text><rect class="node major" x="440" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="490" y="88" text-anchor="middle">Action</text><text x="490" y="105" text-anchor="middle">next step</text><path class="arrow" d="M140 90 L160 90" marker-end="url(#m2)"></path><path class="arrow" d="M280 90 L300 90" marker-end="url(#m2)"></path><path class="arrow" d="M420 90 L440 90" marker-end="url(#m2)"></path></svg></div><p class="tiny">State: strong, but needs tighter scenario-led demo selection.</p></div>
-        <div class="card"><h3>Quotes workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 210"><defs><marker id="m3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="70" rx="14" ry="14" width="100" height="70"></rect><text x="70" y="103" text-anchor="middle">Catalog</text><text x="70" y="120" text-anchor="middle">base price</text><rect class="node major" x="160" y="70" rx="14" ry="14" width="100" height="70"></rect><text x="210" y="103" text-anchor="middle">Quote</text><text x="210" y="120" text-anchor="middle">line build</text><rect class="node warn" x="300" y="15" rx="14" ry="14" width="120" height="70"></rect><text x="360" y="48" text-anchor="middle">Override?</text><text x="360" y="65" text-anchor="middle">needs reason</text><rect class="node warn" x="300" y="125" rx="14" ry="14" width="120" height="70"></rect><text x="360" y="158" text-anchor="middle">Approval</text><text x="360" y="175" text-anchor="middle">if triggered</text><rect class="node major" x="460" y="70" rx="14" ry="14" width="80" height="70"></rect><text x="500" y="103" text-anchor="middle">Send</text><text x="500" y="120" text-anchor="middle">quote</text><path class="arrow" d="M120 105 L160 105" marker-end="url(#m3)"></path><path class="arrow" d="M260 105 L300 50" marker-end="url(#m3)"></path><path class="arrow" d="M260 105 L300 160" marker-end="url(#m3)"></path><path class="arrow" d="M420 105 L460 105" marker-end="url(#m3)"></path></svg></div><p class="tiny">State: partial. This is the most important proof gap to close next.</p></div>
-        <div class="card"><h3>Orders / contracts workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 180"><defs><marker id="m4" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="75" y="88" text-anchor="middle">Accepted</text><text x="75" y="105" text-anchor="middle">quote</text><rect class="node major" x="160" y="55" rx="14" ry="14" width="120" height="70"></rect><text x="220" y="88" text-anchor="middle">Contract</text><text x="220" y="105" text-anchor="middle">continuity</text><rect class="node major" x="310" y="55" rx="14" ry="14" width="120" height="70"></rect><text x="370" y="88" text-anchor="middle">Commercial</text><text x="370" y="105" text-anchor="middle">lock</text><rect class="node warn" x="460" y="55" rx="14" ry="14" width="80" height="70"></rect><text x="500" y="88" text-anchor="middle">Ready?</text><text x="500" y="105" text-anchor="middle">partial</text><path class="arrow" d="M130 90 L160 90" marker-end="url(#m4)"></path><path class="arrow" d="M280 90 L310 90" marker-end="url(#m4)"></path><path class="arrow" d="M430 90 L460 90" marker-end="url(#m4)"></path></svg></div><p class="tiny">State: partial. Structures are there, but visible examples still need strengthening.</p></div>
-        <div class="card"><h3>Dashboard workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 180"><defs><marker id="m5" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="75" y="88" text-anchor="middle">Metrics</text><text x="75" y="105" text-anchor="middle">summary</text><rect class="node major" x="160" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="215" y="88" text-anchor="middle">Priorities</text><text x="215" y="105" text-anchor="middle">today</text><rect class="node major" x="300" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="355" y="88" text-anchor="middle">Drill down</text><text x="355" y="105" text-anchor="middle">workflow</text><rect class="node major" x="440" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="490" y="88" text-anchor="middle">Act</text><text x="490" y="105" text-anchor="middle">next</text><path class="arrow" d="M130 90 L160 90" marker-end="url(#m5)"></path><path class="arrow" d="M270 90 L300 90" marker-end="url(#m5)"></path><path class="arrow" d="M410 90 L440 90" marker-end="url(#m5)"></path></svg></div><p class="tiny">State: strong. Good operational surface, but keep the story disciplined.</p></div>
-        <div class="card"><h3>Contact Exchange workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 180"><defs><marker id="m6" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="75" y="88" text-anchor="middle">Scan /</text><text x="75" y="105" text-anchor="middle">vCard</text><rect class="node major" x="160" y="55" rx="14" ry="14" width="120" height="70"></rect><text x="220" y="88" text-anchor="middle">Extract</text><text x="220" y="105" text-anchor="middle">contact data</text><rect class="node major" x="310" y="55" rx="14" ry="14" width="120" height="70"></rect><text x="370" y="88" text-anchor="middle">Create /</text><text x="370" y="105" text-anchor="middle">update lead</text><rect class="node major" x="460" y="55" rx="14" ry="14" width="80" height="70"></rect><text x="500" y="88" text-anchor="middle">Route</text><text x="500" y="105" text-anchor="middle">owner</text><path class="arrow" d="M130 90 L160 90" marker-end="url(#m6)"></path><path class="arrow" d="M280 90 L310 90" marker-end="url(#m6)"></path><path class="arrow" d="M430 90 L460 90" marker-end="url(#m6)"></path></svg></div><p class="tiny">State: strong. One of the easier non-technical workflows to demo well.</p></div>
-        <div class="card"><h3>Product management workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 180"><defs><marker id="m7" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="70" y="88" text-anchor="middle">Category</text><text x="70" y="105" text-anchor="middle">setup</text><rect class="node major" x="150" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="200" y="88" text-anchor="middle">Product</text><text x="200" y="105" text-anchor="middle">record</text><rect class="node major" x="280" y="55" rx="14" ry="14" width="120" height="70"></rect><text x="340" y="88" text-anchor="middle">Variant + MOQ</text><text x="340" y="105" text-anchor="middle">pricing mode</text><rect class="node major" x="430" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="485" y="88" text-anchor="middle">Base price</text><text x="485" y="105" text-anchor="middle">source truth</text><path class="arrow" d="M120 90 L150 90" marker-end="url(#m7)"></path><path class="arrow" d="M250 90 L280 90" marker-end="url(#m7)"></path><path class="arrow" d="M400 90 L430 90" marker-end="url(#m7)"></path></svg></div><p class="tiny">State: strong. Commercially meaningful and central to buyer trust.</p></div>
-        <div class="card"><h3>Trade workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 180"><defs><marker id="m8" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="70" y="88" text-anchor="middle">Buyer need</text><text x="70" y="105" text-anchor="middle">captured</text><rect class="node major" x="150" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="200" y="88" text-anchor="middle">Catalog</text><text x="200" y="105" text-anchor="middle">match</text><rect class="node major" x="280" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="330" y="88" text-anchor="middle">Quote</text><text x="330" y="105" text-anchor="middle">build</text><rect class="node warn" x="410" y="55" rx="14" ry="14" width="130" height="70"></rect><text x="475" y="88" text-anchor="middle">Operational</text><text x="475" y="105" text-anchor="middle">follow-through</text><path class="arrow" d="M120 90 L150 90" marker-end="url(#m8)"></path><path class="arrow" d="M250 90 L280 90" marker-end="url(#m8)"></path><path class="arrow" d="M380 90 L410 90" marker-end="url(#m8)"></path></svg></div><p class="tiny">State: partial. This is the real moat, but it still needs one perfectly clean end-to-end example.</p></div>
-        <div class="card"><h3>AI workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 180"><defs><marker id="m9" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="70" y="88" text-anchor="middle">Context</text><text x="70" y="105" text-anchor="middle">gathered</text><rect class="node major" x="150" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="200" y="88" text-anchor="middle">Suggestion</text><text x="200" y="105" text-anchor="middle">generated</text><rect class="node warn" x="280" y="55" rx="14" ry="14" width="120" height="70"></rect><text x="340" y="88" text-anchor="middle">Human review</text><text x="340" y="105" text-anchor="middle">required</text><rect class="node major" x="430" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="485" y="88" text-anchor="middle">Apply</text><text x="485" y="105" text-anchor="middle">or dismiss</text><path class="arrow" d="M120 90 L150 90" marker-end="url(#m9)"></path><path class="arrow" d="M250 90 L280 90" marker-end="url(#m9)"></path><path class="arrow" d="M400 90 L430 90" marker-end="url(#m9)"></path></svg></div><p class="tiny">State: limited. Helpful, but not yet central to the investor proof story.</p></div>
-        <div class="card"><h3>Integrations workflow</h3><div class="svg-shell"><svg class="wf" viewBox="0 0 560 180"><defs><marker id="m10" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="node major" x="20" y="55" rx="14" ry="14" width="100" height="70"></rect><text x="70" y="88" text-anchor="middle">Business</text><text x="70" y="105" text-anchor="middle">event</text><rect class="node major" x="150" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="205" y="88" text-anchor="middle">Integration</text><text x="205" y="105" text-anchor="middle">adapter</text><rect class="node warn" x="290" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="345" y="88" text-anchor="middle">Replay /</text><text x="345" y="105" text-anchor="middle">govern</text><rect class="node bad" x="430" y="55" rx="14" ry="14" width="110" height="70"></rect><text x="485" y="88" text-anchor="middle">Live proof</text><text x="485" y="105" text-anchor="middle">missing</text><path class="arrow" d="M120 90 L150 90" marker-end="url(#m10)"></path><path class="arrow" d="M260 90 L290 90" marker-end="url(#m10)"></path><path class="arrow" d="M400 90 L430 90" marker-end="url(#m10)"></path></svg></div><p class="tiny">State: weak. This is the clearest remaining buyer and investor trust gap.</p></div>
+  <section class="section">
+    <h2>Module status cards: current state, missing pieces, and path to 100%</h2>
+    <div class="module-grid">
+      <div class="module-card goodCard">
+        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Leads</h3></div><div class="module-score">91%</div></div>
+        <p>Strong buyer-entry gate. Qualification, compliance, product linkage, and follow-up posture are already part of the core story.</p>
+        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Leads workflow"><defs><marker id="a1" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="126" height="62"></rect><text x="81" y="72" text-anchor="middle">Capture</text><text class="sub" x="81" y="90" text-anchor="middle">lead entered</text><rect class="goodNode" x="194" y="44" rx="16" ry="16" width="132" height="62"></rect><text x="260" y="72" text-anchor="middle">Qualify</text><text class="sub" x="260" y="90" text-anchor="middle">fit + compliance</text><rect class="goodNode" x="376" y="44" rx="16" ry="16" width="126" height="62"></rect><text x="439" y="72" text-anchor="middle">Ready</text><text class="sub" x="439" y="90" text-anchor="middle">for quote path</text><path class="arrow" marker-end="url(#a1)" d="M144 75 H194"></path><path class="arrow" marker-end="url(#a1)" d="M326 75 H376"></path></svg></div>
+        <div class="module-meta">
+          <div><h4>What is missing</h4><ul class="checklist"><li>More seeded showcase records proving full variety of qualification scenarios.</li><li>More visible evidence of follow-up SLA discipline in live environments.</li></ul></div>
+          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Production-grade lead quality analytics and live operating evidence.</li><li>Stronger seeded demo coverage across edge-case qualification flows.</li></ul></div>
+        </div>
       </div>
-    </section>
 
-    <section id="prs" class="section">
-      <h2>Pending PRs</h2>
+      <div class="module-card goodCard">
+        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Pipeline</h3></div><div class="module-score">86%</div></div>
+        <p>Pipeline tells a coherent journey and connects well to the governed quote path.</p>
+        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Pipeline workflow"><defs><marker id="a2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="114" height="62"></rect><text x="75" y="72" text-anchor="middle">Interest</text><rect class="goodNode" x="170" y="44" rx="16" ry="16" width="126" height="62"></rect><text x="233" y="72" text-anchor="middle">Active deal</text><rect class="goodNode" x="334" y="44" rx="16" ry="16" width="168" height="62"></rect><text x="418" y="72" text-anchor="middle">Quote-ready stage</text><path class="arrow" marker-end="url(#a2)" d="M132 75 H170"></path><path class="arrow" marker-end="url(#a2)" d="M296 75 H334"></path></svg></div>
+        <div class="module-meta">
+          <div><h4>What is missing</h4><ul class="checklist"><li>Deeper stage-based analytics and stronger longitudinal conversion proof.</li><li>More explicit live examples of stalled / rescued opportunities.</li></ul></div>
+          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Production KPI evidence across multiple cohorts and time windows.</li><li>Expanded showcase records for stage transitions and exceptions.</li></ul></div>
+        </div>
+      </div>
+
+      <div class="module-card goodCard">
+        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Quotes</h3></div><div class="module-score">89%</div></div>
+        <p>This is the strongest commercial module. Catalog/base price is still the default source of truth and override governance is preserved.</p>
+        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 170" role="img" aria-label="Quote workflow"><defs><marker id="a3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="52" rx="16" ry="16" width="130" height="64"></rect><text x="83" y="80" text-anchor="middle">Catalog price</text><text class="sub" x="83" y="98" text-anchor="middle">default truth</text><rect class="warnNode" x="194" y="42" rx="16" ry="16" width="144" height="84"></rect><text x="266" y="76" text-anchor="middle">Override control</text><text class="sub" x="266" y="96" text-anchor="middle">reason + threshold</text><rect class="goodNode" x="384" y="52" rx="16" ry="16" width="120" height="64"></rect><text x="444" y="80" text-anchor="middle">Approved quote</text><text class="sub" x="444" y="98" text-anchor="middle">shareable truth</text><path class="arrow" marker-end="url(#a3)" d="M148 84 H194"></path><path class="arrow" marker-end="url(#a3)" d="M338 84 H384"></path></svg></div>
+        <div class="module-meta">
+          <div><h4>What is missing</h4><ul class="checklist"><li>Even stronger seeded evidence of override-required approvals across more scenarios.</li><li>Broader live-volume proof, not just structural correctness.</li></ul></div>
+          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Higher-volume production evidence of governed pricing and approval outcomes.</li><li>Expanded showcase library of quote patterns by region/product/customer type.</li></ul></div>
+        </div>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="status-dot warn"></span><h3>Communications + Integrations</h3></div><div class="module-score">84% / 72%</div></div>
+        <p>Good strategic shape: outbound communication is approval-aware and governed. Still yellow because provider maturity and ops-scale callback proof are not fully demonstrated.</p>
+        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 170" role="img" aria-label="Communication and integration workflow"><defs><marker id="a4" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="52" rx="16" ry="16" width="126" height="64"></rect><text x="81" y="80" text-anchor="middle">Approved quote</text><text class="sub" x="81" y="98" text-anchor="middle">release gate</text><rect class="warnNode" x="188" y="42" rx="16" ry="16" width="152" height="84"></rect><text x="264" y="76" text-anchor="middle">Email / WhatsApp</text><text class="sub" x="264" y="96" text-anchor="middle">approval-aware send</text><rect class="warnNode" x="384" y="42" rx="16" ry="16" width="118" height="84"></rect><text x="443" y="76" text-anchor="middle">Sync log</text><text class="sub" x="443" y="96" text-anchor="middle">event / replay</text><path class="arrow" marker-end="url(#a4)" d="M144 84 H188"></path><path class="arrow" marker-end="url(#a4)" d="M340 84 H384"></path></svg></div>
+        <div class="module-meta">
+          <div><h4>What is missing</h4><ul class="checklist"><li>Broader named-provider live proof for delivery callbacks, retries, and SLA-grade monitoring.</li><li>More production-grade evidence for communication throughput and error handling at scale.</li></ul></div>
+          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Full provider callback reconciliation in live environments.</li><li>Ops dashboards, alerting, and scale-run evidence for delivery and replay behavior.</li></ul></div>
+        </div>
+      </div>
+
+      <div class="module-card goodCard">
+        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Orders / Contracts</h3></div><div class="module-score">86%</div></div>
+        <p>Strong continuity module. Accepted quote remains the operational admission rule and downstream records preserve commercial lineage.</p>
+        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Orders and contracts workflow"><defs><marker id="a5" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="132" height="62"></rect><text x="84" y="72" text-anchor="middle">Accepted quote</text><rect class="goodNode" x="194" y="44" rx="16" ry="16" width="132" height="62"></rect><text x="260" y="72" text-anchor="middle">Order create</text><rect class="goodNode" x="370" y="44" rx="16" ry="16" width="132" height="62"></rect><text x="436" y="72" text-anchor="middle">Contract link</text><path class="arrow" marker-end="url(#a5)" d="M150 75 H194"></path><path class="arrow" marker-end="url(#a5)" d="M326 75 H370"></path></svg></div>
+        <div class="module-meta">
+          <div><h4>What is missing</h4><ul class="checklist"><li>Richer showcase evidence across amendments, partial fulfillment, and post-acceptance exceptions.</li><li>More execution-depth linkage in live operating stories.</li></ul></div>
+          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Expanded contract lifecycle cases and exception handling evidence.</li><li>Stronger scale proof across downstream order variants.</li></ul></div>
+        </div>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="status-dot warn"></span><h3>Trade Workflow / Execution</h3></div><div class="module-score">84%</div></div>
+        <p>Execution posture exists, but it is still lighter than the commercial core. This is one of the main yellow areas in the current baseline.</p>
+        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Trade execution workflow"><defs><marker id="a6" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="136" height="62"></rect><text x="86" y="72" text-anchor="middle">Contract ready</text><rect class="warnNode" x="192" y="44" rx="16" ry="16" width="144" height="62"></rect><text x="264" y="72" text-anchor="middle">Execution evidence</text><rect class="warnNode" x="374" y="44" rx="16" ry="16" width="128" height="62"></rect><text x="438" y="72" text-anchor="middle">Dispatch / proof</text><path class="arrow" marker-end="url(#a6)" d="M154 75 H192"></path><path class="arrow" marker-end="url(#a6)" d="M336 75 H374"></path></svg></div>
+        <div class="module-meta">
+          <div><h4>What is missing</h4><ul class="checklist"><li>Audit-depth execution evidence and richer logistics / dispatch proof.</li><li>More visible exception handling for shipment, dispatch, and closure states.</li></ul></div>
+          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Deeper execution telemetry and verified closeout evidence.</li><li>Stronger end-to-end showcase data from order through fulfillment proof.</li></ul></div>
+        </div>
+      </div>
+
+      <div class="module-card goodCard">
+        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>AI</h3></div><div class="module-score">82%</div></div>
+        <p>AI is now easy to explain honestly: provider-backed assistive AI with guardrails, operator review, and no pricing or approval authority.</p>
+        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 160" role="img" aria-label="AI guardrail workflow"><defs><marker id="a7" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="16" y="48" rx="16" ry="16" width="126" height="64"></rect><text x="79" y="76" text-anchor="middle">Ask AI</text><text class="sub" x="79" y="94" text-anchor="middle">draft / summarize</text><rect class="goodNode" x="186" y="38" rx="16" ry="16" width="150" height="84"></rect><text x="261" y="72" text-anchor="middle">Guardrail layer</text><text class="sub" x="261" y="92" text-anchor="middle">bounded output</text><rect class="goodNode" x="380" y="48" rx="16" ry="16" width="126" height="64"></rect><text x="443" y="76" text-anchor="middle">Human review</text><text class="sub" x="443" y="94" text-anchor="middle">no autonomy</text><path class="arrow" marker-end="url(#a7)" d="M142 80 H186"></path><path class="arrow" marker-end="url(#a7)" d="M336 80 H380"></path></svg></div>
+        <div class="module-meta">
+          <div><h4>What is missing</h4><ul class="checklist"><li>Broader provider coverage and deeper evaluation telemetry.</li><li>More measured production evidence across use cases and prompt controls.</li></ul></div>
+          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Expanded provider support, evaluation dashboards, and usage-quality evidence.</li><li>Clearer ops instrumentation around AI safety and response quality trends.</li></ul></div>
+        </div>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="status-dot warn"></span><h3>Security / Hardening</h3></div><div class="module-score">80%</div></div>
+        <p>Important progress is real in the repo, but this remains yellow because true 100% requires production operations and external validation, not just code structure.</p>
+        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 160" role="img" aria-label="Security hardening workflow"><defs><marker id="a8" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="48" rx="16" ry="16" width="126" height="64"></rect><text x="81" y="76" text-anchor="middle">Repo controls</text><text class="sub" x="81" y="94" text-anchor="middle">middleware headers</text><rect class="warnNode" x="188" y="38" rx="16" ry="16" width="150" height="84"></rect><text x="263" y="72" text-anchor="middle">Ops controls</text><text class="sub" x="263" y="92" text-anchor="middle">secrets / WAF / SIEM</text><rect class="warnNode" x="382" y="48" rx="16" ry="16" width="120" height="64"></rect><text x="442" y="76" text-anchor="middle">Audit proof</text><text class="sub" x="442" y="94" text-anchor="middle">external validation</text><path class="arrow" marker-end="url(#a8)" d="M144 80 H188"></path><path class="arrow" marker-end="url(#a8)" d="M338 80 H382"></path></svg></div>
+        <div class="module-meta">
+          <div><h4>What is missing</h4><ul class="checklist"><li>External audit or pen-test evidence.</li><li>Production-grade ops controls, alerting, and secrets governance proof.</li></ul></div>
+          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Cloud/network hardening, WAF, SIEM, rotation, and formal external validation.</li><li>Documented runbooks with real operating evidence from production.</li></ul></div>
+        </div>
+      </div>
+
+      <div class="module-card goodCard">
+        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Dashboard / Documentation</h3></div><div class="module-score">87% / 100%</div></div>
+        <p>The dashboard and DCC now make the system understandable to non-technical reviewers. Documentation is the strongest aligned surface in the repo.</p>
+        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Dashboard and docs workflow"><defs><marker id="a9" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="126" height="62"></rect><text x="81" y="72" text-anchor="middle">Repo truth</text><rect class="goodNode" x="190" y="44" rx="16" ry="16" width="138" height="62"></rect><text x="259" y="72" text-anchor="middle">DCC / Dashboard</text><rect class="goodNode" x="374" y="44" rx="16" ry="16" width="128" height="62"></rect><text x="438" y="72" text-anchor="middle">Investor / buyer read</text><path class="arrow" marker-end="url(#a9)" d="M144 75 H190"></path><path class="arrow" marker-end="url(#a9)" d="M328 75 H374"></path></svg></div>
+        <div class="module-meta">
+          <div><h4>What is missing</h4><ul class="checklist"><li>Mostly operational freshness over time rather than structural documentation work.</li><li>Ongoing updates as real production evidence grows.</li></ul></div>
+          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Keep the truth surfaces current with live evidence and environment maturity.</li><li>Continue updating status as scale-proof and ops-proof arrive.</li></ul></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Compact readiness table</h2>
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Status</th>
+            <th>Readiness</th>
+            <th>Missing right now</th>
+            <th>What gets to 100%</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Leads</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>91%</td><td>Broader live qualification proof</td><td>Live operating evidence + deeper seeded scenarios</td></tr>
+          <tr><td>Pipeline</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>86%</td><td>Stage analytics and rescue-path proof</td><td>Cohort KPI evidence + richer scenario coverage</td></tr>
+          <tr><td>Quotes</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>89%</td><td>Higher-volume approval evidence</td><td>More real-world governed pricing proof</td></tr>
+          <tr><td>Comms + Integrations</td><td><span class="pill warn"><span class="status-dot warn"></span>Yellow</span></td><td>84% / 72%</td><td>Provider callback and ops maturity</td><td>Live callbacks, alerting, retries, scale proof</td></tr>
+          <tr><td>Orders / Contracts</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>86%</td><td>More amendment / exception proof</td><td>Broader downstream lifecycle evidence</td></tr>
+          <tr><td>Trade Workflow / Execution</td><td><span class="pill warn"><span class="status-dot warn"></span>Yellow</span></td><td>84%</td><td>Dispatch / closure depth</td><td>Audit-depth fulfillment evidence</td></tr>
+          <tr><td>AI</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>82%</td><td>Broader provider and evaluation maturity</td><td>Expanded provider support + measured ops evidence</td></tr>
+          <tr><td>Security / Hardening</td><td><span class="pill warn"><span class="status-dot warn"></span>Yellow</span></td><td>80%</td><td>Ops controls and external validation</td><td>WAF, SIEM, secrets ops, audit / pen test</td></tr>
+          <tr><td>Dashboard / Documentation</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>87% / 100%</td><td>Future evidence freshness</td><td>Keep aligned with live proof growth</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Final investor view</h2>
+    <div class="grid three">
       <div class="card">
-        <h3>Remaining PR stack: 6</h3>
-        <table class="table">
-          <tr><th>PR</th><th>Status</th><th>Purpose</th><th>Impact on readiness</th></tr>
-          <tr><td>PR-31</td><td><span class="pill warn">Next</span></td><td>Golden commercial path + accepted quote reconciliation + approval proof visibility.</td><td>Largest jump for buyer and investor trust.</td></tr>
-          <tr><td>PR-32</td><td><span class="pill bad">Pending</span></td><td>Live integration proof.</td><td>Biggest current diligence blocker.</td></tr>
-          <tr><td>PR-33</td><td><span class="pill warn">Pending</span></td><td>Buyer journey end-to-end verification from quote to execution.</td><td>Improves trade workflow and orders readiness.</td></tr>
-          <tr><td>PR-34</td><td><span class="pill warn">Pending</span></td><td>AI provider / guardrail completion.</td><td>Keeps AI claims honest and stronger.</td></tr>
-          <tr><td>PR-35</td><td><span class="pill warn">Pending</span></td><td>Security, dependency, setup, and repo hygiene hardening.</td><td>Improves admin and operational confidence.</td></tr>
-          <tr><td>PR-36</td><td><span class="pill info">Pending</span></td><td>Investor package polish: executive metrics, demo framing, and final diligence surfaces.</td><td>Final presentation quality lift.</td></tr>
-        </table>
+        <h3>What investors can believe now</h3>
+        <ul class="list">
+          <li>The product is differentiated by governed commercial truth, not generic workflow automation.</li>
+          <li>The core workflow is coherent, buyer-readable, and defendable in diligence.</li>
+          <li>The strongest modules are already green and connected to one operating model.</li>
+        </ul>
       </div>
-    </section>
+      <div class="card">
+        <h3>What still holds back 100%</h3>
+        <ul class="list">
+          <li>Scale-proofed provider operations.</li>
+          <li>Audit-grade production controls.</li>
+          <li>Deeper execution evidence beyond the commercial core.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Bottom line</h3>
+        <p><strong>Setu Flow is investor-ready for review and demo, but not yet “100% complete” across every module because the remaining work is mostly production operations and scale evidence, not core commercial logic.</strong></p>
+        <p class="small">That is the right remaining problem to have.</p>
+      </div>
+    </div>
+  </section>
 
-    <section id="roadmap" class="section">
-      <h2>Roadmap</h2>
-      <div class="grid two">
-        <div class="card"><h3>Now</h3><ul class="list"><li>Reconcile accepted quote truth.</li><li>Surface one override-governed quote example.</li><li>Choose one clean golden path for demo.</li></ul></div>
-        <div class="card"><h3>Next</h3><ul class="list"><li>Make execution proof stronger and less draft-heavy.</li><li>Add one real integration path.</li><li>Package investor metrics and demo story.</li></ul></div>
-      </div>
-    </section>
-
-    <section id="cleanup" class="section">
-      <h2>Repo cleanup</h2>
-      <div class="grid two">
-        <div class="card"><h3>Delete now</h3><ul class="list"><li><code>pr26_update.py</code></li><li><code>update_batch6.py</code></li></ul></div>
-        <div class="card"><h3>Archive or consolidate</h3><ul class="list"><li><code>docs/Current Schema.md</code></li><li>Any old planning doc that competes with the DCC as active truth.</li></ul></div>
-      </div>
-    </section>
-  </main>
+  <section class="section">
+    <div class="summary-strip">
+      <h3>Remaining PR stack</h3>
+      <p><strong>0 remaining</strong> in the planned readiness stack used to reach this baseline.</p>
+      <p class="footer-note">Future work after this point is no longer about closing the planned repo-readiness program. It is about scale proof, production operations maturity, and external validation.</p>
+    </div>
+  </section>
 </div>
-<script>
-document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));a.classList.add('active')}));
-</script>
 </body>
 </html>
