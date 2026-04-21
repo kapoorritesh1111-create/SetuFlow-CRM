@@ -9,7 +9,6 @@ import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/works
 import { APPROVAL_STATES, type ApprovalState } from '@/lib/approvalRouting';
 import { QUOTE_STATUSES, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
 import { normalizeCurrencyCode, validateOrganizationProductIds } from '@/lib/catalog-pricing-model';
-import { getLeadProgressionGuard } from '@/lib/document-requirements';
 import { parseLeadWorkflow } from '@/lib/lead-workflow';
 import { buildLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
 import { writeAuditLog } from '@/lib/auditLog';
@@ -114,6 +113,88 @@ async function insertNegotiationEvent(
     message: payload.message ?? null,
     payload: payload.payload ?? {},
   });
+}
+
+function normalizePercent(value: number | null) {
+  if (value == null || Number.isNaN(value)) return null;
+  return Math.round(value * 10) / 10;
+}
+
+function buildQuoteSendDecisionSnapshot(input: {
+  quoteId: string;
+  quoteVersionId: string | null;
+  quoteVersionNo: number | null;
+  lineItems: ParsedLineItem[];
+  approvalRequired: boolean;
+  approvalState: ApprovalState;
+  thresholdPercent: number | null;
+}) {
+  const overrideReasons = Array.from(new Set(input.lineItems.map((item) => String(item.override_reason ?? '').trim()).filter(Boolean)));
+  const overrideDeltas = input.lineItems
+    .filter((item) => Boolean(item.is_price_overridden) && typeof item.unit_price === 'number' && typeof item.catalog_price_amount === 'number' && Number(item.catalog_price_amount) > 0)
+    .map((item) => Math.abs(((Number(item.unit_price) - Number(item.catalog_price_amount)) / Number(item.catalog_price_amount)) * 100));
+  const actualOverrideDeltaPercent = overrideDeltas.length ? normalizePercent(Math.max(...overrideDeltas)) : null;
+  const deltaToThresholdPercent = input.thresholdPercent != null && actualOverrideDeltaPercent != null
+    ? normalizePercent(actualOverrideDeltaPercent - Number(input.thresholdPercent))
+    : null;
+
+  const blockers: Array<{ code: string; detail: string }> = [];
+  if (!input.quoteVersionId) blockers.push({ code: 'QUOTE_VERSION_MISSING', detail: 'The quote did not expose a current version id at send time.' });
+  if (!input.lineItems.length) blockers.push({ code: 'QUOTE_LINES_EMPTY', detail: 'No commercial line items were present at send time.' });
+  if (input.approvalRequired && input.approvalState !== 'approved') {
+    blockers.push({
+      code: input.approvalState === 'rejected' ? 'APPROVAL_REJECTED' : 'APPROVAL_PENDING',
+      detail: input.approvalState === 'rejected'
+        ? 'Approval was rejected at send time.'
+        : 'Approval was still required at send time.',
+    });
+  }
+
+  const threshold = input.thresholdPercent != null
+    ? {
+        configured_percent: normalizePercent(Number(input.thresholdPercent)),
+        actual_margin_percent: null,
+        actual_override_delta_percent: actualOverrideDeltaPercent,
+        governed_metric_label: actualOverrideDeltaPercent != null ? 'Governed approval metric (override delta)' : 'Governed approval metric',
+        governed_metric_source: actualOverrideDeltaPercent != null ? 'override_delta' : 'unavailable',
+        governed_metric_percent: actualOverrideDeltaPercent,
+        margin_exposed: false,
+        delta_to_threshold_percent: deltaToThresholdPercent,
+        narrative: actualOverrideDeltaPercent != null
+          ? `Required threshold ${normalizePercent(Number(input.thresholdPercent))}% with governed approval metric ${actualOverrideDeltaPercent}% from override delta. True commercial margin is not exposed in this repo surface.`
+          : `Required threshold ${normalizePercent(Number(input.thresholdPercent))}% is configured. True commercial margin and current override delta are not exposed in this send surface.`,
+      }
+    : {
+        configured_percent: null,
+        actual_margin_percent: null,
+        actual_override_delta_percent: actualOverrideDeltaPercent,
+        governed_metric_label: actualOverrideDeltaPercent != null ? 'Governed approval metric (override delta)' : 'Governed approval metric',
+        governed_metric_source: actualOverrideDeltaPercent != null ? 'override_delta' : 'unavailable',
+        governed_metric_percent: actualOverrideDeltaPercent,
+        margin_exposed: false,
+        delta_to_threshold_percent: null,
+        narrative: actualOverrideDeltaPercent != null ? `Threshold enforced, value not configured. Governed approval metric currently visible: override delta ${actualOverrideDeltaPercent}%. True commercial margin is not exposed in this repo surface.` : 'Threshold enforced, value not configured. True commercial margin is not exposed in this repo surface.',
+      };
+
+  const safeToSend = blockers.length === 0;
+  return {
+    version_id: input.quoteVersionId,
+    version_label: input.quoteVersionNo ? `v${input.quoteVersionNo}` : 'unsynced version',
+    approval_status: input.approvalRequired ? input.approvalState : 'not_required',
+    margin_threshold_evaluation: threshold,
+    blockers,
+    override: {
+      active: input.lineItems.some((item) => Boolean(item.is_price_overridden)),
+      reasons: overrideReasons,
+    },
+    safe_to_send: safeToSend,
+    ai_recommendation: safeToSend
+      ? 'Send is advisable because the current version, approval posture, and explicit blockers all resolve cleanly.'
+      : `Do not send yet because ${blockers[0]?.detail ?? 'a governed blocker is still active.'}`,
+    commercial_risk_factor: actualOverrideDeltaPercent != null
+      ? `Governed approval metric is override delta at ${actualOverrideDeltaPercent}%. True commercial margin is not exposed in this repo surface.`
+      : 'True commercial margin is not exposed in this repo surface, so approval risk is being explained from the governed override posture instead.',
+  };
 }
 
 async function ensureLeadCommercialReadiness(db: any, organizationId: string, leadId: string) {
@@ -705,24 +786,36 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
   }
 
   if (status === 'sent') {
-    const { data: leadRecord, error: leadError } = await db
-      .from('leads')
-      .select('id, lead_type')
+    const { data: versionRecord, error: versionError } = existing.current_version_id
+      ? await db
+          .from('quote_versions')
+          .select('id, quote_id, version_no, status, approved_at, sent_at')
+          .eq('id', existing.current_version_id)
+          .maybeSingle()
+      : { data: null, error: null };
+    if (versionError) return { error: versionError.message };
+
+    const { data: pricingEngineSettings, error: pricingEngineSettingsError } = await db
+      .from('pricing_engine_settings')
+      .select('approval_threshold_percent')
       .eq('organization_id', organization.id)
-      .eq('id', existing.lead_id)
       .maybeSingle();
+    if (pricingEngineSettingsError) return { error: pricingEngineSettingsError.message };
 
-    if (leadError) return { error: leadError.message };
-    if (!leadRecord) return { error: 'Lead not found for quote progression checks.' };
-
-    const guard = await getLeadProgressionGuard(db, {
-      organizationId: organization.id,
-      leadId: existing.lead_id,
-      leadType: String(leadRecord.lead_type ?? ''),
-      scope: 'quote_send',
+    const sendSnapshot = buildQuoteSendDecisionSnapshot({
+      quoteId,
+      quoteVersionId: existing.current_version_id ?? null,
+      quoteVersionNo: typeof versionRecord?.version_no === 'number' ? versionRecord.version_no : null,
+      lineItems,
+      approvalRequired,
+      approvalState,
+      thresholdPercent:
+        typeof pricingEngineSettings?.approval_threshold_percent === 'number'
+          ? pricingEngineSettings.approval_threshold_percent
+          : null,
     });
 
-    if (guard.blockerCount > 0) {
+    if (!sendSnapshot.safe_to_send) {
       await writeQuoteAuditLog({
         organizationId: organization.id,
         actorUserId: currentUser.id,
@@ -731,10 +824,35 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
         leadId: existing.lead_id,
         previous: { status: existing.status ?? null },
         next: { status: 'sent' },
-        metadata: { reason: guard.blockerReasons.join('; '), blocker_count: guard.blockerCount, source: 'updateQuoteWorkflow' },
+        metadata: {
+          source: 'updateQuoteWorkflow',
+          send_readiness_object: sendSnapshot,
+          blocker_count: sendSnapshot.blockers.length,
+          reason: sendSnapshot.blockers.map((item) => item.detail).join('; '),
+        },
       });
-      return { error: `Quote cannot be sent yet: ${guard.blockerReasons.join('; ')}` };
+      return { error: `Quote cannot be sent yet: ${sendSnapshot.blockers.map((item) => item.detail).join('; ')}` };
     }
+
+    const { error: snapshotCommunicationError } = await insertCommunication(db, {
+      organization_id: organization.id,
+      lead_id: existing.lead_id,
+      related_entity: 'quote',
+      related_id: quoteId,
+      communication_type: 'system_note',
+      direction: 'internal',
+      channel: 'system',
+      subject: 'Quote send decision snapshot recorded',
+      body: `Send decision captured for ${sendSnapshot.version_label}. ${sendSnapshot.ai_recommendation}`,
+      summary: 'Quote send decision snapshot recorded',
+      created_by: currentUser.id,
+      metadata: {
+        source: 'quote_send_decision_snapshot',
+        quote_id: quoteId,
+        send_readiness_object: sendSnapshot,
+      },
+    });
+    if (snapshotCommunicationError?.message) return { error: snapshotCommunicationError.message };
 
     if (existing.current_version_id) {
       const { error: sendFanoutError } = await db.rpc('app_send_quote_version_with_fanout_tx', {
@@ -747,6 +865,20 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
         p_action_source: 'updateQuoteWorkflow',
       });
       if (sendFanoutError) return { error: sendFanoutError.message };
+
+      await writeQuoteAuditLog({
+        organizationId: organization.id,
+        actorUserId: currentUser.id,
+        action: 'quote_sent',
+        quoteId,
+        leadId: existing.lead_id,
+        previous: { status: existing.status ?? null },
+        next: { status: 'sent', quote_version_id: existing.current_version_id },
+        metadata: {
+          source: 'updateQuoteWorkflow',
+          send_readiness_object: sendSnapshot,
+        },
+      });
 
       const fetched = await fetchQuoteRecord(db, organization.id, quoteId);
       if (fetched.error) return { error: fetched.error };

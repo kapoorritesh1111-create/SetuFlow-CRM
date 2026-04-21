@@ -110,8 +110,57 @@ type QuoteCommunication = {
   summary: string | null;
   status: string;
   created_at: string;
+  sent_at?: string | null;
   draft_source: string;
   metadata?: unknown;
+};
+
+type QuoteSendSnapshotRecord = {
+  communicationId: string;
+  recordedAt: string;
+  sentAt: string | null;
+  versionId: string | null;
+  versionLabel: string;
+  safeToSend: boolean;
+  approvalStatus: string;
+  blockers: QuoteSendBlocker[];
+  threshold: QuoteThresholdEvaluation;
+  aiRecommendation: string;
+  legacy: boolean;
+};
+
+type QuoteSendBlocker = {
+  code: string;
+  scope: "quote_version" | "quote" | "permission";
+  label: string;
+  detail: string;
+};
+
+type QuoteThresholdEvaluation = {
+  configuredPercent: number | null;
+  actualMarginPercent: number | null;
+  actualOverrideDeltaPercent: number | null;
+  governedMetricLabel: string;
+  governedMetricSource: "margin" | "override_delta" | "unavailable";
+  governedMetricPercent: number | null;
+  deltaToThresholdPercent: number | null;
+  marginExposed: boolean;
+  narrative: string;
+};
+
+type QuoteSendReadinessRecord = {
+  versionId: string | null;
+  versionLabel: string;
+  approvalStatus: string;
+  blockers: QuoteSendBlocker[];
+  override: {
+    active: boolean;
+    reasons: string[];
+  };
+  threshold: QuoteThresholdEvaluation;
+  safeToSend: boolean;
+  evaluationState: "empty" | "evaluating" | "blocked" | "approval_required" | "approved" | "sent" | "revised";
+  snapshotRecordedAt: string | null;
 };
 type QuoteVersionRecord = {
   id: string;
@@ -121,7 +170,7 @@ type QuoteVersionRecord = {
   created_at: string | null;
   approved_at: string | null;
   sent_at: string | null;
-  pdf_document_id: string | null;
+  pdf_document_id?: string | null;
 };
 type QuoteSavedViewId =
   | "all"
@@ -179,6 +228,33 @@ type QuoteQuickAction = {
     approvalState?: string;
     plainNotes?: string;
   };
+};
+
+type SendDecisionState =
+  | "empty"
+  | "loading"
+  | "blocked"
+  | "approval_required"
+  | "approved"
+  | "sent"
+  | "revised";
+
+type QuoteSendDecision = {
+  state: SendDecisionState;
+  label: string;
+  headline: string;
+  summary: string;
+  blockers: string[];
+  blockerDetails: QuoteSendBlocker[];
+  nextStep: string;
+  thresholdLabel: string;
+  overrideSummary: string;
+  afterSend: string[];
+  aiVerdict: string;
+  aiReasons: string[];
+  readiness: QuoteSendReadinessRecord;
+  panelClasses: string;
+  badgeClasses: string;
 };
 
 function getProductCatalogFallback(
@@ -657,9 +733,390 @@ function getNegotiationComposerCopy(mode: NegotiationComposerMode) {
   }
 }
 
+function getSendDecisionClasses(state: SendDecisionState) {
+  switch (state) {
+    case "approved":
+      return {
+        panelClasses: "border-emerald-200 bg-emerald-50",
+        badgeClasses: "bg-emerald-600 text-white",
+      };
+    case "sent":
+      return {
+        panelClasses: "border-sky-200 bg-sky-50",
+        badgeClasses: "bg-sky-600 text-white",
+      };
+    case "revised":
+      return {
+        panelClasses: "border-violet-200 bg-violet-50",
+        badgeClasses: "bg-violet-600 text-white",
+      };
+    case "approval_required":
+      return {
+        panelClasses: "border-amber-200 bg-amber-50",
+        badgeClasses: "bg-amber-600 text-white",
+      };
+    case "blocked":
+      return {
+        panelClasses: "border-rose-200 bg-rose-50",
+        badgeClasses: "bg-rose-600 text-white",
+      };
+    case "loading":
+      return {
+        panelClasses: "border-slate-200 bg-slate-50",
+        badgeClasses: "bg-slate-700 text-white",
+      };
+    default:
+      return {
+        panelClasses: "border-slate-200 bg-slate-50",
+        badgeClasses: "bg-slate-600 text-white",
+      };
+  }
+}
+
+function normalizePercent(value: number | null) {
+  if (value == null || Number.isNaN(value)) return null;
+  return Math.round(value * 10) / 10;
+}
+
+function formatPercent(value: number | null) {
+  if (value == null || Number.isNaN(value)) return null;
+  const normalized = Math.round(value * 10) / 10;
+  return `${normalized.toFixed(normalized % 1 === 0 ? 0 : 1)}%`;
+}
+
+function readSnapshotTimestamp(communications: QuoteCommunication[], quoteId: string) {
+  const snapshot = communications.find((item) => {
+    if (item.quote_id !== quoteId) return false;
+    const metadata = item.metadata && typeof item.metadata === "object" ? (item.metadata as Record<string, unknown>) : null;
+    return metadata?.source === "quote_send_decision_snapshot";
+  });
+  return snapshot?.created_at ?? null;
+}
+
+function readQuoteSendSnapshots(communications: QuoteCommunication[], quoteId: string): QuoteSendSnapshotRecord[] {
+  return communications
+    .filter((item) => {
+      if (item.quote_id !== quoteId) return false;
+      const metadata = item.metadata && typeof item.metadata === "object" ? (item.metadata as Record<string, unknown>) : null;
+      return metadata?.source === "quote_send_decision_snapshot";
+    })
+    .map((item) => {
+      const metadata = item.metadata && typeof item.metadata === "object" ? (item.metadata as Record<string, unknown>) : null;
+      const readiness = metadata?.send_readiness_object && typeof metadata.send_readiness_object === "object"
+        ? (metadata.send_readiness_object as Record<string, unknown>)
+        : null;
+      const thresholdPayload = readiness?.margin_threshold_evaluation && typeof readiness.margin_threshold_evaluation === "object"
+        ? (readiness.margin_threshold_evaluation as Record<string, unknown>)
+        : null;
+      const blockers = Array.isArray(readiness?.blockers)
+        ? readiness?.blockers.map((blocker) => {
+            const payload = blocker && typeof blocker === "object" ? (blocker as Record<string, unknown>) : null;
+            return {
+              code: typeof payload?.code === "string" ? payload.code : "UNKNOWN_BLOCKER",
+              scope: "quote_version" as const,
+              label: typeof payload?.code === "string" ? payload.code.replaceAll("_", " ") : "Unknown blocker",
+              detail: typeof payload?.detail === "string" ? payload.detail : "Send blocker detail missing from snapshot.",
+            };
+          })
+        : [];
+      const threshold: QuoteThresholdEvaluation = {
+        configuredPercent: typeof thresholdPayload?.configured_percent === "number" ? normalizePercent(Number(thresholdPayload.configured_percent)) : null,
+        actualMarginPercent: typeof thresholdPayload?.actual_margin_percent === "number" ? normalizePercent(Number(thresholdPayload.actual_margin_percent)) : null,
+        actualOverrideDeltaPercent: typeof thresholdPayload?.actual_override_delta_percent === "number" ? normalizePercent(Number(thresholdPayload.actual_override_delta_percent)) : null,
+        governedMetricLabel: typeof thresholdPayload?.governed_metric_label === "string" ? thresholdPayload.governed_metric_label : "Governed approval metric",
+        governedMetricSource: thresholdPayload?.governed_metric_source === "margin" || thresholdPayload?.governed_metric_source === "override_delta" ? thresholdPayload.governed_metric_source : "unavailable",
+        governedMetricPercent: typeof thresholdPayload?.governed_metric_percent === "number" ? normalizePercent(Number(thresholdPayload.governed_metric_percent)) : null,
+        deltaToThresholdPercent: typeof thresholdPayload?.delta_to_threshold_percent === "number" ? normalizePercent(Number(thresholdPayload.delta_to_threshold_percent)) : null,
+        marginExposed: thresholdPayload?.margin_exposed === true,
+        narrative: typeof thresholdPayload?.narrative === "string" ? thresholdPayload.narrative : "Threshold narrative missing from snapshot.",
+      };
+      return {
+        communicationId: item.id,
+        recordedAt: item.created_at,
+        sentAt: item.sent_at ?? null,
+        versionId: typeof readiness?.version_id === "string" ? readiness.version_id : null,
+        versionLabel: typeof readiness?.version_label === "string" ? readiness.version_label : "Unknown version",
+        safeToSend: readiness?.safe_to_send === true,
+        approvalStatus: typeof readiness?.approval_status === "string" ? readiness.approval_status : "unknown",
+        blockers,
+        threshold,
+        aiRecommendation: typeof readiness?.ai_recommendation === "string" ? readiness.ai_recommendation : "AI recommendation not preserved in snapshot.",
+        legacy: false,
+      } satisfies QuoteSendSnapshotRecord;
+    })
+    .sort((left, right) => right.recordedAt.localeCompare(left.recordedAt));
+}
+
+function buildQuoteVersionSendReadiness(input: {
+  quote: QuoteRecord;
+  currentVersion: QuoteVersionRecord | null;
+  communications?: QuoteCommunication[];
+  canSendQuotes?: boolean;
+  sendReadOnlyMessage?: string | null;
+  thresholdPercent?: number | null;
+}): QuoteSendReadinessRecord {
+  const {
+    quote,
+    currentVersion,
+    communications = [],
+    canSendQuotes = true,
+    sendReadOnlyMessage = null,
+    thresholdPercent = null,
+  } = input;
+  const { approvalRequired, approvalState, status } = getQuoteApprovalStateValue(quote);
+  const lineItems = quote.lineItems ?? [];
+  const overrideReasons = Array.from(
+    new Set(
+      lineItems
+        .map((item) => String(item.override_reason ?? "").trim())
+        .filter(Boolean),
+    ),
+  );
+  const activeOverrideDeltas = lineItems
+    .filter((item) => item.is_price_overridden && typeof item.unit_price === "number" && typeof item.catalog_price_amount === "number" && Number(item.catalog_price_amount) > 0)
+    .map((item) => Math.abs(((Number(item.unit_price) - Number(item.catalog_price_amount)) / Number(item.catalog_price_amount)) * 100));
+  const actualOverrideDeltaPercent = activeOverrideDeltas.length
+    ? normalizePercent(Math.max(...activeOverrideDeltas))
+    : null;
+  const deltaToThresholdPercent = thresholdPercent != null && actualOverrideDeltaPercent != null
+    ? normalizePercent(actualOverrideDeltaPercent - Number(thresholdPercent))
+    : null;
+
+  const blockers: QuoteSendBlocker[] = [];
+  if (!canSendQuotes) {
+    blockers.push({
+      code: "SEND_PERMISSION_REQUIRED",
+      scope: "permission",
+      label: "Send permission missing",
+      detail: sendReadOnlyMessage ?? "Your current role can review this quote but cannot send or finalize it.",
+    });
+  }
+  if (!lineItems.length) {
+    blockers.push({
+      code: "QUOTE_LINES_EMPTY",
+      scope: "quote",
+      label: "No commercial lines",
+      detail: "Add at least one priced commercial line before any send decision can be trusted.",
+    });
+  }
+  if (!currentVersion?.id) {
+    blockers.push({
+      code: "QUOTE_VERSION_EVALUATING",
+      scope: "quote_version",
+      label: "Version evaluation still in progress",
+      detail: "The quote does not yet expose a current synced version, so send proof is still evaluating.",
+    });
+  }
+  if (approvalRequired && approvalState !== "approved") {
+    blockers.push({
+      code: approvalState === "rejected" ? "APPROVAL_REJECTED" : "APPROVAL_PENDING",
+      scope: "quote_version",
+      label: approvalState === "rejected" ? "Approval rejected" : "Approval still required",
+      detail:
+        approvalState === "rejected"
+          ? "Approval was rejected for the current governed quote posture. Revise, then re-approve before sending."
+          : "Approval is still required for the current governed quote posture before this version can be sent.",
+    });
+  }
+  if (status === "sent") {
+    blockers.push({
+      code: "QUOTE_ALREADY_SENT",
+      scope: "quote_version",
+      label: "Version already sent",
+      detail: "The quote is already in a sent state, so the next move is tracking response or revision rather than sending again.",
+    });
+  }
+
+  const governedMetricLabel = actualOverrideDeltaPercent != null
+    ? "Governed approval metric (override delta)"
+    : "Governed approval metric";
+  const governedMetricSource: QuoteThresholdEvaluation["governedMetricSource"] = actualOverrideDeltaPercent != null
+    ? "override_delta"
+    : "unavailable";
+  const governedMetricPercent = actualOverrideDeltaPercent;
+  const marginExposed = false;
+  const thresholdNarrative = thresholdPercent != null
+    ? governedMetricPercent != null
+      ? `Required threshold ${formatPercent(thresholdPercent)} · governed approval metric ${formatPercent(governedMetricPercent)} from override delta · ${deltaToThresholdPercent != null ? `${deltaToThresholdPercent >= 0 ? '+' : ''}${formatPercent(deltaToThresholdPercent)} vs threshold` : 'threshold comparison unavailable'}. True commercial margin is not exposed in this repo surface, so approval proof stays tied to governed override delta and approval state.`
+      : `Required threshold ${formatPercent(thresholdPercent)} is configured. This version does not expose a governed override delta right now, and true commercial margin is not exposed in this repo surface.`
+    : governedMetricPercent != null
+      ? `Threshold enforced, value not configured. Governed approval metric currently visible: override delta ${formatPercent(governedMetricPercent)}. True commercial margin is still not exposed here.`
+      : 'Threshold enforced, value not configured. This repo surface can prove approval state, but it cannot honestly display the configured numeric threshold or true commercial margin here.';
+
+  let evaluationState: QuoteSendReadinessRecord['evaluationState'] = "approved";
+  if (!lineItems.length) evaluationState = "empty";
+  else if (status === "sent") evaluationState = "sent";
+  else if (status === "revised") evaluationState = "revised";
+  else if (!currentVersion?.id) evaluationState = "evaluating";
+  else if (approvalRequired && approvalState !== "approved") evaluationState = "approval_required";
+  else if (blockers.some((item) => item.code === "SEND_PERMISSION_REQUIRED")) evaluationState = "blocked";
+
+  const safeToSend = evaluationState === "approved" && blockers.length === 0;
+
+  return {
+    versionId: currentVersion?.id ?? null,
+    versionLabel: currentVersion?.version_no ? `v${currentVersion.version_no}` : "No current version",
+    approvalStatus: approvalRequired ? approvalState : "not_required",
+    blockers,
+    override: {
+      active: lineItems.some((item) => item.is_price_overridden),
+      reasons: overrideReasons,
+    },
+    threshold: {
+      configuredPercent: thresholdPercent != null ? normalizePercent(Number(thresholdPercent)) : null,
+      actualMarginPercent: null,
+      actualOverrideDeltaPercent,
+      governedMetricLabel,
+      governedMetricSource,
+      governedMetricPercent,
+      deltaToThresholdPercent,
+      marginExposed,
+      narrative: thresholdNarrative,
+    },
+    safeToSend,
+    evaluationState,
+    snapshotRecordedAt: readSnapshotTimestamp(communications, quote.id),
+  };
+}
+
+function getQuoteSendDecision(input: {
+  quote: QuoteRecord;
+  currentVersion: QuoteVersionRecord | null;
+  communications?: QuoteCommunication[];
+  canSendQuotes?: boolean;
+  sendReadOnlyMessage?: string | null;
+  thresholdPercent?: number | null;
+}): QuoteSendDecision {
+  const {
+    quote,
+    currentVersion,
+    communications = [],
+    canSendQuotes = true,
+    sendReadOnlyMessage = null,
+    thresholdPercent = null,
+  } = input;
+  const readiness = buildQuoteVersionSendReadiness({
+    quote,
+    currentVersion,
+    communications,
+    canSendQuotes,
+    sendReadOnlyMessage,
+    thresholdPercent,
+  });
+  const { approvalRequired, approvalState, status } = getQuoteApprovalStateValue(quote);
+
+  let state: SendDecisionState = readiness.evaluationState === "evaluating" ? "loading" : readiness.evaluationState;
+  let label = "Safe to send";
+  let headline = `This ${readiness.versionLabel.toLowerCase()} quote version is safe to send.`;
+  let summary =
+    "Version binding, approval posture, and explicit blockers all point to the same answer, so send truth is provable from one governed object.";
+  let nextStep = "Send this exact quote version and keep the outbound trail attached to the same governed record.";
+  let aiVerdict =
+    `AI read: yes — ${readiness.versionLabel} is the active governed version and no blocking condition remains in the current send-readiness object.`;
+
+  if (state === "empty") {
+    label = "Quote still empty";
+    headline = "This quote is not safe to send yet.";
+    summary =
+      "The current quote has no commercial lines, so there is nothing version-safe to send.";
+    nextStep = "Add at least one priced commercial line, then re-check the send-readiness object.";
+    aiVerdict = "AI read: no — there is no commercial scope to send yet.";
+  } else if (state === "sent") {
+    label = "Already sent";
+    headline = `${readiness.versionLabel} has already been sent.`;
+    summary =
+      "The current governed version is already customer-facing, so the next move is response tracking, revision, or outcome capture rather than another send.";
+    nextStep = "Track customer response or create a deliberate revision before sending again.";
+    aiVerdict = "AI read: no new send action — stay in negotiation or revision because this version already has outbound history.";
+  } else if (state === "revised") {
+    label = "Revised and awaiting decision";
+    headline = "This quote was revised after the last customer-facing pass.";
+    summary =
+      "Revision changes the commercial record, so send must be treated as a fresh version-bound decision rather than reused approval confidence.";
+    nextStep = approvalRequired && approvalState !== "approved"
+      ? "Re-clear approval on the revised version before sending it."
+      : "Confirm the revised version is the intended customer-facing record, then send that version deliberately.";
+    aiVerdict = "AI read: check again — revision changed the governed commercial story, so send should be a fresh deliberate decision.";
+  } else if (state === "blocked") {
+    label = "Blocked from send";
+    headline = "This quote is not safe to send yet.";
+    summary =
+      "A named blocker is still active in the send-readiness object, so the next move is remediation rather than guesswork.";
+    nextStep = readiness.blockers[0]?.detail ?? "Resolve the active blocker before sending.";
+    aiVerdict = "AI read: no — an explicit blocker is still active, so remediation comes before send.";
+  } else if (state === "approval_required") {
+    label = "Approval required";
+    headline = "Approval is the only governed checkpoint still blocking send.";
+    summary =
+      "The version is otherwise formed, but approval has not cleared yet, so send stays blocked until approval is resolved.";
+    nextStep = approvalState === "rejected"
+      ? "Revise the quote version to address the rejection, then request approval again."
+      : "Request or complete approval for this quote version before sending it.";
+    aiVerdict = "AI read: not yet — approval is the explicit missing checkpoint.";
+  } else if (state === "loading") {
+    label = "Evaluation in progress";
+    headline = "Send proof is still evaluating for this quote version.";
+    summary =
+      "The workspace is waiting for a current synced version, so send truth is intentionally held in an evaluation state instead of being guessed.";
+    nextStep = "Wait for the current version to sync, then verify send readiness against that exact version.";
+    aiVerdict = "AI read: wait — the version-bound send proof is still evaluating.";
+  }
+
+  const overrideSummary = readiness.override.active
+    ? readiness.override.reasons.length
+      ? `Override reasons recorded on ${readiness.versionLabel}: ${readiness.override.reasons.join('; ')}`
+      : `Overrides are active on ${readiness.versionLabel}, but readable reasons are missing from the current version summary.`
+    : `${readiness.versionLabel} is still on catalog-aligned pricing with no override reason in play.`;
+
+  const afterSend =
+    state === "sent"
+      ? [
+          `${readiness.versionLabel} is already customer-facing.`,
+          "The next tracked moves are customer reply, revision, acceptance, or rejection.",
+          "Use negotiation and history trails instead of attempting another send from the same version.",
+        ]
+      : [
+          `${readiness.versionLabel} becomes the customer-facing record at send time.`,
+          "A send decision snapshot is recorded so operators can prove what was visible at send time.",
+          "Customer response, revision, and accepted handoff should continue from the same quote history.",
+        ];
+
+  const aiReasons = [
+    `Version binding: ${readiness.versionLabel}${readiness.versionId ? ` (${readiness.versionId})` : ''}.`,
+    approvalRequired
+      ? `Approval state is ${approvalState.replaceAll("_", " ")}.`
+      : "No approval requirement is recorded on this quote.",
+    readiness.threshold.governedMetricPercent != null
+      ? `${readiness.threshold.governedMetricLabel} is ${formatPercent(readiness.threshold.governedMetricPercent)}${readiness.threshold.configuredPercent != null && readiness.threshold.deltaToThresholdPercent != null ? ` against a ${formatPercent(readiness.threshold.configuredPercent)} threshold (${readiness.threshold.deltaToThresholdPercent >= 0 ? '+' : ''}${formatPercent(readiness.threshold.deltaToThresholdPercent)} vs threshold).` : '.'}`
+      : readiness.threshold.narrative,
+    !readiness.threshold.marginExposed
+      ? "True commercial margin is not exposed in this repo surface, so AI is explaining the governed approval metric rather than inventing margin proof."
+      : "Commercial margin proof is visible in the governed send object.",
+    readiness.blockers.length
+      ? `${readiness.blockers.length} explicit blocker${readiness.blockers.length === 1 ? '' : 's'} are recorded in the send-readiness object.`
+      : "No explicit blockers remain in the send-readiness object.",
+  ];
+
+  return {
+    state,
+    label,
+    headline,
+    summary,
+    blockers: readiness.blockers.map((item) => item.detail),
+    blockerDetails: readiness.blockers,
+    nextStep,
+    thresholdLabel: readiness.threshold.narrative,
+    overrideSummary,
+    afterSend,
+    aiVerdict,
+    aiReasons,
+    readiness,
+    ...getSendDecisionClasses(state),
+  };
+}
+
 function getSendAction(
   quote: QuoteRecord,
-  guard?: ProgressionGuardSummary,
 ): QuoteQuickAction {
   const { approvalRequired, approvalState, status } =
     getQuoteApprovalStateValue(quote);
@@ -675,15 +1132,6 @@ function getSendAction(
     return {
       label: "Send closed",
       description: "This quote already has a terminal outcome.",
-      disabled: true,
-    };
-  }
-  if (guard?.blockerCount) {
-    return {
-      label: "Resolve blockers to send",
-      description:
-        guard.blockerReasons[0] ??
-        "Quote send is blocked until compliance and document checks clear.",
       disabled: true,
     };
   }
@@ -728,6 +1176,7 @@ export function QuoteWorkspace({
   canSendQuotes = true,
   readOnlyMessage = null,
   sendReadOnlyMessage = null,
+  pricingEngineThresholdPercent = null,
 }: {
   leadId: string;
   rfqs: RfqOption[];
@@ -748,6 +1197,7 @@ export function QuoteWorkspace({
   canSendQuotes?: boolean;
   readOnlyMessage?: string | null;
   sendReadOnlyMessage?: string | null;
+  pricingEngineThresholdPercent?: number | null;
 }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [quoteRecords, setQuoteRecords] = useState<QuoteRecord[]>(quotes);
@@ -1189,7 +1639,17 @@ export function QuoteWorkspace({
       })
     : null;
   const focusSendAction = focusQuote
-    ? getSendAction(focusQuote, quoteSendGuard)
+    ? getSendAction(focusQuote)
+    : null;
+  const focusSendDecision = focusQuote
+    ? getQuoteSendDecision({
+        quote: focusQuote,
+        currentVersion: currentFocusedVersion,
+        communications,
+        canSendQuotes,
+        sendReadOnlyMessage,
+        thresholdPercent: pricingEngineThresholdPercent,
+      })
     : null;
   const focusAcceptAction = focusQuote
     ? getOutcomeAction(focusQuote, "accepted")
@@ -1198,8 +1658,21 @@ export function QuoteWorkspace({
     ? getOutcomeAction(focusQuote, "rejected")
     : null;
   const focusCommunications = focusQuote
-    ? (communicationsByQuote.get(focusQuote.id) ?? [])
+    ? [...(communicationsByQuote.get(focusQuote.id) ?? [])].sort((left, right) => String(right.created_at ?? "").localeCompare(String(left.created_at ?? "")))
     : [];
+  const focusSendSnapshots = focusQuote
+    ? readQuoteSendSnapshots(focusCommunications, focusQuote.id)
+    : [];
+  const legacySentFocusedVersions = focusQuoteVersions.filter(
+    (version) =>
+      Boolean(version.sent_at) &&
+      !focusSendSnapshots.some((snapshot) => snapshot.versionId === version.id),
+  );
+  const currentVersionSupersedesSentVersion = Boolean(
+    currentFocusedVersion?.id &&
+      sentFocusedVersion?.id &&
+      currentFocusedVersion.id !== sentFocusedVersion.id,
+  );
   const focusNegotiationEvents = focusQuote
     ? (negotiationEventsByQuote.get(focusQuote.id) ?? [])
     : [];
@@ -1264,22 +1737,9 @@ export function QuoteWorkspace({
             {visibleSubtotal.toFixed(2)} visible subtotal
           </span>
           <span className="rounded-full bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">
-            {quoteSendGuard?.blockerCount ?? 0} send blockers
+            Version-bound send proof active
           </span>
         </div>
-
-        {quoteSendGuard?.blockerCount ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {quoteSendGuard.blockerReasons.slice(0, 3).map((reason) => (
-              <span
-                key={reason}
-                className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800"
-              >
-                {reason}
-              </span>
-            ))}
-          </div>
-        ) : null}
       </SectionCard>
 
       {focusQuote ? (
@@ -1321,21 +1781,8 @@ export function QuoteWorkspace({
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${getQuoteStatusBadgeClasses(focusQuoteMeta?.status ?? "draft")}`}
-                  >
-                    {String(focusQuoteMeta?.status ?? "draft").replaceAll(
-                      "_",
-                      " ",
-                    )}
-                  </span>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((focusQuoteMeta?.approvalState ?? "not_required") as any)}`}
-                  >
-                    approval{" "}
-                    {String(
-                      focusQuoteMeta?.approvalState ?? "not_required",
-                    ).replaceAll("_", " ")}
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                    Workflow {String(focusQuoteMeta?.status ?? "draft").replaceAll("_", " ")}
                   </span>
                 </div>
               </div>
@@ -1365,6 +1812,162 @@ export function QuoteWorkspace({
                     : "pending sync"}
                 </span>
               </div>
+
+              {focusSendDecision ? (
+                <div className={`mt-6 rounded-[1.5rem] border p-5 ${focusSendDecision.panelClasses}`}>
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${focusSendDecision.badgeClasses}`}>
+                          {focusSendDecision.label}
+                        </span>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((focusQuoteMeta?.approvalState ?? "not_required") as any)}`}>
+                          approval {String(focusQuoteMeta?.approvalState ?? "not_required").replaceAll("_", " ")}
+                        </span>
+                      </div>
+                      <h4 className="mt-4 text-2xl font-semibold text-slate-900">
+                        {focusSendDecision.headline}
+                      </h4>
+                      <p className="mt-2 max-w-3xl text-sm text-slate-700">
+                        {focusSendDecision.summary}
+                      </p>
+                    </div>
+                    <div className="rounded-[1rem] border border-white/70 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm xl:max-w-sm">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        Next obvious move
+                      </p>
+                      <p className="mt-2 font-semibold text-slate-900">
+                        {focusSendDecision.nextStep}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
+                    <div className="rounded-[1rem] border border-white/70 bg-white/85 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        Why send is or is not safe
+                      </p>
+                      {focusSendDecision.blockers.length ? (
+                        <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                          {focusSendDecision.blockers.map((reason) => (
+                            <li key={reason}>• {reason}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-3 text-sm text-slate-700">
+                          No active blockers are visible in this governed quote surface.
+                        </p>
+                      )}
+                      <div className="mt-4 rounded-[1rem] border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quote-version send readiness object</p>
+                          <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
+                            {focusSendDecision.readiness.versionLabel}
+                          </span>
+                        </div>
+                        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Version ID</p>
+                            <p className="mt-2 font-semibold text-slate-900 break-all">{focusSendDecision.readiness.versionId ?? 'Not synced yet'}</p>
+                          </div>
+                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Approval status</p>
+                            <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.approvalStatus.replaceAll('_', ' ')}</p>
+                          </div>
+                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Safe to send</p>
+                            <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.safeToSend ? 'Yes' : 'No'}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Threshold + commercial proof</p>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                              <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Required threshold</p>
+                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.threshold.configuredPercent != null ? formatPercent(focusSendDecision.readiness.threshold.configuredPercent) : 'Not configured'}</p>
+                              </div>
+                              <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{focusSendDecision.readiness.threshold.governedMetricLabel}</p>
+                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.threshold.governedMetricPercent != null ? formatPercent(focusSendDecision.readiness.threshold.governedMetricPercent) : 'Not exposed'}</p>
+                              </div>
+                              <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Pass / fail delta</p>
+                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.threshold.deltaToThresholdPercent != null ? `${focusSendDecision.readiness.threshold.deltaToThresholdPercent >= 0 ? '+' : ''}${formatPercent(focusSendDecision.readiness.threshold.deltaToThresholdPercent)}` : 'Not computable'}</p>
+                              </div>
+                              <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">True margin proof</p>
+                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.threshold.marginExposed ? (focusSendDecision.readiness.threshold.actualMarginPercent != null ? formatPercent(focusSendDecision.readiness.threshold.actualMarginPercent) : 'Visible') : 'Not exposed in repo'}</p>
+                              </div>
+                            </div>
+                            <p className="mt-3">{focusSendDecision.thresholdLabel}</p>
+                          </div>
+                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Override reason visibility</p>
+                            <p className="mt-2">{focusSendDecision.overrideSummary}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Explicit blockers</p>
+                            {focusSendDecision.readiness.blockers.length ? (
+                              <ul className="mt-2 space-y-2 text-xs text-slate-700">
+                                {focusSendDecision.readiness.blockers.map((blocker) => (
+                                  <li key={blocker.code}>
+                                    <span className="font-semibold text-slate-900">{blocker.code}</span> · {blocker.detail}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="mt-2 text-xs text-slate-600">No explicit blockers are recorded for this version.</p>
+                            )}
+                          </div>
+                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Decision snapshot proof</p>
+                            <p className="mt-2 text-sm text-slate-700">
+                              {focusSendDecision.readiness.snapshotRecordedAt
+                                ? `Latest send decision snapshot recorded ${formatDateTime(focusSendDecision.readiness.snapshotRecordedAt)}.`
+                                : 'No send decision snapshot recorded yet for this quote. A snapshot will be written when send is executed.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="rounded-[1rem] border border-white/70 bg-white/85 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">What happens after send</p>
+                        <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                          {focusSendDecision.afterSend.map((item) => (
+                            <li key={item}>• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="rounded-[1rem] border border-brand-200 bg-brand-50/80 p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Should I send this? · AI support</p>
+                            <p className="mt-2 text-sm font-semibold text-slate-900">{focusSendDecision.aiVerdict}</p>
+                          </div>
+                          {canManageQuotes ? (
+                            <GenerateQuoteCoverNoteButton
+                              leadId={leadId}
+                              quoteId={focusQuote.id}
+                              compact
+                            />
+                          ) : null}
+                        </div>
+                        <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                          {focusSendDecision.aiReasons.map((reason) => (
+                            <li key={reason}>• {reason}</li>
+                          ))}
+                        </ul>
+                        <p className="mt-3 text-xs text-slate-600">
+                          AI is embedded here as decision support only. It explains the current send posture, but it cannot approve, send, or override commercial controls.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="mt-6 grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
                 <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
@@ -1582,48 +2185,57 @@ export function QuoteWorkspace({
                         Version history
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        Version visibility, exact-target remediation, checkpoint return continuity, checkpoint re-entry continuity, footer rationale, real submit enforcement, final-step submit locking, blocked-submit handoff, and caution confirmation are already live here. Quote-builder controls remain locked while approval gate, audit-event map, and lock posture stay visible here before deeper trust enforcement begins.
+                        Keep it obvious which exact version is current, which exact version reached the customer, and whether a later revision has already superseded that customer-facing record.
                       </p>
                       <div className="mt-4 space-y-2">
                         {focusQuoteVersions.length ? (
-                          focusQuoteVersions.map((version) => (
-                            <div
-                              key={version.id}
-                              className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600"
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="font-semibold text-slate-900">
-                                  v{version.version_no ?? "—"} ·{" "}
-                                  {String(version.status ?? "draft").replaceAll(
-                                    "_",
-                                    " ",
-                                  )}
+                          focusQuoteVersions.map((version) => {
+                            const snapshotForVersion = focusSendSnapshots.find((snapshot) => snapshot.versionId === version.id);
+                            const isCurrentVersion = version.id === currentFocusedVersion?.id;
+                            const isSentVersion = Boolean(version.sent_at);
+                            const isLatestSentVersion = version.id === sentFocusedVersion?.id;
+                            const isSupersededSentVersion = Boolean(
+                              isSentVersion &&
+                                currentFocusedVersion?.id &&
+                                currentFocusedVersion.id !== version.id,
+                            );
+                            return (
+                              <div
+                                key={version.id}
+                                className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="font-semibold text-slate-900">
+                                    v{version.version_no ?? "—"} · {String(version.status ?? "draft").replaceAll("_", " ")}
+                                  </p>
+                                  <span className="text-xs text-slate-500">
+                                    {formatDateTime(version.sent_at ?? version.approved_at ?? version.created_at)}
+                                  </span>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                                  <span>{version.approved_at ? "Approved" : "Awaiting approval"}</span>
+                                  <span>{version.sent_at ? "Sent" : "Not sent"}</span>
+                                  <span>{isCurrentVersion ? "Current version" : "Prior version"}</span>
+                                  {isLatestSentVersion ? <span>Latest customer-facing version</span> : null}
+                                  {isSupersededSentVersion ? <span>Superseded by {currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "current version"}</span> : null}
+                                  {snapshotForVersion ? <span>Snapshot recorded</span> : isSentVersion ? <span>Legacy send without snapshot</span> : null}
+                                </div>
+                                <p className="mt-2 text-xs text-slate-500">
+                                  {isCurrentVersion && isLatestSentVersion
+                                    ? "This is both the current internal version and the latest customer-facing version."
+                                    : isCurrentVersion && currentVersionSupersedesSentVersion
+                                      ? `This draft supersedes customer-facing ${sentFocusedVersion?.version_no ? `v${sentFocusedVersion.version_no}` : "the prior sent version"}. The customer still has the prior sent version until this one is sent.`
+                                      : isSupersededSentVersion
+                                        ? `This version was sent, but the governed draft has moved forward to ${currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "a newer version"}.`
+                                        : snapshotForVersion
+                                          ? `Send snapshot recorded ${formatDateTime(snapshotForVersion.recordedAt)}.`
+                                          : isSentVersion
+                                            ? "This version was sent before send-decision snapshots were recorded in the repo."
+                                            : "This version remains internal until a deliberate send occurs."}
                                 </p>
-                                <span className="text-xs text-slate-500">
-                                  {formatDateTime(
-                                    version.sent_at ??
-                                      version.approved_at ??
-                                      version.created_at,
-                                  )}
-                                </span>
                               </div>
-                              <div className="mt-2 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                                <span>
-                                  {version.approved_at
-                                    ? "Approved"
-                                    : "Awaiting approval"}
-                                </span>
-                                <span>
-                                  {version.sent_at ? "Sent" : "Not sent"}
-                                </span>
-                                <span>
-                                  {version.id === currentFocusedVersion?.id
-                                    ? "Current version"
-                                    : "Prior version"}
-                                </span>
-                              </div>
-                            </div>
-                          ))
+                            );
+                          })
                         ) : (
                           <div className="rounded-[1rem] border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">
                             No quote versions are synced to this workspace yet.
@@ -1636,8 +2248,7 @@ export function QuoteWorkspace({
                         Send checkpoint history
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        Keep the latest approval and send posture visible
-                        without jumping ahead into trust-layer redesign.
+                        Keep current draft truth, latest sent truth, and historical send-decision snapshots in one place without pretending legacy sends are equally auditable.
                       </p>
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">
                         <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
@@ -1672,6 +2283,25 @@ export function QuoteWorkspace({
                         </div>
                         <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 sm:col-span-2">
                           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Current vs customer-facing continuity
+                          </p>
+                          <p className="mt-2 font-semibold text-slate-900">
+                            {currentVersionSupersedesSentVersion
+                              ? `Current draft ${currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "current version"} supersedes sent ${sentFocusedVersion?.version_no ? `v${sentFocusedVersion.version_no}` : "version"}`
+                              : sentFocusedVersion?.id && currentFocusedVersion?.id === sentFocusedVersion.id
+                                ? "Current version matches the latest customer-facing version"
+                                : "No customer-facing version exists yet"}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {currentVersionSupersedesSentVersion
+                              ? "The customer still has the latest sent version until the current draft is deliberately sent. This prevents draft/sent confusion."
+                              : sentFocusedVersion?.id && currentFocusedVersion?.id === sentFocusedVersion.id
+                                ? "Internal and customer-facing truth point to the same governed version."
+                                : "Once a version is sent, it will remain visible here as the customer-facing checkpoint."}
+                          </p>
+                        </div>
+                        <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 sm:col-span-2">
+                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                             Approval checkpoint
                           </p>
                           <p className="mt-2 font-semibold text-slate-900">
@@ -1685,6 +2315,42 @@ export function QuoteWorkspace({
                               : "Approval timing will appear here once a synced version is approved."}
                           </p>
                         </div>
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Recorded send-decision snapshots</p>
+                        {focusSendSnapshots.length ? (
+                          focusSendSnapshots.map((snapshot) => (
+                            <div key={snapshot.communicationId} className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="font-semibold text-slate-900">{snapshot.versionLabel} · {snapshot.safeToSend ? "safe at send time" : "blocked at send time"}</p>
+                                <span className="text-xs text-slate-500">Recorded {formatDateTime(snapshot.recordedAt)}</span>
+                              </div>
+                              <p className="mt-1 text-xs text-slate-500">Approval {snapshot.approvalStatus.replaceAll("_", " ")} · {snapshot.threshold.narrative}</p>
+                              <p className="mt-2 text-xs text-slate-600">{snapshot.aiRecommendation}</p>
+                              {snapshot.blockers.length ? (
+                                <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                                  {snapshot.blockers.map((blocker) => (
+                                    <li key={`${snapshot.communicationId}-${blocker.code}`}>
+                                      <span className="font-semibold text-slate-900">{blocker.code}</span> · {blocker.detail}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="rounded-[1rem] border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">
+                            No send-decision snapshots have been recorded for this quote yet.
+                          </div>
+                        )}
+                        {legacySentFocusedVersions.length ? (
+                          <div className="rounded-[1rem] border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+                            <p className="font-semibold">Legacy sent versions without snapshot proof</p>
+                            <p className="mt-1 text-xs text-amber-800">
+                              {legacySentFocusedVersions.map((version) => `v${version.version_no ?? "—"}`).join(", ")} were sent before send-decision snapshots were recorded in the repo. They remain historically visible, but not equally auditable.
+                            </p>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -2396,21 +3062,10 @@ export function QuoteWorkspace({
                     </p>
                     <p className="mt-2">
                       <span className="font-medium text-slate-900">
-                        Send blockers:
+                        Version send proof:
                       </span>{" "}
-                      {quoteSendGuard?.blockerCount
-                        ? `${quoteSendGuard.blockerCount} active`
-                        : "Ready"}
+                      {quote.current_version_id ? 'Bound to current quote version' : 'Current version still syncing'}
                     </p>
-                    {quoteSendGuard?.blockerCount ? (
-                      <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-amber-800">
-                        {quoteSendGuard.blockerReasons
-                          .slice(0, 3)
-                          .map((reason) => (
-                            <li key={reason}>{reason}</li>
-                          ))}
-                      </ul>
-                    ) : null}
                     <p className="mt-2 whitespace-pre-wrap">
                       <span className="font-medium text-slate-900">Notes:</span>{" "}
                       {parsed.plainNotes || "No notes"}

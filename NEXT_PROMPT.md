@@ -1,51 +1,61 @@
-# Follow-up prompt — post PR-UX-08 release decision audit
+# Follow-up prompt — PR-FINISH-04 orders / execution proof lock
 
-You are continuing the Setu Flow CRM brutal UX review from the latest repo and DCC baseline.
+You are continuing the Setu Flow CRM final production readiness pass from the latest repo and DCC baseline.
 
 Use the repo as the only source of truth.
 Use public/internal-dcc/index.html as the single source of truth for readiness, release recommendation, and workflow direction.
 
 Immediate objective:
-Run a post PR-UX-08 release decision audit.
+Execute PR-FINISH-04: Orders / execution immutability + contract handoff proof.
 
-Mandatory first step:
-Update public/internal-dcc/index.html FIRST.
+Goal:
+Push Orders / Execution from strong to truly defensible by making accepted-quote handoff, commercial lock continuity, and execution-state truth feel as provable as the quote lane.
+
+Focus:
+Do not widen scope. Finish the execution proof layer.
 
 Scope:
-1. Verify whether the repo proves the current DCC release recommendation or whether it is still too generous.
-2. Inspect the remaining debt called out in the DCC:
-   - Capture handoff compression
-   - Approval / Send confidence at send time
-   - Orders / Execution proof depth
-   - Catalog / Settings / Admin finish quality
-   - AI embedded guidance
-3. Keep workflow confidence labels honest in the DCC:
-   - Core workflow
-   - Support surface
-   - Mixed / unclear workflow
-4. Preserve the governed commercial contract intact:
-   - catalog/base pricing stays default
-   - override requires reason
-   - approval remains required when threshold is met
-5. Return an explicit recommendation:
-   - ship internally
-   - ship for guided external demos
-   - hold for another pass
-6. Be brutal: if the repo does not prove a claim in the DCC, lower the claim.
+1. Accepted-quote handoff proof
+   - make it explicit which accepted quote version seeded the order / contract record
+   - show the exact commercial handoff source in the execution workspace
+   - remove any ambiguity between quote header truth and locked commercial line truth
+
+2. Commercial lock continuity
+   - prove that execution reads locked commercial lines, not mutable draft state
+   - make override posture, locked pricing basis, and approval continuity visible at handoff
+   - call out honestly if any execution view still falls back to weaker quote-level state
+
+3. Execution state completeness
+   - cover empty, loading, blocked, ready, in-progress, completed, and exception / recovery states
+   - make blockers explicit and machine-readable where the repo supports them
+
+4. Contract / order immutability cues
+   - make it obvious what is editable vs locked after acceptance
+   - remove any chance that operators confuse execution updates with commercial rewrites
+
+5. AI support at execution decision points
+   - embed AI as operational guidance only
+   - it may explain readiness / risk / missing evidence
+   - it must not invent execution proof or mutate commercial lock truth
+
+6. DCC integrity update (mandatory)
+   - update DCC in this pass
+   - only increase Orders / Execution if handoff proof and lock continuity are actually complete in repo code
+   - keep Approval / Send at 97% unless a real governed margin source appears in the repo
 
 Files to inspect and update:
 - public/internal-dcc/index.html
-- src/app/(app)/*
-- src/features/*
-- src/components/layout/*
-- src/lib/routes/manifest.json
+- src/app/(app)/orders/*
+- src/features/contracts/*
+- src/features/quotes/*
+- src/app/(app)/integrations/*
+- src/features/ai*
 - NEXT_PROMPT.md
 
 Return:
-1. Updated full repo zip
+1. Updated repo zip
 2. Updated DCC
-3. Release decision audit summary
-4. Updated readiness by module
-5. Remaining UX debt
-6. Brutal notes on what is still broken
-7. Final ship / hold recommendation
+3. PR-FINISH-04 summary
+4. Updated readiness
+5. Explicit remaining blockers
+6. Next PR-FINISH step

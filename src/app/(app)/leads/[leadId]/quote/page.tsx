@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getLeadProfileData } from '@/lib/queries/leads';
 import { hasSupabaseEnv } from '@/lib/env';
+import { createClient } from '@/lib/supabase/server';
 import QuotePrintButton from '@/features/leads/components/quote-print-button';
 import { QuoteWorkspace } from '@/features/quotes/components/quote-workspace';
 import { buildLeadActivityTimeline } from '@/lib/activity-timeline';
@@ -173,6 +174,17 @@ export default async function QuotePage({ params, searchParams }: { params: { le
     ],
   };
 
+  const supabase = await createClient();
+  const { data: pricingEngineSettings } = await (supabase as any)
+    .from('pricing_engine_settings')
+    .select('approval_threshold_percent')
+    .eq('organization_id', workspace.organization.id)
+    .maybeSingle();
+  const pricingEngineThresholdPercent =
+    typeof pricingEngineSettings?.approval_threshold_percent === 'number'
+      ? pricingEngineSettings.approval_threshold_percent
+      : null;
+
   const stageNameMap = new Map(data.stages.map((stage) => [stage.id, stage.name]));
   const normalizedQuotes = normalizeQuotesForTimeline(data.quotes || []);
 
@@ -270,7 +282,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
             <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{mappedProductCount} mapped products</span>
             <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{mappedMarketCount} covered markets</span>
             <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{openQuoteCount} open quotes</span>
-            <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{quoteSendGuard.blockerCount} send blockers</span>
+            <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{quoteSendGuard.blockerCount} lead prerequisite blockers</span>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -391,9 +403,9 @@ export default async function QuotePage({ params, searchParams }: { params: { le
         sendReadOnlyMessage={sendReadOnlyMessage}
         rfqWorkspaceHref={`/leads/${leadId}/rfq/new`}
         pricingSnapshot={pricingSnapshot}
-        quoteSendGuard={quoteSendGuard}
         quoteVersions={data.quoteVersions}
         negotiationEvents={data.negotiationEvents}
+        pricingEngineThresholdPercent={pricingEngineThresholdPercent}
         communications={data.communications.filter((item) => item.quote_id || item.related_entity === 'quote').map((item) => ({
           id: item.id,
           quote_id: item.quote_id,
@@ -403,6 +415,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
           summary: item.summary,
           status: item.status,
           created_at: item.created_at,
+          sent_at: item.sent_at,
           draft_source: item.draft_source,
           metadata: item.metadata,
         }))}
