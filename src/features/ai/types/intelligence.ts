@@ -30,8 +30,33 @@ export type DailyInsightSummary = {
   level: Exclude<AIInsightLevel, 'low'>;
 };
 
+export type AIDecisionEntityKind = 'lead' | 'quote' | 'order' | 'dashboard';
+
+export type AIGovernedDecision = {
+  id: string;
+  entityKind: AIDecisionEntityKind;
+  title: string;
+  summary: string;
+  recommendedAction: string;
+  rationale: string[];
+  guardrails: string[];
+  boundedBy: string;
+  href: string;
+  severity: AIInsightLevel;
+  companyName?: string;
+};
+
+export type AIGovernanceSummary = {
+  governedDecisions: number;
+  explainableDecisions: number;
+  boundedDecisions: number;
+  actionSafeDecisions: number;
+};
+
 export type AIWorkspaceSnapshot = {
   leadPriorities: LeadPrioritySummary[];
   quoteRisks: QuoteRiskSummary[];
   dailyInsights: DailyInsightSummary[];
+  governedDecisions: AIGovernedDecision[];
+  governanceSummary: AIGovernanceSummary;
 };

@@ -9,6 +9,11 @@ export type OrderExecutionInput = {
   lineCount: number;
   openDocumentBlockers: number;
   openComplianceBlockers: number;
+  documentRequirementReasons?: string[];
+  complianceRequirementReasons?: string[];
+  releaseArtifactReasons?: string[];
+  dispatchArtifactReasons?: string[];
+  completionArtifactReasons?: string[];
   currentState?: string | null;
   releasedAt?: string | null;
   dispatchedAt?: string | null;
@@ -33,6 +38,10 @@ export type OrderExecutionEvaluation = {
 
 function normalize(value: string | null | undefined) {
   return String(value ?? '').trim().toLowerCase();
+}
+
+function unique(items: string[]) {
+  return Array.from(new Set(items.map((item) => item.trim()).filter(Boolean)));
 }
 
 export function normalizeOrderExecutionState(value: string | null | undefined): OrderExecutionState | null {
@@ -66,21 +75,33 @@ export function evaluateOrderExecution(input: OrderExecutionInput): OrderExecuti
   if (normalize(input.commercialLockState) !== 'accepted_locked') readyBlockers.push('Commercial lock snapshot is not fully locked yet.');
   if (input.lineCount <= 0) readyBlockers.push('Confirmed quote lines are missing from the order contract.');
 
-  const releaseBlockers = [
+  const documentRequirementReasons = unique([
+    ...(input.documentRequirementReasons ?? []),
+    ...(input.openDocumentBlockers > 0 && !(input.documentRequirementReasons?.length) ? [`${input.openDocumentBlockers} document blocker${input.openDocumentBlockers === 1 ? '' : 's'} still open.`] : []),
+  ]);
+  const complianceRequirementReasons = unique([
+    ...(input.complianceRequirementReasons ?? []),
+    ...(input.openComplianceBlockers > 0 && !(input.complianceRequirementReasons?.length) ? [`${input.openComplianceBlockers} compliance blocker${input.openComplianceBlockers === 1 ? '' : 's'} still open.`] : []),
+  ]);
+
+  const releaseBlockers = unique([
     ...readyBlockers,
-    ...(input.openDocumentBlockers > 0 ? [`${input.openDocumentBlockers} document blocker${input.openDocumentBlockers === 1 ? '' : 's'} still open.`] : []),
-    ...(input.openComplianceBlockers > 0 ? [`${input.openComplianceBlockers} compliance blocker${input.openComplianceBlockers === 1 ? '' : 's'} still open.`] : []),
-  ];
+    ...documentRequirementReasons,
+    ...complianceRequirementReasons,
+    ...(input.releaseArtifactReasons ?? []),
+  ]);
 
-  const dispatchBlockers = [
+  const dispatchBlockers = unique([
     ...(persistedState === 'released' || persistedState === 'dispatched' || persistedState === 'completed' ? [] : ['Release the order to operations before dispatch.']),
-    ...(input.openDocumentBlockers > 0 ? [`${input.openDocumentBlockers} document blocker${input.openDocumentBlockers === 1 ? '' : 's'} still open.`] : []),
-    ...(input.openComplianceBlockers > 0 ? [`${input.openComplianceBlockers} compliance blocker${input.openComplianceBlockers === 1 ? '' : 's'} still open.`] : []),
-  ];
+    ...documentRequirementReasons,
+    ...complianceRequirementReasons,
+    ...(input.dispatchArtifactReasons ?? []),
+  ]);
 
-  const completionBlockers = [
+  const completionBlockers = unique([
     ...(persistedState === 'dispatched' || persistedState === 'completed' ? [] : ['Mark the order dispatched before completing execution.']),
-  ];
+    ...(input.completionArtifactReasons ?? []),
+  ]);
 
   let blockers: string[] = [];
   let actionItems: string[] = [];
@@ -98,19 +119,19 @@ export function evaluateOrderExecution(input: OrderExecutionInput): OrderExecuti
     blockers = releaseBlockers;
     nextState = 'released';
     headline = blockers.length === 0 ? 'Order can be released to operations.' : 'Order is ready commercially but not yet releasable operationally.';
-    summary = blockers.length === 0 ? 'Document and compliance posture are clear enough to release this order into active operations.' : 'Release is blocked until documents and compliance are fully clear.';
+    summary = blockers.length === 0 ? 'Document, compliance, and release evidence posture are clear enough to release this order into active operations.' : 'Release is blocked until required documents, compliance checks, and release evidence are fully clear.';
     actionItems = blockers.length === 0 ? ['Release the order to operations.'] : blockers.map((b) => b.replace(/\.$/, ''));
   } else if (persistedState === 'released') {
     blockers = dispatchBlockers;
     nextState = 'dispatched';
     headline = blockers.length === 0 ? 'Order can be marked dispatched.' : 'Order has been released, but dispatch is still blocked.';
-    summary = blockers.length === 0 ? 'The order has cleared release and is ready for dispatch confirmation.' : 'Dispatch requires zero open document and compliance blockers.';
+    summary = blockers.length === 0 ? 'The order has cleared release and now carries the dispatch evidence needed for shipment confirmation.' : 'Dispatch now depends on explicit artifact evidence, not generic blocker visibility alone.';
     actionItems = blockers.length === 0 ? ['Mark the order dispatched when shipment leaves control.'] : blockers.map((b) => b.replace(/\.$/, ''));
   } else if (persistedState === 'dispatched') {
     blockers = completionBlockers;
     nextState = 'completed';
     headline = blockers.length === 0 ? 'Order can be completed.' : 'Order dispatch is recorded, but completion is still blocked.';
-    summary = blockers.length === 0 ? 'Complete the order once dispatch has landed and downstream handoff is satisfied.' : 'Completion depends on dispatch first.';
+    summary = blockers.length === 0 ? 'Complete the order once delivery evidence and downstream handoff are satisfied.' : 'Completion now requires explicit proof-of-delivery style evidence before closure.';
     actionItems = blockers.length === 0 ? ['Mark the order completed when fulfilment closes.'] : blockers.map((b) => b.replace(/\.$/, ''));
   } else {
     blockers = [];
@@ -150,6 +171,13 @@ export function buildOrderExecutionSnapshot(input: OrderExecutionInput) {
     release_blockers: evaluation.releaseBlockers,
     dispatch_blockers: evaluation.dispatchBlockers,
     completion_blockers: evaluation.completionBlockers,
+    operational_requirements: {
+      document_requirement_reasons: input.documentRequirementReasons ?? [],
+      compliance_requirement_reasons: input.complianceRequirementReasons ?? [],
+      release_artifact_reasons: input.releaseArtifactReasons ?? [],
+      dispatch_artifact_reasons: input.dispatchArtifactReasons ?? [],
+      completion_artifact_reasons: input.completionArtifactReasons ?? [],
+    },
     computed_at: new Date().toISOString(),
   };
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { GenerateComplianceEvidenceButton, GenerateComplianceNextStepButton, GenerateDraftButton, GenerateLeadDraftControls, SuggestionDecisionControls } from '@/features/ai/components/ai-draft-controls';
 import { buildAIWorkspaceSnapshot } from '@/features/ai/logic/intelligence';
-import { AIDailyInsightsList, AILeadPriorityList, AIQuoteRiskList } from '@/features/ai/ui/intelligence-panels';
+import { AIDailyInsightsList, AIGovernedDecisionPanel, AILeadPriorityList, AIQuoteRiskList } from '@/features/ai/ui/intelligence-panels';
 import type { AISuggestionsData } from '@/lib/queries/data';
 import { getSuggestionBadgeClasses, getSuggestionFamily, getSuggestionFamilyLabel, getSuggestionLabel, normalizeSuggestionType } from '@/lib/ai/suggestion-types';
 import { formatDate } from '@/lib/utils';
@@ -121,7 +121,7 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">AI assistive workspace</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-900">Review console for all AI workflows</h1>
-            <p className="mt-2 max-w-3xl text-sm text-slate-600">All AI outputs stay assistive. Operators review every draft here before any communication record is created. Communications remain the SSOT when drafts are applied.</p>
+            <p className="mt-2 max-w-3xl text-sm text-slate-600">AI outputs are now explainable, bounded, and action-safe. Operators review every draft here, and governed decision support now points to the next safe workspace action without mutating workflow truth.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setActiveTab('review')} className={`rounded-2xl border px-4 py-2 text-sm font-medium ${activeTab === 'review' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}>Review queue</button>
@@ -143,7 +143,11 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">AI intelligence posture</p>
             <h2 className="mt-2 text-xl font-semibold text-slate-900">Priority insights by operating risk</h2>
-            <p className="mt-2 text-sm text-slate-600">These ranked insights stay assistive. They do not auto-change records, pricing, compliance state, or communications.</p>
+            <p className="mt-2 text-sm text-slate-600">These ranked insights are now paired with governed decision cards. AI explains why the action is safe, what blocks it, and what it is not allowed to change.</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Governed decision support</p>
+            <div className="mt-4"><AIGovernedDecisionPanel items={intelligence.governedDecisions} summary={intelligence.governanceSummary} /></div>
           </div>
           <div className="grid gap-4 xl:grid-cols-3">
             <div className="rounded-3xl border border-slate-200 bg-white p-5">

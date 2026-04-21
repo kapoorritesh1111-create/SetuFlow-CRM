@@ -23,6 +23,7 @@ const typeToRole: Record<string, 'buyer' | 'supplier' | 'both'> = {
   'stalled-lead':       'buyer',
   'compliance-blocker': 'supplier',
   'quote-risk':         'buyer',
+  'order-execution':    'both',
 };
 
 const roleChip: Record<string, { label: string; cls: string }> = {

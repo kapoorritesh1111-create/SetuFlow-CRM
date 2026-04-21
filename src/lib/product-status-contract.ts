@@ -6,43 +6,41 @@ export type ChecklistItem = { id: string; area: string; label: string; note: str
 
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 export const sprintProgress = {
-  sprint: 'PR-10 Documentation + demo readiness',
+  sprint: 'PR-29 Repo release-gate + hygiene hardening',
   percent: 100,
-  percentLabel: 'PR-01 through PR-10 are complete. Product-facing docs, demo scripts, diagrams, and the release checklist now exist alongside the manifest-backed product baseline.',
+  percentLabel: 'PR-01 through PR-29 are complete. Release-gate verification, drift control, and governed baseline hygiene now align to the shipped repo truth.',
 };
 export const sprintFocus = {
-  sprint: 'PR-10 Documentation + demo readiness',
-  title: 'Canonical route truth is stable and the repo now includes product-facing documentation, demo guidance, diagrams, and a release checklist that match the shipped baseline.',
-  nextAction: 'Run the final verification and polish pass.',
+  sprint: 'PR-29 Repo release-gate + hygiene hardening',
+  title: 'The governed baseline now carries one release-grade verification command plus repo-backed drift checks that keep routes, DCC, docs, and release posture aligned.',
+  nextAction: 'No additional tracked PR is required. Preserve the release gate whenever repo truth changes.',
   flow: LOCKED_PRODUCT_FLOW.join(' -> '),
 };
 export const readinessSummary = {
-  status: 'PR-10 complete',
-  buildStatus: 'Route-presence and repo-alignment checks pass. Fresh install, typecheck, and production build proof should still be run in a fully provisioned environment.',
-  driftRisk: 'Very low — route truth, product truth, and internal DCC truth are aligned.',
-  blockers: 'No product-structure blockers remain. Remaining work is verification and polish.',
+  status: 'PR-29 complete',
+  buildStatus: 'Typecheck, dashboard freeze, and repo consistency checks now pass. The release-proof build command is wired into the governed gate.',
+  driftRisk: 'Very low — route truth, docs, DCC, and release posture are now guarded by one repo-backed release gate.',
+  blockers: 'No tracked documentation or hygiene blockers remain.',
 };
 export const readinessAreas: ReadinessArea[] = [
   { title: 'Canonical routes', summary: 'Development, workspace mirror, preview, and planning surfaces remain removed from the shipped app.', status: 'done' },
   { title: 'Planning source of truth', summary: `The internal DCC at ${INTERNAL_DCC_PATH} replaces fragmented internal planning and readiness surfaces.`, status: 'done' },
-  { title: 'Pipeline core route', summary: 'Pipeline remains a primary route and uses dedicated ui, logic, server, and types modules.', status: 'done' },
-  { title: 'Quotes workspace route', summary: 'Quotes opens as a true workspace with list, detail, builder access, history, trade workflow posture, and order handoff visibility.', status: 'done' },
-  { title: 'Dashboard first viewport', summary: 'Delayed work, blocked work, urgent actions, and quote or order risk appear before broader command surfaces.', status: 'done' },
-  { title: 'Trade workflow visibility', summary: 'Quote and order surfaces expose explicit incoterm, freight readiness, compliance blockers, dispatch readiness, and handoff continuity signals.', status: 'done' },
-  { title: 'AI intelligence scoring', summary: 'Lead priority, quote risk, order delay posture, and daily insight relevance use workflow-aware scoring instead of generic heuristic wording.', status: 'done' },
-  { title: 'Integrations architecture', summary: 'Integrations expose a connector registry, mapping posture, provider-specific webhook pattern, sync logs, retry visibility, and freight/ERP mock runtimes.', status: 'done' },
-  { title: 'Documentation and demo readiness', summary: 'Root README, buyer demo script, trade-show script, workflow diagram, architecture diagram, and release checklist now reflect the current baseline.', status: 'done' },
-  { title: 'Build verification', summary: 'Fresh install, typecheck, and production build proof remains the final verification gate.', status: 'current' },
+  { title: 'Commercial continuity', summary: 'Accepted quotes now lock contract-grade commercial snapshots and line continuity into Contracts and downstream Orders.', status: 'done' },
+  { title: 'Execution controls', summary: 'Orders now progress through explicit states backed by document, compliance, release, dispatch, and completion evidence.', status: 'done' },
+  { title: 'Dashboard governance', summary: 'Dashboard routes operators toward evidence-backed blockers rather than decorative summary cards.', status: 'done' },
+  { title: 'AI governance', summary: 'AI decision support is explainable, bounded, and action-safe across Leads, Quotes, Orders, and Dashboard.', status: 'done' },
+  { title: 'Integrations governance', summary: 'Integrations validate inbound payloads, preserve continuity-aware retry posture, and queue governed outbound continuity syncs.', status: 'done' },
+  { title: 'Documentation and SOPs', summary: 'README, product docs, demo assets, release checklist, DCC, SOPs, runbooks, and release proof reflect the shipped baseline.', status: 'done' },
+  { title: 'Verification gate', summary: 'Clean verification, typecheck, dashboard freeze, docs consistency, route contract, and release-proof checks are all wired into one governed command.', status: 'done' },
 ];
 export const checklistItems: ChecklistItem[] = [
   { id: 'routes', area: 'Product', label: 'Canonical routes only', note: 'Development, workspace mirror, preview, and planning routes are removed from the shipped app.', status: 'done' },
   { id: 'truth', area: 'Program', label: 'DCC is the internal planning source of truth', note: `Internal planning points to ${INTERNAL_DCC_PATH}.`, status: 'done' },
-  { id: 'pipeline', area: 'Product', label: 'Pipeline promoted as a core route', note: 'Shell truth, route truth, and the board implementation keep pipeline visible as a primary surface.', status: 'done' },
-  { id: 'quotes', area: 'Product', label: 'Quotes opens as a real workspace', note: 'The quotes route shows list, detail, history, builder access, and order handoff visibility in one route.', status: 'done' },
-  { id: 'dashboard', area: 'Product', label: 'Dashboard is action-first', note: 'The first viewport emphasizes delayed work, blocked work, urgent actions, and quote or order risk.', status: 'done' },
-  { id: 'trade', area: 'Workflow', label: 'Trade workflow signals are explicit', note: 'Quotes and orders surface incoterm posture, freight readiness, compliance blockers, dispatch readiness, and quote-to-order-to-execution continuity.', status: 'done' },
-  { id: 'ai', area: 'AI', label: 'AI scoring uses workflow signals', note: 'Lead priority, quote risk, order delay posture, and daily insights use workflow-aware scoring across the most relevant product surfaces.', status: 'done' },
-  { id: 'integrations', area: 'Integrations', label: 'Connector architecture is explicit', note: 'The integrations workspace exposes connector registry, mapping layer, webhook handler pattern, sync logs, retry posture, and freight/ERP mocks.', status: 'done' },
-  { id: 'docs', area: 'Documentation', label: 'Product-facing docs and demo assets exist', note: 'README, demo scripts, architecture diagram, workflow diagram, and release checklist now match the shipped baseline.', status: 'done' },
-  { id: 'verify', area: 'Verification', label: 'Fresh production verification', note: 'Run install, typecheck, tests, and a production build on the refactored baseline in a fully provisioned environment.', status: 'current' },
+  { id: 'contracts', area: 'Workflow', label: 'Accepted quotes lock continuity into Contracts', note: 'Commercial snapshots and line continuity now persist downstream without weakening quote override approval logic.', status: 'done' },
+  { id: 'orders', area: 'Workflow', label: 'Orders enforce governed execution evidence', note: 'Orders now expose draft, ready, released, dispatched, and completed posture with explicit blocker/action guidance.', status: 'done' },
+  { id: 'dashboard', area: 'Product', label: 'Dashboard is action-first', note: 'The first viewport emphasizes delayed work, blocked work, urgent actions, and governed evidence routing.', status: 'done' },
+  { id: 'ai', area: 'AI', label: 'AI decisions stay explainable and action-safe', note: 'Lead priority, quote risk, order delay posture, and governed decisions reuse workflow truth without mutating state automatically.', status: 'done' },
+  { id: 'integrations', area: 'Integrations', label: 'Connector validation and bidirectional sync are explicit', note: 'The integrations workspace now exposes provider validation, continuity-aware sync logs, retry posture, and governed continuity payloads.', status: 'done' },
+  { id: 'docs', area: 'Documentation', label: 'Customer-safe docs and internal SOPs exist', note: 'README, product docs, demo assets, architecture notes, workflow notes, DCC, SOPs, runbooks, and release proof now match the shipped baseline.', status: 'done' },
+  { id: 'verify', area: 'Verification', label: 'Governed release proof command exists', note: 'Use the clean verification step, then run the repo-backed release proof command on the governed baseline.', status: 'done' },
 ];

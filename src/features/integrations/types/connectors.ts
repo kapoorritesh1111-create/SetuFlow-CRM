@@ -22,6 +22,10 @@ export type SyncLogItem = {
   createdAt: string | null;
   processedAt: string | null;
   retryEligible: boolean;
+  validationLabel: string;
+  continuityKey: string | null;
+  impactSummary: string;
+  attemptCount: number;
 };
 
 export type ConnectorStateCard = {
@@ -39,6 +43,11 @@ export type ConnectorStateCard = {
   retryMode: string;
   statusHint: string;
   retryQueueCount: number;
+  inboundCount: number;
+  outboundCount: number;
+  validationFailureCount: number;
+  queuedOutboundCount: number;
+  continuityLabel: string;
   syncLogs: SyncLogItem[];
 };
 
@@ -50,6 +59,8 @@ export type RetryQueueItem = {
   createdAt: string | null;
   eventType: string;
   reason: string;
+  attemptCount: number;
+  continuityKey: string | null;
 };
 
 export type IntegrationOverview = {
@@ -58,6 +69,31 @@ export type IntegrationOverview = {
   mockConnectorCount: number;
   recentEventCount: number;
   retryQueueCount: number;
+  validationFailureCount: number;
+  queuedOutboundCount: number;
+  blockedSyncCount: number;
+};
+
+export type GovernedSyncCandidate = {
+  integrationId: string;
+  provider: string;
+  targetType: 'contract';
+  targetId: string;
+  title: string;
+  reason: string;
+  stageLabel: string;
+  readiness: 'ready' | 'blocked';
+  payloadHint: string;
+};
+
+export type IntegrationGovernanceAlert = {
+  id: string;
+  provider: string;
+  title: string;
+  reason: string;
+  severity: 'high' | 'medium';
+  ctaHref: string;
+  ctaLabel: string;
 };
 
 export type IntegrationsWorkspaceViewModel = {
@@ -65,4 +101,6 @@ export type IntegrationsWorkspaceViewModel = {
   connectors: ConnectorStateCard[];
   retryQueue: RetryQueueItem[];
   syncLogs: SyncLogItem[];
+  outboundCandidates: GovernedSyncCandidate[];
+  governanceAlerts: IntegrationGovernanceAlert[];
 };

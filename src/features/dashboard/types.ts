@@ -81,7 +81,7 @@ export type CountryInsight = {
   }>;
 };
 
-export type AttentionItemType = 'overdue-task' | 'stalled-lead' | 'compliance-blocker' | 'quote-risk';
+export type AttentionItemType = 'overdue-task' | 'stalled-lead' | 'compliance-blocker' | 'quote-risk' | 'order-execution';
 
 export type AttentionItem = {
   id: string;
@@ -125,6 +125,43 @@ export type DashboardFilterProduct = {
   name: string;
 };
 
+
+export type DashboardEvidenceLane = 'commercial' | 'compliance' | 'release' | 'dispatch' | 'completion';
+
+export type DashboardEvidenceItem = {
+  id: string;
+  lane: DashboardEvidenceLane;
+  title: string;
+  summary: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  actionLabel: string;
+  actionHref: string;
+  companyName?: string;
+  quoteId?: string;
+  contractId?: string;
+  executionState?: string | null;
+  nextExecutionState?: string | null;
+  blockerCount: number;
+  blockerReasons: string[];
+  leadType?: LeadJourney | null;
+  marketCode?: string | null;
+  stageId?: string | null;
+  stageName?: string | null;
+  productNames?: string[];
+};
+
+export type DashboardExecutionReadiness = {
+  trackedOrders: number;
+  blockedOrders: number;
+  readyOrders: number;
+  releaseReadyOrders: number;
+  dispatchReadyOrders: number;
+  completionReadyOrders: number;
+  missingCommercialLock: number;
+  missingComplianceEvidence: number;
+  missingDispatchEvidence: number;
+};
+
 export type DashboardWidgetDefaults = {
   activeWidgetIds: string[];
   widgetOrder: string[];
@@ -139,6 +176,8 @@ export type DashboardViewData = {
   countryCoverage: CountryCoverageDatum[];
   countryInsights: CountryInsight[];
   attentionItems: AttentionItem[];
+  evidenceItems: DashboardEvidenceItem[];
+  executionReadiness: DashboardExecutionReadiness;
   recentActivity: RecentActivityItem[];
   availableProducts?: DashboardFilterProduct[];
   widgetDefaults: DashboardWidgetDefaults;

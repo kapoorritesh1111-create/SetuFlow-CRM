@@ -23,6 +23,8 @@ import { TradeSignalGrid } from '@/features/trade-workflow/ui';
 import { extractLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
 import { getCommercialLockStateLabel, parseContractCommercialSnapshot } from '@/lib/contract-lock';
 import { evaluateOrderExecution, getOrderExecutionStateLabel } from '@/lib/order-execution';
+import { buildOrderOperationalControlState, type OrderOperationalControlState } from '@/lib/order-operations';
+import type { DocumentRequirementRule } from '@/lib/document-requirements';
 import { progressOrderExecution } from '@/features/orders/server/actions';
 
 // ─── Explicit row types (avoids Supabase generic inference issues) ────────────
@@ -53,6 +55,10 @@ type DocRow = {
   uploaded_at: string;
   version: number;
   related_id: string;
+  related_entity: string | null;
+  requirement_code: string | null;
+  expires_at: string | null;
+  review_notes: string | null;
 };
 
 type ComplianceRow = {
@@ -116,6 +122,9 @@ type ProductVariantRow = {
   source_payload: unknown;
 };
 
+type LeadMarketRow = { lead_id: string; market_id: string };
+type LeadProductInterestRow = { lead_id: string; product_id: string };
+
 type OrderRecord = {
   quoteId: string;
   quoteStatus: string;
@@ -136,6 +145,7 @@ type OrderRecord = {
   executionActionItems: string[];
   nextExecutionState: string | null;
   canAdvanceExecution: boolean;
+  operationalControls: OrderOperationalControlState;
   lines: Array<{
     id: string;
     productName: string;
@@ -174,13 +184,13 @@ function titleCase(v: string): string {
   return v.split(/[_\s-]+/).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
 }
 
-function dispatchGate(docs: DocRow[], compliance: ComplianceRow[]): { label: string; tone: 'success' | 'warning' | 'danger' } {
-  const blocked = [
-    ...docs.filter(d => !['approved', 'complete', 'ready'].includes(d.status.toLowerCase())),
-    ...compliance.filter(c => !['approved', 'complete', 'waived', 'completed'].includes(c.status.toLowerCase())),
-  ].length;
+function dispatchGate(controls: OrderOperationalControlState): { label: string; tone: 'success' | 'warning' | 'danger' } {
+  const blocked = controls.documentRequirementSummary.blockerReasons.length
+    + controls.complianceSummary.blockerReasons.length
+    + controls.releaseArtifactReasons.length
+    + controls.dispatchArtifactReasons.length;
   if (blocked === 0) return { label: 'Dispatch ready', tone: 'success' };
-  if (blocked <= 2) return { label: `${blocked} blocker${blocked > 1 ? 's' : ''}`, tone: 'warning' };
+  if (blocked <= 3) return { label: `${blocked} blocker${blocked > 1 ? 's' : ''}`, tone: 'warning' };
   return { label: `${blocked} blockers`, tone: 'danger' };
 }
 
@@ -298,18 +308,18 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   const quoteIds: string[] = quotes.map(q => q.id);
   const leadIds: string[] = [...new Set(quotes.map(q => q.lead_id))];
 
-  // 2–7. Parallel fetch: leads, documents, compliance, contracts, and line continuity
-  const [leadsResult, docsResult, complianceResult, contractsResult, productsResult, variantsResult] = await Promise.all([
+  // 2–10. Parallel fetch: leads, documents, compliance, contracts, and line continuity
+  const [leadsResult, docsResult, complianceResult, contractsResult, productsResult, variantsResult, leadMarketsResult, leadProductInterestsResult, requirementRulesResult] = await Promise.all([
     db.from('leads')
       .select('id, company_name, contact_name, country, deal_value, deal_currency, lead_type')
       .eq('organization_id', orgId)
       .in('id', leadIds),
 
     db.from('documents')
-      .select('id, file_name, doc_type, status, uploaded_at, version, related_id')
+      .select('id, file_name, doc_type, status, uploaded_at, version, related_id, related_entity, requirement_code, expires_at, review_notes')
       .eq('organization_id', orgId)
-      .eq('related_entity', 'quote')
-      .in('related_id', quoteIds)
+      .in('related_entity', ['quote', 'lead'])
+      .in('related_id', [...quoteIds, ...leadIds])
       .order('uploaded_at', { ascending: false }),
 
     db.from('lead_compliance_items')
@@ -322,14 +332,26 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       .eq('organization_id', orgId)
       .in('quote_id', quoteIds),
 
-
     db.from('products')
       .select('id, name, sku')
       .eq('organization_id', orgId),
 
     db.from('product_variants')
-.select('id, product_id, name, pack_label, sku_code, source_payload, country_of_origin, export_metadata, packaging_type, packaging_unit, units_per_case, net_weight_kg, shipment_notes, shipment_attributes, pricing_mode_default')
+      .select('id, product_id, name, pack_label, sku_code, source_payload, country_of_origin, export_metadata, packaging_type, packaging_unit, units_per_case, net_weight_kg, shipment_notes, shipment_attributes, pricing_mode_default')
       .eq('organization_id', orgId),
+
+    db.from('lead_markets')
+      .select('lead_id, market_id')
+      .in('lead_id', leadIds),
+
+    db.from('lead_product_interests')
+      .select('lead_id, product_id')
+      .in('lead_id', leadIds),
+
+    db.from('document_requirement_rules')
+      .select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, applies_to_entity, is_mandatory, is_active')
+      .eq('organization_id', orgId)
+      .eq('is_active', true),
   ]);
 
   // Build lookup maps with explicit typing
@@ -338,11 +360,19 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
     .forEach(l => leadMap.set(l.id, l));
 
   const docsByQuote = new Map<string, DocRow[]>();
+  const docsByLead = new Map<string, DocRow[]>();
   (Array.isArray(docsResult.data) ? docsResult.data as DocRow[] : [])
     .forEach(d => {
-      const arr = docsByQuote.get(d.related_id) ?? [];
-      arr.push(d);
-      docsByQuote.set(d.related_id, arr);
+      if (d.related_entity === 'quote') {
+        const arr = docsByQuote.get(d.related_id) ?? [];
+        arr.push(d);
+        docsByQuote.set(d.related_id, arr);
+      }
+      if (d.related_entity === 'lead') {
+        const arr = docsByLead.get(d.related_id) ?? [];
+        arr.push(d);
+        docsByLead.set(d.related_id, arr);
+      }
     });
 
   const complianceByLead = new Map<string, ComplianceRow[]>();
@@ -373,9 +403,87 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
     linesByContract.set(line.contract_id, arr);
   });
 
+  const leadMarketIdsByLead = new Map<string, string[]>();
+  (Array.isArray(leadMarketsResult.data) ? leadMarketsResult.data as LeadMarketRow[] : []).forEach((entry) => {
+    const arr = leadMarketIdsByLead.get(entry.lead_id) ?? [];
+    arr.push(entry.market_id);
+    leadMarketIdsByLead.set(entry.lead_id, arr);
+  });
+  const leadProductIdsByLead = new Map<string, string[]>();
+  (Array.isArray(leadProductInterestsResult.data) ? leadProductInterestsResult.data as LeadProductInterestRow[] : []).forEach((entry) => {
+    const arr = leadProductIdsByLead.get(entry.lead_id) ?? [];
+    arr.push(entry.product_id);
+    leadProductIdsByLead.set(entry.lead_id, arr);
+  });
+  const requirementRules = Array.isArray(requirementRulesResult.data) ? requirementRulesResult.data as DocumentRequirementRule[] : [];
+
   // Assemble order records
-  const orders: OrderRecord[] = quotes.map(q => {
+  const orders: OrderRecord[] = quotes.map((q) => {
     const lead = leadMap.get(q.lead_id);
+    const contract = contractByQuote.get(q.id) ?? null;
+    const quoteDocuments = docsByQuote.get(q.id) ?? [];
+    const leadDocuments = docsByLead.get(q.lead_id) ?? [];
+    const complianceItems = complianceByLead.get(q.lead_id) ?? [];
+    const lineItems = ((contract?.id ? linesByContract.get(contract.id) : []) ?? []).map((line) => {
+      const product = line.product_id ? productsById.get(line.product_id) : null;
+      const variant = line.product_variant_id ? variantsById.get(line.product_variant_id) : null;
+      const tradeAttributes = parseTradeAttributes({ ...(variant ?? {}), source_payload: variant?.source_payload ?? null });
+      return {
+        id: line.id,
+        productName: product?.name ?? 'Unmapped product',
+        variantName: variant?.pack_label ?? variant?.name ?? null,
+        skuCode: variant?.sku_code ?? product?.sku ?? null,
+        quantity: line.quantity,
+        unitPrice: line.unit_price,
+        currency: line.currency,
+        catalogPriceAmount: line.catalog_price_amount,
+        catalogPriceCurrency: line.catalog_price_currency,
+        isPriceOverridden: Boolean(line.is_price_overridden),
+        overrideReason: line.override_reason,
+        notes: line.notes,
+        continuityNote: extractLineContinuityNote(line.notes),
+        countryOfOrigin: tradeAttributes.countryOfOrigin,
+        exportMetadata: tradeAttributes.exportMetadata,
+        packaging: [tradeAttributes.packagingType, tradeAttributes.packagingUnit].filter(Boolean).join(' · ') || null,
+        shipmentNotes: tradeAttributes.shipmentNotes,
+      };
+    });
+
+    const allDocuments = [...quoteDocuments, ...leadDocuments].sort((left, right) => String(right.uploaded_at ?? '').localeCompare(String(left.uploaded_at ?? '')));
+    const operationalControls = buildOrderOperationalControlState({
+      documents: allDocuments,
+      complianceItems,
+      requirementRules,
+      leadType: lead?.lead_type ?? null,
+      marketIds: leadMarketIdsByLead.get(q.lead_id) ?? [],
+      productIds: leadProductIdsByLead.get(q.lead_id) ?? [],
+      lines: lineItems.map((line) => ({
+        countryOfOrigin: line.countryOfOrigin,
+        exportMetadata: line.exportMetadata,
+        shipmentNotes: line.shipmentNotes,
+      })),
+    });
+
+    const executionEvaluation = evaluateOrderExecution({
+      quoteAccepted: String(q.status ?? '').toLowerCase() === 'accepted',
+      hasContract: Boolean(contract),
+      contractStatus: contract?.status,
+      contractSignedAt: contract?.signed_at,
+      commercialLockState: contract?.commercial_lock_state,
+      lineCount: lineItems.length,
+      openDocumentBlockers: allDocuments.filter((doc) => !['approved', 'complete', 'ready', 'completed'].includes(doc.status.toLowerCase())).length,
+      openComplianceBlockers: complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length,
+      documentRequirementReasons: operationalControls.documentRequirementSummary.blockerReasons,
+      complianceRequirementReasons: operationalControls.complianceSummary.blockerReasons,
+      releaseArtifactReasons: operationalControls.releaseArtifactReasons,
+      dispatchArtifactReasons: operationalControls.dispatchArtifactReasons,
+      completionArtifactReasons: operationalControls.completionArtifactReasons,
+      currentState: contract?.execution_state,
+      releasedAt: contract?.released_at,
+      dispatchedAt: contract?.dispatched_at,
+      completedAt: contract?.completed_at,
+    });
+
     return {
       quoteId: q.id,
       quoteStatus: q.status,
@@ -388,134 +496,16 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       dealValue: lead?.deal_value ?? null,
       dealCurrency: lead?.deal_currency ?? null,
       leadType: lead?.lead_type === 'buyer' || lead?.lead_type === 'supplier' ? lead.lead_type : 'mixed',
-      documents: docsByQuote.get(q.id) ?? [],
-      complianceItems: complianceByLead.get(q.lead_id) ?? [],
-      contract: contractByQuote.get(q.id) ?? null,
-      executionState: (() => {
-        const contract = contractByQuote.get(q.id) ?? null;
-        const complianceItems = complianceByLead.get(q.lead_id) ?? [];
-        const documents = docsByQuote.get(q.id) ?? [];
-        const lineItems = ((contract?.id ? linesByContract.get(contract.id) : []) ?? []);
-        const evaluation = evaluateOrderExecution({
-          quoteAccepted: String(q.status ?? '').toLowerCase() === 'accepted',
-          hasContract: Boolean(contract),
-          contractStatus: contract?.status,
-          contractSignedAt: contract?.signed_at,
-          commercialLockState: contract?.commercial_lock_state,
-          lineCount: lineItems.length,
-          openDocumentBlockers: documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
-          openComplianceBlockers: complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length,
-          currentState: contract?.execution_state,
-          releasedAt: contract?.released_at,
-          dispatchedAt: contract?.dispatched_at,
-          completedAt: contract?.completed_at,
-        });
-        return evaluation.currentState;
-      })(),
-      executionBlockers: (() => {
-        const contract = contractByQuote.get(q.id) ?? null;
-        const complianceItems = complianceByLead.get(q.lead_id) ?? [];
-        const documents = docsByQuote.get(q.id) ?? [];
-        const lineItems = ((contract?.id ? linesByContract.get(contract.id) : []) ?? []);
-        return evaluateOrderExecution({
-          quoteAccepted: String(q.status ?? '').toLowerCase() === 'accepted',
-          hasContract: Boolean(contract),
-          contractStatus: contract?.status,
-          contractSignedAt: contract?.signed_at,
-          commercialLockState: contract?.commercial_lock_state,
-          lineCount: lineItems.length,
-          openDocumentBlockers: documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
-          openComplianceBlockers: complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length,
-          currentState: contract?.execution_state,
-          releasedAt: contract?.released_at,
-          dispatchedAt: contract?.dispatched_at,
-          completedAt: contract?.completed_at,
-        }).blockers;
-      })(),
-      executionActionItems: (() => {
-        const contract = contractByQuote.get(q.id) ?? null;
-        const complianceItems = complianceByLead.get(q.lead_id) ?? [];
-        const documents = docsByQuote.get(q.id) ?? [];
-        const lineItems = ((contract?.id ? linesByContract.get(contract.id) : []) ?? []);
-        return evaluateOrderExecution({
-          quoteAccepted: String(q.status ?? '').toLowerCase() === 'accepted',
-          hasContract: Boolean(contract),
-          contractStatus: contract?.status,
-          contractSignedAt: contract?.signed_at,
-          commercialLockState: contract?.commercial_lock_state,
-          lineCount: lineItems.length,
-          openDocumentBlockers: documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
-          openComplianceBlockers: complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length,
-          currentState: contract?.execution_state,
-          releasedAt: contract?.released_at,
-          dispatchedAt: contract?.dispatched_at,
-          completedAt: contract?.completed_at,
-        }).actionItems;
-      })(),
-      nextExecutionState: (() => {
-        const contract = contractByQuote.get(q.id) ?? null;
-        const complianceItems = complianceByLead.get(q.lead_id) ?? [];
-        const documents = docsByQuote.get(q.id) ?? [];
-        const lineItems = ((contract?.id ? linesByContract.get(contract.id) : []) ?? []);
-        return evaluateOrderExecution({
-          quoteAccepted: String(q.status ?? '').toLowerCase() === 'accepted',
-          hasContract: Boolean(contract),
-          contractStatus: contract?.status,
-          contractSignedAt: contract?.signed_at,
-          commercialLockState: contract?.commercial_lock_state,
-          lineCount: lineItems.length,
-          openDocumentBlockers: documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
-          openComplianceBlockers: complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length,
-          currentState: contract?.execution_state,
-          releasedAt: contract?.released_at,
-          dispatchedAt: contract?.dispatched_at,
-          completedAt: contract?.completed_at,
-        }).nextState;
-      })(),
-      canAdvanceExecution: (() => {
-        const contract = contractByQuote.get(q.id) ?? null;
-        const complianceItems = complianceByLead.get(q.lead_id) ?? [];
-        const documents = docsByQuote.get(q.id) ?? [];
-        const lineItems = ((contract?.id ? linesByContract.get(contract.id) : []) ?? []);
-        return evaluateOrderExecution({
-          quoteAccepted: String(q.status ?? '').toLowerCase() === 'accepted',
-          hasContract: Boolean(contract),
-          contractStatus: contract?.status,
-          contractSignedAt: contract?.signed_at,
-          commercialLockState: contract?.commercial_lock_state,
-          lineCount: lineItems.length,
-          openDocumentBlockers: documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
-          openComplianceBlockers: complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length,
-          currentState: contract?.execution_state,
-          releasedAt: contract?.released_at,
-          dispatchedAt: contract?.dispatched_at,
-          completedAt: contract?.completed_at,
-        }).canAdvance;
-      })(),
-      lines: ((contractByQuote.get(q.id)?.id ? linesByContract.get(contractByQuote.get(q.id)!.id) : []) ?? []).map((line) => {
-        const product = line.product_id ? productsById.get(line.product_id) : null;
-        const variant = line.product_variant_id ? variantsById.get(line.product_variant_id) : null;
-        const tradeAttributes = parseTradeAttributes({ ...(variant ?? {}), source_payload: variant?.source_payload ?? null });
-        return {
-          id: line.id,
-          productName: product?.name ?? 'Unmapped product',
-          variantName: variant?.pack_label ?? variant?.name ?? null,
-          skuCode: variant?.sku_code ?? product?.sku ?? null,
-          quantity: line.quantity,
-          unitPrice: line.unit_price,
-          currency: line.currency,
-          catalogPriceAmount: line.catalog_price_amount,
-          catalogPriceCurrency: line.catalog_price_currency,
-          isPriceOverridden: Boolean(line.is_price_overridden),
-          overrideReason: line.override_reason,
-          notes: line.notes,
-          continuityNote: extractLineContinuityNote(line.notes),
-          countryOfOrigin: tradeAttributes.countryOfOrigin,
-          exportMetadata: tradeAttributes.exportMetadata,
-          packaging: [tradeAttributes.packagingType, tradeAttributes.packagingUnit].filter(Boolean).join(' · ') || null,
-          shipmentNotes: tradeAttributes.shipmentNotes,
-        };
-      }),
+      documents: allDocuments,
+      complianceItems,
+      contract,
+      executionState: executionEvaluation.currentState,
+      executionBlockers: executionEvaluation.blockers,
+      executionActionItems: executionEvaluation.actionItems,
+      nextExecutionState: executionEvaluation.nextState,
+      canAdvanceExecution: executionEvaluation.canAdvance,
+      operationalControls,
+      lines: lineItems,
     };
   });
 
@@ -534,7 +524,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       <PageHeader
         eyebrow="Orders"
         title="Orders"
-        description="Accepted quotes become live orders here with confirmed quote lines, documents, compliance, and contract status visible per order."
+        description="Accepted quotes become live orders here with contract-grade continuity, compliance requirements, document controls, and dispatch evidence visible per order."
         badge="Live"
         status={`${orders.length} active`}
         meta={[`${accepted.length} accepted`, 'Execution context visible', 'Order-ready only']}
@@ -554,9 +544,9 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
           title="Trade execution readiness"
           signals={[
             { label: 'Buyer / supplier clarity', value: primaryOperationalContext === 'mixed' ? 'Mixed mode' : primaryOperationalContext === 'supplier' ? 'Supplier mode' : 'Buyer mode', tone: 'neutral', detail: 'Orders keeps execution lanes visible so trade work does not collapse into a generic CRM state.' },
-            { label: 'Freight readiness', value: `${accepted.filter((order) => order.contract && order.documents.every((doc) => ['approved', 'complete', 'ready'].includes(doc.status.toLowerCase()))).length}/${accepted.length} ready`, tone: accepted.every((order) => order.contract) ? 'warning' : 'danger', detail: 'Freight handoff now depends on contract posture and document clearance, not commercial acceptance alone.' },
-            { label: 'Compliance blockers', value: String(accepted.reduce((sum, order) => sum + order.complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length, 0)), tone: accepted.some((order) => order.complianceItems.some((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase()))) ? 'warning' : 'success', detail: 'Open compliance items remain visible as execution blockers in the order lane.' },
-            { label: 'Dispatch readiness', value: `${accepted.filter((order) => dispatchGate(order.documents, order.complianceItems).tone === 'success').length}/${accepted.length} ready`, tone: accepted.some((order) => dispatchGate(order.documents, order.complianceItems).tone !== 'success') ? 'warning' : 'success', detail: 'Dispatch readiness now combines contract, document, compliance, and order-state progression in one execution view.' },
+            { label: 'Freight readiness', value: `${accepted.filter((order) => order.operationalControls.documentRequirementSummary.blockerCount === 0 && order.operationalControls.releaseArtifactReasons.length === 0).length}/${accepted.length} ready`, tone: accepted.some((order) => order.operationalControls.documentRequirementSummary.blockerCount > 0 || order.operationalControls.releaseArtifactReasons.length > 0) ? 'warning' : 'success', detail: 'Release now depends on required compliance documents and release artifacts, not commercial acceptance alone.' },
+            { label: 'Compliance blockers', value: String(accepted.reduce((sum, order) => sum + order.operationalControls.complianceSummary.openCount, 0)), tone: accepted.some((order) => order.operationalControls.complianceSummary.openCount > 0) ? 'warning' : 'success', detail: 'Open compliance items stay visible and now feed explicit execution-stage blocker reasons.' },
+            { label: 'Dispatch readiness', value: `${accepted.filter((order) => dispatchGate(order.operationalControls).tone === 'success').length}/${accepted.length} ready`, tone: accepted.some((order) => dispatchGate(order.operationalControls).tone !== 'success') ? 'warning' : 'success', detail: 'Dispatch readiness now combines contract, document, compliance, and order-state progression in one execution view.' },
           ]}
         />
       ) : null}
@@ -567,12 +557,8 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
             .map((order) => predictOrderDelay({
               quoteId: order.quoteId,
               companyName: order.companyName,
-              leadType: order.leadType,
-              quoteStatus: order.quoteStatus,
               updatedAt: order.updatedAt,
-              documentBlockers: order.documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
-              complianceBlockers: order.complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length,
-              hasContract: Boolean(order.contract),
+              blockers: order.executionBlockers,
             }))
             .sort((left, right) => right.score - left.score)
             .slice(0, 3)
@@ -586,7 +572,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         <SectionCard
           eyebrow="Commercially accepted"
           title="Accepted orders"
-          description="Confirmed quote lines are locked here for execution. Operators can progress draft, ready, release, dispatch, and completion posture with explicit blockers visible on each order."
+          description="Confirmed quote lines are locked here for execution. Operators can now progress draft, ready, release, dispatch, and completion posture with explicit compliance-document and dispatch-evidence requirements on each order."
         >
           <div className="space-y-6">
             {accepted.map(order => (
@@ -602,12 +588,12 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 // ─── Order Card ───────────────────────────────────────────────────────────────
 
 function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'sent' }) {
-  const gate = dispatchGate(order.documents, order.complianceItems);
+  const gate = dispatchGate(order.operationalControls);
   const executionLabel = getOrderExecutionStateLabel(order.executionState);
   const tradeWorkflow = inferOrderTradeWorkflow({
     leadType: order.leadType,
-    documentBlockers: order.documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
-    complianceBlockers: order.complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length,
+    documentBlockers: order.operationalControls.documentRequirementSummary.blockerReasons.length + order.operationalControls.releaseArtifactReasons.length + order.operationalControls.dispatchArtifactReasons.length,
+    complianceBlockers: order.operationalControls.complianceSummary.openCount,
     hasContract: Boolean(order.contract),
     quoteStatus: order.quoteStatus,
   });
@@ -616,12 +602,8 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
   const orderDelayPrediction = predictOrderDelay({
     quoteId: order.quoteId,
     companyName: order.companyName,
-    leadType: order.leadType,
-    quoteStatus: order.quoteStatus,
     updatedAt: order.updatedAt,
-    documentBlockers: order.documents.filter((doc) => !['approved', 'complete', 'ready'].includes(doc.status.toLowerCase())).length,
-    complianceBlockers: order.complianceItems.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(item.status.toLowerCase())).length,
-    hasContract: Boolean(order.contract),
+    blockers: order.executionBlockers,
   });
 
   return (
@@ -756,6 +738,69 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
         )}
       </div>
 
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contract progression requirements</p>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{order.operationalControls.documentRequirementSummary.satisfiedCount}/{order.operationalControls.documentRequirementSummary.applicableCount || 0}</span>
+          </div>
+          {order.operationalControls.documentRequirementSummary.expected.length === 0 ? (
+            <p className="mt-2 text-xs text-slate-400">No contract-progression document rules were inferred for this order.</p>
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              {order.operationalControls.documentRequirementSummary.expected.map((item) => (
+                <div key={item.code} className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-slate-800">{item.title}</p>
+                    <p className="text-[10px] text-slate-400">{item.code}</p>
+                  </div>
+                  <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(item.status)}`}>
+                    {titleCase(item.status)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Dispatch artifact orchestration</p>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{order.operationalControls.dispatchArtifacts.length}</span>
+          </div>
+          <div className="mt-2 space-y-1.5">
+            {order.operationalControls.dispatchArtifacts.map((artifact) => (
+              <div key={artifact.key} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-medium text-slate-800">{artifact.title}</p>
+                    <p className="text-[10px] text-slate-400">Needed by {artifact.stage === 'released' ? 'release' : artifact.stage === 'dispatched' ? 'dispatch' : 'completion'}</p>
+                  </div>
+                  <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(artifact.status)}`}>
+                    {titleCase(artifact.status)}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">{artifact.reason}</p>
+                {artifact.matchedDocumentNames.length > 0 ? <p className="mt-1 text-[10px] text-slate-400">{artifact.matchedDocumentNames[0]}</p> : null}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Operational evidence summary</p>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{order.executionBlockers.length}</span>
+          </div>
+          <ul className="mt-2 space-y-1 text-xs text-slate-600">
+            <li className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">{order.operationalControls.documentRequirementSummary.blockerCount} document-rule blocker{order.operationalControls.documentRequirementSummary.blockerCount === 1 ? '' : 's'}</li>
+            <li className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">{order.operationalControls.complianceSummary.openCount} open compliance item{order.operationalControls.complianceSummary.openCount === 1 ? '' : 's'}</li>
+            <li className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">{order.operationalControls.releaseArtifactReasons.length + order.operationalControls.dispatchArtifactReasons.length + order.operationalControls.completionArtifactReasons.length} artifact evidence blocker{order.operationalControls.releaseArtifactReasons.length + order.operationalControls.dispatchArtifactReasons.length + order.operationalControls.completionArtifactReasons.length === 1 ? '' : 's'}</li>
+          </ul>
+          <p className="mt-2 text-[11px] text-slate-500">Execution now keeps contract-grade commercial continuity visible while forcing compliance documents and dispatch evidence to clear in sequence.</p>
+        </div>
+      </div>
+
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         {[
           tradeWorkflow.freightReadiness,
@@ -793,7 +838,7 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
                   <div className="min-w-0">
                     <p className="truncate text-xs font-medium text-slate-800">{doc.file_name}</p>
                     <p className="text-[10px] text-slate-400">
-                      {titleCase(doc.doc_type)} · v{doc.version}
+                      {titleCase(doc.doc_type)} · v{doc.version}{doc.related_entity ? ` · ${titleCase(doc.related_entity)}` : ''}{doc.requirement_code ? ` · ${doc.requirement_code}` : ''}
                     </p>
                   </div>
                   <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(doc.status)}`}>
@@ -818,28 +863,37 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
           {order.complianceItems.length === 0 ? (
             <p className="mt-2 text-xs text-slate-400">No compliance items linked yet.</p>
           ) : (
-            <div className="mt-2 space-y-1.5">
-              {order.complianceItems.slice(0, 5).map(item => (
-                <div key={item.id} className="flex items-center justify-between gap-2">
-                  <p className="truncate text-xs text-slate-600">
-                    {item.compliance_item_id.slice(0, 16)}
-                    {item.submitted_at && (
-                      <span className="ml-1 text-slate-400">
-                        · {formatDateTime(item.submitted_at)}
-                      </span>
-                    )}
-                  </p>
-                  <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(item.status)}`}>
-                    {titleCase(item.status)}
-                  </span>
+            <>
+              {order.operationalControls.complianceSummary.blockerReasons.length > 0 ? (
+                <div className="mt-2 space-y-1">
+                  {order.operationalControls.complianceSummary.blockerReasons.map((reason) => (
+                    <p key={reason} className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-800">{reason}</p>
+                  ))}
                 </div>
-              ))}
-              {order.complianceItems.length > 5 && (
-                <p className="text-[10px] text-slate-400">
-                  +{order.complianceItems.length - 5} more — view in Lead
-                </p>
-              )}
-            </div>
+              ) : null}
+              <div className="mt-2 space-y-1.5">
+                {order.complianceItems.slice(0, 5).map(item => (
+                  <div key={item.id} className="flex items-center justify-between gap-2">
+                    <p className="truncate text-xs text-slate-600">
+                      {item.compliance_item_id.slice(0, 16)}
+                      {item.submitted_at && (
+                        <span className="ml-1 text-slate-400">
+                          · {formatDateTime(item.submitted_at)}
+                        </span>
+                      )}
+                    </p>
+                    <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(item.status)}`}>
+                      {titleCase(item.status)}
+                    </span>
+                  </div>
+                ))}
+                {order.complianceItems.length > 5 && (
+                  <p className="text-[10px] text-slate-400">
+                    +{order.complianceItems.length - 5} more — view in Lead
+                  </p>
+                )}
+              </div>
+            </>
           )}
         </div>
 

@@ -8,6 +8,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { buildOrderExecutionSnapshot, evaluateOrderExecution, normalizeOrderExecutionState } from '@/lib/order-execution';
+import { buildOrderOperationalControlState } from '@/lib/order-operations';
 
 function buildRedirect(notice: string) {
   return `/orders?notice=${encodeURIComponent(notice)}`;
@@ -40,12 +41,25 @@ export async function progressOrderExecution(formData: FormData) {
 
   const quoteId = contract.quote_id as string;
   const leadId = contract.lead_id as string;
-  const [{ data: quote }, { data: docs }, { data: compliance }, { data: lines }] = await Promise.all([
+  const [{ data: quote }, { data: docs }, { data: compliance }, { data: lines }, { data: lead }, { data: leadMarkets }, { data: leadProducts }, { data: requirementRules }] = await Promise.all([
     db.from('quotes').select('id, status').eq('organization_id', workspace.organization.id).eq('id', quoteId).maybeSingle(),
-    db.from('documents').select('id, status').eq('organization_id', workspace.organization.id).eq('related_entity', 'quote').eq('related_id', quoteId),
-    db.from('lead_compliance_items').select('id, status').eq('lead_id', leadId),
+    db.from('documents').select('id, file_name, doc_type, status, uploaded_at, version, related_id, related_entity, requirement_code, expires_at, review_notes').eq('organization_id', workspace.organization.id).in('related_entity', ['quote', 'lead']).in('related_id', [quoteId, leadId]),
+    db.from('lead_compliance_items').select('id, status, compliance_item_id, submitted_at, approved_at').eq('organization_id', workspace.organization.id).eq('lead_id', leadId),
     db.from('contract_line_items').select('id').eq('contract_id', contractId),
+    db.from('leads').select('id, lead_type').eq('organization_id', workspace.organization.id).eq('id', leadId).maybeSingle(),
+    db.from('lead_markets').select('lead_id, market_id').eq('lead_id', leadId),
+    db.from('lead_product_interests').select('lead_id, product_id').eq('lead_id', leadId),
+    db.from('document_requirement_rules').select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, applies_to_entity, is_mandatory, is_active').eq('organization_id', workspace.organization.id).eq('is_active', true),
   ]);
+
+  const operationalControls = buildOrderOperationalControlState({
+    documents: Array.isArray(docs) ? docs : [],
+    complianceItems: Array.isArray(compliance) ? compliance : [],
+    requirementRules: Array.isArray(requirementRules) ? requirementRules : [],
+    leadType: lead?.lead_type ?? null,
+    marketIds: Array.isArray(leadMarkets) ? leadMarkets.map((item: any) => item.market_id).filter(Boolean) : [],
+    productIds: Array.isArray(leadProducts) ? leadProducts.map((item: any) => item.product_id).filter(Boolean) : [],
+  });
 
   const evaluation = evaluateOrderExecution({
     quoteAccepted: String(quote?.status ?? '').toLowerCase() === 'accepted',
@@ -54,8 +68,13 @@ export async function progressOrderExecution(formData: FormData) {
     contractSignedAt: contract.signed_at,
     commercialLockState: contract.commercial_lock_state,
     lineCount: Array.isArray(lines) ? lines.length : 0,
-    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc: any) => !['approved', 'complete', 'ready'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
+    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc: any) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
     openComplianceBlockers: Array.isArray(compliance) ? compliance.filter((item: any) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length : 0,
+    documentRequirementReasons: operationalControls.documentRequirementSummary.blockerReasons,
+    complianceRequirementReasons: operationalControls.complianceSummary.blockerReasons,
+    releaseArtifactReasons: operationalControls.releaseArtifactReasons,
+    dispatchArtifactReasons: operationalControls.dispatchArtifactReasons,
+    completionArtifactReasons: operationalControls.completionArtifactReasons,
     currentState: contract.execution_state,
   });
 
@@ -74,8 +93,13 @@ export async function progressOrderExecution(formData: FormData) {
     contractSignedAt: contract.signed_at,
     commercialLockState: contract.commercial_lock_state,
     lineCount: Array.isArray(lines) ? lines.length : 0,
-    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc: any) => !['approved', 'complete', 'ready'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
+    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc: any) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
     openComplianceBlockers: Array.isArray(compliance) ? compliance.filter((item: any) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length : 0,
+    documentRequirementReasons: operationalControls.documentRequirementSummary.blockerReasons,
+    complianceRequirementReasons: operationalControls.complianceSummary.blockerReasons,
+    releaseArtifactReasons: operationalControls.releaseArtifactReasons,
+    dispatchArtifactReasons: operationalControls.dispatchArtifactReasons,
+    completionArtifactReasons: operationalControls.completionArtifactReasons,
     currentState: nextState,
     releasedAt: nextState === 'released' ? now : null,
     dispatchedAt: nextState === 'dispatched' ? now : null,

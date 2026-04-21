@@ -18,17 +18,23 @@ Setu Flow should turn fragmented commercial and execution signals into a visible
 - Admin
 
 ## Supporting surfaces
+- Contracts
+- Documents
+- Compliance
 - Contact Exchange
 - Integrations
 - AI assist
-- Documents, contracts, compliance, products, and trade events
+- Products, trade events, and tasks
 
 ## Product rules
 - No feature should bypass the locked commercial flow.
 - Pipeline remains a core route.
 - Quotes must remain a real workspace, not an explanatory launchpad.
+- Accepted quotes may lock commercial truth into Contracts, but this does **not** weaken quote override approval logic.
+- Orders must remain governed by contract continuity, document/compliance controls, and explicit execution evidence.
 - Dashboard must stay action-first.
-- Trade workflow, AI, and integrations should reinforce the core operating flow rather than compete with it.
+- AI must stay explainable, bounded, and action-safe.
+- Integrations must never outrun contract lock, compliance controls, or execution evidence.
 - Internal engineering truth belongs in the DCC, not in buyer-facing product surfaces.
 
 ## Demo standard
@@ -37,7 +43,9 @@ A credible product walkthrough should be able to show:
 - lead qualification
 - pipeline movement
 - quote creation and risk visibility
+- contract-backed commercial continuity
 - order execution readiness
-- integration posture
+- bounded AI guidance
+- governed integration posture
 
 For operator guidance, use the buyer demo and trade-show scripts in `docs/`.

@@ -141,22 +141,22 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
             ? 'Supplier mode is active on this dashboard'
             : 'Mixed buyer and supplier view is active on this dashboard'}
         description={resolvedScope === 'buyer'
-          ? 'This view is prioritizing buyer-side commercial movement. The primary action is to create or qualify the next lead, then move it into Quote.'
+          ? 'This view is prioritizing buyer-side commercial movement with evidence-backed order forcing and bounded AI routing. The primary action is to create or qualify the next lead, then clear the next governed blocker.'
           : resolvedScope === 'supplier'
-            ? 'This view is prioritizing supplier-side sourcing movement. The primary action is to progress the next supplier record until it is quote-ready.'
-            : 'This view combines buyer and supplier activity. Use the primary capture action first, then route the record through Lead to Quote and finally into Orders.'}
+            ? 'This view is prioritizing supplier-side sourcing movement with compliance and dispatch evidence visible and bounded AI routing available. The primary action is to progress the next supplier record until its blockers are cleared.'
+            : 'This view combines buyer and supplier activity. Use the primary capture action first, then route the record through Lead to Quote and finally into governed order execution, with AI only recommending safe next actions from repo truth.'}
         tone="neutral"
       />
 
       <div className="grid gap-3 lg:grid-cols-4">
         <StateMessage
-          title="Delayed, blocked, and at-risk work comes first"
+          title="Evidence-backed action forcing comes first"
           description={`${actionSummary.pendingActionCount} items need movement before they can become revenue or execution progress.`}
           tone="neutral"
         />
         <Link href={PRODUCT_ROUTES.app.capture} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Capture new contact</Link>
         <Link href={PRODUCT_ROUTES.app.leads} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open leads queue</Link>
-        <Link href={PRODUCT_ROUTES.app.orders} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open orders risk</Link>
+        <Link href={PRODUCT_ROUTES.app.orders} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open execution workspace</Link>
       </div>
 
       <DashboardInteractive

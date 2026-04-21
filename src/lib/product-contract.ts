@@ -5,6 +5,7 @@ export const LOCKED_PRODUCT_FLOW = manifest.lockedProductFlow as readonly string
 export const INTERNAL_DCC_PATH = manifest.internalDccPath;
 export const APPROVED_REWORK_PHASE = manifest.approvedReworkPhase;
 export const APPROVED_REWORK_TITLE = manifest.approvedReworkTitle;
+export const RELEASE_GATE_CONTRACT = manifest.releaseGate;
 
 export const PRODUCT_ROUTE_LABELS = manifest.routeLabels;
 export const PRODUCT_ROUTES = manifest.routes;

@@ -7,8 +7,8 @@
     "Order",
     "Execution"
   ],
-  "approvedReworkPhase": "Post-PR10 reassessment in progress",
-  "approvedReworkTitle": "Product-catalog workflow alignment and demo-readiness gap closure",
+  "approvedReworkPhase": "PR-29 release-gate baseline complete",
+  "approvedReworkTitle": "Governed workflow release candidate with aligned DCC, docs, and verification gate",
   "routeLabels": {
     "dashboard": "Dashboard",
     "leads": "Leads",
@@ -213,6 +213,20 @@
       "src/app/workspace",
       "src/components/previews",
       "src/components/planning"
+    ]
+  },
+  "releaseGate": {
+    "verificationScript": "npm run release:proof",
+    "cleanScript": "npm run clean:verification",
+    "proofDoc": "docs/RELEASE_PROOF.md",
+    "requiredChecks": [
+      "clean verification artifacts",
+      "typescript typecheck",
+      "dashboard freeze check",
+      "repo alignment tests",
+      "docs and DCC consistency tests",
+      "route manifest consistency tests",
+      "production build"
     ]
   }
 }

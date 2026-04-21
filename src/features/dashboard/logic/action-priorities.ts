@@ -29,7 +29,7 @@ export function buildDashboardPriorityBuckets(items: AttentionItem[]): Dashboard
       label: 'Blocked work',
       count: blocked.length,
       tone: blocked.length ? 'danger' : 'neutral',
-      description: blocked.length ? 'Commercial movement is blocked and needs intervention.' : 'No blocked work is stopping movement right now.',
+      description: blocked.length ? 'Commercial or execution movement is blocked and needs intervention.' : 'No blocked work is stopping movement right now.',
       topItem: blocked[0],
     },
     {
@@ -53,7 +53,7 @@ export function buildDashboardPriorityBuckets(items: AttentionItem[]): Dashboard
       label: 'Quote / order risk',
       count: risk.length,
       tone: risk.length ? 'warning' : 'neutral',
-      description: risk.length ? 'Commercial value is exposed unless the next action is taken.' : 'No major quote or order risk is currently exposed.',
+      description: risk.length ? 'Commercial value is exposed unless the next action is taken.' : 'No major quote or execution risk is currently exposed.',
       topItem: risk[0],
     },
   ];

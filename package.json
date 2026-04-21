@@ -8,11 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/repo-alignment.test.mjs tests/docs-consistency.test.mjs tests/routes-presence.test.mjs",
+    "test": "node --test tests/repo-alignment.test.mjs tests/docs-consistency.test.mjs tests/routes-presence.test.mjs tests/dcc-alignment.test.mjs tests/route-contract.test.mjs tests/release-proof.test.mjs",
     "test:release-readiness": "npm test",
     "check:dashboard": "node scripts/check-dashboard-freeze.mjs",
-    "verify": "npm run typecheck && npm run check:dashboard && npm test && npm run build",
-    "release:proof": "npm run verify"
+    "verify": "npm run clean:verification && npm run typecheck && npm run check:dashboard && npm test && npm run build",
+    "release:proof": "npm run verify",
+    "clean:verification": "node scripts/clean-verification.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

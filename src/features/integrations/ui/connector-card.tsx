@@ -43,6 +43,24 @@ export function ConnectorCard({ connector, retryAction }: Props) {
           <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Retry posture</p>
           <p className="mt-2 text-sm font-semibold text-slate-900">{connector.retryQueueCount ? `${connector.retryQueueCount} events in queue` : connector.retryMode}</p>
         </div>
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Continuity</p>
+          <p className="mt-2 text-sm font-semibold text-slate-900">{connector.continuityLabel}</p>
+        </div>
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Inbound / outbound</p>
+          <p className="mt-2 text-sm font-semibold text-slate-900">{connector.inboundCount} inbound · {connector.outboundCount} outbound</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Validation failures</p>
+          <p className="mt-2 text-sm font-semibold text-slate-900">{connector.validationFailureCount}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Queued outbound syncs</p>
+          <p className="mt-2 text-sm font-semibold text-slate-900">{connector.queuedOutboundCount}</p>
+        </div>
       </div>
       <p className="mt-4 text-sm text-slate-600">{connector.statusHint}</p>
       {retryAction ? <div className="mt-4">{retryAction}</div> : null}

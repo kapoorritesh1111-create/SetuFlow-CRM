@@ -6,6 +6,9 @@ import type { Database } from '@/types/database';
 import { getAuditEvents, type AuditEventRecord } from '@/lib/auditLog';
 import { calculateCommercialSummaryMetrics, isWorkflowOpenStatus } from '@/lib/reporting/summary-metrics';
 import { parseLeadWorkflow, type LeadWorkflowState } from '@/lib/lead-workflow';
+import { evaluateOrderExecution } from '@/lib/order-execution';
+import { buildOrderOperationalControlState } from '@/lib/order-operations';
+import { parseTradeAttributes } from '@/lib/trade-attributes';
 import type {
   DashboardViewData,
   DashboardLeadHealthDatum,
@@ -16,6 +19,8 @@ import type {
   DashboardKpi,
   DashboardScope,
   DashboardStatusTag,
+  DashboardEvidenceItem,
+  DashboardExecutionReadiness,
 } from '@/features/dashboard/types';
 
 type LeadRow = Database['public']['Tables']['leads']['Row'];
@@ -882,6 +887,29 @@ export type IntegrationsWorkspaceData = QueryIssuePayload & {
     IntegrationEventRow,
     'id' | 'integration_id' | 'direction' | 'event_type' | 'status' | 'created_at' | 'processed_at' | 'payload'
   >[];
+  leads: Pick<LeadRow, 'id' | 'company_name' | 'lead_type'>[];
+  quotes: Pick<QuoteRow, 'id' | 'lead_id' | 'status'>[];
+  contracts: Pick<ContractRow, 'id' | 'lead_id' | 'quote_id' | 'status' | 'signed_at' | 'commercial_lock_state' | 'execution_state' | 'released_at' | 'dispatched_at' | 'completed_at' | 'commercial_snapshot'>[];
+  documents: Pick<DocumentRow, 'id' | 'related_entity' | 'related_id' | 'status' | 'expires_at' | 'uploaded_at' | 'file_name' | 'doc_type' | 'requirement_code'>[];
+  complianceItems: Pick<LeadComplianceItemRow, 'id' | 'lead_id' | 'status' | 'compliance_item_id' | 'submitted_at' | 'approved_at'>[];
+  documentRequirementRules: Array<{
+    id: string;
+    market_id: string | null;
+    product_id: string | null;
+    lead_type: string | null;
+    progression_scope: string | null;
+    requirement_code: string;
+    title: string;
+    doc_type: string | null;
+    applies_to_entity: string | null;
+    is_mandatory: boolean | null;
+    is_active: boolean | null;
+  }>;
+  leadMarkets: Pick<LeadMarketRow, 'lead_id' | 'market_id'>[];
+  leadProductInterests: Pick<LeadProductInterestRow, 'lead_id' | 'product_id'>[];
+  contractLineItems: Pick<ContractLineItemRow, 'id' | 'contract_id' | 'product_id' | 'product_variant_id' | 'quantity' | 'unit_price' | 'currency'>[];
+  products: Pick<ProductRow, 'id' | 'name'>[];
+  productVariants: Pick<ProductVariantRow, 'id' | 'source_payload'>[];
 };
 
 export type ReportsData = QueryIssuePayload & {
@@ -983,6 +1011,25 @@ export type AISuggestionsData = QueryIssuePayload & {
     CommunicationRow,
     'id' | 'lead_id' | 'subject' | 'status' | 'draft_source' | 'created_at' | 'metadata'
   >[];
+  contracts: Pick<ContractRow, 'id' | 'lead_id' | 'quote_id' | 'status' | 'signed_at' | 'commercial_lock_state' | 'execution_state' | 'released_at' | 'dispatched_at' | 'completed_at'>[];
+  documentRequirementRules: Array<{
+    id: string;
+    market_id: string | null;
+    product_id: string | null;
+    lead_type: string | null;
+    progression_scope: string | null;
+    requirement_code: string;
+    title: string;
+    doc_type: string | null;
+    applies_to_entity: string | null;
+    is_mandatory: boolean | null;
+    is_active: boolean | null;
+  }>;
+  leadMarkets: Pick<LeadMarketRow, 'lead_id' | 'market_id'>[];
+  leadProductInterests: Pick<LeadProductInterestRow, 'lead_id' | 'product_id'>[];
+  contractLineItems: Pick<ContractLineItemRow, 'id' | 'contract_id' | 'product_id' | 'product_variant_id'>[];
+  products: Pick<ProductRow, 'id' | 'name'>[];
+  productVariants: Pick<ProductVariantRow, 'id' | 'source_payload'>[];
 };
 
 export type SettingsListsData = QueryIssuePayload & {
@@ -1191,7 +1238,7 @@ export async function getDashboardData(
 
   const issues: string[] = [];
   const supabase = await createClient();
-  const [{ stages }, memberUserIds, leads, followUps, activities, tradeEvents, rfqs, quotes, complianceItems, scheduledTasks, countries] =
+  const [{ stages }, memberUserIds, leads, followUps, activities, tradeEvents, rfqs, quotes, complianceItems, scheduledTasks, countries, contractsResult, documentsResult, requirementRulesResult] =
     await Promise.all([
       getOrganizationStages(organizationId, issues),
       getOrganizationMemberUserIds(organizationId, issues),
@@ -1233,7 +1280,7 @@ export async function getDashboardData(
         .limit(DASHBOARD_RECENT_QUOTE_LIMIT),
       supabase
         .from('lead_compliance_items')
-        .select('id, lead_id, status, created_at, submitted_at, approved_at, due_at, severity')
+        .select('id, lead_id, compliance_item_id, status, created_at, submitted_at, approved_at, due_at, severity')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(80),
@@ -1249,7 +1296,27 @@ export async function getDashboardData(
         .eq('organization_id', organizationId)
         .eq('is_active', true)
         .order('name'),
+      supabase
+        .from('contracts')
+        .select('id, quote_id, lead_id, status, signed_at, commercial_lock_state, execution_state, released_at, dispatched_at, completed_at')
+        .eq('organization_id', organizationId)
+        .order('updated_at', { ascending: false })
+        .limit(160),
+      supabase
+        .from('documents')
+        .select('id, file_name, doc_type, status, uploaded_at, version, related_id, related_entity, requirement_code, expires_at, review_notes')
+        .eq('organization_id', organizationId)
+        .in('related_entity', ['lead', 'quote', 'contract'])
+        .order('uploaded_at', { ascending: false })
+        .limit(240),
+      supabase
+        .from('document_requirement_rules')
+        .select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, applies_to_entity, is_mandatory, is_active')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('progression_scope', { ascending: true }),
     ]);
+
 
   await getOrganizationProfiles(memberUserIds, issues);
 
@@ -1296,12 +1363,20 @@ export async function getDashboardData(
     Pick<QuoteRow, 'id' | 'lead_id' | 'rfq_id' | 'status' | 'currency' | 'created_at' | 'updated_at'>
   >;
   const complianceRows = rows(complianceItems.data) as Array<
-    Pick<LeadComplianceItemRow, 'id' | 'lead_id' | 'status' | 'created_at' | 'submitted_at' | 'approved_at' | 'due_at' | 'severity'>
+    Pick<LeadComplianceItemRow, 'id' | 'lead_id' | 'compliance_item_id' | 'status' | 'created_at' | 'submitted_at' | 'approved_at' | 'due_at' | 'severity'>
   >;
   const taskRows = rows(scheduledTasks.data) as Array<
     Pick<ScheduledTaskRow, 'id' | 'lead_id' | 'scheduled_for' | 'status' | 'task_type' | 'payload' | 'completed_at' | 'created_at'>
   >;
   const countryRows = rows(countries.data) as Array<Pick<CountryRow, 'id' | 'name' | 'iso2_code'>>;
+
+  addIssue(issues, 'dashboard contracts', (contractsResult as any).error);
+  addIssue(issues, 'dashboard documents', (documentsResult as any).error);
+  addIssue(issues, 'dashboard document requirement rules', (requirementRulesResult as any).error);
+
+  const contractRows = rows((contractsResult as any).data) as Array<Pick<ContractRow, 'id' | 'quote_id' | 'lead_id' | 'status' | 'signed_at' | 'commercial_lock_state' | 'execution_state' | 'released_at' | 'dispatched_at' | 'completed_at'>>;
+  const documentRows = rows((documentsResult as any).data) as Array<Pick<DocumentRow, 'id' | 'file_name' | 'doc_type' | 'status' | 'uploaded_at' | 'version' | 'related_id' | 'related_entity' | 'requirement_code' | 'expires_at' | 'review_notes'>>;
+  const requirementRuleRows = rows((requirementRulesResult as any).data) as Array<Pick<DocumentRequirementRuleRow, 'id' | 'market_id' | 'product_id' | 'lead_type' | 'progression_scope' | 'requirement_code' | 'title' | 'doc_type' | 'applies_to_entity' | 'is_mandatory' | 'is_active'>>;
 
   const stageById = new Map<string, (typeof stages)[number]>(
     stages.map((stage: (typeof stages)[number]) => [stage.id, stage] as const)
@@ -1316,26 +1391,70 @@ export async function getDashboardData(
   const scopedLeadIds = new Set(scopedLeadRows.map((lead) => lead.id));
 
   const scopedLeadIdList = Array.from(scopedLeadIds);
-  const [leadProductsResult, productsResult] = scopedLeadIdList.length
+  const contractIds = contractRows.map((contract) => contract.id).filter(Boolean);
+  const [leadProductsResult, productsResult, leadMarketsResult, contractLineItemsResult, variantsResult] = scopedLeadIdList.length || contractIds.length
     ? await Promise.all([
         supabase
           .from('lead_product_interests')
           .select('lead_id, product_id')
-          .in('lead_id', scopedLeadIdList),
+          .in('lead_id', scopedLeadIdList.length ? scopedLeadIdList : ['00000000-0000-0000-0000-000000000000']),
         supabase
           .from('products')
-          .select('id, name')
+          .select('id, name, sku')
           .eq('organization_id', organizationId)
           .limit(400),
+        supabase
+          .from('lead_markets')
+          .select('lead_id, market_id')
+          .in('lead_id', scopedLeadIdList.length ? scopedLeadIdList : ['00000000-0000-0000-0000-000000000000']),
+        supabase
+          .from('contract_line_items')
+          .select('id, contract_id, product_id, product_variant_id, quantity, unit_price, currency, notes')
+          .in('contract_id', contractIds.length ? contractIds : ['00000000-0000-0000-0000-000000000000']),
+        supabase
+          .from('product_variants')
+          .select('id, product_id, name, pack_label, sku_code, source_payload')
+          .eq('organization_id', organizationId)
+          .limit(500),
       ])
-    : [{ data: [], error: null }, { data: [], error: null }];
+    : [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }];
 
   addIssue(issues, 'dashboard lead product interests', (leadProductsResult as any).error);
   addIssue(issues, 'dashboard products', (productsResult as any).error);
+  addIssue(issues, 'dashboard lead markets', (leadMarketsResult as any).error);
+  addIssue(issues, 'dashboard contract line items', (contractLineItemsResult as any).error);
+  addIssue(issues, 'dashboard product variants', (variantsResult as any).error);
 
   const leadProductRows = rows((leadProductsResult as any).data) as Array<Pick<LeadProductInterestRow, 'lead_id' | 'product_id'>>;
-  const productRows = rows((productsResult as any).data) as Array<Pick<ProductRow, 'id' | 'name'>>;
+  const productRows = rows((productsResult as any).data) as Array<Pick<ProductRow, 'id' | 'name' | 'sku'>>;
   const productNameById = new Map(productRows.map((product) => [product.id, product.name] as const));
+  const leadMarketRows = rows((leadMarketsResult as any).data) as Array<Pick<LeadMarketRow, 'lead_id' | 'market_id'>>;
+  const contractLineRows = rows((contractLineItemsResult as any).data) as Array<Pick<ContractLineItemRow, 'id' | 'contract_id' | 'product_id' | 'product_variant_id' | 'quantity' | 'unit_price' | 'currency' | 'notes'>>;
+  const variantRows = rows((variantsResult as any).data) as Array<Pick<ProductVariantRow, 'id' | 'product_id' | 'name' | 'pack_label' | 'sku_code' | 'source_payload'>>;
+  const marketIdsByLeadId = new Map<string, string[]>();
+  for (const row of leadMarketRows) {
+    if (!row.lead_id || !row.market_id) continue;
+    const existing = marketIdsByLeadId.get(row.lead_id) ?? [];
+    if (!existing.includes(row.market_id)) existing.push(row.market_id);
+    marketIdsByLeadId.set(row.lead_id, existing);
+  }
+  const productIdsByLeadId = new Map<string, string[]>();
+  const variantById = new Map(variantRows.map((variant) => [variant.id, variant] as const));
+  const contractByQuoteId = new Map(contractRows.filter((contract) => contract.quote_id).map((contract) => [contract.quote_id, contract] as const));
+  const contractLineItemsByContractId = new Map<string, typeof contractLineRows>();
+  for (const line of contractLineRows) {
+    if (!line.contract_id) continue;
+    const existing = contractLineItemsByContractId.get(line.contract_id) ?? [];
+    existing.push(line);
+    contractLineItemsByContractId.set(line.contract_id, existing);
+  }
+  const documentsByEntityKey = new Map<string, typeof documentRows>();
+  for (const document of documentRows) {
+    const key = `${document.related_entity}:${document.related_id}`;
+    const existing = documentsByEntityKey.get(key) ?? [];
+    existing.push(document);
+    documentsByEntityKey.set(key, existing);
+  }
   const productNamesByLeadId = new Map<string, string[]>();
   for (const item of leadProductRows) {
     if (!item.lead_id || !item.product_id) continue;
@@ -1344,6 +1463,9 @@ export async function getDashboardData(
     const existing = productNamesByLeadId.get(item.lead_id) ?? [];
     if (!existing.includes(productName)) existing.push(productName);
     productNamesByLeadId.set(item.lead_id, existing);
+    const ids = productIdsByLeadId.get(item.lead_id) ?? [];
+    if (!ids.includes(item.product_id)) ids.push(item.product_id);
+    productIdsByLeadId.set(item.lead_id, ids);
   }
 
   const scopedFollowUpRows = filterRowsByLeadIds(followUpRows, (item) => item.lead_id, scopedLeadIds);
@@ -1725,6 +1847,197 @@ export async function getDashboardData(
     )
     .slice(0, 6) as AttentionItem[];
 
+
+  const orderEvidenceItems: DashboardEvidenceItem[] = [];
+  const orderAttentionItems: AttentionItem[] = [];
+
+  for (const quote of scopedQuoteRows) {
+    if (String(quote.status ?? '').toLowerCase() !== 'accepted' || !quote.lead_id) continue;
+    const lead = leadById.get(quote.lead_id);
+    if (!lead) continue;
+    const contract = contractByQuoteId.get(quote.id) ?? null;
+    const quoteDocuments = documentsByEntityKey.get(`quote:${quote.id}`) ?? [];
+    const leadDocuments = documentsByEntityKey.get(`lead:${quote.lead_id}`) ?? [];
+    const contractDocuments = contract ? (documentsByEntityKey.get(`contract:${contract.id}`) ?? []) : [];
+    const lineItems = contract ? (contractLineItemsByContractId.get(contract.id) ?? []).map((line) => {
+      const variant = line.product_variant_id ? variantById.get(line.product_variant_id) ?? null : null;
+      const product = line.product_id ? productRows.find((entry) => entry.id === line.product_id) ?? null : null;
+      const trade = parseTradeAttributes(variant?.source_payload ?? null);
+      return {
+        countryOfOrigin: trade.countryOfOrigin,
+        exportMetadata: trade.exportMetadata,
+        shipmentNotes: trade.shipmentNotes,
+        productName: product?.name ?? null,
+      };
+    }) : [];
+
+    const operationalControls = buildOrderOperationalControlState({
+      documents: [...quoteDocuments, ...leadDocuments, ...contractDocuments],
+      complianceItems: (complianceByLead.get(quote.lead_id) ?? []).map((item) => ({
+        id: item.id,
+        status: item.status,
+        compliance_item_id: item.compliance_item_id,
+        submitted_at: item.submitted_at,
+        approved_at: item.approved_at,
+      })),
+      requirementRules: requirementRuleRows.map((rule) => ({
+        id: rule.id,
+        market_id: rule.market_id,
+        product_id: rule.product_id,
+        lead_type: rule.lead_type,
+        progression_scope: rule.progression_scope,
+        requirement_code: rule.requirement_code,
+        title: rule.title,
+        doc_type: rule.doc_type,
+        applies_to_entity: rule.applies_to_entity,
+        is_mandatory: rule.is_mandatory,
+        is_active: rule.is_active,
+      })),
+      leadType: lead.lead_type,
+      marketIds: marketIdsByLeadId.get(quote.lead_id) ?? [],
+      productIds: productIdsByLeadId.get(quote.lead_id) ?? [],
+      lines: lineItems.map((line) => ({
+        countryOfOrigin: line.countryOfOrigin,
+        exportMetadata: line.exportMetadata,
+        shipmentNotes: line.shipmentNotes,
+      })),
+    });
+
+    const execution = evaluateOrderExecution({
+      quoteAccepted: true,
+      hasContract: Boolean(contract),
+      contractStatus: contract?.status,
+      contractSignedAt: contract?.signed_at,
+      commercialLockState: contract?.commercial_lock_state,
+      lineCount: lineItems.length,
+      openDocumentBlockers: 0,
+      openComplianceBlockers: 0,
+      documentRequirementReasons: operationalControls.documentRequirementSummary.blockerReasons,
+      complianceRequirementReasons: operationalControls.complianceSummary.blockerReasons,
+      releaseArtifactReasons: operationalControls.releaseArtifactReasons,
+      dispatchArtifactReasons: operationalControls.dispatchArtifactReasons,
+      completionArtifactReasons: operationalControls.completionArtifactReasons,
+      currentState: contract?.execution_state,
+      releasedAt: contract?.released_at,
+      dispatchedAt: contract?.dispatched_at,
+      completedAt: contract?.completed_at,
+    });
+
+    const marketCode = lead.country_id ? countryById.get(lead.country_id)?.iso2_code ?? null : countryBySlug.get(slugifyDashboardCountry(lead.country))?.iso2_code ?? null;
+    const stageName = lead.stage_id ? stageById.get(lead.stage_id)?.name ?? null : null;
+    const productNames = Array.from(new Set([...(productNamesByLeadId.get(lead.id) ?? []), ...lineItems.map((line) => line.productName).filter(Boolean)])) as string[];
+
+    const laneDefinitions = [
+      {
+        lane: 'commercial' as const,
+        blockerReasons: [
+          ...(contract ? [] : ['Accepted quote has not yet synced into a contract record.']),
+          ...((contract && !contract.signed_at) ? ['Contract is not yet signed for governed execution.'] : []),
+          ...((contract && String(contract.commercial_lock_state ?? '').toLowerCase() !== 'locked') ? ['Commercial lock snapshot is not yet locked.'] : []),
+        ],
+        summary: 'Commercial continuity must be contract-locked before execution becomes operator-safe.',
+      },
+      {
+        lane: 'compliance' as const,
+        blockerReasons: [...operationalControls.documentRequirementSummary.blockerReasons, ...operationalControls.complianceSummary.blockerReasons],
+        summary: 'Compliance documents and checklist items are still blocking governed progression.',
+      },
+      {
+        lane: 'release' as const,
+        blockerReasons: operationalControls.releaseArtifactReasons,
+        summary: 'Release artifacts must be complete before the order can move into release posture.',
+      },
+      {
+        lane: 'dispatch' as const,
+        blockerReasons: operationalControls.dispatchArtifactReasons,
+        summary: 'Dispatch handoff still lacks transport or export evidence.',
+      },
+      {
+        lane: 'completion' as const,
+        blockerReasons: operationalControls.completionArtifactReasons,
+        summary: 'Completion proof is still required before the order can close cleanly.',
+      },
+    ];
+
+    const primaryLane = laneDefinitions.find((lane) => lane.blockerReasons.length > 0) ?? null;
+    if (primaryLane) {
+      const severity = primaryLane.lane === 'commercial' || primaryLane.lane === 'dispatch'
+        ? 'critical'
+        : primaryLane.lane === 'compliance' || primaryLane.lane === 'release'
+          ? 'high'
+          : 'medium';
+      orderEvidenceItems.push({
+        id: `evidence-${quote.id}-${primaryLane.lane}`,
+        lane: primaryLane.lane,
+        title: `${lead.company_name}: ${primaryLane.lane} evidence needs action`,
+        summary: primaryLane.summary,
+        severity,
+        actionLabel: 'Open order workspace',
+        actionHref: PRODUCT_ROUTES.app.orders,
+        companyName: lead.company_name,
+        quoteId: quote.id,
+        contractId: contract?.id,
+        executionState: execution.currentState,
+        nextExecutionState: execution.nextState,
+        blockerCount: primaryLane.blockerReasons.length,
+        blockerReasons: primaryLane.blockerReasons,
+        leadType: lead.lead_type === 'supplier' ? 'supplier' : 'buyer',
+        marketCode,
+        stageId: lead.stage_id,
+        stageName,
+        productNames,
+      });
+
+      orderAttentionItems.push({
+        id: `order-${quote.id}-${primaryLane.lane}`,
+        type: 'order-execution',
+        title: `${lead.company_name}: ${primaryLane.lane} blocker`,
+        reason: primaryLane.blockerReasons[0] ?? primaryLane.summary,
+        severity,
+        ctaLabel: 'Open orders',
+        ctaHref: PRODUCT_ROUTES.app.orders,
+        leadId: lead.id,
+        companyName: lead.company_name,
+        dueAt: quote.updated_at,
+        leadType: lead.lead_type === 'supplier' ? 'supplier' : 'buyer',
+        marketCode,
+        stageId: lead.stage_id,
+        stageName,
+        statusTag: primaryLane.lane === 'commercial' || primaryLane.lane === 'dispatch' ? 'blocked' : primaryLane.lane === 'completion' ? 'at-risk' : 'overdue',
+        productNames,
+        valueImpact: lead.deal_value ?? null,
+      });
+    }
+  }
+
+  const executionReadiness: DashboardExecutionReadiness = {
+    trackedOrders: scopedQuoteRows.filter((quote) => String(quote.status ?? '').toLowerCase() === 'accepted').length,
+    blockedOrders: orderEvidenceItems.length,
+    readyOrders: Math.max(0, scopedQuoteRows.filter((quote) => String(quote.status ?? '').toLowerCase() === 'accepted').length - orderEvidenceItems.length),
+    releaseReadyOrders: scopedQuoteRows.filter((quote) => {
+      if (String(quote.status ?? '').toLowerCase() !== 'accepted' || !quote.lead_id) return false;
+      const evidence = orderEvidenceItems.find((item) => item.quoteId === quote.id);
+      return !evidence || !['commercial', 'compliance', 'release'].includes(evidence.lane);
+    }).length,
+    dispatchReadyOrders: scopedQuoteRows.filter((quote) => {
+      if (String(quote.status ?? '').toLowerCase() !== 'accepted' || !quote.lead_id) return false;
+      const evidence = orderEvidenceItems.find((item) => item.quoteId === quote.id);
+      return !evidence || !['commercial', 'compliance', 'release', 'dispatch'].includes(evidence.lane);
+    }).length,
+    completionReadyOrders: scopedQuoteRows.filter((quote) => {
+      if (String(quote.status ?? '').toLowerCase() !== 'accepted' || !quote.lead_id) return false;
+      const evidence = orderEvidenceItems.find((item) => item.quoteId === quote.id);
+      return !evidence;
+    }).length,
+    missingCommercialLock: orderEvidenceItems.filter((item) => item.lane === 'commercial').length,
+    missingComplianceEvidence: orderEvidenceItems.filter((item) => item.lane === 'compliance').length,
+    missingDispatchEvidence: orderEvidenceItems.filter((item) => item.lane === 'dispatch').length,
+  };
+
+  const evidenceItems = orderEvidenceItems
+    .sort((a, b) => b.blockerCount - a.blockerCount || a.title.localeCompare(b.title))
+    .slice(0, 8);
+
   const recentActivity = [
     ...scopedActivityRows.slice(0, 6).map((activity) => {
       const lead = activity.lead_id ? leadById.get(activity.lead_id) : null;
@@ -1797,6 +2110,8 @@ export async function getDashboardData(
     countryCoverage,
     countryInsights,
     attentionItems,
+    evidenceItems,
+    executionReadiness,
     recentActivity,
     availableProducts,
     widgetDefaults: {
@@ -2885,10 +3200,53 @@ export async function getIntegrationsWorkspaceData(organizationId: string): Prom
     events = rows(data);
   }
 
+  const [leads, quotes, contracts, documents, complianceItems, documentRequirementRules, leadMarkets, leadProductInterests, contractLineItems] = await Promise.all([
+    supabase.from('leads').select('id, company_name, lead_type').eq('organization_id', organizationId),
+    supabase.from('quotes').select('id, lead_id, status').eq('organization_id', organizationId),
+    supabase.from('contracts').select('id, lead_id, quote_id, status, signed_at, commercial_lock_state, execution_state, released_at, dispatched_at, completed_at, commercial_snapshot').eq('organization_id', organizationId),
+    supabase.from('documents').select('id, related_entity, related_id, status, expires_at, uploaded_at, file_name, doc_type, requirement_code').eq('organization_id', organizationId).in('related_entity', ['lead', 'quote', 'contract']),
+    supabase.from('lead_compliance_items').select('id, lead_id, status, compliance_item_id, submitted_at, approved_at').eq('organization_id', organizationId),
+    supabase.from('document_requirement_rules').select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, applies_to_entity, is_mandatory, is_active').eq('organization_id', organizationId).eq('is_active', true),
+    supabase.from('lead_markets').select('lead_id, market_id'),
+    supabase.from('lead_product_interests').select('lead_id, product_id'),
+    supabase.from('contract_line_items').select('id, contract_id, product_id, product_variant_id, quantity, unit_price, currency'),
+  ]);
+
+  addIssue(issues, 'integrations workspace leads', leads.error);
+  addIssue(issues, 'integrations workspace quotes', quotes.error);
+  addIssue(issues, 'integrations workspace contracts', contracts.error);
+  addIssue(issues, 'integrations workspace documents', documents.error);
+  addIssue(issues, 'integrations workspace compliance items', complianceItems.error);
+  addIssue(issues, 'integrations workspace requirement rules', documentRequirementRules.error);
+  addIssue(issues, 'integrations workspace lead markets', leadMarkets.error);
+  addIssue(issues, 'integrations workspace lead product interests', leadProductInterests.error);
+  addIssue(issues, 'integrations workspace contract line items', contractLineItems.error);
+
+  const productIds = Array.from(new Set(rows(contractLineItems.data).map((row: any) => row.product_id).filter(Boolean)));
+  const variantIds = Array.from(new Set(rows(contractLineItems.data).map((row: any) => row.product_variant_id).filter(Boolean)));
+  const [products, productVariants] = await Promise.all([
+    productIds.length ? supabase.from('products').select('id, name').in('id', productIds) : Promise.resolve({ data: [], error: null }),
+    variantIds.length ? supabase.from('product_variants').select('id, source_payload').in('id', variantIds) : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  addIssue(issues, 'integrations workspace products', (products as any).error ?? null);
+  addIssue(issues, 'integrations workspace product variants', (productVariants as any).error ?? null);
+
   return {
     queryIssues: issues,
     integrations: rows(integrations) as IntegrationsWorkspaceData['integrations'],
     integrationEvents: events as IntegrationsWorkspaceData['integrationEvents'],
+    leads: rows(leads.data) as IntegrationsWorkspaceData['leads'],
+    quotes: rows(quotes.data) as IntegrationsWorkspaceData['quotes'],
+    contracts: rows(contracts.data) as IntegrationsWorkspaceData['contracts'],
+    documents: rows(documents.data) as IntegrationsWorkspaceData['documents'],
+    complianceItems: rows(complianceItems.data) as IntegrationsWorkspaceData['complianceItems'],
+    documentRequirementRules: rows(documentRequirementRules.data) as IntegrationsWorkspaceData['documentRequirementRules'],
+    leadMarkets: rows(leadMarkets.data) as IntegrationsWorkspaceData['leadMarkets'],
+    leadProductInterests: rows(leadProductInterests.data) as IntegrationsWorkspaceData['leadProductInterests'],
+    contractLineItems: rows(contractLineItems.data) as IntegrationsWorkspaceData['contractLineItems'],
+    products: rows((products as any).data) as IntegrationsWorkspaceData['products'],
+    productVariants: rows((productVariants as any).data) as IntegrationsWorkspaceData['productVariants'],
   };
 }
 
@@ -2902,7 +3260,7 @@ export async function getAISuggestionsData(organizationId: string): Promise<AISu
     getOrganizationStages(organizationId, issues),
   ]);
 
-  const [leads, followUps, complianceItems, documents, rfqs, quotes, tasks, profiles, aiSuggestions, communications] = await Promise.all([
+  const [leads, followUps, complianceItems, documents, rfqs, quotes, tasks, profiles, aiSuggestions, communications, contracts, documentRequirementRules, leadMarkets, leadProductInterests, contractLineItems, products, productVariants] = await Promise.all([
     supabase
       .from('leads')
       .select('id, company_name, lead_type, stage_id, next_follow_up_at, updated_at, owner_user_id')
@@ -2951,6 +3309,13 @@ export async function getAISuggestionsData(organizationId: string): Promise<AISu
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false })
       .limit(240),
+    supabase.from('contracts').select('id, lead_id, quote_id, status, signed_at, commercial_lock_state, execution_state, released_at, dispatched_at, completed_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(160),
+    supabase.from('document_requirement_rules').select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, applies_to_entity, is_mandatory, is_active').eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(240),
+    supabase.from('lead_markets').select('lead_id, market_id').eq('organization_id', organizationId).limit(400),
+    supabase.from('lead_product_interests').select('lead_id, product_id').eq('organization_id', organizationId).limit(400),
+    supabase.from('contract_line_items').select('id, contract_id, product_id, product_variant_id').eq('organization_id', organizationId).limit(400),
+    supabase.from('products').select('id, name').eq('organization_id', organizationId).limit(400),
+    supabase.from('product_variants').select('id, source_payload').eq('organization_id', organizationId).limit(400),
   ]);
 
   addIssue(issues, 'ai suggestions leads', leads.error);
@@ -2963,6 +3328,13 @@ export async function getAISuggestionsData(organizationId: string): Promise<AISu
   addIssue(issues, 'ai suggestions profiles', profiles.error);
   addIssue(issues, 'ai suggestions drafts', aiSuggestions.error);
   addIssue(issues, 'ai suggestions communications', communications.error);
+  addIssue(issues, 'ai suggestions contracts', contracts.error);
+  addIssue(issues, 'ai suggestions document rules', documentRequirementRules.error);
+  addIssue(issues, 'ai suggestions lead markets', leadMarkets.error);
+  addIssue(issues, 'ai suggestions lead product interests', leadProductInterests.error);
+  addIssue(issues, 'ai suggestions contract line items', contractLineItems.error);
+  addIssue(issues, 'ai suggestions products', products.error);
+  addIssue(issues, 'ai suggestions product variants', productVariants.error);
 
   return {
     queryIssues: issues,
@@ -2977,6 +3349,13 @@ export async function getAISuggestionsData(organizationId: string): Promise<AISu
     profiles: rows(profiles.data) as AISuggestionsData['profiles'],
     aiSuggestions: rows(aiSuggestions.data) as AISuggestionsData['aiSuggestions'],
     communications: rows(communications.data) as AISuggestionsData['communications'],
+    contracts: rows(contracts.data) as AISuggestionsData['contracts'],
+    documentRequirementRules: rows(documentRequirementRules.data) as AISuggestionsData['documentRequirementRules'],
+    leadMarkets: rows(leadMarkets.data) as AISuggestionsData['leadMarkets'],
+    leadProductInterests: rows(leadProductInterests.data) as AISuggestionsData['leadProductInterests'],
+    contractLineItems: rows(contractLineItems.data) as AISuggestionsData['contractLineItems'],
+    products: rows(products.data) as AISuggestionsData['products'],
+    productVariants: rows(productVariants.data) as AISuggestionsData['productVariants'],
   };
 }
 

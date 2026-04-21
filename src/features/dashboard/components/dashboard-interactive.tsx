@@ -11,6 +11,8 @@ import { DashboardControlBar, type DashboardFilters } from './dashboard-control-
 import { AttentionDetailDrawer } from './attention-detail-drawer';
 import { DashboardCustomizePanel } from './dashboard-customize-panel';
 import { DashboardTopStrip } from './dashboard-top-strip';
+import { DashboardEvidenceCenter } from './dashboard-evidence-center';
+import { DashboardAiGovernance } from './dashboard-ai-governance';
 import { DashboardWorldMapSection } from './dashboard-world-map-section';
 import { DashboardWidgetErrorBoundary } from './dashboard-widget-error-boundary';
 import { MarketCommandPanel } from './market-command-panel';
@@ -160,6 +162,17 @@ export default function DashboardInteractive({
     });
   }, [data.attentionItems, filters.marketCode, matchesProduct, matchesStage, matchesStatus, snoozedMap]);
 
+  const filteredEvidenceItems = useMemo(() => {
+    return data.evidenceItems.filter(item => {
+      if (filters.marketCode && item.marketCode !== filters.marketCode) return false;
+      if (filters.mode === 'buyers' && item.leadType === 'supplier') return false;
+      if (filters.mode === 'suppliers' && item.leadType === 'buyer') return false;
+      if (!matchesStage(item.stageId)) return false;
+      if (!matchesProduct(item.productNames)) return false;
+      return true;
+    });
+  }, [data.evidenceItems, filters.marketCode, filters.mode, matchesProduct, matchesStage]);
+
   const filteredRecentActivity = useMemo(() => {
     return data.recentActivity.filter(item => {
       if (filters.marketCode && item.marketCode !== filters.marketCode) return false;
@@ -264,7 +277,7 @@ export default function DashboardInteractive({
         availableStatuses={availableStatuses}
         customizeOpen={layout.customizeOpen}
         onToggleCustomize={layout.onToggleCustomize}
-        resultSummary={`${filteredCountries.length} markets · ${filteredAttentionItems.length} actions`}
+        resultSummary={`${filteredCountries.length} markets · ${filteredAttentionItems.length} actions · ${filteredEvidenceItems.length} execution cards`}
       />
 
       {/* Diagnostics — collapsed by default */}
@@ -290,6 +303,22 @@ export default function DashboardInteractive({
       />
 
       <ActionPriorityPanel buckets={priorityBuckets} />
+
+      <DashboardWidgetErrorBoundary
+        title="AI governance" description="Bounded repo-backed decision routing."
+        eyebrow="AI control" fallbackTitle="AI governance unavailable"
+        fallbackDescription="The bounded AI governance panel hit a runtime issue."
+      >
+        <DashboardAiGovernance attentionItems={filteredAttentionItems} evidenceItems={filteredEvidenceItems} />
+      </DashboardWidgetErrorBoundary>
+
+      <DashboardWidgetErrorBoundary
+        title="Evidence center" description="Accepted-order evidence and execution forcing."
+        eyebrow="Execution truth" fallbackTitle="Evidence center unavailable"
+        fallbackDescription="The execution evidence panel hit a runtime issue."
+      >
+        <DashboardEvidenceCenter items={filteredEvidenceItems} readiness={data.executionReadiness} />
+      </DashboardWidgetErrorBoundary>
 
       {/* KPI strip — role-filtered */}
       {data.kpis.length > 0 && (

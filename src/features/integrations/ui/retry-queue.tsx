@@ -11,7 +11,8 @@ export function RetryQueue({ items }: { items: RetryQueueItem[] }) {
             <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Needs retry</span>
           </div>
           <p className="mt-2 text-sm text-slate-600">{item.eventType}</p>
-          <p className="mt-1 text-xs text-slate-500">{item.reason} · {item.createdAt ? formatDate(item.createdAt) : 'Pending timestamp'}</p>
+          <p className="mt-1 text-xs text-slate-500">{item.reason}</p>
+          <p className="mt-1 text-xs text-slate-500">Attempt {item.attemptCount} · {item.continuityKey ?? 'No continuity key'} · {item.createdAt ? formatDate(item.createdAt) : 'Pending timestamp'}</p>
         </article>
       )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No retry queue items are currently visible.</div>}
     </div>

@@ -10,8 +10,10 @@ export function SyncLogList({ items }: { items: SyncLogItem[] }) {
             <p className="text-sm font-semibold text-slate-900">{item.label}</p>
             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.retryEligible ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>{item.status}</span>
           </div>
-          <p className="mt-2 text-sm text-slate-600">{item.direction} · created {item.createdAt ? formatDate(item.createdAt) : 'Pending'}</p>
-          <p className="mt-1 text-xs text-slate-500">Processed {item.processedAt ? formatDate(item.processedAt) : 'Not processed yet'}</p>
+          <p className="mt-2 text-sm text-slate-600">{item.direction} · {item.validationLabel}</p>
+          <p className="mt-1 text-xs text-slate-500">{item.impactSummary}</p>
+          <p className="mt-1 text-xs text-slate-500">Continuity {item.continuityKey ?? 'not set'} · attempt {item.attemptCount}</p>
+          <p className="mt-1 text-xs text-slate-500">Created {item.createdAt ? formatDate(item.createdAt) : 'Pending'} · Processed {item.processedAt ? formatDate(item.processedAt) : 'Not processed yet'}</p>
         </article>
       )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No sync logs are currently visible.</div>}
     </div>

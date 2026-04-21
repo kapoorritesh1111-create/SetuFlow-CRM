@@ -2,5 +2,5 @@ import type { IntegrationEventRecord } from '@/features/integrations/types/conne
 
 export function shouldQueueRetry(event: IntegrationEventRecord) {
   const status = String(event.status ?? '').toLowerCase();
-  return status === 'failed' || status === 'error' || status === 'queued';
+  return status === 'failed' || status === 'error' || status === 'queued' || status === 'needs_review';
 }
