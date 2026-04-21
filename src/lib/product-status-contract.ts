@@ -6,41 +6,39 @@ export type ChecklistItem = { id: string; area: string; label: string; note: str
 
 export const lockedProductFlow = LOCKED_PRODUCT_FLOW;
 export const sprintProgress = {
-  sprint: 'PR-29 baseline preserved, PR-30 truth reset applied',
-  percent: 82,
-  percentLabel: 'The repo baseline remains strong, but readiness claims are now corrected against the live demo data rather than assuming full completion.',
+  sprint: 'PR-30 truth reset complete, PR-31 next',
+  percent: 74,
+  percentLabel: 'The repo is demoable and commercially credible, but still needs proof hardening before stronger investor claims are justified.',
 };
 export const sprintFocus = {
-  sprint: 'PR-30 Investor and buyer truth reset',
-  title: 'README, DCC, workflow, architecture, readiness, and demo docs now reflect the real data-backed posture of the product.',
-  nextAction: 'Reconcile accepted quote truth and surface one clean approval-governed path before claiming stronger investor readiness.',
+  sprint: 'PR-31 Golden commercial path and quote truth reconciliation',
+  title: 'The next pass should reconcile accepted quote truth, surface an approval-governed quote path, and strengthen order/execution proof.',
+  nextAction: 'Update the DCC first, then align product surfaces and docs to the reconciled golden path.',
   flow: LOCKED_PRODUCT_FLOW.join(' -> '),
 };
 export const readinessSummary = {
-  status: 'PR-29 baseline retained, PR-30 truth reset complete',
-  buildStatus: 'Repo verification remains governed, but product-proof maturity still trails the technical baseline.',
-  driftRisk: 'Low in repo structure, medium in proof surfaces if live data and docs diverge again.',
-  blockers: 'Accepted-state reconciliation, approval-proof visibility, execution-proof maturity, and live integration evidence still need work.',
+  status: 'Overall readiness 74%, 6 PRs remaining',
+  buildStatus: 'Engineering is strong, buyer/investor proof is still partial.',
+  driftRisk: 'Low in repo structure, medium in product-proof surfaces until PR-31 lands.',
+  blockers: 'Accepted quote reconciliation, approval-proof visibility, stronger execution proof, and live integration evidence.',
 };
 export const readinessAreas: ReadinessArea[] = [
-  { title: 'Canonical routes', summary: 'Manifest-backed route truth remains intact.', status: 'done' },
-  { title: 'Planning source of truth', summary: `The internal DCC at ${INTERNAL_DCC_PATH} remains the internal planning and readiness surface.`, status: 'done' },
-  { title: 'Commercial continuity', summary: 'Downstream continuity exists, but is only partially proven cleanly in current live data.', status: 'current' },
-  { title: 'Execution controls', summary: 'Execution structures exist, but visible contract examples remain draft-heavy.', status: 'current' },
-  { title: 'Dashboard governance', summary: 'Dashboard remains action-first, but demo claims should stay disciplined.', status: 'done' },
-  { title: 'AI governance', summary: 'AI should remain bounded, explainable, and operator-reviewed.', status: 'current' },
-  { title: 'Integrations governance', summary: 'Integration architecture exists, but live configured proof is not yet present in the current dataset.', status: 'planned' },
-  { title: 'Documentation and truth surfaces', summary: 'README, DCC, and core docs now reflect the corrected live-data posture.', status: 'done' },
-  { title: 'Verification gate', summary: 'Release-proof and repo checks remain part of the governed baseline.', status: 'done' },
+  { title: 'Leads', summary: 'Strong and already commercially useful.', status: 'done' },
+  { title: 'Pipeline', summary: 'Strong structure, needs sharper demo curation.', status: 'done' },
+  { title: 'Quotes', summary: 'Critical module, still needs proof reconciliation.', status: 'current' },
+  { title: 'Orders / Contracts', summary: 'Continuity exists, visible maturity still partial.', status: 'current' },
+  { title: 'Dashboard', summary: 'Good guided-view surface.', status: 'done' },
+  { title: 'Contact Exchange', summary: 'Differentiated and understandable.', status: 'done' },
+  { title: 'Product management', summary: 'Strong catalog and base-price posture.', status: 'done' },
+  { title: 'AI', summary: 'Assistive and bounded, not yet a headline proof layer.', status: 'current' },
+  { title: 'Integrations', summary: 'Architecture exists, live proof still missing.', status: 'planned' },
+  { title: 'Documentation', summary: `DCC at ${INTERNAL_DCC_PATH} is the active truth surface.`, status: 'done' },
 ];
 export const checklistItems: ChecklistItem[] = [
-  { id: 'routes', area: 'Product', label: 'Canonical routes only', note: 'Manifest-backed routes remain the shipped surface.', status: 'done' },
-  { id: 'truth', area: 'Program', label: 'DCC remains the internal source of truth', note: `Internal readiness points to ${INTERNAL_DCC_PATH}.`, status: 'done' },
-  { id: 'quotes', area: 'Workflow', label: 'Quote acceptance truth needs reconciliation', note: 'Accepted negotiation events and summary-level accepted quote posture should match before stronger claims are made.', status: 'current' },
-  { id: 'approval', area: 'Workflow', label: 'Override approval proof must stay explicit', note: 'Do not weaken base price, reason, and approval logic; surface it clearly in demoable records.', status: 'current' },
-  { id: 'orders', area: 'Workflow', label: 'Contracts and execution need stronger proof', note: 'Execution structures exist, but visible examples remain draft-heavy.', status: 'current' },
-  { id: 'ai', area: 'AI', label: 'AI remains bounded and operator-reviewed', note: 'Keep AI claims honest and workflow-safe.', status: 'current' },
-  { id: 'integrations', area: 'Integrations', label: 'Connector claims must remain conservative', note: 'Integration architecture exists, but live configured evidence is still missing.', status: 'planned' },
-  { id: 'docs', area: 'Documentation', label: 'Core docs now match the live-data posture', note: 'README, architecture, workflow, readiness, demo, and DCC were reset in PR-30.', status: 'done' },
-  { id: 'verify', area: 'Verification', label: 'Governed release proof remains intact', note: 'Keep the release-proof command and repo alignment tests in place.', status: 'done' },
+  { id: 'dcc', area: 'Documentation', label: 'DCC is source of truth', note: `All current readiness truth should remain centered in ${INTERNAL_DCC_PATH}.`, status: 'done' },
+  { id: 'pricing', area: 'Workflow', label: 'Pricing rule stays locked', note: 'Base price, override reason, and approval must not be weakened.', status: 'locked' },
+  { id: 'quotes', area: 'Workflow', label: 'Accepted quote truth needs reconciliation', note: 'Top-level quote truth must match the actual commercial event story.', status: 'current' },
+  { id: 'golden', area: 'Demo', label: 'Golden path must be undeniable', note: 'One clean buyer-to-contract path should be surfaced for non-technical reviewers.', status: 'current' },
+  { id: 'execution', area: 'Workflow', label: 'Execution proof needs strengthening', note: 'Visible contract examples should move beyond draft-heavy posture.', status: 'current' },
+  { id: 'integrations', area: 'Integrations', label: 'Live integration proof is still missing', note: 'Connector architecture exists, but external proof still trails.', status: 'planned' },
 ];

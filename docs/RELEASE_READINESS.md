@@ -1,56 +1,33 @@
-# Release Readiness
+# Release readiness
 
-## Current posture
+## Current state
 
-The repository remains technically strong enough to continue iteration, but it should **not** present itself as “nothing left to do”.
+The repo is technically strong enough for controlled demos and guided reviews.
 
-This repo is now documented against the **actual live demo data posture**.
+## Current readiness scores
 
-## Readiness summary
+- Engineering baseline: 86%
+- Demo readiness: 81%
+- Buyer readiness: 76%
+- Investor readiness: 72%
+- Overall readiness: 74%
 
-- **Engineering baseline:** strong
-- **Demo readiness:** good with curation
-- **Buyer readiness:** promising but not frictionless
-- **Investor readiness:** credible but not fully diligence-safe
+## Remaining blockers
 
-## What is ready
+- accepted quote truth reconciliation
+- stronger approval-proof visibility
+- more mature visible execution examples
+- live integration proof
 
-- README, DCC, and workflow docs now align to a more truthful repo narrative
-- tests still guard route and DCC alignment
-- release verification remains wired through `npm run release:proof`
-- catalog and quote governance remain part of the product story
-- contracts and execution structures exist in the product
+## Remaining PRs
 
-## What still blocks a clean “investor-ready” claim
+- PR-31
+- PR-32
+- PR-33
+- PR-34
+- PR-35
+- PR-36
 
-- accepted quote truth is not fully reconciled with accepted negotiation events fileciteturn3file0turn3file1
-- approval-required pricing examples are not clearly surfaced in current visible quote data even though policy exists fileciteturn3file11
-- execution states remain draft-heavy in visible contract data fileciteturn3file3turn3file12
-- integrations are not configured in current live demo data fileciteturn3file0
+## Release rule
 
-## Verification commands
-
-```bash
-npm run typecheck
-npm test
-npm run build
-npm run release:proof
-```
-
-## Current release standard
-
-Release claims should stay within these boundaries:
-
-- okay to say the repo is structurally strong
-- okay to say the workflow model is differentiated
-- okay to say the demo data is real and commercially relevant
-- not okay to claim full investor readiness
-- not okay to claim live integration maturity
-- not okay to imply override approval proof is fully demo-complete when the current visible data does not show that cleanly
-
-## Next release-quality priorities
-
-1. reconcile quote acceptance truth across summary, quote records, and negotiation events
-2. surface one clean approval-required quote example
-3. strengthen contract/order execution proof beyond draft-only posture
-4. configure or narrow integration claims
+Do not move the product into a stronger investor-readiness posture until PR-31 and PR-32 are materially advanced.
