@@ -1,61 +1,76 @@
-# Follow-up prompt — PR-FINISH-04 orders / execution proof lock
-
 You are continuing the Setu Flow CRM final production readiness pass from the latest repo and DCC baseline.
 
 Use the repo as the only source of truth.
 Use public/internal-dcc/index.html as the single source of truth for readiness, release recommendation, and workflow direction.
 
 Immediate objective:
-Execute PR-FINISH-04: Orders / execution immutability + contract handoff proof.
+Execute PR-FINISH-05: Version-bound contract snapshot + execution immutability hardening.
 
 Goal:
-Push Orders / Execution from strong to truly defensible by making accepted-quote handoff, commercial lock continuity, and execution-state truth feel as provable as the quote lane.
+Eliminate the last remaining gap between “clear execution” and “provable execution” by making contract handoff and execution fully version-bound and immutable.
 
 Focus:
-Do not widen scope. Finish the execution proof layer.
+This is the most important backend-proof pass remaining.
+Do not focus on UI polish.
 
 Scope:
-1. Accepted-quote handoff proof
-   - make it explicit which accepted quote version seeded the order / contract record
-   - show the exact commercial handoff source in the execution workspace
-   - remove any ambiguity between quote header truth and locked commercial line truth
+1. Create version-bound contract snapshot (CRITICAL)
+   - introduce a dedicated accepted quote snapshot structure if repo allows:
+     - version_id
+     - locked commercial lines
+     - pricing basis
+     - approval status
+     - override state
+     - timestamp
+   - stop reconstructing contract state from quote-level tables
 
-2. Commercial lock continuity
-   - prove that execution reads locked commercial lines, not mutable draft state
-   - make override posture, locked pricing basis, and approval continuity visible at handoff
-   - call out honestly if any execution view still falls back to weaker quote-level state
+2. Bind Orders / Execution strictly to snapshot
+   - execution must read ONLY from:
+     - accepted snapshot
+     - not current quote draft
+   - remove any fallback to quote-level derivation
 
-3. Execution state completeness
-   - cover empty, loading, blocked, ready, in-progress, completed, and exception / recovery states
-   - make blockers explicit and machine-readable where the repo supports them
+3. Make immutability provable
+   - once accepted:
+     - commercial lines cannot mutate
+   - UI must reflect:
+     - “locked from version X”
+   - backend must enforce:
+     - no mutation path
 
-4. Contract / order immutability cues
-   - make it obvious what is editable vs locked after acceptance
-   - remove any chance that operators confuse execution updates with commercial rewrites
+4. Backfill strategy (honest handling)
+   - do NOT fake legacy proof
+   - clearly label:
+     - “legacy record (no snapshot)”
+   - ensure new records are fully provable
 
-5. AI support at execution decision points
-   - embed AI as operational guidance only
-   - it may explain readiness / risk / missing evidence
-   - it must not invent execution proof or mutate commercial lock truth
+5. Strengthen traceability
+   - every execution line should map to:
+     - snapshot line id (if repo supports)
+   - surface gaps explicitly
 
-6. DCC integrity update (mandatory)
-   - update DCC in this pass
-   - only increase Orders / Execution if handoff proof and lock continuity are actually complete in repo code
-   - keep Approval / Send at 97% unless a real governed margin source appears in the repo
+6. DCC integrity update (MANDATORY)
+   - update DCC
+   - keep the workflow diagram unless product truth changes
+   - keep explicit module percentages
+   - keep the remaining PR roadmap visible
+   - only move Orders / Execution to 97%+ if:
+     - snapshot exists
+     - immutability enforced
+     - no fallback derivation
 
-Files to inspect and update:
+Files:
 - public/internal-dcc/index.html
 - src/app/(app)/orders/*
 - src/features/contracts/*
 - src/features/quotes/*
-- src/app/(app)/integrations/*
-- src/features/ai*
+- mitigation/supabase/sql/*
 - NEXT_PROMPT.md
 
 Return:
 1. Updated repo zip
 2. Updated DCC
-3. PR-FINISH-04 summary
+3. PR-FINISH-05 summary
 4. Updated readiness
-5. Explicit remaining blockers
+5. Remaining blockers
 6. Next PR-FINISH step

@@ -11,6 +11,7 @@ import { QUOTE_STATUSES, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
 import { normalizeCurrencyCode, validateOrganizationProductIds } from '@/lib/catalog-pricing-model';
 import { parseLeadWorkflow } from '@/lib/lead-workflow';
 import { buildLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
+import { getLeadProgressionGuard } from '@/lib/document-requirements';
 import { writeAuditLog } from '@/lib/auditLog';
 
 export type QuoteActionState = { error?: string; success?: string; record?: any; mode?: 'create' | 'update' };

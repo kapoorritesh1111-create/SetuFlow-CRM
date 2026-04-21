@@ -1,75 +1,13 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Setu Flow Internal DCC · PR-UX-08 completed</title>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Setu Flow Internal DCC · PR-FINISH-04</title>
 <style>
-:root{--bg:#07111d;--panel:#0d1b2a;--panel2:#10243a;--ink:#eaf2ff;--muted:#a8b8cb;--line:#1f3a57;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--blue:#22d3ee;--shadow:0 18px 42px rgba(0,0,0,.28)}
-*{box-sizing:border-box}body{margin:0;font:15px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#04101b,#09192a 48%,#07111d);color:var(--ink)}
-main{max-width:1320px;margin:0 auto;padding:28px 18px 60px}.topbar,.section,.card,.module-card,.shell{background:rgba(10,24,40,.94);border:1px solid var(--line);box-shadow:var(--shadow)}
-.topbar{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 18px;border-radius:18px;position:sticky;top:12px;backdrop-filter:blur(10px);z-index:5}.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.bad{background:rgba(239,68,68,.12);color:#fecaca}.warn{background:rgba(245,158,11,.12);color:#fde68a}.good{background:rgba(34,197,94,.12);color:#bbf7d0}
-.hero-grid,.grid2,.grid3,.module-grid,.stack-grid,.diag-grid{display:grid;gap:16px}.hero-grid{grid-template-columns:1.25fr .95fr}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.module-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.stack-grid{grid-template-columns:1fr 1fr}.diag-grid{grid-template-columns:1.08fr .92fr}@media (max-width:1140px){.hero-grid,.grid2,.grid3,.module-grid,.stack-grid,.diag-grid{grid-template-columns:1fr}}
-.section{border-radius:24px;padding:22px;margin-top:18px}.card{border-radius:20px;padding:18px}.hero h1{font-size:40px;line-height:1.08;margin:0 0 10px}.hero p,.card p,td,li{color:var(--muted)}h2{font-size:28px;margin:0 0 10px}h3{font-size:20px;margin:0 0 8px}a{color:#93c5fd}ul{padding-left:18px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8fb0cf}.metric{padding:16px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--line)}.metric span{display:block;color:var(--muted);font-size:13px}.metric strong{display:block;font-size:30px;margin-top:4px}.kpi{font-size:34px;font-weight:900}.subkpi{color:var(--muted);font-size:13px}.bar{height:10px;border-radius:999px;background:#0a1523;overflow:hidden;border:1px solid var(--line);margin-top:10px}.bar>span{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#60a5fa)}
-.module-card{padding:18px;border-radius:22px;background:rgba(19,36,59,.94)}.module-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}.module-score{font-size:30px;font-weight:900;color:#fff}.indicator{display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.indicator:before{content:'';width:9px;height:9px;border-radius:999px;display:inline-block}.indicator.green{background:rgba(34,197,94,.13);color:#bbf7d0}.indicator.green:before{background:var(--green)}.indicator.yellow{background:rgba(245,158,11,.13);color:#fde68a}.indicator.yellow:before{background:var(--yellow)}.indicator.red{background:rgba(239,68,68,.13);color:#fecaca}.indicator.red:before{background:var(--red)}
-.note{padding:14px 16px;border-radius:16px;border:1px dashed #355677;background:rgba(12,25,42,.62);color:#d9e8ff}.shell{background:#08111d;border-radius:18px;padding:12px}.wf{width:100%;height:auto}.wf text{fill:#edf5ff;font-size:14px;font-weight:700}.wf .sub{fill:#a7bad0;font-size:12px;font-weight:600}.wf .node{fill:#11233a;stroke:#3b82f6;stroke-width:2}.wf .major{fill:#14304a;stroke:#22d3ee;stroke-width:2}.wf .support{fill:#2e260f;stroke:#f59e0b;stroke-width:2}.wf .goodnode{fill:#143820;stroke:#22c55e;stroke-width:2}.wf .risk{fill:#3a1717;stroke:#ef4444;stroke-width:2}.wf .arrow{stroke:#22d3ee;stroke-width:3;fill:none}.wf .soft{stroke:#60a5fa;stroke-width:2.4;fill:none;stroke-dasharray:7 6}.wf .zone{fill:none;stroke:#ef4444;stroke-width:2;stroke-dasharray:8 6}
-.small{font-size:13px;color:var(--muted)} .eyebrow{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#8fb0cf;font-weight:800} .truth{font-size:13px;color:#d9e8ff} code,pre{white-space:pre-wrap;background:#06101a;border:1px solid var(--line);border-radius:16px;padding:16px;color:#d9e8ff}
-</style>
-</head>
-<body>
-<main>
-  <div class="topbar">
-    <div><strong>Internal DCC</strong> · PR-UX status, readiness, and workflow direction · <strong>single source of truth</strong></div>
-    <div class="pill warn">workflow confidence stays explicit</div>
-  </div>
-
-  <section class="section hero">
-    <div class="hero-grid">
-      <div class="card">
-        <h1>Setu Flow CRM brutal UX review · PR-UX-08 completed</h1>
-        <p>PR-UX-08 is a <strong>finish pass</strong>, not a fantasy pass. The repo now proves stronger lifecycle coverage across the core routes: the shell-wide perspective lens survives keyboard navigation and back-links, Quotes and Orders no longer drop to blank loading screens, and route-level recovery copy is explicit where generic placeholders existed. The DCC still refuses fake certainty: every module is marked as <strong>core workflow</strong>, <strong>support surface</strong>, or <strong>mixed</strong> based on what the repo actually proves.</p>
-        <div class="grid3">
-          <div class="metric"><span>Buyer readiness</span><strong>94%</strong></div>
-          <div class="metric"><span>Investor readiness</span><strong>93%</strong></div>
-          <div class="metric"><span>Overall UX/workflow readiness</span><strong>95%</strong></div>
-        </div>
-      </div>
-      <div class="card">
-        <h3>What changed in this pass</h3>
-        <p>Finish-level trust work landed in the shell and route lifecycle states: <strong>All / Buyers / Suppliers</strong> now stays intact when operators use keyboard shortcuts or context back-links, governed setup pages no longer carry decorative perspective chrome, and the core commercial lanes now have more honest loading and recovery states.</p>
-        <div class="grid2">
-          <div class="card"><div class="kpi">8</div><div class="subkpi">modules with strong workflow evidence from routes, page structure, gating logic, and state coverage</div><div class="bar"><span style="width:86%"></span></div></div>
-          <div class="card"><div class="kpi">3</div><div class="subkpi">support or mixed modules still carrying setup/admin energy or thin embedded guidance</div><div class="bar"><span style="width:44%"></span></div></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="grid2">
-      <div class="card">
-        <h3>PR-UX-08 status</h3>
-        <p class="small"><strong>Latest completed pass:</strong> PR-UX-08 · 96% finish pass + empty/loading/success lock</p>
-        <p><strong>Direction now locked:</strong> keep the workflow diagram direction intact, keep the shell-wide <strong>All / Buyers / Suppliers</strong> lens only where it is a real operating filter, keep <strong>Pipeline</strong> visible, keep <strong>Dashboard / Overview</strong> prominent for leadership, and keep Settings/Admin described as governed setup rather than pretending they are the same kind of flow as Quote or Orders.</p>
-        <p><strong>Governance kept intact:</strong> catalog/base pricing stays default, overrides still require reason, approval remains mandatory when threshold rules are met, and order confidence still inherits from governed commercial truth rather than post-facto cleanup.</p>
-      </div>
-      <div class="card">
-        <h3>How to tell whether a workflow is real</h3>
-        <ul>
-          <li><strong>Core workflow:</strong> route sits in the main operating spine and the code shows progression, blockers, recovery, or gating.</li>
-          <li><strong>Support surface:</strong> route helps visibility, intervention, reporting, or setup but is not itself the operating journey.</li>
-          <li><strong>Mixed:</strong> repo has real logic but the page still reads more like system structure than intuitive user workflow.</li>
-          <li><strong>Finish-pass rule:</strong> a module does not earn 96%+ just because the copy sounds good. It needs believable state coverage and operator recovery.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="diag-grid">
-      <div class="card">
-        <h2>Unified workflow map: keep this direction unless product truth changes</h2>
-        <div class="shell"><svg class="wf" viewBox="0 0 1220 470" role="img" aria-label="Unified workflow map">
+:root{--bg:#07111d;--panel:#0d1b2a;--panel2:#10243a;--ink:#eaf2ff;--muted:#a8b8cb;--line:#1f3a57;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--blue:#22d3ee;--shadow:0 18px 42px rgba(0,0,0,.28)}*{box-sizing:border-box}body{margin:0;font:15px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#04101b,#09192a 48%,#07111d);color:var(--ink)}main{max-width:1320px;margin:0 auto;padding:28px 18px 60px}.topbar,.section,.card,.module-card,.shell{background:rgba(10,24,40,.94);border:1px solid var(--line);box-shadow:var(--shadow)}.topbar{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 18px;border-radius:18px;position:sticky;top:12px;backdrop-filter:blur(10px);z-index:5}.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.warn{background:rgba(245,158,11,.12);color:#fde68a}.good{background:rgba(34,197,94,.12);color:#bbf7d0}.yellow{background:rgba(245,158,11,.13);color:#fde68a}.green{background:rgba(34,197,94,.13);color:#bbf7d0}.red{background:rgba(239,68,68,.13);color:#fecaca}.hero-grid,.grid2,.grid3,.module-grid,.diag-grid{display:grid;gap:16px}.hero-grid{grid-template-columns:1.2fr .8fr}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.module-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.diag-grid{grid-template-columns:1.1fr .9fr}@media (max-width:1140px){.hero-grid,.grid2,.grid3,.module-grid,.diag-grid{grid-template-columns:1fr}}.section{border-radius:24px;padding:22px;margin-top:18px}.card{border-radius:20px;padding:18px}.hero h1{font-size:40px;line-height:1.08;margin:0 0 10px}.hero p,.card p,td,li{color:var(--muted)}h2{font-size:28px;margin:0 0 10px}h3{font-size:20px;margin:0 0 8px}a{color:#93c5fd}ul{padding-left:18px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8fb0cf}.metric{padding:16px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--line)}.metric span{display:block;color:var(--muted);font-size:13px}.metric strong{display:block;font-size:30px;margin-top:4px}.kpi{font-size:34px;font-weight:900}.subkpi{color:var(--muted);font-size:13px}.bar{height:10px;border-radius:999px;background:#0a1523;overflow:hidden;border:1px solid var(--line);margin-top:10px}.bar>span{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#60a5fa)}.module-card{padding:18px;border-radius:22px;background:rgba(19,36,59,.94)}.module-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}.module-score{font-size:30px;font-weight:900;color:#fff}.indicator{display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.indicator:before{content:'';width:9px;height:9px;border-radius:999px;display:inline-block}.indicator.green:before{background:#22c55e}.indicator.yellow:before{background:#f59e0b}.indicator.red:before{background:#ef4444}.note{padding:14px 16px;border-radius:16px;border:1px dashed #355677;background:rgba(12,25,42,.62);color:#d9e8ff}.shell{background:#08111d;border-radius:18px;padding:12px}.wf{width:100%;height:auto}.wf text{fill:#edf5ff;font-size:14px;font-weight:700}.wf .sub{fill:#a7bad0;font-size:12px;font-weight:600}.wf .node{fill:#11233a;stroke:#3b82f6;stroke-width:2}.wf .major{fill:#14304a;stroke:#22d3ee;stroke-width:2}.wf .support{fill:#2e260f;stroke:#f59e0b;stroke-width:2}.wf .goodnode{fill:#143820;stroke:#22c55e;stroke-width:2}.wf .risk{fill:#3a1717;stroke:#ef4444;stroke-width:2}.wf .arrow{stroke:#22d3ee;stroke-width:3;fill:none}.wf .soft{stroke:#60a5fa;stroke-width:2.4;fill:none;stroke-dasharray:7 6}.wf .zone{fill:none;stroke:#ef4444;stroke-width:2;stroke-dasharray:8 6}.small{font-size:13px;color:var(--muted)} .eyebrow{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#8fb0cf;font-weight:800} .truth{font-size:13px;color:#d9e8ff} code{background:#06101a;border:1px solid var(--line);border-radius:8px;padding:1px 6px;color:#d9e8ff}
+</style></head><body><main>
+<div class="topbar"><div><strong>Internal DCC</strong> · readiness, release recommendation, and workflow direction · <strong>single source of truth</strong></div><div class="pill warn">workflow diagram preserved unless product truth changes</div></div>
+<section class="section hero"><div class="hero-grid"><div class="card"><div class="eyebrow">Current pass</div><h1>Setu Flow CRM · PR-FINISH-04</h1><p>This DCC has been cleaned back to a consistent structure. It keeps the workflow diagram, restores module-by-module percentages, and shows the current PR sequence so you can see exactly where the product stands.</p><div class="grid3"><div class="metric"><span>Current PR</span><strong>PR-FINISH-04</strong></div><div class="metric"><span>Overall readiness</span><strong>95%</strong></div><div class="metric"><span>Build status</span><strong>Type fix landed</strong></div></div></div><div class="card"><h3>What changed in this corrective pass</h3><ul><li>Fixed the build-breaking <strong>getLeadProgressionGuard</strong> reference in quote server actions.</li><li>Rebuilt the DCC layout so sections stay clean and consistent.</li><li>Kept the workflow diagram intact.</li><li>Restored explicit module percentages and remaining PR counts.</li></ul><div class="grid2"><div class="card"><div class="kpi">1</div><div class="subkpi">active finish pass shown in DCC</div><div class="bar"><span style="width:100%"></span></div></div><div class="card"><div class="kpi">2</div><div class="subkpi">likely remaining passes: one required proof pass, one likely final cleanup pass</div><div class="bar"><span style="width:66%"></span></div></div></div></div></div></section>
+<section class="section"><div class="grid2"><div class="card"><h3>Release posture</h3><p><strong>Recommendation:</strong> <span class="truth">keep shipping as an internal review / guided demo release candidate.</span></p><p>Quote is effectively at target, Approval / Send is one governed-proof gap away, and Orders / Execution is strong but still not fully version-bound end to end.</p></div><div class="card"><h3>Remaining PR roadmap</h3><table><tr><th>Pass</th><th>Status</th><th>Purpose</th></tr><tr><td>PR-FINISH-04</td><td>Current</td><td>Orders / execution immutability + contract handoff proof</td></tr><tr><td>PR-FINISH-05</td><td>Required</td><td>Version-bound contract snapshot + execution immutability hardening</td></tr><tr><td>PR-FINISH-06</td><td>Likely final cleanup</td><td>Converge remaining proof gaps, route contract cleanup, and release-grade consistency</td></tr></table></div></div></section>
+<section class="section"><div class="diag-grid"><div class="card"><h2>Workflow diagram</h2><p class="small">Keep this direction unless product truth changes.</p><div class="shell"><svg class="wf" viewBox="0 0 1220 470" role="img" aria-label="Unified workflow map">
             <rect x="18" y="18" width="1184" height="434" rx="24" ry="24" fill="none" stroke="#214568"/>
             <rect x="72" y="206" width="145" height="88" rx="18" class="major"/>
             <text x="144" y="244" text-anchor="middle">Capture</text>
@@ -144,93 +82,7 @@ main{max-width:1320px;margin:0 auto;padding:28px 18px 60px}.topbar,.section,.car
             <path d="M 926 360 L 902 294" class="soft"/>
             <rect x="606" y="174" width="410" height="130" rx="26" class="zone"/>
             <text x="810" y="163" class="sub" text-anchor="middle">Critical trust zone: quote → approval → outbound communication</text>
-          </svg></div>
-      </div>
-      <div class="card">
-        <h2>Workflow confidence by module</h2>
-        <table>
-          <tr><th>Module</th><th>Type</th><th>Why this is believable</th></tr>
-          <tr><td>Capture</td><td><span class="indicator yellow">Core flow</span></td><td>Explicit main-nav route and clear intake framing, but the handoff is still not compressed enough to call it finish-level.</td></tr>
-          <tr><td>Follow-up</td><td><span class="indicator green">Core flow</span></td><td>Lead command-center logic shows next action, qualification, batch movement, and quote continuity.</td></tr>
-          <tr><td>Quote</td><td><span class="indicator green">Core flow</span></td><td>Repo now proves quote-version-bound send readiness, explicit blockers, equivalent governed approval-metric exposure, snapshot continuity, and clear separation between current draft truth and customer-facing sent truth.</td></tr>
-          <tr><td>Approval / Send</td><td><span class="indicator green">Core flow</span></td><td>Approval/send truth is now tied to a quote-version send-readiness object with explicit blockers, visible threshold evaluation, send-time snapshot proof, legacy-send honesty, and AI support that explains commercial risk without pretending margin exists.</td></tr>
-          <tr><td>Orders / Execution</td><td><span class="indicator green">Core flow</span></td><td>Execution readiness now has better loading/recovery coverage and remains tied to commercial lock rather than generic orders.</td></tr>
-          <tr><td>Dashboard / Overview</td><td><span class="indicator yellow">Support surface</span></td><td>Strong leadership watchtower with geo-first differentiation, but it still supports intervention rather than being the workflow itself.</td></tr>
-          <tr><td>Pipeline / Risks</td><td><span class="indicator yellow">Support surface</span></td><td>Useful rescue board and visibility layer; the shell lens stays intact, but record-level intervention can still get sharper.</td></tr>
-          <tr><td>Catalog</td><td><span class="indicator yellow">Support surface</span></td><td>Commercial authority is real and now explained well, but Catalog still feeds the main flow rather than replacing it.</td></tr>
-          <tr><td>Settings / Lists</td><td><span class="indicator red">Mixed</span></td><td>Real setup records exist for defaults, stages, and shared vocabulary, but the page still reads more like list administration than intuitive workspace setup.</td></tr>
-          <tr><td>Admin / Organization</td><td><span class="indicator red">Mixed</span></td><td>Real workspace governance exists and the shell now stops pushing decorative perspective chrome here, but it is still setup and access management, not an operator journey.</td></tr>
-          <tr><td>AI</td><td><span class="indicator yellow">Support surface</span></td><td>Docs and route language place AI in contextual support and recovery is clearer, but it is still not embedded deeply enough in every lane.</td></tr>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="card">
-      <h2>Readiness by module</h2>
-      <div class="module-grid">
-        <div class="module-card"><div class="module-top"><div><h3>Capture</h3><p class="small">Entry is clear; handoff still needs stronger compression.</p></div><div class="module-score">74%</div></div><span class="indicator yellow">Not finished</span><p>PRs to 96%+: <strong>2</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Follow-up</h3><p class="small">One of the clearest proven flows in the repo.</p></div><div class="module-score">94%</div></div><span class="indicator green">Strong</span><p>PRs to 96%+: <strong>1</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Quote</h3><p class="small">Governed commercial truth now binds send decisions to a specific quote version with explicit proof instead of scattered clues.</p></div><div class="module-score">98%</div></div><span class="indicator green">At target</span><p>PRs to 98%+: <strong>0</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Approval / Send</h3><p class="small">The fast lane now exposes the governed approval metric, historical snapshots, and sent-vs-current continuity, but approval evidence still lacks true commercial margin exposure.</p></div><div class="module-score">97%</div></div><span class="indicator green">One gap left</span><p>PRs to 98%+: <strong>1</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Orders / Execution</h3><p class="small">Execution-readiness desk is clear and now more resilient, but proof is still lighter than quote proof.</p></div><div class="module-score">94%</div></div><span class="indicator green">Strong</span><p>PRs to 96%+: <strong>1</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Pipeline / Risks</h3><p class="small">Useful rescue surface; still not the same thing as the main operating flow.</p></div><div class="module-score">93%</div></div><span class="indicator green">Strong support</span><p>PRs to 96%+: <strong>1</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Dashboard / Overview</h3><p class="small">Leadership-grade watchtower; support surface, not main flow.</p></div><div class="module-score">95%</div></div><span class="indicator green">Leadership standout</span><p>PRs to 96%+: <strong>1</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Catalog</h3><p class="small">Governed commercial truth is clear, but still feels more admin-forward than operator-native.</p></div><div class="module-score">92%</div></div><span class="indicator yellow">Near bar</span><p>PRs to 96%+: <strong>1</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Settings / Lists</h3><p class="small">Clearer name and purpose now, but still more list admin than intuitive setup flow.</p></div><div class="module-score">84%</div></div><span class="indicator yellow">Clearer, not solved</span><p>PRs to 96%+: <strong>2</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Admin / Organization</h3><p class="small">Organization setup, people, invitations, and audit are clearer, but still not elegant enough.</p></div><div class="module-score">86%</div></div><span class="indicator yellow">Better structure</span><p>PRs to 96%+: <strong>2</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>Trade workflow</h3><p class="small">Core spine is believable and the perspective lens now survives keyboard navigation and back-links.</p></div><div class="module-score">94%</div></div><span class="indicator green">Believable</span><p>PRs to 96%+: <strong>1</strong></p></div>
-        <div class="module-card"><div class="module-top"><div><h3>AI</h3><p class="small">AI now explains commercial risk from the governed approval metric inside the send decision point, but it is still guidance rather than a shared governed engine across all lanes.</p></div><div class="module-score">84%</div></div><span class="indicator yellow">More embedded</span><p>PRs to 96%+: <strong>2</strong></p></div>
-      </div>
-    </div>
-  </section>
-
-
-  <section class="section">
-    <div class="grid2">
-      <div class="card">
-        <h3>PR-FINISH-03 · Commercial proof continuity + sent-version immutability</h3>
-        <ul>
-          <li><strong>Commercial proof continuity</strong> now exposes the governed approval metric (override delta) alongside threshold truth and says explicitly that true commercial margin is still not exposed in the repo.</li>
-          <li><strong>Snapshot continuity</strong> is now visible in the quote workspace so historical send-decision snapshots can be read without leaving the fast lane.</li>
-          <li><strong>Sent-version immutability</strong> is now clearer: the workspace distinguishes the current draft from the latest customer-facing sent version and calls out when a newer draft supersedes that sent record.</li>
-          <li><strong>Legacy-send honesty</strong> is now explicit: older sent versions without a recorded send snapshot are labeled as legacy rather than being presented as equally auditable.</li>
-          <li><strong>AI</strong> now explains the commercial risk factor from the governed approval metric while still staying assistive only.</li>
-        </ul>
-      </div>
-      <div class="card">
-        <h3>Why Approval / Send is still not honest 98%</h3>
-        <ul>
-          <li>The route still does <strong>not</strong> expose true commercial margin in this send surface, so Approval / Send cannot honestly move from 97% to 98% yet.</li>
-          <li>Historical quotes still do not backfill old send-decision snapshots, so continuity is visible and honest now, but legacy audit-proof remains incomplete.</li>
-          <li>Evaluation state is first-class in the UI, but it is still computed at runtime rather than persisted as a dedicated quote-version record.</li>
-          <li>Approval / Send is far stronger now, but the last honest gap to 98% is full commercial margin proof in the same governed object.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="grid2">
-      <div class="card">
-        <h3>Final remaining UX debt</h3>
-        <ul>
-          <li><strong>Capture</strong> still needs a cleaner jump into Follow-up so the first handoff feels inevitable rather than procedural.</li>
-          <li><strong>Approval / Send</strong> is now materially stronger, but 98% still needs true commercial margin proof in the repo itself.</li>
-          <li><strong>Orders / Execution</strong> is good, but proof is still lighter than the quote lane.</li>
-          <li><strong>Catalog</strong>, <strong>Settings / Lists</strong>, and <strong>Admin / Organization</strong> still carry setup/admin energy that leadership will notice.</li>
-          <li><strong>AI</strong> is embedded in Quote send posture now, but the same decision-support pattern is not yet carried consistently across the rest of the core spine.</li>
-        </ul>
-      </div>
-      <div class="card">
-        <h3>Final release recommendation</h3>
-        <p><strong>Recommendation:</strong> <span class="truth">ship for internal leadership review and guided buyer demos, but keep claiming Approval / Send at 97% until a real governed margin source exists in the repo.</span></p>
-        <p>The repo now supports a credible story: strong dashboard, visible pipeline, governed quote logic, clearer approval/send and orders desks, honest DCC workflow labeling, and better lifecycle states. The remaining risk is not that the product is broken; it is that a few surfaces still read more like setup or evidence scaffolding than finished operator experience.</p>
-        <div class="note">Best honest framing: <strong>release candidate for internal review / guided demos</strong>, not a blind-confidence external launch baseline.</div>
-      </div>
-    </div>
-  </section>
-</main>
-</body>
-</html>
+          </svg></div></div><div class="card"><h2>Workflow truth by lane</h2><table><tr><th>Lane</th><th>Classification</th><th>Repo truth</th></tr><tr><td>Capture</td><td><span class="indicator yellow">Core flow</span></td><td>Entry route is clear, but the first handoff into Follow-up still needs stronger compression.</td></tr><tr><td>Follow-up</td><td><span class="indicator green">Core flow</span></td><td>One of the most believable lanes in the repo: strong continuity, explicit next moves, and clear operator recovery.</td></tr><tr><td>Quote</td><td><span class="indicator green">Core flow</span></td><td>Quote-version send proof is strong and clear enough to hold at 98%.</td></tr><tr><td>Approval / Send</td><td><span class="indicator green">Core flow</span></td><td>Still one proof gap away from 98% because true governed commercial margin is not exposed.</td></tr><tr><td>Orders / Execution</td><td><span class="indicator green">Core flow</span></td><td>Execution is strong, but contract handoff proof still relies on lighter continuity than the quote lane.</td></tr><tr><td>Dashboard / Overview</td><td><span class="indicator yellow">Support surface</span></td><td>Excellent leadership watchtower, but still a support surface rather than the operating journey.</td></tr><tr><td>Pipeline / Risks</td><td><span class="indicator yellow">Support surface</span></td><td>Useful rescue and intervention surface; not the commercial spine itself.</td></tr><tr><td>Catalog</td><td><span class="indicator yellow">Support surface</span></td><td>Commercial authority is real, but it still feeds the flow rather than being the flow.</td></tr><tr><td>Settings / Lists</td><td><span class="indicator red">Mixed</span></td><td>Governed setup is present, but the experience still feels list-admin heavy.</td></tr><tr><td>Admin / Organization</td><td><span class="indicator red">Mixed</span></td><td>Real workspace governance exists, but it remains a setup surface, not an operator journey.</td></tr><tr><td>AI</td><td><span class="indicator yellow">Support surface</span></td><td>Embedded in key commercial decisions, but not yet a shared governed assistant across all lanes.</td></tr></table></div></div></section>
+<section class="section"><div class="card"><h2>Module completion</h2><div class="module-grid"><div class="module-card"><div class="module-top"><div><h3>Capture</h3><p class="small">Clear entry, but the jump into Follow-up still needs finish-level compression.</p></div><div class="module-score">74%</div></div><span class="indicator yellow">Not finished</span><p>PRs remaining to 96%+: <strong>2</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Follow-up</h3><p class="small">Strong continuity and believable next-action behavior.</p></div><div class="module-score">94%</div></div><span class="indicator green">Strong</span><p>PRs remaining to 96%+: <strong>1</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Quote</h3><p class="small">Version-bound send truth and snapshot continuity are strong enough to hold target.</p></div><div class="module-score">98%</div></div><span class="indicator green">At target</span><p>PRs remaining to 98%+: <strong>0</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Approval / Send</h3><p class="small">One governed-proof gap remains: true commercial margin is still not surfaced.</p></div><div class="module-score">97%</div></div><span class="indicator green">One gap left</span><p>PRs remaining to 98%+: <strong>1</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Orders / Execution</h3><p class="small">Clearer handoff and continuity, but still not fully immutable end to end.</p></div><div class="module-score">95%</div></div><span class="indicator green">Strong, not finished</span><p>PRs remaining to 97%+: <strong>1</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Pipeline / Risks</h3><p class="small">Good support surface for rescue and prioritization.</p></div><div class="module-score">93%</div></div><span class="indicator green">Strong support</span><p>PRs remaining to 96%+: <strong>1</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Dashboard / Overview</h3><p class="small">Leadership-grade visibility and strong geo-first framing.</p></div><div class="module-score">95%</div></div><span class="indicator green">Leadership standout</span><p>PRs remaining to 96%+: <strong>1</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Catalog</h3><p class="small">Commercial source of truth is clear, but the experience is still more admin-forward than operator-native.</p></div><div class="module-score">92%</div></div><span class="indicator yellow">Near bar</span><p>PRs remaining to 96%+: <strong>1</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Settings / Lists</h3><p class="small">Clearer than before, but still list-admin heavy.</p></div><div class="module-score">84%</div></div><span class="indicator yellow">Clearer, not solved</span><p>PRs remaining to 96%+: <strong>2</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Admin / Organization</h3><p class="small">Governance exists, but elegance and workflow feel are still below bar.</p></div><div class="module-score">86%</div></div><span class="indicator yellow">Better structure</span><p>PRs remaining to 96%+: <strong>2</strong></p></div><div class="module-card"><div class="module-top"><div><h3>Trade workflow</h3><p class="small">Core spine is believable and the lens behavior holds.</p></div><div class="module-score">94%</div></div><span class="indicator green">Believable</span><p>PRs remaining to 96%+: <strong>1</strong></p></div><div class="module-card"><div class="module-top"><div><h3>AI</h3><p class="small">Better embedded in commercial decisions, but still not consistently shared across all lanes.</p></div><div class="module-score">84%</div></div><span class="indicator yellow">Improving</span><p>PRs remaining to 96%+: <strong>2</strong></p></div></div></div></section>
+<section class="section"><div class="grid2"><div class="card"><h3>Current blockers</h3><ul><li><strong>Approval / Send:</strong> no true governed commercial margin source is exposed in the send-readiness object.</li><li><strong>Orders / Execution:</strong> contract lock continuity is improved, but still not fully version-bound end to end.</li><li><strong>Legacy history:</strong> older records still do not backfill the same fidelity as new send snapshots.</li><li><strong>Platform cleanup:</strong> route contract debt still exists around the pipeline/dashboard nav expectation.</li></ul></div><div class="card"><h3>Build + repo notes</h3><ul><li><strong>Build blocker fixed:</strong> restored the missing <code>getLeadProgressionGuard</code> import in <code>src/features/quotes/server/actions.ts</code>.</li><li><strong>User-visible impact:</strong> this was the exact type error that broke your Vercel build.</li><li><strong>Still separate from build:</strong> the repo-level route contract mismatch around <code>/pipeline</code> vs <code>/dashboard</code> remains a cleanup item, not the Vercel type failure you pasted.</li></ul><div class="note">Honest planning number right now: <strong>2 more PRs</strong> — <strong>PR-FINISH-05</strong> is required, and <strong>PR-FINISH-06</strong> is likely the final cleanup/convergence pass.</div></div></div></section>
+</main></body></html>
