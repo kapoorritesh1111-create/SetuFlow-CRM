@@ -1059,10 +1059,15 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     previousMarketIds = (marketRows ?? []).map((item: { market_id: string }) => item.market_id).sort();
   }
 
-  const contactSourceContext = {
-    sourceType: (existingLead?.source_label ?? payload.source_label) ? 'contact_exchange_or_lead' : null,
-    sourceLabel: existingLead?.source_label ?? payload.source_label ?? null,
-  };
+  const resolvedSourceLabel =
+  existingLead?.source_label ??
+  normalizeLeadOptionalText(parsed.data.source_label) ??
+  null;
+
+const contactSourceContext = {
+  sourceType: resolvedSourceLabel ? 'contact_exchange_or_lead' : null,
+  sourceLabel: resolvedSourceLabel,
+};
   const coverageSelections = requestedCategoryIds.map((categoryId) => {
     const scopedProducts = productIds.filter((productId) => categoryByProductId.get(productId) === categoryId);
     return {
