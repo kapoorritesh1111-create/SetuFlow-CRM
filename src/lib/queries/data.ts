@@ -2513,12 +2513,19 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     contracts: rows(contractsResult.data) as LeadProfileData['contracts'],
     workflow: {
       ...parsedLeadWorkflow.workflow,
-      productMappingNotes: parsedLeadWorkflow.workflow.productMappingNotes ?? leadInterestRows.map((item: any) => {
-        const label = typeof item?.label === 'string' ? item.label : '';
-        const context = item?.source_context && typeof item.source_context === 'object' ? item.source_context : null;
-        const sourceLabel = typeof context?.sourceLabel === 'string' ? context.sourceLabel : '';
-        return sourceLabel ? `${item.interest_type === 'category_only' ? 'Category-only' : 'Confirmed-product'} linkage via ${sourceLabel}` : null;
-      }).filter(Boolean).join(' · ') || null,
+      productMappingNotes:
+        parsedLeadWorkflow.workflow.productMappingNotes ??
+        (
+          leadInterestRows
+            .map((item: any) => {
+              const label = typeof item?.label === 'string' ? item.label : '';
+              const context = item?.source_context && typeof item.source_context === 'object' ? item.source_context : null;
+              const sourceLabel = typeof context?.sourceLabel === 'string' ? context.sourceLabel : label;
+              return sourceLabel ? `${item.interest_type === 'category_only' ? 'Category-only' : 'Confirmed-product'} linkage via ${sourceLabel}` : null;
+            })
+            .filter(Boolean)
+            .join(' · ') || null
+        ),
     },
   };
 }

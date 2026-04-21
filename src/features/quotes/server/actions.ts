@@ -311,7 +311,7 @@ function revalidateCommercialViews(leadId?: string) {
 
 
 async function buildTradeAttributesByVariantId(db: any, organizationId: string, variantIds: string[]) {
-  if (!variantIds.length) return new Map<string, ReturnType<typeof parseTradeAttributes>>();
+  if (!variantIds.length) return { error: null as string | null, map: new Map<string, ReturnType<typeof parseTradeAttributes>>() };
   const { data, error } = await db
     .from('product_variants')
     .select('id, source_payload, products!inner(organization_id)')

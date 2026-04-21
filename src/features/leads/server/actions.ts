@@ -1025,6 +1025,10 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
   const ownerUserId = ownerMapping.ownerUserId;
   const marketIds = marketMapping.marketIds;
   const productIds = productInterestMapping.productIds;
+  const productCategoryRows = productIds.length
+    ? (((await db.from('products').select('id, category_id').eq('organization_id', organization.id).in('id', productIds)).data) ?? []) as Array<{ id: string; category_id: string | null }>
+    : [];
+  const categoryByProductId = new Map(productCategoryRows.map((row) => [row.id, row.category_id]));
 
   if (!ownerUserId) return { error: 'Selected owner is not an active member of this organization.' };
 
@@ -1054,6 +1058,20 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     previousProductIds = (productRows ?? []).map((item: { product_id: string }) => item.product_id).sort();
     previousMarketIds = (marketRows ?? []).map((item: { market_id: string }) => item.market_id).sort();
   }
+
+  const contactSourceContext = {
+    sourceType: (existingLead?.source_label ?? payload.source_label) ? 'contact_exchange_or_lead' : null,
+    sourceLabel: existingLead?.source_label ?? payload.source_label ?? null,
+  };
+  const coverageSelections = requestedCategoryIds.map((categoryId) => {
+    const scopedProducts = productIds.filter((productId) => categoryByProductId.get(productId) === categoryId);
+    return {
+      categoryId,
+      productIds: scopedProducts,
+      interestType: scopedProducts.length ? 'confirmed_product' : 'category_only',
+      sourceContext: contactSourceContext,
+    } as LeadCoverageSelection;
+  });
 
   const shouldWriteFollowUp = !parsed.data.lead_id || followUpFieldProvided;
   const nextFollowUpAt = shouldWriteFollowUp ? normalizedNextFollowUpAt : existingLead?.next_follow_up_at ?? null;

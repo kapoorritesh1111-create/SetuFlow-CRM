@@ -3,8 +3,10 @@ export type ContractCommercialSnapshot = {
   quoteStatus?: string | null;
   quoteCurrency?: string | null;
   pricingBasis?: string | null;
+  pricingBasisLabel?: string | null;
   approvalRequired?: boolean;
   approvalState?: string | null;
+  approvalLabel?: string | null;
   approvedAt?: string | null;
   approvalActor?: string | null;
   sentAt?: string | null;
@@ -48,8 +50,10 @@ export function parseContractCommercialSnapshot(value: unknown): ContractCommerc
     quoteStatus: maybeString(record.quote_status),
     quoteCurrency: maybeString(record.quote_currency),
     pricingBasis: maybeString(record.pricing_basis),
+    pricingBasisLabel: maybeString(record.pricing_basis_label) ?? maybeString(record.pricing_basis),
     approvalRequired: typeof record.approval_required === 'boolean' ? record.approval_required : false,
     approvalState: maybeString(record.approval_state),
+    approvalLabel: maybeString(record.approval_label) ?? maybeString(record.approval_state),
     approvedAt: maybeString(record.approved_at),
     approvalActor: maybeString(record.approval_actor),
     sentAt: maybeString(record.sent_at),
@@ -88,5 +92,36 @@ export function getCommercialLockStateLabel(lockState: string | null | undefined
       return 'Approved ready';
     default:
       return 'Draft open';
+  }
+}
+
+export function getPricingBasisLabel(pricingBasis: string | null | undefined) {
+  switch (String(pricingBasis ?? '').toLowerCase()) {
+    case 'ex_factory':
+      return 'Ex-Factory';
+    case 'fob':
+      return 'FOB';
+    case 'cif':
+      return 'CIF';
+    case 'bulk_chips':
+      return 'Bulk chips';
+    default:
+      return pricingBasis ?? 'Unspecified';
+  }
+}
+
+export function getApprovalStateLabel(approvalState: string | null | undefined) {
+  switch (String(approvalState ?? '').toLowerCase()) {
+    case 'approved':
+      return 'Approved';
+    case 'pending':
+    case 'approval_pending':
+      return 'Approval pending';
+    case 'rejected':
+      return 'Rejected';
+    case 'not_required':
+      return 'Not required';
+    default:
+      return approvalState ?? 'Unknown';
   }
 }

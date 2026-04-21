@@ -153,6 +153,7 @@ function buildPipelineStageItems(data: LeadProfileData, pricingReadiness: LeadPr
 function buildNextActionSummary(data: LeadProfileData): NextActionSummary {
   const tasks = getTaskStatus(data)
   const qualification = getQualificationState(data)
+  const mapping = getMappingState(data)
   const quote = latestQuote(data)
   const followUp = latestPendingFollowUp(data)
   const ai = getAiQueueStatus(data)
