@@ -1,40 +1,97 @@
-# Workflow Diagrams
+# Unified Workflow Diagram
 
-## End-to-end trade workflow
+This is the current **investor-safe and buyer-safe** workflow statement for the shipped repo and the live demo data.
 
-![Trade workflow](./diagrams/trade-workflow.svg)
+```text
+Capture
+  |
+  v
+Lead
+  |
+  v
+Product / Category Interest
+  |
+  v
+Quote
+  |
+  +--> Base catalog pricing is default
+  |
+  +--> Override allowed only with reason
+  |
+  +--> Approval required when override policy is triggered
+  |
+  v
+Contract / Order
+  |
+  +--> Quote continuity must persist
+  +--> Commercial snapshot must remain auditable
+  |
+  v
+Execution
+  |
+  +--> Documents
+  +--> Compliance
+  +--> Release readiness
+  +--> Dispatch
+  +--> Completion
+  |
+  v
+Freight / Finance follow-through
+```
 
-Canonical shipped flow remains:
+## What the current data supports
 
-**Capture -> Lead -> Quote -> Order**
+The live dataset proves that Setu Flow already has meaningful commercial coverage:
 
-Supporting governed surfaces sit around that flow rather than replacing it:
-- **Contracts** receive accepted-quote commercial lock snapshots and line continuity.
-- **Documents / Compliance** gate quote send and contract progression through requirement rules and review status.
-- **Orders** enforce execution-state progression across draft, ready, released, dispatched, and completed posture.
-- **Dashboard** surfaces commercial, compliance, release, dispatch, and completion blockers as action-forcing evidence cards.
-- **AI** explains the next safe action from repo-backed blockers and guardrails; it does not mutate workflow truth automatically.
-- **Integrations** validate payloads, preserve continuity-aware events, and queue governed outbound syncs without outrunning contract or execution truth.
+- 35 buyers
+- 10 suppliers
+- 21 products
+- 31 variants
+- 8 quotes
+- 3 contracts fileciteturn3file0
 
-## Feature workflows
+## What the current data does not fully prove yet
 
-### Leads
-![Leads workflow](./diagrams/leads-workflow.svg)
+The unified workflow above is the correct product story, but the current live data still has proof gaps:
 
-### Pipeline
-![Pipeline workflow](./diagrams/pipeline-workflow.svg)
+- quote-level accepted state is not fully reconciled with accepted negotiation events
+- approval proof is underrepresented in visible quote records
+- execution is still mostly visible in draft posture
+- freight/integration proof exists architecturally more than operationally in the current live export fileciteturn3file0turn3file3
 
-### Quotes
-![Quotes workflow](./diagrams/quotes-workflow.svg)
+## Workflow interpretation rules
 
-### Orders
-![Orders workflow](./diagrams/orders-workflow.svg)
+### Capture
+Sources already present in the dataset include:
 
-### Dashboard
-![Dashboard workflow](./diagrams/dashboard-workflow.svg)
+- website inbound
+- trade event
+- referral
+- quote backfill
+- manual entry fileciteturn3file0
 
-### AI
-![AI workflow](./diagrams/ai-workflow.svg)
+### Lead
+Leads are not just contacts. They carry:
 
-### Integrations
-![Integrations workflow](./diagrams/integrations-workflow.svg)
+- buyer vs supplier identity
+- geography
+- pipeline placement
+- next step posture
+- product need context
+
+### Product / Category Interest
+The product model is commercially meaningful enough for demo. Buyer leads already carry real product needs such as chips, powders, jaggery, onion, garlic, and fruit/vegetable product families. fileciteturn3file0
+
+### Quote
+Pricing integrity rules remain mandatory:
+
+- catalog/base pricing is default
+- override must not be casual
+- override needs a reason
+- approval must remain enforceable
+
+### Contract / Order
+Contracts already exist in the live data, but not yet in a way that proves a fully mature accepted-to-executing chain for every demo path. fileciteturn3file3turn3file12
+
+### Execution
+Execution exists conceptually and structurally, but the visible examples still show `execution_state = draft`, so execution should be demoed carefully and honestly. fileciteturn3file3turn3file12

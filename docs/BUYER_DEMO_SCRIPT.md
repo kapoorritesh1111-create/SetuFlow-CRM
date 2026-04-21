@@ -1,97 +1,112 @@
-# Buyer Demo Script
+# Buyer / Investor Demo Script
 
 ## Goal
-Show Setu Flow as a trustworthy commercial operating system for import-export teams, not as a generic CRM.
+
+Show Setu Flow as a disciplined trade workflow system with real demo data, while staying honest about what is already proven and what still needs strengthening.
 
 ## Demo length
-10 to 12 minutes
 
-## Demo story
-Start with a messy inbound trade opportunity and show how it becomes a structured, execution-ready order.
+8 to 12 minutes
 
-## Recommended flow
+## Opening line
 
-### 1. Dashboard — 60 to 90 seconds
+> Setu Flow helps import-export teams move from captured demand to governed quoting and execution without losing pricing discipline or downstream continuity.
+
+## Live-data context you can say out loud
+
+> This workspace currently includes 35 buyers, 10 suppliers, 21 products, 31 variants, 8 quotes, and 3 contracts, so this is not an empty UI demo. fileciteturn3file0
+
+## Golden walkthrough
+
+### 1. Dashboard
+Say:
+
+> The point of the dashboard is operational clarity, not decorative reporting.
+
 Show:
-- delayed work
-- blocked work
-- urgent actions for today
-- quote or order risk
-- evidence-backed next-action routing
 
-Message:
-> Setu Flow tells the team what needs attention first instead of hiding action inside a decorative dashboard.
+- what needs attention now
+- blocker visibility
+- quote/order follow-through posture
 
-### 2. Leads — 2 minutes
+### 2. Lead
+Open a real buyer lead.
+
+Recommended lead characteristics:
+
+- clear company name
+- product need populated
+- pipeline stage present
+- next step visible
+
+Good examples in the live data include buyers such as Atlas Grocery Group, Metro Pantry UK, Pacific Wellness Foods, Dubai Gourmet Souq, and Sahara Fine Foods. fileciteturn3file0
+
+Say:
+
+> Leads in Setu Flow are commercial working records, not just contact cards.
+
+### 3. Product / Category Interest
+Show the attached need or confirmed product interest.
+
+Say:
+
+> The workflow stays close to real trade work by keeping category demand and product interest tied to the opportunity.
+
+### 4. Quote
+Open one of the seeded quotes.
+
 Show:
-- lead qualification
-- buyer or supplier mode
-- next action visibility
-- operational context attached to the lead
-- category-only versus confirmed-product interest
 
-Message:
-> Every opportunity starts with commercial clarity, not just contact storage.
+- quote number
+- validity window
+- current version
+- pricing basis or missing basis where applicable
+- current commercial posture
 
-### 3. Pipeline — 90 seconds
-Show:
-- stage clarity
-- card-level next action visibility
-- stalled movement and risk posture
-- governed stage blockers
+Say:
 
-Message:
-> Pipeline is not just a view of deals. It is the operating picture for what must move next.
+> Quotes are where commercial discipline starts to matter. Catalog pricing is the default posture, and overrides should stay governed.
 
-### 4. Quotes — 2 to 3 minutes
-Show:
-- list and detail in one workspace
-- quote builder access
-- history
-- quote-to-contract continuity
-- quote risk posture
-- incoterm and communication traceability signals
+### 5. Pricing integrity
+Say explicitly:
 
-Message:
-> The quote workspace keeps pricing, revision, and trust signals visible before an accepted quote becomes an execution burden.
+> The product rule is that base catalog price is the default. If price is overridden, it must carry reason and approval policy. The policy is configured to require approval for override with a 5% threshold. fileciteturn3file11
 
-### 5. Orders — 2 minutes
-Show:
-- contract-backed commercial continuity
-- freight readiness
-- compliance blockers
-- dispatch readiness
-- completion proof posture
+Important honesty note:
 
-Message:
-> After acceptance, Setu Flow keeps execution risk visible and evidence-backed instead of forcing teams to improvise across tools.
+- the policy is visible in the data
+- the strongest live approval-required demo record is **not yet surfaced cleanly in the current export**
 
-### 6. AI and Integrations — 60 to 90 seconds
-Show:
-- governed AI decision cards
-- operator-reviewed AI drafts
-- connector registry
-- sync logs
-- retry posture
-- governed outbound queue
+### 6. Contract / Order continuity
+Show one of the contracts that carries continuity information.
 
-Message:
-> AI and integrations stay inside the operating rules. They help the team move faster without bypassing approvals, compliance, or execution truth.
+Say:
 
-## What to emphasize
-- trade-native workflow
-- action-first operating surfaces
-- explicit handoff from quote to execution
-- AI that supports operational prioritization instead of adding noise
-- integration controls that do not outrun governed workflow state
-- cleaner route truth and product consistency
+> The product is designed to preserve quote continuity into the downstream contract/order record.
 
-## What to avoid
-- overselling AI as autonomous decision-making
-- presenting mock connectors as live third-party certifications
-- treating internal DCC content as a buyer-facing artifact
-- claiming that quote override approvals were loosened
+Use examples where continuity snapshots show:
 
-## Demo close
-End with:
-> Setu Flow gives import-export teams one operating flow from inbound commercial intent to execution readiness, with clearer risk signals, stronger continuity, and fewer hidden handoffs.
+- source quote line item id
+- catalog price amount
+- final unit price
+- product variant linkage fileciteturn3file6turn3file15
+
+### 7. Execution posture
+Show execution state carefully.
+
+Say:
+
+> Execution is structurally present, but I want to be precise: the currently visible contract examples are still sitting in draft execution posture, so this is an area we are still tightening for proof quality. fileciteturn3file3turn3file12
+
+## What to avoid saying
+
+Do **not** say:
+
+- “Everything is complete.”
+- “Integrations are already live and proven.”
+- “AI is making autonomous decisions.”
+- “Approval logic is fully proven in today’s demo data.”
+
+## Best close
+
+> Setu Flow is already a credible trade workflow product with real commercial data, but we are still tightening proof quality around approval, accepted-state reconciliation, and downstream execution so buyers and investors can trust every claim.

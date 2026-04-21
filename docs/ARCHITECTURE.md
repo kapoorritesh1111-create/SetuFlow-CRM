@@ -1,46 +1,93 @@
-# Setu Flow Architecture Contract
+# Setu Flow Architecture
 
-## Current code shape
-The repo is organized around:
-- `src/app/` for route entry points and page shells
-- `src/features/` for domain and feature implementations
-- `src/components/` for shared UI
-- `src/lib/` for contracts, queries, workflow logic, services, and shared utilities
-- `public/` for public assets, including the internal-only DCC
+## Architecture posture
 
-## Product ownership lanes
-- **Dashboard** owns action-first operating visibility and evidence-backed next-action routing.
-- **Leads** owns qualification, contact context, commercial follow-up posture, and category-only versus confirmed-product interest.
-- **Pipeline** owns governed stage movement and next-action visibility.
-- **Quotes** owns pricing, revisions, risk posture, and quote-to-contract handoff while preserving strict override governance.
-- **Contracts** owns signed commercial commitments, locked continuity snapshots, and contract progression posture.
-- **Orders** owns accepted commercial truth carried into execution, including state progression and evidence gates.
-- **Admin / governance** owns users, org setup, audit, analytics, catalog governance, and settings.
-- **Supporting lanes** such as documents, compliance, contact exchange, integrations, AI assist, and trade workflow modules reinforce the core operating flow.
+Setu Flow is a trade workflow application built on a Next.js + Supabase stack. The architecture is strongest when understood as a **governed commercial-to-execution system**, not as a generic CRM shell.
 
-## Architecture rules
-- Route truth must remain aligned to `src/lib/routes/manifest.json`.
-- Product, tests, and status contracts must describe the same shipped routes.
-- Internal planning belongs in `public/internal-dcc/index.html`, not in product-facing routes.
-- Feature work should keep moving toward owned `ui`, `logic`, `server`, and `types` boundaries.
-- Shared query and utility layers must not become silent monoliths.
-- Repo changes that affect governed workflow behavior should update the SOP/runbook pack in the same pass.
+## Repo structure
 
-## Current architecture strengths
-- canonical route truth is manifest-backed
-- shell truth, tests, and status contracts are aligned
-- contracts and orders now share explicit commercial continuity and execution-state models
-- document and compliance rules are computed through shared requirement logic
-- trade workflow, AI intelligence, and integrations now exist as explicit modules instead of only implicit behavior
-- integrations and AI both reuse governed blocker truth instead of introducing parallel state machines
+- `src/app/` — route entry points and shell composition
+- `src/features/` — domain workspaces and feature-owned UI / actions
+- `src/components/` — shared UI building blocks
+- `src/lib/` — workflow rules, pricing logic, approvals, execution, analytics, and repo contracts
+- `src/types/` — generated and hand-authored data contracts
+- `public/` — public assets and internal DCC
+- `docs/` — readiness, workflow, architecture, runbooks, demo materials, and cleanup docs
+
+## Core architecture thesis
+
+The most valuable architectural idea in Setu Flow is this:
+
+> commercial truth should not disappear when work moves from lead management into quoting and then into contracts/orders and execution.
+
+That principle shows up in:
+
+- approval routing
+- catalog pricing logic
+- quote workflow logic
+- contract lock logic
+- order execution logic
+- document/compliance requirements
+
+## What the live data confirms
+
+The uploaded Supabase export confirms that the repo is not empty or hypothetical. It has live operating data across:
+
+- buyers and suppliers
+- product catalog and variants
+- quotes and contracts
+- documents
+- pricing settings
+
+Specifically:
+
+- 35 buyers
+- 10 suppliers
+- 21 products
+- 31 variants
+- 8 quotes
+- 3 contracts
+- 7 documents fileciteturn3file0
+
+## What the architecture supports correctly
+
+### 1. Trade-native opportunity handling
+The lead model supports real buyer/supplier context, not just generic CRM contacts.
+
+### 2. Catalog-aware quoting
+The product and pricing model is capable of treating catalog/base pricing as the starting point.
+
+### 3. Override governance
+Pricing policy currently shows `require_approval_for_override = true` with a 5% threshold. That is the correct commercial direction and must remain intact. fileciteturn3file11
+
+### 4. Downstream continuity
+Contracts and contract line items show at least partial continuity from quote lines into downstream records, including catalog amounts and source quote line references in some cases. fileciteturn3file6turn3file15
 
 ## Current architecture risks
-- large shared query surfaces still need long-term tightening
-- some quote and dashboard-heavy files still deserve further decomposition
-- release-gate proof still depends on a fully provisioned environment for fresh install, typecheck, and build verification
-- future workflow changes could create documentation drift unless the DCC and SOP pack are refreshed together
 
-## Reference diagrams
-- `docs/ARCHITECTURE_DIAGRAM.md`
-- `docs/WORKFLOW_DIAGRAM.md`
-- `docs/SOP_RUNBOOK_INDEX.md`
+### 1. Truth mismatch between summary state and event state
+The uploaded data shows accepted quote events in `quote_negotiation_events`, while the summary block still reports zero accepted quotes. That weakens buyer and investor trust unless reconciled. fileciteturn3file0turn3file1
+
+### 2. Approval proof is underexposed in live records
+The pricing policy is correct, but the visible top-level quote records still show `approval_required = false`, so the strongest commercial rule is not yet clearly evidenced in the demo dataset. fileciteturn3file0turn3file11
+
+### 3. Execution proof is still immature
+Contracts are present, but visible examples remain in draft execution posture, which means the execution story is real structurally but not yet fully proven operationally. fileciteturn3file3turn3file12
+
+### 4. Integrations are an architecture lane, not a live proof lane yet
+The current live data shows zero integrations configured. fileciteturn3file0
+
+## Recommended architecture message for investors
+
+The right claim today is:
+
+- the architecture is **credible and commercially thoughtful**
+- the quote/order continuity model is stronger than a basic CRM
+- the repo is **not yet fully diligence-clean** because event truth, approval proof, and execution proof still need tightening
+
+## Internal truth surfaces
+
+- `public/internal-dcc/index.html` — internal readiness dashboard
+- `docs/DEMO_DATA_AUDIT.md` — data-backed reality check
+- `docs/RELEASE_READINESS.md` — current release posture
+- `docs/WORKFLOW_DIAGRAM.md` — single end-to-end commercial flow
