@@ -1,0 +1,3344 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Setu Flow · Trade execution system for import-export sales teams</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  /* ==================================================================
+     Setu Flow brand system  ·  derived from /tailwind.config.ts and /src/app/page.tsx
+     ================================================================== */
+  :root {
+    --brand-primary:  #1F487C;          /* deep blue   */
+    --brand-dark:     #193769;          /* logo navy   */
+    --brand-teal:     #359F91;          /* teal        */
+    --brand-teal-d:   #279491;          /* logo teal   */
+    --brand-grad:     linear-gradient(135deg, #1F487C 0%, #359F91 100%);
+
+    --bg-page:        linear-gradient(180deg,#f5fbfb 0%,#eef6fb 45%,#f8fbff 100%);
+    --bg-soft:        #F7FBFC;
+    --bg-card:        #ffffff;
+    --bg-tint:        rgba(31,72,124,0.06);
+    --bg-tint-2:      linear-gradient(135deg, rgba(31,72,124,0.06) 0%, rgba(53,159,145,0.08) 100%);
+
+    --text-950:       #0F172A;          /* slate-950 */
+    --text-900:       #0f172a;
+    --text-700:       #334155;
+    --text-600:       #475569;
+    --text-500:       #64748b;
+    --text-400:       #94a3b8;
+    --line:           rgba(31,72,124,0.10);
+    --line-2:         rgba(31,72,124,0.18);
+    --line-strong:    #E2E8F0;
+
+    --stage-new:      #3B82F6;
+    --stage-qualified:#22C55E;
+    --stage-contacted:#6366F1;
+    --stage-sample:   #F59E0B;
+    --stage-negot:    #A855F7;
+    --stage-won:      #10B981;
+    --stage-lost:     #EF4444;
+    --status-amber:   #F59E0B;
+    --status-rose:    #E11D48;
+    --status-emerald: #10B981;
+
+    --shadow-soft:    0 1px 3px rgba(15,23,42,0.05);
+    --shadow-card:    0 12px 32px rgba(15,23,42,0.08);
+    --shadow-prem:    0 18px 45px rgba(31,72,124,0.10);
+    --shadow-deep:    0 28px 80px rgba(31,72,124,0.14);
+    --shadow-pop:     0 32px 80px rgba(15,23,42,0.18);
+
+    --r-sm:   0.75rem;
+    --r-md:   1.1rem;
+    --r-lg:   1.5rem;
+    --r-xl:   1.8rem;
+    --r-2xl:  2.0rem;
+    --r-3xl:  2.6rem;
+
+    --font-sans: 'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", Menlo, monospace;
+
+    --max: 1280px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--text-900);
+    background: var(--bg-page);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection { background: var(--brand-primary); color: white; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: none; background: none; padding: 0; color: inherit; }
+  img, svg { max-width: 100%; display: block; }
+  h1, h2, h3, h4, h5, h6 { margin: 0; font-weight: 600; letter-spacing: -0.025em; color: var(--text-950); }
+
+  /* ============ Topbar ============ */
+  .topbar {
+    position: sticky; top: 0; z-index: 60;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .brand-mark { width: 44px; height: 44px; }
+  .brand-mark svg { width: 100%; height: 100%; }
+  .brand-name {
+    font-size: 17px; font-weight: 700;
+    color: var(--brand-primary);
+    letter-spacing: -0.01em;
+  }
+  .brand-name .accent { color: var(--brand-teal-d); font-weight: 600; }
+  .nav { display: flex; gap: 28px; }
+  .nav a {
+    font-size: 13px; font-weight: 500;
+    color: var(--text-600);
+    transition: color .15s;
+  }
+  .nav a:hover { color: var(--brand-primary); }
+  .topbar-cta {
+    background: var(--brand-grad);
+    color: white;
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 0 12px 28px rgba(31,72,124,0.22);
+    transition: transform .15s;
+  }
+  .topbar-cta:hover { transform: translateY(-1px); }
+  @media (max-width: 880px) { .nav { display: none; } }
+
+  /* ============ Section frame ============ */
+  section.shell {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 88px 24px;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--brand-teal-d);
+    margin-bottom: 14px;
+  }
+  .eyebrow.dark { color: var(--brand-primary); }
+  .eyebrow.invert { color: #6EE7B7; }
+
+  /* ============ HERO (mirrors home page) ============ */
+  .hero {
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at top right, rgba(53,159,145,0.18), transparent 32%),
+      radial-gradient(circle at left, rgba(31,72,124,0.18), transparent 38%);
+    pointer-events: none;
+  }
+  .hero-inner {
+    position: relative;
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 72px 24px 96px;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .raise-pill {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: white;
+    border: 1px solid var(--line-2);
+    color: var(--brand-primary);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 11.5px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    box-shadow: var(--shadow-soft);
+  }
+  .raise-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand-teal); animation: pulse 1.6s infinite; box-shadow: 0 0 10px var(--brand-teal); }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+
+  .hero h1 {
+    margin-top: 24px;
+    font-size: clamp(38px, 5.4vw, 68px);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+    color: var(--text-950);
+  }
+  .hero h1 .grad {
+    background: var(--brand-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero-lede {
+    margin-top: 20px;
+    color: var(--text-600);
+    font-size: 18px;
+    max-width: 560px;
+    line-height: 1.55;
+  }
+  .hero-actions {
+    margin-top: 32px;
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 22px;
+    border-radius: 999px;
+    font-size: 14px; font-weight: 600;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn-primary {
+    background: var(--brand-grad);
+    color: white;
+    box-shadow: 0 16px 36px rgba(31,72,124,0.28);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 20px 44px rgba(31,72,124,0.34); }
+  .btn-ghost {
+    background: white;
+    color: var(--brand-primary);
+    border: 1px solid var(--line-2);
+  }
+  .btn-ghost:hover { border-color: var(--brand-primary); background: rgba(31,72,124,0.04); }
+  .arr { transition: transform .15s; }
+  .btn:hover .arr { transform: translateX(3px); }
+
+  /* hero side: workspace overview card from real homepage */
+  .hero-side {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 28px;
+    box-shadow: var(--shadow-deep);
+  }
+  .hero-side-head {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--line-strong);
+    padding-bottom: 14px; margin-bottom: 18px;
+  }
+  .hero-side-head .ttl { font-size: 14px; font-weight: 600; color: var(--text-900); }
+  .hero-side-head .sub { font-size: 12.5px; color: var(--text-500); margin-top: 2px; }
+  .live-pill {
+    background: rgba(53,159,145,0.12);
+    color: var(--brand-teal-d);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .hero-cards {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .hero-card {
+    background: #f8fafc;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-lg);
+    padding: 16px;
+  }
+  .hero-card .lbl {
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.18em;
+    color: var(--brand-primary);
+  }
+  .hero-card .val {
+    margin-top: 8px;
+    font-size: 16px; font-weight: 600; color: var(--text-950);
+    letter-spacing: -0.01em;
+  }
+  .hero-card ul {
+    margin: 10px 0 0; padding: 0; list-style: none;
+    font-size: 12.5px; color: var(--text-600); line-height: 1.7;
+  }
+  .hero-card li::before { content: "• "; color: var(--brand-teal-d); font-weight: 700; }
+  .hero-card.wide { grid-column: 1 / -1; background: var(--bg-tint-2); border-color: var(--line); }
+  .hero-card.wide .val { font-size: 15px; }
+  .hero-card.wide p { margin: 8px 0 0; font-size: 12.5px; color: var(--text-600); line-height: 1.55; }
+
+  .hero-tags {
+    margin-top: 56px;
+    border-top: 1px solid var(--line-strong);
+    padding-top: 24px;
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .tag {
+    background: white;
+    border: 1px solid var(--line-2);
+    color: var(--brand-primary);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 11.5px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  @media (max-width: 980px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+  }
+
+  /* ============ MARKET SIZE ============ */
+  .market-grid {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 64px;
+    align-items: start;
+  }
+  .market-grid h2 {
+    font-size: clamp(30px, 3.6vw, 48px);
+    line-height: 1.05;
+  }
+  .market-grid p { color: var(--text-600); font-size: 16.5px; margin-top: 18px; }
+
+  .tam-stack {
+    display: grid; gap: 14px;
+  }
+  .tam-row {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-prem);
+    display: grid;
+    grid-template-columns: 100px 1fr auto;
+    gap: 20px;
+    align-items: center;
+  }
+  .tam-row.tam {
+    background: var(--bg-tint-2);
+  }
+  .tam-row.sam {
+    margin-left: 32px;
+    background: linear-gradient(135deg, rgba(31,72,124,0.10) 0%, rgba(53,159,145,0.14) 100%);
+  }
+  .tam-row.som {
+    margin-left: 64px;
+    background: var(--brand-grad);
+    color: white;
+    border-color: var(--brand-primary);
+  }
+  .tam-row.som .lbl, .tam-row.som .desc, .tam-row.som .num { color: white; }
+  .tam-row .lbl {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--brand-primary);
+  }
+  .tam-row .num {
+    font-size: 32px; font-weight: 700;
+    color: var(--text-950);
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  .tam-row .desc {
+    font-size: 13px;
+    color: var(--text-600);
+    margin-top: 6px;
+  }
+  .tam-row .meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-500);
+    text-align: right;
+  }
+  .tam-row.som .meta { color: rgba(255,255,255,0.85); }
+
+  .source-line {
+    margin-top: 20px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-500);
+    line-height: 1.7;
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 880px) {
+    .market-grid { grid-template-columns: 1fr; gap: 32px; }
+    .tam-row { grid-template-columns: 1fr; text-align: left; }
+    .tam-row.sam, .tam-row.som { margin-left: 0; }
+    .tam-row .meta { text-align: left; }
+  }
+
+  /* ============ PROBLEM ============ */
+  .problem-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  .problem-grid h2 {
+    font-size: clamp(30px, 3.6vw, 48px);
+    line-height: 1.05;
+  }
+  .problem-grid h2 .grad {
+    background: var(--brand-grad);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .problem-grid p { color: var(--text-600); font-size: 16.5px; margin-top: 18px; }
+
+  .pain-list {
+    margin-top: 28px;
+    list-style: none; padding: 0;
+    border-top: 1px solid var(--line-strong);
+  }
+  .pain-list li {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 18px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line-strong);
+    align-items: baseline;
+  }
+  .pain-list .num {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--brand-teal-d);
+    letter-spacing: 0.04em;
+  }
+  .pain-list h4 {
+    font-size: 16px; font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .pain-list p { margin: 0; font-size: 14px; color: var(--text-600); }
+
+  /* receipt of "old way" */
+  .receipt {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 32px 28px;
+    box-shadow: var(--shadow-deep);
+    position: relative;
+    font-family: var(--font-mono);
+  }
+  .receipt::before {
+    content: "OLD WAY · TODAY";
+    position: absolute; top: -12px; left: 24px;
+    background: var(--brand-grad);
+    color: white;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    font-weight: 700;
+  }
+  .receipt h5 {
+    font-family: var(--font-sans);
+    font-size: 12px; text-transform: uppercase;
+    color: var(--text-500);
+    letter-spacing: 0.18em;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .receipt-row {
+    display: grid;
+    grid-template-columns: 84px 1fr auto;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 12px;
+    border-bottom: 1px dashed var(--line-strong);
+  }
+  .receipt-row:last-of-type { border-bottom: none; }
+  .receipt-row .when { color: var(--text-500); }
+  .receipt-row .what { color: var(--text-700); }
+  .receipt-row .who {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--brand-teal-d);
+  }
+  .receipt-total {
+    margin-top: 18px; padding-top: 14px;
+    border-top: 2px solid var(--brand-primary);
+    display: flex; justify-content: space-between;
+    font-size: 13px; font-weight: 700;
+    color: var(--text-950);
+  }
+
+  @media (max-width: 880px) {
+    .problem-grid { grid-template-columns: 1fr; gap: 36px; }
+  }
+
+  /* ============ WHY NOW ============ */
+  .whynow-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-top: 36px;
+  }
+  .whynow-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 28px 24px;
+    box-shadow: var(--shadow-prem);
+  }
+  .whynow-card .yr {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--brand-teal-d);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .whynow-card h4 {
+    font-size: 19px;
+    margin: 12px 0 12px;
+    line-height: 1.2;
+  }
+  .whynow-card p { color: var(--text-600); font-size: 14px; line-height: 1.55; }
+  .whynow-card .src {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line-strong);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-500);
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 880px) {
+    .whynow-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============ CATEGORY (vs table) ============ */
+  .vs-section {
+    background: var(--brand-dark);
+    color: white;
+    margin-top: 0;
+  }
+  .vs-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 96px 24px;
+  }
+  .vs-section h2 {
+    color: white;
+    font-size: clamp(32px, 4vw, 56px);
+    line-height: 1.05;
+    max-width: 880px;
+  }
+  .vs-section h2 .grad {
+    background: linear-gradient(135deg, #6EE7B7 0%, #5DD4F0 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .vs-section .sub {
+    color: rgba(255,255,255,0.8);
+    margin-top: 18px;
+    font-size: 17px;
+    max-width: 700px;
+  }
+  .vs-table {
+    width: 100%;
+    margin-top: 48px;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  .vs-table th, .vs-table td {
+    padding: 18px 16px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+  }
+  .vs-table thead th {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: rgba(255,255,255,0.65);
+    border-bottom: 1px solid rgba(255,255,255,0.25);
+  }
+  .vs-table thead th.us {
+    color: #6EE7B7;
+  }
+  .vs-table tbody td:first-child {
+    color: white;
+    font-weight: 600;
+    width: 30%;
+    font-size: 14.5px;
+  }
+  .vs-table tbody td { color: rgba(255,255,255,0.72); }
+  .vs-table tbody td.us {
+    color: white;
+    background: rgba(53,159,145,0.06);
+  }
+  .vs-table tbody td.fail::before { content: "✕  "; color: #FCA5A5; font-weight: 700; }
+  .vs-table tbody td.partial::before { content: "≈  "; color: #FCD34D; font-weight: 700; }
+  .vs-table tbody td.us::before { content: "●  "; color: #6EE7B7; font-weight: 700; }
+
+  .vs-legend {
+    margin-top: 28px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.06em;
+  }
+  .vs-legend span { margin-right: 24px; }
+
+  @media (max-width: 880px) {
+    .vs-table { font-size: 12px; }
+    .vs-table th, .vs-table td { padding: 12px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== TOPBAR ===================== -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top">
+      <div class="brand-mark">
+        <!-- Real Setu Flow logo (from /public/logos/setu-flow-logo.svg) -->
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+          <defs>
+            <linearGradient id="sfg1" x1="187.214" y1="491.5612" x2="772.3713" y2="491.5612" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#1F487C"/><stop offset="1" stop-color="#359F91"/>
+            </linearGradient>
+            <linearGradient id="sfg2" x1="187.214" y1="491.896" x2="772.3713" y2="491.896" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#1F487C"/><stop offset="1" stop-color="#359F91"/>
+            </linearGradient>
+            <linearGradient id="sfg3" x1="187.214" y1="491.9374" x2="772.3713" y2="491.9374" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#1F487C"/><stop offset="1" stop-color="#359F91"/>
+            </linearGradient>
+            <linearGradient id="sfg4" x1="187.214" y1="291.1287" x2="772.3713" y2="291.1287" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#1F487C"/><stop offset="1" stop-color="#359F91"/>
+            </linearGradient>
+          </defs>
+          <g>
+            <path fill="url(#sfg1)" d="M80.9,631.6c0.3-2.5,0.4-4.2,0.8-5.8c3-12.4,6.1-24.8,9.1-36.5c4.6-3,82.2-31.6,90.3-33.4 c35.3,27,72.7,28.9,107.9,1.5c34.2-26.6,41.2-62.6,24.2-103.7c53.3-17.5,107.4-26.8,163.4-29.9c2-18.6,3.9-36.2,5.8-54.2 c7.4-6.3,14.9-12.6,23.4-18.1c9.3,4.2,15.6,12.2,23.7,16.9c3.6,18.3,3.4,36.5,6.8,55.4c55.5,2.8,109.8,12.8,163.3,29.9 c-16.7,42.3-9.4,78.8,26.7,106c26,19.6,64.7,27.7,106.1-3.4c5,0.6,82.2,28.5,90,32.7c3.2,13.5,6.6,27.6,10,41.4 c-2.4,1.9-4,0.8-5.5,0.4c-51.2-14.1-103.4-23.7-155.9-31.5c-31.7-4.7-63.6-8.3-95.5-10.8c-46.2-3.7-92.4-5.5-138.8-6.6 c-35.3-0.8-70.5-0.2-105.6,1c-54.2,1.9-108.4,5.7-162.3,12.9c-62,8.3-123.5,18.9-183.9,35.4C83.9,631.5,82.9,631.4,80.9,631.6z M668.2,575.7c-33.4-53.3-96.4-97.4-179.6-89.8c-61.7,5.7-108.5,37.2-142.4,88.4C453.4,565.8,560.3,566.4,668.2,575.7z"/>
+            <path fill="url(#sfg2)" d="M308.9,492.5c-0.1,39.6-31.6,70.2-72,70c-39.4-0.2-71.7-33.1-70.2-73.5c1.5-39,32.8-67.8,72.1-67.7 C274.3,421.4,309.9,449.1,308.9,492.5z"/>
+            <path fill="url(#sfg3)" d="M845.1,491.7c-0.1,40.9-30.3,70.7-71.6,70.6c-38.9-0.1-69.7-31.5-69.7-71c0-39.2,31.4-70.3,72.2-69.8 C816.2,422.1,846.4,454.9,845.1,491.7z"/>
+            <path fill="url(#sfg4)" d="M506.1,330.1c-25.7,17.5-77,51.1-77.5,50.7c25.5-59.8,50.9-119.5,76.4-179.3c0.8-0.1,52.8,119.1,78.1,178.8 C582.5,380.6,531.6,347.4,506.1,330.1z"/>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">Setu <span class="accent">Flow</span></div>
+      </div>
+    </a>
+
+    <nav class="nav">
+      <a href="#problem">Problem</a>
+      <a href="#category">Category</a>
+      <a href="#product">Product</a>
+      <a href="#wedge">Why us</a>
+      <a href="#business">Business</a>
+      <a href="#traction">Traction</a>
+      <a href="#ask">The ask</a>
+    </nav>
+
+    <a href="#ask" class="topbar-cta">Invest · $2M Seed →</a>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<section class="hero" id="top">
+  <div class="hero-inner">
+    <div>
+      <span class="raise-pill"><span class="dot"></span> Raising $2M Seed · April 2026</span>
+      <h1>The trade execution system that turns messy commercial work into a <span class="grad">usable operating flow.</span></h1>
+      <p class="hero-lede">
+        Setu Flow helps import-export companies capture inbound opportunities, convert them into structured leads, move them through quote creation, and manage execution with more control, speed, and confidence — in a single locked flow: <strong>Capture → Lead → Quote → Order.</strong>
+      </p>
+      <div class="hero-actions">
+        <a href="#product" class="btn btn-primary">See the live workflow <span class="arr">→</span></a>
+        <a href="#category" class="btn btn-ghost">Why generic CRMs fail</a>
+      </div>
+    </div>
+
+    <aside class="hero-side">
+      <div class="hero-side-head">
+        <div>
+          <div class="ttl">Setu Flow workspace overview</div>
+          <div class="sub">A cleaner commercial operating system for global trade teams</div>
+        </div>
+        <span class="live-pill">Live product</span>
+      </div>
+      <div class="hero-cards">
+        <div class="hero-card">
+          <div class="lbl">Action first dashboard</div>
+          <div class="val">See what needs attention now</div>
+          <ul>
+            <li>Quotes waiting for approval</li>
+            <li>Leads needing follow-up</li>
+            <li>Country-level trade movement</li>
+          </ul>
+        </div>
+        <div class="hero-card">
+          <div class="lbl">Guided quote flow</div>
+          <div class="val">Move from inquiry to send-out</div>
+          <ul>
+            <li>Product and quantity capture</li>
+            <li>Pricing and terms structure</li>
+            <li>Versioning and send controls</li>
+          </ul>
+        </div>
+        <div class="hero-card wide">
+          <div class="lbl">Market gap</div>
+          <div class="val">Most CRMs stop at contact tracking. Setu Flow is built for how import-export teams actually work.</div>
+          <p>Instead of forcing teams to stitch together email, spreadsheets, pricing logic, RFQ files, and commercial follow-up manually, Setu Flow connects those steps into a practical, auditable operating flow.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div style="max-width: var(--max); margin: 0 auto; padding: 0 24px;">
+    <div class="hero-tags">
+      <span class="tag">Multi-currency FX</span>
+      <span class="tag">Freight by port + container</span>
+      <span class="tag">FOB · CIF · Ex-Factory</span>
+      <span class="tag">Approval gates + audit</span>
+      <span class="tag">AI assistive · never autonomous</span>
+      <span class="tag">Buyer + Supplier dual mode</span>
+      <span class="tag">vCard · QR · OCR capture</span>
+      <span class="tag">Country compliance</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MARKET ===================== -->
+<section class="shell" id="market">
+  <div class="market-grid">
+    <div>
+      <div class="eyebrow">Market opportunity</div>
+      <h2>A $2.8B category growing 10–12% a year — without a clear winner for SMB exporters.</h2>
+      <p>
+        The global trade management software market is currently dominated by enterprise vendors built for Fortune 500 logistics teams (Oracle, SAP, E2open, Descartes). The 50–500-person import-export operator — the engine of global trade — is left to Excel, email, and lightweight CRMs that don't understand freight or FX.
+      </p>
+      <p>
+        That's the gap Setu Flow targets first.
+      </p>
+
+      <div class="source-line">
+        SOURCES · COHERENT MARKET INSIGHTS 2025 · MORDOR INTELLIGENCE 2025 · FORTUNE BUSINESS INSIGHTS 2026 · WORLD TRADE ORGANIZATION 2025
+      </div>
+    </div>
+
+    <div class="tam-stack">
+      <div class="tam-row tam">
+        <div class="lbl">TAM</div>
+        <div>
+          <div class="num">$2.8B</div>
+          <div class="desc">Global trade management software market · 2025 · projected ~$5.7B by 2032 at ~10.6% CAGR</div>
+        </div>
+        <div class="meta">Coherent<br>2025</div>
+      </div>
+      <div class="tam-row sam">
+        <div class="lbl">SAM</div>
+        <div>
+          <div class="num">$680M</div>
+          <div class="desc">SMB &amp; mid-market import-export operators in India, MENA, SEA, EU — quoting, capture, execution layer</div>
+        </div>
+        <div class="meta">~24% of TAM<br>internal model</div>
+      </div>
+      <div class="tam-row som">
+        <div class="lbl">SOM · 5yr</div>
+        <div>
+          <div class="num" style="color:white">$42M ARR</div>
+          <div class="desc">~3,500 trade SMBs at $1,000/mo blended ACV — India + GCC wedge first, EU expansion year 3</div>
+        </div>
+        <div class="meta">~6% SAM<br>year 5 target</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PROBLEM ===================== -->
+<section class="shell" id="problem" style="background: white; max-width: none; padding: 88px 24px;">
+  <div class="problem-grid" style="max-width: var(--max); margin: 0 auto;">
+    <div>
+      <div class="eyebrow">The problem · today</div>
+      <h2>A single export quote takes <span class="grad">3 days, 4 tools, 17 emails.</span></h2>
+      <p>
+        Import-export sales teams don't fail because they lack a CRM. They fail because the work isn't pipeline management — it's <strong>commercial execution under uncertainty.</strong>
+      </p>
+      <p>
+        Pricing depends on FX. Freight depends on port and container. Documents depend on country. Approvals depend on margin. And every one of those lives in a different spreadsheet, WhatsApp thread, or PDF on someone's desktop.
+      </p>
+
+      <ol class="pain-list">
+        <li><span class="num">01</span><div><h4>The card from the trade fair becomes a Notes screenshot.</h4><p>By Tuesday it's lost. By next month the lead is cold.</p></div></li>
+        <li><span class="num">02</span><div><h4>The quote is a Word doc with a hand-typed FX rate.</h4><p>Margin is wrong by the time the buyer replies.</p></div></li>
+        <li><span class="num">03</span><div><h4>The approval is a Slack message to the boss.</h4><p>No record. No version. No accountability.</p></div></li>
+        <li><span class="num">04</span><div><h4>The order is an email forward to ops.</h4><p>Documents missing. Compliance discovered at customs.</p></div></li>
+      </ol>
+    </div>
+
+    <div class="receipt">
+      <h5>Activity log · one quote · composite of 12 exporter interviews</h5>
+      <div class="receipt-row"><span class="when">MON 09:14</span><span class="what">Card from Gulfood scanned to phone</span><span class="who">Sales</span></div>
+      <div class="receipt-row"><span class="when">MON 11:02</span><span class="what">Excel: copy product list, paste prices</span><span class="who">Sales</span></div>
+      <div class="receipt-row"><span class="when">MON 14:30</span><span class="what">WhatsApp boss for FX rate</span><span class="who">Sales</span></div>
+      <div class="receipt-row"><span class="when">TUE 10:11</span><span class="what">Forwarder email · freight Jebel Ali?</span><span class="who">Logistics</span></div>
+      <div class="receipt-row"><span class="when">TUE 16:45</span><span class="what">Word doc: format quote, attach PDF</span><span class="who">Sales</span></div>
+      <div class="receipt-row"><span class="when">WED 09:20</span><span class="what">Slack boss: "Approve this?"</span><span class="who">Sales</span></div>
+      <div class="receipt-row"><span class="when">WED 14:08</span><span class="what">Send. Cross fingers.</span><span class="who">Sales</span></div>
+      <div class="receipt-row"><span class="when">FRI 10:30</span><span class="what">Buyer reply: "What about FOB pricing?"</span><span class="who">Buyer</span></div>
+      <div class="receipt-row"><span class="when">— — —</span><span class="what">Restart from step 2…</span><span class="who">Sales</span></div>
+      <div class="receipt-total">
+        <span>Time to first commercial response</span>
+        <span>≈ 3 days · 4 tools · 17 emails</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== WHY NOW ===================== -->
+<section class="shell" id="whynow">
+  <div class="eyebrow">Why now</div>
+  <h2 style="font-size: clamp(30px, 3.6vw, 48px); line-height: 1.05; max-width: 880px;">Three macro shifts make this the moment to build for cross-border SMBs.</h2>
+
+  <div class="whynow-grid">
+    <div class="whynow-card">
+      <div class="yr">2024 · 2026</div>
+      <h4>Supply-chain reset, post-COVID</h4>
+      <p>Buyers across the GCC, US, and EU are deliberately diversifying away from single-country sourcing. New importer-exporter relationships are forming faster than incumbent ERPs can model — and SMBs are getting RFQs they've never had access to before.</p>
+      <div class="src">Source · WTO Trade Outlook 2025</div>
+    </div>
+    <div class="whynow-card">
+      <div class="yr">2024 onward</div>
+      <h4>India's $1T export push</h4>
+      <p>The Government of India target for $1T in exports by 2030 is funneling policy support, credit lines, and trade-show subsidies to mid-market exporters. The bottleneck isn't demand — it's how slowly small teams can quote and convert.</p>
+      <div class="src">Source · Ministry of Commerce, GoI 2024 directive</div>
+    </div>
+    <div class="whynow-card">
+      <div class="yr">2025</div>
+      <h4>AI maturity meets domain depth</h4>
+      <p>Generic AI agents make headlines but break inside regulated, multi-party workflows like trade. The winning pattern is <strong>assistive AI + locked operator approval + audit trail</strong> — exactly what enterprise buyers are now demanding. Setu Flow was built for this from day one.</p>
+      <div class="src">Source · Anthropic, OpenAI enterprise reports 2025</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CATEGORY · vs ===================== -->
+<div class="vs-section" id="category">
+  <div class="vs-inner">
+    <div class="eyebrow invert">The category insight</div>
+    <h2>Generic CRMs sell pipelines.<br>Trade teams need <span class="grad">execution.</span></h2>
+    <p class="sub">
+      Salesforce, HubSpot, and Zoho were built for SaaS sales — predictable products, fixed pricing, domestic delivery. None of those assumptions hold for international trade. Here's the gap.
+    </p>
+
+    <table class="vs-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Generic CRM<br><span style="font-weight:400;font-size:10px;color:rgba(255,255,255,0.5)">HubSpot · Salesforce · Zoho</span></th>
+          <th>Adjacent trade tools<br><span style="font-weight:400;font-size:10px;color:rgba(255,255,255,0.5)">SAP GTS · E2open · Descartes</span></th>
+          <th class="us">Setu Flow</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Quote with live FX, freight, container basis</td>
+          <td class="fail">Plugin or spreadsheet</td>
+          <td class="partial">Enterprise-only · 6mo onboarding</td>
+          <td class="us">Native: FX + freight profiles per port + chips/powders/pallets</td>
+        </tr>
+        <tr>
+          <td>FOB / CIF / Ex-Factory pricing basis</td>
+          <td class="fail">Custom field, no logic</td>
+          <td class="partial">Heavy ERP module</td>
+          <td class="us">First-class basis with auto recalculation</td>
+        </tr>
+        <tr>
+          <td>Capture business card → lead with inherited context</td>
+          <td class="partial">3rd-party scan app</td>
+          <td class="fail">No capture layer</td>
+          <td class="us">In-app OCR, vCard, QR card, public capture form</td>
+        </tr>
+        <tr>
+          <td>Approval gates with margin thresholds + audit trail</td>
+          <td class="partial">Workflow add-on</td>
+          <td class="us" style="background:rgba(53,159,145,0.06)">Yes (legacy UX)</td>
+          <td class="us">Built into the quote send checkpoint</td>
+        </tr>
+        <tr>
+          <td>Country-specific compliance + document checklist</td>
+          <td class="fail">External tool</td>
+          <td class="us" style="background:rgba(53,159,145,0.06)">Yes (enterprise pricing)</td>
+          <td class="us">Driven by destination + product + trade-event scope</td>
+        </tr>
+        <tr>
+          <td>Geographic trade map with country drill-down</td>
+          <td class="fail">Reports tab</td>
+          <td class="partial">BI export</td>
+          <td class="us">Action-first dashboard with country command panel</td>
+        </tr>
+        <tr>
+          <td>AI assist that drafts but never auto-sends</td>
+          <td class="partial">Black-box agents</td>
+          <td class="fail">Not present</td>
+          <td class="us">AI suggestions queue · operator decides · prompt context logged</td>
+        </tr>
+        <tr>
+          <td>Two-way: outward My Card + inbound capture in one loop</td>
+          <td class="fail">Outward only via marketing</td>
+          <td class="fail">No outward layer</td>
+          <td class="us">Public card + QR + capture form feed straight to leads</td>
+        </tr>
+        <tr>
+          <td>Time to value for a 20-person exporter</td>
+          <td class="partial">2–4 weeks (but missing trade logic)</td>
+          <td class="fail">3–6 months · $50k+ implementation</td>
+          <td class="us">&lt; 5 days · self-serve onboarding</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="vs-legend">
+      <span><strong style="color:#6EE7B7">●</strong> Setu Flow built it</span>
+      <span><strong style="color:#FCD34D">≈</strong> Adjacent tools partial</span>
+      <span><strong style="color:#FCA5A5">✕</strong> Generic CRMs ignore</span>
+    </div>
+  </div>
+</div>
+<!-- ===================== PRODUCT WALKTHROUGH ===================== -->
+<style>
+  /* ============ Product walkthrough ============ */
+  .wf-head {
+    display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: end;
+    margin-bottom: 40px;
+  }
+  .wf-head h2 { font-size: clamp(32px, 4vw, 52px); line-height: 1.04; }
+  .wf-head p { color: var(--text-600); font-size: 17px; max-width: 480px; }
+
+  /* The 4 stage tabs styled like real Setu Flow workspace cards */
+  .stage-rail {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stage-tab {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 18px 18px 20px;
+    text-align: left;
+    transition: all .15s;
+    box-shadow: var(--shadow-soft);
+  }
+  .stage-tab:hover { transform: translateY(-2px); box-shadow: var(--shadow-prem); }
+  .stage-tab.active {
+    background: var(--brand-grad);
+    color: white;
+    border-color: var(--brand-primary);
+    box-shadow: 0 16px 36px rgba(31,72,124,0.28);
+  }
+  .stage-tab .num {
+    font-family: var(--font-mono);
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--brand-teal-d);
+  }
+  .stage-tab.active .num { color: rgba(255,255,255,0.85); }
+  .stage-tab .ttl {
+    font-size: 17px; font-weight: 700;
+    margin-top: 8px;
+    letter-spacing: -0.015em;
+    color: var(--text-950);
+  }
+  .stage-tab.active .ttl { color: white; }
+  .stage-tab .sub {
+    font-size: 12px;
+    color: var(--text-500);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .stage-tab.active .sub { color: rgba(255,255,255,0.85); }
+
+  /* Frame for the active screen */
+  .stage-frame {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-deep);
+  }
+  .frame-bar {
+    background: #F1F5F9;
+    border-bottom: 1px solid var(--line-strong);
+    padding: 12px 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .fdot { width: 10px; height: 10px; border-radius: 50%; background: #CBD5E1; }
+  .fdot.r { background: #FB7185; }
+  .fdot.y { background: #FCD34D; }
+  .fdot.g { background: #6EE7B7; }
+  .frame-url {
+    margin-left: 14px;
+    background: white;
+    border: 1px solid var(--line-strong);
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-600);
+    flex: 1; max-width: 540px;
+  }
+  .frame-url .accent { color: var(--brand-primary); font-weight: 700; }
+  .frame-mode {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  .stage-body { display: none; padding: 28px; background: #fafbfd; }
+  .stage-body.active { display: block; }
+
+  /* ─── DASHBOARD replica (mirrors render-dashboard-page.tsx) ─── */
+  .dash-head {
+    display: flex; flex-direction: column; gap: 14px;
+    margin-bottom: 16px;
+  }
+  .dash-head .title-row {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    justify-content: space-between; align-items: flex-end;
+  }
+  .dash-head .ey {
+    font-size: 11px; font-weight: 700;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .dash-head h3 {
+    font-size: 22px;
+    margin-top: 6px;
+  }
+  .dash-head p {
+    font-size: 13px; color: var(--text-600);
+    margin-top: 4px; max-width: 520px;
+  }
+  .dash-head .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dash-act {
+    background: var(--text-950);
+    color: white;
+    padding: 9px 16px;
+    border-radius: var(--r-md);
+    font-size: 13px; font-weight: 600;
+  }
+  .dash-act.ghost {
+    background: white;
+    color: var(--text-700);
+    border: 1px solid var(--line-strong);
+  }
+
+  /* KPI strip — matches DashboardTopStrip */
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+    margin-top: 14px;
+  }
+  .kpi {
+    background: white;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    padding: 14px 14px 13px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.05);
+  }
+  .kpi.warn { background: rgba(251,191,36,0.06); border-color: #FDE68A; }
+  .kpi.danger { background: rgba(244,63,94,0.06); border-color: #FECACA; }
+  .kpi .lbl {
+    font-size: 10px; font-weight: 700;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .kpi .val {
+    font-size: 26px; font-weight: 700;
+    color: var(--text-950);
+    margin-top: 6px;
+    letter-spacing: -0.02em; line-height: 1;
+  }
+  .kpi .delta {
+    font-size: 11px; font-weight: 600;
+    margin-top: 5px;
+  }
+  .kpi .delta.up { color: var(--status-emerald); }
+  .kpi .delta.down { color: var(--status-rose); }
+  .kpi .drill {
+    font-size: 10px; font-weight: 700;
+    color: var(--text-400);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 6px;
+  }
+
+  /* The 4-card "next step guidance" row mirrors live render-dashboard-page */
+  .guidance-row {
+    display: grid; grid-template-columns: 1.05fr 1.05fr 0.9fr 1.2fr; gap: 12px;
+    margin-top: 14px;
+  }
+  .guide-card {
+    background: white;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-lg);
+    padding: 16px;
+  }
+  .guide-card .ey {
+    font-size: 10.5px; font-weight: 700;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .guide-card .ttl {
+    font-size: 16px; font-weight: 700;
+    color: var(--text-950);
+    margin-top: 6px;
+    letter-spacing: -0.01em;
+  }
+  .guide-card .desc {
+    font-size: 12.5px;
+    color: var(--text-600);
+    margin-top: 6px; line-height: 1.55;
+  }
+  .guide-card .pill-btn {
+    display: inline-flex;
+    background: var(--text-950);
+    color: white;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    margin-top: 12px;
+  }
+  .guide-card .pill-btn.ghost { background: white; color: var(--text-700); border: 1px solid var(--line-strong); }
+  .guide-card.pending { background: #F8FAFC; }
+  .guide-card.pending .big {
+    font-size: 30px; font-weight: 700;
+    color: var(--text-950);
+    letter-spacing: -0.025em;
+    margin-top: 4px;
+  }
+  .inbound-list {
+    margin-top: 12px;
+    display: grid; gap: 8px;
+  }
+  .inbound-item {
+    background: #f8fafc;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    padding: 8px 12px;
+  }
+  .inbound-item .nm { font-size: 12.5px; font-weight: 600; color: var(--text-950); }
+  .inbound-item .meta { font-size: 11px; color: var(--text-500); margin-top: 2px; }
+
+  /* World map + needs attention split */
+  .dash-split {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px;
+    margin-top: 16px;
+  }
+  .map-card, .attn-card {
+    background: white;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-lg);
+    padding: 18px;
+  }
+  .map-card h5, .attn-card h5 {
+    font-size: 11px; font-weight: 700;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    margin-bottom: 10px;
+  }
+  .map-card .h-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .map-card .h-ttl {
+    font-size: 16px; font-weight: 700;
+    color: var(--text-950);
+  }
+  .map-card .h-sub {
+    font-size: 12px; color: var(--text-500);
+    font-family: var(--font-mono);
+  }
+  .map-svg {
+    width: 100%;
+    height: 260px;
+    background: linear-gradient(135deg, rgba(31,72,124,0.04) 0%, rgba(53,159,145,0.06) 100%);
+    border-radius: var(--r-md);
+    position: relative;
+    overflow: hidden;
+  }
+  .country-bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--brand-teal);
+    color: white;
+    font-size: 9.5px; font-weight: 700;
+    display: grid; place-items: center;
+    box-shadow: 0 4px 12px rgba(53,159,145,0.4);
+    cursor: pointer;
+    transition: transform .15s;
+  }
+  .country-bubble:hover { transform: scale(1.1); }
+  .country-bubble.lg { background: var(--brand-primary); box-shadow: 0 4px 16px rgba(31,72,124,0.4); }
+  .country-bubble .lbl {
+    position: absolute;
+    bottom: -22px;
+    left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: var(--text-700); font-weight: 600;
+    background: white;
+    padding: 1px 6px; border-radius: 4px;
+    border: 1px solid var(--line-strong);
+    white-space: nowrap;
+  }
+
+  /* attention list */
+  .attn-list { display: grid; gap: 8px; }
+  .attn-row {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 8px; padding: 11px 12px;
+    background: #F8FAFC;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+  }
+  .attn-row.urgent { background: rgba(244,63,94,0.04); border-color: #FECACA; }
+  .attn-row.warn { background: rgba(251,191,36,0.04); border-color: #FDE68A; }
+  .attn-row .h { font-size: 13px; font-weight: 600; color: var(--text-950); }
+  .attn-row .m { font-size: 11px; color: var(--text-500); margin-top: 2px; }
+  .attn-row .badge {
+    font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    align-self: center;
+  }
+  .badge.b-urgent { background: rgba(244,63,94,0.14); color: #BE123C; }
+  .badge.b-warn { background: rgba(251,191,36,0.16); color: #B45309; }
+  .badge.b-ok { background: rgba(16,185,129,0.14); color: #047857; }
+
+  /* ─── LEADS replica (mirrors leads-workspace.tsx row anatomy) ─── */
+  .leads-shell {
+    background: white;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+  }
+  .leads-toolbar {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line-strong);
+    background: #fafbfd;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 14px;
+  }
+  .leads-toolbar h4 { font-size: 17px; }
+  .leads-toolbar .stats {
+    display: flex; gap: 18px;
+    font-size: 12px; color: var(--text-600);
+  }
+  .leads-toolbar .stats strong { color: var(--text-950); font-weight: 700; }
+  .leads-search {
+    background: white;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px; color: var(--text-500);
+    width: 280px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .lead-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.95fr) 140px 130px;
+    gap: 16px; align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line-strong);
+    background: white;
+    transition: background .12s;
+  }
+  .lead-row:hover { background: rgba(31,72,124,0.025); }
+  .lead-row.spotlight { background: rgba(31,72,124,0.04); }
+  .lead-row:last-child { border-bottom: none; }
+
+  .lead-info { display: flex; gap: 12px; min-width: 0; }
+  .lead-avatar {
+    width: 44px; height: 44px;
+    background: #F1F5F9;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 14px; font-weight: 700;
+    color: var(--text-700);
+    flex-shrink: 0;
+  }
+  .lead-text { min-width: 0; }
+  .lead-text .co {
+    font-size: 14.5px; font-weight: 700;
+    color: var(--text-950);
+    letter-spacing: -0.005em;
+  }
+  .lead-text .co-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+  .stage-badge {
+    display: inline-flex;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .stage-badge.qual { background: rgba(34,197,94,0.10); color: #15803D; border-color: #BBF7D0; }
+  .stage-badge.contact { background: rgba(99,102,241,0.10); color: #4338CA; border-color: #C7D2FE; }
+  .stage-badge.sample { background: rgba(245,158,11,0.10); color: #B45309; border-color: #FDE68A; }
+  .stage-badge.negot { background: rgba(168,85,247,0.10); color: #6B21A8; border-color: #E9D5FF; }
+  .stage-badge.new { background: rgba(59,130,246,0.10); color: #1D4ED8; border-color: #BFDBFE; }
+  .lead-text .contact-line {
+    font-size: 12px; color: var(--text-600);
+    margin-top: 4px;
+  }
+  .lead-text .stage-owner {
+    font-size: 11px; color: var(--text-500);
+    margin-top: 2px;
+  }
+
+  .lead-next {
+    background: linear-gradient(135deg, rgba(31,72,124,0.04) 0%, rgba(53,159,145,0.05) 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 10px 12px;
+  }
+  .lead-next .lbl {
+    font-size: 10px; font-weight: 700;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .lead-next .what {
+    font-size: 13px; font-weight: 600;
+    color: var(--text-950);
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+  .lead-next .when {
+    font-size: 11px; color: var(--text-500);
+    margin-top: 2px;
+  }
+
+  .lead-followup { text-align: right; }
+  .lead-followup .due {
+    font-size: 13px; font-weight: 700;
+    letter-spacing: -0.005em;
+  }
+  .lead-followup .due.overdue { color: #BE123C; }
+  .lead-followup .due.today { color: #B45309; }
+  .lead-followup .due.ok { color: var(--text-950); }
+  .lead-followup .lbl {
+    font-size: 10.5px; color: var(--text-500);
+    margin-top: 2px;
+  }
+  .lead-followup .health {
+    margin-top: 8px;
+    display: inline-flex;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .health.hot { background: rgba(239,68,68,0.08); color: #BE123C; border-color: #FECACA; }
+  .health.warm { background: rgba(245,158,11,0.08); color: #B45309; border-color: #FDE68A; }
+  .health.cool { background: rgba(59,130,246,0.08); color: #1D4ED8; border-color: #BFDBFE; }
+  .health.cold { background: rgba(148,163,184,0.12); color: #475569; border-color: #CBD5E1; }
+
+  .lead-cta { text-align: right; }
+  .open-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--status-emerald);
+    color: white;
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13px; font-weight: 700;
+    box-shadow: 0 10px 22px rgba(16,185,129,0.22);
+  }
+
+  /* ─── QUOTE BUILDER (5 steps with freight/FX) ─── */
+  .quote-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+  }
+  .quote-main {
+    background: white;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-lg);
+    padding: 24px;
+  }
+  .qsteps { display: flex; gap: 8px; margin-bottom: 22px; }
+  .qstep {
+    flex: 1;
+    padding: 11px 12px;
+    text-align: center;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line-strong);
+    font-size: 12.5px;
+    color: var(--text-500);
+    background: #fafbfd;
+  }
+  .qstep.done {
+    background: var(--brand-grad);
+    color: white;
+    border-color: var(--brand-primary);
+  }
+  .qstep.done::before { content: "✓ "; }
+  .qstep.now {
+    border: 2px solid var(--brand-primary);
+    color: var(--brand-primary);
+    font-weight: 700;
+    background: white;
+  }
+
+  .quote-meta {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .quote-meta h4 { font-size: 18px; }
+  .quote-meta .pinfo { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-500); }
+
+  .quote-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .quote-table th {
+    text-align: left;
+    padding: 10px 8px;
+    font-size: 10.5px; font-weight: 700;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .quote-table th.r, .quote-table td.r { text-align: right; }
+  .quote-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--line-strong);
+    vertical-align: top;
+  }
+  .quote-table td.product { font-weight: 600; color: var(--text-950); }
+  .quote-table td.product small {
+    display: block; margin-top: 3px;
+    color: var(--text-500); font-size: 11px;
+    font-family: var(--font-mono); font-weight: 400;
+  }
+  .quote-table td.r.usd { font-family: var(--font-mono); font-weight: 600; }
+  .frt-add {
+    display: inline-block;
+    background: rgba(53,159,145,0.12);
+    color: var(--brand-teal-d);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .basis-pill {
+    font-family: var(--font-mono);
+    font-size: 10.5px; font-weight: 600;
+    padding: 2px 8px;
+    background: rgba(31,72,124,0.08);
+    color: var(--brand-primary);
+    border-radius: 4px;
+  }
+  .quote-totals {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 2px solid var(--text-950);
+    display: grid; grid-template-columns: 1fr auto; row-gap: 6px; column-gap: 14px;
+  }
+  .quote-totals .lbl { color: var(--text-600); font-size: 13px; }
+  .quote-totals .amt { text-align: right; font-family: var(--font-mono); font-size: 13px; color: var(--text-950); }
+  .quote-totals .lbl.grand { color: var(--text-950); font-weight: 700; font-size: 16px; padding-top: 6px; border-top: 1px dashed var(--line-strong); }
+  .quote-totals .amt.grand { font-size: 18px; font-weight: 700; padding-top: 6px; border-top: 1px dashed var(--line-strong); }
+
+  .quote-side { display: grid; gap: 12px; align-content: start; }
+  .qside {
+    background: white;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    padding: 16px;
+  }
+  .qside h6 {
+    font-size: 10.5px; font-weight: 700;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 10px;
+  }
+  .frow {
+    display: grid; grid-template-columns: 1fr auto;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--line-strong);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+  }
+  .frow:last-child { border-bottom: none; }
+  .frow .k { color: var(--text-600); }
+  .frow .v { color: var(--text-950); font-weight: 600; }
+
+  .qside.approval {
+    background: linear-gradient(135deg, rgba(245,158,11,0.06) 0%, rgba(217,119,6,0.10) 100%);
+    border-color: #FDE68A;
+  }
+  .qside.approval h6 { color: #B45309; }
+  .qside.approval .who {
+    display: flex; align-items: center; gap: 10px;
+    margin: 8px 0;
+    font-size: 13px; font-weight: 600;
+  }
+  .av {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--brand-grad);
+    color: white;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .reason {
+    background: white;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    color: var(--text-700);
+    border-left: 3px solid var(--brand-teal);
+    line-height: 1.5;
+  }
+  .qbtn {
+    margin-top: 12px; width: 100%;
+    background: var(--text-950);
+    color: white;
+    border-radius: var(--r-md);
+    padding: 10px;
+    font-size: 13px; font-weight: 600;
+  }
+  .qside.lock {
+    background: var(--text-950);
+    color: rgba(255,255,255,0.8);
+    border-color: var(--text-950);
+    font-family: var(--font-mono);
+    font-size: 11px; line-height: 1.7;
+  }
+  .qside.lock h6 { color: #6EE7B7; }
+  .qside.lock strong { color: white; }
+
+  /* ─── vCARD + CAPTURE ─── */
+  .vcard-grid {
+    display: grid;
+    grid-template-columns: 0.95fr 1.05fr;
+    gap: 20px;
+  }
+
+  /* Real vCard replica with gradient header circle */
+  .vcard {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-3xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-deep);
+  }
+  .vcard-head {
+    background: var(--brand-grad);
+    padding: 32px 32px 36px;
+    color: white;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .vcard-head::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at top right, rgba(255,255,255,0.4), transparent 30%),
+                radial-gradient(circle at bottom left, rgba(255,255,255,0.2), transparent 32%);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .vcard-head .relwrap { position: relative; z-index: 2; }
+  .avatar-circle {
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.4);
+    backdrop-filter: blur(8px);
+    margin: 0 auto;
+    display: grid; place-items: center;
+    font-size: 52px; font-weight: 700;
+    color: white;
+    box-shadow: 0 20px 60px rgba(15,23,42,0.18);
+  }
+  .vcard-head .role {
+    margin-top: 18px;
+    font-size: 10.5px; font-weight: 700;
+    color: rgba(255,255,255,0.78);
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+  }
+  .vcard-head .name {
+    font-size: 36px; font-weight: 700;
+    margin-top: 12px;
+    letter-spacing: -0.04em;
+    color: white;
+  }
+  .vcard-head .org {
+    font-size: 17px; font-weight: 500;
+    color: rgba(255,255,255,0.88);
+    margin-top: 6px;
+    letter-spacing: -0.015em;
+  }
+
+  .vcard-body {
+    background: linear-gradient(180deg, #ffffff 0%, #F7FBFC 100%);
+    padding: 22px 28px 28px;
+  }
+  .vcard-details {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 18px;
+    box-shadow: 0 12px 30px rgba(15,23,42,0.04);
+    display: grid; gap: 10px;
+  }
+  .vcard-details .row {
+    display: flex; align-items: center; gap: 14px;
+    color: var(--text-700);
+    font-size: 13px;
+  }
+  .vcard-details .row .ic {
+    width: 28px; height: 28px;
+    background: rgba(53,159,145,0.10);
+    color: var(--brand-teal-d);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .vcard-cta {
+    margin-top: 20px;
+    text-align: center;
+  }
+  .vcard-cta h5 {
+    font-size: 22px;
+    color: var(--text-950);
+    letter-spacing: -0.025em;
+  }
+  .vcard-actions {
+    margin-top: 14px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .v-act-1 {
+    background: var(--brand-grad);
+    color: white;
+    padding: 14px;
+    border-radius: var(--r-lg);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .v-act-2 {
+    background: white;
+    color: var(--brand-primary);
+    border: 1px solid var(--line-2);
+    padding: 14px;
+    border-radius: var(--r-lg);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .v-save {
+    margin-top: 10px;
+    background: var(--text-950);
+    color: white;
+    padding: 11px;
+    border-radius: var(--r-md);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    display: block;
+    text-align: center;
+  }
+
+  .qr-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 18px;
+    text-align: center;
+    margin-top: 14px;
+    box-shadow: var(--shadow-soft);
+  }
+  .qr-card .qr-box {
+    width: 80px; height: 80px;
+    margin: 0 auto;
+    background:
+      linear-gradient(45deg, var(--text-950) 25%, transparent 25%, transparent 75%, var(--text-950) 75%),
+      linear-gradient(45deg, var(--text-950) 25%, transparent 25%, transparent 75%, var(--text-950) 75%),
+      white;
+    background-size: 12px 12px, 12px 12px;
+    background-position: 0 0, 6px 6px;
+    border: 6px solid white;
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px var(--line-strong);
+  }
+  .qr-card .lbl {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-500);
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  /* Capture review side */
+  .capture-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 24px;
+    box-shadow: var(--shadow-deep);
+  }
+  .capture-card h4 {
+    font-size: 17px;
+    margin-bottom: 4px;
+  }
+  .capture-card .desc {
+    font-size: 13px; color: var(--text-600);
+    margin-bottom: 18px;
+  }
+  .source-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin-bottom: 16px;
+  }
+  .src-pill {
+    background: #fafbfd;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    padding: 10px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .src-pill.active { border-color: var(--brand-teal); background: rgba(53,159,145,0.06); }
+  .src-pill .ic {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--brand-teal-d);
+    letter-spacing: 0.14em;
+  }
+  .src-pill .nm {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-950);
+    margin-top: 4px;
+  }
+
+  .biz-card-mock {
+    background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-primary) 60%, var(--brand-teal) 100%);
+    color: white;
+    border-radius: var(--r-md);
+    padding: 18px 20px;
+    box-shadow: 0 12px 28px rgba(31,72,124,0.28);
+    transform: rotate(-1deg);
+    position: relative;
+  }
+  .biz-card-mock .co {
+    font-size: 18px; font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .biz-card-mock .nm { margin-top: 12px; font-size: 13px; font-weight: 600; }
+  .biz-card-mock .rl { font-size: 11px; color: rgba(255,255,255,0.78); }
+  .biz-card-mock .meta {
+    margin-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.7;
+  }
+  .biz-card-mock::after {
+    content: "SCANNED";
+    position: absolute; top: -8px; right: -8px;
+    background: var(--brand-teal-d);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    font-weight: 700;
+    transform: rotate(8deg);
+    box-shadow: 0 4px 12px rgba(39,148,145,0.4);
+  }
+
+  .extract {
+    margin-top: 16px;
+    background: #fafbfd;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    padding: 14px 16px;
+  }
+  .extract h6 {
+    font-size: 10.5px; font-weight: 700;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    margin-bottom: 10px;
+  }
+  .ex-row {
+    display: grid; grid-template-columns: 100px 1fr auto;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 12px;
+    border-bottom: 1px dashed var(--line-strong);
+  }
+  .ex-row:last-child { border-bottom: none; }
+  .ex-row .k {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-500);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .ex-row .v {
+    font-weight: 600;
+    color: var(--text-950);
+  }
+  .conf {
+    font-size: 10px; font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(16,185,129,0.12);
+    color: #047857;
+  }
+  .conf.warn { background: rgba(245,158,11,0.14); color: #B45309; }
+
+  .review-gate {
+    margin-top: 16px;
+    background: var(--text-950);
+    color: white;
+    border-radius: var(--r-md);
+    padding: 16px 18px;
+  }
+  .review-gate .head {
+    font-size: 10.5px; font-weight: 700;
+    color: #6EE7B7;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    margin-bottom: 8px;
+  }
+  .review-gate .body {
+    font-size: 12.5px; line-height: 1.55;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 12px;
+  }
+  .review-actions { display: flex; gap: 8px; }
+  .review-actions button {
+    flex: 1;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 12px;
+  }
+  .review-actions button.primary {
+    background: white;
+    color: var(--text-950);
+    border: none;
+    font-weight: 700;
+  }
+
+  @media (max-width: 1080px) {
+    .stage-rail { grid-template-columns: 1fr 1fr; }
+    .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    .guidance-row { grid-template-columns: 1fr 1fr; }
+    .dash-split { grid-template-columns: 1fr; }
+    .quote-grid { grid-template-columns: 1fr; }
+    .vcard-grid { grid-template-columns: 1fr; }
+    .lead-row { grid-template-columns: 1fr; gap: 10px; }
+    .lead-followup, .lead-cta { text-align: left; }
+  }
+</style>
+
+<section class="shell" id="product">
+  <div class="wf-head">
+    <div>
+      <div class="eyebrow">The product · live walkthrough</div>
+      <h2>One locked flow.<br>Four screens you'll click through right now.</h2>
+    </div>
+    <p>
+      Every part of the product earns its place by serving the locked commercial flow:
+      <strong>Capture → Lead → Quote → Order.</strong> Pick a stage to see the actual screen and what makes it different.
+    </p>
+  </div>
+
+  <div class="stage-rail" id="stageRail">
+    <button class="stage-tab active" data-stage="dash">
+      <div class="num">01 · Dashboard</div>
+      <div class="ttl">Action-first command</div>
+      <div class="sub">KPIs, world map, needs-attention queue</div>
+    </button>
+    <button class="stage-tab" data-stage="leads">
+      <div class="num">02 · Leads</div>
+      <div class="ttl">Pipeline workspace</div>
+      <div class="sub">Stage, next-action, follow-up, drill into command center</div>
+    </button>
+    <button class="stage-tab" data-stage="quote">
+      <div class="num">03 · Quote</div>
+      <div class="ttl">Trade-native builder</div>
+      <div class="sub">Product → Pricing → Terms → Review → Send</div>
+    </button>
+    <button class="stage-tab" data-stage="vcard">
+      <div class="num">04 · vCard + Capture</div>
+      <div class="ttl">Two-way contact loop</div>
+      <div class="sub">My Card share + OCR card scan + review gate</div>
+    </button>
+  </div>
+
+  <div class="stage-frame">
+    <div class="frame-bar">
+      <span class="fdot r"></span><span class="fdot y"></span><span class="fdot g"></span>
+      <div class="frame-url"><span class="accent">app.setuflow.com</span><span id="frameUrl">/dashboard</span></div>
+      <span class="frame-mode">Live screen replica</span>
+    </div>
+
+    <!-- ─── DASHBOARD ─── -->
+    <div class="stage-body active" data-body="dash">
+      <div class="dash-head">
+        <div class="title-row">
+          <div>
+            <div class="ey">Next step guidance</div>
+            <h3>Turn dashboard insight into pipeline movement</h3>
+            <p>The dashboard is the command layer, not the finishing point. Start the next commercial record, pick up pending actions, and watch fresh public-card demand from here.</p>
+          </div>
+          <div class="actions">
+            <button class="dash-act">Capture new contact</button>
+            <button class="dash-act ghost">Open leads</button>
+            <button class="dash-act ghost">Open orders</button>
+          </div>
+        </div>
+
+        <div class="kpi-strip">
+          <div class="kpi">
+            <div class="lbl">Open leads</div>
+            <div class="val">147</div>
+            <div class="delta up">↑ 11 this week</div>
+            <div class="drill">View pipeline →</div>
+          </div>
+          <div class="kpi warn">
+            <div class="lbl">Active quotes</div>
+            <div class="val">23</div>
+            <div class="delta" style="color:#B45309">3 awaiting approval</div>
+            <div class="drill">Open queue →</div>
+          </div>
+          <div class="kpi danger">
+            <div class="lbl">Overdue follow-ups</div>
+            <div class="val">8</div>
+            <div class="delta down">↑ 2 since yesterday</div>
+            <div class="drill">Resolve →</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl">Pipeline value</div>
+            <div class="val">$1.42M</div>
+            <div class="delta up">↑ 18% MoM</div>
+            <div class="drill">Drill by market →</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl">Compliance blockers</div>
+            <div class="val">4</div>
+            <div class="delta" style="color:#B45309">2 buyers · 2 SKUs</div>
+            <div class="drill">Review →</div>
+          </div>
+        </div>
+
+        <div class="guidance-row">
+          <div class="guide-card">
+            <div class="ey">New lead</div>
+            <div class="ttl">Start a fresh commercial record</div>
+            <div class="desc">Use Capture when the next buyer or supplier contact needs to enter the CRM cleanly.</div>
+            <a class="pill-btn">New Lead</a>
+          </div>
+          <div class="guide-card">
+            <div class="ey">New quote</div>
+            <div class="ttl">Open commercial work already in motion</div>
+            <div class="desc">23 active quote workspaces need attention before they can move into Orders.</div>
+            <a class="pill-btn ghost">New Quote</a>
+          </div>
+          <div class="guide-card pending">
+            <div class="ey">Pending actions</div>
+            <div class="big">31</div>
+            <div class="desc">8 overdue follow-ups and 23 active quote workspaces.</div>
+            <a class="pill-btn ghost">Review queue</a>
+          </div>
+          <div class="guide-card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start">
+              <div>
+                <div class="ey">Recent inbound card activity</div>
+                <div class="ttl" style="font-size:15px">Live public-card demand</div>
+              </div>
+              <a style="font-size:11px;font-weight:700;color:var(--brand-primary);text-transform:uppercase;letter-spacing:0.14em">My Card →</a>
+            </div>
+            <div class="inbound-list">
+              <div class="inbound-item">
+                <div class="nm">Al Marwah Trading LLC</div>
+                <div class="meta">Public Card · Gulfood booth · 32m ago</div>
+              </div>
+              <div class="inbound-item">
+                <div class="nm">Heritage Imports UK</div>
+                <div class="meta">Public Card · Email signature · 4h ago</div>
+              </div>
+              <div class="inbound-item">
+                <div class="nm">Sami Foods Co.</div>
+                <div class="meta">Public Card · LinkedIn DM · 1d ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-split">
+        <div class="map-card">
+          <div class="h-row">
+            <div>
+              <div class="h-ttl">Trade map · active markets</div>
+              <div class="h-sub" style="margin-top:2px">Click country to drill into commercial activity</div>
+            </div>
+            <div class="h-sub">12 countries · 49 active leads</div>
+          </div>
+          <div class="map-svg">
+            <!-- approximated world map silhouette -->
+            <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.18">
+              <!-- N America -->
+              <path d="M50,80 Q90,50 150,55 L200,90 L210,140 L160,170 L100,160 L60,130 Z" fill="#1F487C"/>
+              <!-- S America -->
+              <path d="M195,180 L230,175 L240,230 L210,260 L195,240 Z" fill="#1F487C"/>
+              <!-- Europe -->
+              <path d="M380,55 L440,50 L450,90 L420,110 L380,100 Z" fill="#1F487C"/>
+              <!-- Africa -->
+              <path d="M390,115 L460,110 L470,200 L420,230 L390,200 L385,150 Z" fill="#1F487C"/>
+              <!-- Asia -->
+              <path d="M460,55 L640,60 L680,110 L660,150 L580,160 L490,140 L470,90 Z" fill="#1F487C"/>
+              <!-- Australia -->
+              <path d="M620,180 L700,175 L710,220 L640,225 Z" fill="#1F487C"/>
+            </svg>
+            <!-- bubbles -->
+            <div class="country-bubble lg" style="left:54%; top:42%; width:48px; height:48px;">
+              UAE<span class="lbl">12 leads · $480k</span>
+            </div>
+            <div class="country-bubble lg" style="left:45%; top:30%; width:42px; height:42px;">
+              UK<span class="lbl">8 leads · $310k</span>
+            </div>
+            <div class="country-bubble" style="left:50%; top:40%; width:36px; height:36px;">
+              KSA<span class="lbl">7 leads</span>
+            </div>
+            <div class="country-bubble" style="left:62%; top:48%; width:32px; height:32px;">
+              SG
+            </div>
+            <div class="country-bubble" style="left:48%; top:34%; width:30px; height:30px;">
+              DE
+            </div>
+            <div class="country-bubble" style="left:18%; top:34%; width:28px; height:28px;">
+              US
+            </div>
+          </div>
+        </div>
+
+        <div class="attn-card">
+          <h5>Needs attention</h5>
+          <div class="attn-list">
+            <div class="attn-row urgent">
+              <div>
+                <div class="h">Al Marwah · LC expires in 2 days</div>
+                <div class="m">Order SF-ORD-0184 · documents pending</div>
+              </div>
+              <span class="badge b-urgent">Urgent</span>
+            </div>
+            <div class="attn-row warn">
+              <div>
+                <div class="h">Quote SF-2026-0184 · margin 11.4%</div>
+                <div class="m">Below 12% threshold · approval needed</div>
+              </div>
+              <span class="badge b-warn">Approval</span>
+            </div>
+            <div class="attn-row warn">
+              <div>
+                <div class="h">Heritage Imports · follow-up overdue</div>
+                <div class="m">3 days · last contact 14 Apr</div>
+              </div>
+              <span class="badge b-warn">Overdue</span>
+            </div>
+            <div class="attn-row">
+              <div>
+                <div class="h">Sami Foods · sample shipment lands tomorrow</div>
+                <div class="m">Schedule buyer call to confirm receipt</div>
+              </div>
+              <span class="badge b-ok">On track</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── LEADS ─── -->
+    <div class="stage-body" data-body="leads">
+      <div class="leads-shell">
+        <div class="leads-toolbar">
+          <div>
+            <h4>Leads workspace</h4>
+            <div class="stats" style="margin-top:6px;">
+              <span><strong>147</strong> open</span>
+              <span><strong>8</strong> overdue</span>
+              <span><strong>23</strong> in quote</span>
+              <span style="color:var(--brand-teal-d)"><strong style="color:var(--brand-teal-d)">$1.42M</strong> pipeline value</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <div class="leads-search">🔎 Search company, market, contact…</div>
+            <button class="dash-act">+ Quick lead</button>
+          </div>
+        </div>
+
+        <div class="lead-row spotlight">
+          <div class="lead-info">
+            <div class="lead-avatar">AM</div>
+            <div class="lead-text">
+              <div class="co">Al Marwah Trading LLC</div>
+              <div class="co-meta">
+                <span class="stage-badge negot">Quote requested</span>
+                <span style="font-size:11.5px;color:var(--text-500)">UAE · Dubai · DMCC</span>
+              </div>
+              <div class="contact-line">Khalid bin Rashid · Procurement Director · khalid@almarwah.ae</div>
+              <div class="stage-owner">Stage: Quote requested · Owner: Priya M.</div>
+            </div>
+          </div>
+          <div class="lead-next">
+            <div class="lbl">Next action</div>
+            <div class="what">Send drafted quote SF-2026-0184 (FOB Mundra)</div>
+            <div class="when">AI draft ready · awaiting approval (margin 11.4%)</div>
+          </div>
+          <div class="lead-followup">
+            <div class="due today">Today, 4:00 PM</div>
+            <div class="lbl">Due</div>
+            <div class="health hot">● Hot</div>
+          </div>
+          <div class="lead-cta">
+            <button class="open-btn">Open ↗</button>
+          </div>
+        </div>
+
+        <div class="lead-row">
+          <div class="lead-info">
+            <div class="lead-avatar">HI</div>
+            <div class="lead-text">
+              <div class="co">Heritage Imports Ltd.</div>
+              <div class="co-meta">
+                <span class="stage-badge sample">Sample sent</span>
+                <span style="font-size:11.5px;color:var(--text-500)">UK · London</span>
+              </div>
+              <div class="contact-line">Emma Whitfield · Head of Sourcing · emma@heritage.co.uk</div>
+              <div class="stage-owner">Stage: Sample sent · Owner: Rajesh P.</div>
+            </div>
+          </div>
+          <div class="lead-next">
+            <div class="lbl">Next action</div>
+            <div class="what">Follow up on basmati sample receipt</div>
+            <div class="when">Sample dispatched 12 Apr · ETA 18 Apr</div>
+          </div>
+          <div class="lead-followup">
+            <div class="due overdue">3 days overdue</div>
+            <div class="lbl">Due 14 Apr</div>
+            <div class="health warm">● Warm</div>
+          </div>
+          <div class="lead-cta">
+            <button class="open-btn">Open ↗</button>
+          </div>
+        </div>
+
+        <div class="lead-row">
+          <div class="lead-info">
+            <div class="lead-avatar">SF</div>
+            <div class="lead-text">
+              <div class="co">Sami Foods Co.</div>
+              <div class="co-meta">
+                <span class="stage-badge contact">Contacted</span>
+                <span style="font-size:11.5px;color:var(--text-500)">KSA · Riyadh</span>
+              </div>
+              <div class="contact-line">Mohammed Al-Sami · Director · m.alsami@samifoods.sa</div>
+              <div class="stage-owner">Stage: Contacted · Owner: Priya M.</div>
+            </div>
+          </div>
+          <div class="lead-next">
+            <div class="lbl">Next action</div>
+            <div class="what">Send catalog + price list for spices</div>
+            <div class="when">Captured from public-card form · 1d ago</div>
+          </div>
+          <div class="lead-followup">
+            <div class="due ok">Tomorrow, 11:00 AM</div>
+            <div class="lbl">Due</div>
+            <div class="health cool">● Cool</div>
+          </div>
+          <div class="lead-cta">
+            <button class="open-btn">Open ↗</button>
+          </div>
+        </div>
+
+        <div class="lead-row">
+          <div class="lead-info">
+            <div class="lead-avatar">BT</div>
+            <div class="lead-text">
+              <div class="co">Bavaria Trading GmbH</div>
+              <div class="co-meta">
+                <span class="stage-badge qual">Qualified</span>
+                <span style="font-size:11.5px;color:var(--text-500)">Germany · Munich</span>
+              </div>
+              <div class="contact-line">Klaus Mueller · Procurement Lead · k.mueller@bavaria-trade.de</div>
+              <div class="stage-owner">Stage: Qualified · Owner: Rajesh P.</div>
+            </div>
+          </div>
+          <div class="lead-next">
+            <div class="lbl">Next action</div>
+            <div class="what">Schedule discovery call · turmeric sourcing</div>
+            <div class="when">Inbound RFQ · qualified 16 Apr</div>
+          </div>
+          <div class="lead-followup">
+            <div class="due ok">22 Apr</div>
+            <div class="lbl">Due</div>
+            <div class="health cool">● Cool</div>
+          </div>
+          <div class="lead-cta">
+            <button class="open-btn">Open ↗</button>
+          </div>
+        </div>
+
+        <div class="lead-row">
+          <div class="lead-info">
+            <div class="lead-avatar">PE</div>
+            <div class="lead-text">
+              <div class="co">Pacific Exporters Pte.</div>
+              <div class="co-meta">
+                <span class="stage-badge new">New</span>
+                <span style="font-size:11.5px;color:var(--text-500)">Singapore</span>
+              </div>
+              <div class="contact-line">Lin Wei · Trading Manager · lin@pacific-ex.sg</div>
+              <div class="stage-owner">Stage: New · Owner: Unassigned</div>
+            </div>
+          </div>
+          <div class="lead-next">
+            <div class="lbl">Next action</div>
+            <div class="what">Initial qualification call</div>
+            <div class="when">Captured from QR scan · trade event 17 Apr</div>
+          </div>
+          <div class="lead-followup">
+            <div class="due ok">25 Apr</div>
+            <div class="lbl">Due</div>
+            <div class="health cold">● Cold</div>
+          </div>
+          <div class="lead-cta">
+            <button class="open-btn">Open ↗</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── QUOTE ─── -->
+    <div class="stage-body" data-body="quote">
+      <div class="quote-grid">
+        <div class="quote-main">
+          <div class="qsteps">
+            <div class="qstep done">Product</div>
+            <div class="qstep done">Pricing</div>
+            <div class="qstep now">Terms</div>
+            <div class="qstep">Review</div>
+            <div class="qstep">Send</div>
+          </div>
+
+          <div class="quote-meta">
+            <div>
+              <h4>Quote SF-2026-0184</h4>
+              <div style="font-size:12px;color:var(--text-500);margin-top:3px">Al Marwah Trading LLC · UAE</div>
+            </div>
+            <span class="pinfo">USD · FOB Mundra · 1 × 40HC</span>
+          </div>
+
+          <table class="quote-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="r">Qty</th>
+                <th class="r">Basis</th>
+                <th class="r">Unit price</th>
+                <th class="r">Line total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="product">Basmati Rice 1121 · Premium<small>HSN 1006.30 · 25 kg PP woven · 800 bags / 40HC</small></td>
+                <td class="r">25 MT</td>
+                <td class="r"><span class="basis-pill">FOB</span></td>
+                <td class="r usd">$ 1,420.00<span class="frt-add">+ frt 73</span></td>
+                <td class="r usd">$ 35,500</td>
+              </tr>
+              <tr>
+                <td class="product">Turmeric Powder · 5% curcumin<small>HSN 0910.30 · 25 kg fibre drum · 640 drums / 40HC</small></td>
+                <td class="r">16 MT</td>
+                <td class="r"><span class="basis-pill">FOB</span></td>
+                <td class="r usd">$ 2,180.00<span class="frt-add">+ frt 91</span></td>
+                <td class="r usd">$ 34,880</td>
+              </tr>
+              <tr>
+                <td class="product">Coriander Whole · sortex clean<small>HSN 0909.21 · 50 kg PP bag</small></td>
+                <td class="r">8 MT</td>
+                <td class="r"><span class="basis-pill">FOB</span></td>
+                <td class="r usd">$ 1,740.00<span class="frt-add">+ frt 78</span></td>
+                <td class="r usd">$ 13,920</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="quote-totals">
+            <span class="lbl">Subtotal · FOB Mundra</span><span class="amt">$ 84,300.00</span>
+            <span class="lbl">Freight · Mundra → Jebel Ali · 1×40HC</span><span class="amt">$ 1,820.00</span>
+            <span class="lbl">Insurance · 110% CIF (computed)</span><span class="amt">$ 945.00</span>
+            <span class="lbl">FX rate applied</span><span class="amt">USD/INR 83.42 · ICICI 17 Apr 09:00</span>
+            <span class="lbl grand">Total · CIF Jebel Ali</span><span class="amt grand">$ 87,065.00</span>
+          </div>
+        </div>
+
+        <div class="quote-side">
+          <div class="qside">
+            <h6>Freight profile · Jebel Ali</h6>
+            <div class="frow"><span class="k">Origin port</span><span class="v">Mundra</span></div>
+            <div class="frow"><span class="k">Container</span><span class="v">1 × 40HC</span></div>
+            <div class="frow"><span class="k">Sea freight</span><span class="v">$ 1,420</span></div>
+            <div class="frow"><span class="k">THC + BAF</span><span class="v">$ 240</span></div>
+            <div class="frow"><span class="k">Documentation</span><span class="v">$ 95</span></div>
+            <div class="frow"><span class="k">Local + bunker</span><span class="v">$ 65</span></div>
+            <div class="frow"><span class="k"><strong>Total freight</strong></span><span class="v"><strong>$ 1,820</strong></span></div>
+            <div class="frow"><span class="k">Per MT (chips/powders mix)</span><span class="v">$ 73 — 91</span></div>
+          </div>
+
+          <div class="qside approval">
+            <h6>● Approval gate · margin policy</h6>
+            <p style="margin:6px 0 0;font-size:12px;color:var(--text-700)">Quote margin <strong>11.4%</strong> is below the 12% threshold for UAE buyers.</p>
+            <div class="who"><div class="av">RP</div>Rajesh P. · Sales Director</div>
+            <div class="reason"><strong>Reason required:</strong> Strategic buyer · repeat orders expected from Gulfood relationship · margin recovers on freight contract Q3.</div>
+            <button class="qbtn">Request approval</button>
+          </div>
+
+          <div class="qside lock">
+            <h6>● Lock posture</h6>
+            <p style="margin:0">Quote becomes <strong>immutable</strong> at <strong>Send</strong>. New version required for any change. Full audit trail preserved.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── vCARD + CAPTURE ─── -->
+    <div class="stage-body" data-body="vcard">
+      <div class="vcard-grid">
+        <!-- Outward My Card -->
+        <div>
+          <div class="vcard">
+            <div class="vcard-head">
+              <div class="relwrap">
+                <div class="avatar-circle">P</div>
+                <div class="role">Sales Director · Setu Flow</div>
+                <div class="name">Priya Mehta</div>
+                <div class="org">Setu Flow Trading Co.</div>
+              </div>
+            </div>
+            <div class="vcard-body">
+              <div class="vcard-details">
+                <div class="row"><span class="ic">●</span><span>+91 98765 43210</span></div>
+                <div class="row"><span class="ic">●</span><span>4F, Centrum, Andheri East, Mumbai</span></div>
+                <div class="row"><span class="ic">●</span><span>priya@setuflow.com</span></div>
+                <div class="row"><span class="ic">●</span><span>setuflow.com/p/priya</span></div>
+              </div>
+              <div class="vcard-cta">
+                <h5>Connect with Priya</h5>
+                <div class="vcard-actions">
+                  <a class="v-act-1">Request quote</a>
+                  <a class="v-act-2">Book appointment</a>
+                </div>
+                <a class="v-save">Save contact</a>
+              </div>
+            </div>
+          </div>
+          <div class="qr-card">
+            <div class="qr-box"></div>
+            <div class="lbl">Scan QR · public capture form</div>
+            <p style="font-size:11.5px;color:var(--text-500);margin-top:6px;line-height:1.5">Every business card you hand out becomes an inbound capture form. Quote requests land as leads with full context.</p>
+          </div>
+        </div>
+
+        <!-- Capture review side -->
+        <div class="capture-card">
+          <h4>Capture · review before save</h4>
+          <p class="desc">All capture data passes through a review gate before becoming a lead. Operator sees confidence scores, duplicates, and inherited context.</p>
+
+          <div class="source-grid">
+            <div class="src-pill active"><div class="ic">OCR</div><div class="nm">Card scan</div></div>
+            <div class="src-pill"><div class="ic">VCF</div><div class="nm">vCard</div></div>
+            <div class="src-pill"><div class="ic">QR</div><div class="nm">My Card</div></div>
+            <div class="src-pill"><div class="ic">RFQ</div><div class="nm">RFQ doc</div></div>
+            <div class="src-pill"><div class="ic">EVT</div><div class="nm">Trade event</div></div>
+            <div class="src-pill"><div class="ic">MAN</div><div class="nm">Manual</div></div>
+          </div>
+
+          <div class="biz-card-mock">
+            <div class="co">Al Marwah Trading LLC</div>
+            <div class="nm">Khalid bin Rashid</div>
+            <div class="rl">Procurement Director</div>
+            <div class="meta">
+              khalid@almarwah.ae<br>
+              +971 50 442 8910<br>
+              Office 2204 · Almas Tower · DMCC
+            </div>
+          </div>
+
+          <div class="extract">
+            <h6>Extracted fields</h6>
+            <div class="ex-row"><span class="k">Company</span><span class="v">Al Marwah Trading LLC</span><span class="conf">98%</span></div>
+            <div class="ex-row"><span class="k">Contact</span><span class="v">Khalid bin Rashid</span><span class="conf">96%</span></div>
+            <div class="ex-row"><span class="k">Email</span><span class="v">khalid@almarwah.ae</span><span class="conf">99%</span></div>
+            <div class="ex-row"><span class="k">Phone</span><span class="v">+971 50 442 8910</span><span class="conf">99%</span></div>
+            <div class="ex-row"><span class="k">Country</span><span class="v">UAE · Dubai · DMCC</span><span class="conf">97%</span></div>
+            <div class="ex-row"><span class="k">Source</span><span class="v">Gulfood 2026 · Day 2 booth</span><span class="conf warn">tagged</span></div>
+            <div class="ex-row"><span class="k">Duplicate?</span><span class="v">None in 2,847 leads</span><span class="conf">clear</span></div>
+          </div>
+
+          <div class="review-gate">
+            <div class="head">Review-before-save · trust gate</div>
+            <div class="body">Operator chooses next step before record enters CRM:</div>
+            <div class="review-actions">
+              <button>Edit fields</button>
+              <button>Create lead</button>
+              <button class="primary">Lead + Draft Quote →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<!-- ===================== WEDGE ===================== -->
+<style>
+  .wedge { background: white; }
+  .wedge-grid {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .wedge-card {
+    background: var(--bg-page);
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 32px 28px;
+    box-shadow: var(--shadow-prem);
+    position: relative;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .wedge-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-deep); }
+  .wedge-num {
+    font-family: var(--font-mono);
+    font-size: 13px; font-weight: 700;
+    color: var(--brand-teal-d);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .wedge-card h3 {
+    font-size: 22px;
+    margin-top: 14px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .wedge-card .desc {
+    margin-top: 12px;
+    color: var(--text-600);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .wedge-proof {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line-strong);
+  }
+  .wedge-proof .lbl {
+    font-family: var(--font-mono);
+    font-size: 10.5px; font-weight: 700;
+    color: var(--brand-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .wedge-proof .pf {
+    font-size: 13px; color: var(--text-700);
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  @media (max-width: 880px) {
+    .wedge-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============ BUSINESS MODEL ============ */
+  .biz {
+    background: linear-gradient(180deg, var(--bg-page) 0%, white 100%);
+  }
+  .biz-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  .biz h2 { font-size: clamp(30px, 3.6vw, 48px); line-height: 1.05; }
+  .biz p { color: var(--text-600); font-size: 16px; margin-top: 16px; }
+
+  .pricing-stack { display: grid; gap: 14px; margin-top: 28px; }
+  .price-tier {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: center;
+    box-shadow: var(--shadow-prem);
+  }
+  .price-tier.popular {
+    background: var(--brand-grad);
+    color: white;
+    border-color: var(--brand-primary);
+    box-shadow: 0 28px 60px rgba(31,72,124,0.28);
+    position: relative;
+  }
+  .price-tier.popular::before {
+    content: "Most popular · 70% of design partners";
+    position: absolute; top: -12px; left: 24px;
+    background: #FCD34D;
+    color: #78350F;
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+  .price-tier .tname {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--brand-primary);
+  }
+  .price-tier.popular .tname { color: rgba(255,255,255,0.82); }
+  .price-tier .ttitle { font-size: 22px; font-weight: 700; margin-top: 6px; letter-spacing: -0.02em; }
+  .price-tier.popular .ttitle { color: white; }
+  .price-tier .tdesc { font-size: 13px; color: var(--text-600); margin-top: 6px; line-height: 1.5; }
+  .price-tier.popular .tdesc { color: rgba(255,255,255,0.85); }
+  .price-tier .tprice { text-align: right; }
+  .price-tier .tprice .num { font-size: 36px; font-weight: 700; letter-spacing: -0.03em; }
+  .price-tier .tprice .per { font-size: 13px; color: var(--text-500); }
+  .price-tier.popular .tprice .per { color: rgba(255,255,255,0.82); }
+  .price-tier .tprice .seats { font-family: var(--font-mono); font-size: 11px; color: var(--text-500); margin-top: 4px; }
+  .price-tier.popular .tprice .seats { color: rgba(255,255,255,0.78); }
+
+  .unit-econ {
+    margin-top: 28px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  .ue-card {
+    background: white;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    padding: 16px 18px;
+  }
+  .ue-card .lbl {
+    font-family: var(--font-mono);
+    font-size: 10.5px; font-weight: 700;
+    color: var(--text-500);
+    text-transform: uppercase; letter-spacing: 0.14em;
+  }
+  .ue-card .val { font-size: 24px; font-weight: 700; margin-top: 4px; letter-spacing: -0.025em; color: var(--text-950); }
+  .ue-card .val .em { color: var(--brand-teal-d); }
+  .ue-card .desc { font-size: 12px; color: var(--text-600); margin-top: 4px; }
+
+  @media (max-width: 880px) {
+    .biz-grid { grid-template-columns: 1fr; gap: 32px; }
+    .price-tier { grid-template-columns: 1fr; gap: 12px; }
+    .price-tier .tprice { text-align: left; }
+  }
+
+  /* ============ GTM ============ */
+  .gtm-phases {
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--brand-primary);
+    border-radius: var(--r-2xl);
+    overflow: hidden;
+  }
+  .gtm-phase {
+    padding: 28px 24px;
+    background: white;
+    border-right: 1px solid var(--line-strong);
+  }
+  .gtm-phase:last-child { border-right: none; }
+  .gtm-phase.active { background: var(--bg-tint-2); }
+  .gtm-phase .ph-num {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--brand-teal-d);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .gtm-phase .ph-tt {
+    font-size: 18px; font-weight: 700;
+    margin-top: 8px;
+    letter-spacing: -0.015em;
+  }
+  .gtm-phase .ph-when {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-500);
+    margin-top: 4px;
+  }
+  .gtm-phase ul { margin: 14px 0 0; padding-left: 18px; font-size: 13px; color: var(--text-700); }
+  .gtm-phase ul li { margin-bottom: 6px; line-height: 1.5; }
+  .gtm-phase .target {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line-strong);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--brand-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+  }
+  @media (max-width: 880px) {
+    .gtm-phases { grid-template-columns: 1fr; }
+    .gtm-phase { border-right: none; border-bottom: 1px solid var(--line-strong); }
+  }
+
+  /* ============ TRACTION ============ */
+  .traction { background: var(--brand-dark); color: white; }
+  .traction-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 96px 24px;
+  }
+  .traction h2 {
+    color: white;
+    font-size: clamp(32px, 4vw, 56px);
+    line-height: 1.05;
+    max-width: 880px;
+  }
+  .traction h2 .grad {
+    background: linear-gradient(135deg, #6EE7B7 0%, #5DD4F0 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .traction p.sub { color: rgba(255,255,255,0.75); font-size: 17px; max-width: 600px; margin-top: 20px; }
+
+  .sprint-row {
+    margin-top: 48px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+  }
+  .sprint {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: var(--r-md);
+    padding: 20px 18px;
+  }
+  .sprint.done { background: rgba(110,231,183,0.10); border-color: rgba(110,231,183,0.4); }
+  .sprint.active { background: rgba(252,211,77,0.10); border-color: rgba(252,211,77,0.5); }
+  .sprint .sp-num {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .sprint.done .sp-num { color: #6EE7B7; }
+  .sprint.active .sp-num { color: #FCD34D; }
+  .sprint .sp-name {
+    font-size: 15px; font-weight: 700;
+    margin-top: 8px;
+    letter-spacing: -0.01em;
+    color: white;
+  }
+  .sprint .sp-stat {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    margin-top: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.6);
+  }
+  .sprint.done .sp-stat { color: #6EE7B7; }
+  .sprint.active .sp-stat { color: #FCD34D; }
+
+  .stats-row {
+    margin-top: 56px;
+    padding-top: 36px;
+    border-top: 1px solid rgba(255,255,255,0.18);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+  .stat .num {
+    font-size: 56px; font-weight: 700;
+    color: white;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .stat .num em { color: #6EE7B7; font-style: normal; }
+  .stat .lbl {
+    margin-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 700;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .stat .desc { margin-top: 8px; color: rgba(255,255,255,0.78); font-size: 13px; line-height: 1.55; }
+
+  @media (max-width: 880px) {
+    .sprint-row { grid-template-columns: 1fr 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ============ TEAM ============ */
+  .team-grid {
+    margin-top: 36px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .person {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 20px;
+    box-shadow: var(--shadow-prem);
+  }
+  .person .pic {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: var(--brand-grad);
+    color: white;
+    display: grid; place-items: center;
+    font-size: 28px; font-weight: 700;
+    box-shadow: 0 12px 28px rgba(31,72,124,0.28);
+  }
+  .person .role {
+    font-family: var(--font-mono);
+    font-size: 10.5px; font-weight: 700;
+    color: var(--brand-teal-d);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .person .nm { font-size: 19px; font-weight: 700; margin-top: 6px; letter-spacing: -0.015em; }
+  .person p { color: var(--text-600); font-size: 13.5px; margin-top: 8px; line-height: 1.55; }
+  .person .hire { font-style: italic; color: var(--text-500); }
+
+  @media (max-width: 880px) { .team-grid { grid-template-columns: 1fr; } }
+
+  /* ============ THE ASK ============ */
+  .ask {
+    background: var(--brand-grad);
+    color: white;
+    margin-top: 0;
+  }
+  .ask-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 96px 24px;
+  }
+  .ask-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  .ask h2 {
+    color: white;
+    font-size: clamp(36px, 4.6vw, 64px);
+    line-height: 1;
+    letter-spacing: -0.035em;
+  }
+  .ask h2 .em {
+    background: linear-gradient(180deg, #FCD34D 0%, #FBBF24 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .ask .lede { color: rgba(255,255,255,0.88); font-size: 18px; margin-top: 22px; max-width: 480px; }
+
+  .ask-card {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: var(--r-2xl);
+    padding: 32px;
+    backdrop-filter: blur(8px);
+  }
+  .ask-card h4 {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 700;
+    color: #FCD34D;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-bottom: 16px;
+  }
+  .use-row {
+    display: grid; grid-template-columns: 1fr auto;
+    padding: 14px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.18);
+    align-items: center;
+  }
+  .use-row:last-child { border-bottom: none; }
+  .use-row .lbl {
+    color: rgba(255,255,255,0.92);
+    font-size: 13.5px;
+  }
+  .use-row .lbl small { display: block; color: rgba(255,255,255,0.65); font-size: 11.5px; margin-top: 2px; }
+  .use-row .pct {
+    font-family: var(--font-mono);
+    color: white;
+    font-size: 18px; font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .milestones {
+    margin-top: 36px;
+    border-top: 1px solid rgba(255,255,255,0.18);
+    padding-top: 28px;
+  }
+  .milestones h5 {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 700;
+    color: #FCD34D;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-bottom: 16px;
+  }
+  .ms-row {
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.16);
+  }
+  .ms-row:last-child { border-bottom: none; }
+  .ms-row .ms-when {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    width: 80px;
+    letter-spacing: 0.06em;
+  }
+  .ms-row .ms-what {
+    font-size: 13.5px;
+    color: white;
+  }
+
+  .ask-actions {
+    margin-top: 28px;
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .ask .btn-primary {
+    background: white;
+    color: var(--brand-primary);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+  }
+  .ask .btn-primary:hover { background: #FCD34D; color: #78350F; }
+  .ask .btn-ghost {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.4);
+  }
+  .ask .btn-ghost:hover { background: white; color: var(--brand-primary); border-color: white; }
+
+  @media (max-width: 880px) {
+    .ask-grid { grid-template-columns: 1fr; gap: 36px; }
+  }
+
+  /* ============ FOOTER ============ */
+  footer.foot {
+    background: var(--text-950);
+    color: rgba(255,255,255,0.7);
+    padding: 36px 24px;
+  }
+  .foot-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .foot-brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .foot-brand .mk {
+    width: 32px; height: 32px;
+  }
+  .foot-text {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+  }
+  .foot-text strong { color: white; font-weight: 600; }
+  .foot-meta {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  /* reveal */
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+</style>
+
+<section class="shell wedge" id="wedge">
+  <div class="reveal">
+    <div class="eyebrow">Why us · the wedge</div>
+    <h2 style="font-size: clamp(32px, 4vw, 52px); line-height: 1.04; max-width: 820px;">Three things only Setu Flow does — and why each is hard to copy.</h2>
+  </div>
+
+  <div class="wedge-grid reveal">
+    <div class="wedge-card">
+      <div class="wedge-num">01 · Product moat</div>
+      <h3>A trade-native quote builder.</h3>
+      <p class="desc">
+        Pricing isn't a number. It's <strong>basis × currency × FX-as-of × freight profile × container fit × margin policy.</strong> Setu Flow models all of it natively, recomputes on every change, and produces a clean buyer-ready quote — with the audit trail of every input intact.
+      </p>
+      <div class="wedge-proof">
+        <div class="lbl">Why hard to copy</div>
+        <div class="pf">Years of trade-ops domain logic in schema · 40+ tables · per-port freight profiles · multi-currency FX resolution. Not a feature — an operating model.</div>
+      </div>
+    </div>
+
+    <div class="wedge-card">
+      <div class="wedge-num">02 · Trust moat</div>
+      <h3>A trust layer baked into the flow.</h3>
+      <p class="desc">
+        Approval gates, immutable lock at send, full audit trail, AI that drafts but never sends. Built for the compliance officer who has to defend a deal eighteen months later — not the rep who just wants to close. Enterprise-grade trust as a default, not a feature flag.
+      </p>
+      <div class="wedge-proof">
+        <div class="lbl">Why hard to copy</div>
+        <div class="pf">Generic CRMs would have to re-architect to bolt this on without breaking pipeline UX. Trust is a foundation, not a layer you paint on top.</div>
+      </div>
+    </div>
+
+    <div class="wedge-card">
+      <div class="wedge-num">03 · Distribution moat</div>
+      <h3>A two-way contact loop.</h3>
+      <p class="desc">
+        Inbound capture (OCR, vCard, RFQ doc) plus an outward <strong>My Card / public QR</strong> page that turns every business card you hand out at a trade fair into an inbound capture form. Quote requests land as leads with full context — no friction, no re-typing.
+      </p>
+      <div class="wedge-proof">
+        <div class="lbl">Why hard to copy</div>
+        <div class="pf">Every customer becomes a distribution channel. Each card scanned by their buyer creates a free lead surfaced in our network. Compounds with usage.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== BUSINESS MODEL ===================== -->
+<section class="shell biz" id="business">
+  <div class="biz-grid">
+    <div class="reveal">
+      <div class="eyebrow">Business model</div>
+      <h2>Per-seat SaaS · land at $299/mo · expand to $2k+ as the trade team grows.</h2>
+      <p>
+        Trade teams are organized in tight pods (5–15 sales, ops, and compliance roles per office). Setu Flow lands inside a pod, proves quote velocity, and expands across markets and verticals inside the same parent company. Pricing rewards depth, not breadth.
+      </p>
+      <p>
+        Add-ons — country compliance packs, custom freight profiles, and AI assist credits — give us a clean second revenue lane without breaking the per-seat model.
+      </p>
+
+      <div class="unit-econ">
+        <div class="ue-card">
+          <div class="lbl">Blended ACV</div>
+          <div class="val">$<span class="em">12k</span> / yr</div>
+          <div class="desc">10-seat avg pod · year-1 land</div>
+        </div>
+        <div class="ue-card">
+          <div class="lbl">CAC target</div>
+          <div class="val">$<span class="em">3.6k</span></div>
+          <div class="desc">Founder-led + design-partner referrals</div>
+        </div>
+        <div class="ue-card">
+          <div class="lbl">Gross margin</div>
+          <div class="val"><span class="em">82%</span></div>
+          <div class="desc">Cloud + AI inference · year 2 steady-state</div>
+        </div>
+        <div class="ue-card">
+          <div class="lbl">LTV / CAC target</div>
+          <div class="val"><span class="em">5.4x</span></div>
+          <div class="desc">36mo avg life · NRR 118% target year 3</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pricing-stack reveal">
+      <div class="price-tier">
+        <div>
+          <div class="tname">Starter</div>
+          <div class="ttitle">Pod</div>
+          <div class="tdesc">Single-market exporters · core flow + capture + basic quote</div>
+        </div>
+        <div class="tprice">
+          <div class="num">$299</div>
+          <div class="per">/ month</div>
+          <div class="seats">up to 5 seats · 1 market</div>
+        </div>
+      </div>
+
+      <div class="price-tier popular">
+        <div>
+          <div class="tname">Growth</div>
+          <div class="ttitle">Trade Office</div>
+          <div class="tdesc">Multi-market exporters · full quote builder + freight + approvals + My Card</div>
+        </div>
+        <div class="tprice">
+          <div class="num">$599</div>
+          <div class="per">/ month</div>
+          <div class="seats">up to 15 seats · 5 markets</div>
+        </div>
+      </div>
+
+      <div class="price-tier">
+        <div>
+          <div class="tname">Scale</div>
+          <div class="ttitle">Trading House</div>
+          <div class="tdesc">Multi-office trading houses · custom compliance · priority support · SLA</div>
+        </div>
+        <div class="tprice">
+          <div class="num">From $2,500</div>
+          <div class="per">/ month</div>
+          <div class="seats">unlimited seats · multi-org</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== GTM ===================== -->
+<section class="shell" id="gtm">
+  <div class="reveal">
+    <div class="eyebrow">Go-to-market</div>
+    <h2 style="font-size: clamp(30px, 3.6vw, 48px); line-height: 1.05; max-width: 820px;">Win the wedge in India + Gulf · then expand laterally by vertical.</h2>
+    <p style="color: var(--text-600); font-size: 16.5px; max-width: 720px; margin-top: 20px;">
+      We're not trying to displace Salesforce in the US enterprise. We're building the system of record for the SMB exporter that Salesforce never reached — starting where the trade volume is densest and the pain is loudest.
+    </p>
+  </div>
+
+  <div class="gtm-phases reveal">
+    <div class="gtm-phase active">
+      <div class="ph-num">Phase 1 · now</div>
+      <div class="ph-tt">Design partners</div>
+      <div class="ph-when">Apr 2026 → Q3 2026</div>
+      <ul>
+        <li>10 design-partner exporters across food &amp; agri, industrial, chemicals</li>
+        <li>India + GCC focus · founder-led onboarding</li>
+        <li>12-month locked pricing in exchange for case study + roadmap voice</li>
+      </ul>
+      <div class="target">Target · 10 customers · $120k ARR</div>
+    </div>
+
+    <div class="gtm-phase">
+      <div class="ph-num">Phase 2</div>
+      <div class="ph-tt">Vertical wedge</div>
+      <div class="ph-when">Q4 2026 → Q3 2027</div>
+      <ul>
+        <li>Hire 2 vertical sales leads (food &amp; agri export, industrial sourcing)</li>
+        <li>Trade-event sponsorships · Gulfood, Anuga, Spices Board India</li>
+        <li>Partnership with EPCs (Export Promotion Councils) in India</li>
+      </ul>
+      <div class="target">Target · 120 customers · $1.4M ARR</div>
+    </div>
+
+    <div class="gtm-phase">
+      <div class="ph-num">Phase 3</div>
+      <div class="ph-tt">Geographic scale</div>
+      <div class="ph-when">Q4 2027 onward</div>
+      <ul>
+        <li>EU expansion (Germany, Netherlands · industrial trading)</li>
+        <li>Self-serve onboarding · PLG motion for &lt;5-seat pods</li>
+        <li>Series A · scale GTM team to 20</li>
+      </ul>
+      <div class="target">Target · 800+ customers · $10M+ ARR</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TRACTION ===================== -->
+<div class="traction" id="traction">
+  <div class="traction-inner">
+    <div class="reveal">
+      <div class="eyebrow invert">Traction · honest baseline</div>
+      <h2>Built. Shipping. Hardening for buyers.<br><span class="grad">No vapor.</span></h2>
+      <p class="sub">
+        We don't believe in vapor decks. Here's the actual repo state, sprint by sprint, as of April 2026.
+      </p>
+    </div>
+
+    <div class="sprint-row reveal">
+      <div class="sprint done">
+        <div class="sp-num">Sprint 1–2</div>
+        <div class="sp-name">Foundation + Capture</div>
+        <div class="sp-stat">● Closed</div>
+      </div>
+      <div class="sprint done">
+        <div class="sp-num">Sprint 3–4</div>
+        <div class="sp-name">Leads + Quote builder</div>
+        <div class="sp-stat">● Closed</div>
+      </div>
+      <div class="sprint done">
+        <div class="sp-num">Sprint 5–6</div>
+        <div class="sp-name">Trust layer + Orders</div>
+        <div class="sp-stat">● Closed</div>
+      </div>
+      <div class="sprint done">
+        <div class="sp-num">Sprint 7–8</div>
+        <div class="sp-name">Dashboard + My Card</div>
+        <div class="sp-stat">● Closed</div>
+      </div>
+      <div class="sprint active">
+        <div class="sp-num">Sprint 9–10</div>
+        <div class="sp-name">Hardening + Demo proof</div>
+        <div class="sp-stat">◆ Active · 21 Apr</div>
+      </div>
+    </div>
+
+    <div class="stats-row reveal">
+      <div class="stat">
+        <div class="num">55<em>+</em></div>
+        <div class="lbl">Live routes shipped</div>
+        <div class="desc">Lead, quote, order, dashboard, admin, capture, public card, integrations</div>
+      </div>
+      <div class="stat">
+        <div class="num">40<em>+</em></div>
+        <div class="lbl">Database tables</div>
+        <div class="desc">Quotes, freight profiles, FX, compliance, audit, AI suggestions, contracts</div>
+      </div>
+      <div class="stat">
+        <div class="num">8</div>
+        <div class="lbl">Sprints closed</div>
+        <div class="desc">Foundation through Dashboard rebuild and outward My Card layer</div>
+      </div>
+      <div class="stat">
+        <div class="num">100<em>%</em></div>
+        <div class="lbl">Audit-traced events</div>
+        <div class="desc">Every commercial action logged · designed for buyer due diligence</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TEAM ===================== -->
+<section class="shell" id="team">
+  <div class="reveal">
+    <div class="eyebrow">Team</div>
+    <h2 style="font-size: clamp(30px, 3.6vw, 48px); line-height: 1.05; max-width: 820px;">Operators who've lived this pain — building the tool we wish we'd had.</h2>
+    <p style="color: var(--text-600); font-size: 16px; margin-top: 20px; max-width: 640px;">
+      The seed round funds key hires across product, engineering, and go-to-market. Founder team profiles below — replace with your names + bios before sending to investors.
+    </p>
+  </div>
+
+  <div class="team-grid reveal">
+    <div class="person">
+      <div class="pic">F</div>
+      <div>
+        <div class="role">Founder · CEO</div>
+        <div class="nm">Ritesh Kapoor</div>
+        <p>[1–2 sentence bio: trade industry experience, prior company, what made you start this. Investors care about founder-market fit above all else for this category.]</p>
+      </div>
+    </div>
+    <div class="person">
+      <div class="pic">C</div>
+      <div>
+        <div class="role">Co-founder · CTO</div>
+        <div class="nm">Mayank Kumar</div>
+        <p>[Engineering background, scale experience, why qualified to build this. If solo, replace this card with "Key hire post-funding" framing.]</p>
+      </div>
+    </div>
+    <div class="person">
+      <div class="pic" style="background: rgba(31,72,124,0.10); color: var(--brand-primary)">+</div>
+      <div>
+        <div class="role hire">Hiring with seed round</div>
+        <div class="nm">Head of Sales · India + GCC</div>
+        <p>Vertical sales lead with 10+ years selling enterprise SaaS into trading houses. Books design partners → wedge customers. <strong>Q3 2026.</strong></p>
+      </div>
+    </div>
+    <div class="person">
+      <div class="pic" style="background: rgba(31,72,124,0.10); color: var(--brand-primary)">+</div>
+      <div>
+        <div class="role hire">Hiring with seed round</div>
+        <div class="nm">Founding engineers · 3</div>
+        <p>Senior full-stack (Next.js + Postgres + Supabase) with bias for shipping. Trade or fintech background a plus. <strong>Q2–Q4 2026.</strong></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== THE ASK ===================== -->
+<div class="ask" id="ask">
+  <div class="ask-inner">
+    <div class="ask-grid">
+      <div class="reveal">
+        <div class="eyebrow invert" style="color: #FCD34D">The ask</div>
+        <h2>$<span class="em">1M</span> Seed.<br>10 months runway.<br>Path to <span class="em">$1M ARR.</span></h2>
+        <p class="lede">
+          Capital deployed across product depth, GTM in India + GCC, and a 4-person engineering pod to ship the integration and enterprise layer that unlocks Series A.
+        </p>
+        <div class="ask-actions">
+          <a href="mailto:hello@setuflow.com" class="btn btn-primary">Talk to the founder <span class="arr">→</span></a>
+          <a href="#product" class="btn btn-ghost">Replay product walkthrough</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="ask-card reveal">
+          <h4>Use of funds · 10 months</h4>
+          <div class="use-row">
+            <div class="lbl">Engineering & product<small>4 founding engineers + design</small></div>
+            <div class="pct">52%</div>
+          </div>
+          <div class="use-row">
+            <div class="lbl">Sales & marketing<small>2 vertical leads · trade-event GTM · partnerships</small></div>
+            <div class="pct">28%</div>
+          </div>
+          <div class="use-row">
+            <div class="lbl">Customer success & onboarding<small>Design-partner success · India + GCC</small></div>
+            <div class="pct">10%</div>
+          </div>
+          <div class="use-row">
+            <div class="lbl">Infrastructure & compliance<small>SOC 2, GDPR, multi-region hosting</small></div>
+            <div class="pct">7%</div>
+          </div>
+          <div class="use-row">
+            <div class="lbl">Reserve<small>Opportunistic hires + runway buffer</small></div>
+            <div class="pct">3%</div>
+          </div>
+
+          <div class="milestones">
+            <h5>Milestones to Series A</h5>
+            <div class="ms-row">
+              <div class="ms-when">Q3 2026</div>
+              <div class="ms-what">10 paying design partners · $200k ARR · NPS &gt; 50</div>
+            </div>
+            <div class="ms-row">
+              <div class="ms-when">Q1 2027</div>
+              <div class="ms-what">50 paying customers · $800k ARR · first vertical sales hire ramped</div>
+            </div>
+            <div class="ms-row">
+              <div class="ms-when">Q3 2027</div>
+              <div class="ms-what">120 customers · $1.4M ARR · NRR &gt; 110%</div>
+            </div>
+            <div class="ms-row">
+              <div class="ms-when">Q4 2027</div>
+              <div class="ms-what">$2M ARR run-rate · ready to raise Series A</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="mk">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ftg1" x1="187" y1="491" x2="772" y2="491" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#5DD4F0"/><stop offset="1" stop-color="#6EE7B7"/>
+            </linearGradient>
+          </defs>
+          <g>
+            <path fill="url(#ftg1)" d="M80.9,631.6c0.3-2.5,0.4-4.2,0.8-5.8c3-12.4,6.1-24.8,9.1-36.5c4.6-3,82.2-31.6,90.3-33.4c35.3,27,72.7,28.9,107.9,1.5c34.2-26.6,41.2-62.6,24.2-103.7c53.3-17.5,107.4-26.8,163.4-29.9c2-18.6,3.9-36.2,5.8-54.2c7.4-6.3,14.9-12.6,23.4-18.1c9.3,4.2,15.6,12.2,23.7,16.9c3.6,18.3,3.4,36.5,6.8,55.4c55.5,2.8,109.8,12.8,163.3,29.9c-16.7,42.3-9.4,78.8,26.7,106c26,19.6,64.7,27.7,106.1-3.4c5,0.6,82.2,28.5,90,32.7c3.2,13.5,6.6,27.6,10,41.4c-2.4,1.9-4,0.8-5.5,0.4c-51.2-14.1-103.4-23.7-155.9-31.5c-31.7-4.7-63.6-8.3-95.5-10.8c-46.2-3.7-92.4-5.5-138.8-6.6c-35.3-0.8-70.5-0.2-105.6,1c-54.2,1.9-108.4,5.7-162.3,12.9c-62,8.3-123.5,18.9-183.9,35.4C83.9,631.5,82.9,631.4,80.9,631.6z M668.2,575.7c-33.4-53.3-96.4-97.4-179.6-89.8c-61.7,5.7-108.5,37.2-142.4,88.4C453.4,565.8,560.3,566.4,668.2,575.7z"/>
+            <path fill="url(#ftg1)" d="M308.9,492.5c-0.1,39.6-31.6,70.2-72,70c-39.4-0.2-71.7-33.1-70.2-73.5c1.5-39,32.8-67.8,72.1-67.7C274.3,421.4,309.9,449.1,308.9,492.5z"/>
+            <path fill="url(#ftg1)" d="M845.1,491.7c-0.1,40.9-30.3,70.7-71.6,70.6c-38.9-0.1-69.7-31.5-69.7-71c0-39.2,31.4-70.3,72.2-69.8C816.2,422.1,846.4,454.9,845.1,491.7z"/>
+            <path fill="url(#ftg1)" d="M506.1,330.1c-25.7,17.5-77,51.1-77.5,50.7c25.5-59.8,50.9-119.5,76.4-179.3c0.8-0.1,52.8,119.1,78.1,178.8C582.5,380.6,531.6,347.4,506.1,330.1z"/>
+          </g>
+        </svg>
+      </div>
+      <div class="foot-text"><strong>Setu Flow</strong> · Trade execution system for import-export sales teams</div>
+    </div>
+    <div class="foot-meta">Capture → Lead → Quote → Order · Investor demo · April 2026</div>
+  </div>
+</footer>
+
+<script>
+  // ─── Stage tabs ──────────────────────────────────────
+  const tabs = document.querySelectorAll('.stage-tab');
+  const bodies = document.querySelectorAll('.stage-body');
+  const frameUrl = document.getElementById('frameUrl');
+  const urls = {
+    dash:  '/dashboard',
+    leads: '/leads',
+    quote: '/leads/al-marwah/quote/SF-2026-0184',
+    vcard: '/contact-exchange/vcard',
+  };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const stage = tab.dataset.stage;
+      tabs.forEach(t => t.classList.toggle('active', t === tab));
+      bodies.forEach(b => b.classList.toggle('active', b.dataset.body === stage));
+      if (frameUrl) frameUrl.textContent = urls[stage] || '/';
+    });
+  });
+
+  // ─── Reveal on scroll ────────────────────────────────
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.10 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // ─── Smooth-scroll offset for sticky bar ─────────────
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      const id = a.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      const y = target.getBoundingClientRect().top + window.scrollY - 72;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>

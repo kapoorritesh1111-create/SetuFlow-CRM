@@ -3,394 +3,565 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Setu Flow Internal DCC</title>
+<title>Setu Flow Internal DCC · Brutal UX Review</title>
 <style>
 :root{
-  --bg:#07111f;--bg2:#0b1627;--panel:#0f1c2e;--card:#13243b;--ink:#e8f1fb;--muted:#9fb3c8;--line:#28415f;
-  --good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--accent:#22d3ee;--major:#60a5fa;--shadow:0 16px 40px rgba(0,0,0,.24)
+  --bg:#07111f;--bg2:#0a1526;--panel:#0f1c2e;--panel2:#13243b;--ink:#ecf3fb;--muted:#a7bad0;--line:#27415d;
+  --good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--accent:#22d3ee;--major:#60a5fa;--shadow:0 18px 42px rgba(0,0,0,.24)
 }
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),var(--bg2) 35%,#0a1321);color:var(--ink)}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),var(--bg2) 38%,#09111d);color:var(--ink)}
+a{color:#8ad9ff;text-decoration:none} a:hover{text-decoration:underline}
 img{max-width:100%;height:auto}
-.wrapper{max-width:1320px;margin:0 auto;padding:24px}
-.hero,.card,.band,.legend,.summary-strip{background:rgba(15,28,46,.94);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+.wrapper{max-width:1440px;margin:0 auto;padding:24px}
+.band,.card,.hero,.legend,.toc,.warning{background:rgba(15,28,46,.95);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow)}
+.band{padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
 .hero{padding:26px;margin-bottom:18px}
-.band{padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
-.summary-strip{padding:16px 18px;margin:18px 0}
-.hero-grid,.grid.two,.grid.three,.grid.four,.workflow-grid,.module-grid,.proof-grid{display:grid;gap:16px}
-.hero-grid{grid-template-columns:2.2fr 1.1fr}
-.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
-.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
-.grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
-.workflow-grid{grid-template-columns:1.25fr .95fr}
+.card{padding:18px}
+.warning{padding:16px 18px;border-color:rgba(239,68,68,.4);background:linear-gradient(180deg,rgba(61,20,20,.5),rgba(15,28,46,.95))}
+.toc{padding:14px 18px;margin-bottom:18px}
+.toc-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+.toc-links a{display:inline-flex;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#0a1321;color:#d5e3f2;font-size:13px}
+.section{margin:20px 0}
+.grid2,.grid3,.grid4,.hero-grid,.module-grid,.proof-grid,.roadmap-grid,.diag-grid{display:grid;gap:16px}
+.hero-grid{grid-template-columns:1.45fr .95fr}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .proof-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media (max-width:1080px){.hero-grid,.grid.two,.grid.three,.grid.four,.workflow-grid,.module-grid,.proof-grid{grid-template-columns:1fr}}
-h1,h2,h3,h4{margin:0 0 8px} h1{font-size:34px;line-height:1.1} h2{font-size:25px} h3{font-size:18px} h4{font-size:15px}
+.roadmap-grid{grid-template-columns:1.15fr .85fr}
+.diag-grid{grid-template-columns:1.25fr .95fr}
+@media (max-width:1120px){.hero-grid,.grid2,.grid3,.grid4,.module-grid,.proof-grid,.roadmap-grid,.diag-grid{grid-template-columns:1fr}}
+h1,h2,h3,h4{margin:0 0 8px} h1{font-size:38px;line-height:1.08} h2{font-size:27px} h3{font-size:19px} h4{font-size:15px}
 p{margin:0 0 10px;color:var(--muted);line-height:1.55}
-.section{margin:18px 0}.card{padding:18px}
-.logo-row{display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
-.logo-mark{width:180px;min-width:140px;padding:10px 14px;background:#fff;border-radius:18px;border:1px solid rgba(255,255,255,.2)}
-.logo-copy small,.caption{display:block;color:var(--muted);font-size:13px}
-.kpi{font-size:34px;font-weight:800;color:#fff}.label{color:var(--muted);font-size:14px}
-.bar{height:10px;background:#0a1321;border-radius:999px;overflow:hidden;margin-top:10px}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--major))}
-.list{margin:0;padding-left:18px;color:var(--muted);line-height:1.6}
-.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.table th{color:#cde2fb;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
-.pill,.status-dot,.mini-pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;font-size:12px;font-weight:800}
-.pill{padding:7px 11px}.mini-pill{padding:5px 9px}.good{background:rgba(34,197,94,.14);color:#9ff0b8}.warn{background:rgba(245,158,11,.14);color:#ffd28a}.bad{background:rgba(239,68,68,.14);color:#ffb4b4}.majorTxt{background:rgba(96,165,250,.14);color:#bfdbfe}.mutedPill{background:rgba(159,179,200,.14);color:#d7e2ee}
-.status-dot{width:12px;height:12px;padding:0;border-radius:999px}.status-dot.good{background:var(--good)}.status-dot.warn{background:var(--warn)}.status-dot.bad{background:var(--bad)}
-.footer-note{color:#8fa8c0;font-size:13px}
-.svg-shell{background:#0a1321;border:1px solid var(--line);border-radius:18px;padding:10px}
-.wf{width:100%;height:auto}.wf text{fill:#e8f1fb;font-size:14px;font-weight:700}.wf .sub{fill:#9fb3c8;font-size:12px;font-weight:600}.wf .arrow{stroke:#22d3ee;stroke-width:3;fill:none}.wf .node{fill:#102338;stroke:#3b82f6;stroke-width:2}.wf .major{fill:#142a43;stroke:#22d3ee;stroke-width:2}.wf .goodNode{fill:#123323;stroke:#22c55e;stroke-width:2}.wf .warnNode{fill:#39280c;stroke:#f59e0b;stroke-width:2}.wf .badNode{fill:#3d1414;stroke:#ef4444;stroke-width:2}.wf .halo{fill:none;stroke:#36597e;stroke-width:2;stroke-dasharray:8 7}
-.metric-row{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 0}.metric{background:#0a1321;border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-width:178px}.metric span{display:block;font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:24px;margin-top:4px}
-.legend{padding:14px 16px}.legend-grid{display:flex;gap:16px;flex-wrap:wrap}.legend-item{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:14px}
-.module-card{padding:18px;border-radius:20px;border:1px solid var(--line);background:rgba(19,36,59,.94);box-shadow:var(--shadow)}
-.module-card.goodCard{border-color:rgba(34,197,94,.4);background:linear-gradient(180deg,rgba(19,51,35,.55),rgba(19,36,59,.94))}
-.module-card.warnCard{border-color:rgba(245,158,11,.42);background:linear-gradient(180deg,rgba(57,40,12,.5),rgba(19,36,59,.94))}
-.module-card.badCard{border-color:rgba(239,68,68,.42);background:linear-gradient(180deg,rgba(61,20,20,.48),rgba(19,36,59,.94))}
-.module-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
-.module-title{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.module-score{font-size:30px;font-weight:900;color:#fff}
-.module-meta{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
-.checklist{margin:0;padding-left:18px;color:var(--muted);line-height:1.55}
-.checklist li+li{margin-top:6px}
-.connector-map{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}.connector{padding:8px 10px;border-radius:12px;background:#0a1321;border:1px solid var(--line);color:#dbe7f4;font-size:13px}
-.small{font-size:13px;color:var(--muted)}
-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#d7e2ee}
+small,.caption{color:var(--muted)}
+.logo-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.logo-mark{width:190px;min-width:150px;background:#fff;border-radius:20px;padding:12px 16px;border:1px solid rgba(255,255,255,.2)}
+.kpi{font-size:38px;font-weight:900;color:#fff}.subkpi{font-size:14px;color:var(--muted)}
+.metric-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}.metric{min-width:180px;padding:12px 14px;border-radius:16px;background:#0a1321;border:1px solid var(--line)} .metric span{display:block;color:var(--muted);font-size:12px} .metric strong{display:block;font-size:28px;color:#fff;margin-top:4px}
+.bar{height:10px;border-radius:999px;background:#08111d;overflow:hidden;margin-top:10px}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--major))}
+.pill,.mini-pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;font-size:12px;font-weight:800;padding:7px 11px}
+.good{background:rgba(34,197,94,.14);color:#9ff0b8}.warn{background:rgba(245,158,11,.14);color:#ffd28a}.bad{background:rgba(239,68,68,.14);color:#ffb4b4}.blue{background:rgba(96,165,250,.15);color:#cbe0ff}.muted{background:rgba(159,179,200,.14);color:#dce7f2}
+.dot{display:inline-flex;width:11px;height:11px;border-radius:999px}.dot.good{background:var(--good);padding:0}.dot.warn{background:var(--warn);padding:0}.dot.bad{background:var(--bad);padding:0}
+.legend{padding:14px 16px;margin-bottom:18px}.legend-items{display:flex;gap:16px;flex-wrap:wrap}.legend-item{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}
+.list,.checklist{margin:0;padding-left:18px;color:var(--muted);line-height:1.6}.checklist li+li,.list li+li{margin-top:6px}
+.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}.table th{font-size:12px;color:#cfe3fb;text-transform:uppercase;letter-spacing:.08em}
+.table strong{color:#fff}
+.svg-shell{background:#08111d;border:1px solid var(--line);border-radius:18px;padding:10px}
+.wf{width:100%;height:auto}.wf text{fill:#edf5ff;font-size:14px;font-weight:700}.wf .sub{fill:#a7bad0;font-size:12px;font-weight:600}.wf .node{fill:#102338;stroke:#3b82f6;stroke-width:2}.wf .goodNode{fill:#133624;stroke:#22c55e;stroke-width:2}.wf .warnNode{fill:#3a290e;stroke:#f59e0b;stroke-width:2}.wf .badNode{fill:#401717;stroke:#ef4444;stroke-width:2}.wf .major{fill:#142a43;stroke:#22d3ee;stroke-width:2}.wf .arrow{stroke:#22d3ee;stroke-width:3;fill:none}.wf .softArrow{stroke:#60a5fa;stroke-width:2.4;fill:none;stroke-dasharray:7 6}.wf .risk{fill:none;stroke:#ef4444;stroke-width:2;stroke-dasharray:6 5}
+.module-card{padding:18px;border-radius:22px;border:1px solid var(--line);background:rgba(19,36,59,.94);box-shadow:var(--shadow)}
+.module-card.goodCard{border-color:rgba(34,197,94,.36);background:linear-gradient(180deg,rgba(18,53,36,.56),rgba(19,36,59,.94))}
+.module-card.warnCard{border-color:rgba(245,158,11,.4);background:linear-gradient(180deg,rgba(58,41,14,.54),rgba(19,36,59,.94))}
+.module-card.badCard{border-color:rgba(239,68,68,.4);background:linear-gradient(180deg,rgba(64,23,23,.54),rgba(19,36,59,.94))}
+.module-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}.module-score{font-size:34px;font-weight:900;color:#fff}.module-title{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}@media (max-width:760px){.split{grid-template-columns:1fr}}
+.note{padding:10px 12px;border-radius:14px;background:#09111d;border:1px solid var(--line)}
+.roadmap-stage{padding:14px 16px;border-radius:18px;background:#0a1321;border:1px solid var(--line)}
+.footer-note{font-size:13px;color:#8ea6be}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#e4edf8}
 </style>
 </head>
 <body>
 <div class="wrapper">
   <div class="band">
-    <div><strong>Internal DCC</strong> · PR-36 complete · Current source of truth for buyer / investor readiness</div>
-    <div class="pill good"><span class="status-dot good"></span>0 PRs remaining in planned readiness stack</div>
+    <div><strong>Internal DCC</strong> · Brutal UX / workflow assessment baseline · Source of truth for buyer + investor product-readiness review</div>
+    <div class="pill bad"><span class="dot bad"></span>0 modules at the 96% demo-ready bar</div>
   </div>
 
-  <div class="hero">
+  <div class="warning">
+    <h3>Brutal truth</h3>
+    <p>This product has a real commercial backbone, but the UX still behaves like a smart internal tool more than a buyer-ready operating system. A serious trade buyer would respect the pricing discipline and workflow logic, then still ask: <strong>why do I need to think this hard to move work forward?</strong> A serious investor would like the governed quote thesis, then immediately worry that the experience is not yet crisp enough to scale sales, onboarding, and daily use.</p>
+  </div>
+
+  <div class="toc">
+    <h3>What this page now answers</h3>
+    <div class="toc-links">
+      <a href="#verdict">Buyer + investor verdict</a>
+      <a href="#workflow">Unified workflow map</a>
+      <a href="#readiness">Module readiness table</a>
+      <a href="#modules">Module-by-module brutal review</a>
+      <a href="#pr-roadmap">PR-UX roadmap</a>
+      <a href="#next-prompt">Next prompt</a>
+    </div>
+  </div>
+
+  <div class="hero" id="verdict">
     <div class="logo-row">
       <div class="logo-mark"><img src="../logos/setu-flow-logo.svg" alt="Setu Flow logo"></div>
-      <div class="logo-copy">
-        <h1>Setu Flow CRM current state and workflow map</h1>
-        <small>Readable for buyers, investors, operators, and non-technical reviewers. This page shows where each module stands now, what is missing, and what will move each module to 100%.</small>
+      <div>
+        <h1>Setu Flow CRM brutal UX + workflow review</h1>
+        <p>Single-source readout for buyers, investors, operators, and product leadership. This version resets readiness around one hard rule: <strong>nothing is demo-ready until each module is at 96%+ in real UX and workflow terms</strong>.</p>
       </div>
     </div>
 
     <div class="hero-grid">
       <div>
-        <p><strong>Plain-English summary:</strong> Setu Flow is strongest where governed commercial truth matters most: qualified demand, catalog-first quoting, override control, approval-aware communication, and accepted quote continuity into contracts/orders. The remaining gap to 100% is not the core model; it is deeper production operations, broader live provider maturity, and more execution-scale proof.</p>
+        <p><strong>Bottom line:</strong> Setu Flow has a differentiated commercial thesis — catalog-first pricing, governed override control, approval-aware communication, and quote-to-order continuity — but the product still hides too much of that strength behind uneven navigation, mixed mental models, and too many “understand the system first” screens. The workflow makes sense to the builders more than to a first-time trade operator.</p>
         <div class="metric-row">
-          <div class="metric"><span>Current overall readiness</span><strong>93%</strong></div>
-          <div class="metric"><span>Security hardening</span><strong>80%</strong></div>
-          <div class="metric"><span>Investor posture</span><strong>94%</strong></div>
-          <div class="metric"><span>Biggest remaining gap</span><strong>Ops scale proof</strong></div>
+          <div class="metric"><span>Buyer readiness</span><strong>73%</strong></div>
+          <div class="metric"><span>Investor readiness</span><strong>69%</strong></div>
+          <div class="metric"><span>Overall UX/workflow readiness</span><strong>74%</strong></div>
+          <div class="metric"><span>Modules already at 96%+</span><strong>0 / 13</strong></div>
         </div>
       </div>
-      <div class="grid two">
-        <div class="card"><div class="kpi">94%</div><div class="label">Engineering baseline</div><div class="bar"><span style="width:94%"></span></div></div>
-        <div class="card"><div class="kpi">95%</div><div class="label">Demo readiness</div><div class="bar"><span style="width:95%"></span></div></div>
-        <div class="card"><div class="kpi">92%</div><div class="label">Buyer readiness</div><div class="bar"><span style="width:92%"></span></div></div>
-        <div class="card"><div class="kpi">94%</div><div class="label">Investor readiness</div><div class="bar"><span style="width:94%"></span></div></div>
+      <div class="grid2">
+        <div class="card"><div class="kpi">88%</div><div class="subkpi">Core commercial logic quality</div><div class="bar"><span style="width:88%"></span></div></div>
+        <div class="card"><div class="kpi">62%</div><div class="subkpi">Navigation / information architecture</div><div class="bar"><span style="width:62%"></span></div></div>
+        <div class="card"><div class="kpi">68%</div><div class="subkpi">End-to-end workflow clarity</div><div class="bar"><span style="width:68%"></span></div></div>
+        <div class="card"><div class="kpi">65%</div><div class="subkpi">State, feedback, and next-step guidance</div><div class="bar"><span style="width:65%"></span></div></div>
       </div>
     </div>
   </div>
 
   <div class="legend">
     <h3>Status legend</h3>
-    <div class="legend-grid">
-      <div class="legend-item"><span class="status-dot good"></span>Green = strong, defensible, close to go-live for its intended role</div>
-      <div class="legend-item"><span class="status-dot warn"></span>Yellow = partial+, works but still missing meaningful proof or operating maturity</div>
-      <div class="legend-item"><span class="status-dot bad"></span>Red = material gap that would still block trust or handoff</div>
-      <div class="legend-item"><span class="mini-pill majorTxt">Blue path</span>Main governed workflow backbone</div>
+    <div class="legend-items">
+      <div class="legend-item"><span class="dot good"></span>Green = strong enough that the remaining work is mostly polish or proof packaging</div>
+      <div class="legend-item"><span class="dot warn"></span>Yellow = useful, but a buyer will still hit friction or ambiguity</div>
+      <div class="legend-item"><span class="dot bad"></span>Red = still risks demo embarrassment, misunderstanding, or trust loss</div>
+      <div class="legend-item"><span class="mini-pill blue">Blue arrows</span>Main governed commercial path</div>
     </div>
   </div>
 
   <section class="section">
-    <h2>Where the product stands right now</h2>
     <div class="proof-grid">
       <div class="card">
-        <h3>Proven directly in repo behavior</h3>
+        <h3>What actually works</h3>
         <ul class="list">
-          <li>Catalog/base pricing is still the default commercial truth.</li>
-          <li>Override requires reason, and approval is enforced when the threshold is met.</li>
-          <li>Communication, sync, and AI remain downstream of governed quote truth.</li>
-          <li>Accepted quote continuity remains the admission rule into order/contract flow.</li>
+          <li>The repo has a real business spine: catalog pricing, override reason, approval enforcement, accepted quote continuity.</li>
+          <li>Trade workflow, communications, integrations, and AI are all downstream of governed commercial truth.</li>
+          <li>The codebase contains real modules, not fake investor theatre.</li>
         </ul>
       </div>
       <div class="card">
-        <h3>Proven by aligned docs and readiness surfaces</h3>
+        <h3>What does not work well enough yet</h3>
         <ul class="list">
-          <li>The DCC, README, release readiness, PR tracker, architecture, and investor docs now tell the same story.</li>
-          <li>Non-technical reviewers can see both the strongest proof and the remaining gaps without reading code.</li>
-          <li>Module-by-module gaps are now explicit instead of implied.</li>
+          <li>Primary navigation under-exposes important work areas and over-hides operational modules.</li>
+          <li>The product still assumes the user understands the internal data model before the UI guides them through tasks.</li>
+          <li>There is too much “workspace” language and not enough direct task language.</li>
         </ul>
       </div>
       <div class="card">
-        <h3>Still needed to reach true 100%</h3>
+        <h3>What gets the biggest reaction in a live demo</h3>
         <ul class="list">
-          <li>Production operations maturity: audit, alerting, WAF, secrets rotation, callback handling at scale.</li>
-          <li>Deeper execution evidence in trade workflow and broader live provider maturity in integrations.</li>
-          <li>More scale-proofed real-world runs, not just repo-true architecture and governed demos.</li>
+          <li><strong>Buyer concern:</strong> “Why am I switching between Leads, Pipeline, Quotes, Orders, Trade Events, Documents, and Integrations to do one job?”</li>
+          <li><strong>Investor concern:</strong> “If the logic is this good, why does the product shell still feel partially internal?”</li>
+          <li><strong>Immediate fix:</strong> reframe the app around one visible operating journey with clearer stage-based surfaces.</li>
         </ul>
       </div>
     </div>
   </section>
 
-  <section class="section">
-    <h2>Overall workflow and module connection map</h2>
-    <div class="workflow-grid">
+  <section class="section" id="workflow">
+    <h2>Unified workflow map: the product the buyer thinks they are buying</h2>
+    <div class="diag-grid">
       <div class="card">
         <div class="svg-shell">
-          <svg class="wf" viewBox="0 0 1120 520" role="img" aria-label="Main workflow with module connection and current status colors">
+          <svg class="wf" viewBox="0 0 1260 540" role="img" aria-label="Unified workflow diagram from capture to execution with module status">
             <defs>
-              <marker id="arr-main" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker>
+              <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker>
+              <marker id="arr2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#60a5fa"></path></marker>
             </defs>
-            <rect class="halo" x="18" y="24" rx="24" ry="24" width="1080" height="472"></rect>
+            <rect class="major" x="26" y="206" rx="20" ry="20" width="144" height="90"></rect>
+            <text x="98" y="243" text-anchor="middle">Capture</text>
+            <text class="sub" x="98" y="265" text-anchor="middle">lead / event / contact</text>
+            <text class="sub" x="98" y="284" text-anchor="middle">multiple entry points</text>
 
-            <rect class="goodNode" x="42" y="206" rx="18" ry="18" width="140" height="82"></rect>
-            <text x="112" y="238" text-anchor="middle">Leads</text>
-            <text class="sub" x="112" y="258" text-anchor="middle">91% · green</text>
-            <text class="sub" x="112" y="276" text-anchor="middle">qualified entry gate</text>
+            <rect class="warnNode" x="212" y="206" rx="20" ry="20" width="148" height="90"></rect>
+            <text x="286" y="243" text-anchor="middle">Qualify</text>
+            <text class="sub" x="286" y="265" text-anchor="middle">fit + compliance + intent</text>
+            <text class="sub" x="286" y="284" text-anchor="middle">still too app-native</text>
 
-            <rect class="goodNode" x="216" y="206" rx="18" ry="18" width="148" height="82"></rect>
-            <text x="290" y="238" text-anchor="middle">Pipeline</text>
-            <text class="sub" x="290" y="258" text-anchor="middle">86% · green</text>
-            <text class="sub" x="290" y="276" text-anchor="middle">buyer stage clarity</text>
+            <rect class="warnNode" x="402" y="206" rx="20" ry="20" width="154" height="90"></rect>
+            <text x="479" y="243" text-anchor="middle">Follow-up</text>
+            <text class="sub" x="479" y="265" text-anchor="middle">pipeline movement</text>
+            <text class="sub" x="479" y="284" text-anchor="middle">guidance too weak</text>
 
-            <rect class="goodNode" x="398" y="206" rx="18" ry="18" width="156" height="82"></rect>
-            <text x="476" y="238" text-anchor="middle">Quotes</text>
-            <text class="sub" x="476" y="258" text-anchor="middle">89% · green</text>
-            <text class="sub" x="476" y="276" text-anchor="middle">catalog first / governed</text>
+            <rect class="goodNode" x="600" y="206" rx="20" ry="20" width="160" height="90"></rect>
+            <text x="680" y="243" text-anchor="middle">Quote</text>
+            <text class="sub" x="680" y="265" text-anchor="middle">catalog-first pricing</text>
+            <text class="sub" x="680" y="284" text-anchor="middle">best current module</text>
 
-            <rect class="warnNode" x="588" y="206" rx="18" ry="18" width="170" height="82"></rect>
-            <text x="673" y="238" text-anchor="middle">Comms + Integration</text>
-            <text class="sub" x="673" y="258" text-anchor="middle">84% / 72% · mixed</text>
-            <text class="sub" x="673" y="276" text-anchor="middle">approval-aware outbound</text>
+            <rect class="warnNode" x="804" y="206" rx="20" ry="20" width="166" height="90"></rect>
+            <text x="887" y="243" text-anchor="middle">Approval + Send</text>
+            <text class="sub" x="887" y="265" text-anchor="middle">gated comms are right</text>
+            <text class="sub" x="887" y="284" text-anchor="middle">UX still too hidden</text>
 
-            <rect class="goodNode" x="792" y="206" rx="18" ry="18" width="164" height="82"></rect>
-            <text x="874" y="238" text-anchor="middle">Orders / Contracts</text>
-            <text class="sub" x="874" y="258" text-anchor="middle">86% · green</text>
-            <text class="sub" x="874" y="276" text-anchor="middle">accepted quote continuity</text>
+            <rect class="warnNode" x="1012" y="206" rx="20" ry="20" width="154" height="90"></rect>
+            <text x="1089" y="243" text-anchor="middle">Order</text>
+            <text class="sub" x="1089" y="265" text-anchor="middle">handoff exists</text>
+            <text class="sub" x="1089" y="284" text-anchor="middle">ops view still split</text>
 
-            <rect class="warnNode" x="978" y="206" rx="18" ry="18" width="106" height="82"></rect>
-            <text x="1031" y="238" text-anchor="middle">Execution</text>
-            <text class="sub" x="1031" y="258" text-anchor="middle">84% · yellow</text>
-            <text class="sub" x="1031" y="276" text-anchor="middle">proof still lighter</text>
+            <rect class="warnNode" x="1090" y="382" rx="18" ry="18" width="132" height="84"></rect>
+            <text x="1156" y="416" text-anchor="middle">Execution</text>
+            <text class="sub" x="1156" y="438" text-anchor="middle">trade proof lighter</text>
 
-            <path class="arrow" marker-end="url(#arr-main)" d="M182 247 H216"></path>
-            <path class="arrow" marker-end="url(#arr-main)" d="M364 247 H398"></path>
-            <path class="arrow" marker-end="url(#arr-main)" d="M554 247 H588"></path>
-            <path class="arrow" marker-end="url(#arr-main)" d="M758 247 H792"></path>
-            <path class="arrow" marker-end="url(#arr-main)" d="M956 247 H978"></path>
+            <path class="arrow" marker-end="url(#arr)" d="M170 251 H212"></path>
+            <path class="arrow" marker-end="url(#arr)" d="M360 251 H402"></path>
+            <path class="arrow" marker-end="url(#arr)" d="M556 251 H600"></path>
+            <path class="arrow" marker-end="url(#arr)" d="M760 251 H804"></path>
+            <path class="arrow" marker-end="url(#arr)" d="M970 251 H1012"></path>
+            <path class="arrow" marker-end="url(#arr)" d="M1118 296 C1130 324 1145 346 1156 382"></path>
 
-            <rect class="goodNode" x="240" y="64" rx="18" ry="18" width="154" height="84"></rect>
-            <text x="317" y="97" text-anchor="middle">Product Management</text>
-            <text class="sub" x="317" y="117" text-anchor="middle">90% · green</text>
-            <text class="sub" x="317" y="135" text-anchor="middle">catalog / base price truth</text>
-            <path class="arrow" marker-end="url(#arr-main)" d="M394 106 C456 106 432 182 476 206"></path>
+            <rect class="warnNode" x="44" y="54" rx="18" ry="18" width="154" height="90"></rect>
+            <text x="121" y="89" text-anchor="middle">Navigation shell</text>
+            <text class="sub" x="121" y="110" text-anchor="middle">62% · main UX blocker</text>
+            <text class="sub" x="121" y="129" text-anchor="middle">not trade-task first</text>
+            <path class="softArrow" marker-end="url(#arr2)" d="M121 144 C121 176 118 190 98 206"></path>
 
-            <rect class="goodNode" x="454" y="356" rx="18" ry="18" width="164" height="84"></rect>
-            <text x="536" y="389" text-anchor="middle">AI Assist Layer</text>
-            <text class="sub" x="536" y="409" text-anchor="middle">82% · green</text>
-            <text class="sub" x="536" y="427" text-anchor="middle">bounded / operator-reviewed</text>
-            <path class="arrow" marker-end="url(#arr-main)" d="M536 356 V288"></path>
+            <rect class="goodNode" x="540" y="52" rx="18" ry="18" width="166" height="94"></rect>
+            <text x="623" y="87" text-anchor="middle">Product management</text>
+            <text class="sub" x="623" y="108" text-anchor="middle">82% · strong logic</text>
+            <text class="sub" x="623" y="127" text-anchor="middle">spreadsheet UX still heavy</text>
+            <path class="softArrow" marker-end="url(#arr2)" d="M623 146 V206"></path>
 
-            <rect class="goodNode" x="692" y="58" rx="18" ry="18" width="160" height="90"></rect>
-            <text x="772" y="92" text-anchor="middle">Dashboard + Docs</text>
-            <text class="sub" x="772" y="112" text-anchor="middle">86% / 100% · green</text>
-            <text class="sub" x="772" y="130" text-anchor="middle">truth surface for review</text>
-            <path class="arrow" marker-end="url(#arr-main)" d="M772 148 V206"></path>
+            <rect class="warnNode" x="792" y="52" rx="18" ry="18" width="170" height="94"></rect>
+            <text x="877" y="87" text-anchor="middle">Integrations + Comms</text>
+            <text class="sub" x="877" y="108" text-anchor="middle">61% / 67%</text>
+            <text class="sub" x="877" y="127" text-anchor="middle">real logic, weak visibility</text>
+            <path class="softArrow" marker-end="url(#arr2)" d="M877 146 V206"></path>
 
-            <rect class="warnNode" x="870" y="54" rx="18" ry="18" width="174" height="94"></rect>
-            <text x="957" y="88" text-anchor="middle">Security / Hardening</text>
-            <text class="sub" x="957" y="108" text-anchor="middle">80% · yellow</text>
-            <text class="sub" x="957" y="126" text-anchor="middle">repo hardened, ops pending</text>
-            <path class="arrow" marker-end="url(#arr-main)" d="M930 148 C930 176 920 188 884 206"></path>
+            <rect class="warnNode" x="340" y="382" rx="18" ry="18" width="156" height="84"></rect>
+            <text x="418" y="416" text-anchor="middle">Dashboard</text>
+            <text class="sub" x="418" y="438" text-anchor="middle">74% · informative</text>
+            <text class="sub" x="418" y="456" text-anchor="middle">not decisive enough</text>
+            <path class="softArrow" marker-end="url(#arr2)" d="M418 382 C418 340 455 319 479 296"></path>
 
-            <rect class="warnNode" x="30" y="54" rx="18" ry="18" width="166" height="90"></rect>
-            <text x="113" y="88" text-anchor="middle">Contact Exchange</text>
-            <text class="sub" x="113" y="108" text-anchor="middle">84% · yellow/green edge</text>
-            <text class="sub" x="113" y="126" text-anchor="middle">useful, not primary driver</text>
-            <path class="arrow" marker-end="url(#arr-main)" d="M113 144 V206"></path>
+            <rect class="warnNode" x="560" y="382" rx="18" ry="18" width="156" height="84"></rect>
+            <text x="638" y="416" text-anchor="middle">AI assist</text>
+            <text class="sub" x="638" y="438" text-anchor="middle">68% · bounded</text>
+            <text class="sub" x="638" y="456" text-anchor="middle">helpful, not central</text>
+            <path class="softArrow" marker-end="url(#arr2)" d="M638 382 V296"></path>
+
+            <rect class="warnNode" x="764" y="382" rx="18" ry="18" width="188" height="84"></rect>
+            <text x="858" y="416" text-anchor="middle">Settings / Admin / hygiene</text>
+            <text class="sub" x="858" y="438" text-anchor="middle">66% / 80%</text>
+            <text class="sub" x="858" y="456" text-anchor="middle">too hidden / too internal</text>
+            <path class="softArrow" marker-end="url(#arr2)" d="M858 382 C858 338 876 319 887 296"></path>
+
+            <rect class="risk" x="580" y="188" rx="24" ry="24" width="402" height="126"></rect>
+            <text class="sub" x="781" y="176" text-anchor="middle">Critical trust zone: quote → approval → outbound communication</text>
           </svg>
         </div>
       </div>
       <div class="card">
-        <h3>Main workflow reading guide</h3>
+        <h3>How to read the workflow</h3>
         <ul class="list">
-          <li><strong>Blue arrows</strong> show the main governed path through the product.</li>
-          <li><strong>Green modules</strong> are strong and already support the main story well.</li>
-          <li><strong>Yellow modules</strong> work but still need more proof, operating maturity, or scale evidence.</li>
-          <li><strong>Red modules</strong> would indicate blockers. In this baseline there is no fully red module, but integrations, trade execution, and hardening still have yellow gaps.</li>
-          <li>The most important design truth remains unchanged: <strong>communications, integrations, and AI all follow governed commercial truth rather than rewriting it</strong>.</li>
+          <li>The commercial core is sound. The UX around it is not yet simple enough.</li>
+          <li>The most important buyer journey is still split across too many screens and terms.</li>
+          <li>The current shell exposes <code>Dashboard / Leads / Pipeline / Quotes / Orders / Admin</code> but hides other important work areas, which makes the mental model flatter for the builders than for the user.</li>
+          <li>The next passes should not start with styling. They should start with <strong>workflow reduction, navigation simplification, and stage-specific “what next” guidance</strong>.</li>
         </ul>
-        <div class="connector-map">
-          <div class="connector">Lead qualification feeds Pipeline</div>
-          <div class="connector">Product Management feeds Quotes</div>
-          <div class="connector">Quotes gate Comms + Integration</div>
-          <div class="connector">Accepted quotes feed Orders / Contracts</div>
-          <div class="connector">AI supports, but does not decide</div>
-          <div class="connector">Hardening wraps the whole surface</div>
+        <div class="metric-row">
+          <div class="metric"><span>Main UX defect</span><strong>Too many surfaces</strong></div>
+          <div class="metric"><span>Main buyer risk</span><strong>Workflow ambiguity</strong></div>
+          <div class="metric"><span>Main investor risk</span><strong>Product-shell immaturity</strong></div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="section">
-    <h2>Module status cards: current state, missing pieces, and path to 100%</h2>
-    <div class="module-grid">
-      <div class="module-card goodCard">
-        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Leads</h3></div><div class="module-score">91%</div></div>
-        <p>Strong buyer-entry gate. Qualification, compliance, product linkage, and follow-up posture are already part of the core story.</p>
-        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Leads workflow"><defs><marker id="a1" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="126" height="62"></rect><text x="81" y="72" text-anchor="middle">Capture</text><text class="sub" x="81" y="90" text-anchor="middle">lead entered</text><rect class="goodNode" x="194" y="44" rx="16" ry="16" width="132" height="62"></rect><text x="260" y="72" text-anchor="middle">Qualify</text><text class="sub" x="260" y="90" text-anchor="middle">fit + compliance</text><rect class="goodNode" x="376" y="44" rx="16" ry="16" width="126" height="62"></rect><text x="439" y="72" text-anchor="middle">Ready</text><text class="sub" x="439" y="90" text-anchor="middle">for quote path</text><path class="arrow" marker-end="url(#a1)" d="M144 75 H194"></path><path class="arrow" marker-end="url(#a1)" d="M326 75 H376"></path></svg></div>
-        <div class="module-meta">
-          <div><h4>What is missing</h4><ul class="checklist"><li>More seeded showcase records proving full variety of qualification scenarios.</li><li>More visible evidence of follow-up SLA discipline in live environments.</li></ul></div>
-          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Production-grade lead quality analytics and live operating evidence.</li><li>Stronger seeded demo coverage across edge-case qualification flows.</li></ul></div>
-        </div>
-      </div>
-
-      <div class="module-card goodCard">
-        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Pipeline</h3></div><div class="module-score">86%</div></div>
-        <p>Pipeline tells a coherent journey and connects well to the governed quote path.</p>
-        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Pipeline workflow"><defs><marker id="a2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="114" height="62"></rect><text x="75" y="72" text-anchor="middle">Interest</text><rect class="goodNode" x="170" y="44" rx="16" ry="16" width="126" height="62"></rect><text x="233" y="72" text-anchor="middle">Active deal</text><rect class="goodNode" x="334" y="44" rx="16" ry="16" width="168" height="62"></rect><text x="418" y="72" text-anchor="middle">Quote-ready stage</text><path class="arrow" marker-end="url(#a2)" d="M132 75 H170"></path><path class="arrow" marker-end="url(#a2)" d="M296 75 H334"></path></svg></div>
-        <div class="module-meta">
-          <div><h4>What is missing</h4><ul class="checklist"><li>Deeper stage-based analytics and stronger longitudinal conversion proof.</li><li>More explicit live examples of stalled / rescued opportunities.</li></ul></div>
-          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Production KPI evidence across multiple cohorts and time windows.</li><li>Expanded showcase records for stage transitions and exceptions.</li></ul></div>
-        </div>
-      </div>
-
-      <div class="module-card goodCard">
-        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Quotes</h3></div><div class="module-score">89%</div></div>
-        <p>This is the strongest commercial module. Catalog/base price is still the default source of truth and override governance is preserved.</p>
-        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 170" role="img" aria-label="Quote workflow"><defs><marker id="a3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="52" rx="16" ry="16" width="130" height="64"></rect><text x="83" y="80" text-anchor="middle">Catalog price</text><text class="sub" x="83" y="98" text-anchor="middle">default truth</text><rect class="warnNode" x="194" y="42" rx="16" ry="16" width="144" height="84"></rect><text x="266" y="76" text-anchor="middle">Override control</text><text class="sub" x="266" y="96" text-anchor="middle">reason + threshold</text><rect class="goodNode" x="384" y="52" rx="16" ry="16" width="120" height="64"></rect><text x="444" y="80" text-anchor="middle">Approved quote</text><text class="sub" x="444" y="98" text-anchor="middle">shareable truth</text><path class="arrow" marker-end="url(#a3)" d="M148 84 H194"></path><path class="arrow" marker-end="url(#a3)" d="M338 84 H384"></path></svg></div>
-        <div class="module-meta">
-          <div><h4>What is missing</h4><ul class="checklist"><li>Even stronger seeded evidence of override-required approvals across more scenarios.</li><li>Broader live-volume proof, not just structural correctness.</li></ul></div>
-          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Higher-volume production evidence of governed pricing and approval outcomes.</li><li>Expanded showcase library of quote patterns by region/product/customer type.</li></ul></div>
-        </div>
-      </div>
-
-      <div class="module-card warnCard">
-        <div class="module-top"><div class="module-title"><span class="status-dot warn"></span><h3>Communications + Integrations</h3></div><div class="module-score">84% / 72%</div></div>
-        <p>Good strategic shape: outbound communication is approval-aware and governed. Still yellow because provider maturity and ops-scale callback proof are not fully demonstrated.</p>
-        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 170" role="img" aria-label="Communication and integration workflow"><defs><marker id="a4" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="52" rx="16" ry="16" width="126" height="64"></rect><text x="81" y="80" text-anchor="middle">Approved quote</text><text class="sub" x="81" y="98" text-anchor="middle">release gate</text><rect class="warnNode" x="188" y="42" rx="16" ry="16" width="152" height="84"></rect><text x="264" y="76" text-anchor="middle">Email / WhatsApp</text><text class="sub" x="264" y="96" text-anchor="middle">approval-aware send</text><rect class="warnNode" x="384" y="42" rx="16" ry="16" width="118" height="84"></rect><text x="443" y="76" text-anchor="middle">Sync log</text><text class="sub" x="443" y="96" text-anchor="middle">event / replay</text><path class="arrow" marker-end="url(#a4)" d="M144 84 H188"></path><path class="arrow" marker-end="url(#a4)" d="M340 84 H384"></path></svg></div>
-        <div class="module-meta">
-          <div><h4>What is missing</h4><ul class="checklist"><li>Broader named-provider live proof for delivery callbacks, retries, and SLA-grade monitoring.</li><li>More production-grade evidence for communication throughput and error handling at scale.</li></ul></div>
-          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Full provider callback reconciliation in live environments.</li><li>Ops dashboards, alerting, and scale-run evidence for delivery and replay behavior.</li></ul></div>
-        </div>
-      </div>
-
-      <div class="module-card goodCard">
-        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Orders / Contracts</h3></div><div class="module-score">86%</div></div>
-        <p>Strong continuity module. Accepted quote remains the operational admission rule and downstream records preserve commercial lineage.</p>
-        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Orders and contracts workflow"><defs><marker id="a5" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="132" height="62"></rect><text x="84" y="72" text-anchor="middle">Accepted quote</text><rect class="goodNode" x="194" y="44" rx="16" ry="16" width="132" height="62"></rect><text x="260" y="72" text-anchor="middle">Order create</text><rect class="goodNode" x="370" y="44" rx="16" ry="16" width="132" height="62"></rect><text x="436" y="72" text-anchor="middle">Contract link</text><path class="arrow" marker-end="url(#a5)" d="M150 75 H194"></path><path class="arrow" marker-end="url(#a5)" d="M326 75 H370"></path></svg></div>
-        <div class="module-meta">
-          <div><h4>What is missing</h4><ul class="checklist"><li>Richer showcase evidence across amendments, partial fulfillment, and post-acceptance exceptions.</li><li>More execution-depth linkage in live operating stories.</li></ul></div>
-          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Expanded contract lifecycle cases and exception handling evidence.</li><li>Stronger scale proof across downstream order variants.</li></ul></div>
-        </div>
-      </div>
-
-      <div class="module-card warnCard">
-        <div class="module-top"><div class="module-title"><span class="status-dot warn"></span><h3>Trade Workflow / Execution</h3></div><div class="module-score">84%</div></div>
-        <p>Execution posture exists, but it is still lighter than the commercial core. This is one of the main yellow areas in the current baseline.</p>
-        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Trade execution workflow"><defs><marker id="a6" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="136" height="62"></rect><text x="86" y="72" text-anchor="middle">Contract ready</text><rect class="warnNode" x="192" y="44" rx="16" ry="16" width="144" height="62"></rect><text x="264" y="72" text-anchor="middle">Execution evidence</text><rect class="warnNode" x="374" y="44" rx="16" ry="16" width="128" height="62"></rect><text x="438" y="72" text-anchor="middle">Dispatch / proof</text><path class="arrow" marker-end="url(#a6)" d="M154 75 H192"></path><path class="arrow" marker-end="url(#a6)" d="M336 75 H374"></path></svg></div>
-        <div class="module-meta">
-          <div><h4>What is missing</h4><ul class="checklist"><li>Audit-depth execution evidence and richer logistics / dispatch proof.</li><li>More visible exception handling for shipment, dispatch, and closure states.</li></ul></div>
-          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Deeper execution telemetry and verified closeout evidence.</li><li>Stronger end-to-end showcase data from order through fulfillment proof.</li></ul></div>
-        </div>
-      </div>
-
-      <div class="module-card goodCard">
-        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>AI</h3></div><div class="module-score">82%</div></div>
-        <p>AI is now easy to explain honestly: provider-backed assistive AI with guardrails, operator review, and no pricing or approval authority.</p>
-        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 160" role="img" aria-label="AI guardrail workflow"><defs><marker id="a7" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="16" y="48" rx="16" ry="16" width="126" height="64"></rect><text x="79" y="76" text-anchor="middle">Ask AI</text><text class="sub" x="79" y="94" text-anchor="middle">draft / summarize</text><rect class="goodNode" x="186" y="38" rx="16" ry="16" width="150" height="84"></rect><text x="261" y="72" text-anchor="middle">Guardrail layer</text><text class="sub" x="261" y="92" text-anchor="middle">bounded output</text><rect class="goodNode" x="380" y="48" rx="16" ry="16" width="126" height="64"></rect><text x="443" y="76" text-anchor="middle">Human review</text><text class="sub" x="443" y="94" text-anchor="middle">no autonomy</text><path class="arrow" marker-end="url(#a7)" d="M142 80 H186"></path><path class="arrow" marker-end="url(#a7)" d="M336 80 H380"></path></svg></div>
-        <div class="module-meta">
-          <div><h4>What is missing</h4><ul class="checklist"><li>Broader provider coverage and deeper evaluation telemetry.</li><li>More measured production evidence across use cases and prompt controls.</li></ul></div>
-          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Expanded provider support, evaluation dashboards, and usage-quality evidence.</li><li>Clearer ops instrumentation around AI safety and response quality trends.</li></ul></div>
-        </div>
-      </div>
-
-      <div class="module-card warnCard">
-        <div class="module-top"><div class="module-title"><span class="status-dot warn"></span><h3>Security / Hardening</h3></div><div class="module-score">80%</div></div>
-        <p>Important progress is real in the repo, but this remains yellow because true 100% requires production operations and external validation, not just code structure.</p>
-        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 160" role="img" aria-label="Security hardening workflow"><defs><marker id="a8" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="48" rx="16" ry="16" width="126" height="64"></rect><text x="81" y="76" text-anchor="middle">Repo controls</text><text class="sub" x="81" y="94" text-anchor="middle">middleware headers</text><rect class="warnNode" x="188" y="38" rx="16" ry="16" width="150" height="84"></rect><text x="263" y="72" text-anchor="middle">Ops controls</text><text class="sub" x="263" y="92" text-anchor="middle">secrets / WAF / SIEM</text><rect class="warnNode" x="382" y="48" rx="16" ry="16" width="120" height="64"></rect><text x="442" y="76" text-anchor="middle">Audit proof</text><text class="sub" x="442" y="94" text-anchor="middle">external validation</text><path class="arrow" marker-end="url(#a8)" d="M144 80 H188"></path><path class="arrow" marker-end="url(#a8)" d="M338 80 H382"></path></svg></div>
-        <div class="module-meta">
-          <div><h4>What is missing</h4><ul class="checklist"><li>External audit or pen-test evidence.</li><li>Production-grade ops controls, alerting, and secrets governance proof.</li></ul></div>
-          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Cloud/network hardening, WAF, SIEM, rotation, and formal external validation.</li><li>Documented runbooks with real operating evidence from production.</li></ul></div>
-        </div>
-      </div>
-
-      <div class="module-card goodCard">
-        <div class="module-top"><div class="module-title"><span class="status-dot good"></span><h3>Dashboard / Documentation</h3></div><div class="module-score">87% / 100%</div></div>
-        <p>The dashboard and DCC now make the system understandable to non-technical reviewers. Documentation is the strongest aligned surface in the repo.</p>
-        <div class="svg-shell"><svg class="wf" viewBox="0 0 520 150" role="img" aria-label="Dashboard and docs workflow"><defs><marker id="a9" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#22d3ee"></path></marker></defs><rect class="goodNode" x="18" y="44" rx="16" ry="16" width="126" height="62"></rect><text x="81" y="72" text-anchor="middle">Repo truth</text><rect class="goodNode" x="190" y="44" rx="16" ry="16" width="138" height="62"></rect><text x="259" y="72" text-anchor="middle">DCC / Dashboard</text><rect class="goodNode" x="374" y="44" rx="16" ry="16" width="128" height="62"></rect><text x="438" y="72" text-anchor="middle">Investor / buyer read</text><path class="arrow" marker-end="url(#a9)" d="M144 75 H190"></path><path class="arrow" marker-end="url(#a9)" d="M328 75 H374"></path></svg></div>
-        <div class="module-meta">
-          <div><h4>What is missing</h4><ul class="checklist"><li>Mostly operational freshness over time rather than structural documentation work.</li><li>Ongoing updates as real production evidence grows.</li></ul></div>
-          <div><h4>What gets it to 100%</h4><ul class="checklist"><li>Keep the truth surfaces current with live evidence and environment maturity.</li><li>Continue updating status as scale-proof and ops-proof arrive.</li></ul></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2>Compact readiness table</h2>
+  <section class="section" id="readiness">
+    <h2>Module readiness table: where each module actually stands against the 96% bar</h2>
     <div class="card">
       <table class="table">
         <thead>
           <tr>
             <th>Module</th>
+            <th>Current</th>
             <th>Status</th>
-            <th>Readiness</th>
-            <th>Missing right now</th>
-            <th>What gets to 100%</th>
+            <th>What 96% means</th>
+            <th>Main gap</th>
+            <th>PRs still needed</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Leads</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>91%</td><td>Broader live qualification proof</td><td>Live operating evidence + deeper seeded scenarios</td></tr>
-          <tr><td>Pipeline</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>86%</td><td>Stage analytics and rescue-path proof</td><td>Cohort KPI evidence + richer scenario coverage</td></tr>
-          <tr><td>Quotes</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>89%</td><td>Higher-volume approval evidence</td><td>More real-world governed pricing proof</td></tr>
-          <tr><td>Comms + Integrations</td><td><span class="pill warn"><span class="status-dot warn"></span>Yellow</span></td><td>84% / 72%</td><td>Provider callback and ops maturity</td><td>Live callbacks, alerting, retries, scale proof</td></tr>
-          <tr><td>Orders / Contracts</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>86%</td><td>More amendment / exception proof</td><td>Broader downstream lifecycle evidence</td></tr>
-          <tr><td>Trade Workflow / Execution</td><td><span class="pill warn"><span class="status-dot warn"></span>Yellow</span></td><td>84%</td><td>Dispatch / closure depth</td><td>Audit-depth fulfillment evidence</td></tr>
-          <tr><td>AI</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>82%</td><td>Broader provider and evaluation maturity</td><td>Expanded provider support + measured ops evidence</td></tr>
-          <tr><td>Security / Hardening</td><td><span class="pill warn"><span class="status-dot warn"></span>Yellow</span></td><td>80%</td><td>Ops controls and external validation</td><td>WAF, SIEM, secrets ops, audit / pen test</td></tr>
-          <tr><td>Dashboard / Documentation</td><td><span class="pill good"><span class="status-dot good"></span>Green</span></td><td>87% / 100%</td><td>Future evidence freshness</td><td>Keep aligned with live proof growth</td></tr>
+          <tr><td><strong>Leads</strong></td><td>84%</td><td><span class="pill warn"><span class="dot warn"></span>Yellow</span></td><td>Qualification is fast, obvious, and visibly drives the next action.</td><td>Too much dense context before a clear next move.</td><td>2</td></tr>
+          <tr><td><strong>Pipeline</strong></td><td>78%</td><td><span class="pill warn"><span class="dot warn"></span>Yellow</span></td><td>Stage movement feels like running deals, not sorting cards.</td><td>Weak stage guidance and exception handling.</td><td>3</td></tr>
+          <tr><td><strong>Quotes</strong></td><td>88%</td><td><span class="pill good"><span class="dot good"></span>Green-ish</span></td><td>The quote path is one clean commercial desk with approval visibility built in.</td><td>UI framing still split between modules and views.</td><td>2</td></tr>
+          <tr><td><strong>Orders</strong></td><td>79%</td><td><span class="pill warn"><span class="dot warn"></span>Yellow</span></td><td>Accepted quote handoff becomes one operational lane with no ambiguity.</td><td>Execution context still feels separated from the handoff.</td><td>3</td></tr>
+          <tr><td><strong>Dashboard</strong></td><td>74%</td><td><span class="pill warn"><span class="dot warn"></span>Yellow</span></td><td>The dashboard tells the operator exactly what to do next.</td><td>Informative but not directive enough.</td><td>2</td></tr>
+          <tr><td><strong>Contact Exchange</strong></td><td>63%</td><td><span class="pill bad"><span class="dot bad"></span>Red</span></td><td>Clear supporting utility with obvious CRM value.</td><td>Feels adjacent, not essential to the main workflow.</td><td>3</td></tr>
+          <tr><td><strong>Settings / Admin</strong></td><td>66%</td><td><span class="pill bad"><span class="dot bad"></span>Red</span></td><td>Admin feels safe, compact, and separate from daily work.</td><td>Too internal and too discoverability-heavy.</td><td>3</td></tr>
+          <tr><td><strong>Product Management</strong></td><td>82%</td><td><span class="pill warn"><span class="dot warn"></span>Yellow</span></td><td>Catalog editing is fast, trustworthy, and quote-aware without spreadsheet drag.</td><td>Spreadsheet-heavy interaction model.</td><td>2</td></tr>
+          <tr><td><strong>Trade Workflow</strong></td><td>71%</td><td><span class="pill warn"><span class="dot warn"></span>Yellow</span></td><td>Execution status is visible from quote acceptance to shipment/compliance milestones.</td><td>Proof and UX are still fragmented.</td><td>3</td></tr>
+          <tr><td><strong>AI</strong></td><td>68%</td><td><span class="pill bad"><span class="dot bad"></span>Red</span></td><td>AI is useful in context, not a sidecar the user has to remember exists.</td><td>Helpful but not yet woven into the main job flow.</td><td>2</td></tr>
+          <tr><td><strong>Integrations</strong></td><td>61%</td><td><span class="pill bad"><span class="dot bad"></span>Red</span></td><td>Operational sync status is visible where users make decisions.</td><td>Control plane exists, user trust surface is weak.</td><td>3</td></tr>
+          <tr><td><strong>Documentation</strong></td><td>86%</td><td><span class="pill warn"><span class="dot warn"></span>Yellow</span></td><td>Every operator and investor can understand the product in minutes.</td><td>Good truth surfaces, still too many concepts to absorb.</td><td>1</td></tr>
+          <tr><td><strong>Repo hygiene / DCC integrity</strong></td><td>80%</td><td><span class="pill warn"><span class="dot warn"></span>Yellow</span></td><td>The shipped repo, live DCC, and demo branch stay in lockstep.</td><td>Version drift and deploy mismatch risk.</td><td>2</td></tr>
         </tbody>
       </table>
+      <p class="footer-note">Buyer-ready does not mean “the logic is impressive.” It means a first-time user can move one deal from capture to execution with confidence, speed, and almost no confusion.</p>
+    </div>
+  </section>
+
+  <section class="section" id="modules">
+    <h2>Module-by-module brutal review</h2>
+    <div class="module-grid">
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="dot warn"></span><h3>Leads · 84%</h3></div><span class="mini-pill warn">2 PRs to 96%</span></div>
+        <p><strong>What works:</strong> Lead records hold real business context and connect to product, market, compliance, and follow-up data.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>The view asks the user to absorb too much before taking action.</li><li>Qualification is present, but the screen does not dramatize the next best move strongly enough.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Am I qualifying a lead or reading a dossier?”</li><li><strong>Investor:</strong> “Strong data model, but is the sales rep faster because of it?”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> compress the lead command center into a clear 3-lane layout: profile, blockers, next action. Surface “quote-ready / not quote-ready” as a primary state.</p>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="dot warn"></span><h3>Pipeline · 78%</h3></div><span class="mini-pill warn">3 PRs to 96%</span></div>
+        <p><strong>What works:</strong> The board exists and ties into stages, quotes, compliance, and activities.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>Stage movement still feels like board maintenance instead of running a trade deal.</li><li>Exception states and rescue actions are not strong enough.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “What do I do when a deal stalls?”</li><li><strong>Investor:</strong> “Is the board operational, or mostly a visualization?”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> add stage-specific next-step prompts, blockers, and one-click actions; reduce passive status exposure.</p>
+      </div>
+
+      <div class="module-card goodCard">
+        <div class="module-top"><div class="module-title"><span class="dot good"></span><h3>Quotes · 88%</h3></div><span class="mini-pill warn">2 PRs to 96%</span></div>
+        <p><strong>What works:</strong> This is the strongest module. Catalog-first price truth and approval gating create real commercial trust.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>Some quote work is still discovered through leads rather than a single obvious quote desk.</li><li>Approval visibility is correct, but not yet elegant.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Where is the one screen to finish this quote?”</li><li><strong>Investor:</strong> “Great logic. Is the UX catching up?”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> consolidate the quote workspace into one dominant progression panel: pricing, overrides, approval state, share state, order-readiness.</p>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="dot warn"></span><h3>Orders · 79%</h3></div><span class="mini-pill warn">3 PRs to 96%</span></div>
+        <p><strong>What works:</strong> Accepted quote continuity is the right admission rule. That is a real product strength.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>Operational follow-through still feels split across orders, contracts, documents, and trade events.</li><li>The handoff moment is logically clean but experientially under-celebrated.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Did I just create an order, a contract, or start execution?”</li><li><strong>Investor:</strong> “This is where products lose users if the lane gets muddy.”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> create one order execution workspace with milestones, required docs, sync state, and owner accountability in one lane.</p>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="dot warn"></span><h3>Dashboard · 74%</h3></div><span class="mini-pill warn">2 PRs to 96%</span></div>
+        <p><strong>What works:</strong> The dashboard surfaces metrics and command panels, which is directionally right.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>It reads as a summary first, a work launcher second.</li><li>Top actions are not ruthless enough.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Why am I looking at this instead of doing my next task?”</li><li><strong>Investor:</strong> “Dashboards impress demos and lose operators if they do not route work.”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> make the first fold a triage console: deals to move, quotes blocked, approvals pending, orders at risk.</p>
+      </div>
+
+      <div class="module-card badCard">
+        <div class="module-top"><div class="module-title"><span class="dot bad"></span><h3>Contact Exchange · 63%</h3></div><span class="mini-pill bad">3 PRs to 96%</span></div>
+        <p><strong>What works:</strong> There is a real idea here around identity sharing and inbound capture.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>It is too easy to see this as a side product.</li><li>The value to the main CRM flow is not forceful enough.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Is this a must-have or a nice extra?”</li><li><strong>Investor:</strong> “Does this focus the story or dilute it?”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> reposition it as a capture accelerator tied directly to lead creation, duplicate prevention, and event intake.</p>
+      </div>
+
+      <div class="module-card badCard">
+        <div class="module-top"><div class="module-title"><span class="dot bad"></span><h3>Settings / Admin · 66%</h3></div><span class="mini-pill bad">3 PRs to 96%</span></div>
+        <p><strong>What works:</strong> Necessary control surfaces exist.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>Admin and product management are mixed too closely into the main shell.</li><li>The language still feels builder-facing, not admin-facing.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Why does admin feel so present in daily work?”</li><li><strong>Investor:</strong> “Can enterprise controls grow without bloating the shell?”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> separate daily operating nav from setup/admin nav; turn admin into a compact governance console.</p>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="dot warn"></span><h3>Product Management · 82%</h3></div><span class="mini-pill warn">2 PRs to 96%</span></div>
+        <p><strong>What works:</strong> Product and pricing truth are central, which is exactly right for this business.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>The spreadsheet paradigm is efficient for power users but heavy for broader teams.</li><li>Quote consequences are not visible enough from catalog editing.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Can my product manager do this without feeling like they opened a database?”</li><li><strong>Investor:</strong> “Can this module scale without becoming maintenance drag?”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> keep the table, but add a stronger detail/impact drawer and safer pricing-change review flows.</p>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="dot warn"></span><h3>Trade Workflow · 71%</h3></div><span class="mini-pill warn">3 PRs to 96%</span></div>
+        <p><strong>What works:</strong> Trade-specific concepts exist, which is better than generic CRM cosplay.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>Execution still feels distributed across several supporting areas.</li><li>Milestone visibility is not yet the emotional center of post-quote work.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Show me dispatch, documents, compliance, and shipment risk in one place.”</li><li><strong>Investor:</strong> “This is the moat if it becomes operationally crisp.”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> create one execution timeline with milestones, owners, required docs, freight/compliance state, and exceptions.</p>
+      </div>
+
+      <div class="module-card badCard">
+        <div class="module-top"><div class="module-title"><span class="dot bad"></span><h3>AI · 68%</h3></div><span class="mini-pill bad">2 PRs to 96%</span></div>
+        <p><strong>What works:</strong> The AI is bounded, which is the correct philosophy.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>It still behaves like a separate place rather than contextual help inside work.</li><li>It is too easy to demo and too easy to ignore.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Why do I go somewhere else for help?”</li><li><strong>Investor:</strong> “Good guardrails, but is usage real?”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> embed AI in leads, quotes, and execution surfaces as explainable assist chips and review drawers.</p>
+      </div>
+
+      <div class="module-card badCard">
+        <div class="module-top"><div class="module-title"><span class="dot bad"></span><h3>Integrations · 61%</h3></div><span class="mini-pill bad">3 PRs to 96%</span></div>
+        <p><strong>What works:</strong> The control plane and governance idea are good.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>The current UX makes integration health feel like a specialist surface.</li><li>Operational sync state is not visible where commercial decisions happen.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “If sync is blocked, will I know before I promise something?”</li><li><strong>Investor:</strong> “Useful backend posture, weak front-end confidence layer.”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> surface sync health inside quote, order, and execution screens; keep the control desk as a second-level audit surface.</p>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="dot warn"></span><h3>Documentation · 86%</h3></div><span class="mini-pill warn">1 PR to 96%</span></div>
+        <p><strong>What works:</strong> The repo now has strong truth surfaces.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>There is still a lot to read before a new buyer/investor fully gets the system.</li><li>The product shell does not yet match the clarity of the documentation.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “The documents are clearer than some screens.”</li><li><strong>Investor:</strong> “Good story. Make the product itself tell it.”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> simplify the documentation around role-based journeys and keep the DCC synced with the live shell.</p>
+      </div>
+
+      <div class="module-card warnCard">
+        <div class="module-top"><div class="module-title"><span class="dot warn"></span><h3>Repo hygiene / DCC integrity · 80%</h3></div><span class="mini-pill warn">2 PRs to 96%</span></div>
+        <p><strong>What works:</strong> The DCC is now the clearest single narrative surface.</p>
+        <div class="split">
+          <div class="note"><h4>What does not</h4><ul class="checklist"><li>Live-vs-local drift has already happened once.</li><li>The DCC is useful, but still easy to desync from deployed state.</li></ul></div>
+          <div class="note"><h4>Buyer confusion / investor worry</h4><ul class="checklist"><li><strong>Buyer:</strong> “Will the demo match what I sign for?”</li><li><strong>Investor:</strong> “Can the team keep truth surfaces disciplined under pressure?”</li></ul></div>
+        </div>
+        <p><strong>Path to 96%:</strong> tighten deploy hygiene, add DCC version stamp discipline, and reduce branch/build ambiguity.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="pr-roadmap">
+    <h2>PR-UX roadmap: the passes still needed to get every module to 96%+</h2>
+    <div class="roadmap-grid">
+      <div class="card">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>PR</th>
+              <th>Title</th>
+              <th>Affected modules</th>
+              <th>Expected readiness delta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>PR-UX-01</strong></td><td>Navigation reset + information architecture cleanup</td><td>Dashboard, Leads, Pipeline, Orders, Settings/Admin, DCC integrity</td><td>+6 to +12 on shell-dependent modules</td></tr>
+            <tr><td><strong>PR-UX-02</strong></td><td>Lead-to-quote command center simplification</td><td>Leads, Pipeline, Quotes</td><td>Leads 84→91, Pipeline 78→86, Quotes 88→92</td></tr>
+            <tr><td><strong>PR-UX-03</strong></td><td>Quote approval and outbound communication desk</td><td>Quotes, Integrations, AI, Dashboard</td><td>Quotes 92→96, Integrations 61→72, AI 68→74</td></tr>
+            <tr><td><strong>PR-UX-04</strong></td><td>Order-to-execution workspace unification</td><td>Orders, Trade Workflow, Integrations, Documents</td><td>Orders 79→89, Trade Workflow 71→83</td></tr>
+            <tr><td><strong>PR-UX-05</strong></td><td>Product management and pricing impact UX</td><td>Product Management, Quotes, Settings/Admin</td><td>Product 82→90, Quotes 96 maintained</td></tr>
+            <tr><td><strong>PR-UX-06</strong></td><td>Contextual AI + exception-state feedback</td><td>AI, Leads, Quotes, Orders, Dashboard</td><td>AI 74→86, Dashboard 74→83</td></tr>
+            <tr><td><strong>PR-UX-07</strong></td><td>Trade-specific execution timeline + risk surfacing</td><td>Trade Workflow, Orders, Integrations</td><td>Trade 83→92, Orders 89→93</td></tr>
+            <tr><td><strong>PR-UX-08</strong></td><td>Buyer-ready polish, empty states, loading, success feedback, demo discipline</td><td>All modules</td><td>Most modules +3 to +6</td></tr>
+            <tr><td><strong>PR-UX-09</strong></td><td>Final 96% audit and DCC lock</td><td>All modules, DCC integrity</td><td>Bring lagging modules over 96%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Priority ladder</h3>
+        <div class="roadmap-stage">
+          <h4>Critical</h4>
+          <ul class="checklist">
+            <li>Fix the shell so navigation reflects the trade operator’s job, not the codebase module list.</li>
+            <li>Reduce the lead → quote → approval → order journey into a smaller number of dominant work surfaces.</li>
+            <li>Make next-step guidance impossible to miss.</li>
+          </ul>
+        </div>
+        <div class="roadmap-stage" style="margin-top:12px">
+          <h4>High</h4>
+          <ul class="checklist">
+            <li>Unify order + execution context.</li>
+            <li>Embed integration health where decisions happen.</li>
+            <li>Turn AI into contextual assist rather than a destination.</li>
+          </ul>
+        </div>
+        <div class="roadmap-stage" style="margin-top:12px">
+          <h4>Medium</h4>
+          <ul class="checklist">
+            <li>Refine admin/settings separation.</li>
+            <li>Improve spreadsheet-heavy product management ergonomics.</li>
+            <li>Tighten demo and DCC discipline to eliminate truth drift.</li>
+          </ul>
+        </div>
+        <p style="margin-top:12px"><strong>Estimated passes to get every module to 96%+:</strong> <span class="pill warn"><span class="dot warn"></span>9 serious UX/workflow passes</span></p>
+      </div>
     </div>
   </section>
 
   <section class="section">
-    <h2>Final investor view</h2>
-    <div class="grid three">
+    <h2>Investor and buyer verdict after this brutal pass</h2>
+    <div class="grid2">
       <div class="card">
-        <h3>What investors can believe now</h3>
-        <ul class="list">
-          <li>The product is differentiated by governed commercial truth, not generic workflow automation.</li>
-          <li>The core workflow is coherent, buyer-readable, and defendable in diligence.</li>
-          <li>The strongest modules are already green and connected to one operating model.</li>
-        </ul>
+        <h3>Would a serious buyer pay for this today?</h3>
+        <p><strong>Not at the current UX standard.</strong> A serious trade house could believe in the workflow logic, but they would still see too much friction between “I have work to do” and “the product makes the next step obvious.” They would ask for workflow cleanup before a broad rollout.</p>
       </div>
       <div class="card">
-        <h3>What still holds back 100%</h3>
-        <ul class="list">
-          <li>Scale-proofed provider operations.</li>
-          <li>Audit-grade production controls.</li>
-          <li>Deeper execution evidence beyond the commercial core.</li>
-        </ul>
-      </div>
-      <div class="card">
-        <h3>Bottom line</h3>
-        <p><strong>Setu Flow is investor-ready for review and demo, but not yet “100% complete” across every module because the remaining work is mostly production operations and scale evidence, not core commercial logic.</strong></p>
-        <p class="small">That is the right remaining problem to have.</p>
+        <h3>Would a serious investor fund this today?</h3>
+        <p><strong>Possibly, but on product potential more than current UX readiness.</strong> The investor story is strongest when the governed commercial thesis is front and center. The risk is not that the product is fake — it is that the shell and flow still under-express the quality of the underlying system.</p>
       </div>
     </div>
   </section>
 
-  <section class="section">
-    <div class="summary-strip">
-      <h3>Remaining PR stack</h3>
-      <p><strong>0 remaining</strong> in the planned readiness stack used to reach this baseline.</p>
-      <p class="footer-note">Future work after this point is no longer about closing the planned repo-readiness program. It is about scale proof, production operations maturity, and external validation.</p>
+  <section class="section" id="next-prompt">
+    <h2>Next prompt for the next chat</h2>
+    <div class="card">
+      <p>Paste this exactly in the next session:</p>
+      <div class="svg-shell" style="padding:16px">
+<pre style="margin:0;white-space:pre-wrap;color:#dbe8f6;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.55">You are continuing the Setu Flow CRM brutal UX review from the latest repo and DCC baseline.
+
+Use the repo as the only source of truth.
+Use public/internal-dcc/index.html as the single source of truth for readiness, PR-UX status, and workflow direction.
+
+Immediate objective:
+Execute PR-UX-01: Navigation reset + information architecture cleanup.
+
+Mandatory first step:
+Update public/internal-dcc/index.html FIRST.
+
+PR-UX-01 scope:
+1. Redesign the primary app shell/navigation so a trade operator can instantly understand where to go for:
+   - Capture
+   - Follow-up
+   - Quote
+   - Approval / Send
+   - Orders / Execution
+   - Exceptions / Risks
+   - Catalog / Admin / Settings
+2. Reduce the feeling that critical modules are hidden or scattered.
+3. Propose and implement a clearer top-level operating structure in the repo.
+4. Keep the governed commercial contract intact:
+   - catalog/base pricing stays default
+   - override requires reason
+   - approval remains required when threshold is met
+5. Keep the DCC updated with:
+   - new readiness scores
+   - PR-UX-01 status
+   - module deltas
+   - remaining PR count to reach 96%+ per module
+6. Be brutal: remove or demote anything in navigation that weakens the mental model.
+
+Files to inspect and update:
+- public/internal-dcc/index.html
+- src/lib/routes/manifest.json
+- src/lib/product-contract.ts
+- src/components/layout/app-shell.tsx
+- src/components/layout/shell/*
+- any route-level labels or shell descriptors affected by the nav reset
+- NEXT_PROMPT.md
+
+Return:
+1. Updated full repo zip
+2. Updated DCC
+3. PR-UX-01 summary
+4. Updated readiness by module
+5. Remaining PR-UX stack
+6. Brutal notes on what is still broken
+7. Next prompt for PR-UX-02</pre>
+      </div>
     </div>
   </section>
+
+  <p class="footer-note">Assessment basis: repo routes, shell manifest, key workflow pages, DCC baseline, and the current live/local drift lessons. This is a UX reset, not a code-capability denial.</p>
 </div>
 </body>
 </html>
