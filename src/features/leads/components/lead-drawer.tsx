@@ -157,7 +157,7 @@ const LEAD_WIZARD_STEPS: WizardStepDefinition[] = [
     id: 'basics',
     title: 'Lead basics',
     shortLabel: 'Basics',
-    description: 'Capture the company, contact, role, and country context before moving into routing decisions.',
+    description: 'Save the minimum valid lead first, then move into routing only after the entry is secure.',
   },
   {
     id: 'workflow',
@@ -1265,27 +1265,37 @@ export function LeadDrawer({
               description="Start with the minimum valid lead. The next action stays visible immediately so the operator does not need to read through the full drawer before acting."
               aside={wizardAside}
             >
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+              <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/70 p-4 shadow-soft">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Capture now</p>
-                    <h3 className="mt-2 text-base font-semibold text-slate-900">Save the lead with only the details needed to route the next move</h3>
-                    <p className="mt-1 text-sm text-slate-600">Fill company, contact, and country first. Routing and coverage stay in the next steps instead of competing for attention above the fold.</p>
+                  <div className="max-w-3xl">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Capture now</p>
+                    <h3 className="mt-2 text-base font-semibold text-slate-900">Enter the minimum valid lead and save before anything else competes for attention</h3>
+                    <p className="mt-1 text-sm text-slate-700">Start with company, contact, and country. Workflow, ownership, and coverage stay in the next steps so the first save feels immediate.</p>
                   </div>
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">Next: workflow and owner</span>
+                  <span className="rounded-full border border-emerald-300 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">One obvious next move: save basics</span>
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Where am I</p>
-                    <p className="mt-2 text-sm font-semibold text-slate-900">Lead entry</p>
+                <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div className="rounded-[1.25rem] border border-white/80 bg-white p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Do this first</p>
+                    <ol className="mt-3 space-y-2 text-sm text-slate-700">
+                      <li><span className="font-semibold text-slate-900">1.</span> Add company and contact.</li>
+                      <li><span className="font-semibold text-slate-900">2.</span> Confirm country so downstream defaults stay explainable.</li>
+                      <li><span className="font-semibold text-slate-900">3.</span> Save basics, then move to workflow and owner.</li>
+                    </ol>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">What blocks save</p>
-                    <p className="mt-2 text-sm font-semibold text-slate-900">Missing company, contact, or country context</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Do next</p>
-                    <p className="mt-2 text-sm font-semibold text-slate-900">Save basics, then assign owner and next step</p>
+                  <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                    <div className="rounded-2xl border border-white/80 bg-white p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Where am I</p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">Lead entry</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/80 bg-white p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">What blocks save</p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">Missing company, contact, or country</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/80 bg-white p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">What happens after save</p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">Owner and next-step routing open next</p>
+                    </div>
                   </div>
                 </div>
               </div>

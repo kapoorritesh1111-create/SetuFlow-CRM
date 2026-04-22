@@ -275,6 +275,21 @@ export function SettingsListsManager({
           ? 'Add next steps so follow-up defaults become operator-ready.'
           : 'Jump to the one section you need, edit it, and leave the rest collapsed.';
 
+  const primaryFocusTable: TableName = isWorkspaceEmpty || !markets.length
+    ? 'markets'
+    : !countries.length
+      ? 'countries'
+      : !nextSteps.length
+        ? 'next_steps'
+        : 'markets';
+  const primaryFocusLabel = isWorkspaceEmpty || !markets.length
+    ? 'Start with markets'
+    : !countries.length
+      ? 'Add countries'
+      : !nextSteps.length
+        ? 'Add next steps'
+        : 'Edit markets';
+
   const showActionMessage = (nextMessage: string, tone: 'default' | 'danger' = 'default') => {
     setMessage(nextMessage);
     setMessageTone(tone);
@@ -442,7 +457,7 @@ export function SettingsListsManager({
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Action-first settings lane</p>
             <h3 className="mt-2 text-xl font-semibold text-slate-900">Keep setup governed without making operators scan the whole page</h3>
-            <p className="mt-2 text-sm text-slate-600">Where am I: reference lists. What is blocking me: {blockerSummary} What do I do next: jump straight into the section you need below.</p>
+            <p className="mt-2 text-sm text-slate-600">Where am I: reference lists. What is blocking me: {blockerSummary} What do I do next: {primaryFocusLabel.toLowerCase()} and keep the rest collapsed.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <ToolbarStat label={`${activeReferenceItems} active rows`} />
               <ToolbarStat label={`${totalReferenceItems} total rows`} tone="info" />
@@ -450,7 +465,7 @@ export function SettingsListsManager({
             </div>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            <ToolbarActionButton type="button" onClick={() => focusSection('markets')}>Markets</ToolbarActionButton>
+            <ToolbarActionButton type="button" onClick={() => focusSection(primaryFocusTable)}>{primaryFocusLabel}</ToolbarActionButton>
             <ToolbarActionButton type="button" onClick={() => focusSection('countries')}>Countries</ToolbarActionButton>
             <ToolbarActionButton type="button" onClick={() => focusSection('next_steps')}>Next steps</ToolbarActionButton>
             <ToolbarActionButton type="button" onClick={() => focusSection('product_categories')}>Categories</ToolbarActionButton>

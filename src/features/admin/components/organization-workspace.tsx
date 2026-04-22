@@ -78,17 +78,23 @@ export function OrganizationWorkspace({
   const blockerSummary = !governanceContext.isReady
     ? `${governanceContext.missingCount} governance gaps still need owner/admin attention.`
     : 'No critical governance blocker is visible on this overview.';
+  const primaryLaneHref = !governanceContext.isReady
+    ? governanceContext.missingItems[0]?.href ?? '/settings/lists'
+    : '/admin/users';
+  const primaryLaneLabel = !governanceContext.isReady
+    ? `Fix ${governanceContext.missingItems[0]?.label ?? 'governance gap'}`
+    : 'Open users';
 
   return (
     <div className="space-y-6">
       <WorkspaceHeader
         eyebrow="Admin"
         title="Organization workspace"
-        description={`Where am I: organization governance. What is blocking me: ${blockerSummary} What do I do next: open the exact admin lane you need instead of scanning the whole workspace.`}
+        description={`Where am I: organization governance. What is blocking me: ${blockerSummary} What do I do next: ${primaryLaneLabel.toLowerCase()} first, then leave the rest alone.`}
         badge={organizationName}
         actions={
           <>
-            <Link href="/admin/users" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Users</Link>
+            <Link href={primaryLaneHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">{primaryLaneLabel}</Link>
             <Link href="/admin/invitations" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Invitations</Link>
             <Link href="/settings/lists" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Settings lists</Link>
           </>
@@ -130,7 +136,7 @@ export function OrganizationWorkspace({
             <div className="max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Missing governance context</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Some operational surfaces are running without full admin setup</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">The gap list stays compact here so operators can resolve setup without reading every downstream screen first.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Open the first gap, fix it, then leave this overview. The list stays short so governance repair does not turn into a reading task.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <StatusBadge label={`${governanceContext.missingCount} gaps`} tone="warning" />
@@ -194,7 +200,7 @@ export function OrganizationWorkspace({
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Quick actions</p>
               <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Manage organization workspace</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Use the exact admin lane you need, then come back here only for overview and governance status.
+                One lane should win first. Use the primary action above, make the change, then leave unless a second admin move is truly needed.
               </p>
             </div>
           </div>
@@ -241,8 +247,8 @@ export function OrganizationWorkspace({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Cross-surface consistency</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Admin summaries stay aligned with hardened operational surfaces</h2>
-              <p className="mt-2 text-sm text-slate-600">The same governance setup that feeds settings lists also explains why dashboard, reports, pipeline, and products may show contained missing-context states.</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Admin stays aligned with the governed surfaces it feeds</h2>
+              <p className="mt-2 text-sm text-slate-600">Use this only to explain or repair governance drift. Do not turn it into a second reading layer once the first lane is clear.</p>
             </div>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-2">

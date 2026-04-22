@@ -936,16 +936,15 @@ export function LeadsWorkspace({
           </div>
           <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">
             <div className="rounded-[1rem] border border-emerald-200 bg-emerald-50/80 px-4 py-3 dark:border-emerald-900/50 dark:bg-emerald-950/30">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">Fast lane</p>
-              <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Capture one live lead, link one product, then move into Quote.</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Use Quick Lead for field work and trade shows. Keep the first save minimal, then let the quote lane carry the deeper commercial work.</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">What do I do next</p>
+              <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{canManageLeads ? 'Open Quick Lead first. Save the minimum buyer context, then move into Quote only after the product lane is linked.' : 'Review one live lead row and hand off edits to a workspace manager when capture changes are needed.'}</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Quick Lead stays the fastest entry point. Use New Lead only when you need the full capture flow.</p>
             </div>
             <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-700/70 dark:bg-slate-900/60">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">What do I do next</p>
-              <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{canManageLeads ? 'Open Quick Lead, save the minimum buyer context, then open Quote only when the product lane is linked.' : 'Review one live lead row and hand off edits to a workspace manager when capture changes are needed.'}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Cross-surface rule</p>
+              <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Capture starts the record. Quote carries the deeper commercial work. Do not front-load both at once.</p>
             </div>
           </div>
-          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Quick Lead is the fastest entry point. Use New Lead only when you need the full capture flow.</p>
         </div>
 
         {batchState.error ? <div className="px-5 pt-3"><StateMessage title="Bulk follow-up update failed" tone="danger" description={batchState.error} /></div> : null}

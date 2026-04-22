@@ -111,17 +111,31 @@ export default async function SettingsListsPage({
         : tabParam === 'product-categories'
           ? 'product_categories'
           : 'markets';
+  const primarySetupHref = !markets.length
+    ? '/settings/lists?tab=markets'
+    : !countries.length
+      ? '/settings/lists?tab=countries'
+      : !nextSteps.length
+        ? '/settings/lists?tab=next-steps'
+        : '/settings/lists?tab=markets';
+  const primarySetupLabel = !markets.length
+    ? 'Start with markets'
+    : !countries.length
+      ? 'Add countries'
+      : !nextSteps.length
+        ? 'Add next steps'
+        : 'Edit one list';
 
   return (
     <div className="space-y-6">
       <WorkspaceHeader
         eyebrow="Settings"
         title="Reference settings and defaults"
-        description={`Where am I: settings lists. What is blocking me: ${blockerSummary} What do I do next: jump straight into one list and make the smallest safe edit.`}
+        description={`Where am I: settings lists. What is blocking me: ${blockerSummary} What do I do next: ${primarySetupLabel.toLowerCase()} and leave the rest alone.`}
         badge={workspace.organization.name}
         actions={
           <>
-            <a href="/products" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Open Catalog</a>
+            <a href={primarySetupHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">{primarySetupLabel}</a>
             <a href="/admin/organization" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open Admin</a>
           </>
         }
@@ -136,16 +150,14 @@ export default async function SettingsListsPage({
       />
       <WorkspaceToolbar
         actionSlot={
-          <>
-            <a href="/settings/lists?tab=markets" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edit markets</a>
-            <a href="/settings/lists?tab=countries" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edit countries</a>
-            <a href="/settings/lists?tab=next-steps" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edit next steps</a>
-            <a href="/settings/lists?tab=product-categories" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edit categories</a>
-          </>
+          <div className="flex flex-wrap gap-2">
+            <a href={primarySetupHref} className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Review primary setup lane</a>
+          </div>
         }
         metaSlot={
           <div className="flex flex-wrap gap-2">
             <ToolbarStat label={blockerSummary} tone={isWorkspaceEmpty || !markets.length || !countries.length || !nextSteps.length ? 'warning' : 'success'} />
+            <ToolbarStat label="One safe edit at a time" tone="info" />
           </div>
         }
       />

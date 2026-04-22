@@ -1,60 +1,21 @@
-You are continuing the Setu Flow CRM full-trust reset from the latest repo and DCC baseline.
+# ✅ RESET ROADMAP COMPLETE
 
-Use the repo as the only source of truth.
-Use public/internal-dcc/index.html as the single source of truth for readiness, release recommendation, workflow direction, module percentages, target thresholds, and remaining PR roadmap.
+No further reset PR remains.
 
-Critical rule:
-We are NOT done until every module is 96% or above.
-Do not use old almost-done logic.
-Do not change the workflow diagram image in DCC unless the workflow actually changes in repo code.
+Use the repo as the source of truth.
+Use `public/internal-dcc/index.html` as the source of truth for readiness, release recommendation, workflow direction, module percentages, target thresholds, and roadmap status.
 
-Immediate objective:
-Execute PR-RESET-07: capture and setup convergence.
+## Current state
 
-Goals:
-1. Finish the remaining below-target modules together:
-   - Capture
-   - Settings / Lists
-   - Admin / Organization
+- All tracked modules are at **96% or above**
+- The workflow diagram image remains unchanged because repo workflow truth did not change
+- The reset roadmap is complete
+- The repo is **ready for final sign-off**
 
-2. Compress the real operator path further:
-   - make capture feel immediate above the fold
-   - reduce setup/admin reading even more
-   - keep one obvious next action visible first
+## If a follow-up pass is needed
 
-3. Preserve the PR-RESET-06 AI pattern:
-   - keep compact first answer
-   - keep deeper explanation collapsed
-   - keep AI advisory only
-
-4. Do not degrade the already-cleared modules:
-   - Quote
-   - Approval / Send
-   - Orders / Execution
-   - Pipeline / Risks
-   - Dashboard
-   - Trade workflow
-   - AI
-
-5. Update DCC honestly:
-   - preserve workflow diagram image unless workflow truth changes
-   - keep module-by-module percentages
-   - keep target 96% minimum and gap-to-target table
-   - keep the true remaining PR roadmap visible
-
-Files to inspect and update:
-- public/internal-dcc/index.html
-- src/features/leads/*
-- src/features/settings/*
-- src/features/admin/*
-- src/features/ai* only if required to support the remaining modules
-- NEXT_PROMPT.md
-
-Return:
-1. Updated repo zip
-2. Updated DCC
-3. PR-RESET-07 summary
-4. Updated module percentages
-5. Gap-to-96 table
-6. True remaining PR count
-7. Next PR step
+Treat it as one of these, not another reset PR:
+- normal product iteration
+- deployment-specific validation
+- production operations hardening outside repo scope
+- post-sign-off polish that does not change reset truth
