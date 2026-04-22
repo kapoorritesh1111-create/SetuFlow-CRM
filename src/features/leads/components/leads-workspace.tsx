@@ -252,6 +252,7 @@ export function LeadsWorkspace({
   canManageLeads = true,
   readOnlyMessage = null,
   isWorkspaceEmpty = false,
+  initialQuickCapture = null,
 }: LeadsWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();

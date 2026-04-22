@@ -243,7 +243,6 @@ export function LeadDrawer({
   const [ownerUserId, setOwnerUserId] = useState<string>('');
   const [coverageSelections, setCoverageSelections] = useState<CoverageSelection[]>(prefilledProductIds.length ? [createCoverageSelection('', prefilledProductIds, 0)] : []);
   const [selectedMarketIdSet, setSelectedMarketIdSet] = useState<string[]>(selectedMarketIds);
-  const [selectedProductIdSet, setSelectedProductIdSet] = useState<string[]>(selectedProductIds.length ? selectedProductIds : prefilledProductIds);
   const [notes, setNotes] = useState<string>(lead?.notes ?? '');
   const [sourceType, setSourceType] = useState<string>(lead?.source_type ?? prefill?.sourceType ?? '');
   const [sourceLabel, setSourceLabel] = useState<string>(lead?.source_label ?? prefill?.sourceLabel ?? '');
@@ -383,7 +382,6 @@ export function LeadDrawer({
     setNextStepId(defaultNextStepId);
     setOwnerUserId(defaultOwnerId);
     setSelectedMarketIdSet(selectedMarketIds);
-    setSelectedProductIdSet(selectedProductIds.length ? selectedProductIds : prefilledProductIds);
     setNotes(lead?.notes ?? '');
     setSourceType(lead?.source_type ?? prefill?.sourceType ?? '');
     setSourceLabel(lead?.source_label ?? prefill?.sourceLabel ?? '');
@@ -1264,9 +1262,33 @@ export function LeadDrawer({
           {activeStepId === 'basics' ? (
             <WizardStepBody
               title="Lead basics"
-              description="Capture the core lead details first, then route and enrich the record only as needed."
+              description="Start with the minimum valid lead. The next action stays visible immediately so the operator does not need to read through the full drawer before acting."
               aside={wizardAside}
             >
+              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Capture now</p>
+                    <h3 className="mt-2 text-base font-semibold text-slate-900">Save the lead with only the details needed to route the next move</h3>
+                    <p className="mt-1 text-sm text-slate-600">Fill company, contact, and country first. Routing and coverage stay in the next steps instead of competing for attention above the fold.</p>
+                  </div>
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">Next: workflow and owner</span>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Where am I</p>
+                    <p className="mt-2 text-sm font-semibold text-slate-900">Lead entry</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">What blocks save</p>
+                    <p className="mt-2 text-sm font-semibold text-slate-900">Missing company, contact, or country context</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Do next</p>
+                    <p className="mt-2 text-sm font-semibold text-slate-900">Save basics, then assign owner and next step</p>
+                  </div>
+                </div>
+              </div>
               <LeadBasicInfoSection
                 currentLeadId={lead?.id ?? ''}
                 leadType={leadType}

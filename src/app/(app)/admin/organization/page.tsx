@@ -139,7 +139,7 @@ export default async function AdminOrganizationPage() {
         eyebrow="Admin"
         title="Organization workspace"
         badge={organization.name}
-        description="Keep organization overview, people access, invitations, role coverage, and settings readiness in one admin surface while preserving the existing route structure."
+        description="Where am I: organization governance. What is blocking me: any people, invite, or settings drift shown below. What do I do next: enter the exact admin lane you need, make one controlled change, and return."
         actions={[
           { label: 'Users', href: '/admin/users' },
           { label: 'Invitations', href: '/admin/invitations' },

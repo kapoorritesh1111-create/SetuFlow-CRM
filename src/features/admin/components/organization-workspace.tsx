@@ -228,11 +228,11 @@ export function OrganizationWorkspace({
         <AICompactActionBrief
           lane="Admin / Organization"
           where="Organization governance overview"
-          blocker={settingsSummaries.some((item) => item.status !== 'healthy') ? 'At least one governance area still needs attention before downstream surfaces become easier to trust.' : 'No major governance drift is visible in the current admin summary.'}
-          nextAction={settingsSummaries.find((item) => item.status !== 'healthy')?.nextAction ?? 'Use users, invitations, or settings lists only when a specific governance action is needed.'}
+          blocker={!governanceContext.isReady ? 'At least one governance area still needs attention before downstream surfaces become easier to trust.' : 'No major governance drift is visible in the current admin summary.'}
+          nextAction={governanceContext.missingItems[0]?.href ? `Open ${governanceContext.missingItems[0].label} and complete the missing governed setup.` : 'Use users, invitations, or settings lists only when a specific governance action is needed.'}
           guardrail="AI can explain the current admin posture and route the operator. It cannot assign roles, accept invitations, or change governance on its own."
-          details={settingsSummaries.slice(0, 4).map((item) => `${item.label}: ${item.helperText ?? item.value}`)}
-          tone={settingsSummaries.some((item) => item.status === 'critical') ? 'critical' : settingsSummaries.some((item) => item.status !== 'healthy') ? 'warning' : 'neutral'}
+          details={settingsSummaries.slice(0, 4).map((item) => `${item.label}: ${item.helper ?? item.value}`)}
+          tone={!governanceContext.isReady ? 'warning' : 'neutral'}
         />
       </div>
 

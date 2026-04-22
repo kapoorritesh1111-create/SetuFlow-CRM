@@ -12,7 +12,7 @@ function deriveBrief(message: string) {
   const blocker = lower.includes('blocked') || lower.includes('risk')
     ? normalized
     : `The current rescue board message is "${normalized}".`;
-  const tone = lower.includes('critical') || lower.includes('blocked')
+  const tone: 'warning' | 'critical' | 'neutral' = lower.includes('critical') || lower.includes('blocked')
     ? 'critical'
     : lower.includes('risk') || lower.includes('follow-up') || lower.includes('quote')
       ? 'warning'

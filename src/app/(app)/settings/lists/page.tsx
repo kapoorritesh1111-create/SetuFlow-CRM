@@ -116,7 +116,7 @@ export default async function SettingsListsPage({
       <WorkspaceHeader
         eyebrow="Settings"
         title="Reference settings and defaults"
-        description={`Keep governed reference data fast to manage. Where am I: settings lists. What is blocking me: ${blockerSummary} What do I do next: open the list you need and edit only that section.`}
+        description={`Where am I: settings lists. What is blocking me: ${blockerSummary} What do I do next: jump straight into one list and make the smallest safe edit.`}
         badge={workspace.organization.name}
         actions={
           <>
@@ -136,10 +136,10 @@ export default async function SettingsListsPage({
       <WorkspaceToolbar
         actionSlot={
           <>
-            <a href="/settings/lists?tab=markets" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Markets</a>
-            <a href="/settings/lists?tab=countries" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Countries</a>
-            <a href="/settings/lists?tab=next-steps" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Next steps</a>
-            <a href="/settings/lists?tab=product-categories" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Categories</a>
+            <a href="/settings/lists?tab=markets" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edit markets</a>
+            <a href="/settings/lists?tab=countries" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edit countries</a>
+            <a href="/settings/lists?tab=next-steps" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edit next steps</a>
+            <a href="/settings/lists?tab=product-categories" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edit categories</a>
           </>
         }
         metaSlot={
