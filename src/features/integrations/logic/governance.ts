@@ -154,7 +154,7 @@ export function buildGovernedContractSyncStates(data: IntegrationsWorkspaceData)
     });
 
     const erpReasons: string[] = [];
-    if (normalize(contract.commercial_lock_state) !== 'locked') erpReasons.push('Commercial lock snapshot is not yet locked.');
+    if (!['accepted_locked', 'contract_locked', 'locked'].includes(normalize(contract.commercial_lock_state))) erpReasons.push('Commercial lock snapshot is not yet locked.');
     if (!contract.signed_at) erpReasons.push('Contract is not yet signed.');
     if (controls.documentRequirementSummary.blockerReasons.length) erpReasons.push('Contract-progression document requirements still have blockers.');
 

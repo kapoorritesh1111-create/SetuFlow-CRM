@@ -35,6 +35,8 @@ type QuoteRow = {
   currency: string | null;
   updated_at: string;
   lead_id: string;
+  current_version_id: string | null;
+  accepted_version_id: string | null;
 };
 
 type LeadRow = {
@@ -74,6 +76,9 @@ type ContractRow = {
   id: string;
   quote_id: string;
   status: string;
+  accepted_quote_version_id: string | null;
+  commercial_snapshot_mode: string | null;
+  commercial_handoff_at: string | null;
   signed_at: string | null;
   starts_on: string | null;
   ends_on: string | null;
@@ -95,6 +100,8 @@ type ContractRow = {
 type ContractLineRow = {
   id: string;
   contract_id: string;
+  source_quote_version_line_item_id: string | null;
+  continuity_source_mode: string | null;
   product_id: string | null;
   product_variant_id: string | null;
   quantity: number;
@@ -128,6 +135,8 @@ type LeadProductInterestRow = { lead_id: string; product_id: string };
 type OrderRecord = {
   quoteId: string;
   quoteStatus: string;
+  currentVersionId: string | null;
+  acceptedVersionId: string | null;
   currency: string | null;
   updatedAt: string;
   leadId: string;
@@ -148,6 +157,8 @@ type OrderRecord = {
   operationalControls: OrderOperationalControlState;
   lines: Array<{
     id: string;
+    sourceQuoteVersionLineItemId: string | null;
+    continuitySourceMode: string | null;
     productName: string;
     variantName: string | null;
     skuCode: string | null;
@@ -256,7 +267,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   // 1. Fetch accepted quotes only — orders should represent won commercial work
   const { data: rawQuotes, error: quotesError } = await db
     .from('quotes')
-    .select('id, status, currency, updated_at, lead_id')
+    .select('id, status, currency, updated_at, lead_id, current_version_id, accepted_version_id')
     .eq('organization_id', orgId)
     .in('status', ['accepted'])
     .order('updated_at', { ascending: false })
@@ -328,7 +339,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       .order('created_at', { ascending: false }),
 
     db.from('contracts')
-      .select('id, quote_id, status, signed_at, starts_on, ends_on, commercial_lock_state, pricing_basis, quote_currency, approval_required, approval_state, commercial_snapshot, execution_state, execution_blockers, execution_snapshot, ready_at, released_at, dispatched_at, completed_at')
+      .select('id, quote_id, status, accepted_quote_version_id, commercial_snapshot_mode, commercial_handoff_at, signed_at, starts_on, ends_on, commercial_lock_state, pricing_basis, quote_currency, approval_required, approval_state, commercial_snapshot, execution_state, execution_blockers, execution_snapshot, ready_at, released_at, dispatched_at, completed_at')
       .eq('organization_id', orgId)
       .in('quote_id', quoteIds),
 
@@ -389,7 +400,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
   const contractIds = contractRows.map((contract) => contract.id);
   const contractLineItemsData = contractIds.length
-    ? await db.from('contract_line_items').select('id, contract_id, product_id, product_variant_id, quantity, unit_price, currency, notes, catalog_price_amount, catalog_price_currency, is_price_overridden, override_reason').in('contract_id', contractIds)
+    ? await db.from('contract_line_items').select('id, contract_id, source_quote_version_line_item_id, continuity_source_mode, product_id, product_variant_id, quantity, unit_price, currency, notes, catalog_price_amount, catalog_price_currency, is_price_overridden, override_reason').in('contract_id', contractIds)
     : { data: [], error: null };
 
   const productsById = new Map<string, ProductRow>();
@@ -430,6 +441,8 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       const tradeAttributes = parseTradeAttributes({ ...(variant ?? {}), source_payload: variant?.source_payload ?? null });
       return {
         id: line.id,
+        sourceQuoteVersionLineItemId: line.source_quote_version_line_item_id,
+        continuitySourceMode: line.continuity_source_mode,
         productName: product?.name ?? 'Unmapped product',
         variantName: variant?.pack_label ?? variant?.name ?? null,
         skuCode: variant?.sku_code ?? product?.sku ?? null,
@@ -487,6 +500,8 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
     return {
       quoteId: q.id,
       quoteStatus: q.status,
+      currentVersionId: q.current_version_id ?? null,
+      acceptedVersionId: q.accepted_version_id ?? null,
       currency: q.currency,
       updatedAt: q.updated_at,
       leadId: q.lead_id,
@@ -685,6 +700,45 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
         </Link>
       </div>
 
+      <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3">
+        {(() => {
+          const snapshot = order.contract ? parseContractCommercialSnapshot(order.contract.commercial_snapshot) : null;
+          const snapshotMode = snapshot?.snapshotMode ?? order.contract?.commercial_snapshot_mode ?? 'legacy_quote_fallback';
+          const acceptedVersionLabel = snapshot?.acceptedVersionNo != null
+            ? `v${snapshot.acceptedVersionNo}`
+            : order.contract?.accepted_quote_version_id
+              ? `${String(order.contract.accepted_quote_version_id).slice(0, 8)}`
+              : 'none';
+          const currentVersionLabel = order.currentVersionId ? String(order.currentVersionId).slice(0, 8) : 'none';
+          const acceptedVersionId = snapshot?.acceptedVersionId ?? order.contract?.accepted_quote_version_id ?? order.acceptedVersionId ?? null;
+          const draftDrift = Boolean(acceptedVersionId && order.currentVersionId && acceptedVersionId !== order.currentVersionId);
+          return (
+            <div className="grid gap-3 md:grid-cols-4">
+              <div className="rounded-xl border border-indigo-200 bg-white p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Commercial handoff source</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{snapshot?.sourceHandoffLabel ?? 'Legacy quote-level contract snapshot'}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{snapshotMode === 'version_bound' ? 'Execution is reading the accepted quote snapshot, not the mutable draft quote.' : 'Execution is still falling back to quote-level continuity because no accepted-version snapshot is present.'}</p>
+              </div>
+              <div className="rounded-xl border border-indigo-200 bg-white p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Accepted version</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{acceptedVersionLabel}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{snapshot?.commercialHandoffAt ? `Locked ${formatDateTime(snapshot.commercialHandoffAt)}` : 'Handoff timestamp will appear once the accepted snapshot is recorded.'}</p>
+              </div>
+              <div className="rounded-xl border border-indigo-200 bg-white p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Current draft version</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{currentVersionLabel}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{draftDrift ? 'Current draft has moved past the accepted handoff. Execution must stay pinned to the accepted version.' : 'Current draft and accepted handoff are aligned, or no later draft is recorded.'}</p>
+              </div>
+              <div className="rounded-xl border border-indigo-200 bg-white p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Line traceability</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{order.lines.filter((line) => line.continuitySourceMode === 'version_bound').length}/{order.lines.length}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{snapshotMode === 'version_bound' ? 'Execution lines are expected to map back to accepted-version line ids.' : 'Legacy records are visible, but not equally auditable.'}</p>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -767,6 +821,7 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
                       <div>{line.countryOfOrigin ? `Origin ${line.countryOfOrigin}` : 'Origin pending'}</div>
                       {line.packaging ? <div className="text-[10px] text-slate-500">{line.packaging}</div> : null}
                       {line.exportMetadata ? <div className="text-[10px] text-slate-500">{line.exportMetadata}</div> : null}
+                      <div className="text-[10px] text-slate-400">{line.continuitySourceMode === 'version_bound' ? `Locked from accepted snapshot line ${line.sourceQuoteVersionLineItemId ? String(line.sourceQuoteVersionLineItemId).slice(0, 8) : 'recorded'}` : 'Legacy line continuity: sourced from quote-level fallback.'}</div>
                       {line.continuityNote ? <div className="text-[10px] text-slate-400">{line.continuityNote}</div> : null}
                     </td>
                   </tr>
@@ -961,6 +1016,8 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
                   <>
                     <p className="text-xs text-slate-500">Pricing basis {snapshot.pricingBasisLabel}</p>
                     <p className="text-xs text-slate-500">Approval posture {snapshot.approvalLabel}</p>
+                    <p className="text-xs text-slate-500">Handoff source {snapshot.sourceHandoffLabel ?? 'Legacy quote-level contract snapshot'}</p>
+                    <p className="text-xs text-slate-500">Snapshot mode {snapshot.snapshotMode ?? order.contract?.commercial_snapshot_mode ?? 'legacy_quote_fallback'}</p>
                   </>
                 );
               })()}

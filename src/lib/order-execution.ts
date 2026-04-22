@@ -72,7 +72,7 @@ export function evaluateOrderExecution(input: OrderExecutionInput): OrderExecuti
   if (!input.quoteAccepted) readyBlockers.push('Quote must remain accepted before execution can progress.');
   if (!input.hasContract) readyBlockers.push('Contract record is missing from this order handoff.');
   if (!isSignedContract(input.contractStatus, input.contractSignedAt)) readyBlockers.push('Signed contract posture is still missing.');
-  if (normalize(input.commercialLockState) !== 'accepted_locked') readyBlockers.push('Commercial lock snapshot is not fully locked yet.');
+  if (!['accepted_locked', 'contract_locked', 'locked'].includes(normalize(input.commercialLockState))) readyBlockers.push('Commercial lock snapshot is not fully locked yet.');
   if (input.lineCount <= 0) readyBlockers.push('Confirmed quote lines are missing from the order contract.');
 
   const documentRequirementReasons = unique([

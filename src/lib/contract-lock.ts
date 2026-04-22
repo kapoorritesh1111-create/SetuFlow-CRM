@@ -1,5 +1,12 @@
 export type ContractCommercialSnapshot = {
   quoteId?: string | null;
+  acceptedVersionId?: string | null;
+  acceptedVersionNo?: number | null;
+  currentVersionId?: string | null;
+  snapshotMode?: string | null;
+  sourceHandoffLabel?: string | null;
+  commercialSourceTruth?: string | null;
+  commercialHandoffAt?: string | null;
   quoteStatus?: string | null;
   quoteCurrency?: string | null;
   pricingBasis?: string | null;
@@ -19,6 +26,10 @@ export type ContractCommercialSnapshot = {
 
 export type ContractLineContinuitySnapshot = {
   quoteLineItemId?: string | null;
+  quoteVersionLineItemId?: string | null;
+  quoteVersionId?: string | null;
+  acceptedVersionId?: string | null;
+  sourceMode?: string | null;
   productId?: string | null;
   productVariantId?: string | null;
   quantity?: number | null;
@@ -47,6 +58,13 @@ export function parseContractCommercialSnapshot(value: unknown): ContractCommerc
   const record = normalizeRecord(value);
   return {
     quoteId: maybeString(record.quote_id),
+    acceptedVersionId: maybeString(record.accepted_version_id),
+    acceptedVersionNo: maybeNumber(record.accepted_version_no) ?? undefined,
+    currentVersionId: maybeString(record.current_version_id),
+    snapshotMode: maybeString(record.snapshot_mode),
+    sourceHandoffLabel: maybeString(record.source_handoff_label),
+    commercialSourceTruth: maybeString(record.commercial_source_truth),
+    commercialHandoffAt: maybeString(record.commercial_handoff_at),
     quoteStatus: maybeString(record.quote_status),
     quoteCurrency: maybeString(record.quote_currency),
     pricingBasis: maybeString(record.pricing_basis),
@@ -69,6 +87,10 @@ export function parseContractLineContinuitySnapshot(value: unknown): ContractLin
   const record = normalizeRecord(value);
   return {
     quoteLineItemId: maybeString(record.quote_line_item_id),
+    quoteVersionLineItemId: maybeString(record.quote_version_line_item_id),
+    quoteVersionId: maybeString(record.quote_version_id),
+    acceptedVersionId: maybeString(record.accepted_version_id),
+    sourceMode: maybeString(record.source_mode),
     productId: maybeString(record.product_id),
     productVariantId: maybeString(record.product_variant_id),
     quantity: maybeNumber(record.quantity) ?? undefined,
@@ -84,6 +106,8 @@ export function parseContractLineContinuitySnapshot(value: unknown): ContractLin
 
 export function getCommercialLockStateLabel(lockState: string | null | undefined) {
   switch (String(lockState ?? '').toLowerCase()) {
+    case 'accepted_locked':
+      return 'Accepted version locked';
     case 'contract_locked':
       return 'Contract locked';
     case 'sent_locked':

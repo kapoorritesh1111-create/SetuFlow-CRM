@@ -375,6 +375,33 @@ function getStepClasses(state: QuoteStepState) {
   return "border-slate-200 bg-white text-slate-600";
 }
 
+function getCurrentBuilderStep(steps: BuilderFocusStep[] | undefined) {
+  if (!steps?.length) return null;
+  return (
+    steps.find((step) => step.state === "current") ??
+    steps.find((step) => step.state === "upcoming") ??
+    steps[steps.length - 1] ??
+    null
+  );
+}
+
+function getCompactProgressLabel(steps: BuilderFocusStep[] | undefined) {
+  if (!steps?.length) return "No builder progress yet";
+  const completed = steps.filter((step) => step.state === "done").length;
+  return `${completed}/${steps.length} steps complete`;
+}
+
+function getPrimaryBlockerLabel(
+  decision: QuoteSendDecision | null,
+  guidance: BuilderGuidance | null,
+) {
+  const blocker = decision?.blockers[0]?.trim();
+  if (blocker) return blocker;
+  const prompt = guidance?.validationPrompts[0]?.trim();
+  if (prompt) return prompt;
+  return "No active blocker is visible right now.";
+}
+
 function getFocusQuoteBuilderGuidance(
   quote: QuoteRecord,
   quoteSendGuard?: ProgressionGuardSummary,
@@ -1688,6 +1715,14 @@ export function QuoteWorkspace({
   const focusSendRun = focusSendAction?.run ?? null;
   const focusAcceptRun = focusAcceptAction?.run ?? null;
   const focusRejectRun = focusRejectAction?.run ?? null;
+  const focusCurrentStep = getCurrentBuilderStep(focusBuilderGuidance?.steps);
+  const focusPrimaryBlocker = getPrimaryBlockerLabel(
+    focusSendDecision ?? null,
+    focusBuilderGuidance ?? null,
+  );
+  const focusCompactProgressLabel = getCompactProgressLabel(
+    focusBuilderGuidance?.steps,
+  );
 
   return (
     <section className="space-y-4">
@@ -1799,18 +1834,73 @@ export function QuoteWorkspace({
                   Basis {focusBuilderGuidance?.basisLabel ?? "FOB"}
                 </span>
                 <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                  Template{" "}
-                  {focusBuilderGuidance?.templateLabel ?? "Manual pricing"}
+                  Template {focusBuilderGuidance?.templateLabel ?? "Manual pricing"}
                 </span>
                 <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                   Updated {formatDateTime(focusQuote.updated_at)}
                 </span>
                 <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                  Current version{" "}
-                  {currentFocusedVersion?.version_no
-                    ? `v${currentFocusedVersion.version_no}`
-                    : "pending sync"}
+                  Current version {currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "pending sync"}
                 </span>
+              </div>
+
+              <div className="mt-5 rounded-[1.25rem] border border-slate-200 bg-white/90 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] xl:sticky xl:top-4 xl:z-10">
+                <div className="grid gap-3 xl:grid-cols-[0.95fr_1.15fr_1fr_auto]">
+                  <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Current step</p>
+                    <p className="mt-2 text-base font-semibold text-slate-900">{focusCurrentStep?.label ?? "Review"}</p>
+                    <p className="mt-1 text-sm text-slate-600">{focusCurrentStep?.detail ?? "Stay in the focused quote and finish the next governed action."}</p>
+                  </div>
+                  <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Primary blocker</p>
+                    <p className="mt-2 text-base font-semibold text-slate-900">{focusPrimaryBlocker}</p>
+                    <p className="mt-1 text-sm text-slate-600">{focusSendDecision?.nextStep ?? "Use the next action button instead of scanning the full workspace."}</p>
+                  </div>
+                  <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Progress</p>
+                    <p className="mt-2 text-base font-semibold text-slate-900">{focusCompactProgressLabel}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {focusBuilderGuidance?.steps.map((step) => (
+                        <span
+                          key={`rail-${step.id}`}
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStepClasses(step.state)}`}
+                        >
+                          {step.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 xl:min-w-[240px]">
+                    <button
+                      type="button"
+                      onClick={() => openQuoteEditor(focusQuote)}
+                      disabled={!canManageQuotes}
+                      className="rounded-[10px] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {canManageQuotes ? `Continue ${getPreferredEditorStep(focusQuote).replace("_", " ")} step` : "Read-only quote details"}
+                    </button>
+                    {focusApprovalAction ? (
+                      <button
+                        type="button"
+                        disabled={focusApprovalAction.disabled || (isWorkflowPending && quickActionQuoteId === focusQuote.id)}
+                        onClick={() => runQuickAction(focusQuote, focusApprovalAction)}
+                        className="rounded-[10px] border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isWorkflowPending && quickActionQuoteId === focusQuote.id && focusApprovalAction.run ? "Saving…" : focusApprovalAction.label}
+                      </button>
+                    ) : null}
+                    {focusSendAction ? (
+                      <button
+                        type="button"
+                        disabled={!canSendQuotes || focusSendAction.disabled || (isWorkflowPending && quickActionQuoteId === focusQuote.id)}
+                        onClick={() => setComposer({ quoteId: focusQuote.id, mode: "send" })}
+                        className="rounded-[10px] border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-800 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {focusSendAction.label}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
               </div>
 
               {focusSendDecision ? (
