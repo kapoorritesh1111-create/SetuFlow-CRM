@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { GenerateLeadDraftControls } from '@/features/ai/components/ai-draft-controls'
+import { AICompactActionBrief } from '@/features/ai/ui/intelligence-panels'
 import type { AiAssistSummary, NextActionSummary } from './types'
 
 export function LeadAiAssistPopover({
@@ -25,13 +26,25 @@ export function LeadAiAssistPopover({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">AI assist</p>
-            <h3 className="mt-2 text-xl font-semibold text-slate-950">Draft, summarize, and suggest without leaving the lead.</h3>
-            {nextAction ? <p className="mt-2 text-sm text-slate-600">Current next action: {nextAction.title}</p> : null}
+            <h3 className="mt-2 text-xl font-semibold text-slate-950">Fast AI read for the live lead.</h3>
+            <p className="mt-2 text-sm text-slate-600">Compact first answer, deeper reasoning only when needed.</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-3 py-1 text-sm font-semibold text-slate-600">Close</button>
         </div>
-        <div className="mt-4 rounded-[22px] border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600">
-          {aiAssist.pendingReviewCount} pending review · {aiAssist.readyDraftCount} ready drafts. AI stays assistive only.
+        <div className="mt-4">
+          <AICompactActionBrief
+            lane="Follow-up"
+            where={nextAction ? `Lead command center · ${nextAction.title}` : 'Lead command center'}
+            blocker={nextAction ? nextAction.summary : 'No governed next action is visible yet, so the operator should review open follow-up and compliance context.'}
+            nextAction={nextAction ? nextAction.primaryLabel : 'Review the lead timeline, then draft or schedule the next operator-owned step.'}
+            guardrail="AI can draft, summarize, and explain. It cannot fake proof, override governance, or create hidden workflow dependencies."
+            tone={nextAction?.urgency === 'OVERDUE' ? 'critical' : nextAction?.urgency === 'DUE' ? 'warning' : 'neutral'}
+            details={[
+              `${aiAssist.pendingReviewCount} pending review item${aiAssist.pendingReviewCount === 1 ? '' : 's'} remain in the queue.`,
+              `${aiAssist.readyDraftCount} draft${aiAssist.readyDraftCount === 1 ? '' : 's'} are ready for operator review.`,
+              ...(nextAction ? nextAction.secondaryLabels : []),
+            ]}
+          />
         </div>
         <div className="mt-4">
           <GenerateLeadDraftControls leadId={leadId} />

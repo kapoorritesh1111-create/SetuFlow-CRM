@@ -13,6 +13,7 @@ import RightDrawer, { DrawerActionBar, DrawerSection } from '@/components/RightD
 import { checkboxClassName } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ToolbarActionButton, ToolbarStat } from '@/components/ui/workspace-toolbar';
+import { AICompactActionBrief } from '@/features/ai/ui/intelligence-panels';
 
 type BaseItem = {
   id: string;
@@ -47,6 +48,7 @@ type Props = {
   productCategories: ProductCategory[];
   marketOptions: MarketOption[];
   isWorkspaceEmpty?: boolean;
+  initialFocus?: TableName | null;
 };
 
 type TableName = 'markets' | 'countries' | 'next_steps' | 'product_categories';
@@ -67,6 +69,7 @@ export function SettingsListsManager({
   productCategories,
   marketOptions,
   isWorkspaceEmpty = false,
+  initialFocus = null,
 }: Props) {
   const [message, setMessage] = useState('');
   const [messageTone, setMessageTone] = useState<'default' | 'danger'>('default');
@@ -83,9 +86,9 @@ export function SettingsListsManager({
   const [showInactiveProductCategories, setShowInactiveProductCategories] = useState(false);
 
   const [expandedMarkets, setExpandedMarkets] = useState(true);
-  const [expandedCountries, setExpandedCountries] = useState(true);
-  const [expandedNextSteps, setExpandedNextSteps] = useState(true);
-  const [expandedProductCategories, setExpandedProductCategories] = useState(true);
+  const [expandedCountries, setExpandedCountries] = useState(false);
+  const [expandedNextSteps, setExpandedNextSteps] = useState(false);
+  const [expandedProductCategories, setExpandedProductCategories] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -106,9 +109,9 @@ export function SettingsListsManager({
       if (savedExpandedStr) {
         const savedExpanded = JSON.parse(savedExpandedStr);
         setExpandedMarkets(savedExpanded.expandedMarkets ?? true);
-        setExpandedCountries(savedExpanded.expandedCountries ?? true);
-        setExpandedNextSteps(savedExpanded.expandedNextSteps ?? true);
-        setExpandedProductCategories(savedExpanded.expandedProductCategories ?? true);
+        setExpandedCountries(savedExpanded.expandedCountries ?? false);
+        setExpandedNextSteps(savedExpanded.expandedNextSteps ?? false);
+        setExpandedProductCategories(savedExpanded.expandedProductCategories ?? false);
       }
     } catch {
       // ignore local storage parsing issues
@@ -144,6 +147,22 @@ export function SettingsListsManager({
     productCategorySearch,
     showInactiveProductCategories,
   ]);
+
+
+  useEffect(() => {
+    if (!initialFocus) return;
+    setExpandedMarkets(initialFocus === 'markets');
+    setExpandedCountries(initialFocus === 'countries');
+    setExpandedNextSteps(initialFocus === 'next_steps');
+    setExpandedProductCategories(initialFocus === 'product_categories');
+  }, [initialFocus]);
+
+  const focusSection = (table: TableName) => {
+    setExpandedMarkets(table === 'markets');
+    setExpandedCountries(table === 'countries');
+    setExpandedNextSteps(table === 'next_steps');
+    setExpandedProductCategories(table === 'product_categories');
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -223,6 +242,38 @@ export function SettingsListsManager({
   );
 
   const totalReferenceItems = markets.length + countries.length + nextSteps.length + productCategories.length;
+  const activeReferenceItems = markets.filter((item) => item.is_active).length + countries.filter((item) => item.is_active).length + nextSteps.filter((item) => item.is_active).length + productCategories.filter((item) => item.is_active).length;
+  const blockerSummary = isWorkspaceEmpty
+    ? 'No reference lists yet. Start with a market or import a JSON snapshot.'
+    : !markets.length
+      ? 'Markets are still missing, so downstream geography defaults stay weak.'
+      : !countries.length
+        ? 'Countries are still missing, so market coverage is incomplete.'
+        : !nextSteps.length
+          ? 'Next steps are missing, so follow-up defaults remain thin.'
+          : 'Reference lists are live. Focus the section you want and edit without scanning the whole page.';
+
+  const settingsAiWhere = isWorkspaceEmpty
+    ? 'Settings lists are empty.'
+    : `${activeReferenceItems} of ${totalReferenceItems} reference items are active across markets, countries, next steps, and categories.`;
+  const settingsAiBlocker = isWorkspaceEmpty
+    ? 'No governed reference data exists yet.'
+    : !markets.length
+      ? 'Markets are missing, so geography defaults stay weak downstream.'
+      : !countries.length
+        ? 'Countries are missing, so market coverage is incomplete.'
+        : !nextSteps.length
+          ? 'Next steps are missing, so follow-up defaults remain thin.'
+          : 'The lists are live; the main risk is operator reading weight, not missing setup proof.';
+  const settingsAiNextAction = isWorkspaceEmpty
+    ? 'Create the first market or import a JSON snapshot before editing anything else.'
+    : !markets.length
+      ? 'Add a market first, then fill country coverage under it.'
+      : !countries.length
+        ? 'Add countries next so downstream geography stays explainable.'
+        : !nextSteps.length
+          ? 'Add next steps so follow-up defaults become operator-ready.'
+          : 'Jump to the one section you need, edit it, and leave the rest collapsed.';
 
   const showActionMessage = (nextMessage: string, tone: 'default' | 'danger' = 'default') => {
     setMessage(nextMessage);
@@ -386,6 +437,40 @@ export function SettingsListsManager({
 
   return (
     <div className="space-y-6">
+      <section className="rounded-3xl border border-brand-200 bg-brand-50/70 p-5 shadow-soft">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Action-first settings lane</p>
+            <h3 className="mt-2 text-xl font-semibold text-slate-900">Keep setup governed without making operators scan the whole page</h3>
+            <p className="mt-2 text-sm text-slate-600">Where am I: reference lists. What is blocking me: {blockerSummary} What do I do next: jump straight into the section you need below.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <ToolbarStat label={`${activeReferenceItems} active rows`} />
+              <ToolbarStat label={`${totalReferenceItems} total rows`} tone="info" />
+              {isWorkspaceEmpty ? <ToolbarStat label="First-time setup" tone="warning" /> : null}
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <ToolbarActionButton type="button" onClick={() => focusSection('markets')}>Markets</ToolbarActionButton>
+            <ToolbarActionButton type="button" onClick={() => focusSection('countries')}>Countries</ToolbarActionButton>
+            <ToolbarActionButton type="button" onClick={() => focusSection('next_steps')}>Next steps</ToolbarActionButton>
+            <ToolbarActionButton type="button" onClick={() => focusSection('product_categories')}>Categories</ToolbarActionButton>
+          </div>
+        </div>
+      </section>
+
+      <AICompactActionBrief
+        lane="Settings / Admin"
+        where={settingsAiWhere}
+        blocker={settingsAiBlocker}
+        nextAction={settingsAiNextAction}
+        guardrail="AI can compress setup posture and the next safe edit. It cannot change lists, bypass schema rules, or create hidden defaults."
+        details={[
+          blockerSummary,
+          `${markets.length} markets · ${countries.length} countries · ${nextSteps.length} next steps · ${productCategories.length} categories`,
+        ]}
+        tone={isWorkspaceEmpty || !markets.length || !countries.length || !nextSteps.length ? 'warning' : 'neutral'}
+      />
+
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">

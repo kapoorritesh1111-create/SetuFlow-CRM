@@ -59,6 +59,15 @@ export type PricingRule = { id: string; product_id?: string | null; product_vari
 export type LeadOpenStep = 'basics' | 'workflow' | 'coverage' | 'quotes';
 export type LeadWizardStepId = LeadOpenStep;
 
+export type LeadQuickCapturePrefill = {
+  sourceType?: string;
+  sourceLabel?: string;
+  selectedProductIds?: string[];
+  autoOpenQuoteAfterSave?: boolean;
+  title?: string;
+  description?: string;
+};
+
 export type LeadsWorkspaceProps = {
   currentUserId: string;
   canManageLeads?: boolean;
@@ -93,6 +102,7 @@ export type LeadsWorkspaceProps = {
   initialMode?: WorkspaceMode;
   initialTodayState?: TodayLayerState;
   storageKey?: string;
+  initialQuickCapture?: LeadQuickCapturePrefill | null;
 };
 
 export type LeadDrawerLead = Pick<LeadRow,
@@ -147,4 +157,5 @@ export type LeadDrawerProps = {
   onNavigateNext?: () => void;
   navigationMeta?: string;
   initialStepId?: LeadWizardStepId;
+  prefill?: LeadQuickCapturePrefill | null;
 };

@@ -217,8 +217,13 @@ export function LeadDrawer({
   onNavigateNext,
   navigationMeta,
   initialStepId,
+  prefill = null,
 }: LeadDrawerProps) {
   const router = useRouter();
+  const isQuickMode = mode === 'quick';
+  const isEditingExistingLead = Boolean(lead?.id);
+  const prefilledProductIds = useMemo(() => Array.from(new Set(prefill?.selectedProductIds ?? [])).filter(Boolean), [prefill]);
+  const shouldAutoOpenQuoteAfterSave = Boolean(prefill?.autoOpenQuoteAfterSave && !isEditingExistingLead);
   const [state, setState] = useState<LeadFormState>({});
   const [isPending, startTransition] = useTransition();
   const [leadType, setLeadType] = useState<'buyer' | 'supplier'>(lead?.lead_type ?? 'buyer');
@@ -236,11 +241,12 @@ export function LeadDrawer({
   const [followUpAt, setFollowUpAt] = useState<string>('');
   const [nextStepId, setNextStepId] = useState<string>('');
   const [ownerUserId, setOwnerUserId] = useState<string>('');
-  const [coverageSelections, setCoverageSelections] = useState<CoverageSelection[]>([]);
+  const [coverageSelections, setCoverageSelections] = useState<CoverageSelection[]>(prefilledProductIds.length ? [createCoverageSelection('', prefilledProductIds, 0)] : []);
   const [selectedMarketIdSet, setSelectedMarketIdSet] = useState<string[]>(selectedMarketIds);
+  const [selectedProductIdSet, setSelectedProductIdSet] = useState<string[]>(selectedProductIds.length ? selectedProductIds : prefilledProductIds);
   const [notes, setNotes] = useState<string>(lead?.notes ?? '');
-  const [sourceType, setSourceType] = useState<string>(lead?.source_type ?? '');
-  const [sourceLabel, setSourceLabel] = useState<string>(lead?.source_label ?? '');
+  const [sourceType, setSourceType] = useState<string>(lead?.source_type ?? prefill?.sourceType ?? '');
+  const [sourceLabel, setSourceLabel] = useState<string>(lead?.source_label ?? prefill?.sourceLabel ?? '');
   const [postApplyAssist, setPostApplyAssist] = useState<ContactPostApplyAssistResult | null>(null);
   const [afterSaveGuidance, setAfterSaveGuidance] = useState<ContactAfterSaveGuidanceResult | null>(null);
   const [defaultFollowUpLocal, setDefaultFollowUpLocal] = useState('');
@@ -281,8 +287,6 @@ export function LeadDrawer({
     setShowNewCountryForm(false);
   };
 
-  const isQuickMode = mode === 'quick';
-  const isEditingExistingLead = Boolean(lead?.id);
 
   const handleAddMarket = () => {
     if (!newMarketName.trim()) return;
@@ -379,9 +383,10 @@ export function LeadDrawer({
     setNextStepId(defaultNextStepId);
     setOwnerUserId(defaultOwnerId);
     setSelectedMarketIdSet(selectedMarketIds);
+    setSelectedProductIdSet(selectedProductIds.length ? selectedProductIds : prefilledProductIds);
     setNotes(lead?.notes ?? '');
-    setSourceType(lead?.source_type ?? '');
-    setSourceLabel(lead?.source_label ?? '');
+    setSourceType(lead?.source_type ?? prefill?.sourceType ?? '');
+    setSourceLabel(lead?.source_label ?? prefill?.sourceLabel ?? '');
     setPostApplyAssist(null);
     setAfterSaveGuidance(null);
 
@@ -396,10 +401,12 @@ export function LeadDrawer({
 
     if (groupedSelections.size) {
       setCoverageSelections(Array.from(groupedSelections.entries()).map(([categoryId, productIds], index) => createCoverageSelection(categoryId, productIds, index)));
+    } else if (prefilledProductIds.length) {
+      setCoverageSelections([createCoverageSelection('', prefilledProductIds, 0)]);
     } else {
       setCoverageSelections([createCoverageSelection('', [], 0)]);
     }
-  }, [defaultFollowUpLocal, defaultNextStepId, defaultOwnerId, lead, open, products, selectedMarketIds, selectedProductIds]);
+  }, [defaultFollowUpLocal, defaultNextStepId, defaultOwnerId, lead, open, prefill?.sourceLabel, prefill?.sourceType, prefilledProductIds, products, selectedMarketIds, selectedProductIds]);
 
   useEffect(() => {
     if (!(isEditingExistingLead && !isQuickMode) && activeStepId === 'quotes') {
@@ -824,9 +831,22 @@ export function LeadDrawer({
           : null;
         setAfterSaveGuidance(nextAfterSaveGuidance);
 
-        const resetForNextLead = !isEditingExistingLead && isQuickMode;
+        const resetForNextLead = !isEditingExistingLead && isQuickMode && !shouldAutoOpenQuoteAfterSave;
         setValidationIssues([]);
         setActiveStepId('basics');
+
+        if (shouldAutoOpenQuoteAfterSave && nextState.lead?.id) {
+          setState((current) => ({ ...current, success: 'Lead saved. Opening quote draft…' }));
+          void openOrCreateLeadQuoteDraft(nextState.lead.id).then((quoteResult) => {
+            if (quoteResult?.error) {
+              setQuoteActionError(quoteResult.error);
+              return;
+            }
+            router.push(`/leads/${nextState.lead?.id}/quote${quoteResult?.quoteId ? `?quoteId=${quoteResult.quoteId}` : ''}`);
+            onClose?.();
+          });
+        }
+
         if (resetForNextLead) {
           formElement.reset();
           setLeadType('buyer');
@@ -844,11 +864,11 @@ export function LeadDrawer({
           setFollowUpAt(defaultFollowUpLocal || getDefaultFollowUpLocalValue());
           setNextStepId(defaultNextStepId);
           setOwnerUserId(defaultOwnerId);
-          setCoverageSelections([createCoverageSelection('', [], 0)]);
+          setCoverageSelections(prefilledProductIds.length ? [createCoverageSelection('', prefilledProductIds, 0)] : [createCoverageSelection('', [], 0)]);
           setSelectedMarketIdSet([]);
           setNotes('');
-          setSourceType('');
-          setSourceLabel('');
+          setSourceType(prefill?.sourceType ?? '');
+          setSourceLabel(prefill?.sourceLabel ?? '');
           setPostApplyAssist(null);
           companyInputRef.current?.focus();
         }
@@ -1069,6 +1089,18 @@ export function LeadDrawer({
       ))}
 
       <div className="space-y-5 px-5 py-5">
+        {!isEditingExistingLead && prefill ? (
+          <div className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50/80 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Fast capture lane</p>
+                <h3 className="mt-2 text-base font-semibold text-slate-900">{prefill.title ?? 'Quick lead'}</h3>
+                <p className="mt-1 text-sm text-slate-600">{prefill.description ?? 'Save the minimum valid lead, keep the commercial lane compact, and move into Quote quickly.'}</p>
+              </div>
+              <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">{shouldAutoOpenQuoteAfterSave ? 'Quote opens after save' : 'Quick save'}</span>
+            </div>
+          </div>
+        ) : null}
         {afterSaveGuidance ? (
           <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">

@@ -152,6 +152,14 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
     await openProduct(productId);
   };
 
+
+  const tradeShowQuickLeadHref = '/leads?quickLead=1&sourceType=trade_show&sourceLabel=Trade%20show%20fast%20lane&autoQuote=1';
+  const quoteReadyRows = useMemo(() => filteredRows.filter((row) => row.is_quoteable && row.is_active), [filteredRows]);
+  const readyToSellRows = useMemo(() => quoteReadyRows.filter((row) => row.pricing_rule_set_id && (row.ex_factory_value != null || row.fob_value != null)), [quoteReadyRows]);
+  const tradeShowReadyProduct = readyToSellRows[0] ?? quoteReadyRows[0] ?? null;
+  const tradeShowReadyHref = tradeShowReadyProduct
+    ? `${tradeShowQuickLeadHref}&productId=${encodeURIComponent(tradeShowReadyProduct.product_id)}`
+    : tradeShowQuickLeadHref;
   const totalRows = response?.meta.total_rows ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
 
@@ -163,10 +171,13 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">Governed commercial source of truth</div>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">Catalog command center</h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-              Use Catalog as the governed commercial source of truth. Baseline pricing starts here, quoteability is proven here, and downstream confidence in Quote and Orders only exists when this surface is coherent.
+              Pick a priced product, confirm it is quote-ready, then jump into Quote. Keep the setup truth here without making operators read through the whole commercial story first.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <Link href={tradeShowReadyHref} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>
+              {tradeShowReadyProduct ? 'Quick quote from ready product' : 'Trade-show quick quote'}
+            </Link>
             <div className="inline-flex rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900/85">
               <button type="button" onClick={() => setViewMode('unit')} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${viewMode === 'unit' ? 'bg-slate-950 text-white dark:bg-sky-500 dark:text-slate-950' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
                 Per Unit
@@ -196,35 +207,46 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         </div>
       </div>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,.85fr)]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,.75fr)]">
         <div className={workspacePanelClass}>
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Catalog truth</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">Why this page matters to Quote, Approval, and Orders</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Catalog is not just product maintenance. It sets the default commercial baseline that Quote should inherit, frames when an override becomes exceptional, and protects order confidence by making sure the commercial record starts from governed product truth.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">Above-the-fold fast lane</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">Where am I, what is blocking me, what do I do next?</h2>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/70"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">Where am I</p><p className="mt-2 text-sm text-slate-700 dark:text-slate-200">Catalog is the pre-priced product lane. Pick a quote-ready product and move straight into Quote.</p></div>
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">What blocks me</p><p className="mt-2 text-sm text-amber-900 dark:text-amber-100">Missing pricing, not quoteable, or inactive products should stop the quick path immediately.</p></div>
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">What do I do next</p><p className="mt-2 text-sm text-emerald-900 dark:text-emerald-100">Use the product quick quote jump for pre-priced trade-show selling, or open a product to fix the blocker first.</p></div>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/quotes" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Open Quote</Link>
-              <Link href="/ai-suggestions?family=quote" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>Open AI guidance</Link>
+            <div className="flex min-w-[280px] flex-col gap-2 xl:max-w-sm">
+              <Link href={tradeShowReadyHref} className={`rounded-2xl px-4 py-3 text-center text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>
+                {tradeShowReadyProduct ? `Quick quote · ${tradeShowReadyProduct.product_name ?? 'Ready product'}` : 'Start trade-show quick quote'}
+              </Link>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                <button type="button" onClick={() => setQuoteableFilter('quoteable')} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Show quote-ready only</button>
+                <button type="button" onClick={() => setGapFilter('has_gap')} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Show blockers first</button>
+                <button type="button" onClick={() => { setSearch(''); setCategory(''); setPricingMode(''); setGapFilter('all'); setActiveFilter('active'); setQuoteableFilter('quoteable'); setPage(1); }} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Focus ready products</button>
+                <Link href="/quotes" className={`rounded-2xl px-4 py-2 text-center text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Open Quote workspace</Link>
+              </div>
             </div>
           </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/70"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">Base price truth</p><p className="mt-2 text-sm text-slate-700 dark:text-slate-200">Catalog/base pricing remains the default starting point for governed quoting.</p></div>
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">Override posture</p><p className="mt-2 text-sm text-amber-900 dark:text-amber-100">Any commercial override should read as an exception to baseline truth and requires an explicit reason.</p></div>
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/60 dark:bg-rose-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-700 dark:text-rose-200">Approval threshold</p><p className="mt-2 text-sm text-rose-900 dark:text-rose-100">Threshold approvals still gate risky commercial moves even after a quote exists.</p></div>
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">Order confidence</p><p className="mt-2 text-sm text-emerald-900 dark:text-emerald-100">Orders should inherit confidence from clean catalog truth, not from ad hoc pricing cleanup later.</p></div>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-200">{readyToSellRows.length} ready to sell now</span>
+            <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-200">{quoteReadyRows.length} quote-ready rows</span>
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200">{gapRows} blockers to clean</span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200">Latest pricing update: {latestPricingUpdate}</span>
           </div>
         </div>
+
         <aside className={workspacePanelClass}>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Contextual AI guidance</p>
-          <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">AI should explain, not decide</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Use AI to surface missing pricing coverage, quoteability gaps, and where a commercial record is drifting from governed baseline truth. It should route the operator back into the real workflow instead of replacing approval, override reasoning, or order release judgment.</p>
-          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600 dark:text-slate-300">
-            <li>Find quote-linked guidance fast.</li>
-            <li>Keep approvals and overrides human-owned.</li>
-            <li>Push the next safe action back into Quote, Approval / Send, or Orders.</li>
-          </ul>
+          <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">AI should explain the blocker, not slow the operator</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Use AI after the fast lane tells you a product is missing pricing or quoteability proof. Do not force the operator into more reading when the product is already clean and ready.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/ai-suggestions?family=quote" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>Open AI guidance</Link>
+            <Link href={tradeShowReadyHref} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Use ready product in quote</Link>
+          </div>
         </aside>
       </section>
 

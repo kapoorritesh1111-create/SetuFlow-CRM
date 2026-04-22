@@ -11,7 +11,14 @@ import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams?: { mode?: string | string[] };
+  searchParams?: {
+    mode?: string | string[];
+    quickLead?: string | string[];
+    sourceType?: string | string[];
+    sourceLabel?: string | string[];
+    productId?: string | string[];
+    autoQuote?: string | string[];
+  };
 }) {
   const workspace = await getWorkspaceAccess();
 
@@ -42,6 +49,22 @@ export default async function LeadsPage({
   }
 
   const viewModel = buildLeadsPageViewModel({ workspace, data, searchParams });
+
+
+  const readParam = (value?: string | string[]) => Array.isArray(value) ? value[0] ?? '' : value ?? '';
+  const quickLeadEnabled = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
+  const quickLeadProductId = readParam(searchParams?.productId).trim();
+  const initialQuickCapture = quickLeadEnabled
+    ? {
+        sourceType: readParam(searchParams?.sourceType).trim() || 'trade_show',
+        sourceLabel: readParam(searchParams?.sourceLabel).trim() || 'Trade show fast lane',
+        selectedProductIds: quickLeadProductId ? [quickLeadProductId] : [],
+        autoOpenQuoteAfterSave: ['1', 'true', 'yes'].includes(readParam(searchParams?.autoQuote).toLowerCase()),
+        title: 'Trade-show quick lead',
+        description: 'Capture the minimum buyer context, keep the product lane pre-linked, and move into Quote faster.',
+      }
+    : null;
+
 
   return (
     <div className="space-y-4">
@@ -92,6 +115,7 @@ export default async function LeadsPage({
         initialMode={viewModel.workspaceMode}
         initialLeadType={viewModel.initialLeadType}
         initialTodayState={viewModel.todayState}
+        initialQuickCapture={initialQuickCapture}
       />
     </div>
   );

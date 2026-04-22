@@ -8,6 +8,7 @@ import {
   useTransition,
 } from "react";
 import { GenerateQuoteCoverNoteButton } from "@/features/ai/components/ai-draft-controls";
+import { AICompactActionBrief } from "@/features/ai/ui/intelligence-panels";
 import RightDrawer from "@/components/RightDrawer";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionCard } from "@/components/ui/section-card";
@@ -2033,9 +2034,16 @@ export function QuoteWorkspace({
                       </div>
                       <div className="rounded-[1rem] border border-brand-200 bg-brand-50/80 p-4">
                         <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Should I send this? · AI support</p>
-                            <p className="mt-2 text-sm font-semibold text-slate-900">{focusSendDecision.aiVerdict}</p>
+                          <div className="min-w-0 flex-1">
+                            <AICompactActionBrief
+                              lane="Quote / Send"
+                              where={`Quote workspace · ${focusSendDecision.label}`}
+                              blocker={focusSendDecision.aiVerdict}
+                              nextAction={focusSendDecision.nextStep}
+                              guardrail="AI explains the current send posture only. It cannot approve, send, override commercial controls, or manufacture proof."
+                              details={focusSendDecision.aiReasons}
+                              tone={focusSendDecision.state === 'blocked' ? 'critical' : focusSendDecision.state === 'approval_required' || focusSendDecision.state === 'loading' ? 'warning' : 'neutral'}
+                            />
                           </div>
                           {canManageQuotes ? (
                             <GenerateQuoteCoverNoteButton
@@ -2045,14 +2053,6 @@ export function QuoteWorkspace({
                             />
                           ) : null}
                         </div>
-                        <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                          {focusSendDecision.aiReasons.map((reason) => (
-                            <li key={reason}>• {reason}</li>
-                          ))}
-                        </ul>
-                        <p className="mt-3 text-xs text-slate-600">
-                          AI is embedded here as decision support only. It explains the current send posture, but it cannot approve, send, or override commercial controls.
-                        </p>
                       </div>
                     </div>
                   </div>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { createClient } from '@/lib/supabase/server';
 import DashboardInteractive from '@/features/dashboard/components/dashboard-interactive';
+import { AICompactActionBrief } from '@/features/ai/ui/intelligence-panels';
 import type { DashboardScope } from '@/features/dashboard/types';
 import type { WorkspaceMode } from '@/features/workspace/types';
 import { getDashboardData } from '@/lib/queries/dashboard';
@@ -178,6 +179,32 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
               ? 'Buyer mode is narrowing this dashboard to buyer-side commercial intervention only.'
               : 'Supplier mode is narrowing this dashboard to supplier-side sourcing and execution intervention only.'}
           tone="neutral"
+        />
+      </div>
+
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <AICompactActionBrief
+          lane="Dashboard"
+          where={resolvedScope === 'all' ? 'Leadership watchtower · mixed view' : resolvedScope === 'buyer' ? 'Leadership watchtower · buyer view' : 'Leadership watchtower · supplier view'}
+          blocker={actionSummary.pendingActionCount > 0 ? `${actionSummary.pendingActionCount} records still need intervention before they become clean revenue or execution progress.` : 'No immediate action pile-up is visible right now.'}
+          nextAction={actionSummary.overdueFollowUpCount > 0 ? 'Open follow-up command center first and clear the oldest overdue record.' : actionSummary.draftQuoteCount > 0 ? 'Open quote or pipeline surfaces and clear the oldest governed quote decision.' : 'Stay on the dashboard and monitor for the next lane that begins drifting.'}
+          guardrail="AI can compress the watchtower read into one next move. It cannot replace lane-level proof, approvals, or operator judgment."
+          details={[
+            `${actionSummary.overdueFollowUpCount} overdue follow-up item${actionSummary.overdueFollowUpCount === 1 ? '' : 's'} are visible.`,
+            `${actionSummary.draftQuoteCount} quote${actionSummary.draftQuoteCount === 1 ? '' : 's'} remain in governed motion.`,
+            resolvedScope === 'all' ? 'Mixed mode is combining buyer and supplier movement on purpose.' : `Scope is narrowed to ${resolvedScope} work.`
+          ]}
+          tone={actionSummary.pendingActionCount > 0 ? 'warning' : 'neutral'}
+        />
+        <AICompactActionBrief
+          lane="Dashboard"
+          where="Intervention routing"
+          blocker={actionSummary.recentInbound.length > 0 ? `Recent inbound records exist, but they still need explicit next-action ownership.` : 'No new public-card inbound records are visible in the fast summary.'}
+          nextAction={actionSummary.recentInbound.length > 0 ? `Review ${actionSummary.recentInbound[0]?.company_name ?? 'the latest inbound lead'} and decide whether it belongs in Capture, Follow-up, or Pipeline.` : 'Use the rescue board or leads workspace for the next governed intervention.'}
+          guardrail="AI can route attention, not auto-qualify records or skip workflow checkpoints."
+          details={actionSummary.recentInbound.length > 0 ? actionSummary.recentInbound.map((item) => `${item.company_name ?? 'Unknown company'} · ${item.source_label ?? 'source unknown'} · ${formatRelativeTimestamp(item.created_at ?? null)}`) : ['No fresh inbound cards are visible in this summary window.']}
+          tone={actionSummary.recentInbound.length > 0 ? 'warning' : 'neutral'}
         />
       </div>
 

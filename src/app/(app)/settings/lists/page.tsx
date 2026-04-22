@@ -35,7 +35,11 @@ function ListCard({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-export default async function SettingsListsPage() {
+export default async function SettingsListsPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const workspace = await getWorkspaceAccess();
 
   if (!workspace.membership || !workspace.organization) {
@@ -87,26 +91,63 @@ export default async function SettingsListsPage() {
     countries.length === 0 &&
     nextSteps.length === 0 &&
     productCategories.length === 0;
+  const totalLists = markets.length + countries.length + nextSteps.length + productCategories.length;
+  const blockerSummary = isWorkspaceEmpty
+    ? 'No reference rows exist yet.'
+    : !markets.length
+      ? 'Markets still need setup.'
+      : !countries.length
+        ? 'Countries still need setup.'
+        : !nextSteps.length
+          ? 'Next steps still need setup.'
+          : 'No critical blocker in reference data; jump straight into the list you need.';
+  const tabParam = typeof searchParams?.tab === 'string' ? searchParams.tab : null;
+  const initialFocus =
+    tabParam === 'countries'
+      ? 'countries'
+      : tabParam === 'next-steps'
+        ? 'next_steps'
+        : tabParam === 'product-categories'
+          ? 'product_categories'
+          : 'markets';
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-brand-200 bg-brand-50/70 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Governed workspace source of truth</p>
-            <h3 className="mt-2 text-xl font-semibold text-slate-900">Reference lists support Catalog and workflow defaults</h3>
-            <p className="mt-2 max-w-3xl text-sm text-slate-600">Categories stay editable here, while the primary product system of record for catalog pricing, packaging, trade attributes, and override policy lives in Catalog and governed admin surfaces.</p>
+      <WorkspaceHeader
+        eyebrow="Settings"
+        title="Reference settings and defaults"
+        description={`Keep governed reference data fast to manage. Where am I: settings lists. What is blocking me: ${blockerSummary} What do I do next: open the list you need and edit only that section.`}
+        badge={workspace.organization.name}
+        actions={
+          <>
+            <a href="/products" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Open Catalog</a>
+            <a href="/admin/organization" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open Admin</a>
+          </>
+        }
+        meta={
+          <>
+            <ToolbarStat label="Reference rows" value={String(totalLists)} />
+            <ToolbarStat label="Markets" value={String(markets.length)} tone={markets.length ? 'default' : 'warning'} />
+            <ToolbarStat label="Countries" value={String(countries.length)} tone={countries.length ? 'default' : 'warning'} />
+            <ToolbarStat label="Next steps" value={String(nextSteps.length)} tone={nextSteps.length ? 'default' : 'warning'} />
+          </>
+        }
+      />
+      <WorkspaceToolbar
+        actionSlot={
+          <>
+            <a href="/settings/lists?tab=markets" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Markets</a>
+            <a href="/settings/lists?tab=countries" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Countries</a>
+            <a href="/settings/lists?tab=next-steps" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Next steps</a>
+            <a href="/settings/lists?tab=product-categories" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Categories</a>
+          </>
+        }
+        metaSlot={
+          <div className="flex flex-wrap gap-2">
+            <ToolbarStat label={blockerSummary} tone={isWorkspaceEmpty || !markets.length || !countries.length || !nextSteps.length ? 'warning' : 'success'} />
           </div>
-          <a href="/products" className="inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Open Catalog</a>
-        </div>
-      </div>
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Settings lists</p>
-        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Reference settings and defaults</h2>
-        <p className="mt-2 max-w-3xl text-sm text-slate-600">
-          Maintain organization-scoped master data used by follow-up, catalog, risk review, and reporting.
-        </p>
-      </div>
+        }
+      />
       <QueryIssuesAlert issues={data.queryIssues} />
       <SettingsListsManager
         markets={markets}
@@ -115,6 +156,7 @@ export default async function SettingsListsPage() {
         productCategories={productCategories}
         marketOptions={markets.map((market) => ({ id: market.id, name: market.name }))}
         isWorkspaceEmpty={isWorkspaceEmpty}
+        initialFocus={initialFocus}
       />
       <div className="grid gap-4 xl:grid-cols-2">
         <ListCard title="Pipelines" items={pipelines.map((item) => `${item.name} · ${item.lead_type}`)} />

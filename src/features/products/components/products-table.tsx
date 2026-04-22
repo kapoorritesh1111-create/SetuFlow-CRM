@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ProductsGapBadge } from './products-gap-badge';
 import { getProductGapActionLabel, getProductGapState } from '@/features/products/lib/products-gap-utils';
@@ -183,7 +184,16 @@ export function ProductsTable({ rows, loading, viewMode, sortBy, sortOrder, onSo
                   <td className="border-b border-slate-200/90 px-4 py-3.5 dark:border-slate-700/70"><EditablePriceCell row={row} field="ex_factory" viewMode={viewMode} onSaved={onQuickSaved} canManageCatalog={canManageCatalog} onActionBlocked={onActionBlocked} /></td>
                   <td className="border-b border-slate-200/90 px-4 py-3.5 dark:border-slate-700/70"><EditablePriceCell row={row} field="fob" viewMode={viewMode} onSaved={onQuickSaved} canManageCatalog={canManageCatalog} onActionBlocked={onActionBlocked} /></td>
                   <td className="border-b border-slate-200/90 px-4 py-3.5 text-slate-600 dark:border-slate-700/70 dark:text-slate-300">{row.bulk_display ?? '—'}</td>
-                  <td className="border-b border-slate-200/90 px-4 py-3.5 dark:border-slate-700/70"><button type="button" onClick={(event) => { event.stopPropagation(); onOpenProduct(row.product_id); }} className={`rounded-xl px-3 py-2 text-xs font-semibold ${workspaceSecondaryButtonClass}`}>{getProductGapActionLabel(row)}</button></td>
+                  <td className="border-b border-slate-200/90 px-4 py-3.5 dark:border-slate-700/70">
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={(event) => { event.stopPropagation(); onOpenProduct(row.product_id); }} className={`rounded-xl px-3 py-2 text-xs font-semibold ${workspaceSecondaryButtonClass}`}>{getProductGapActionLabel(row)}</button>
+                      {row.is_active && row.is_quoteable ? (
+                        <Link href={`/leads?quickLead=1&sourceType=trade_show&sourceLabel=Trade%20show%20fast%20lane&autoQuote=1&productId=${encodeURIComponent(row.product_id)}`} onClick={(event) => event.stopPropagation()} className={`rounded-xl px-3 py-2 text-xs font-semibold ${workspaceSecondaryButtonClass}`}>
+                          Quick quote
+                        </Link>
+                      ) : null}
+                    </div>
+                  </td>
                 </tr>
               );
             })}

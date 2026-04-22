@@ -24,6 +24,61 @@ export function AIDailyInsightsList({ items }: { items: DailyInsightSummary[] })
   return <div className="space-y-3">{items.map((item) => <div key={item.title} className={`rounded-2xl border p-4 ${levelClasses(item.level)}`}><p className="font-semibold">{item.title}</p><p className="mt-2 text-sm opacity-90">{item.detail}</p></div>)}</div>;
 }
 
+
+export function AICompactActionBrief({
+  lane,
+  where,
+  blocker,
+  nextAction,
+  guardrail,
+  details = [],
+  tone = 'neutral',
+}: {
+  lane: string;
+  where: string;
+  blocker: string;
+  nextAction: string;
+  guardrail: string;
+  details?: string[];
+  tone?: 'neutral' | 'warning' | 'critical';
+}) {
+  const toneClasses = tone === 'critical'
+    ? 'border-rose-200 bg-rose-50'
+    : tone === 'warning'
+      ? 'border-amber-200 bg-amber-50'
+      : 'border-slate-200 bg-white';
+  const accentClasses = tone === 'critical'
+    ? 'bg-rose-100 text-rose-700'
+    : tone === 'warning'
+      ? 'bg-amber-100 text-amber-700'
+      : 'bg-sky-100 text-sky-700';
+
+  return (
+    <section className={`rounded-[1.5rem] border p-4 ${toneClasses}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${accentClasses}`}>AI action brief</span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{lane}</span>
+          </div>
+          <p className="mt-3 text-sm font-semibold text-slate-900">Where you are: <span className="font-normal text-slate-700">{where}</span></p>
+          <p className="mt-1 text-sm font-semibold text-slate-900">Blocking you: <span className="font-normal text-slate-700">{blocker}</span></p>
+          <p className="mt-1 text-sm font-semibold text-slate-900">Do next: <span className="font-normal text-slate-700">{nextAction}</span></p>
+          <p className="mt-3 text-xs text-slate-500">Guardrail: {guardrail}</p>
+        </div>
+      </div>
+      {details.length ? (
+        <details className="mt-3 rounded-2xl border border-slate-200 bg-white/80 p-3">
+          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Why AI says this</summary>
+          <ul className="mt-3 space-y-1 text-sm text-slate-600">
+            {details.map((detail) => <li key={detail}>• {detail}</li>)}
+          </ul>
+        </details>
+      ) : null}
+    </section>
+  );
+}
+
 export function AIGovernedDecisionPanel({ items, summary }: { items: AIGovernedDecision[]; summary: AIGovernanceSummary }) {
   return (
     <div className="space-y-4">

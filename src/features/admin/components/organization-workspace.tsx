@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { AICompactActionBrief } from '@/features/ai/ui/intelligence-panels';
 import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { WorkspaceHeader, ToolbarStat, WorkspaceToolbar } from '@/components/ui/workspace-toolbar';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { AdminGovernanceSummaryItem, MissingGovernanceItem } from '@/features/admin/admin-governance';
 
@@ -73,8 +75,41 @@ export function OrganizationWorkspace({
   roleSummaries: RoleSummary[];
   settingsSummaries: AdminGovernanceSummaryItem[];
 }) {
+  const blockerSummary = !governanceContext.isReady
+    ? `${governanceContext.missingCount} governance gaps still need owner/admin attention.`
+    : 'No critical governance blocker is visible on this overview.';
+
   return (
     <div className="space-y-6">
+      <WorkspaceHeader
+        eyebrow="Admin"
+        title="Organization workspace"
+        description={`Where am I: organization governance. What is blocking me: ${blockerSummary} What do I do next: open the exact admin lane you need instead of scanning the whole workspace.`}
+        badge={organizationName}
+        actions={
+          <>
+            <Link href="/admin/users" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Users</Link>
+            <Link href="/admin/invitations" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Invitations</Link>
+            <Link href="/settings/lists" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Settings lists</Link>
+          </>
+        }
+        meta={
+          <>
+            <ToolbarStat label="My role" value={myRoleLabel} tone="info" />
+            <ToolbarStat label="Governance gaps" value={String(governanceContext.missingCount)} tone={governanceContext.isReady ? 'success' : 'warning'} />
+            <ToolbarStat label="Default currency" value={defaultCurrency ?? 'Unset'} tone={defaultCurrency ? 'default' : 'warning'} />
+          </>
+        }
+      />
+
+      <WorkspaceToolbar
+        metaSlot={
+          <div className="flex flex-wrap gap-2">
+            <ToolbarStat label={blockerSummary} tone={governanceContext.isReady ? 'success' : 'warning'} />
+          </div>
+        }
+      />
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {overviewStats.map((item) => (
           <StatCard key={item.label} label={item.label} value={item.value} helper={item.helper} />
@@ -95,7 +130,7 @@ export function OrganizationWorkspace({
             <div className="max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Missing governance context</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Some operational surfaces are running without full admin setup</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Dashboard, reports, pipeline, and products now call out missing setup directly. This admin summary keeps the same gaps visible so governance totals stay explainable before operators hit those downstream screens.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">The gap list stays compact here so operators can resolve setup without reading every downstream screen first.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <StatusBadge label={`${governanceContext.missingCount} gaps`} tone="warning" />
@@ -123,7 +158,7 @@ export function OrganizationWorkspace({
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Organization overview</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{organizationName}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                This workspace keeps organization identity, member access, invitation flow, and settings references visible from a single admin surface without changing the underlying route architecture.
+                Keep organization identity, people access, and settings readiness visible from one admin surface without forcing a long scan first.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -159,7 +194,7 @@ export function OrganizationWorkspace({
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Quick actions</p>
               <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Manage organization workspace</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Use the existing admin routes for user and invitation workflows, then jump to settings lists for reference data configuration.
+                Use the exact admin lane you need, then come back here only for overview and governance status.
               </p>
             </div>
           </div>
@@ -186,6 +221,19 @@ export function OrganizationWorkspace({
             </Link>
           </div>
         </SectionCard>
+      </div>
+
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <AICompactActionBrief
+          lane="Admin / Organization"
+          where="Organization governance overview"
+          blocker={settingsSummaries.some((item) => item.status !== 'healthy') ? 'At least one governance area still needs attention before downstream surfaces become easier to trust.' : 'No major governance drift is visible in the current admin summary.'}
+          nextAction={settingsSummaries.find((item) => item.status !== 'healthy')?.nextAction ?? 'Use users, invitations, or settings lists only when a specific governance action is needed.'}
+          guardrail="AI can explain the current admin posture and route the operator. It cannot assign roles, accept invitations, or change governance on its own."
+          details={settingsSummaries.slice(0, 4).map((item) => `${item.label}: ${item.helperText ?? item.value}`)}
+          tone={settingsSummaries.some((item) => item.status === 'critical') ? 'critical' : settingsSummaries.some((item) => item.status !== 'healthy') ? 'warning' : 'neutral'}
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">

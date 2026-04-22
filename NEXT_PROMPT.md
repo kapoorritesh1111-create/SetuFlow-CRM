@@ -5,35 +5,39 @@ Use public/internal-dcc/index.html as the single source of truth for readiness, 
 
 Critical rule:
 We are NOT done until every module is 96% or above.
-Do not use the old main workflow almost done logic.
+Do not use old almost-done logic.
+Do not change the workflow diagram image in DCC unless the workflow actually changes in repo code.
 
 Immediate objective:
-Execute PR-RESET-03: Capture fast lane + trade-show quote jump.
+Execute PR-RESET-07: capture and setup convergence.
 
 Goals:
-1. Make Capture fast enough for live selling:
-   - reduce form burden
-   - surface the minimum fields needed for a valid quick lead
-   - make the first action obvious above the fold
+1. Finish the remaining below-target modules together:
+   - Capture
+   - Settings / Lists
+   - Admin / Organization
 
-2. Build the product-first trade-show quote jump:
-   - let operators move from product-ready pricing to quote draft quickly
-   - do not force long setup reading when the product already carries the trade-show price
-   - preserve governed quote truth while removing unnecessary steps for standard pre-priced quotes
+2. Compress the real operator path further:
+   - make capture feel immediate above the fold
+   - reduce setup/admin reading even more
+   - keep one obvious next action visible first
 
-3. Tighten Capture → Follow-up → Quote continuity:
-   - make it obvious where the operator goes next
-   - keep blocker visibility compact
-   - keep one primary CTA visible
+3. Preserve the PR-RESET-06 AI pattern:
+   - keep compact first answer
+   - keep deeper explanation collapsed
+   - keep AI advisory only
 
-4. Keep the workflow reset pattern consistent:
-   - where am I
-   - what is blocking me
-   - what do I do next
-   visible above the fold
+4. Do not degrade the already-cleared modules:
+   - Quote
+   - Approval / Send
+   - Orders / Execution
+   - Pipeline / Risks
+   - Dashboard
+   - Trade workflow
+   - AI
 
 5. Update DCC honestly:
-   - preserve the workflow diagram unless product truth changes
+   - preserve workflow diagram image unless workflow truth changes
    - keep module-by-module percentages
    - keep target 96% minimum and gap-to-target table
    - keep the true remaining PR roadmap visible
@@ -41,16 +45,15 @@ Goals:
 Files to inspect and update:
 - public/internal-dcc/index.html
 - src/features/leads/*
-- src/app/(app)/leads/*
-- src/features/quotes/*
-- src/features/catalog/*
-- src/app/(app)/products/*
+- src/features/settings/*
+- src/features/admin/*
+- src/features/ai* only if required to support the remaining modules
 - NEXT_PROMPT.md
 
 Return:
 1. Updated repo zip
 2. Updated DCC
-3. PR-RESET-03 summary
+3. PR-RESET-07 summary
 4. Updated module percentages
 5. Gap-to-96 table
 6. True remaining PR count

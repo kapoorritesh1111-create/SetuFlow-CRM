@@ -18,7 +18,7 @@ import { formatDateTime } from '@/lib/utils';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { inferOrderTradeWorkflow } from '@/features/trade-workflow/logic';
 import { predictOrderDelay } from '@/features/ai/logic/intelligence';
-import { AIInsightCard, AIOrderDelayPanel } from '@/features/ai/ui/intelligence-panels';
+import { AICompactActionBrief, AIInsightCard, AIOrderDelayPanel } from '@/features/ai/ui/intelligence-panels';
 import { TradeSignalGrid } from '@/features/trade-workflow/ui';
 import { extractLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
 import { getCommercialLockStateLabel, parseContractCommercialSnapshot } from '@/lib/contract-lock';
@@ -925,6 +925,21 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
           </div>
         ))}
         <AIOrderDelayPanel prediction={orderDelayPrediction} />
+        <div className="xl:col-span-2"> 
+          <AICompactActionBrief
+            lane="Orders / Execution"
+            where={`Execution state · ${getOrderExecutionStateLabel(order.executionState)}`}
+            blocker={order.executionBlockers[0] ?? 'No explicit execution blocker is active right now.'}
+            nextAction={order.executionActionItems[0] ?? (order.nextExecutionState ? `Progress this order to ${getOrderExecutionStateLabel(order.nextExecutionState)} when the visible evidence is complete.` : 'Monitor the live order and keep evidence attached to the same governed record.')}
+            guardrail="AI can explain the current execution posture and next safe move. It cannot release, dispatch, complete, or fake contract-grade evidence."
+            details={[
+              `${order.operationalControls.documentRequirementSummary.blockerCount} document-rule blocker${order.operationalControls.documentRequirementSummary.blockerCount === 1 ? '' : 's'} are visible.`,
+              `${order.operationalControls.complianceSummary.openCount} compliance item${order.operationalControls.complianceSummary.openCount === 1 ? '' : 's'} remain open.`,
+              ...order.executionBlockers.slice(0, 3),
+            ]}
+            tone={order.executionBlockers.length > 0 ? 'critical' : orderDelayPrediction.level === 'critical' || orderDelayPrediction.level === 'high' ? 'warning' : 'neutral'}
+          />
+        </div>
       </div>
 
       {/* Three-panel grid: Documents · Compliance · Contract */}

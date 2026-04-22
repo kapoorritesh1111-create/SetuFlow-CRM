@@ -110,7 +110,7 @@ export function ProductDetailDrawer({ open, detail, loading, error, onClose, onS
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Product detail</div>
             <h2 className="mt-2 text-2xl font-semibold text-slate-950">{detail?.product.name ?? 'Loading product...'}</h2>
-            <p className="mt-1 text-sm text-slate-500">Edit core product fields, control active status, and review variant pricing without losing spreadsheet context.</p>
+            <p className="mt-1 text-sm text-slate-500">Fix blockers fast, confirm quote readiness, or jump straight into a trade-show quote from this product.</p>
           </div>
           <button type="button" className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600" onClick={onClose}>Close</button>
         </div>
@@ -204,11 +204,19 @@ export function ProductDetailDrawer({ open, detail, loading, error, onClose, onS
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Downstream commercial handoff</div>
-              <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold">
-                <Link href="/pipeline" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Pipeline</Link>
-                <Link href={PRODUCT_ROUTES.app.leads} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Leads</Link>
-                <Link href={PRODUCT_ROUTES.app.quotes} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Quotes</Link>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Downstream commercial handoff</div>
+                  <p className="mt-2 text-sm text-slate-600">Use the product quick quote when this item is active, quoteable, and already priced. Otherwise fix the blocker first.</p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-sm font-semibold">
+                  {detail.product.is_active && detail.variants.some((variant) => variant.is_quoteable) ? (
+                    <Link href={`/leads?quickLead=1&sourceType=trade_show&sourceLabel=Trade%20show%20fast%20lane&autoQuote=1&productId=${encodeURIComponent(detail.product.id)}`} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Quick quote</Link>
+                  ) : null}
+                  <Link href="/pipeline" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Pipeline</Link>
+                  <Link href={PRODUCT_ROUTES.app.leads} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Leads</Link>
+                  <Link href={PRODUCT_ROUTES.app.quotes} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700">Quotes</Link>
+                </div>
               </div>
             </div>
           </div>
