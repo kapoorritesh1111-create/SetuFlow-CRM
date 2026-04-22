@@ -79,6 +79,8 @@ export type GovernedSyncCandidate = {
   provider: string;
   targetType: 'contract';
   targetId: string;
+  quoteId: string;
+  leadId: string;
   title: string;
   reason: string;
   stageLabel: string;

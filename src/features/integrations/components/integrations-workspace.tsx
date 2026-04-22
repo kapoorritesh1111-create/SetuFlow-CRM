@@ -142,8 +142,8 @@ export function IntegrationsWorkspace({ data }: Props) {
                   {candidate.readiness === 'ready' ? (
                     <IntegrationQueueSyncButton integrationId={candidate.integrationId} provider={candidate.provider} targetType={candidate.targetType} targetId={candidate.targetId} reason={candidate.reason} />
                   ) : null}
-                  {candidate.leadId ? <Link href={buildLeadWorkflowHref(candidate.leadId, undefined, { quoteId: candidate.targetId, handoff: candidate.readiness === 'ready' ? 'approval-send-quote-live' : 'approval-send-fix-blocker' })} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Open follow-up</Link> : null}
-                  <Link href={buildOrdersHref({ quoteId: candidate.targetId, handoff: 'approval-send-open-orders' })} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Open Orders & Execution</Link>
+                  {candidate.leadId ? <Link href={buildLeadWorkflowHref(candidate.leadId, undefined, { quoteId: candidate.quoteId, handoff: candidate.readiness === 'ready' ? 'approval-send-quote-live' : 'approval-send-fix-blocker' })} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Open follow-up</Link> : null}
+                  <Link href={buildOrdersHref({ quoteId: candidate.quoteId, handoff: 'approval-send-open-orders' })} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Open Orders & Execution</Link>
                 </div>
               </article>
             )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No ready-to-send items are waiting right now.</div>}
