@@ -235,8 +235,8 @@ export function OrganizationWorkspace({
           lane="Admin / Organization"
           where="Organization governance overview"
           blocker={!governanceContext.isReady ? 'At least one governance area still needs attention before downstream surfaces become easier to trust.' : 'No major governance drift is visible in the current admin summary.'}
-          nextAction={governanceContext.missingItems[0]?.href ? `Open ${governanceContext.missingItems[0].label} and complete the missing governed setup.` : 'Use users, invitations, or settings lists only when a specific governance action is needed.'}
-          guardrail="AI can explain the current admin posture and route the operator. It cannot assign roles, accept invitations, or change governance on its own."
+          nextAction={governanceContext.missingItems[0]?.href ? `Open ${governanceContext.missingItems[0].label} and complete the missing setup.` : 'Use users, invitations, or settings lists only when a specific governance action is needed.'}
+          guardrail="AI can explain the current admin status and point the team to the right page. It cannot assign roles, accept invitations, or change settings on its own."
           details={settingsSummaries.slice(0, 4).map((item) => `${item.label}: ${item.helper ?? item.value}`)}
           tone={!governanceContext.isReady ? 'warning' : 'neutral'}
         />
@@ -247,7 +247,7 @@ export function OrganizationWorkspace({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Cross-surface consistency</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Admin stays aligned with the governed surfaces it feeds</h2>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Admin stays aligned with the pages it feeds</h2>
               <p className="mt-2 text-sm text-slate-600">Use this only to explain or repair governance drift. Do not turn it into a second reading layer once the first lane is clear.</p>
             </div>
           </div>
@@ -404,7 +404,7 @@ export function OrganizationWorkspace({
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href="/settings/lists" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">Open settings lists</Link>
-              <Link href="/integrations" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">Review integrations</Link>
+              <Link href="/approval-send" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">Review approvals & sending</Link>
             </div>
           </div>
         </SectionCard>

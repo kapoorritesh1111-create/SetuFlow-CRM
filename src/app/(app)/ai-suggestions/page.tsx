@@ -12,7 +12,7 @@ export default async function AISuggestionsPage({ searchParams }: { searchParams
       <WorkspaceState
         eyebrow="Contextual AI guidance"
         title="Workspace membership needed"
-        description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization membership is active before reviewing AI guidance that should route work back into Follow-up, Quote, Approval / Send, or Orders."
+        description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization membership is active before reviewing AI guidance that should route work back into Follow-up, Quote, Approvals & Sending, or Orders."
         primaryActionHref="/dashboard"
         primaryActionLabel="Go to dashboard"
       />

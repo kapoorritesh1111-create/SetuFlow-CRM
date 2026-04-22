@@ -270,7 +270,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
             <div className="max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Quote command lane</p>
               <h2 className="mt-2 text-xl font-semibold text-slate-900">Move through Product, Pricing, Terms, Review, and Send inside one commercial surface</h2>
-              <p className="mt-2 text-sm text-slate-600">Stay anchored to the lead command center while moving the current quote through Product, Pricing, Terms, Review, and Send. Surface blockers once, keep one quote in focus, and move accepted work straight into the order workspace.</p>
+              <p className="mt-2 text-sm text-slate-600">Stay anchored to the lead workspace while moving the current quote through Product, Pricing, Terms, Review, and Sending. Surface blockers once, keep one quote in focus, and move accepted work straight into the orders workspace.</p>
             </div>
             <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getPricingReadinessClasses(pricingSnapshot.pricingReadiness)}`}>
               {getPricingReadinessLabel(pricingSnapshot.pricingReadiness)}
@@ -286,7 +286,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href={leadCommandHref} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Lead command center</Link>
+            <Link href={leadCommandHref} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Lead workspace</Link>
             <Link href="/orders" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Orders workspace</Link>
           </div>
         </div>
@@ -348,7 +348,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Order handoff</p>
-              <p className="mt-1 text-sm text-slate-600">Accepted quotes seed order records automatically so operators can continue execution, signature, activation, and completion from the order workspace.</p>
+              <p className="mt-1 text-sm text-slate-600">Accepted quotes create order records automatically so the team can continue execution, signature, activation, and completion from the orders workspace.</p>
             </div>
             <Link href="/orders" className="rounded-2xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100">Open orders workspace</Link>
           </div>

@@ -123,7 +123,7 @@ function buildLiveWorkflowCards(snapshot: LeadProfileSnapshot, input: {
       return {
         ...card,
         stateLabel: input.quoteNumber || (input.quoteCount > 0 ? 'Quote in progress' : 'No quote yet'),
-        helperText: input.pricingBasis ? `${input.pricingBasis.replace(/_/g, ' ')} basis is carrying the current commercial lane` : 'Create or review the current quote and pricing basis',
+        helperText: input.pricingBasis ? `${input.pricingBasis.replace(/_/g, ' ')} basis is carrying the current sales process` : 'Create or review the current quote and pricing basis',
       }
     }
     return {

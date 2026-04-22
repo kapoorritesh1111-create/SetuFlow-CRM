@@ -285,7 +285,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Conversion visibility</p>
               <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">What your public card is bringing into the CRM</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">These are operator-facing outcomes, not vanity metrics. Review the request mix, then open the captured lead record and move it into qualification or quote work.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">These are working outcomes, not vanity metrics. Review the request mix, then open the captured lead record and move it into qualification or quote work.</p>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Source-attributed</span>
           </div>
@@ -304,7 +304,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
             <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Captured leads</p>
               <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{insights?.recentLeads.length ?? 0}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Recent CRM records linked back to your card share so operators can verify the funnel is working.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Recent CRM records linked back to your card share so the team can verify the funnel is working.</p>
             </div>
           </div>
 

@@ -12,10 +12,10 @@ export default function RouteError({ error, reset }: { error: Error & { digest?:
   return (
     <ErrorBoundaryView
       title="Orders / Execution desk unavailable"
-      description="We could not load execution readiness, documentary blockers, or dispatch posture for this workspace. Try again, then fall back to Approval / Send if you need the last stable commercial truth."
+      description="We could not load execution readiness, documentary blockers, or dispatch posture for this workspace. Try again, then fall back to Approvals & Sending if you need the last stable commercial truth."
       reset={reset}
       homeHref={PRODUCT_ROUTES.app.integrations}
-      homeLabel="Back to Approval / Send"
+      homeLabel="Back to Approvals & Sending"
     />
   );
 }

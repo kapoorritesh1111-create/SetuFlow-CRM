@@ -12,7 +12,7 @@ export default function RouteError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Legacy integrations route redirected after failing to render.', error);
+    console.error('Approvals & Sending route failed to render.', error);
   }, [error]);
 
   return (

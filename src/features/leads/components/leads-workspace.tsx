@@ -135,7 +135,7 @@ function getReadinessTone(readiness: string): SignalTone {
 }
 
 function buildAiLeadBrief(lead: LeadRow, readiness: LeadCommercialReadiness | undefined, ownerLabel: string, followUpLabel: string) {
-  if ((readiness?.blockerCount ?? 0) > 0) return `${lead.company_name} needs blocker recovery before moving deeper into the commercial lane. ${ownerLabel} should review ${followUpLabel.toLowerCase()}.`;
+  if ((readiness?.blockerCount ?? 0) > 0) return `${lead.company_name} needs blocker recovery before moving deeper into the sales process. ${ownerLabel} should review ${followUpLabel.toLowerCase()}.`;
   if (lead.next_follow_up_at) return `${lead.company_name} is live in the queue with ${followUpLabel.toLowerCase()}. Keep the operator handoff calm and move toward ${lead.contact_name ?? 'the main contact'}.`;
   return `${lead.company_name} has no scheduled next touch. Add a follow-up so AI, pricing, and workflow stay aligned.`;
 }
@@ -930,8 +930,8 @@ export function LeadsWorkspace({
             </div>
             <div className="flex flex-wrap gap-2 xl:justify-end">
               <a href={PRODUCT_ROUTES.app.myCard} className="inline-flex min-h-11 items-center justify-center rounded-[1rem] px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 border border-slate-200 bg-slate-100/90 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.05)] hover:bg-white dark:border-slate-700 dark:bg-slate-800/78 dark:text-slate-200">Share my card</a>
-              <ToolbarActionButton type="button" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">+ Quick Lead</ToolbarActionButton>
               <ToolbarActionButton type="button" tone="primary" onClick={openFullAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">New Lead</ToolbarActionButton>
+              <ToolbarActionButton type="button" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">Quick Add</ToolbarActionButton>
             </div>
           </div>
           <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">

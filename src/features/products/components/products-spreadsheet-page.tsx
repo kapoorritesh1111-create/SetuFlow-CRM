@@ -171,7 +171,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">Governed commercial source of truth</div>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">Catalog command center</h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-              Pick a priced product, confirm it is quote-ready, then jump into Quote. Keep the setup truth here without making operators read through the whole commercial story first.
+              Pick a priced product, confirm it is quote-ready, then jump into Quote. Keep the setup here without making the team read through the whole pricing story first.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -240,9 +240,9 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         </div>
 
         <aside className={workspacePanelClass}>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Contextual AI guidance</p>
-          <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">AI should explain the blocker, not slow the operator</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Use AI after the fast lane tells you a product is missing pricing or quoteability proof. Do not force the operator into more reading when the product is already clean and ready.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">AI help</p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">AI should explain the blocker, not slow the team down</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Use AI after the fast lane shows a product is missing pricing or quote-ready proof. Do not force extra reading when the product is already clean and ready.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/ai-suggestions?family=quote" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>Open AI guidance</Link>
             <Link href={tradeShowReadyHref} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Use ready product in quote</Link>

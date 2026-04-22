@@ -577,7 +577,7 @@ export function PipelineBoard({
                 const currentStage = lead.stage_id ? stageById.get(lead.stage_id) : null;
                 return currentStage
                   ? getStageMoveReadinessForLead(lead, currentStage)
-                  : { status: 'ready', summary: 'Stage movement is ready under the current governed workflow.', blockers: [], warnings: [], actionItems: ['Advance stage'], canMove: true };
+                  : { status: 'ready', summary: 'Stage movement is ready under the current workflow.', blockers: [], warnings: [], actionItems: ['Advance stage'], canMove: true };
               })()}
               countryCode={lead.country_id ? (countryById.get(lead.country_id)?.iso2_code ?? null) : (lead.country ? (countryCodeByName.get(lead.country.trim().toLowerCase()) ?? null) : null)}
               coverageSummary={`${getLeadCoverageSummary(lead)} · ${getLeadCoverageActionSummary(lead)}`}
@@ -684,9 +684,9 @@ export function PipelineBoard({
             <p className="mt-2 text-base font-semibold text-slate-900">{overdueCount || atRiskCount ? `${overdueCount} overdue, ${atRiskCount} at risk` : 'No rescue pressure right now'}</p>
             <p className="mt-1 text-sm text-slate-600">{filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0)} visible records still have commercial or workflow blockers.</p>
           </div>
-          <div className="flex flex-col gap-2 lg:min-w-[220px]">
+          <div className="flex flex-col items-start gap-2 lg:min-w-[220px]">
             <a href={PRODUCT_ROUTES.app.leads} className={workspacePrimaryButtonClass}>Open follow-up queue</a>
-            <a href={PRODUCT_ROUTES.app.orders} className={workspaceSecondaryButtonClass}>Open execution desk</a>
+            <a href={PRODUCT_ROUTES.app.orders} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Orders</a>
           </div>
         </div>
         <PipelineAIStrip message={aiMessage} />

@@ -187,7 +187,7 @@ export function AppShell({
       { keys: ['G', 'C'], description: 'Go to Capture' },
       { keys: ['G', 'F'], description: 'Go to Follow-up' },
       { keys: ['G', 'Q'], description: 'Go to Quote' },
-      { keys: ['G', 'S'], description: 'Go to Approval / Send' },
+      { keys: ['G', 'S'], description: 'Go to Approvals & Sending' },
       { keys: ['G', 'O'], description: 'Go to Orders / Execution' },
       { keys: ['G', 'X'], description: 'Go to Pipeline / Risks' },
       { keys: ['G', 'K'], description: 'Go to Catalog' },

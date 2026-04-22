@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const dcc = readFileSync('public/internal-dcc/index.html', 'utf8');
 
-test('dcc aligns to PR-FINISH-06 truth and final release framing', () => {
-  assert.match(dcc, /PR-FINISH-06 completed/i);
-  assert.match(dcc, /Current pass: PR-FINISH-06/i);
-  assert.match(dcc, /True remaining PR count: 0/i);
-  assert.match(dcc, /Capture<\/td><td class="score good">96%<\/td>/i);
-  assert.match(dcc, /Settings \/ Lists<\/td><td class="score good">96%<\/td>/i);
-  assert.match(dcc, /Admin \/ Organization<\/td><td class="score good">96%<\/td>/i);
-  assert.match(dcc, /Release recommendation:<\/strong> ready for final sign-off/i);
+test('dcc exposes current, ux 99 tracker, ux audit, and archive tabs while preserving release truth', () => {
+  assert.match(dcc, /Release truth \+ UX 99 system tracker/i);
+  assert.match(dcc, /UX 99 tracker/i);
+  assert.match(dcc, /UX audit/i);
+  assert.match(dcc, /Archive/i);
+  assert.match(dcc, /UX 99 program active/i);
+  assert.match(dcc, /Reset history archived/i);
+  assert.match(dcc, /All tracked modules are at or above 96%/i);
+  assert.match(dcc, /PR-UX-01/i);
+  assert.match(dcc, /PR-UX-05/i);
 });

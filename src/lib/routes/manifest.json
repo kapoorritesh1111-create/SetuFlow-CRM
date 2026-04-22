@@ -4,17 +4,17 @@
     "Capture",
     "Follow-up",
     "Quote (catalog price with reasoned overrides)",
-    "Approval / Send",
+    "Approvals & Sending",
     "Orders / Execution"
   ],
-  "approvedReworkPhase": "PR-UX-08 completed",
-  "approvedReworkTitle": "96% finish pass + empty/loading/success lock",
+  "approvedReworkPhase": "PR-UX-01 completed",
+  "approvedReworkTitle": "Language system reset",
   "routeLabels": {
     "overview": "Dashboard / Overview",
     "capture": "Capture",
     "followUp": "Follow-up",
     "quote": "Quote",
-    "approvalSend": "Approval / Send",
+    "approvalSend": "Approvals & Sending",
     "ordersExecution": "Orders / Execution",
     "exceptionsRisks": "Pipeline / Risks",
     "catalog": "Catalog",
@@ -29,7 +29,7 @@
       "pipeline": "/pipeline",
       "quotes": "/quotes",
       "orders": "/orders",
-      "integrations": "/integrations",
+      "integrations": "/approval-send",
       "products": "/products",
       "settings": "/settings/lists",
       "admin": "/admin/organization",
@@ -43,7 +43,7 @@
   "productShellLabels": {
     "productShell": "Operating shell",
     "ritualHeading": "Workflow guardrails",
-    "ritualBeforeCoding": "Keep the shell organized around the operator's job, not the repo's module list.",
+    "ritualBeforeCoding": "Keep the shell organized around the user's job, not the repo's module list.",
     "ritualDuringCoding": "Keep All / Buyers / Suppliers perspective active where it is a real operating lens, preserve a visible pipeline view, keep dashboard prominent for leadership, make dashboard and pipeline answer what needs intervention now, keep orders proving execution readiness rather than merely accepted quote state, and lock empty/loading/blocked/success states across the core flow.",
     "ritualAfterCoding": "Update the DCC whenever readiness, workflow direction, or shell truth changes."
   },
@@ -77,7 +77,7 @@
       "href": "/quotes",
       "label": "Quote",
       "exact": true,
-      "description": "Build governed commercial truth from the catalog baseline.",
+      "description": "Build quotes from catalog pricing, apply overrides with a reason, and keep approval checks visible.",
       "aliases": [
         "quote desk",
         "pricing",
@@ -86,16 +86,16 @@
       "navKey": "q"
     },
     {
-      "href": "/integrations",
-      "label": "Approval / Send",
+      "href": "/approval-send",
+      "label": "Approvals & Sending",
       "exact": true,
-      "description": "Review approval truth, send blockers, latest outbound action, and resend posture in one desk.",
+      "description": "Check approval status, send readiness, latest message activity, and resend history in one place.",
       "aliases": [
-        "approval",
+        "approvals",
+        "sending",
         "send",
         "outbound",
-        "communications",
-        "send desk"
+        "communications"
       ],
       "navKey": "s"
     },
@@ -129,7 +129,7 @@
       "href": "/products",
       "label": "Catalog",
       "exact": true,
-      "description": "Use Catalog as the governed commercial source of truth: baseline price first, reasoned overrides second, approval when thresholds are crossed.",
+      "description": "Use Catalog as the pricing source: start from the base price, record override reasons, and keep approval thresholds visible.",
       "aliases": [
         "products",
         "catalog",
@@ -141,7 +141,7 @@
       "href": "/settings/lists",
       "label": "Settings / Lists",
       "exact": true,
-      "description": "Clean up reference data and defaults in a way operators and leadership can actually understand.",
+      "description": "Keep reference data and defaults clear for the team and leadership.",
       "aliases": [
         "settings",
         "lists",
@@ -154,7 +154,7 @@
       "href": "/dashboard",
       "label": "Dashboard / Overview",
       "exact": true,
-      "description": "Leadership and operators get a quick geo-first watchtower for market, country, and queue health.",
+      "description": "Get a quick geo-first view of market, country, and queue health.",
       "aliases": [
         "dashboard",
         "overview",
@@ -208,14 +208,14 @@
       "id": "leadership-watchtower",
       "label": "Leadership / overview",
       "icon": "line-chart",
-      "description": "A quick-read surface for leadership and operators. Geo-first, market-first, and country-first views stay visible here.",
+      "description": "A quick-read view for leadership and the team. Geo-first, market-first, and country-first views stay visible here.",
       "tone": "primary",
       "items": [
         {
           "href": "/dashboard",
           "label": "Dashboard / Overview",
           "exact": true,
-          "description": "Leadership and operators get a quick geo-first watchtower for market, country, and queue health.",
+          "description": "Get a quick geo-first view of market, country, and queue health.",
           "aliases": [
             "dashboard",
             "overview",
@@ -278,7 +278,7 @@
           "href": "/quotes",
           "label": "Quote",
           "exact": true,
-          "description": "Build governed commercial truth from the catalog baseline.",
+          "description": "Build quotes from catalog pricing, apply overrides with a reason, and keep approval checks visible.",
           "aliases": [
             "quote desk",
             "pricing",
@@ -287,10 +287,10 @@
           "navKey": "q"
         },
         {
-          "href": "/integrations",
-          "label": "Approval / Send",
+          "href": "/approval-send",
+          "label": "Approvals & Sending",
           "exact": true,
-          "description": "Review approval truth, send blockers, latest outbound action, and resend posture in one desk.",
+          "description": "Check approval status, send readiness, latest message activity, and resend history in one place.",
           "aliases": [
             "approval",
             "send",
@@ -325,7 +325,7 @@
           "href": "/products",
           "label": "Catalog",
           "exact": true,
-          "description": "Use Catalog as the governed commercial source of truth: baseline price first, reasoned overrides second, approval when thresholds are crossed.",
+          "description": "Use Catalog as the pricing source: start from the base price, record override reasons, and keep approval thresholds visible.",
           "aliases": [
             "products",
             "catalog",
@@ -349,7 +349,7 @@
         {
           "href": "/admin/organization",
           "label": "Admin / Organization",
-          "description": "Own organization setup, people, invitations, audit visibility, and governed controls without turning admin into archaeology.",
+          "description": "Own organization setup, people, invitations, and audit visibility without turning admin into archaeology.",
           "aliases": [
             "admin",
             "users",
@@ -423,15 +423,15 @@
     "My Card"
   ],
   "driftGuardrails": [
-    "Define the operator shell once and import it everywhere.",
+    "Define the working shell once and reuse it everywhere.",
     "Keep All / Buyers / Suppliers visible as a workspace-wide perspective, not a page-specific trick.",
     "Do not bury the pipeline view behind language that hides the actual pipeline.",
     "Treat dashboard as a leadership support surface with geo, market, and country visibility, not as a leftover report page.",
-    "Settings and admin must become comprehensible governed surfaces, not internal-tool junk drawers.",
+    "Settings and admin must stay clear and usable instead of feeling like internal tool junk drawers.",
     "Keep the DCC as the single source of truth for readiness, PR-UX status, and workflow direction.",
     "Catalog base price remains the system default; manual overrides require an auditable reason.",
     "Approval remains mandatory when the configured threshold is met, and send surfaces must not outrun that truth.",
-    "Orders and execution must prove release and dispatch readiness from accepted commercial truth rather than branching into parallel realities.",
+    "Orders and execution must show release and dispatch readiness from the accepted quote instead of splitting into competing stories.",
     "The DCC must label workflow confidence honestly: core flow, support surface, or unclear / mixed."
   ],
   "tests": {
@@ -444,7 +444,8 @@
       "src/app/(app)/contact-exchange/vcard/page.tsx",
       "src/app/(app)/contact-exchange/scan/page.tsx",
       "public/internal-dcc/index.html",
-      "src/app/page.tsx"
+      "src/app/page.tsx",
+      "src/app/(app)/approval-send/page.tsx"
     ],
     "forbiddenPaths": [
       "src/app/development",

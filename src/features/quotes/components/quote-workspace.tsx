@@ -1741,7 +1741,7 @@ export function QuoteWorkspace({
               </span>
             </div>
             <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-              One commercial lane for Product, Pricing, Terms, Review, and Send
+              One quote flow for product, pricing, terms, review, and sending
             </h3>
             <p className="mt-2 text-sm text-slate-600">
               Keep the current quote visible, preserve the guided builder
@@ -1850,7 +1850,7 @@ export function QuoteWorkspace({
                   <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Current step</p>
                     <p className="mt-2 text-base font-semibold text-slate-900">{focusCurrentStep?.label ?? "Review"}</p>
-                    <p className="mt-1 text-sm text-slate-600">{focusCurrentStep?.detail ?? "Stay in the focused quote and finish the next governed action."}</p>
+                    <p className="mt-1 text-sm text-slate-600">{focusCurrentStep?.detail ?? "Stay in the focused quote and finish the next action."}</p>
                   </div>
                   <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Primary blocker</p>
@@ -1935,7 +1935,7 @@ export function QuoteWorkspace({
                   <div className="mt-4 grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
                     <div className="rounded-[1rem] border border-white/70 bg-white/85 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        Why send is or is not safe
+                        Why sending is or is not safe
                       </p>
                       {focusSendDecision.blockers.length ? (
                         <ul className="mt-3 space-y-2 text-sm text-slate-700">
@@ -1945,7 +1945,7 @@ export function QuoteWorkspace({
                         </ul>
                       ) : (
                         <p className="mt-3 text-sm text-slate-700">
-                          No active blockers are visible in this governed quote surface.
+                          No active blockers are visible on this quote.
                         </p>
                       )}
                       <div className="mt-4 rounded-[1rem] border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
@@ -2769,7 +2769,7 @@ export function QuoteWorkspace({
               <div className="mt-4 rounded-[1rem] bg-slate-50 p-4 text-sm text-slate-600">
                 <p className="font-semibold text-slate-900">Daily sales rule</p>
                 <p className="mt-2">
-                  Keep one quote in focus, clear approval or send blockers
+                  Keep one quote in focus, clear approval or sending blockers
                   first, then move to the next quote instead of bouncing through
                   every card on the page.
                 </p>
@@ -2931,7 +2931,7 @@ export function QuoteWorkspace({
       {!canManageQuotes && !quoteRecords.length ? (
         <StateMessage
           title="No quote draft can be created from this role"
-          description="Open the lead command center or ask a teammate with lead-manage access to create the first quote for this lead."
+          description="Open Follow-up or ask a teammate with lead access to create the first quote for this lead."
           tone="warning"
         />
       ) : null}

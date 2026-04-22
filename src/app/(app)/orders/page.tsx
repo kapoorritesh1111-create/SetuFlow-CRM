@@ -298,7 +298,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
           description="Accepted quotes become operational orders here with documents, compliance, and execution status in one place."
           badge="Live"
           status="No orders yet"
-          actions={[{ label: 'Go to Follow-up', href: PRODUCT_ROUTES.app.leads }]}
+          actions={[]}
         />
         <SectionCard
           eyebrow="No orders yet"
@@ -538,7 +538,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       <section className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft xl:grid-cols-[0.9fr_1.1fr_auto]">
         <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Where am I</p>
-          <p className="mt-2 text-base font-semibold text-slate-900">Orders / execution desk</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">Orders workspace</p>
           <p className="mt-1 text-sm text-slate-600">Open one accepted record, clear blockers, then advance execution. Do not read the whole page first.</p>
         </div>
         <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
@@ -546,16 +546,12 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
           <p className="mt-2 text-base font-semibold text-slate-900">{perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length ? `${perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length} accepted records blocked` : 'Execution blockers are clear right now'}</p>
           <p className="mt-1 text-sm text-slate-600">{primaryOperationalContext === 'supplier' ? 'Supplier fulfilment context is active.' : primaryOperationalContext === 'buyer' ? 'Buyer fulfilment context is active.' : 'Mixed buyer/supplier execution context is active.'}</p>
         </div>
-        <div className="flex flex-col gap-2 xl:min-w-[220px]">
-          <Link href={PRODUCT_ROUTES.app.leads} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Go to Follow-up</Link>
-          <Link href={PRODUCT_ROUTES.app.quotes} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Open Quote workspace</Link>
+        <div className="flex flex-col items-start gap-2 xl:min-w-[220px]">
+          <a href={perspectiveAccepted.length > 0 ? `#order-${perspectiveAccepted[0].quoteId}` : '#accepted-orders'} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Review next accepted order</a>
+          <Link href={PRODUCT_ROUTES.app.quotes} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Quote context</Link>
+          <Link href={PRODUCT_ROUTES.app.leads} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Follow-up</Link>
         </div>
       </section>
-      <StateMessage
-        title={primaryOperationalContext === 'supplier' ? 'Supplier execution context is active' : primaryOperationalContext === 'buyer' ? 'Buyer execution context is active' : 'Mixed execution context is active'}
-        description={primaryOperationalContext === 'supplier' ? 'Orders is now the execution workspace for supplier-side fulfilment. The primary action is to open one accepted record and clear blockers.' : primaryOperationalContext === 'buyer' ? 'Orders is now the execution workspace for buyer-side fulfilment. The primary action is to open one accepted record and keep execution moving.' : 'Orders is showing accepted work across buyer and supplier activity. Focus on one accepted record at a time and clear blockers first.'}
-        tone="neutral"
-      />
       <PageHeader
         eyebrow="Orders / Execution"
         title="Orders / Execution"
@@ -563,7 +559,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         badge="Live"
         status={`${perspectiveOrders.length} active`}
         meta={[`${perspectiveAccepted.length} accepted`, perspectiveMode === 'all' ? 'All workspace' : perspectiveMode === 'buyers' ? 'Buyer perspective' : 'Supplier perspective', 'Execution ready only']}
-        actions={[{ label: 'Go to Follow-up', href: PRODUCT_ROUTES.app.leads }]}
+        actions={[]}
       />
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
@@ -603,11 +599,6 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         </div>
       </section>
 
-      <StateMessage
-        title="What to do next in Orders"
-        description="Orders only represent accepted commercial work. Review blockers first, then open the linked quote if pricing or acceptance context still needs operator confirmation."
-        tone="neutral"
-      />
 
       {perspectiveAccepted.length > 0 ? (
         <TradeSignalGrid
@@ -639,10 +630,11 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       ) : null}
 
       {perspectiveAccepted.length > 0 && (
+        <div id="accepted-orders">
         <SectionCard
           eyebrow="Commercially accepted"
           title="Execution desk"
-          description="Confirmed quote lines are shown as one execution desk. Operators can now prove commercial lock, clear blockers, and progress draft, ready, release, dispatch, and completion posture with explicit evidence requirements on each order."
+          description="Confirmed quote lines are shown in one orders workspace. Teams can confirm locked quote terms, clear blockers, and move draft, ready, release, dispatch, and completion steps with explicit evidence on each order."
         >
           <div className="space-y-6">
             {perspectiveAccepted.map(order => (
@@ -650,6 +642,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
             ))}
           </div>
         </SectionCard>
+        </div>
       )}
     </div>
   );
@@ -677,7 +670,7 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
   });
 
   return (
-    <div className={`rounded-2xl border ${borderClass} ${bgClass} p-4`}>
+    <div id={`order-${order.quoteId}`} className={`rounded-2xl border ${borderClass} ${bgClass} p-4`}>
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -733,7 +726,7 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
               <div className="rounded-xl border border-indigo-200 bg-white p-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Commercial handoff source</p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">{snapshot?.sourceHandoffLabel ?? 'Legacy quote-level contract snapshot'}</p>
-                <p className="mt-1 text-[11px] text-slate-500">{snapshotMode === 'version_bound' ? 'Execution is reading the accepted quote snapshot, not the mutable draft quote.' : 'Execution is still falling back to quote-level continuity because no accepted-version snapshot is present.'}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{snapshotMode === 'version_bound' ? 'Orders are reading the accepted quote snapshot, not the editable draft quote.' : 'Orders are still falling back to quote-level data because no accepted-version snapshot is present.'}</p>
               </div>
               <div className="rounded-xl border border-indigo-200 bg-white p-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Accepted version</p>
@@ -748,7 +741,7 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
               <div className="rounded-xl border border-indigo-200 bg-white p-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Line traceability</p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">{order.lines.filter((line) => line.continuitySourceMode === 'version_bound').length}/{order.lines.length}</p>
-                <p className="mt-1 text-[11px] text-slate-500">{snapshotMode === 'version_bound' ? 'Execution lines are expected to map back to accepted-version line ids.' : 'Legacy records are visible, but not equally auditable.'}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{snapshotMode === 'version_bound' ? 'Order lines should map back to accepted-version line IDs.' : 'Older records are visible, but they are not equally easy to audit.'}</p>
               </div>
             </div>
           );
@@ -837,7 +830,7 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
                       <div>{line.countryOfOrigin ? `Origin ${line.countryOfOrigin}` : 'Origin pending'}</div>
                       {line.packaging ? <div className="text-[10px] text-slate-500">{line.packaging}</div> : null}
                       {line.exportMetadata ? <div className="text-[10px] text-slate-500">{line.exportMetadata}</div> : null}
-                      <div className="text-[10px] text-slate-400">{line.continuitySourceMode === 'version_bound' ? `Locked from accepted snapshot line ${line.sourceQuoteVersionLineItemId ? String(line.sourceQuoteVersionLineItemId).slice(0, 8) : 'recorded'}` : 'Legacy line continuity: sourced from quote-level fallback.'}</div>
+                      <div className="text-[10px] text-slate-400">{line.continuitySourceMode === 'version_bound' ? `Locked from accepted snapshot line ${line.sourceQuoteVersionLineItemId ? String(line.sourceQuoteVersionLineItemId).slice(0, 8) : 'recorded'}` : 'Older line mapping: sourced from quote-level fallback.'}</div>
                       {line.continuityNote ? <div className="text-[10px] text-slate-400">{line.continuityNote}</div> : null}
                     </td>
                   </tr>

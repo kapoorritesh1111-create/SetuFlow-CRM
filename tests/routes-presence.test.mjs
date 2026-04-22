@@ -19,7 +19,7 @@ test('canonical manifest keeps the operator path visible in primary navigation',
     '/contact-exchange/scan',
     '/leads',
     '/quotes',
-    '/integrations',
+    '/approval-send',
     '/orders',
     '/pipeline',
   ]);

@@ -135,52 +135,36 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
 
   return (
     <div className="space-y-6">
-      <StateMessage
-        title={resolvedScope === 'buyer'
-          ? 'Buyer mode is active on this dashboard'
-          : resolvedScope === 'supplier'
-            ? 'Supplier mode is active on this dashboard'
-            : 'Mixed buyer and supplier view is active on this dashboard'}
-        description={resolvedScope === 'buyer'
-          ? 'This view is prioritizing buyer-side commercial movement with evidence-backed order forcing and bounded AI routing. The primary action is to identify what needs intervention now, then clear the next governed blocker.'
-          : resolvedScope === 'supplier'
-            ? 'This view is prioritizing supplier-side sourcing movement with compliance and dispatch evidence visible and bounded AI routing available. The primary action is to identify what needs intervention now, then progress the next supplier record until its blockers are cleared.'
-            : 'This view combines buyer and supplier activity. Use it as a geo-first leadership watchtower to see what needs intervention now, then route records through Capture, Follow-up, Quote, and governed order execution without losing market context.'}
-        tone="neutral"
-      />
-
-      <div className="grid gap-3 lg:grid-cols-4">
-        <StateMessage
-          title="Evidence-backed action forcing comes first"
-          description={`${actionSummary.pendingActionCount} items need movement before they can become revenue or execution progress.`}
-          tone="neutral"
-        />
-        <Link href={PRODUCT_ROUTES.app.pipeline} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open rescue board</Link>
-        <Link href={PRODUCT_ROUTES.app.leads} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open follow-up command center</Link>
-        <Link href={PRODUCT_ROUTES.app.orders} className="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">Open execution workspace</Link>
-      </div>
+      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Dashboard / Overview</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">See what needs intervention, then open the next working route</h1>
+            <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">{resolvedScope === 'buyer'
+              ? 'Buyer mode is active. Use the dashboard to spot the next overdue or blocked buyer record, then move into Follow-up to clear it.'
+              : resolvedScope === 'supplier'
+                ? 'Supplier mode is active. Use the dashboard to spot the next blocked supplier record, then move into Pipeline or Orders to clear it.'
+                : 'This mixed view keeps buyer and supplier pressure visible in one place. Start with the next overdue or blocked record, then move into the route that resolves it.'}</p>
+          </div>
+          <div className="flex flex-col items-start gap-2 lg:min-w-[240px]">
+            <Link href={actionSummary.overdueFollowUpCount > 0 ? PRODUCT_ROUTES.app.leads : actionSummary.draftQuoteCount > 0 ? PRODUCT_ROUTES.app.pipeline : PRODUCT_ROUTES.app.orders} className="inline-flex rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+              {actionSummary.overdueFollowUpCount > 0 ? 'Clear overdue follow-ups' : actionSummary.draftQuoteCount > 0 ? 'Open the rescue board' : 'Open execution workspace'}
+            </Link>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <Link href={PRODUCT_ROUTES.app.pipeline} className="font-semibold text-slate-700 hover:text-slate-900">Pipeline</Link>
+              <Link href={PRODUCT_ROUTES.app.leads} className="font-semibold text-slate-700 hover:text-slate-900">Follow-up</Link>
+              <Link href={PRODUCT_ROUTES.app.orders} className="font-semibold text-slate-700 hover:text-slate-900">Orders</Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-3 lg:grid-cols-3">
         <StateMessage
           title="What leadership should check first"
           description={`${actionSummary.overdueFollowUpCount} follow-ups are overdue and ${actionSummary.draftQuoteCount} quotes are still in governed motion. Use this as the fast intervention surface before drilling into individual workspaces.`}
           tone={actionSummary.pendingActionCount > 0 ? 'warning' : 'success'}
-        />
-        <StateMessage
-          title="Geo / market / country view remains a differentiator"
-          description="Leadership can stay geo-first here, then drop into the rescue board only when a country, market, or stage starts to drift."
-          tone="neutral"
-        />
-        <StateMessage
-          title="Perspective lens stays real"
-          description={resolvedScope === 'all'
-            ? 'All mode is active, so this dashboard is combining buyer and supplier movement on purpose.'
-            : resolvedScope === 'buyer'
-              ? 'Buyer mode is narrowing this dashboard to buyer-side commercial intervention only.'
-              : 'Supplier mode is narrowing this dashboard to supplier-side sourcing and execution intervention only.'}
-          tone="neutral"
-        />
-      </div>
+        />      </div>
 
 
       <div className="grid gap-3 lg:grid-cols-2">

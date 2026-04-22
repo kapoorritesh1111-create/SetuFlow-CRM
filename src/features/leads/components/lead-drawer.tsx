@@ -1093,7 +1093,7 @@ export function LeadDrawer({
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Fast capture lane</p>
                 <h3 className="mt-2 text-base font-semibold text-slate-900">{prefill.title ?? 'Quick lead'}</h3>
-                <p className="mt-1 text-sm text-slate-600">{prefill.description ?? 'Save the minimum valid lead, keep the commercial lane compact, and move into Quote quickly.'}</p>
+                <p className="mt-1 text-sm text-slate-600">{prefill.description ?? 'Save the minimum valid lead, keep the sales process compact, and move into Quote quickly.'}</p>
               </div>
               <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">{shouldAutoOpenQuoteAfterSave ? 'Quote opens after save' : 'Quick save'}</span>
             </div>

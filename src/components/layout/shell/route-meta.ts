@@ -25,8 +25,8 @@ export function getRouteMeta(pathname: string): RouteMeta {
                 : pathname.startsWith('/admin/users')
                   ? 'People & access'
                   : 'Admin / Organization',
-      description: 'Use admin for governed workspace setup: organization defaults, people access, invitations, audit proof, and admin-only control surfaces. This is not the daily trade workflow.',
-      sectionLabel: 'Governed workspace setup',
+      description: 'Use admin for workspace setup: organization defaults, people access, invitations, audit proof, and admin-only controls. This is not the daily work route.',
+      sectionLabel: 'Workspace setup',
       tabs: ADMIN_TABS,
       showWorkspaceModeSwitch: false,
     };
@@ -72,7 +72,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
     if (/^\/leads\/[^/]+\/rfq/.test(pathname)) {
       return {
         title: 'RFQs',
-        description: 'Manage RFQ work for the selected lead without breaking the lead-owned operating sequence.',
+        description: 'Manage RFQ work for the selected lead without breaking the normal sales sequence.',
         sectionLabel: 'Primary operating flow',
         backHref: pathname.replace(/\/rfq.*/, ''),
         backLabel: 'Back to follow-up',
@@ -81,7 +81,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
     if (/^\/leads\/[^/]+$/.test(pathname)) {
       return {
         title: 'Follow-up',
-        description: 'Work one compressed command center for qualification, blockers, next step, and quote motion without bouncing between products.',
+        description: 'Work one focused page for qualification, blockers, next step, and quote progress without bouncing between tools.',
         sectionLabel: 'Primary operating flow',
         tabs: PRODUCT_SHELL_TABS,
         backHref: PRODUCT_ROUTES.app.leads,
@@ -90,7 +90,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
     }
     return {
       title: 'Follow-up',
-      description: 'Run the follow-up command center where qualification and quote motion stay in one working set with explicit next steps.',
+      description: 'Run follow-up where qualification and quote progress stay in one working set with clear next steps.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -99,7 +99,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === PRODUCT_ROUTES.app.quotes || pathname.startsWith(`${PRODUCT_ROUTES.app.quotes}/`)) {
     return {
       title: 'Quote',
-      description: 'Use the quote command center to finish governed pricing and then hand off cleanly into Approval / Send without pretending a quote is already safe to send.',
+      description: 'Finish quote pricing here, then hand off cleanly into Approvals & Sending when the quote is actually ready.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -107,8 +107,8 @@ export function getRouteMeta(pathname: string): RouteMeta {
 
   if (pathname === PRODUCT_ROUTES.app.integrations || pathname.startsWith(`${PRODUCT_ROUTES.app.integrations}/`)) {
     return {
-      title: 'Approval / Send',
-      description: 'Review approval truth, send blockers, latest outbound action, and resend posture without letting send posture outrun commercial truth.',
+      title: 'Approvals & Sending',
+      description: 'Review approval status, send blockers, latest outbound activity, and resend history without sending too early.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -117,7 +117,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === PRODUCT_ROUTES.app.orders || pathname.startsWith(`${PRODUCT_ROUTES.app.orders}/`)) {
     return {
       title: 'Orders / Execution',
-      description: 'Use one execution desk to prove release readiness, dispatch evidence, blockers, and next action so accepted quote truth is never mistaken for execution readiness.',
+      description: 'Use one orders workspace to confirm release readiness, dispatch evidence, blockers, and next action so an accepted quote is not confused with execution readiness.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -135,17 +135,17 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname.startsWith('/products')) {
     return {
       title: 'Catalog',
-      description: 'Use Catalog as governed commercial truth: start from the baseline price, require a reason for overrides, and keep threshold approvals explicit before quote or order confidence is implied.',
+      description: 'Use Catalog as the pricing source: start from the base price, require a reason for overrides, and keep approval thresholds visible before a quote or order looks ready.',
       sectionLabel: 'Catalog / Settings / Admin',
       tabs: PRODUCT_SHELL_TABS,
     };
   }
   if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Useful capture support, intentionally demoted from the main daily shell.', sectionLabel: 'Demoted side tools', showWorkspaceModeSwitch: false };
-  if (pathname.startsWith('/settings/lists')) return { title: 'Settings / Lists', description: 'Maintain shared lists, defaults, pipelines, and stage vocabulary that support the workflow. This page is governed setup, not the workflow itself.', sectionLabel: 'Governed workspace setup', tabs: PRODUCT_SHELL_TABS, showWorkspaceModeSwitch: false };
-  if (pathname.startsWith('/ai-suggestions')) return { title: 'Contextual AI guidance', description: 'Keep AI guidance contextual and bounded. It should route the operator to the next safe action inside Follow-up, Quote, Approval / Send, or Orders rather than becoming its own product.', sectionLabel: 'Demoted side tools' };
+  if (pathname.startsWith('/settings/lists')) return { title: 'Settings / Lists', description: 'Maintain shared lists, defaults, pipelines, and stage names that support the workflow. This page is setup, not the workflow itself.', sectionLabel: 'Workspace setup', tabs: PRODUCT_SHELL_TABS, showWorkspaceModeSwitch: false };
+  if (pathname.startsWith('/ai-suggestions')) return { title: 'AI help', description: 'Keep AI help contextual and bounded. It should point the team to the next safe action inside Follow-up, Quote, Approvals & Sending, or Orders instead of becoming its own product.', sectionLabel: 'Demoted side tools' };
   if (pathname.startsWith('/contact-exchange/vcard')) return { title: 'My Card', description: 'Personal sharing tool, intentionally secondary to the trade operating spine.', sectionLabel: 'Demoted side tools' };
   if (pathname.startsWith('/tasks')) return { title: 'Tasks', description: 'Supporting work tracker that should not outrank the core trade flow.', sectionLabel: 'Demoted side tools' };
   if (pathname.startsWith('/documents')) return { title: 'Documents', description: 'Review files, documentary completeness, expiry, and evidence gaps close to the core workflow.', sectionLabel: 'Risk and control' };
   if (pathname.startsWith('/compliance')) return { title: 'Compliance', description: 'Keep compliance blockers visible before commercial or execution moves go too far.', sectionLabel: 'Risk and control' };
-  return { title: 'Workspace', description: 'Operate daily work from a cleaner shell that matches the trade operator mental model.', sectionLabel: 'SETU Flow workspace' };
+  return { title: 'Workspace', description: 'Operate daily work from a cleaner shell that matches how the team actually works.', sectionLabel: 'SETU Flow workspace' };
 }

@@ -91,7 +91,7 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
   if (hasAcceptedContract || status === 'accepted') {
     return {
       label: 'Move into Orders / Execution',
-      detail: 'Commercial truth is accepted. The next move is operational handoff, not more quoting.',
+      detail: 'The quote is accepted. The next move is order handoff, not more quote edits.',
       href: PRODUCT_ROUTES.app.orders,
       tone: 'orders' as const,
     };
@@ -99,7 +99,7 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
 
   if (status === 'pending_approval') {
     return {
-      label: 'Resolve approval before send',
+      label: 'Clear approval before sending',
       detail: 'Approval is the blocker. The quote should not advance into outbound communication until that gate clears.',
       href: PRODUCT_ROUTES.app.integrations,
       tone: 'approval' as const,
@@ -108,8 +108,8 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
 
   if (status === 'approved') {
     return {
-      label: 'Send governed quote',
-      detail: 'Commercial review is clear. The next move is outbound send with operator-visible continuity.',
+      label: 'Send quote',
+      detail: 'Review is complete. The next move is sending this quote and keeping the activity trail visible.',
       href: PRODUCT_ROUTES.app.integrations,
       tone: 'approval' as const,
     };
@@ -118,7 +118,7 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
   if (status === 'sent' || status === 'negotiating') {
     return {
       label: 'Drive response from Follow-up',
-      detail: 'The quote is live. Move the operator back to the follow-up lane to handle buyer response and next action.',
+      detail: 'The quote is live. Go back to Follow-up to handle the buyer response and next action.',
       href: `/leads/${leadId}?tab=workflow`,
       tone: 'follow_up' as const,
     };
@@ -127,7 +127,7 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
   if (status === 'rejected' || status === 'expired') {
     return {
       label: 'Requalify or close from Follow-up',
-      detail: 'The commercial thread is no longer healthy. Put the lead back into an explicit follow-up decision.',
+      detail: 'This quote is no longer active. Put the lead back into a clear follow-up decision.',
       href: `/leads/${leadId}?tab=workflow`,
       tone: 'follow_up' as const,
     };

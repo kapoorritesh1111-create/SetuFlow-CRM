@@ -11,7 +11,7 @@ export default function RouteError({ error, reset }: { error: Error & { digest?:
 
   return (
     <ErrorBoundaryView
-      title="Quote command center unavailable"
+      title="Quote workspace unavailable"
       description="We could not load governed pricing, version history, or approval posture for this workspace. Try again, then return to Follow-up if you need a stable recovery route."
       reset={reset}
       homeHref={PRODUCT_ROUTES.app.leads}

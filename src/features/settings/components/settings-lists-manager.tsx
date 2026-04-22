@@ -257,14 +257,14 @@ export function SettingsListsManager({
     ? 'Settings lists are empty.'
     : `${activeReferenceItems} of ${totalReferenceItems} reference items are active across markets, countries, next steps, and categories.`;
   const settingsAiBlocker = isWorkspaceEmpty
-    ? 'No governed reference data exists yet.'
+    ? 'No shared reference data exists yet.'
     : !markets.length
       ? 'Markets are missing, so geography defaults stay weak downstream.'
       : !countries.length
         ? 'Countries are missing, so market coverage is incomplete.'
         : !nextSteps.length
           ? 'Next steps are missing, so follow-up defaults remain thin.'
-          : 'The lists are live; the main risk is operator reading weight, not missing setup proof.';
+          : 'The lists are live; the main risk is too much reading, not missing setup proof.';
   const settingsAiNextAction = isWorkspaceEmpty
     ? 'Create the first market or import a JSON snapshot before editing anything else.'
     : !markets.length
@@ -272,7 +272,7 @@ export function SettingsListsManager({
       : !countries.length
         ? 'Add countries next so downstream geography stays explainable.'
         : !nextSteps.length
-          ? 'Add next steps so follow-up defaults become operator-ready.'
+          ? 'Add next steps so follow-up defaults are ready to use.'
           : 'Jump to the one section you need, edit it, and leave the rest collapsed.';
 
   const primaryFocusTable: TableName = isWorkspaceEmpty || !markets.length
@@ -456,7 +456,7 @@ export function SettingsListsManager({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Action-first settings lane</p>
-            <h3 className="mt-2 text-xl font-semibold text-slate-900">Keep setup governed without making operators scan the whole page</h3>
+            <h3 className="mt-2 text-xl font-semibold text-slate-900">Keep setup controlled without making the team scan the whole page</h3>
             <p className="mt-2 text-sm text-slate-600">Where am I: reference lists. What is blocking me: {blockerSummary} What do I do next: {primaryFocusLabel.toLowerCase()} and keep the rest collapsed.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <ToolbarStat label={`${activeReferenceItems} active rows`} />

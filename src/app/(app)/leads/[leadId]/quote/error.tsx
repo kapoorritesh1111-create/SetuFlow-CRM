@@ -12,7 +12,7 @@ export default function RouteError({ error, reset }: { error: Error & { digest?:
   return (
     <ErrorBoundaryView
       title="Quote workspace unavailable"
-      description="The quote workspace failed to load. Try the route again, or return to the lead command center while RFQ, pricing, and negotiation data are checked."
+      description="The quote workspace failed to load. Try the route again, or return to the lead workspace while RFQ, pricing, and negotiation data are checked."
       reset={reset}
       homeHref={PRODUCT_ROUTES.app.leads}
       homeLabel="Return to leads"

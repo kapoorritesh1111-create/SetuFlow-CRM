@@ -749,7 +749,7 @@ export function ProductsManager({
               <p className="mt-2 text-base font-semibold text-slate-900">
                 {workspaceMode === 'catalog'
                   ? 'Products owns the baseline price truth across active markets.'
-                  : 'Product setup owns master data only. Baseline pricing remains visible but is governed from the baseline catalog mode.'}
+                  : 'Product setup owns master data only. Base pricing stays visible here, but pricing changes still follow the catalog rules.'}
               </p>
               <p className="mt-2 text-sm text-slate-600">
                 {workspaceMode === 'catalog'

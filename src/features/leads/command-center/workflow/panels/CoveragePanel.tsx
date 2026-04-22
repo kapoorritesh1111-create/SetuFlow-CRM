@@ -26,7 +26,7 @@ export function CoveragePanel({
               <h3 className="mt-1 text-xl font-semibold text-neutral-900">Edit mapped products and market context</h3>
             </div>
           </div>
-          <p className="mt-3 text-sm leading-7 text-neutral-600">Keep product coverage clean before quote work starts. Products define the commercial lane, while markets add operator context when trade fit matters.</p>
+          <p className="mt-3 text-sm leading-7 text-neutral-600">Keep product coverage clean before quote work starts. Products define the quote path, while markets add team context when trade fit matters.</p>
         </div>
         <button type="button" onClick={onEditCoverage} className="inline-flex items-center gap-2 rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark">
           <span className={ICON_CONTAINER_CLASS}><OpenIcon className="h-4 w-4 text-neutral-900" /></span>

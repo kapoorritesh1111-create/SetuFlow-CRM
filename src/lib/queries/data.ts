@@ -1932,15 +1932,15 @@ export async function getDashboardData(
         lane: 'commercial' as const,
         blockerReasons: [
           ...(contract ? [] : ['Accepted quote has not yet synced into a contract record.']),
-          ...((contract && !contract.signed_at) ? ['Contract is not yet signed for governed execution.'] : []),
+          ...((contract && !contract.signed_at) ? ['Contract is not yet signed for order execution.'] : []),
           ...((contract && String(contract.commercial_lock_state ?? '').toLowerCase() !== 'locked') ? ['Commercial lock snapshot is not yet locked.'] : []),
         ],
-        summary: 'Commercial continuity must be contract-locked before execution becomes operator-safe.',
+        summary: 'The contract must be locked before execution is ready.',
       },
       {
         lane: 'compliance' as const,
         blockerReasons: [...operationalControls.documentRequirementSummary.blockerReasons, ...operationalControls.complianceSummary.blockerReasons],
-        summary: 'Compliance documents and checklist items are still blocking governed progression.',
+        summary: 'Compliance documents and checklist items are still blocking progress.',
       },
       {
         lane: 'release' as const,

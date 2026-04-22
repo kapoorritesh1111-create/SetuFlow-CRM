@@ -229,7 +229,7 @@ function buildNextActionSummary(data: LeadProfileData): NextActionSummary {
       title: 'Review active quote',
       summary: 'The latest quote is the primary commercial artifact. Keep pricing basis, send readiness, and next communication aligned before moving forward.',
       urgency: tasks.urgency,
-      primaryLabel: 'Open commercial lane',
+      primaryLabel: 'Open quote flow',
       secondaryLabels: ['Check pricing basis', 'Move into Quotes tab when ready'],
       quoteId: quote.id,
       aiDraftAvailable: ai.readyDraftCount > 0 || ai.pendingReviewCount > 0,
@@ -291,7 +291,7 @@ function buildWorkflowActionCards(data: LeadProfileData): WorkflowActionCardStat
       key: 'commercial',
       label: 'Commercial',
       stateLabel: quote?.quote_number ?? 'No quote yet',
-      helperText: pricingBasis ? `${pricingBasis.replace(/_/g, ' ')} basis is carrying the current commercial lane` : 'Create or review the current quote and pricing basis',
+      helperText: pricingBasis ? `${pricingBasis.replace(/_/g, ' ')} basis is carrying the current sales process` : 'Create or review the current quote and pricing basis',
       badge: quote?.status ?? null,
       blocked: compliance.gate === 'BLOCKED' || String(quote?.status ?? '').toLowerCase() === 'draft',
       blockedReason: compliance.gate === 'BLOCKED'

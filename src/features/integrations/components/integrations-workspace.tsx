@@ -64,8 +64,9 @@ export function IntegrationsWorkspace({ data }: Props) {
   return (
     <div className="space-y-6">
       <section className="grid gap-4 lg:grid-cols-[1.45fr_1fr]">
+      <a id="send-queue" className="sr-only" aria-hidden="true"></a>
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Approval / Send desk</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Approvals & Sending</p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">One operator desk for approval truth, send blockers, and outbound continuity</h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-600">
             This route should never imply that a quote is safe to send just because it exists. Keep approval truth, gated send readiness, latest outbound action,
@@ -79,10 +80,11 @@ export function IntegrationsWorkspace({ data }: Props) {
               </div>
             ))}
           </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/quotes" className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Back to Quote</Link>
-            <Link href="/contracts" className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Contracts</Link>
-            <Link href="/orders" className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Open Orders / Execution</Link>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <a href="#governed-send-queue" className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Review ready items</a>
+            <Link href="/quotes" className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50">Back to Quote</Link>
+            <Link href="/orders" className="text-sm font-semibold text-brand-700 hover:text-brand-800">Orders &amp; Execution</Link>
+            <Link href="/contracts" className="text-sm font-semibold text-slate-700 hover:text-slate-900">Contracts</Link>
           </div>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
@@ -90,7 +92,7 @@ export function IntegrationsWorkspace({ data }: Props) {
           <ul className="mt-4 space-y-3 text-sm text-slate-600">
             <li>• A quote is not safe to send until approval truth and continuity blockers are visibly clear.</li>
             <li>• Retry or resend must preserve continuity keys, latest action context, and operator review visibility.</li>
-            <li>• Outbound posture must never outrun the governed commercial contract.</li>
+            <li>• Sending must never move ahead of the approved quote and contract status.</li>
             <li>• Technical connector health matters only after the operator can answer: send, revise, or hold?</li>
           </ul>
         </div>
@@ -104,10 +106,10 @@ export function IntegrationsWorkspace({ data }: Props) {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.25fr_1fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+        <div id="governed-send-queue" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Governed send queue</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Ready to send queue</p>
               <h3 className="mt-1 text-xl font-semibold text-slate-900">What is actually ready, blocked, or waiting for revision</h3>
             </div>
           </div>
@@ -128,7 +130,7 @@ export function IntegrationsWorkspace({ data }: Props) {
                   </div>
                 ) : null}
               </article>
-            )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No governed send candidates are waiting right now.</div>}
+            )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No ready-to-send items are waiting right now.</div>}
           </div>
         </div>
 

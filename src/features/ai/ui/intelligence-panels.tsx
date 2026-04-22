@@ -83,7 +83,7 @@ export function AIGovernedDecisionPanel({ items, summary }: { items: AIGovernedD
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-3xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Governed decisions</p><p className="mt-2 text-2xl font-semibold text-slate-900">{summary.governedDecisions}</p></div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Recommended decisions</p><p className="mt-2 text-2xl font-semibold text-slate-900">{summary.governedDecisions}</p></div>
         <div className="rounded-3xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Explainable</p><p className="mt-2 text-2xl font-semibold text-slate-900">{summary.explainableDecisions}</p></div>
         <div className="rounded-3xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Bounded</p><p className="mt-2 text-2xl font-semibold text-slate-900">{summary.boundedDecisions}</p></div>
         <div className="rounded-3xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Action-safe</p><p className="mt-2 text-2xl font-semibold text-slate-900">{summary.actionSafeDecisions}</p></div>
@@ -95,7 +95,7 @@ export function AIGovernedDecisionPanel({ items, summary }: { items: AIGovernedD
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${levelClasses(item.severity)}`}>{item.entityKind}</span>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">Repo governed</span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">Repo checked</span>
                 </div>
                 <h3 className="mt-3 text-base font-semibold text-slate-900">{item.title}</h3>
                 <p className="mt-1 text-sm text-slate-600">{item.summary}</p>

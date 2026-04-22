@@ -1,5 +1,5 @@
 import { RouteLoadingState } from '@/components/app/route-loading-state';
 
 export default function Loading() {
-  return <RouteLoadingState eyebrow="Workspace" title="Loading integrations" description="Preparing live data, permissions, and operator surfaces for this workspace." />;
+  return <RouteLoadingState eyebrow="Workspace" title="Redirecting to approvals & sending" description="Preparing the updated approvals & sending route for this workspace." />;
 }

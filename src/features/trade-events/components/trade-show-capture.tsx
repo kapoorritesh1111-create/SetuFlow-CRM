@@ -37,7 +37,7 @@ export function TradeShowCapture({ events }: { events: TradeEventOption[] }) {
             <h3 className="mt-2 text-xl font-semibold text-slate-900">Create floor-ready buyer and supplier leads fast</h3>
             <p className="mt-2 max-w-3xl text-sm text-slate-600">Capture a real lead with next follow-up, event linkage, and notes from the booth without opening the full lead workspace.</p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button type="button" onClick={() => { setLeadType('buyer'); setOpen(true); }} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Capture buyer</button>
             <button type="button" onClick={() => { setLeadType('supplier'); setOpen(true); }} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Capture supplier</button>
           </div>

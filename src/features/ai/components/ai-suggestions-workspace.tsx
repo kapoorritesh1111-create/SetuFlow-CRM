@@ -119,9 +119,9 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-soft">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">AI assistive workspace</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-900">Review console for all AI workflows</h1>
-            <p className="mt-2 max-w-3xl text-sm text-slate-600">AI outputs are now explainable, bounded, and action-safe. Operators review every draft here, and governed decision support now points to the next safe workspace action without mutating workflow truth.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">AI workspace</p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-900">Review AI drafts and suggestions</h1>
+            <p className="mt-2 max-w-3xl text-sm text-slate-600">AI outputs stay explainable, bounded, and action-safe. Every draft is reviewed here, and decision support points to the next safe workspace action without changing the workflow on its own.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setActiveTab('review')} className={`rounded-2xl border px-4 py-2 text-sm font-medium ${activeTab === 'review' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}>Review queue</button>
@@ -143,7 +143,7 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">AI intelligence posture</p>
             <h2 className="mt-2 text-xl font-semibold text-slate-900">Priority insights by operating risk</h2>
-            <p className="mt-2 text-sm text-slate-600">These ranked insights are now paired with governed decision cards. AI explains why the action is safe, what blocks it, and what it is not allowed to change.</p>
+            <p className="mt-2 text-sm text-slate-600">These ranked insights are paired with decision cards. AI explains why the action is safe, what blocks it, and what it is not allowed to change.</p>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Governed decision support</p>
@@ -285,7 +285,7 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
                   <div className="mt-3 grid gap-3 md:grid-cols-3">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"><span className="font-medium text-slate-900">Workflow family:</span> {suggestionFamily}</div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"><span className="font-medium text-slate-900">Conversion state:</span> {isApplied ? 'Approved and applied to communications' : draft.status === 'approved' ? 'Approved, waiting for communication draft creation' : 'Still in review funnel'}</div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"><span className="font-medium text-slate-900">Override signal:</span> {draft.operator_notes?.trim() ? 'Operator note captured' : draft.status === 'dismissed' ? 'Dismissed without notes' : 'No override signal yet'}</div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"><span className="font-medium text-slate-900">Override signal:</span> {draft.operator_notes?.trim() ? 'Review note captured' : draft.status === 'dismissed' ? 'Dismissed without notes' : 'No override signal yet'}</div>
                   </div>
                   <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
@@ -313,7 +313,7 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
                       </div>
                     </div>
                   </div>
-                  {draft.operator_notes ? <p className="mt-3 text-sm text-slate-500"><span className="font-medium text-slate-700">Latest operator note:</span> {draft.operator_notes}</p> : null}
+                  {draft.operator_notes ? <p className="mt-3 text-sm text-slate-500"><span className="font-medium text-slate-700">Latest review note:</span> {draft.operator_notes}</p> : null}
                 </article>
               );
             }) : <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-sm text-slate-500">No persisted AI drafts match the current filters. Generate a follow-up from Tasks or Lead Detail to populate this review queue.</div>}

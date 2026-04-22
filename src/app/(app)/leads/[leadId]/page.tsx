@@ -152,8 +152,8 @@ export default async function Page({ params, searchParams }: { params: { leadId:
       <StateMessage
         title={leadType === 'supplier' ? 'Supplier command mode is active' : 'Buyer command mode is active'}
         description={leadType === 'supplier'
-          ? 'This command center is operating on a supplier record. Keep the main action on qualification, coverage, and quote readiness before pushing work downstream.'
-          : 'This command center is operating on a buyer record. Keep the main action on qualification, quote preparation, and a clean move into Orders once the quote is accepted.'}
+          ? 'This page is showing a supplier record. Keep the main action on qualification, coverage, and quote readiness before pushing work downstream.'
+          : 'This page is showing a buyer record. Keep the main action on qualification, quote preparation, and a clean move into Orders once the quote is accepted.'}
         tone="neutral"
       />
       <LeadCommandCenterPage
