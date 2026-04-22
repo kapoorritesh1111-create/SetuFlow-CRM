@@ -26,6 +26,7 @@ import { PipelineAIStrip } from './PipelineAIStrip';
 import { WorkspaceWorkflowShell } from '@/features/workspace/components/WorkspaceWorkflowShell';
 import { buildTodayLayerState } from '@/features/workspace/today';
 import { workspaceInsetClass, workspacePanelClass, workspacePrimaryButtonClass, workspaceSecondaryButtonClass } from '@/components/ui/workspace-surfaces';
+import { CollapsiblePanel } from '@/components/ui/collapsible-panel';
 import { workspaceModeToLeadJourney } from '@/features/workspace/mode';
 import type { TodayFilterKey, TodayLayerState, WorkspaceMode } from '@/features/workspace/types';
 
@@ -708,33 +709,42 @@ export function PipelineBoard({
         ) : null}
       </section>
 
-      <section className="grid gap-3 lg:grid-cols-3">
-        <StateMessage
-          title="What needs intervention now"
-          tone={overdueCount || atRiskCount ? 'warning' : 'success'}
-          description={`${overdueCount} overdue follow-ups, ${atRiskCount} at-risk leads, and ${filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0)} commercially blocked records need rescue attention before pipeline movement can be trusted.`}
-        />
-        <StateMessage
-          title="Pipeline stays explicit"
-          tone="neutral"
-          description="This page stays a true pipeline board. Rescue posture is layered on top of the board, not used as an excuse to hide stage movement."
-        />
-        <div className={cn('flex flex-col gap-3 p-4', workspacePanelClass)}>
-          <p className="text-sm font-semibold text-slate-950">Move fast without losing continuity</p>
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-            <a href={PRODUCT_ROUTES.app.dashboard} className={workspaceSecondaryButtonClass}>Open dashboard</a>
-            <a href={PRODUCT_ROUTES.app.leads} className={workspaceSecondaryButtonClass}>Open follow-up</a>
-            <a href={PRODUCT_ROUTES.app.orders} className={workspacePrimaryButtonClass}>Open execution</a>
+      <section>
+        <CollapsiblePanel
+          title="Board status and route shortcuts"
+          summary="Open when you need rescue totals or a faster jump to another workspace."
+          className={cn('bg-white/80', workspacePanelClass)}
+          bodyClassName="bg-transparent"
+        >
+          <div className="grid gap-3 lg:grid-cols-3">
+            <StateMessage
+              title="What needs intervention now"
+              tone={overdueCount || atRiskCount ? 'warning' : 'success'}
+              description={`${overdueCount} overdue follow-ups, ${atRiskCount} at-risk leads, and ${filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0)} commercially blocked records need rescue attention before pipeline movement can be trusted.`}
+            />
+            <StateMessage
+              title="Pipeline stays explicit"
+              tone="neutral"
+              description="This page stays a true pipeline board. Rescue posture is layered on top of the board, not used as an excuse to hide stage movement."
+            />
+            <div className={cn('flex flex-col gap-3 p-4', workspacePanelClass)}>
+              <p className="text-sm font-semibold text-slate-950">Move fast without losing continuity</p>
+              <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                <a href={PRODUCT_ROUTES.app.dashboard} className={workspaceSecondaryButtonClass}>Open dashboard</a>
+                <a href={PRODUCT_ROUTES.app.leads} className={workspaceSecondaryButtonClass}>Open follow-up</a>
+                <a href={PRODUCT_ROUTES.app.orders} className={workspacePrimaryButtonClass}>Open execution</a>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Pipeline summary metrics">
-        <ToolbarStat label="Visible leads" value={String(filteredLeads.length)} tone="default" />
-        <ToolbarStat label="Move blocked" value={String(filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0))} tone={filteredLeads.some((lead) => getLeadBlockerCount(lead.id) > 0) ? 'danger' : 'default'} />
-        <ToolbarStat label="Overdue follow-ups" value={String(overdueCount)} tone={overdueCount ? 'danger' : 'default'} />
-        <ToolbarStat label="Due today" value={String(todayCount)} tone={todayCount ? 'warning' : 'default'} />
-        <ToolbarStat label="At risk" value={String(atRiskCount)} tone={atRiskCount ? 'warning' : 'default'} />
+          <section className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Pipeline summary metrics">
+            <ToolbarStat label="Visible leads" value={String(filteredLeads.length)} tone="default" />
+            <ToolbarStat label="Move blocked" value={String(filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0))} tone={filteredLeads.some((lead) => getLeadBlockerCount(lead.id) > 0) ? 'danger' : 'default'} />
+            <ToolbarStat label="Overdue follow-ups" value={String(overdueCount)} tone={overdueCount ? 'danger' : 'default'} />
+            <ToolbarStat label="Due today" value={String(todayCount)} tone={todayCount ? 'warning' : 'default'} />
+            <ToolbarStat label="At risk" value={String(atRiskCount)} tone={atRiskCount ? 'warning' : 'default'} />
+          </section>
+        </CollapsiblePanel>
       </section>
 
       {showStageConfigurationState ? (

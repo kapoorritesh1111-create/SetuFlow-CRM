@@ -1,5 +1,6 @@
 import type { QuoteHistoryItem, QuoteWorkspaceListItem, QuotesWorkspaceViewModel } from '@/features/quotes/types/workspace';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
+import { buildApprovalSendHref, buildLeadQuoteHref, buildLeadWorkflowHref, buildOrdersHref } from '@/lib/workflow/handoffs';
 
 type LeadRow = { id: string; company_name: string | null; contact_name: string | null; lead_type?: 'buyer' | 'supplier' | null };
 type QuoteRow = {
@@ -87,12 +88,13 @@ function buildHistory(quoteId: string, versions: QuoteVersionRow[], negotiations
   });
 }
 
-function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status: string; hasAcceptedContract: boolean; leadId: string; quoteId: string }) {
+function getNextStep({ status, hasAcceptedContract, leadId, quoteId, leadType }: { status: string; hasAcceptedContract: boolean; leadId: string; quoteId: string; leadType?: 'buyer' | 'supplier' | 'mixed' | null }) {
+  const mode = leadType === 'buyer' ? 'buyers' : leadType === 'supplier' ? 'suppliers' : null;
   if (hasAcceptedContract || status === 'accepted') {
     return {
       label: 'Move into Orders / Execution',
       detail: 'The quote is accepted. The next move is order handoff, not more quote edits.',
-      href: PRODUCT_ROUTES.app.orders,
+      href: buildOrdersHref({ notice: 'quote-accepted', quoteId, leadId, handoff: 'quote-to-orders' }, mode),
       tone: 'orders' as const,
     };
   }
@@ -101,7 +103,7 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
     return {
       label: 'Clear approval before sending',
       detail: 'Approval is the blocker. The quote should not advance into outbound communication until that gate clears.',
-      href: PRODUCT_ROUTES.app.integrations,
+      href: buildApprovalSendHref({ queue: 'approvals', quoteId, leadId, handoff: 'quote-needs-approval' }, mode),
       tone: 'approval' as const,
     };
   }
@@ -110,7 +112,7 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
     return {
       label: 'Send quote',
       detail: 'Review is complete. The next move is sending this quote and keeping the activity trail visible.',
-      href: PRODUCT_ROUTES.app.integrations,
+      href: buildApprovalSendHref({ queue: 'send', quoteId, leadId, handoff: 'quote-ready-to-send' }, mode),
       tone: 'approval' as const,
     };
   }
@@ -119,7 +121,7 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
     return {
       label: 'Drive response from Follow-up',
       detail: 'The quote is live. Go back to Follow-up to handle the buyer response and next action.',
-      href: `/leads/${leadId}?tab=workflow`,
+      href: buildLeadWorkflowHref(leadId, mode, { quoteId, handoff: 'quote-live-follow-up' }),
       tone: 'follow_up' as const,
     };
   }
@@ -128,7 +130,7 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
     return {
       label: 'Requalify or close from Follow-up',
       detail: 'This quote is no longer active. Put the lead back into a clear follow-up decision.',
-      href: `/leads/${leadId}?tab=workflow`,
+      href: buildLeadWorkflowHref(leadId, mode, { quoteId, handoff: 'quote-requalify' }),
       tone: 'follow_up' as const,
     };
   }
@@ -136,7 +138,7 @@ function getNextStep({ status, hasAcceptedContract, leadId, quoteId }: { status:
   return {
     label: 'Finish quote build',
     detail: 'Keep the working set compressed around the quote builder until pricing, terms, and readiness are explicit.',
-    href: `/leads/${leadId}/quote?quoteId=${quoteId}`,
+    href: buildLeadQuoteHref(leadId, quoteId, mode, { handoff: 'quote-build' }),
     tone: 'quote' as const,
   };
 }
@@ -193,7 +195,7 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
       negotiationCount: negotiationCounts.get(quote.id) ?? 0,
       historyCount: (versionCounts.get(quote.id) ?? 0) + (negotiationCounts.get(quote.id) ?? 0) + (communicationCounts.get(quote.id) ?? 0),
       hasAcceptedContract,
-      nextStep: getNextStep({ status, hasAcceptedContract, leadId: quote.lead_id, quoteId: quote.id }),
+      nextStep: getNextStep({ status, hasAcceptedContract, leadId: quote.lead_id, quoteId: quote.id, leadType }),
       contract: contractByQuoteId.get(quote.id) ?? null,
       lastNegotiationMessage: quoteNegotiations.sort((a, b) => Date.parse(b.created_at ?? '') - Date.parse(a.created_at ?? ''))[0]?.message ?? null,
     };

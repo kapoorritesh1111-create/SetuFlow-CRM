@@ -372,7 +372,7 @@ export async function convertTradeEventEntryToLead(formData: FormData): Promise<
 
   if (entryError || !entry?.id) return;
   if (entry.converted_lead_id) {
-    redirect(`/leads/${entry.converted_lead_id}`);
+    redirect(`/leads/${entry.converted_lead_id}?tab=workflow&handoff=capture-converted&mode=buyers`);
   }
 
   const companyName = String(entry.captured_company_name ?? '').trim();
@@ -530,5 +530,5 @@ export async function convertTradeEventEntryToLead(formData: FormData): Promise<
   revalidatePath('/trade-events');
   revalidatePath('/leads');
   revalidatePath('/dashboard');
-  redirect(`/leads/${createdLead.id}`);
+  redirect(`/leads/${createdLead.id}?tab=workflow&handoff=capture-converted&mode=buyers`);
 }

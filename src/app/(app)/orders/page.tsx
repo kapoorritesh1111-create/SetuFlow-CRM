@@ -233,7 +233,7 @@ function decodeNotice(noticeKey: string | null) {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default async function OrdersPage({ searchParams }: { searchParams?: { notice?: string | string[]; mode?: string | string[] } }) {
+export default async function OrdersPage({ searchParams }: { searchParams?: { notice?: string | string[]; mode?: string | string[]; handoff?: string | string[]; quoteId?: string | string[]; leadId?: string | string[] } }) {
   const workspace = await getWorkspaceAccess();
 
   if (!workspace.membership || !workspace.organization) {
@@ -528,9 +528,14 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
   const noticeKey = Array.isArray(searchParams?.notice) ? searchParams?.notice[0] ?? null : searchParams?.notice ?? null;
   const notice = decodeNotice(noticeKey);
+  const handoffKey = Array.isArray(searchParams?.handoff) ? searchParams?.handoff[0] ?? null : searchParams?.handoff ?? null;
+  const focusQuoteId = Array.isArray(searchParams?.quoteId) ? searchParams?.quoteId[0] ?? null : searchParams?.quoteId ?? null;
+  const focusLeadId = Array.isArray(searchParams?.leadId) ? searchParams?.leadId[0] ?? null : searchParams?.leadId ?? null;
   const modeParam = Array.isArray(searchParams?.mode) ? searchParams?.mode[0] ?? 'all' : searchParams?.mode ?? 'all';
   const perspectiveMode = modeParam === 'buyers' || modeParam === 'suppliers' ? modeParam : 'all';
   const perspectiveAccepted = accepted.filter((order) => perspectiveMode === 'all' ? true : perspectiveMode === 'buyers' ? order.leadType === 'buyer' : order.leadType === 'supplier');
+  const focusedOrder = focusQuoteId ? accepted.find((order) => order.quoteId === focusQuoteId) ?? null : focusLeadId ? accepted.find((order) => order.leadId === focusLeadId) ?? null : perspectiveAccepted[0] ?? null;
+  const handoffMessage = handoffKey === 'quote-to-orders' ? { title: 'Quote handoff continues here', description: 'The commercial decision is finished. Stay in Orders to confirm documents, compliance, and release readiness on the accepted record.', tone: 'success' as const } : handoffKey === 'dashboard-execution' ? { title: 'Dashboard routed you into execution', description: 'This jump preserved your active mode so you can work the next accepted record instead of reopening the watchtower.', tone: 'success' as const } : handoffKey === 'approval-send-open-orders' ? { title: 'Sending hands off to execution here', description: 'Use Orders when the next question is fulfilment readiness, release evidence, or dispatch posture.', tone: 'success' as const } : handoffKey === 'dashboard-open-orders' ? { title: 'Order queue opened from Overview', description: 'The next working route is now in focus. Open the accepted record instead of scanning every card first.', tone: 'success' as const } : null;
   const perspectiveOrders = orders.filter((order) => perspectiveMode === 'all' ? true : perspectiveMode === 'buyers' ? order.leadType === 'buyer' : order.leadType === 'supplier');
 
   return (
@@ -547,7 +552,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
           <p className="mt-1 text-sm text-slate-600">{primaryOperationalContext === 'supplier' ? 'Supplier fulfilment context is active.' : primaryOperationalContext === 'buyer' ? 'Buyer fulfilment context is active.' : 'Mixed buyer/supplier execution context is active.'}</p>
         </div>
         <div className="flex flex-col items-start gap-2 xl:min-w-[220px]">
-          <a href={perspectiveAccepted.length > 0 ? `#order-${perspectiveAccepted[0].quoteId}` : '#accepted-orders'} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Review next accepted order</a>
+          <a href={focusedOrder ? `#order-${focusedOrder.quoteId}` : perspectiveAccepted.length > 0 ? `#order-${perspectiveAccepted[0].quoteId}` : '#accepted-orders'} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Review next accepted order</a>
           <Link href={PRODUCT_ROUTES.app.quotes} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Quote context</Link>
           <Link href={PRODUCT_ROUTES.app.leads} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Follow-up</Link>
         </div>
@@ -563,6 +568,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       />
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
+      {handoffMessage ? <StateMessage title={handoffMessage.title} description={handoffMessage.description} tone={handoffMessage.tone} /> : null}
 
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
         <div className="flex flex-wrap items-start justify-between gap-4">

@@ -15,7 +15,7 @@ function formatMetadata(event: ActivityEvent) {
     .join(' · ');
 }
 
-export function ActivityTimeline({ events, emptyLabel = 'No activity available yet.' }: { events: ActivityEvent[]; emptyLabel?: string }) {
+export function ActivityTimeline({ events, emptyLabel = 'No activity yet.' }: { events: ActivityEvent[]; emptyLabel?: string }) {
   if (!events.length) {
     return <p className="text-sm text-slate-500">{emptyLabel}</p>;
   }

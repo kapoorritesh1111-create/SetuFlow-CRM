@@ -302,22 +302,39 @@ export default function DashboardInteractive({
         onReset={layout.onResetLayout}
       />
 
-      <ActionPriorityPanel buckets={priorityBuckets} />
+      <div className="grid gap-5 xl:grid-cols-[0.68fr_0.32fr]">
+        <ActionPriorityPanel buckets={priorityBuckets} />
+
+        <div className="rounded-[1.45rem] border border-slate-200/80 bg-white/95 p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Money at risk</p>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-700">Blocked value</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{blockedValue > 0 ? `$${blockedValue.toLocaleString()}` : '—'}</p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">At-risk value</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{atRiskValue > 0 ? `$${atRiskValue.toLocaleString()}` : '—'}</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Hot conversion opportunities</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{hotCount > 0 ? hotCount.toLocaleString() : '—'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <DashboardWidgetErrorBoundary
-        title="AI governance" description="Bounded repo-backed decision routing."
-        eyebrow="AI control" fallbackTitle="AI governance unavailable"
-        fallbackDescription="The bounded AI governance panel hit a runtime issue."
+        title="Action queue" description="Filtered by role and market."
+        eyebrow="Action zone" fallbackTitle="Action queue unavailable"
+        fallbackDescription="Action queue hit a runtime issue."
       >
-        <DashboardAiGovernance attentionItems={filteredAttentionItems} evidenceItems={filteredEvidenceItems} />
-      </DashboardWidgetErrorBoundary>
-
-      <DashboardWidgetErrorBoundary
-        title="Evidence center" description="Accepted-order evidence and execution forcing."
-        eyebrow="Execution truth" fallbackTitle="Evidence center unavailable"
-        fallbackDescription="The execution evidence panel hit a runtime issue."
-      >
-        <DashboardEvidenceCenter items={filteredEvidenceItems} readiness={data.executionReadiness} />
+        <NeedsAttentionCard
+          items={filteredAttentionItems}
+          mode={filters.mode}
+          marketCode={filters.marketCode}
+          onFocus={layout.onFocusAttention}
+        />
       </DashboardWidgetErrorBoundary>
 
       {/* KPI strip — role-filtered */}
@@ -375,40 +392,6 @@ export default function DashboardInteractive({
         </WidgetShell>
       </DashboardWidgetErrorBoundary>
 
-      {/* Action row + risk summary */}
-      <div className="grid gap-5 xl:grid-cols-[0.68fr_0.32fr]">
-        <DashboardWidgetErrorBoundary
-          title="Action queue" description="Filtered by role and market."
-          eyebrow="Action zone" fallbackTitle="Action queue unavailable"
-          fallbackDescription="Action queue hit a runtime issue."
-        >
-          <NeedsAttentionCard
-            items={filteredAttentionItems}
-            mode={filters.mode}
-            marketCode={filters.marketCode}
-            onFocus={layout.onFocusAttention}
-          />
-        </DashboardWidgetErrorBoundary>
-
-        <div className="rounded-[1.45rem] border border-slate-200/80 bg-white/95 p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Money at risk</p>
-          <div className="mt-4 space-y-3">
-            <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-700">Blocked value</p>
-              <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{blockedValue > 0 ? `$${blockedValue.toLocaleString()}` : '—'}</p>
-            </div>
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">At-risk value</p>
-              <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{atRiskValue > 0 ? `$${atRiskValue.toLocaleString()}` : '—'}</p>
-            </div>
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Hot conversion opportunities</p>
-              <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{hotCount > 0 ? hotCount.toLocaleString() : '—'}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Commercial feed */}
       <DashboardWidgetErrorBoundary
         title="Commercial feed" description="Recent events filtered by current view."
@@ -416,6 +399,22 @@ export default function DashboardInteractive({
         fallbackDescription="Activity feed hit a runtime issue."
       >
         <RecentActivityCard items={filteredRecentActivity} mode={filters.mode} marketCode={filters.marketCode} />
+      </DashboardWidgetErrorBoundary>
+
+      <DashboardWidgetErrorBoundary
+        title="AI governance" description="Bounded repo-backed decision routing."
+        eyebrow="AI control" fallbackTitle="AI governance unavailable"
+        fallbackDescription="The bounded AI governance panel hit a runtime issue."
+      >
+        <DashboardAiGovernance attentionItems={filteredAttentionItems} evidenceItems={filteredEvidenceItems} />
+      </DashboardWidgetErrorBoundary>
+
+      <DashboardWidgetErrorBoundary
+        title="Evidence center" description="Accepted-order evidence and execution forcing."
+        eyebrow="Execution truth" fallbackTitle="Evidence center unavailable"
+        fallbackDescription="The execution evidence panel hit a runtime issue."
+      >
+        <DashboardEvidenceCenter items={filteredEvidenceItems} readiness={data.executionReadiness} />
       </DashboardWidgetErrorBoundary>
 
       {/* Empty state */}

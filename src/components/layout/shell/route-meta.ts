@@ -44,7 +44,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === PRODUCT_ROUTES.app.dashboard || pathname.startsWith(`${PRODUCT_ROUTES.app.dashboard}/`)) {
     return {
       title: 'Dashboard / Overview',
-      description: 'Use the geo-first leadership watchtower to see market, country, queue health, execution drift, and what needs intervention now. This is a support surface, but it should feel operational rather than passive.',
+      description: 'Use Dashboard to see market, country, queue health, execution drift, and what needs intervention now. This is a support surface, but it should still feel operational.',
       sectionLabel: 'Risk and control',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -66,7 +66,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
         description: 'Review commercial output, approvals, and pricing detail for this lead without losing the surrounding follow-up context.',
         sectionLabel: 'Primary operating flow',
         backHref: pathname.replace(/\/quote.*/, ''),
-        backLabel: 'Back to follow-up',
+        backLabel: 'Back to Follow-up',
       };
     }
     if (/^\/leads\/[^/]+\/rfq/.test(pathname)) {
@@ -75,7 +75,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
         description: 'Manage RFQ work for the selected lead without breaking the normal sales sequence.',
         sectionLabel: 'Primary operating flow',
         backHref: pathname.replace(/\/rfq.*/, ''),
-        backLabel: 'Back to follow-up',
+        backLabel: 'Back to Follow-up',
       };
     }
     if (/^\/leads\/[^/]+$/.test(pathname)) {
@@ -85,7 +85,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
         sectionLabel: 'Primary operating flow',
         tabs: PRODUCT_SHELL_TABS,
         backHref: PRODUCT_ROUTES.app.leads,
-        backLabel: 'Back to follow-up list',
+        backLabel: 'Back to Follow-up list',
       };
     }
     return {
@@ -99,7 +99,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === PRODUCT_ROUTES.app.quotes || pathname.startsWith(`${PRODUCT_ROUTES.app.quotes}/`)) {
     return {
       title: 'Quote',
-      description: 'Finish quote pricing here, then hand off cleanly into Approvals & Sending when the quote is actually ready.',
+      description: 'Finish pricing here, then move into Approvals & Sending only when the quote is actually ready.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -117,7 +117,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === PRODUCT_ROUTES.app.orders || pathname.startsWith(`${PRODUCT_ROUTES.app.orders}/`)) {
     return {
       title: 'Orders / Execution',
-      description: 'Use one orders workspace to confirm release readiness, dispatch evidence, blockers, and next action so an accepted quote is not confused with execution readiness.',
+      description: 'Use one orders workspace to confirm release readiness, dispatch evidence, blockers, and the next action so an accepted quote is not confused with execution readiness.',
       sectionLabel: 'Primary operating flow',
       tabs: PRODUCT_SHELL_TABS,
     };
@@ -126,7 +126,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === PRODUCT_ROUTES.app.pipeline || pathname.startsWith(`${PRODUCT_ROUTES.app.pipeline}/`)) {
     return {
       title: 'Pipeline / Risks',
-      description: 'Use the explicit pipeline rescue board to spot stalled work, blockers, and next intervention fast without hiding the actual pipeline view behind softer language.',
+      description: 'Use the pipeline board to spot stalled work, blockers, and the next intervention fast without hiding the real queue state.',
       sectionLabel: 'Risk and control',
       tabs: PRODUCT_SHELL_TABS,
     };

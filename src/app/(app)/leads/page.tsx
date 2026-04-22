@@ -18,6 +18,7 @@ export default async function LeadsPage({
     sourceLabel?: string | string[];
     productId?: string | string[];
     autoQuote?: string | string[];
+    handoff?: string | string[];
   };
 }) {
   const workspace = await getWorkspaceAccess();
@@ -54,6 +55,9 @@ export default async function LeadsPage({
   const readParam = (value?: string | string[]) => Array.isArray(value) ? value[0] ?? '' : value ?? '';
   const quickLeadEnabled = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
   const quickLeadProductId = readParam(searchParams?.productId).trim();
+  const handoff = readParam(searchParams?.handoff).trim();
+  const handoffMessage = handoff === 'dashboard-overdue' || handoff === 'dashboard-open-follow-up' ? { title: 'Overview sent you into Follow-up', description: 'Your active mode and next working lane were preserved. Open one priority lead and clear the real blocker.' } : handoff === 'capture-converted' ? { title: 'Capture converted into Follow-up', description: 'The lead is live now. Stay in Follow-up to qualify it, then move into Quote only when the commercial path is ready.' } : null;
+
   const initialQuickCapture = quickLeadEnabled
     ? {
         sourceType: readParam(searchParams?.sourceType).trim() || 'trade_show',
@@ -69,6 +73,7 @@ export default async function LeadsPage({
   return (
     <div className="space-y-4">
       <QueryIssuesAlert issues={data.queryIssues} />
+      {handoffMessage ? <StateMessage title={handoffMessage.title} description={handoffMessage.description} tone="success" /> : null}
       <StateMessage
         title={viewModel.workspaceMode === 'buyers'
           ? 'Buyer mode is active in Leads'

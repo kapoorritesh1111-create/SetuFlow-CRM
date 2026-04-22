@@ -66,7 +66,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   if (!quotes.length) {
     return (
       <div className="space-y-6 p-4 sm:p-6">
-        <SectionCard eyebrow="Quote command center" title="No quotes yet" description="Start the first governed commercial thread from Follow-up once the lead is qualified and commercially coherent.">
+        <SectionCard eyebrow="Quote command center" title="No quotes yet" description="Start the first commercial thread from Follow-up once the lead is qualified and ready for pricing.">
           <div className="flex flex-wrap items-center gap-3">
             <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Open Follow-up</Link>
             <Link href={PRODUCT_ROUTES.app.orders} className="text-sm font-semibold text-brand-700 hover:text-brand-800">Orders</Link>
@@ -124,8 +124,8 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Quote command center</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Keep Follow-up and Quote in one governed working set</h1>
-            <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">This route keeps one quote in focus. Start from catalog pricing, make override reasons visible, and only hand off into Approvals & Sending when the quote is actually ready to send.</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Keep Follow-up and Quote in one working flow</h1>
+            <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">Keep one quote in focus here. Start from catalog pricing, make override reasons visible, and move into Approvals & Sending only when the quote is truly ready.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link href={selectedLeadHref} className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Edit this quote</Link>
@@ -230,7 +230,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
         </div>
 
         <div className="space-y-4">
-          <SectionCard eyebrow="Command-center rule" title="When this route should win" description="Quote stays close to Follow-up, but it should not behave like a detached product.">
+          <SectionCard eyebrow="Route rule" title="When this route should lead" description="Quote stays close to Follow-up, but it should still feel like one connected workflow.">
             <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
               <li>Use this desk to keep one live commercial record in focus.</li>
               <li>Use the quote editor only when pricing lines, revisions, or sending details need deeper edits.</li>

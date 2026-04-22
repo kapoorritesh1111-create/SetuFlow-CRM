@@ -13,6 +13,7 @@ import RightDrawer from "@/components/RightDrawer";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionCard } from "@/components/ui/section-card";
 import { StateMessage } from "@/components/ui/state-message";
+import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
 import {
   saveWorkspaceDefaultView,
   saveWorkspaceView,
@@ -1832,17 +1833,21 @@ export function QuoteWorkspace({
                   {focusQuoteTotals?.lineItemCount ?? 0} line items
                 </span>
                 <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                  Basis {focusBuilderGuidance?.basisLabel ?? "FOB"}
-                </span>
-                <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                  Template {focusBuilderGuidance?.templateLabel ?? "Manual pricing"}
-                </span>
-                <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                  Updated {formatDateTime(focusQuote.updated_at)}
-                </span>
-                <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                   Current version {currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "pending sync"}
                 </span>
+              </div>
+              <div className="mt-3">
+                <CollapsiblePanel
+                  title="Quote context"
+                  summary="Open for basis, template, and timing detail when you need more than the next move."
+                  className="bg-white/70"
+                >
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">Basis {focusBuilderGuidance?.basisLabel ?? "FOB"}</span>
+                    <span className="rounded-full bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">Template {focusBuilderGuidance?.templateLabel ?? "Manual pricing"}</span>
+                    <span className="rounded-full bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">Updated {formatDateTime(focusQuote.updated_at)}</span>
+                  </div>
+                </CollapsiblePanel>
               </div>
 
               <div className="mt-5 rounded-[1.25rem] border border-slate-200 bg-white/90 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] xl:sticky xl:top-4 xl:z-10">

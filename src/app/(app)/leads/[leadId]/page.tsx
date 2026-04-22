@@ -24,7 +24,7 @@ function parseWorkspaceReturnTo(value: string | string[] | undefined, fallbackHr
   return fallbackHref;
 }
 
-export default async function Page({ params, searchParams }: { params: { leadId: string }, searchParams?: { mode?: string | string[]; tab?: string | string[]; returnTo?: string | string[] } }) {
+export default async function Page({ params, searchParams }: { params: { leadId: string }, searchParams?: { mode?: string | string[]; tab?: string | string[]; returnTo?: string | string[]; handoff?: string | string[]; quoteId?: string | string[] } }) {
   let workspace: Awaited<ReturnType<typeof requireWorkspace>> | null = null
 
   try {
@@ -67,6 +67,7 @@ export default async function Page({ params, searchParams }: { params: { leadId:
   const requestedMode = parseWorkspaceMode(searchParams?.mode)
 
   const requestedTab = parseLeadCommandTab(searchParams?.tab)
+  const handoff = Array.isArray(searchParams?.handoff) ? searchParams?.handoff[0] ?? '' : searchParams?.handoff ?? ''
   const effectiveMode = requestedMode === 'all' ? (leadType === 'supplier' ? 'suppliers' : 'buyers') : requestedMode
   const returnToHref = parseWorkspaceReturnTo(searchParams?.returnTo, `/pipeline?mode=${effectiveMode}`)
   if (returnToHref === '/compliance') snapshot.links.complianceWorkspace = returnToHref
@@ -149,6 +150,7 @@ export default async function Page({ params, searchParams }: { params: { leadId:
 
   return (
     <div className="space-y-4">
+      {handoff ? <StateMessage title={handoff === 'capture-converted' ? 'Capture handoff is complete' : handoff === 'quote-live-follow-up' ? 'Quote response work continues here' : handoff === 'quote-requalify' ? 'Quote decision now needs follow-up' : handoff === 'approval-send-fix-blocker' ? 'Sending blocker needs follow-up' : 'Workflow handoff is active'} description={handoff === 'capture-converted' ? 'This record was just created from Capture. Qualify it here first, then open Quote only when the commercial path is explicit.' : handoff === 'quote-live-follow-up' ? 'The quote is already live. Stay in this lead workflow to manage the buyer response and next commercial move.' : handoff === 'quote-requalify' ? 'This quote is no longer active. Make the next qualification or close decision here instead of lingering in Quote.' : handoff === 'approval-send-fix-blocker' ? 'Approvals & Sending found a blocker. Use this lead view to fix the missing context before another send attempt.' : 'The route transition preserved context so the next working step stays obvious.'} tone="success" /> : null}
       <StateMessage
         title={leadType === 'supplier' ? 'Supplier command mode is active' : 'Buyer command mode is active'}
         description={leadType === 'supplier'

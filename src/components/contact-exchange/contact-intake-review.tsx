@@ -415,9 +415,14 @@ export function ContactIntakeReview() {
               <div className="mt-4 rounded-[1.25rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                 <p className="font-semibold text-emerald-900">Lead created: {createdLead.companyName}</p>
                 <p className="mt-1">Internal source attribution: {createdLead.sourceLabel}</p>
-                <Link href={`/leads/${createdLead.id}`} className="mt-3 inline-flex rounded-full border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
-                  Open lead
-                </Link>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link href={`/leads/${createdLead.id}?tab=workflow&handoff=capture-review-open-lead`} className="inline-flex rounded-full border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                    Open lead
+                  </Link>
+                  <Link href={`/leads/${createdLead.id}/quote?handoff=capture-review-open-quote`} className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700">
+                    Open quote prep
+                  </Link>
+                </div>
               </div>
             ) : null}
           </div>

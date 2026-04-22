@@ -128,17 +128,15 @@ export function LeadTableRow({
               {[lead.contact_name ?? 'No primary contact', lead.job_title, lead.country].filter(Boolean).join(' · ')}
             </p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{stageName} · {ownerLabel}</p>
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{lead.source_label ?? lead.source_type ?? 'Lead queue'} · {nextStepName}</p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Use Open on any row to move into `/leads/[leadId]` command center. Quick Lead is the fastest entry point, while New Lead opens the full capture flow.</p>
         </div>
       </div>
 
       <div className={`min-w-0 px-4 py-3 ${workspaceInsetClass}`}>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Next action</p>
         <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{nextStepName}</p>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {lead.source_label ?? lead.source_type ?? ownerLabel}
-        </p>
+        {secondaryBadge ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{secondaryBadge}</p> : null}
       </div>
 
       <div className="flex flex-col justify-center lg:items-end">

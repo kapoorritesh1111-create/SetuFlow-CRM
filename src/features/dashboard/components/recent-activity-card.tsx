@@ -42,7 +42,7 @@ export function RecentActivityCard({ items, mode = 'all', marketCode }: Props) {
     >
       {filtered.length ? (
         <div className="space-y-2">
-          {filtered.slice(0, 8).map(item => {
+          {filtered.slice(0, 5).map(item => {
             const cfg = typeConfig[item.type] ?? { icon: '•', role: 'both' as const };
             const chip = roleChip[item.leadType ?? cfg.role];
             return (

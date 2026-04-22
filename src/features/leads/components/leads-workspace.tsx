@@ -19,6 +19,7 @@ import { buildLeadCommercialReadiness, getPricingReadinessLabel, type LeadCommer
 import { buildLeadDocumentRequirementState, type DocumentRequirementRule, type LeadRequirementDocument } from '@/lib/document-requirements';
 import { AlertTriangle, ArrowUpRight, BadgeCheck, CalendarCheck, CheckCircle, Clock, ExternalLink, Handshake, Package, Phone, Snowflake, Sparkles, Trophy, XCircle } from '@/features/leads/command-center/ui-system';
 import { WorkspaceWorkflowShell } from '@/features/workspace/components/WorkspaceWorkflowShell';
+import { CollapsiblePanel } from '@/components/ui/collapsible-panel';
 import { workspaceInsetClass, workspaceTableShellClass } from '@/components/ui/workspace-surfaces';
 import { buildTodayLayerState } from '@/features/workspace/today';
 import { LeadTableRow, type LeadTableRowProps } from '@/features/leads/ui/lead-table-row';
@@ -934,16 +935,25 @@ export function LeadsWorkspace({
               <ToolbarActionButton type="button" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">Quick Add</ToolbarActionButton>
             </div>
           </div>
-          <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">
-            <div className="rounded-[1rem] border border-emerald-200 bg-emerald-50/80 px-4 py-3 dark:border-emerald-900/50 dark:bg-emerald-950/30">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">What do I do next</p>
-              <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{canManageLeads ? 'Open Quick Lead first. Save the minimum buyer context, then move into Quote only after the product lane is linked.' : 'Review one live lead row and hand off edits to a workspace manager when capture changes are needed.'}</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Quick Lead stays the fastest entry point. Use New Lead only when you need the full capture flow.</p>
-            </div>
-            <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-700/70 dark:bg-slate-900/60">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Cross-surface rule</p>
-              <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Capture starts the record. Quote carries the deeper commercial work. Do not front-load both at once.</p>
-            </div>
+          <div className="mt-3">
+            <CollapsiblePanel
+              title="Queue guide"
+              summary={canManageLeads ? 'Quick Lead stays first. Open deeper rules only when you need them.' : 'Review the queue and open one live lead when edits are locked.'}
+              className="border-emerald-200 bg-emerald-50/70"
+              bodyClassName="bg-transparent"
+            >
+              <div className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">
+                <div className="rounded-[1rem] border border-emerald-200 bg-white/80 px-4 py-3 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">What do I do next</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{canManageLeads ? 'Open Quick Lead first. Save the minimum buyer context, then move into Quote only after the product lane is linked.' : 'Review one live lead row and hand off edits to a workspace manager when capture changes are needed.'}</p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Quick Lead stays the fastest entry point. Use New Lead only when you need the full capture flow.</p>
+                </div>
+                <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-700/70 dark:bg-slate-900/60">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Cross-surface rule</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Capture starts the record. Quote carries the deeper commercial work. Do not front-load both at once.</p>
+                </div>
+              </div>
+            </CollapsiblePanel>
           </div>
         </div>
 

@@ -58,7 +58,7 @@ export function AICompactActionBrief({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${accentClasses}`}>AI action brief</span>
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${accentClasses}`}>AI suggestion</span>
             <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{lane}</span>
           </div>
           <p className="mt-3 text-sm font-semibold text-slate-900">Where you are: <span className="font-normal text-slate-700">{where}</span></p>
@@ -69,7 +69,7 @@ export function AICompactActionBrief({
       </div>
       {details.length ? (
         <details className="mt-3 rounded-2xl border border-slate-200 bg-white/80 p-3">
-          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Why AI says this</summary>
+          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Why this is suggested</summary>
           <ul className="mt-3 space-y-1 text-sm text-slate-600">
             {details.map((detail) => <li key={detail}>• {detail}</li>)}
           </ul>
@@ -95,14 +95,14 @@ export function AIGovernedDecisionPanel({ items, summary }: { items: AIGovernedD
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${levelClasses(item.severity)}`}>{item.entityKind}</span>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">Repo checked</span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">Checked against repo rules</span>
                 </div>
                 <h3 className="mt-3 text-base font-semibold text-slate-900">{item.title}</h3>
                 <p className="mt-1 text-sm text-slate-600">{item.summary}</p>
                 <p className="mt-3 text-sm font-medium text-slate-900">Recommended action: <span className="font-normal text-slate-700">{item.recommendedAction}</span></p>
                 <div className="mt-3 grid gap-4 lg:grid-cols-2">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Why AI says this</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Why this is suggested</p>
                     <ul className="mt-2 space-y-1 text-sm text-slate-600">{item.rationale.map((reason) => <li key={reason}>• {reason}</li>)}</ul>
                   </div>
                   <div>

@@ -1,82 +1,67 @@
-# 🚀 NEXT PROMPT — PR-UX-03
+# CODEX HANDOFF — v1.1 correction lane after dashboard rewrite prototype
 
 You are continuing Setu Flow CRM from the latest full repo and internal DCC baseline.
 
 Use the repo as the only source of truth.
 Use `public/internal-dcc/index.html` as the single source of truth for:
 - release truth
-- UX 99 roadmap
-- active PR scope
+- completed UX 99 history
+- active v1.1 roadmap
+- additional corrective PR lane
 - execution order
-- pass rules
 - archived reset history
 
----
+## Current repo truth
 
-## Critical rule
+- UX 99 is complete and must remain preserved.
+- Workflow truth did not change.
+- The workflow diagram image must not change unless repo workflow truth changes.
+- A **dashboard first-screen rewrite prototype** has already been applied in repo to reduce read-first load and show the next action sooner.
+- This prototype is a direction setter for the next passes. Do not revert it back into a heavier explanatory surface.
 
-We are no longer in reset recovery.
-Do not reopen solved workflow logic unless repo workflow truth actually changes.
-Do not change the workflow diagram image unless repo workflow truth changes.
-Treat this as a **repo-wide UX architecture pass**, not a single-screen tweak.
+## Guardrail
 
-PR-UX-01 and PR-UX-02 are already complete.
-Do not reopen completed language cleanup or action hierarchy cleanup unless a visible user-facing conflict still remains in repo truth.
-
----
+Do not reopen reset recovery or solved UX 99 work unless repo workflow truth actually changes.
+Do not frame new work as unfinished UX cleanup.
+Treat the next passes as **business-impact product improvement**.
 
 ## Immediate objective
 
-**Execute PR-UX-03: Screen density and collapse system**
+Continue the v1.1 correction lane so the product feels lighter, more decisive, and easier to buy.
 
----
+## Priority order
 
-## Goals
+### Core v1.1 roadmap already defined
+- PR-CA-01 — Deal momentum engine
+- PR-CA-02 — Time-to-action pressure system
+- PR-CA-03 — Next-best-action layer
+- PR-CA-04 — Revenue flow visibility
+- PR-CA-05 — Stall and risk detection
 
-1. Reduce above-the-fold reading load on major workspaces without hiding the real next step.
-2. Collapse secondary detail blocks, helper cards, and deep evidence until the user asks for them.
-3. Make long workspaces feel scannable in under 5 seconds on Dashboard, Orders, Follow-up, Quote, Pipeline, and Approvals & Sending.
-4. Preserve compact AI advisory behavior and keep it secondary to workflow actions.
-5. Update the DCC honestly with only what this pass actually changes.
+### Additional corrective PRs now added from live product review
+- PR-CA-06 — Brutal first screen
+- PR-CA-07 — Zero-scroll critical zone
+- PR-CA-08 — Action over explanation
+- PR-CA-09 — State as signal
+- PR-CA-10 — Revenue pressure layer
 
----
+## What to do next
 
-## Patterns to fix everywhere they appear
+Start with **PR-CA-06 on Quote, Approvals & Sending, and Follow-up**, using the new Dashboard rewrite as the reference pattern:
+- one dominant metric
+- one dominant action
+- one visible urgency signal
+- no long explanatory header stack
+- AI kept compact and secondary
 
-Fix density problems such as:
-- stacked info cards that repeat the same message in different words
-- long hero sections that push the working list or board below the fold
-- full-detail cards that expose every diagnostic section before the user chooses to inspect
-- helper panels, metric strips, or AI summaries that duplicate the real workspace state
-- tables or cards where secondary metadata visually outweighs the primary decision signal
-
-Important: do not change workflow truth to make a page feel simpler. Only change framing, collapse behavior, and visible density.
-
----
-
-## Files to inspect and update
-
-- major workspaces in `src/features/**`
-- route entry framing in `src/app/**`
-- shared surface/collapse components in `src/components/**`
-- `public/internal-dcc/index.html`
-- `NEXT_PROMPT.md`
-
----
-
-## Return
-
-1. Updated full repo zip
-2. Updated internal DCC HTML
-3. PR-UX-03 summary
-4. Which density/collapse conflicts were fixed
-5. Which routes became faster to scan
-6. True remaining UX PR count
-7. Next prompt
-
----
+Then execute **PR-CA-07** across the same routes so the critical move is visible above the fold.
 
 ## Delivery rule
 
-I will always provide the full repo.
-Always return the full repo, the updated internal DCC HTML with current status of the build based on PR completed, what was done, and the next prompt.
+Always return:
+1. updated full repo zip
+2. updated `public/internal-dcc/index.html`
+3. what PR was executed
+4. what changed
+5. current completion % for the active PR lane
+6. the next prompt

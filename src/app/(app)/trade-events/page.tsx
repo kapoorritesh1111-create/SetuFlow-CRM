@@ -8,7 +8,7 @@ import { getTradeEventsData } from '@/lib/queries/trade-events';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
-export default async function TradeEventsPage() {
+export default async function TradeEventsPage({ searchParams }: { searchParams?: { notice?: string | string[] } }) {
   const workspace = await requireWorkspace();
 
   if (!workspace.membership || !workspace.organization) {
@@ -24,6 +24,7 @@ export default async function TradeEventsPage() {
   }
 
   const data = await getTradeEventsData(workspace.organization.id);
+  const noticeKey = Array.isArray(searchParams?.notice) ? searchParams.notice[0] ?? null : searchParams?.notice ?? null;
   const entryCountByEvent = new Map<string, number>();
   for (const entry of data.entries) {
     entryCountByEvent.set(entry.trade_event_id, (entryCountByEvent.get(entry.trade_event_id) ?? 0) + 1);
@@ -40,6 +41,9 @@ export default async function TradeEventsPage() {
       </div>
 
       <QueryIssuesAlert issues={data.queryIssues} />
+      {noticeKey === 'capture-converted' ? (
+        <WorkspaceState eyebrow="Capture handoff" title="Lead is ready for Follow-up" description="This capture was converted into a live lead. Continue in Follow-up to qualify it, then open Quote only when commercial readiness is real." primaryActionHref="/leads?handoff=capture-converted" primaryActionLabel="Open Follow-up" secondaryActionHref="/quotes" secondaryActionLabel="Open Quote workspace" />
+      ) : null}
       <TradeEventEntryCapture events={data.events} />
       <TradeShowCapture events={data.events} />
       <TradeEventsManager events={data.events} />
@@ -81,9 +85,14 @@ export default async function TradeEventsPage() {
                       <td className="px-4 py-3 text-slate-600">{formatDateTime(entry.captured_at || entry.created_at)}</td>
                       <td className="px-4 py-3 text-slate-600">
                         {isConverted ? (
-                          <a href={`/leads/${entry.converted_lead_id}`} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                            Open lead
-                          </a>
+                          <div className="flex flex-wrap gap-2">
+                            <a href={`/leads/${entry.converted_lead_id}?tab=workflow&handoff=capture-open-lead`} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                              Open lead
+                            </a>
+                            <a href={`/quotes?leadId=${entry.converted_lead_id}&handoff=capture-open-quote`} className="rounded-2xl border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                              Open Quote
+                            </a>
+                          </div>
                         ) : (
                           <form action={convertTradeEventEntryToLead}>
                             <input type="hidden" name="entry_id" value={entry.id} />
