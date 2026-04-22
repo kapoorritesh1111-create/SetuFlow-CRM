@@ -909,27 +909,25 @@ export function LeadsWorkspace({
       ) : null}
 
       <section className={workspaceTableShellClass}>
-        <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-700/70 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Lead queue</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">One clean queue for daily lead work</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">One execution queue driven by today, search, and next action.</p>
+        <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700/70">
+          <div className="grid gap-3 xl:grid-cols-[0.9fr_1.1fr_auto]">
+            <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Where am I</p>
+              <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-50">Lead queue</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Fast daily follow-up with search, today, and one clear next move per row.</p>
+            </div>
+            <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">What is blocking me</p>
+              <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-50">{visibleLeads.length ? `${visibleLeads.filter((lead) => (readinessByLeadId.get(lead.id)?.blockerReasons?.length ?? 0) > 0).length} leads need intervention` : 'No visible leads right now'}</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Use Open on one row, not the whole page, when you need deeper context.</p>
+            </div>
+            <div className="flex flex-wrap gap-2 xl:justify-end">
+              <a href={PRODUCT_ROUTES.app.myCard} className="inline-flex min-h-11 items-center justify-center rounded-[1rem] px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 border border-slate-200 bg-slate-100/90 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.05)] hover:bg-white dark:border-slate-700 dark:bg-slate-800/78 dark:text-slate-200">Share my card</a>
+              <ToolbarActionButton type="button" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">+ Quick Lead</ToolbarActionButton>
+              <ToolbarActionButton type="button" tone="primary" onClick={openFullAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">New Lead</ToolbarActionButton>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={PRODUCT_ROUTES.app.myCard}
-              className="inline-flex min-h-11 items-center justify-center rounded-[1rem] px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 border border-slate-200 bg-slate-100/90 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.05)] hover:bg-white dark:border-slate-700 dark:bg-slate-800/78 dark:text-slate-200"
-            >
-              Share my card
-            </a>
-            <ToolbarActionButton type="button" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">
-              + Quick Lead
-            </ToolbarActionButton>
-            <ToolbarActionButton type="button" tone="primary" onClick={openFullAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">
-              New Lead
-            </ToolbarActionButton>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Use Open on any row to move into `/leads/[leadId]` command center. Quick Lead is the fastest entry point, while New Lead opens the full capture flow.</p>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Quick Lead is the fastest entry point. Use New Lead only when you need the full capture flow.</p>
         </div>
 
         {batchState.error ? <div className="px-5 pt-3"><StateMessage title="Bulk follow-up update failed" tone="danger" description={batchState.error} /></div> : null}

@@ -180,7 +180,7 @@ begin
     updated_at = timezone('utc', now())
   where id = p_contract_id
     and organization_id = p_organization_id
-    and quote_id = p_quote_id
+    and public.contracts.quote_id = p_quote_id
     and lead_id = p_lead_id;
 
   delete from public.contract_line_items

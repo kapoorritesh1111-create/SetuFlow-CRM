@@ -672,7 +672,23 @@ export function PipelineBoard({
           </>
         )}
       />
-      <section className="sticky top-[73px] z-20 space-y-4">
+      <section className="sticky top-[73px] z-20 space-y-3">
+        <div className={cn('grid gap-3 rounded-[1.4rem] border p-4 shadow-soft lg:grid-cols-[0.9fr_1.1fr_auto]', workspacePanelClass)}>
+          <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Where am I</p>
+            <p className="mt-2 text-base font-semibold text-slate-900">Pipeline rescue board</p>
+            <p className="mt-1 text-sm text-slate-600">Work one stage move at a time with blockers visible before you drag anything.</p>
+          </div>
+          <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">What is blocking me</p>
+            <p className="mt-2 text-base font-semibold text-slate-900">{overdueCount || atRiskCount ? `${overdueCount} overdue, ${atRiskCount} at risk` : 'No rescue pressure right now'}</p>
+            <p className="mt-1 text-sm text-slate-600">{filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0)} visible records still have commercial or workflow blockers.</p>
+          </div>
+          <div className="flex flex-col gap-2 lg:min-w-[220px]">
+            <a href={PRODUCT_ROUTES.app.leads} className={workspacePrimaryButtonClass}>Open follow-up queue</a>
+            <a href={PRODUCT_ROUTES.app.orders} className={workspaceSecondaryButtonClass}>Open execution desk</a>
+          </div>
+        </div>
         <PipelineAIStrip message={aiMessage} />
         {readOnlyMessage ? (
           <StateMessage

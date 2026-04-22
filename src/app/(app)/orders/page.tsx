@@ -535,6 +535,22 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
+      <section className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft xl:grid-cols-[0.9fr_1.1fr_auto]">
+        <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Where am I</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">Orders / execution desk</p>
+          <p className="mt-1 text-sm text-slate-600">Open one accepted record, clear blockers, then advance execution. Do not read the whole page first.</p>
+        </div>
+        <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">What is blocking me</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">{perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length ? `${perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length} accepted records blocked` : 'Execution blockers are clear right now'}</p>
+          <p className="mt-1 text-sm text-slate-600">{primaryOperationalContext === 'supplier' ? 'Supplier fulfilment context is active.' : primaryOperationalContext === 'buyer' ? 'Buyer fulfilment context is active.' : 'Mixed buyer/supplier execution context is active.'}</p>
+        </div>
+        <div className="flex flex-col gap-2 xl:min-w-[220px]">
+          <Link href={PRODUCT_ROUTES.app.leads} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Go to Follow-up</Link>
+          <Link href={PRODUCT_ROUTES.app.quotes} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Open Quote workspace</Link>
+        </div>
+      </section>
       <StateMessage
         title={primaryOperationalContext === 'supplier' ? 'Supplier execution context is active' : primaryOperationalContext === 'buyer' ? 'Buyer execution context is active' : 'Mixed execution context is active'}
         description={primaryOperationalContext === 'supplier' ? 'Orders is now the execution workspace for supplier-side fulfilment. The primary action is to open one accepted record and clear blockers.' : primaryOperationalContext === 'buyer' ? 'Orders is now the execution workspace for buyer-side fulfilment. The primary action is to open one accepted record and keep execution moving.' : 'Orders is showing accepted work across buyer and supplier activity. Focus on one accepted record at a time and clear blockers first.'}

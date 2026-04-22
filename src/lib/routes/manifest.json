@@ -49,21 +49,6 @@
   },
   "primaryNav": [
     {
-      "href": "/dashboard",
-      "label": "Dashboard / Overview",
-      "exact": true,
-      "description": "Leadership and operators get a quick geo-first watchtower for market, country, and queue health.",
-      "aliases": [
-        "dashboard",
-        "overview",
-        "leadership",
-        "geo",
-        "market",
-        "country"
-      ],
-      "navKey": "d"
-    },
-    {
       "href": "/contact-exchange/scan",
       "label": "Capture",
       "exact": true,
@@ -164,6 +149,21 @@
         "reference data"
       ],
       "navKey": "t"
+    },
+    {
+      "href": "/dashboard",
+      "label": "Dashboard / Overview",
+      "exact": true,
+      "description": "Leadership and operators get a quick geo-first watchtower for market, country, and queue health.",
+      "aliases": [
+        "dashboard",
+        "overview",
+        "leadership",
+        "geo",
+        "market",
+        "country"
+      ],
+      "navKey": "d"
     }
   ],
   "adminTabs": [
