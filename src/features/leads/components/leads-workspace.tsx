@@ -918,42 +918,20 @@ export function LeadsWorkspace({
 
       <section className={workspaceTableShellClass}>
         <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700/70">
-          <div className="grid gap-3 xl:grid-cols-[0.9fr_1.1fr_auto]">
+          <div className="grid gap-3 xl:grid-cols-[1fr_auto]">
             <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Where am I</p>
-              <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-50">Lead queue</p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Fast daily follow-up with search, today, and one clear next move per row.</p>
-            </div>
-            <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">What is blocking me</p>
-              <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-50">{visibleLeads.length ? `${visibleLeads.filter((lead) => (readinessByLeadId.get(lead.id)?.blockerReasons?.length ?? 0) > 0).length} leads need intervention` : 'No visible leads right now'}</p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Use Open on one row, not the whole page, when you need deeper context.</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Follow-up command zone</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">{summary.overdue}</p>
+              <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">Overdue follow-ups</p>
+              <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${summary.overdue > 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200'}`}>
+                {summary.overdue > 0 ? 'Urgent recovery needed now' : 'No overdue pressure'}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2 xl:justify-end">
+              <ToolbarActionButton type="button" tone="primary" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">Follow up now</ToolbarActionButton>
               <a href={PRODUCT_ROUTES.app.myCard} className="inline-flex min-h-11 items-center justify-center rounded-[1rem] px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 border border-slate-200 bg-slate-100/90 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.05)] hover:bg-white dark:border-slate-700 dark:bg-slate-800/78 dark:text-slate-200">Share my card</a>
-              <ToolbarActionButton type="button" tone="primary" onClick={openFullAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">New Lead</ToolbarActionButton>
-              <ToolbarActionButton type="button" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">Quick Add</ToolbarActionButton>
+              <ToolbarActionButton type="button" onClick={openFullAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">New Lead</ToolbarActionButton>
             </div>
-          </div>
-          <div className="mt-3">
-            <CollapsiblePanel
-              title="Queue guide"
-              summary={canManageLeads ? 'Quick Lead stays first. Open deeper rules only when you need them.' : 'Review the queue and open one live lead when edits are locked.'}
-              className="border-emerald-200 bg-emerald-50/70"
-              bodyClassName="bg-transparent"
-            >
-              <div className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">
-                <div className="rounded-[1rem] border border-emerald-200 bg-white/80 px-4 py-3 dark:border-emerald-900/50 dark:bg-emerald-950/20">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">What do I do next</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{canManageLeads ? 'Open Quick Lead first. Save the minimum buyer context, then move into Quote only after the product lane is linked.' : 'Review one live lead row and hand off edits to a workspace manager when capture changes are needed.'}</p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Quick Lead stays the fastest entry point. Use New Lead only when you need the full capture flow.</p>
-                </div>
-                <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-700/70 dark:bg-slate-900/60">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Cross-surface rule</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Capture starts the record. Quote carries the deeper commercial work. Do not front-load both at once.</p>
-                </div>
-              </div>
-            </CollapsiblePanel>
           </div>
         </div>
 
