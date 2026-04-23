@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import QRCode from 'qrcode';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { ShellNavigation } from '@/components/layout/shell/navigation';
 import { getRouteMeta } from '@/components/layout/shell/route-meta';
@@ -32,6 +33,7 @@ export function AppShell({
   const searchParams = useSearchParams();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [vcardModalOpen, setVcardModalOpen] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
 
   const normalizedRoles = useMemo(() => normalizeWorkspaceRoles(currentRoles), [currentRoles]);
   const currentRole = useMemo(() => getPrimaryWorkspaceRole(normalizedRoles) ?? 'member', [normalizedRoles]);
@@ -68,6 +70,35 @@ export function AppShell({
     return `/api/public/card-vcf?${params.toString()}`;
   }, [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
 
+
+  useEffect(() => {
+    let active = true;
+
+    async function generateQr() {
+      if (!vcardModalOpen) return;
+      const absoluteShareLink = typeof window === 'undefined' ? shareLink : `${window.location.origin}${shareLink}`;
+      try {
+        const dataUrl = await QRCode.toDataURL(absoluteShareLink, {
+          errorCorrectionLevel: 'M',
+          margin: 1,
+          width: 220,
+          color: {
+            dark: '#0f172a',
+            light: '#ffffff',
+          },
+        });
+        if (active) setQrCodeDataUrl(dataUrl);
+      } catch {
+        if (active) setQrCodeDataUrl(null);
+      }
+    }
+
+    void generateQr();
+    return () => {
+      active = false;
+    };
+  }, [shareLink, vcardModalOpen]);
+
   const handleCopyShareLink = async () => {
     if (typeof window === 'undefined' || !navigator.clipboard) return;
     const absolute = `${window.location.origin}${shareLink}`;
@@ -77,11 +108,11 @@ export function AppShell({
   const sidebar = (
     <>
       <div className="flex justify-center">
-        <div className="flex h-10 w-10 items-center justify-center rounded-[0.9rem] bg-[linear-gradient(135deg,#0c7fff_0%,#2da0ff_100%)] text-sm font-bold text-white shadow-[0_10px_24px_rgba(12,127,255,0.4)]">
-          SF
+        <div className="flex h-11 w-11 items-center justify-center rounded-[0.9rem] bg-white/8 ring-1 ring-white/10">
+          <img src="/logos/setu-flow-logo.svg" alt="SETU Flow" className="h-7 w-7 object-contain" />
         </div>
       </div>
-      <div className="mt-6">
+      <div className="mt-6 flex min-h-0 flex-1 flex-col">
         <ShellNavigation
           pathname={pathname}
           canAccessAdmin={canAccessAdmin}
@@ -115,7 +146,7 @@ export function AppShell({
             onClick={() => setMobileNavOpen(false)}
             aria-label="Close navigation"
           />
-          <aside className="relative z-[61] h-full w-[84px] border-r border-white/10 bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white shadow-2xl">
+          <aside className="relative z-[61] flex h-full w-[84px] flex-col border-r border-white/10 bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white shadow-2xl">
             {sidebar}
           </aside>
         </div>
@@ -155,7 +186,7 @@ export function AppShell({
                   <span>🔗</span>
                   <span>Copy link</span>
                 </button>
-                <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(shareLink)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
+                <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(typeof window === 'undefined' ? shareLink : `${window.location.origin}${shareLink}`)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
                   <span>✉</span>
                   <span>Send email</span>
                 </a>
@@ -169,15 +200,15 @@ export function AppShell({
         </div>
       ) : null}
 
-      <div className="mx-auto grid min-h-screen max-w-[1820px] grid-cols-1 gap-0 px-0 lg:grid-cols-[72px_minmax(0,1fr)] lg:px-5 lg:py-5">
-        <aside className="hidden rounded-[2rem] border border-[#d9e2ec] bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.10)] lg:sticky lg:top-5 lg:block lg:h-[calc(100vh-2.5rem)] lg:overflow-y-auto">
+      <div className="grid min-h-screen grid-cols-1 gap-0 px-0 lg:grid-cols-[72px_minmax(0,1fr)] lg:px-4 lg:py-4 xl:px-5">
+        <aside className="hidden flex-col rounded-[2rem] border border-[#d9e2ec] bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.10)] lg:sticky lg:top-4 lg:flex lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
           {sidebar}
         </aside>
 
-        <main id="app-content" className="relative min-w-0 overflow-x-clip lg:pl-5">
+        <main id="app-content" className="relative min-w-0 overflow-x-clip lg:pl-5 xl:pl-6">
           <div className="min-h-screen lg:rounded-[2rem] lg:border lg:border-white/80 lg:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.98))] lg:shadow-[0_24px_70px_rgba(15,23,42,0.10)] lg:ring-1 lg:ring-slate-950/[0.03]">
             <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur lg:rounded-t-[2rem]">
-              <div className="px-4 py-4 sm:px-6 lg:px-8">
+              <div className="px-4 py-4 sm:px-6 lg:px-7 xl:px-9">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <button
@@ -244,7 +275,7 @@ export function AppShell({
                 </div>
               </div>
             </header>
-            <div className="relative px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+            <div className="relative px-4 py-5 sm:px-6 lg:px-7 xl:px-8">{children}</div>
           </div>
         </main>
       </div>

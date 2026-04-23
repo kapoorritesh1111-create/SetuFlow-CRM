@@ -16,6 +16,7 @@ export type DashboardKpi = {
   intent?: DashboardIntent;
   href?: string;
   drillThroughLabel?: string;
+  contextLabel?: string;
 };
 
 export type DashboardStageCount = {

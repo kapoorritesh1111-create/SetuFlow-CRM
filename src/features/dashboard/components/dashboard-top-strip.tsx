@@ -34,14 +34,17 @@ export function DashboardTopStrip({ kpis, mode = 'all' }: Props) {
         const style = intentStyles[kpi.intent ?? 'default'];
         const trendArrow = kpi.trendDirection === 'up' ? '↑' : kpi.trendDirection === 'down' ? '↓' : '•';
         const card = (
-          <article className={cn('relative overflow-hidden rounded-[1.35rem] border bg-white px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:shadow-[0_16px_36px_rgba(15,23,42,0.09)]', style.border)}>
+          <article className={cn('group relative overflow-hidden rounded-[1.35rem] border bg-white px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.02] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.09)] focus-within:-translate-y-0.5 focus-within:shadow-[0_16px_36px_rgba(15,23,42,0.09)]', style.border)}>
             <div className={cn('absolute inset-x-0 top-0 h-1', style.accent)} />
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">{kpi.label}</p>
-            <div className="mt-3 flex items-end justify-between gap-3">
-              <p className="text-[1.8rem] font-semibold leading-none tracking-tight text-slate-950">{kpi.value}</p>
-              {kpi.trendLabel ? <span className={cn('pb-0.5 text-[11px] font-semibold', style.badge)}>{trendArrow} {kpi.trendLabel}</span> : null}
+            <div className="mt-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[1.95rem] font-semibold leading-none tracking-tight text-slate-950">{kpi.value}</p>
+                {kpi.contextLabel ? <p className="mt-2 max-w-[15rem] text-[11px] font-medium leading-5 text-slate-500">{kpi.contextLabel}</p> : null}
+              </div>
+              {kpi.trendLabel ? <span className={cn('mt-0.5 shrink-0 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold shadow-sm ring-1 ring-black/5', style.badge)}>{trendArrow} {kpi.trendLabel}</span> : null}
             </div>
-            {kpi.drillThroughLabel ? <p className={cn('mt-3 text-[10px] font-semibold uppercase tracking-[0.14em]', style.action)}>→ {kpi.drillThroughLabel}</p> : null}
+            {kpi.drillThroughLabel ? <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3"><p className={cn('text-[10px] font-semibold uppercase tracking-[0.14em]', style.action)}>{kpi.drillThroughLabel}</p><span className={cn('text-sm transition group-hover:translate-x-0.5', style.action)}>→</span></div> : null}
           </article>
         );
         return kpi.href ? <Link key={kpi.id} href={kpi.href} className="block">{card}</Link> : <div key={kpi.id}>{card}</div>;

@@ -22,34 +22,66 @@ const PRIMARY_LABELS: Record<string, string> = {
   '/products': 'Catalog',
 };
 
+const UTILITY_LABELS: Record<string, string> = {
+  '/settings/lists': 'Settings',
+  '/admin/organization': 'Admin',
+};
+
 export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compact = false, onNavigate }: { pathname: string; canAccessAdmin: boolean; workspaceMode: 'all' | 'buyers' | 'suppliers'; compact?: boolean; onNavigate?: () => void }) {
   const sections = useMemo<NavSection[]>(() => filterSections(canAccessAdmin), [canAccessAdmin]);
   const items = useMemo(() => sections.flatMap((section) => section.items).filter((item, index, arr) => arr.findIndex((entry) => entry.href === item.href) === index), [sections]);
   const primaryItems = items.filter((item) => item.href in PRIMARY_LABELS).sort((a, b) => Object.keys(PRIMARY_LABELS).indexOf(a.href) - Object.keys(PRIMARY_LABELS).indexOf(b.href));
+  const utilityItems = items.filter((item) => item.href in UTILITY_LABELS).sort((a, b) => Object.keys(UTILITY_LABELS).indexOf(a.href) - Object.keys(UTILITY_LABELS).indexOf(b.href));
 
   if (compact) {
     return (
-      <nav className="space-y-2" aria-label="Primary navigation">
-        {primaryItems.map((item) => {
-          const active = isNavItemActive(pathname, item);
-          return (
-            <a
-              key={item.href}
-              href={withWorkspaceMode(item.href, workspaceMode)}
-              onClick={onNavigate}
-              aria-current={active ? 'page' : undefined}
-              title={PRIMARY_LABELS[item.href]}
-              className={cn(
-                'flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
-                active ? 'bg-white/12 text-white' : 'text-white/60 hover:bg-white/8 hover:text-white',
-              )}
-            >
-              <FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />
-              <span className="mt-1 normal-case tracking-normal text-[9px]">{PRIMARY_LABELS[item.href]}</span>
-            </a>
-          );
-        })}
-      </nav>
+      <div className="flex h-full flex-col">
+        <nav className="space-y-2" aria-label="Primary navigation">
+          {primaryItems.map((item) => {
+            const active = isNavItemActive(pathname, item);
+            return (
+              <a
+                key={item.href}
+                href={withWorkspaceMode(item.href, workspaceMode)}
+                onClick={onNavigate}
+                aria-current={active ? 'page' : undefined}
+                title={PRIMARY_LABELS[item.href]}
+                className={cn(
+                  'flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
+                  active ? 'bg-white/12 text-white' : 'text-white/60 hover:bg-white/8 hover:text-white',
+                )}
+              >
+                <FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />
+                <span className="mt-1 normal-case tracking-normal text-[9px]">{PRIMARY_LABELS[item.href]}</span>
+              </a>
+            );
+          })}
+        </nav>
+
+        {utilityItems.length ? (
+          <nav className="mt-auto space-y-2 pt-6" aria-label="Workspace utilities">
+            {utilityItems.map((item) => {
+              const active = isNavItemActive(pathname, item);
+              return (
+                <a
+                  key={item.href}
+                  href={withWorkspaceMode(item.href, workspaceMode)}
+                  onClick={onNavigate}
+                  aria-current={active ? 'page' : undefined}
+                  title={UTILITY_LABELS[item.href]}
+                  className={cn(
+                    'flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
+                    active ? 'bg-white/12 text-white' : 'text-white/60 hover:bg-white/8 hover:text-white',
+                  )}
+                >
+                  <FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />
+                  <span className="mt-1 normal-case tracking-normal text-[8px]">{UTILITY_LABELS[item.href]}</span>
+                </a>
+              );
+            })}
+          </nav>
+        ) : null}
+      </div>
     );
   }
 

@@ -11,28 +11,66 @@ export function PipelineStageChartCard({ items }: { items: DashboardStageCount[]
   const visible = items.filter((item) => item.count > 0 || (item.valueImpact ?? 0) > 0);
   const max = Math.max(...visible.map((item) => item.count), 1);
   const totalValue = visible.reduce((sum, item) => sum + Number(item.valueImpact ?? 0), 0);
+  const totalCount = visible.reduce((sum, item) => sum + item.count, 0);
+  const activeStages = visible.length;
+  const avgStageValue = activeStages ? totalValue / activeStages : 0;
 
   return (
-    <WidgetShell title="Pipeline Stage Distribution" description="Count and dollar value per stage so the funnel reads like revenue, not just volume." eyebrow="Pipeline">
+    <WidgetShell
+      title="Pipeline Stage Distribution"
+      description="Read count and value together so each stage shows commercial weight, not just traffic."
+      eyebrow="Pipeline"
+      className="h-full border border-slate-200/85 bg-white/96 shadow-[0_18px_44px_rgba(15,23,42,0.06)]"
+    >
       {visible.length ? (
-        <div className="space-y-3">
-          {visible.map((item) => (
-            <div key={item.stageId} className="space-y-1.5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="truncate text-sm font-medium text-slate-700">{item.stageName}</span>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="font-semibold text-slate-950">{item.count}</span>
-                  <span className="font-semibold text-slate-400">{formatCompactCurrency(Number(item.valueImpact ?? 0))}</span>
-                </div>
-              </div>
-              <div className="h-2 rounded-full bg-slate-100">
-                <div className="h-2 rounded-full transition-all" style={{ width: `${Math.max((item.count / max) * 100, item.count ? 10 : 0)}%`, backgroundColor: item.colorToken ?? '#2563eb' }} />
-              </div>
+        <div className="space-y-5">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/90 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Open stages</p>
+              <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{activeStages}</p>
             </div>
-          ))}
-          <div className="mt-4 border-t border-slate-200 pt-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Total pipeline</p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{formatCompactCurrency(totalValue)}</p>
+            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/90 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Open deals</p>
+              <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{totalCount.toLocaleString()}</p>
+            </div>
+            <div className="rounded-[1.35rem] border border-emerald-200 bg-emerald-50/80 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Pipeline value</p>
+              <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{formatCompactCurrency(totalValue)}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-[1.5rem] border border-slate-200/90 bg-white/90 p-4">
+            {visible.map((item) => {
+              const width = Math.max((item.count / max) * 100, item.count ? 10 : 0);
+              return (
+                <div key={item.stageId} className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">{item.stageName}</p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">{item.count.toLocaleString()} active records flowing through this stage</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-semibold text-slate-950">{formatCompactCurrency(Number(item.valueImpact ?? 0))}</p>
+                      <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{item.count} deals</p>
+                    </div>
+                  </div>
+                  <div className="relative h-2.5 overflow-hidden rounded-full bg-slate-100">
+                    <div className="absolute inset-y-0 left-0 rounded-full transition-all" style={{ width: `${width}%`, backgroundColor: item.colorToken ?? '#2563eb' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/80 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Average stage value</p>
+              <p className="mt-1 text-lg font-semibold tracking-tight text-slate-950">{formatCompactCurrency(avgStageValue)}</p>
+            </div>
+            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/80 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Reading guide</p>
+              <p className="mt-1 text-sm leading-5 text-slate-600">Stage bars show flow volume while value labels keep commercial priority visible.</p>
+            </div>
           </div>
         </div>
       ) : (

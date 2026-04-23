@@ -6,7 +6,7 @@ import type { DashboardData } from '@/lib/queries/data';
 import type { LeadJourney } from '@/features/dashboard/types';
 import { WidgetEmptyState, WidgetShell } from '@/components/ui/widget-shell';
 import { useDashboardLayout } from '@/features/dashboard/hooks/use-dashboard-layout';
-import type { DashboardFilters } from './dashboard-control-bar';
+import { DashboardControlBar, type DashboardFilters, type DashboardTimeRange } from './dashboard-control-bar';
 import { AttentionDetailDrawer } from './attention-detail-drawer';
 import { DashboardTopStrip } from './dashboard-top-strip';
 import { DashboardWorldMapSection } from './dashboard-world-map-section';
@@ -27,6 +27,37 @@ type DashboardInteractiveProps = {
   serverNowIso?: string;
   readOnlyMessage?: string | null;
 };
+
+function resolveTimeRange(value: string | null): DashboardTimeRange {
+  return value === 'this-week' || value === 'this-month' || value === 'this-quarter' || value === 'custom' ? value : 'this-month';
+}
+
+function isWithinTimeRange(value: string | null | undefined, range: DashboardTimeRange) {
+  if (!value || range === 'custom') return true;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return true;
+
+  const now = new Date();
+  const start = new Date(now);
+
+  if (range === 'this-week') {
+    const day = start.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - diff);
+    start.setHours(0, 0, 0, 0);
+    return date >= start && date <= now;
+  }
+
+  if (range === 'this-month') {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    return date >= start && date <= now;
+  }
+
+  start.setMonth(Math.floor(start.getMonth() / 3) * 3, 1);
+  start.setHours(0, 0, 0, 0);
+  return date >= start && date <= now;
+}
 
 export default function DashboardInteractive({
   data,
@@ -50,6 +81,7 @@ export default function DashboardInteractive({
     productName: searchParams.get('product') ?? '',
     stageFilter: searchParams.get('stage') ?? '',
     statusFilter: searchParams.get('status') ?? '',
+    timeRange: resolveTimeRange(searchParams.get('range')),
   });
   const [reviewedMap, setReviewedMap] = useState<Record<string, { at: number }>>({});
   const [snoozedMap, setSnoozedMap] = useState<Record<string, { until: number }>>({});
@@ -84,6 +116,7 @@ export default function DashboardInteractive({
       if (next.productName) params.set('product', next.productName); else params.delete('product');
       if (next.stageFilter) params.set('stage', next.stageFilter); else params.delete('stage');
       if (next.statusFilter) params.set('status', next.statusFilter); else params.delete('status');
+      if (next.timeRange === 'this-month') params.delete('range'); else params.set('range', next.timeRange);
       const q = params.toString();
       router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
     },
@@ -91,6 +124,26 @@ export default function DashboardInteractive({
   );
 
   const layout = useDashboardLayout(data, { dashboardVariant, currentRoles, persistenceKey });
+
+  const availableMarkets = useMemo(
+    () => [...data.countryCoverage].sort((a, b) => a.countryName.localeCompare(b.countryName)).map((country) => ({ code: country.countryCode, name: country.countryName })),
+    [data.countryCoverage],
+  );
+  const availableProducts = useMemo(() => data.availableProducts ?? [], [data.availableProducts]);
+  const availableStages = useMemo(
+    () => data.stageCounts.map((stage) => ({ id: stage.stageId, name: stage.stageName })),
+    [data.stageCounts],
+  );
+  const availableStatuses = useMemo(
+    () => [
+      { value: 'active', label: 'Active' },
+      { value: 'blocked', label: 'Blocked' },
+      { value: 'at-risk', label: 'At risk' },
+      { value: 'hot', label: 'Hot' },
+      { value: 'overdue', label: 'Overdue' },
+    ],
+    [],
+  );
 
   const handleMarkReviewed = useCallback((itemId: string) => {
     setReviewedMap((current) => ({ ...current, [itemId]: { at: Date.now() } }));
@@ -148,9 +201,10 @@ export default function DashboardInteractive({
       if (!matchesStage(item.stageId)) return false;
       if (!matchesStatus(item.statusTag)) return false;
       if (!matchesProduct(item.productNames)) return false;
+      if (!isWithinTimeRange(item.dueAt, filters.timeRange)) return false;
       return true;
     });
-  }, [data.attentionItems, filters.marketCode, filters.mode, matchesProduct, matchesStage, matchesStatus, snoozedMap]);
+  }, [data.attentionItems, filters.marketCode, filters.mode, filters.timeRange, matchesProduct, matchesStage, matchesStatus, snoozedMap]);
 
   const filteredCountryInsights = useMemo(() => {
     return data.countryInsights
@@ -171,11 +225,17 @@ export default function DashboardInteractive({
     () =>
       data.countryCoverage.filter((country) => {
         if (filters.marketCode && country.countryCode !== filters.marketCode) return false;
+        if (!isWithinTimeRange(country.lastActivityAt, filters.timeRange)) return false;
         const insight = filteredCountryInsights.find((item) => item.countryCode === country.countryCode);
         const hasAttention = filteredAttentionItems.some((item) => item.marketCode === country.countryCode);
         return Boolean(insight?.topCompanies.length) || hasAttention;
       }),
-    [data.countryCoverage, filteredAttentionItems, filteredCountryInsights, filters.marketCode],
+    [data.countryCoverage, filteredAttentionItems, filteredCountryInsights, filters.marketCode, filters.timeRange],
+  );
+
+  const filteredStageCounts = useMemo(
+    () => (filters.stageFilter ? data.stageCounts.filter((stage) => stage.stageId === filters.stageFilter) : data.stageCounts),
+    [data.stageCounts, filters.stageFilter],
   );
 
   const blockedValue = Math.round(
@@ -189,13 +249,25 @@ export default function DashboardInteractive({
       .reduce((sum, item) => sum + (item.valueImpact ?? 0), 0),
   );
   const hotCount = filteredAttentionItems.filter((item) => item.statusTag === 'hot').length;
+  const visibleLeadCount = filteredCountries.reduce((sum, country) => sum + country.activeLeadCount, 0);
+  const resultSummary = `${filteredCountries.length} market${filteredCountries.length === 1 ? '' : 's'} · ${visibleLeadCount} leads · ${filteredAttentionItems.length} action${filteredAttentionItems.length === 1 ? '' : 's'}`;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-5 sm:px-6 xl:px-0">
+    <div className="flex w-full flex-col gap-6 pb-12 pt-3 xl:gap-7">
+      <DashboardControlBar
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        availableMarkets={availableMarkets}
+        availableProducts={availableProducts}
+        availableStages={availableStages}
+        availableStatuses={availableStatuses}
+        resultSummary={resultSummary}
+      />
+
       {data.kpis.length > 0 ? (
         <DashboardWidgetErrorBoundary
           title="Commercial signals"
-          description="Key metrics for the active view."
+          description="Top commercial signals for the active dashboard view."
           eyebrow="Overview"
           fallbackTitle="Metrics unavailable"
           fallbackDescription="KPI strip hit a runtime issue."
@@ -204,31 +276,40 @@ export default function DashboardInteractive({
         </DashboardWidgetErrorBoundary>
       ) : null}
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1.04fr)_400px]">
         <DashboardWidgetErrorBoundary
           title="Trade map"
-          description="Geography-first command surface."
+          description="Geographic view of live commercial activity with instant market drill-down."
           eyebrow="Command center"
           fallbackTitle="Trade map unavailable"
           fallbackDescription="The coverage map hit a runtime issue."
         >
           <WidgetShell
-            title={selectedCountry ? `${selectedCountry.countryName} · Market drill-down` : 'Active Market Map'}
+            title={selectedCountry ? `${selectedCountry.countryName} · Market view` : 'Market command map'}
             description={
               selectedCountry
-                ? `Actions, buyers, and blockers for ${selectedCountry.countryName}. Click another country or clear to return.`
-                : `${filteredCountries.length} active market${filteredCountries.length !== 1 ? 's' : ''} — click any country to drill into action.`
+                ? `Priority accounts, actions, and blockers for ${selectedCountry.countryName}. Clear the market to return to the full market view.`
+                : `${filteredCountries.length} visible market${filteredCountries.length !== 1 ? 's' : ''} with live activity. Click a country to open the market view.`
             }
-            eyebrow="Geographic coverage"
-            actions={selectedCountry ? (
-              <button
-                type="button"
-                onClick={handleClearCountry}
-                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-              >
-                ✕ Clear market
-              </button>
-            ) : undefined}
+            eyebrow="Markets"
+            className="h-full border border-slate-200/85 bg-white/96 shadow-[0_20px_52px_rgba(15,23,42,0.07)]"
+            contentClassName="px-5 py-5 sm:px-6 sm:py-6"
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Command row
+                </span>
+                {selectedCountry ? (
+                  <button
+                    type="button"
+                    onClick={handleClearCountry}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Clear market
+                  </button>
+                ) : null}
+              </div>
+            }
           >
             {filteredCountries.length > 0 ? (
               <DashboardWorldMapSection
@@ -239,8 +320,8 @@ export default function DashboardInteractive({
               />
             ) : (
               <WidgetEmptyState
-                title="No markets match current filters"
-                description="Clear the market filter or add country data to leads to light up the map."
+                title="No markets match the current filters"
+                description="Clear a filter to bring markets back into view."
               />
             )}
 
@@ -259,7 +340,7 @@ export default function DashboardInteractive({
 
         <DashboardWidgetErrorBoundary
           title="Action queue"
-          description="Filtered by role and market."
+          description="Priority actions for the active view, ranked for the next commercial move."
           eyebrow="Action zone"
           fallbackTitle="Action queue unavailable"
           fallbackDescription="Action queue hit a runtime issue."
@@ -273,20 +354,20 @@ export default function DashboardInteractive({
         </DashboardWidgetErrorBoundary>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         <DashboardWidgetErrorBoundary
           title="Pipeline stage distribution"
-          description="Count and value by stage."
+          description="Stage mix and visible value for the current dashboard view."
           eyebrow="Pipeline"
           fallbackTitle="Pipeline unavailable"
           fallbackDescription="Pipeline stage card hit a runtime issue."
         >
-          <PipelineStageChartCard items={data.stageCounts} />
+          <PipelineStageChartCard items={filteredStageCounts} />
         </DashboardWidgetErrorBoundary>
 
         <DashboardWidgetErrorBoundary
           title="Country performance"
-          description="Top countries by value."
+          description="Country performance for the current dashboard view."
           eyebrow="Markets"
           fallbackTitle="Country performance unavailable"
           fallbackDescription="Country performance card hit a runtime issue."
@@ -296,25 +377,47 @@ export default function DashboardInteractive({
 
         <DashboardWidgetErrorBoundary
           title="Commercial risk"
-          description="Blocked, at-risk, and hot signals."
+          description="Blocked revenue, at-risk value, and close-now heat in one surface."
           eyebrow="Commercial risk"
           fallbackTitle="Commercial risk unavailable"
           fallbackDescription="Commercial risk card hit a runtime issue."
         >
-          <div className="rounded-[1.45rem] border border-slate-200/80 bg-white/95 p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-            <div className="space-y-3">
-              <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-700">Blocked ($)</p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{blockedValue > 0 ? `$${blockedValue.toLocaleString()}` : '—'}</p>
+          <div className="h-full rounded-[2rem] border border-slate-200/85 bg-white/96 p-5 shadow-[0_20px_52px_rgba(15,23,42,0.07)] sm:p-6">
+            <div className="grid gap-3.5">
+              <div className="rounded-[1.5rem] border border-rose-200 bg-[linear-gradient(135deg,rgba(255,241,242,0.95),rgba(255,255,255,0.98))] p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-700">Blocked revenue</p>
+                    <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">{blockedValue > 0 ? `$${blockedValue.toLocaleString()}` : '—'}</p>
+                  </div>
+                  <span className="rounded-full border border-rose-200 bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-rose-700">Stop ship</span>
+                </div>
+                <p className="mt-2 text-sm leading-5 text-slate-600">Revenue currently stalled by blockers that need clearance before the next move.</p>
               </div>
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">At Risk ($)</p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{atRiskValue > 0 ? `$${atRiskValue.toLocaleString()}` : '—'}</p>
+              <div className="rounded-[1.5rem] border border-amber-200 bg-[linear-gradient(135deg,rgba(255,251,235,0.95),rgba(255,255,255,0.98))] p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">At-risk value</p>
+                    <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">{atRiskValue > 0 ? `$${atRiskValue.toLocaleString()}` : '—'}</p>
+                  </div>
+                  <span className="rounded-full border border-amber-200 bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-700">Needs action</span>
+                </div>
+                <p className="mt-2 text-sm leading-5 text-slate-600">Commercial value at risk if the next outreach or approval step slips any further.</p>
               </div>
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Hot count</p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{hotCount > 0 ? hotCount.toLocaleString() : '—'}</p>
+              <div className="rounded-[1.5rem] border border-emerald-200 bg-[linear-gradient(135deg,rgba(236,253,245,0.95),rgba(255,255,255,0.98))] p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Hot opportunities</p>
+                    <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">{hotCount > 0 ? hotCount.toLocaleString() : '—'}</p>
+                  </div>
+                  <span className="rounded-full border border-emerald-200 bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Close now</span>
+                </div>
+                <p className="mt-2 text-sm leading-5 text-slate-600">High-intent opportunities that deserve immediate attention while momentum is strongest.</p>
               </div>
+            </div>
+            <div className="mt-4 rounded-[1.35rem] border border-slate-200 bg-slate-50/85 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Commercial view</p>
+              <p className="mt-1 text-sm leading-5 text-slate-700">Use this card to spot what is blocked, what needs action, and what is ready to close.</p>
             </div>
           </div>
         </DashboardWidgetErrorBoundary>

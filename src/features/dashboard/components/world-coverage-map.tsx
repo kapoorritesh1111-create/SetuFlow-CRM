@@ -134,13 +134,13 @@ export function WorldCoverageMap({
   if (!worldMap) {
     return (
       <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-700/60 bg-[#0a1628] p-4', className)}>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/8 pb-3">
           <span className="h-6 w-32 animate-pulse rounded-full bg-slate-800" />
           <div className="flex gap-1.5">
             {[1,2,3].map(i => <span key={i} className="h-8 w-10 animate-pulse rounded-full bg-slate-800" />)}
           </div>
         </div>
-        <div className="flex h-[340px] items-center justify-center rounded-[1.4rem] bg-[#0d1f3a]">
+        <div className="flex h-[348px] items-center justify-center rounded-[1.4rem] bg-[#0d1f3a]">
           <div className="text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-slate-400" />
             <p className="mt-3 text-xs font-semibold text-slate-500">Loading trade map…</p>
@@ -151,9 +151,9 @@ export function WorldCoverageMap({
   }
 
   return (
-    <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-700/60 bg-[#0a1628] p-4 shadow-[0_24px_64px_rgba(0,0,0,0.5)]', className)}>
+    <div className={cn('relative overflow-hidden rounded-[1.7rem] border border-slate-700/70 bg-[#0a1628] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.52)] ring-1 ring-white/5', className)}>
       {/* Header bar */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/8 pb-3">
         <div className="flex flex-wrap items-center gap-2">
           {selectedCountryCode ? (
             <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
@@ -164,10 +164,10 @@ export function WorldCoverageMap({
               {modeLabel} · {countries.length} market{countries.length !== 1 ? 's' : ''}
             </span>
           )}
-          <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Fast map · role aware</span>
+          <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Live coverage · role aware</span>
           <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${mapReady ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>{mapReady ? 'Ready' : 'Loading'}</span>
         </div>
-        <div className="flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+        <div className="flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/85 p-1 shadow-[0_12px_28px_rgba(0,0,0,0.24)]">
           <button type="button" onClick={onZoomOut} aria-label="Zoom out" className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">−</button>
           <button type="button" onClick={onZoomIn}  aria-label="Zoom in"  className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">+</button>
           <button type="button" onClick={onResetView} className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">Reset</button>
@@ -176,7 +176,7 @@ export function WorldCoverageMap({
 
       {/* Map container */}
       <div
-        className={cn('relative h-[340px] overflow-hidden rounded-[1.4rem] bg-[#0d1f3a] transition-opacity duration-300', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
+        className={cn('relative h-[348px] overflow-hidden rounded-[1.4rem] bg-[#0d1f3a] transition-opacity duration-300', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onPointerLeave={onPointerLeave}
       >
@@ -257,7 +257,7 @@ export function WorldCoverageMap({
       </div>
 
       {/* Legend */}
-      <div className="mt-3 flex flex-wrap items-center gap-3 px-1">
+      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-white/8 px-1 pt-3">
         {mode === 'suppliers' ? (
           <>
             <LegendDot color="bg-purple-400" label="Critical" />
@@ -272,7 +272,7 @@ export function WorldCoverageMap({
           </>
         )}
         <LegendDot color="bg-white/90" label="Selected" />
-        <span className="ml-auto rounded-full border border-slate-700/70 bg-slate-900/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Click any market to drill down</span>
+        <span className="ml-auto rounded-full border border-slate-700/70 bg-slate-900/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Click any market to open its command lane</span>
       </div>
     </div>
   );

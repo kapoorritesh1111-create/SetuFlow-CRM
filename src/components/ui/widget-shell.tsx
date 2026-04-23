@@ -29,8 +29,8 @@ export function WidgetShell({
   contentClassName?: string;
 }) {
   return (
-    <section className={cn('group relative overflow-hidden rounded-[2rem] ring-1 ring-slate-950/[0.04] backdrop-blur before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.96),transparent)] dark:ring-white/[0.04] dark:before:bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.36),transparent)]', workspaceGlassClass, className)}>
-      <div className="border-b border-slate-200/70 px-5 py-4 dark:border-slate-700/70 sm:px-6 sm:py-5">
+    <section className={cn('group relative overflow-hidden rounded-[1.85rem] ring-1 ring-slate-950/[0.04] backdrop-blur before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.96),transparent)] dark:ring-white/[0.04] dark:before:bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.36),transparent)]', workspaceGlassClass, className)}>
+      <div className="border-b border-slate-200/70 px-5 py-4.5 dark:border-slate-700/70 sm:px-6 sm:py-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0 max-w-3xl">
             {eyebrow ? <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-sky-300">{eyebrow}</p> : null}

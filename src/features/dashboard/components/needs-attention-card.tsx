@@ -15,10 +15,10 @@ const severityBorder = {
 } as const;
 
 const severityLabel = {
-  low: { text: 'Watch', cls: 'bg-slate-100 text-slate-600' },
-  medium: { text: 'Action', cls: 'bg-amber-100 text-amber-700' },
-  high: { text: 'Urgent', cls: 'bg-orange-100 text-orange-700' },
-  critical: { text: 'Critical', cls: 'bg-rose-100 text-rose-700' },
+  low: { text: 'Watch', cls: 'bg-slate-100 text-slate-600 border border-slate-200' },
+  medium: { text: 'Action', cls: 'bg-amber-100 text-amber-700 border border-amber-200' },
+  high: { text: 'Urgent', cls: 'bg-orange-100 text-orange-700 border border-orange-200' },
+  critical: { text: 'Critical', cls: 'bg-rose-100 text-rose-700 border border-rose-200' },
 } as const;
 
 const typeToRole: Record<string, 'buyer' | 'supplier' | 'both'> = {
@@ -70,11 +70,25 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
 
   const modeLabel = mode === 'buyers' ? ' · Buyers' : mode === 'suppliers' ? ' · Suppliers' : '';
   const marketLabel = marketCode ? ` · ${marketCode}` : '';
+  const summaryLine = `${counts.critical} critical · ${counts.quotes} quote risk · ${counts.compliance} compliance`;
 
   return (
-    <WidgetShell title={`Needs Attention${modeLabel}${marketLabel}`} description="Ordered by urgency so the queue reads like a command list, not a report." eyebrow="Action zone">
-      <div className="-mx-5 -mt-2 border-b border-slate-200 px-5 pb-3">
-        <div className="flex flex-wrap gap-1">
+    <WidgetShell
+      title={`Needs Attention${modeLabel}${marketLabel}`}
+      description="Scan urgency first, then open the next record that moves revenue forward."
+      eyebrow="Action zone"
+      className="h-full border border-slate-200/85 bg-white/96 shadow-[0_22px_52px_rgba(15,23,42,0.08)]"
+      contentClassName="px-0 py-0"
+      actions={
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            {summaryLine}
+          </span>
+        </div>
+      }
+    >
+      <div className="border-b border-slate-200 px-5 pb-3 pt-1 sm:px-6">
+        <div className="flex flex-wrap gap-2">
           {tabs.map((entry) => {
             const active = tab === entry.key;
             return (
@@ -82,9 +96,14 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
                 key={entry.key}
                 type="button"
                 onClick={() => setTab(entry.key)}
-                className={active ? 'rounded-full bg-[#0b2e4a] px-3 py-1.5 text-xs font-semibold text-white' : 'rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900'}
+                className={active ? 'rounded-full bg-[#0b2e4a] px-3.5 py-2 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)]' : 'rounded-full border border-transparent px-3.5 py-2 text-xs font-semibold text-slate-500 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'}
               >
-                {entry.label} {entry.count > 0 ? <span className={active ? 'ml-1 rounded-full bg-white/15 px-1.5 py-0.5 text-[10px]' : 'ml-1 rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] text-slate-700'}>{entry.count}</span> : null}
+                {entry.label}
+                {entry.count > 0 ? (
+                  <span className={active ? 'ml-1.5 rounded-full bg-white/15 px-1.5 py-0.5 text-[10px]' : 'ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-700'}>
+                    {entry.count}
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -92,38 +111,74 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
       </div>
 
       {filtered.length ? (
-        <div className="-mx-5 max-h-[480px] space-y-0 overflow-y-auto px-5 pr-3">
-          {filtered.map((item) => {
-            const sev = item.severity;
-            const role = item.leadType ?? typeToRole[item.type] ?? 'both';
-            const chip = roleChip[role];
-            const sl = severityLabel[sev];
-            return (
-              <div key={item.id} className="flex gap-3 border-b border-slate-200 px-0 py-3 last:border-b-0 hover:bg-slate-50/70">
-                <div className={`mt-1 w-1 self-stretch rounded-full ${severityBorder[sev]}`} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <p className="text-sm font-semibold text-slate-950">{item.title}</p>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${chip.cls}`}>{chip.label}</span>
-                    {item.stageName ? <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{item.stageName}</span> : null}
-                    {item.productNames?.[0] ? <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{item.productNames[0]}</span> : null}
+        <>
+          <div className="max-h-[480px] space-y-0 overflow-y-auto px-5 pb-0 pr-3 sm:px-6 sm:pr-4">
+            {filtered.map((item) => {
+              const sev = item.severity;
+              const role = item.leadType ?? typeToRole[item.type] ?? 'both';
+              const chip = roleChip[role];
+              const sl = severityLabel[sev];
+              const primaryAction = item.ctaLabel ?? 'Open record';
+              return (
+                <div key={item.id} className="group flex gap-3 border-b border-slate-200/90 py-4 last:border-b-0 hover:bg-slate-50/65">
+                  <div className={`mt-1 w-1 shrink-0 self-stretch rounded-full ${severityBorder[sev]}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${sl.cls}`}>{sl.text}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${chip.cls}`}>{chip.label}</span>
+                      {item.stageName ? <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{item.stageName}</span> : null}
+                      {item.productNames?.[0] ? <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{item.productNames[0]}</span> : null}
+                    </div>
+                    <div className="mt-2 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-950 transition group-hover:text-slate-900">{item.title}</p>
+                        <p className="mt-1 text-xs leading-5 text-slate-600">{item.reason}</p>
+                      </div>
+                      {typeof item.valueImpact === 'number' && item.valueImpact > 0 ? (
+                        <div className="shrink-0 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-right">
+                          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-700">Value at stake</p>
+                          <p className="mt-0.5 text-sm font-semibold text-slate-950">${Math.round(item.valueImpact).toLocaleString()}</p>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                      <span>{item.dueAt ? `Due ${formatDate(item.dueAt)}` : 'No due date set'}</span>
+                      <span className="text-slate-300">•</span>
+                      <span>{item.statusTag ? item.statusTag.replace('-', ' ') : 'Open'}</span>
+                    </div>
                   </div>
-                  <p className="mt-1 text-xs leading-5 text-slate-600">{item.reason}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${sl.cls}`}>{sl.text}</span>
-                    <span className="text-[11px] text-slate-400">{item.dueAt ? `Due ${formatDate(item.dueAt)}` : 'No due date'}</span>
-                    {typeof item.valueImpact === 'number' && item.valueImpact > 0 ? <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">${Math.round(item.valueImpact).toLocaleString()} impact</span> : null}
+                  <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => onFocus?.(item)}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Review
+                    </button>
+                    {item.ctaHref ? (
+                      <Link href={item.ctaHref} className="rounded-full bg-[#0b2e4a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-[#08253b]">
+                        {primaryAction}
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onFocus?.(item)}
+                        className="rounded-full bg-[#0b2e4a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-[#08253b]"
+                      >
+                        {primaryAction}
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="flex shrink-0 items-start gap-2">
-                  <button type="button" onClick={() => onFocus?.(item)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Review</button>
-                  {item.ctaHref ? <Link href={item.ctaHref} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-slate-700 hover:bg-slate-200">{item.ctaLabel}</Link> : <button type="button" onClick={() => onFocus?.(item)} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-slate-700 hover:bg-slate-200">Open detail</button>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : <WidgetEmptyState title="Queue clear" description="No items match the current attention tab." />}
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/80 px-5 py-3 text-[11px] font-semibold text-slate-500 sm:px-6">
+            <span>{summaryLine}</span>
+            <span className="text-[#0b2e4a]">Open the next priority item to keep momentum moving</span>
+          </div>
+        </>
+      ) : <WidgetEmptyState className="m-5 sm:m-6" title="Queue clear" description="No items match this view right now." />}
     </WidgetShell>
   );
 }
