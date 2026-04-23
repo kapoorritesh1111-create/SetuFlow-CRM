@@ -13,6 +13,7 @@ import { QuoteHistoryList } from '@/features/quotes/ui/quote-history-list';
 import { getCommercialLockStateLabel, parseContractCommercialSnapshot } from '@/lib/contract-lock';
 import { inferQuoteTradeWorkflow, journeyLabel } from '@/features/trade-workflow/logic';
 import { TradeSignalGrid } from '@/features/trade-workflow/ui';
+import { CollapsiblePanel } from '@/components/ui/collapsible-panel';
 
 function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -229,7 +230,15 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                     {selectedContractSnapshot ? <p className="mt-2 text-xs text-slate-500">{getCommercialLockStateLabel((selected.contract as any).commercial_lock_state ?? selectedContractSnapshot.lockState)} · {selectedContractSnapshot.pricingBasis ?? 'pricing basis pending'} · {selectedContractSnapshot.lineCount ?? 0} locked lines</p> : null}
                   </div>
                 </div>
-                {selectedQuoteRisk ? <AIInsightCard title={selectedQuoteRisk.label} score={selectedQuoteRisk.score} level={selectedQuoteRisk.level} reasons={selectedQuoteRisk.reasons} /> : null}
+                {selectedQuoteRisk ? (
+                  <CollapsiblePanel
+                    title="AI assist (secondary)"
+                    summary="Open only if you need a compact risk read."
+                    className="border border-slate-200 bg-slate-50/60"
+                  >
+                    <AIInsightCard title={selectedQuoteRisk.label} score={selectedQuoteRisk.score} level={selectedQuoteRisk.level} reasons={selectedQuoteRisk.reasons} />
+                  </CollapsiblePanel>
+                ) : null}
                 {selected.notes ? <div className="rounded-2xl border border-slate-200 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Notes</p><p className="mt-2">{selected.notes}</p></div> : null}
               </div>
             ) : <p className="text-sm text-slate-500">Choose a quote from the list to review detail.</p>}
@@ -241,21 +250,28 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
         </div>
 
         <div className="space-y-4">
-          <SectionCard eyebrow="Route rule" title="When this route should lead" description="Quote stays close to Follow-up, but it should still feel like one connected workflow.">
-            <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
-              <li>Use this desk to keep one live commercial record in focus.</li>
-              <li>Use the quote editor only when pricing lines, revisions, or sending details need deeper edits.</li>
-              <li>Push accepted work into Orders instead of lingering here.</li>
-              <li>Push rejected or stalled work back into explicit Follow-up action.</li>
-            </ul>
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Commercial truth reminder</p>
-              <p className="mt-2 text-sm text-slate-700">Catalog/base pricing stays the default. Override requires an explicit reason. Threshold approvals still govern risky moves. AI can explain pressure and missing context, but it does not approve, send, or lock commercial terms.</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link href={PRODUCT_ROUTES.app.products} className="inline-flex rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Catalog</Link>
-                <Link href="/ai-suggestions?family=quote" className="inline-flex rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open AI guidance</Link>
-              </div>
+          <SectionCard eyebrow="Route actions" title="Run quote actions" description="Pick one record and move it.">
+            <div className="flex flex-wrap gap-2">
+              <Link href={selected?.nextStep?.href ?? PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Move current quote</Link>
+              <Link href={PRODUCT_ROUTES.app.orders} className="inline-flex rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Orders</Link>
+              <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Follow-up</Link>
             </div>
+            <CollapsiblePanel
+              title="Why these rules exist"
+              summary="Open for governance and pricing rationale."
+              className="mt-4 border border-slate-200 bg-slate-50"
+            >
+              <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
+                <li>Keep one live commercial record in focus.</li>
+                <li>Edit line pricing only when revisions are required.</li>
+                <li>Move accepted work into Orders.</li>
+                <li>Route stalled work back to Follow-up.</li>
+              </ul>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href={PRODUCT_ROUTES.app.products} className="inline-flex rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open Catalog</Link>
+                <Link href="/ai-suggestions?family=quote" className="inline-flex rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open AI assist</Link>
+              </div>
+            </CollapsiblePanel>
           </SectionCard>
 
           {selected ? (
