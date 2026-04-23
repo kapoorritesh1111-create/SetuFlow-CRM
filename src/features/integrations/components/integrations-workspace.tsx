@@ -24,6 +24,7 @@ export function IntegrationsWorkspace({ data }: Props) {
   const readyCount = view.outboundCandidates.filter((candidate) => candidate.readiness === 'ready').length;
   const latestSync = view.syncLogs[0] ?? null;
   const latestRetry = view.retryQueue[0] ?? null;
+  const dominantUrgencyCount = blockedCount > 0 ? blockedCount : view.overview.retryQueueCount;
   const approvalTruth = blockedCount === 0 ? 'green' : readyCount > 0 ? 'yellow' : 'red';
   const outboundTruth = latestRetry ? 'yellow' : latestSync ? 'green' : 'red';
   const deskSummary = [
@@ -68,31 +69,21 @@ export function IntegrationsWorkspace({ data }: Props) {
       <section className="grid gap-4 lg:grid-cols-[1.45fr_1fr]">
       <a id="send-queue" className="sr-only" aria-hidden="true"></a>
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Approvals & Sending</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">One workspace for approval status, send blockers, and outbound continuity</h2>
-          <p className="mt-2 max-w-3xl text-sm text-slate-600">
-            This route should never imply that a quote is safe to send just because it exists. Keep approval status, send readiness, latest outbound action,
-            and resend or revision posture in one place before anything customer-facing moves.
-          </p>
-          <div className="mt-5">
-            <CollapsiblePanel
-              title="Desk summary"
-              summary="Keep the queue visible first. Open this when you want the full approval, send, and resend posture in one scan."
-              className="bg-slate-50/70"
-            >
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {deskSummary.map((item) => (
-                  <div key={item.title} className={`rounded-2xl border p-4 ${toneClass(item.tone)}`}>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em]">{item.title}</p>
-                    <p className="mt-3 text-sm leading-6">{item.body}</p>
-                  </div>
-                ))}
-              </div>
-            </CollapsiblePanel>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Approvals &amp; Sending</p>
+          <div className="mt-3 grid gap-4 xl:grid-cols-[1fr_auto] xl:items-center">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Blocked send packets</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{blockedCount}</p>
+              <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${dominantUrgencyCount > 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                {dominantUrgencyCount > 0 ? `${dominantUrgencyCount} urgent item${dominantUrgencyCount === 1 ? '' : 's'} require decision` : 'No immediate send pressure'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <a href="#governed-send-queue" className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Review ready items</a>
+              <Link href="/quotes?handoff=approval-send-return" className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50">Back to Quote workspace</Link>
+            </div>
           </div>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <a href="#governed-send-queue" className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Review ready items</a>
-            <Link href="/quotes?handoff=approval-send-return" className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50">Back to Quote workspace</Link>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Link href={buildOrdersHref({ handoff: 'approval-send-open-orders' })} className="text-sm font-semibold text-brand-700 hover:text-brand-800">Orders &amp; Execution</Link>
             <Link href="/contracts" className="text-sm font-semibold text-slate-700 hover:text-slate-900">Contracts</Link>
           </div>
@@ -118,6 +109,21 @@ export function IntegrationsWorkspace({ data }: Props) {
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Blocked outbound</p><p className="mt-2 text-2xl font-semibold text-amber-700">{blockedCount}</p></div>
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-400">Retry pressure</p><p className="mt-2 text-2xl font-semibold text-slate-900">{view.overview.retryQueueCount}</p></div>
       </section>
+
+      <CollapsiblePanel
+        title="Desk summary"
+        summary="Keep this collapsed while you clear the send queue."
+        className="bg-slate-50/70"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {deskSummary.map((item) => (
+            <div key={item.title} className={`rounded-2xl border p-4 ${toneClass(item.tone)}`}>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em]">{item.title}</p>
+              <p className="mt-3 text-sm leading-6">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </CollapsiblePanel>
 
       <section className="grid gap-4 xl:grid-cols-[1.25fr_1fr]">
         <div id="governed-send-queue" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">

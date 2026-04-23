@@ -103,6 +103,14 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     ? inferQuoteTradeWorkflow({ leadType: selected.leadType, notes: selected.notes, hasAcceptedContract: selected.hasAcceptedContract })
     : null;
   const selectedContractSnapshot = selected?.contract ? parseContractCommercialSnapshot((selected.contract as any).commercial_snapshot) : null;
+  const urgentQuoteCount = viewModel.items.filter((item) => {
+    const state = String(item.status ?? '').toLowerCase();
+    if (['accepted', 'rejected', 'expired', 'cancelled'].includes(state)) return false;
+    const updatedAt = new Date(item.updatedAt).getTime();
+    if (!Number.isFinite(updatedAt)) return false;
+    return Date.now() - updatedAt >= 72 * 60 * 60 * 1000;
+  }).length;
+  const dominantQuoteActionHref = selected?.nextStep?.href ?? selectedLeadHref;
   const selectedQuoteRisk = selected
     ? scoreQuoteRisk({
         quoteId: selected.id,
@@ -121,14 +129,17 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   return (
     <div className="space-y-6 p-4 sm:p-6">
       <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0 flex-1 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Quote command center</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Keep Follow-up and Quote in one working flow</h1>
-            <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">Keep one quote in focus here. Start from catalog pricing, make override reasons visible, and move into Approvals & Sending only when the quote is truly ready.</p>
+            <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{urgentQuoteCount}</p>
+            <p className="mt-1 text-sm font-medium text-slate-700">Quotes need action in the next cycle</p>
+            <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${urgentQuoteCount > 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+              {urgentQuoteCount > 0 ? `${urgentQuoteCount} quote${urgentQuoteCount === 1 ? '' : 's'} aging 72h+` : 'No aged quote pressure right now'}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Link href={selectedLeadHref} className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Edit this quote</Link>
+            <Link href={dominantQuoteActionHref} className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Resolve next quote now</Link>
             <Link href={PRODUCT_ROUTES.app.leads} className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50">Back to Follow-up</Link>
             <Link href={PRODUCT_ROUTES.app.integrations} className="text-sm font-semibold text-brand-700 hover:text-brand-800">Approvals &amp; Sending</Link>
           </div>
