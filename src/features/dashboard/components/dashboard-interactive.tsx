@@ -32,6 +32,16 @@ function resolveTimeRange(value: string | null): DashboardTimeRange {
   return value === 'this-week' || value === 'this-month' || value === 'this-quarter' || value === 'custom' ? value : 'this-month';
 }
 
+
+function formatCompactCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: value >= 1000000 ? 1 : 0,
+    notation: value >= 1000000 ? 'compact' : 'standard',
+  }).format(value);
+}
+
 function isWithinTimeRange(value: string | null | undefined, range: DashboardTimeRange) {
   if (!value || range === 'custom') return true;
   const date = new Date(value);
@@ -250,10 +260,76 @@ export default function DashboardInteractive({
   );
   const hotCount = filteredAttentionItems.filter((item) => item.statusTag === 'hot').length;
   const visibleLeadCount = filteredCountries.reduce((sum, country) => sum + country.activeLeadCount, 0);
+  const visibleBuyerCount = filteredCountries.reduce((sum, country) => sum + (country.buyerLeadCount ?? 0), 0);
+  const visibleSupplierCount = filteredCountries.reduce((sum, country) => sum + (country.supplierLeadCount ?? 0), 0);
+  const visibleQuoteCount = filteredCountries.reduce((sum, country) => sum + country.openQuoteCount, 0);
+  const visiblePipelineValue = Math.round(filteredCountries.reduce((sum, country) => sum + (country.pipelineValue ?? 0), 0));
+  const overdueQueueCount = filteredAttentionItems.filter((item) => item.statusTag === 'overdue' || item.type === 'overdue-task').length;
+  const blockedQueueCount = filteredAttentionItems.filter((item) => item.statusTag === 'blocked').length;
+  const filteredKpis = useMemo(() => {
+    const hasScopedFilters = Boolean(filters.marketCode || filters.productName || filters.stageFilter || filters.statusFilter || filters.timeRange !== 'this-month');
+    if (!hasScopedFilters) return data.kpis;
+
+    return data.kpis.map((kpi) => {
+      if (kpi.id === 'open-leads') {
+        const count = filters.marketCode ? visibleLeadCount : (filters.stageFilter ? filteredStageCounts.reduce((sum, stage) => sum + stage.count, 0) : visibleLeadCount);
+        return {
+          ...kpi,
+          value: count,
+          rawValue: count,
+          contextLabel: count ? `${visibleBuyerCount} buyers · ${visibleSupplierCount} suppliers in motion` : 'No active opportunities in this view',
+        };
+      }
+
+      if (kpi.id === 'overdue-followups') {
+        return {
+          ...kpi,
+          value: overdueQueueCount,
+          rawValue: overdueQueueCount,
+          contextLabel: overdueQueueCount ? 'Clear priority items before they cool' : 'No overdue follow-ups in the current view',
+          trendLabel: overdueQueueCount ? 'Priority work today' : 'Queue clear',
+          trendDirection: overdueQueueCount ? 'up' : 'neutral',
+          intent: overdueQueueCount ? 'warning' : 'success',
+        };
+      }
+
+      if (kpi.id === 'active-quotes') {
+        return {
+          ...kpi,
+          value: visibleQuoteCount,
+          rawValue: visibleQuoteCount,
+          contextLabel: visibleQuoteCount ? 'Track live pricing and buyer response' : 'No live quotes in the current view',
+        };
+      }
+
+      if (kpi.id === 'compliance-blockers') {
+        return {
+          ...kpi,
+          value: blockedQueueCount,
+          rawValue: blockedQueueCount,
+          contextLabel: blockedQueueCount ? 'Compliance holds are slowing progression' : 'No active blockers in this view',
+          trendLabel: blockedQueueCount ? 'Needs clearance' : 'Clear to progress',
+          trendDirection: blockedQueueCount ? 'up' : 'neutral',
+          intent: blockedQueueCount ? 'danger' : 'success',
+        };
+      }
+
+      if (kpi.id === 'pipeline-value') {
+        return {
+          ...kpi,
+          value: formatCompactCurrency(visiblePipelineValue),
+          rawValue: visiblePipelineValue,
+          contextLabel: visiblePipelineValue ? 'Current value across active stages' : 'No visible value in this view',
+        };
+      }
+
+      return kpi;
+    });
+  }, [data.kpis, filteredStageCounts, filters.marketCode, filters.productName, filters.stageFilter, filters.statusFilter, filters.timeRange, overdueQueueCount, blockedQueueCount, visibleLeadCount, visibleBuyerCount, visibleSupplierCount, visibleQuoteCount, visiblePipelineValue]);
   const resultSummary = `${filteredCountries.length} market${filteredCountries.length === 1 ? '' : 's'} · ${visibleLeadCount} leads · ${filteredAttentionItems.length} action${filteredAttentionItems.length === 1 ? '' : 's'}`;
 
   return (
-    <div className="flex w-full flex-col gap-6 pb-12 pt-3 xl:gap-7">
+    <div className="flex w-full flex-col gap-5 pb-10 pt-2 xl:gap-6">
       <DashboardControlBar
         filters={filters}
         onFiltersChange={handleFiltersChange}
@@ -272,11 +348,11 @@ export default function DashboardInteractive({
           fallbackTitle="Metrics unavailable"
           fallbackDescription="KPI strip hit a runtime issue."
         >
-          <DashboardTopStrip kpis={data.kpis} mode={filters.mode} />
+          <DashboardTopStrip kpis={filteredKpis} mode={filters.mode} />
         </DashboardWidgetErrorBoundary>
       ) : null}
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1.04fr)_400px]">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1.04fr)_400px]">
         <DashboardWidgetErrorBoundary
           title="Trade map"
           description="Geographic view of live commercial activity with instant market drill-down."
@@ -354,7 +430,7 @@ export default function DashboardInteractive({
         </DashboardWidgetErrorBoundary>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         <DashboardWidgetErrorBoundary
           title="Pipeline stage distribution"
           description="Stage mix and visible value for the current dashboard view."

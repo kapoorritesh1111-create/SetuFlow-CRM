@@ -172,10 +172,17 @@ export function AppShell({
               <p className="mt-2 text-xs text-white/55">{profile?.email ?? 'Signed in via Supabase'}</p>
             </div>
             <div className="px-7 py-6">
-              <div className="mx-auto mb-5 flex h-32 w-32 items-center justify-center rounded-[1rem] border border-slate-200 bg-slate-100 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 whitespace-pre-line">
-                QR share
-                {'\n'}
-                block
+              <div className="mb-5 flex flex-col items-center">
+                <div className="flex h-[124px] w-[124px] items-center justify-center rounded-[1rem] border border-slate-200 bg-slate-50 p-2 shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+                  {qrCodeDataUrl ? (
+                    <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-full w-full rounded-[0.75rem] bg-white p-1" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center rounded-[0.75rem] border border-dashed border-slate-300 bg-white text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Preparing QR
+                    </div>
+                  )}
+                </div>
+                <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Scan to save contact</p>
               </div>
               <div className="space-y-2.5">
                 <a href={downloadVcfHref} className="flex items-center gap-3 rounded-[0.9rem] bg-[#0b2e4a] px-4 py-3 text-sm font-semibold text-white hover:bg-[#061c2e]">
@@ -208,7 +215,7 @@ export function AppShell({
         <main id="app-content" className="relative min-w-0 overflow-x-clip lg:pl-5 xl:pl-6">
           <div className="min-h-screen lg:rounded-[2rem] lg:border lg:border-white/80 lg:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.98))] lg:shadow-[0_24px_70px_rgba(15,23,42,0.10)] lg:ring-1 lg:ring-slate-950/[0.03]">
             <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur lg:rounded-t-[2rem]">
-              <div className="px-4 py-4 sm:px-6 lg:px-7 xl:px-9">
+              <div className="px-4 py-3.5 sm:px-6 lg:px-7 xl:px-9">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <button
@@ -275,7 +282,7 @@ export function AppShell({
                 </div>
               </div>
             </header>
-            <div className="relative px-4 py-5 sm:px-6 lg:px-7 xl:px-8">{children}</div>
+            <div className="relative px-4 py-4 sm:px-6 lg:px-7 xl:px-8">{children}</div>
           </div>
         </main>
       </div>
