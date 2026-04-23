@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { DashboardData } from '@/lib/queries/data';
-import type { LeadJourney } from '@/features/dashboard/types';
+import type { DashboardKpi, LeadJourney } from '@/features/dashboard/types';
 import { WidgetEmptyState, WidgetShell } from '@/components/ui/widget-shell';
 import { useDashboardLayout } from '@/features/dashboard/hooks/use-dashboard-layout';
 import { DashboardControlBar, type DashboardFilters, type DashboardTimeRange } from './dashboard-control-bar';
@@ -266,7 +266,7 @@ export default function DashboardInteractive({
   const visiblePipelineValue = Math.round(filteredCountries.reduce((sum, country) => sum + (country.pipelineValue ?? 0), 0));
   const overdueQueueCount = filteredAttentionItems.filter((item) => item.statusTag === 'overdue' || item.type === 'overdue-task').length;
   const blockedQueueCount = filteredAttentionItems.filter((item) => item.statusTag === 'blocked').length;
-  const filteredKpis = useMemo(() => {
+  const filteredKpis = useMemo<DashboardKpi[]>(() => {
     const hasScopedFilters = Boolean(filters.marketCode || filters.productName || filters.stageFilter || filters.statusFilter || filters.timeRange !== 'this-month');
     if (!hasScopedFilters) return data.kpis;
 
