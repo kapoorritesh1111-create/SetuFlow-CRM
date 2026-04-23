@@ -47,6 +47,7 @@
   <div class="tabs" role="tablist" aria-label="DCC sections">
     <button class="tab active" role="tab" aria-selected="true" aria-controls="tab-current" id="btn-current">Current</button>
     <button class="tab" role="tab" aria-selected="false" aria-controls="tab-v11" id="btn-v11">v1.1 roadmap</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-dashboard" id="btn-dashboard">Dashboard rebuild</button>
     <button class="tab" role="tab" aria-selected="false" aria-controls="tab-ux99" id="btn-ux99">UX 99 tracker</button>
     <button class="tab" role="tab" aria-selected="false" aria-controls="tab-audit" id="btn-audit">UX audit</button>
     <button class="tab" role="tab" aria-selected="false" aria-controls="tab-archive" id="btn-archive">Archive</button>
@@ -108,6 +109,89 @@
       </ul>
       <div class="note"><strong>Definition of done for v1.1:</strong> the product does not just show work clearly — it actively helps the operator move more deals from quote to order faster.</div>
     </div>
+  </div>
+</section>
+
+<section id="tab-dashboard" class="tabpanel" role="tabpanel" aria-labelledby="btn-dashboard">
+  <div class="archive-banner"><strong>New active lane:</strong> dashboard shell rebuild tracker sourced from the uploaded redesign proposal and aligned to the current repo dashboard architecture.</div>
+  <div class="current-grid">
+    <div class="card">
+      <h2>Dashboard rebuild objective</h2>
+      <p class="small" style="margin-top:8px">The target is not a surface polish. The dashboard needs to become the command surface for the entire CRM: numbers first, action second, drill-through third. The uploaded redesign establishes the destination view: compact left rail, stronger topbar, clear mode switch, visible filters, KPI strip, map plus action queue, then pipeline / country / risk support panels.</p>
+      <div class="note"><strong>North star:</strong> rebuild the app shell and dashboard so the first screen answers three questions immediately — what matters now, what is stuck, and where to go next.</div>
+      <table style="margin-top:14px">
+        <tr><th>Current repo signal</th><th>Why it must change</th><th>Target from redesign</th></tr>
+        <tr><td>Explanation-heavy hero and leadership framing</td><td>Reads like internal review copy before the operator can act</td><td>Trade Command Center topbar with one dominant context line and route actions</td></tr>
+        <tr><td>AI governance and evidence surfaces compete too early</td><td>Steal first-screen focus from commercial signal and action</td><td>Demote non-critical support blocks below fold or into other routes</td></tr>
+        <tr><td>Dashboard control bar still uses internal framing and no time control</td><td>Filters feel like system settings rather than trading controls</td><td>Viewing filters with market, product, stage, status, and time range</td></tr>
+        <tr><td>Pipeline chart stands alone as the main visual</td><td>Misses the command-center feel and weakens geographic + urgency context</td><td>Map + attention queue as the main row, pipeline shifted to support row</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Execution posture</h2>
+      <div class="program-grid" style="grid-template-columns:1fr; margin-top:14px">
+        <div class="program-card">
+          <h3>What stays</h3>
+          <ul>
+            <li>Existing dashboard data contracts and route handoffs</li>
+            <li>Role-aware KPI filtering logic</li>
+            <li>World map drill-down behavior and attention item routing</li>
+            <li>UX 99 completion as preserved baseline, not reopened work</li>
+          </ul>
+        </div>
+        <div class="program-card">
+          <h3>What changes now</h3>
+          <ul>
+            <li>App shell visual hierarchy</li>
+            <li>Dashboard above-the-fold composition</li>
+            <li>Action language, density, and urgency signals</li>
+            <li>Internal DCC tracking so dashboard work has its own active lane</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note"><strong>Recommended build order:</strong> land shell primitives first, then dashboard composition, then cleanup and tracking updates. Avoid one giant mixed PR.</div>
+    </div>
+  </div>
+
+  <div class="section card">
+    <h2>Dashboard PR stack</h2>
+    <table style="margin-top:14px">
+      <tr><th>PR</th><th>Objective</th><th>Primary files</th><th>Completion</th></tr>
+      <tr><td><strong>PR-DB-01</strong><br>Shell foundation</td><td>Refactor the app shell visual system to support the new compact left rail, stronger topbar hierarchy, and route-level command actions without changing workflow truth.</td><td>src/components/layout/app-shell.tsx<br>src/components/layout/shell/navigation.tsx<br>route metadata and shell primitives</td><td class="score warn">0%</td></tr>
+      <tr><td><strong>PR-DB-02</strong><br>Dashboard first-screen reorder</td><td>Remove explanation-first composition and rebuild the above-the-fold layout into KPI strip → map + action queue → support grid.</td><td>src/features/dashboard/components/dashboard-interactive.tsx<br>dashboard-main-visual-row.tsx<br>widget layout wiring</td><td class="score warn">0%</td></tr>
+      <tr><td><strong>PR-DB-03</strong><br>Filter and mode cleanup</td><td>Replace internal framing in the control bar, add time range control, improve active chips, and keep result summary right-aligned and scannable.</td><td>dashboard-control-bar.tsx<br>filter state plumbing in dashboard-interactive.tsx</td><td class="score warn">0%</td></tr>
+      <tr><td><strong>PR-DB-04</strong><br>KPI + action language upgrade</td><td>Give each KPI a stronger visual intent, visible drill-through action, and role-aware commercial framing.</td><td>dashboard-top-strip.tsx<br>kpi-card.tsx<br>dashboard query formatting surfaces</td><td class="score warn">0%</td></tr>
+      <tr><td><strong>PR-DB-05</strong><br>Main row command center</td><td>Promote the world map and needs-attention queue into the dominant operational row with fixed height, cleaner cards, and stronger CTA consistency.</td><td>dashboard-world-map-section.tsx<br>needs-attention-card.tsx<br>market-command-panel.tsx</td><td class="score warn">0%</td></tr>
+      <tr><td><strong>PR-DB-06</strong><br>Support row value signals</td><td>Rebuild the lower row into pipeline stage distribution with value, active countries table, and money-at-risk summary.</td><td>pipeline-stage-chart-card.tsx<br>country insight surfaces<br>risk / support cards</td><td class="score warn">0%</td></tr>
+      <tr><td><strong>PR-DB-07</strong><br>Demotion + cleanup pass</td><td>Push AI governance, evidence-center, and excess helper messaging below fold or off-dashboard where appropriate; finish direct action copy sweep.</td><td>dashboard-ai-governance.tsx<br>dashboard-evidence-center.tsx<br>dashboard header / helper surfaces</td><td class="score warn">0%</td></tr>
+      <tr><td><strong>PR-DB-08</strong><br>Demo seed + finish pass</td><td>Polish spacing, responsive behavior, realistic demo data assumptions, and final DCC completion updates for leadership review.</td><td>dashboard visual components<br>public/internal-dcc/index.html<br>demo data touchpoints</td><td class="score warn">0%</td></tr>
+    </table>
+    <div class="note"><strong>Sequence:</strong> PR-DB-01 → PR-DB-02 → PR-DB-03 → PR-DB-04 → PR-DB-05 → PR-DB-06 → PR-DB-07 → PR-DB-08.<br><span class="small">This keeps shell changes isolated, then lands the dashboard rebuild in clear layers instead of mixing navigation, filters, and widget rewrites in one branch.</span></div>
+  </div>
+
+  <div class="section card">
+    <h2>Dashboard-specific cleanup rules</h2>
+    <div class="change-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px">
+      <div class="program-card">
+        <h3>Keep and elevate</h3>
+        <ul>
+          <li>World map drill-down</li>
+          <li>Needs attention severity model</li>
+          <li>Role-aware KPI filtering</li>
+          <li>Route drill-through into real workspaces</li>
+        </ul>
+      </div>
+      <div class="program-card">
+        <h3>Demote or remove</h3>
+        <ul>
+          <li>Leadership-lens wording</li>
+          <li>Early AI governance block</li>
+          <li>Dashboard evidence center on first screen</li>
+          <li>Explanation-first state messaging</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note"><strong>Dashboard UX rule:</strong> every card on the first screen must either show pressure, show value, or launch work. If it only explains the dashboard, it should move down or out.</div>
   </div>
 </section>
 
