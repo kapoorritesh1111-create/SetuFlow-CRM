@@ -79,8 +79,8 @@ export function IntegrationsWorkspace({ data }: Props) {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <a href="#governed-send-queue" className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Review ready items</a>
-              <Link href="/quotes?handoff=approval-send-return" className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50">Back to Quote workspace</Link>
+              <a href="#governed-send-queue" className="inline-flex rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Open send queue</a>
+              <Link href="/quotes?handoff=approval-send-return" className="inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50">Open quote queue</Link>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -130,7 +130,7 @@ export function IntegrationsWorkspace({ data }: Props) {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Ready to send queue</p>
-              <h3 className="mt-1 text-xl font-semibold text-slate-900">What is actually ready, blocked, or waiting for revision</h3>
+              <h3 className="mt-1 text-xl font-semibold text-slate-900">Send, hold, or revise</h3>
             </div>
           </div>
           <div className="mt-4 space-y-3">
@@ -139,11 +139,15 @@ export function IntegrationsWorkspace({ data }: Props) {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{candidate.title}</p>
-                    <p className="mt-1 text-sm text-slate-600">{candidate.reason}</p>
+                    <p className="mt-1 text-sm text-slate-600">{candidate.readiness === 'ready' ? 'Send now' : 'Fix blockers, then send'}</p>
                   </div>
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${candidate.readiness === 'ready' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{candidate.readiness === 'ready' ? 'Safe to move' : 'Hold / revise first'}</span>
                 </div>
                 <p className="mt-2 text-xs text-slate-500">{candidate.payloadHint} · execution {candidate.stageLabel}</p>
+                <details className="mt-2 text-xs text-slate-500">
+                  <summary className="cursor-pointer font-semibold text-slate-600">Why this state</summary>
+                  <p className="mt-1">{candidate.reason}</p>
+                </details>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   {candidate.readiness === 'ready' ? (
                     <IntegrationQueueSyncButton integrationId={candidate.integrationId} provider={candidate.provider} targetType={candidate.targetType} targetId={candidate.targetId} reason={candidate.reason} />
@@ -199,7 +203,10 @@ export function IntegrationsWorkspace({ data }: Props) {
                   <p className="text-sm font-semibold text-slate-900">{alert.title}</p>
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${alert.severity === 'high' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{alert.severity === 'high' ? 'High risk' : 'Medium risk'}</span>
                 </div>
-                <p className="mt-2 text-sm text-slate-600">{alert.reason}</p>
+                <details className="mt-2 text-sm text-slate-600">
+                  <summary className="cursor-pointer font-semibold text-slate-700">Why this alert</summary>
+                  <p className="mt-1">{alert.reason}</p>
+                </details>
                 <Link href={alert.ctaHref} className="mt-3 inline-flex rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">{alert.ctaLabel}</Link>
               </article>
             )) : <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No send alerts are visible right now.</div>}

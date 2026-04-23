@@ -76,15 +76,15 @@ export default async function LeadsPage({
       {handoffMessage ? <StateMessage title={handoffMessage.title} description={handoffMessage.description} tone="success" /> : null}
       <StateMessage
         title={viewModel.workspaceMode === 'buyers'
-          ? 'Buyer mode is active in Leads'
+          ? 'Work buyer leads now'
           : viewModel.workspaceMode === 'suppliers'
-            ? 'Supplier mode is active in Leads'
-            : 'Combined buyer and supplier view is active in Leads'}
+            ? 'Work supplier leads now'
+            : 'Work priority leads now'}
         description={viewModel.workspaceMode === 'buyers'
-          ? 'Keep the primary action on qualification and progression. The next commercial move is to open one lead, tighten details, and advance it toward Quote.'
+          ? 'Open one buyer lead. Qualify it. Move it to Quote.'
           : viewModel.workspaceMode === 'suppliers'
-            ? 'Keep the primary action on supplier qualification and coverage readiness. Move one supplier record forward rather than spreading attention across the board.'
-            : 'This workspace mixes buyer and supplier records. Pick one priority record, open the command center, and move it cleanly through the locked flow.'}
+            ? 'Open one supplier lead. Confirm coverage. Move it forward.'
+            : 'Open one lead and move the next step.'}
         tone="neutral"
       />
 

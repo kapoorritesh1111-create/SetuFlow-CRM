@@ -839,7 +839,7 @@ export function LeadsWorkspace({
     <div className="space-y-4">
       <WorkspaceWorkflowShell
         title="Leads"
-        description="Work your lead queue and move deals forward."
+        description="Open leads. Run follow-up. Move stage."
         mode={workspaceMode}
         onModeChange={() => {}}
         todayState={todayState}
@@ -913,7 +913,7 @@ export function LeadsWorkspace({
       ) : null}
 
       {!canManageLeads && readOnlyMessage ? (
-        <StateMessage title="Read-only lead queue" tone="warning" description={`${readOnlyMessage} Review existing leads and open the command center, but ask a workspace admin to unlock queue edits if you need to add or update records.`} />
+        <StateMessage title="Read-only lead queue" tone="warning" description={`${readOnlyMessage} Open leads and review status. Ask an admin to enable edits.`} />
       ) : null}
 
       <section className={workspaceTableShellClass}>
@@ -972,9 +972,9 @@ export function LeadsWorkspace({
                 description={
                   isWorkspaceEmpty && !search && activeFilterCount === 0
                     ? canManageLeads
-                      ? 'Start with Quick Lead for a fast entry or use New Lead when you need the full capture flow.'
-                      : 'This workspace is empty and your role is read-only. Ask a workspace admin to add the first lead or grant edit access.'
-                    : 'Adjust your today filter, search, or filters to recover an active queue.'
+                      ? 'Create a lead now: Quick Lead for speed, New Lead for full capture.'
+                      : 'No leads yet. Ask an admin to add the first lead or grant edit access.'
+                    : 'Reset filters or search, then open a lead.'
                 }
                 primaryActionHref={isWorkspaceEmpty && !search && activeFilterCount === 0 && canManageLeads ? PRODUCT_ROUTES.app.leads : undefined}
                 primaryActionLabel={isWorkspaceEmpty && !search && activeFilterCount === 0 && canManageLeads ? 'Stay on leads' : undefined}
