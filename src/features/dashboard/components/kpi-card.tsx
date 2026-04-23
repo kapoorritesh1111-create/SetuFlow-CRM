@@ -7,6 +7,7 @@ const intentStyles = {
   warning: 'text-amber-600',
   danger: 'text-rose-600',
   success: 'text-emerald-600',
+  brand: 'text-sky-600',
 };
 
 export function KpiCard({ label, value, trendLabel, trendDirection = 'neutral', intent = 'default', href, drillThroughLabel }: DashboardKpi) {

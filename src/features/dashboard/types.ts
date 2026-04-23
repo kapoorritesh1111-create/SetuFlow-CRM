@@ -2,7 +2,7 @@ export type LeadJourney = 'buyer' | 'supplier';
 export type DashboardScope = 'all' | 'buyer' | 'supplier';
 
 export type DashboardTrendDirection = 'up' | 'down' | 'neutral';
-export type DashboardIntent = 'default' | 'warning' | 'danger' | 'success';
+export type DashboardIntent = 'default' | 'warning' | 'danger' | 'success' | 'brand';
 
 export type DashboardStatusTag = 'active' | 'blocked' | 'at-risk' | 'hot' | 'overdue';
 
@@ -22,6 +22,7 @@ export type DashboardStageCount = {
   stageId: string;
   stageName: string;
   count: number;
+  valueImpact?: number;
   colorToken?: string;
   isClosed?: boolean;
   isWon?: boolean;
@@ -47,6 +48,7 @@ export type CountryCoverageDatum = {
   lastActivityAt: string | null;
   openRfqCount: number;
   openQuoteCount: number;
+  pipelineValue?: number;
   buyerLeadCount?: number;
   supplierLeadCount?: number;
   topAccounts: CountryCoverageTopAccount[];

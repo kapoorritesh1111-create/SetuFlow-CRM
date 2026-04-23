@@ -153,12 +153,54 @@
     </div>
   </div>
 
+  
+  <div class="section card">
+    <h2>DASHBOARD REBUILD TRACK</h2>
+    <div class="program-grid" style="grid-template-columns:1fr 1fr; margin-top:14px">
+      <div class="program-card">
+        <h3>CURRENTLY WORKING ON</h3>
+        <p><strong>PR-DB-01 + PR-DB-02</strong></p>
+        <p class="small">DB rebuild is the only active lane. Shell + dashboard composition are locked together in this pass.</p>
+      </div>
+      <div class="program-card">
+        <h3>NEXT PR</h3>
+        <p><strong>PR-DB-03 — Filters + UX polish</strong></p>
+        <p class="small">Time range filter, chip UX, filter clarity improvements, internal jargon cleanup, and visual tightening.</p>
+      </div>
+    </div>
+    <table style="margin-top:14px">
+      <tr><th>PR STATUS TABLE</th><th>Status</th><th>Notes</th></tr>
+      <tr><td><strong>PR-DB-01</strong></td><td class="score good">DONE</td><td>Compact shell, command-center topbar, instant Share my vCard modal overlay.</td></tr>
+      <tr><td><strong>PR-DB-02</strong></td><td class="score good">DONE</td><td>Exact first-screen reorder: KPI strip → map + queue → pipeline / countries / risk.</td></tr>
+      <tr><td><strong>Completed PRs</strong></td><td class="score good">None before this pass</td><td>This dashboard rebuild starts from an empty completed list and closes PR-DB-01 + PR-DB-02 together.</td></tr>
+    </table>
+    <div class="program-grid" style="grid-template-columns:1fr 1fr; margin-top:14px">
+      <div class="program-card">
+        <h3>REFERENCE ASSETS</h3>
+        <ul>
+          <li><strong>SetuFlow-Dashboard-Redesign_1.html (SOURCE OF TRUTH)</strong></li>
+          <li>vCard modal interaction reference</li>
+        </ul>
+      </div>
+      <div class="program-card">
+        <h3>ACTIVE REQUIREMENTS</h3>
+        <ul>
+          <li>Shell refactor</li>
+          <li>Dashboard reorder</li>
+          <li>vCard modal overlay</li>
+          <li>Share my vCard opens lightweight modal overlay (smile share UX)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note"><strong>DRIFT PREVENTION:</strong> all layout decisions must match redesign HTML. Reference asset SetuFlow-Dashboard-Redesign_1.html remains the SOURCE OF TRUTH for shell hierarchy, KPI-first order, and vCard modal behavior.</div>
+  </div>
+
   <div class="section card">
     <h2>Dashboard PR stack</h2>
     <table style="margin-top:14px">
       <tr><th>PR</th><th>Objective</th><th>Primary files</th><th>Completion</th></tr>
-      <tr><td><strong>PR-DB-01</strong><br>Shell foundation</td><td>Refactor the app shell visual system to support the new compact left rail, stronger topbar hierarchy, and route-level command actions without changing workflow truth.</td><td>src/components/layout/app-shell.tsx<br>src/components/layout/shell/navigation.tsx<br>route metadata and shell primitives</td><td class="score warn">0%</td></tr>
-      <tr><td><strong>PR-DB-02</strong><br>Dashboard first-screen reorder</td><td>Remove explanation-first composition and rebuild the above-the-fold layout into KPI strip → map + action queue → support grid.</td><td>src/features/dashboard/components/dashboard-interactive.tsx<br>dashboard-main-visual-row.tsx<br>widget layout wiring</td><td class="score warn">0%</td></tr>
+      <tr><td><strong>PR-DB-01</strong><br>Shell foundation</td><td>Refactor the app shell visual system to support the new compact left rail, stronger topbar hierarchy, and route-level command actions without changing workflow truth.</td><td>src/components/layout/app-shell.tsx<br>src/components/layout/shell/navigation.tsx<br>route metadata and shell primitives</td><td class="score good">100%</td></tr>
+      <tr><td><strong>PR-DB-02</strong><br>Dashboard first-screen reorder</td><td>Remove explanation-first composition and rebuild the above-the-fold layout into KPI strip → map + action queue → support grid.</td><td>src/features/dashboard/components/dashboard-interactive.tsx<br>dashboard-main-visual-row.tsx<br>widget layout wiring</td><td class="score good">100%</td></tr>
       <tr><td><strong>PR-DB-03</strong><br>Filter and mode cleanup</td><td>Replace internal framing in the control bar, add time range control, improve active chips, and keep result summary right-aligned and scannable.</td><td>dashboard-control-bar.tsx<br>filter state plumbing in dashboard-interactive.tsx</td><td class="score warn">0%</td></tr>
       <tr><td><strong>PR-DB-04</strong><br>KPI + action language upgrade</td><td>Give each KPI a stronger visual intent, visible drill-through action, and role-aware commercial framing.</td><td>dashboard-top-strip.tsx<br>kpi-card.tsx<br>dashboard query formatting surfaces</td><td class="score warn">0%</td></tr>
       <tr><td><strong>PR-DB-05</strong><br>Main row command center</td><td>Promote the world map and needs-attention queue into the dominant operational row with fixed height, cleaner cards, and stronger CTA consistency.</td><td>dashboard-world-map-section.tsx<br>needs-attention-card.tsx<br>market-command-panel.tsx</td><td class="score warn">0%</td></tr>

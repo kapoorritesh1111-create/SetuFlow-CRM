@@ -43,9 +43,9 @@ export function getRouteMeta(pathname: string): RouteMeta {
 
   if (pathname === PRODUCT_ROUTES.app.dashboard || pathname.startsWith(`${PRODUCT_ROUTES.app.dashboard}/`)) {
     return {
-      title: 'Dashboard / Overview',
+      title: 'Dashboard',
       description: 'Use Dashboard to see market, country, queue health, execution drift, and what needs intervention now. This is a support surface, but it should still feel operational.',
-      sectionLabel: 'Risk and control',
+      sectionLabel: 'Trade Command Center',
       tabs: PRODUCT_SHELL_TABS,
     };
   }

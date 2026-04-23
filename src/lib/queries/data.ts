@@ -1517,22 +1517,23 @@ export async function getDashboardData(
   const kpis: DashboardKpi[] = [
     {
       id: 'open-leads',
-      label: 'Active Buyers',
+      label: 'Open Leads',
       value: summaryMetrics.openLeadCount,
       rawValue: summaryMetrics.openLeadCount,
       href: '/pipeline',
-      drillThroughLabel: 'Open pipeline board',
-      trendLabel: 'Active pipeline',
-      trendDirection: 'neutral',
+      drillThroughLabel: 'Open Follow-up',
+      trendLabel: 'Pipeline moving',
+      trendDirection: 'up',
+      intent: 'danger',
     },
     {
       id: 'overdue-followups',
-      label: 'Silent Quotes',
+      label: 'Overdue Follow-ups',
       value: summaryMetrics.overdueFollowUpCount,
       rawValue: summaryMetrics.overdueFollowUpCount,
       href: PRODUCT_ROUTES.app.leads,
-      drillThroughLabel: 'Open lead follow-up queue',
-      trendLabel: summaryMetrics.overdueFollowUpCount ? 'Needs action today' : 'On track',
+      drillThroughLabel: 'View overdue queue',
+      trendLabel: summaryMetrics.overdueFollowUpCount ? 'Needs action today' : 'Queue clear',
       trendDirection: summaryMetrics.overdueFollowUpCount ? 'up' : 'neutral',
       intent: summaryMetrics.overdueFollowUpCount ? 'warning' : 'success',
     },
@@ -1541,10 +1542,11 @@ export async function getDashboardData(
       label: 'Active Quotes',
       value: summaryMetrics.openQuoteCount,
       rawValue: summaryMetrics.openQuoteCount,
-      href: '/reports',
-      drillThroughLabel: 'Open quote reporting',
+      href: '/quotes',
+      drillThroughLabel: 'Open quote desk',
       trendLabel: 'Negotiations live',
-      trendDirection: 'neutral',
+      trendDirection: 'up',
+      intent: 'brand',
     },
     {
       id: 'compliance-blockers',
@@ -1564,21 +1566,26 @@ export async function getDashboardData(
       rawValue: pipelineValue,
       trendLabel: 'Visible commercial value',
       trendDirection: 'neutral',
-      href: '/reports',
-      drillThroughLabel: 'Open reporting totals',
+      href: '/pipeline',
+      drillThroughLabel: 'Open pipeline',
+      intent: 'success',
     },
   ];
 
   const palette = ['#2563eb', '#0ea5e9', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6'];
-  const stageCounts = stages.map((stage: (typeof stages)[number], index: number) => ({
-    stageId: stage.id,
-    stageName: stage.name,
-    count: openLeads.filter((lead) => lead.stage_id === stage.id).length,
-    colorToken: palette[index % palette.length],
-    isClosed: stage.is_closed,
-    isWon: stage.is_won,
-    isLost: stage.is_lost,
-  }));
+  const stageCounts = stages.map((stage: (typeof stages)[number], index: number) => {
+    const stageLeads = openLeads.filter((lead) => lead.stage_id === stage.id);
+    return {
+      stageId: stage.id,
+      stageName: stage.name,
+      count: stageLeads.length,
+      valueImpact: stageLeads.reduce((sum, lead) => sum + Number(lead.deal_value ?? 0), 0),
+      colorToken: palette[index % palette.length],
+      isClosed: stage.is_closed,
+      isWon: stage.is_won,
+      isLost: stage.is_lost,
+    };
+  });
 
   const blockedLeadIds = new Set(blockerItems.map((item) => item.lead_id).filter(Boolean) as string[]);
   const leadHealth: DashboardLeadHealthDatum[] = [
@@ -1624,6 +1631,7 @@ export async function getDashboardData(
         lastActivityAt: null,
         openRfqCount: 0,
         openQuoteCount: 0,
+        pipelineValue: 0,
         buyerLeadCount: 0,
         supplierLeadCount: 0,
         topAccounts: [],
@@ -1641,6 +1649,7 @@ export async function getDashboardData(
     }
 
     existing.openRfqCount += (rfqByLead.get(lead.id) ?? []).filter((rfq) => rfq.status !== 'cancelled').length;
+    existing.pipelineValue = (existing.pipelineValue ?? 0) + Number(lead.deal_value ?? 0);
     existing.openQuoteCount += (quoteByLead.get(lead.id) ?? []).filter(
       (quote) =>
         quote.status !== 'accepted' && quote.status !== 'rejected' && quote.status !== 'cancelled'

@@ -140,7 +140,7 @@ export function WorldCoverageMap({
             {[1,2,3].map(i => <span key={i} className="h-8 w-10 animate-pulse rounded-full bg-slate-800" />)}
           </div>
         </div>
-        <div className="flex h-[420px] items-center justify-center rounded-[1.4rem] bg-[#0d1f3a]">
+        <div className="flex h-[340px] items-center justify-center rounded-[1.4rem] bg-[#0d1f3a]">
           <div className="text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-slate-400" />
             <p className="mt-3 text-xs font-semibold text-slate-500">Loading trade map…</p>
@@ -176,7 +176,7 @@ export function WorldCoverageMap({
 
       {/* Map container */}
       <div
-        className={cn('relative h-[420px] overflow-hidden rounded-[1.4rem] bg-[#0d1f3a] transition-opacity duration-300', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
+        className={cn('relative h-[340px] overflow-hidden rounded-[1.4rem] bg-[#0d1f3a] transition-opacity duration-300', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onPointerLeave={onPointerLeave}
       >
