@@ -1706,8 +1706,8 @@ export function QuoteWorkspace({
     ) ?? null;
   const focusApprovalAction = focusQuote ? getApprovalAction(focusQuote) : null;
   const focusQuoteStatus = focusQuoteMeta?.status ?? focusQuote?.status ?? "draft";
-  const focusQuoteApprovalRequired = focusQuoteApprovalRequired;
-  const focusQuoteApprovalState = focusQuoteApprovalState;
+  const focusQuoteApprovalRequired = focusQuoteMeta?.approvalRequired ?? false;
+  const focusQuoteApprovalState = focusQuoteMeta?.approvalState ?? "not_required";
   const currentFocusedVersionNo = currentFocusedVersion?.version_no ?? null;
   const currentFocusedVersionCreatedAt = currentFocusedVersion?.created_at ?? null;
   const currentFocusedVersionLabel = currentFocusedVersionNo
@@ -1776,14 +1776,24 @@ export function QuoteWorkspace({
     focusCommunications[0]?.summary ??
     null;
   const activeComposer =
-    focusQuote && composer && composer.quoteId === focusQuote.id ? composer : null;
-  const activeComposerMode = activeComposer?.mode ?? null;
-  const composerActive = activeComposerMode
-    ? getNegotiationComposerCopy(activeComposerMode)
+    focusQuote && composer?.quoteId === focusQuote.id ? composer : null;
+  const activeComposerMode: NegotiationComposerMode | null = activeComposer
+    ? activeComposer!.mode
     : null;
+  const composerActive = activeComposerMode === null
+    ? null
+    : getNegotiationComposerCopy(activeComposerMode!);
   const focusSendRun = focusSendAction?.run ?? null;
   const focusAcceptRun = focusAcceptAction?.run ?? null;
   const focusRejectRun = focusRejectAction?.run ?? null;
+  const focusApprovalActionView = focusApprovalAction as NonNullable<typeof focusApprovalAction>;
+  const focusSendActionView = focusSendAction as NonNullable<typeof focusSendAction>;
+  const focusAcceptActionView = focusAcceptAction as NonNullable<typeof focusAcceptAction>;
+  const focusRejectActionView = focusRejectAction as NonNullable<typeof focusRejectAction>;
+  const focusSendDecisionView = focusSendDecision as NonNullable<typeof focusSendDecision>;
+  const composerActiveView = composerActive as NonNullable<typeof composerActive>;
+  const activeComposerModeView = activeComposerMode as NegotiationComposerMode;
+  const workflowNoticeView = workflowNotice as WorkflowNotice;
   const focusCurrentStep = getCurrentBuilderStep(focusBuilderGuidance?.steps);
   const focusPrimaryBlocker = getPrimaryBlockerLabel(
     focusSendDecision ?? null,
@@ -1955,21 +1965,21 @@ export function QuoteWorkspace({
                     {focusApprovalAction ? (
                       <button
                         type="button"
-                        disabled={focusApprovalAction.disabled || (isWorkflowPending && quickActionQuoteId === focusQuote.id)}
-                        onClick={() => runQuickAction(focusQuote, focusApprovalAction)}
+                        disabled={focusApprovalActionView.disabled || (isWorkflowPending && quickActionQuoteId === focusQuote.id)}
+                        onClick={() => runQuickAction(focusQuote, focusApprovalActionView)}
                         className="rounded-[10px] border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {isWorkflowPending && quickActionQuoteId === focusQuote.id && focusApprovalAction.run ? "Saving…" : focusApprovalAction.label}
+                        {isWorkflowPending && quickActionQuoteId === focusQuote.id && focusApprovalActionView.run ? "Saving…" : focusApprovalActionView.label}
                       </button>
                     ) : null}
                     {focusSendAction ? (
                       <button
                         type="button"
-                        disabled={!canSendQuotes || focusSendAction.disabled || (isWorkflowPending && quickActionQuoteId === focusQuote.id)}
+                        disabled={!canSendQuotes || focusSendActionView.disabled || (isWorkflowPending && quickActionQuoteId === focusQuote.id)}
                         onClick={() => setComposer({ quoteId: focusQuote.id, mode: "send" })}
                         className="rounded-[10px] border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-800 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {focusSendAction.label}
+                        {focusSendActionView.label}
                       </button>
                     ) : null}
                   </div>
@@ -1977,22 +1987,22 @@ export function QuoteWorkspace({
               </div>
 
               {focusSendDecision ? (
-                <div className={`mt-6 rounded-[1.5rem] border p-5 ${focusSendDecision.panelClasses}`}>
+                <div className={`mt-6 rounded-[1.5rem] border p-5 ${focusSendDecisionView.panelClasses}`}>
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-3">
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${focusSendDecision.badgeClasses}`}>
-                          {focusSendDecision.label}
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${focusSendDecisionView.badgeClasses}`}>
+                          {focusSendDecisionView.label}
                         </span>
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((focusQuoteApprovalState) as any)}`}>
                           approval {String(focusQuoteApprovalState).replaceAll("_", " ")}
                         </span>
                       </div>
                       <h4 className="mt-4 text-2xl font-semibold text-slate-900">
-                        {focusSendDecision.headline}
+                        {focusSendDecisionView.headline}
                       </h4>
                       <p className="mt-2 max-w-3xl text-sm text-slate-700">
-                        {focusSendDecision.summary}
+                        {focusSendDecisionView.summary}
                       </p>
                     </div>
                     <div className="rounded-[1rem] border border-white/70 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm xl:max-w-sm">
@@ -2000,7 +2010,7 @@ export function QuoteWorkspace({
                         Next obvious move
                       </p>
                       <p className="mt-2 font-semibold text-slate-900">
-                        {focusSendDecision.nextStep}
+                        {focusSendDecisionView.nextStep}
                       </p>
                     </div>
                   </div>
@@ -2009,9 +2019,9 @@ export function QuoteWorkspace({
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                         Why sending is or is not safe
                       </p>
-                      {focusSendDecision.blockers.length ? (
+                      {focusSendDecisionView.blockers.length ? (
                         <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                          {focusSendDecision.blockers.map((reason) => (
+                          {focusSendDecisionView.blockers.map((reason) => (
                             <li key={reason}>• {reason}</li>
                           ))}
                         </ul>
@@ -2024,21 +2034,21 @@ export function QuoteWorkspace({
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quote-version send readiness object</p>
                           <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
-                            {focusSendDecision.readiness.versionLabel}
+                            {focusSendDecisionView.readiness.versionLabel}
                           </span>
                         </div>
                         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                           <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Version ID</p>
-                            <p className="mt-2 font-semibold text-slate-900 break-all">{focusSendDecision.readiness.versionId ?? 'Not synced yet'}</p>
+                            <p className="mt-2 font-semibold text-slate-900 break-all">{focusSendDecisionView.readiness.versionId ?? 'Not synced yet'}</p>
                           </div>
                           <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Approval status</p>
-                            <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.approvalStatus.replaceAll('_', ' ')}</p>
+                            <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.approvalStatus.replaceAll('_', ' ')}</p>
                           </div>
                           <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Safe to send</p>
-                            <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.safeToSend ? 'Yes' : 'No'}</p>
+                            <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.safeToSend ? 'Yes' : 'No'}</p>
                           </div>
                         </div>
                         <div className="mt-3 grid gap-3 lg:grid-cols-2">
@@ -2047,34 +2057,34 @@ export function QuoteWorkspace({
                             <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                               <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Required threshold</p>
-                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.threshold.configuredPercent != null ? formatPercent(focusSendDecision.readiness.threshold.configuredPercent) : 'Not configured'}</p>
+                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.threshold.configuredPercent != null ? formatPercent(focusSendDecisionView.readiness.threshold.configuredPercent) : 'Not configured'}</p>
                               </div>
                               <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{focusSendDecision.readiness.threshold.governedMetricLabel}</p>
-                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.threshold.governedMetricPercent != null ? formatPercent(focusSendDecision.readiness.threshold.governedMetricPercent) : 'Not exposed'}</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{focusSendDecisionView.readiness.threshold.governedMetricLabel}</p>
+                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.threshold.governedMetricPercent != null ? formatPercent(focusSendDecisionView.readiness.threshold.governedMetricPercent) : 'Not exposed'}</p>
                               </div>
                               <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Pass / fail delta</p>
-                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.threshold.deltaToThresholdPercent != null ? `${focusSendDecision.readiness.threshold.deltaToThresholdPercent >= 0 ? '+' : ''}${formatPercent(focusSendDecision.readiness.threshold.deltaToThresholdPercent)}` : 'Not computable'}</p>
+                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.threshold.deltaToThresholdPercent != null ? `${(focusSendDecisionView.readiness.threshold.deltaToThresholdPercent ?? 0) >= 0 ? '+' : ''}${formatPercent(focusSendDecisionView.readiness.threshold.deltaToThresholdPercent ?? 0)}` : 'Not computable'}</p>
                               </div>
                               <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">True margin proof</p>
-                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecision.readiness.threshold.marginExposed ? (focusSendDecision.readiness.threshold.actualMarginPercent != null ? formatPercent(focusSendDecision.readiness.threshold.actualMarginPercent) : 'Visible') : 'Not exposed in repo'}</p>
+                                <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.threshold.marginExposed ? (focusSendDecisionView.readiness.threshold.actualMarginPercent != null ? formatPercent(focusSendDecisionView.readiness.threshold.actualMarginPercent) : 'Visible') : 'Not exposed in repo'}</p>
                               </div>
                             </div>
-                            <p className="mt-3">{focusSendDecision.thresholdLabel}</p>
+                            <p className="mt-3">{focusSendDecisionView.thresholdLabel}</p>
                           </div>
                           <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
                             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Override reason visibility</p>
-                            <p className="mt-2">{focusSendDecision.overrideSummary}</p>
+                            <p className="mt-2">{focusSendDecisionView.overrideSummary}</p>
                           </div>
                         </div>
                         <div className="mt-3 grid gap-3 lg:grid-cols-2">
                           <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
                             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Explicit blockers</p>
-                            {focusSendDecision.readiness.blockers.length ? (
+                            {focusSendDecisionView.readiness.blockers.length ? (
                               <ul className="mt-2 space-y-2 text-xs text-slate-700">
-                                {focusSendDecision.readiness.blockers.map((blocker) => (
+                                {focusSendDecisionView.readiness.blockers.map((blocker) => (
                                   <li key={blocker.code}>
                                     <span className="font-semibold text-slate-900">{blocker.code}</span> · {blocker.detail}
                                   </li>
@@ -2087,8 +2097,8 @@ export function QuoteWorkspace({
                           <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
                             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Decision snapshot proof</p>
                             <p className="mt-2 text-sm text-slate-700">
-                              {focusSendDecision.readiness.snapshotRecordedAt
-                                ? `Latest send decision snapshot recorded ${formatDateTime(focusSendDecision.readiness.snapshotRecordedAt)}.`
+                              {focusSendDecisionView.readiness.snapshotRecordedAt
+                                ? `Latest send decision snapshot recorded ${formatDateTime(focusSendDecisionView.readiness.snapshotRecordedAt)}.`
                                 : 'No send decision snapshot recorded yet for this quote. A snapshot will be written when send is executed.'}
                             </p>
                           </div>
@@ -2099,7 +2109,7 @@ export function QuoteWorkspace({
                       <div className="rounded-[1rem] border border-white/70 bg-white/85 p-4">
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">What happens after send</p>
                         <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                          {focusSendDecision.afterSend.map((item) => (
+                          {focusSendDecisionView.afterSend.map((item) => (
                             <li key={item}>• {item}</li>
                           ))}
                         </ul>
@@ -2109,12 +2119,12 @@ export function QuoteWorkspace({
                           <div className="min-w-0 flex-1">
                             <AICompactActionBrief
                               lane="Quote / Send"
-                              where={`Quote workspace · ${focusSendDecision.label}`}
-                              blocker={focusSendDecision.aiVerdict}
-                              nextAction={focusSendDecision.nextStep}
+                              where={`Quote workspace · ${focusSendDecisionView.label}`}
+                              blocker={focusSendDecisionView.aiVerdict}
+                              nextAction={focusSendDecisionView.nextStep}
                               guardrail="AI explains the current send posture only. It cannot approve, send, override commercial controls, or manufacture proof."
-                              details={focusSendDecision.aiReasons}
-                              tone={focusSendDecision.state === 'blocked' ? 'critical' : focusSendDecision.state === 'approval_required' || focusSendDecision.state === 'loading' ? 'warning' : 'neutral'}
+                              details={focusSendDecisionView.aiReasons}
+                              tone={focusSendDecisionView.state === 'blocked' ? 'critical' : focusSendDecisionView.state === 'approval_required' || focusSendDecisionView.state === 'loading' ? 'warning' : 'neutral'}
                             />
                           </div>
                           {canManageQuotes ? (
@@ -2231,20 +2241,20 @@ export function QuoteWorkspace({
                       <button
                         type="button"
                         disabled={
-                          focusApprovalAction.disabled ||
+                          focusApprovalActionView.disabled ||
                           (isWorkflowPending &&
                             quickActionQuoteId === focusQuote.id)
                         }
                         onClick={() =>
-                          runQuickAction(focusQuote, focusApprovalAction)
+                          runQuickAction(focusQuote, focusApprovalActionView)
                         }
                         className="rounded-[10px] border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isWorkflowPending &&
                         quickActionQuoteId === focusQuote.id &&
-                        focusApprovalAction.run
+                        focusApprovalActionView.run
                           ? "Saving…"
-                          : focusApprovalAction.label}
+                          : focusApprovalActionView.label}
                       </button>
                     ) : null}
                     {focusSendAction ? (
@@ -2252,7 +2262,7 @@ export function QuoteWorkspace({
                         type="button"
                         disabled={
                           !canSendQuotes ||
-                          focusSendAction.disabled ||
+                          focusSendActionView.disabled ||
                           (isWorkflowPending &&
                             quickActionQuoteId === focusQuote.id)
                         }
@@ -2265,7 +2275,7 @@ export function QuoteWorkspace({
                         quickActionQuoteId === focusQuote.id &&
                         activeComposerMode === "send"
                           ? "Saving…"
-                          : focusSendAction.label}
+                          : focusSendActionView.label}
                       </button>
                     ) : null}
                     {focusAcceptAction ? (
@@ -2273,7 +2283,7 @@ export function QuoteWorkspace({
                         type="button"
                         disabled={
                           !canSendQuotes ||
-                          focusAcceptAction.disabled ||
+                          focusAcceptActionView.disabled ||
                           (isWorkflowPending &&
                             quickActionQuoteId === focusQuote.id)
                         }
@@ -2285,7 +2295,7 @@ export function QuoteWorkspace({
                         }
                         className="rounded-[10px] border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {focusAcceptAction.label}
+                        {focusAcceptActionView.label}
                       </button>
                     ) : null}
                     {focusRejectAction ? (
@@ -2293,7 +2303,7 @@ export function QuoteWorkspace({
                         type="button"
                         disabled={
                           !canSendQuotes ||
-                          focusRejectAction.disabled ||
+                          focusRejectActionView.disabled ||
                           (isWorkflowPending &&
                             quickActionQuoteId === focusQuote.id)
                         }
@@ -2305,7 +2315,7 @@ export function QuoteWorkspace({
                         }
                         className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {focusRejectAction.label}
+                        {focusRejectActionView.label}
                       </button>
                     ) : null}
                   </div>
@@ -2338,7 +2348,7 @@ export function QuoteWorkspace({
                   </div>
                   {focusTrustContract ? (
                     <div className="mt-4">
-                      <QuoteTrustContractPreview contract={focusTrustContract} />
+                      <QuoteTrustContractPreview contract={focusTrustContract!} />
                     </div>
                   ) : null}
                   <div className="mt-4 grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
@@ -2593,10 +2603,10 @@ export function QuoteWorkspace({
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <p className="text-sm font-semibold text-slate-900">
-                              {composerActive.title}
+                              {composerActiveView.title}
                             </p>
                             <p className="mt-1 text-sm text-slate-600">
-                              {composerActive.description}
+                              {composerActiveView.description}
                             </p>
                           </div>
                           <button
@@ -2627,12 +2637,12 @@ export function QuoteWorkspace({
                               type="button"
                               onClick={() =>
                                 runQuickAction(focusQuote, {
-                                  ...focusSendAction,
+                                  ...focusSendActionView,
                                   run: {
-                                    ...focusSendRun,
+                                    ...focusSendRun!,
                                     plainNotes:
                                       composerNote.trim() ||
-                                      focusSendRun.plainNotes,
+                                      focusSendRun!.plainNotes,
                                   },
                                 })
                               }
@@ -2642,7 +2652,7 @@ export function QuoteWorkspace({
                               }
                               className="rounded-[10px] bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                             >
-                              {composerActive.cta}
+                              {composerActiveView.cta}
                             </button>
                           ) : null}
                           {activeComposerMode === "accepted" &&
@@ -2652,12 +2662,12 @@ export function QuoteWorkspace({
                               type="button"
                               onClick={() =>
                                 runQuickAction(focusQuote, {
-                                  ...focusAcceptAction,
+                                  ...focusAcceptActionView,
                                   run: {
-                                    ...focusAcceptRun,
+                                    ...focusAcceptRun!,
                                     plainNotes:
                                       composerNote.trim() ||
-                                      focusAcceptRun.plainNotes,
+                                      focusAcceptRun!.plainNotes,
                                   },
                                 })
                               }
@@ -2667,7 +2677,7 @@ export function QuoteWorkspace({
                               }
                               className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                             >
-                              {composerActive.cta}
+                              {composerActiveView.cta}
                             </button>
                           ) : null}
                           {activeComposerMode === "rejected" &&
@@ -2677,12 +2687,12 @@ export function QuoteWorkspace({
                               type="button"
                               onClick={() =>
                                 runQuickAction(focusQuote, {
-                                  ...focusRejectAction,
+                                  ...focusRejectActionView,
                                   run: {
-                                    ...focusRejectRun,
+                                    ...focusRejectRun!,
                                     plainNotes:
                                       composerNote.trim() ||
-                                      focusRejectRun.plainNotes,
+                                      focusRejectRun!.plainNotes,
                                   },
                                 })
                               }
@@ -2692,7 +2702,7 @@ export function QuoteWorkspace({
                               }
                               className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
                             >
-                              {composerActive.cta}
+                              {composerActiveView.cta}
                             </button>
                           ) : null}
                           {activeComposerMode === "revision_ready" ? (
@@ -2721,7 +2731,7 @@ export function QuoteWorkspace({
                               }
                               className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
                             >
-                              {composerActive.cta}
+                              {composerActiveView.cta}
                             </button>
                           ) : null}
                           {activeComposerMode === "counter_offer" ||
@@ -2732,7 +2742,7 @@ export function QuoteWorkspace({
                               onClick={() =>
                                 submitNegotiationLog(
                                   focusQuote,
-                                  activeComposerMode,
+                                  activeComposerModeView as "counter_offer" | "revision_requested" | "customer_reply",
                                 )
                               }
                               disabled={
@@ -2741,7 +2751,7 @@ export function QuoteWorkspace({
                               }
                               className="rounded-[10px] bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                             >
-                              {composerActive.cta}
+                              {composerActiveView.cta}
                             </button>
                           ) : null}
                         </div>
@@ -3029,9 +3039,9 @@ export function QuoteWorkspace({
       ) : null}
       {workflowNotice ? (
         <StateMessage
-          title={workflowNotice.title}
-          description={workflowNotice.description}
-          tone={workflowNotice.tone}
+          title={workflowNoticeView.title}
+          description={workflowNoticeView.description}
+          tone={workflowNoticeView.tone}
         />
       ) : null}
 
@@ -3383,7 +3393,7 @@ export function QuoteWorkspace({
       >
         {activeQuote && canManageQuotes ? (
           <QuoteEditWizardForm
-            key={`${activeQuote.id}-${activeQuoteStep ?? "product"}`}
+            key={`${activeQuote!.id}-${activeQuoteStep ?? "product"}`}
             quote={activeQuote as any}
             products={products}
             quoteVersions={quoteVersions as any}
