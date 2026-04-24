@@ -768,6 +768,61 @@ export function LeadsWorkspace({
     setDrawerState((current) => ({ ...current, open: false, leadId: lead?.id ?? current.leadId }));
   };
 
+
+  const groupedLeadSections = useMemo(() => {
+    const groups: Array<{ id: 'critical' | 'due-today' | 'active'; label: string; leads: LeadRow[] }> = [
+      { id: 'critical', label: 'Critical — needs action now', leads: [] },
+      { id: 'due-today', label: 'Due today — keep momentum', leads: [] },
+      { id: 'active', label: 'Active — next best queue', leads: [] },
+    ];
+
+    for (const lead of visibleLeads) {
+      const readiness = readinessByLeadId.get(lead.id);
+      const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
+      if ((readiness?.blockerCount ?? 0) > 0 || followUpState === 'overdue') groups[0].leads.push(lead);
+      else if (followUpState === 'today') groups[1].leads.push(lead);
+      else groups[2].leads.push(lead);
+    }
+
+    return groups.filter((group) => group.leads.length > 0);
+  }, [readinessByLeadId, visibleLeads]);
+
+  const handleBatchFollowUpSubmit = () => {
+    const formData = new FormData();
+    selectedLeadIds.forEach((leadId) => formData.append('lead_ids', leadId));
+    formData.set('scheduled_at', batchFollowUpAt);
+    formData.set('next_step_id', batchNextStepId);
+    setBatchState({});
+    startBatchTransition(() => {
+      void batchScheduleLeadFollowUps(undefined, formData).then((result) => {
+        setBatchState(result ?? {});
+        if (result?.success) {
+          setSelectedLeadIds([]);
+          setBatchFollowUpAt('');
+          setBatchNextStepId('');
+          router.refresh();
+        }
+      });
+    });
+  };
+
+  const handleBatchStageSubmit = () => {
+    const formData = new FormData();
+    selectedLeadIds.forEach((leadId) => formData.append('lead_ids', leadId));
+    formData.set('stage_id', batchStageId);
+    setBatchStageState({});
+    startBatchStageTransition(() => {
+      void batchMoveLeadsToStage(undefined, formData).then((result) => {
+        setBatchStageState(result ?? {});
+        if (result?.success) {
+          setSelectedLeadIds([]);
+          setBatchStageId('');
+          router.refresh();
+        }
+      });
+    });
+  };
+
   const selectedAllVisible =
     visibleLeads.length > 0 && visibleLeads.every((lead) => selectedLeadIds.includes(lead.id));
 
@@ -920,17 +975,17 @@ export function LeadsWorkspace({
         <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700/70">
           <div className="grid gap-3 xl:grid-cols-[1fr_auto]">
             <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Follow-up command zone</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Lead Queue</p>
               <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">{summary.overdue}</p>
-              <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">Overdue follow-ups</p>
+              <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">Critical follow-ups</p>
               <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${summary.overdue > 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200'}`}>
                 {summary.overdue > 0 ? 'Urgent recovery needed now' : 'No overdue pressure'}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 xl:justify-end">
-              <ToolbarActionButton type="button" tone="primary" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">Follow up now</ToolbarActionButton>
+              <ToolbarActionButton type="button" tone="primary" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">Quick Lead</ToolbarActionButton>
               <a href={PRODUCT_ROUTES.app.myCard} className="inline-flex min-h-11 items-center justify-center rounded-[1rem] px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 border border-slate-200 bg-slate-100/90 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.05)] hover:bg-white dark:border-slate-700 dark:bg-slate-800/78 dark:text-slate-200">Share my card</a>
-              <ToolbarActionButton type="button" onClick={openFullAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">New Lead</ToolbarActionButton>
+              <ToolbarActionButton type="button" onClick={openFullAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">Full Lead</ToolbarActionButton>
             </div>
           </div>
         </div>
@@ -940,29 +995,64 @@ export function LeadsWorkspace({
         {batchStageState.error ? <div className="px-5 pt-1"><StateMessage title="Batch stage move failed" tone="danger" description={batchStageState.error} /></div> : null}
         {batchStageState.success ? <div className="px-5 pt-1"><StateMessage title="Batch stage move applied" tone="success" description={batchStageState.success} /></div> : null}
 
+        {selectedLeadIds.length ? (
+          <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-5 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.06)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{selectedLeadIds.length} selected</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Batch tools appear only after checkbox selection.</p>
+              </div>
+              <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                <button type="button" onClick={toggleVisibleSelection} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                  {selectedAllVisible ? 'Unselect shown' : 'Select shown'}
+                </button>
+                <input type="datetime-local" value={batchFollowUpAt} onChange={(event) => setBatchFollowUpAt(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
+                <select value={batchNextStepId} onChange={(event) => setBatchNextStepId(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                  <option value="">Default next step</option>
+                  {nextSteps.map((step) => <option key={step.id} value={step.id}>{step.name}</option>)}
+                </select>
+                <ToolbarActionButton type="button" onClick={handleBatchFollowUpSubmit} disabled={isBatchPending || !batchFollowUpAt} className="h-10 rounded-xl px-3 py-2">Set follow-up</ToolbarActionButton>
+                <select value={batchStageId} onChange={(event) => setBatchStageId(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                  <option value="">Move stage...</option>
+                  {availableBatchStages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
+                </select>
+                <ToolbarActionButton type="button" onClick={handleBatchStageSubmit} disabled={isBatchStagePending || !batchStageId} className="h-10 rounded-xl px-3 py-2">Move</ToolbarActionButton>
+                <ToolbarActionButton type="button" onClick={() => setSelectedLeadIds([])} className="h-10 rounded-xl px-3 py-2">Clear</ToolbarActionButton>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <div>
           {visibleLeads.length ? (
-            visibleLeads.map((lead) => (
-              <LeadTableRow
-                key={lead.id}
-                lead={lead}
-                selected={selectedLeadIds.includes(lead.id)}
-                isSpotlight={spotlightLead?.id === lead.id}
-                toggleSelect={toggleLeadSelection}
-                setSpotlightLead={setSpotlightLeadId}
-                stageMap={stageMap}
-                nextStepMap={nextStepMap}
-                ownerMap={ownerMap}
-                safeFormatDateTime={safeFormatDateTime}
-                activityMap={activityMap}
-                stageHistoryMap={stageHistoryMap}
-                stageMetaMap={stageMetaMap}
-                readinessMap={readinessByLeadId}
-                getLeadCommandCenterHref={getLeadCommandCenterHref}
-                openLeadCommandCenter={openLeadCommandCenter}
-                shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
-                handleLeadCommandCenterKeyDown={handleLeadCommandCenterKeyDown}
-              />
+            groupedLeadSections.map((section) => (
+              <section key={section.id}>
+                <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-2.5 dark:border-slate-700 dark:bg-slate-800/70">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">{section.label} ({section.leads.length})</p>
+                </div>
+                {section.leads.map((lead) => (
+                  <LeadTableRow
+                    key={lead.id}
+                    lead={lead}
+                    selected={selectedLeadIds.includes(lead.id)}
+                    isSpotlight={spotlightLead?.id === lead.id}
+                    toggleSelect={toggleLeadSelection}
+                    setSpotlightLead={setSpotlightLeadId}
+                    stageMap={stageMap}
+                    nextStepMap={nextStepMap}
+                    ownerMap={ownerMap}
+                    safeFormatDateTime={safeFormatDateTime}
+                    activityMap={activityMap}
+                    stageHistoryMap={stageHistoryMap}
+                    stageMetaMap={stageMetaMap}
+                    readinessMap={readinessByLeadId}
+                    getLeadCommandCenterHref={getLeadCommandCenterHref}
+                    openLeadCommandCenter={openLeadCommandCenter}
+                    shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
+                    handleLeadCommandCenterKeyDown={handleLeadCommandCenterKeyDown}
+                  />
+                ))}
+              </section>
             ))
           ) : (
             <div className="p-6">

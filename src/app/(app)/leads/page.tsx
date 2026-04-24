@@ -1,7 +1,6 @@
 // UPDATED FILE
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
-import { StateMessage } from '@/components/ui/state-message';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
 import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -73,20 +72,12 @@ export default async function LeadsPage({
   return (
     <div className="space-y-4">
       <QueryIssuesAlert issues={data.queryIssues} />
-      {handoffMessage ? <StateMessage title={handoffMessage.title} description={handoffMessage.description} tone="success" /> : null}
-      <StateMessage
-        title={viewModel.workspaceMode === 'buyers'
-          ? 'Work buyer leads now'
-          : viewModel.workspaceMode === 'suppliers'
-            ? 'Work supplier leads now'
-            : 'Work priority leads now'}
-        description={viewModel.workspaceMode === 'buyers'
-          ? 'Open one buyer lead. Qualify it. Move it to Quote.'
-          : viewModel.workspaceMode === 'suppliers'
-            ? 'Open one supplier lead. Confirm coverage. Move it forward.'
-            : 'Open one lead and move the next step.'}
-        tone="neutral"
-      />
+      {handoffMessage ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <p className="font-semibold">{handoffMessage.title}</p>
+          <p className="mt-1">{handoffMessage.description}</p>
+        </div>
+      ) : null}
 
       <LeadsWorkspace
         currentUserId={viewModel.currentUserId}

@@ -223,7 +223,8 @@ export function LeadDrawer({
   const isQuickMode = mode === 'quick';
   const isEditingExistingLead = Boolean(lead?.id);
   const prefilledProductIds = useMemo(() => Array.from(new Set(prefill?.selectedProductIds ?? [])).filter(Boolean), [prefill]);
-  const shouldAutoOpenQuoteAfterSave = Boolean(prefill?.autoOpenQuoteAfterSave && !isEditingExistingLead);
+  const [autoOpenQuoteAfterSave, setAutoOpenQuoteAfterSave] = useState(Boolean(prefill?.autoOpenQuoteAfterSave && !isEditingExistingLead));
+  const shouldAutoOpenQuoteAfterSave = Boolean(autoOpenQuoteAfterSave && !isEditingExistingLead);
   const [state, setState] = useState<LeadFormState>({});
   const [isPending, startTransition] = useTransition();
   const [leadType, setLeadType] = useState<'buyer' | 'supplier'>(lead?.lead_type ?? 'buyer');
@@ -379,6 +380,7 @@ export function LeadDrawer({
     setStageId(lead?.stage_id ?? '');
     setCountryId(lead?.country_id ?? '');
     setFollowUpAt(toDatetimeLocalValue(lead?.next_follow_up_at) || defaultFollowUpLocal || getDefaultFollowUpLocalValue());
+    setAutoOpenQuoteAfterSave(Boolean(prefill?.autoOpenQuoteAfterSave && !lead?.id));
     setNextStepId(defaultNextStepId);
     setOwnerUserId(defaultOwnerId);
     setSelectedMarketIdSet(selectedMarketIds);
@@ -404,7 +406,7 @@ export function LeadDrawer({
     } else {
       setCoverageSelections([createCoverageSelection('', [], 0)]);
     }
-  }, [defaultFollowUpLocal, defaultNextStepId, defaultOwnerId, lead, open, prefill?.sourceLabel, prefill?.sourceType, prefilledProductIds, products, selectedMarketIds, selectedProductIds]);
+  }, [defaultFollowUpLocal, defaultNextStepId, defaultOwnerId, lead, open, prefill?.autoOpenQuoteAfterSave, prefill?.sourceLabel, prefill?.sourceType, prefilledProductIds, products, selectedMarketIds, selectedProductIds]);
 
   useEffect(() => {
     if (!(isEditingExistingLead && !isQuickMode) && activeStepId === 'quotes') {
@@ -1388,6 +1390,20 @@ export function LeadDrawer({
               aside={wizardAside}
             >
               <div className="space-y-5">
+                {isQuickMode ? (
+                  <label className="flex items-start gap-3 rounded-[1.5rem] border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-emerald-900">
+                    <input
+                      type="checkbox"
+                      checked={autoOpenQuoteAfterSave}
+                      onChange={(event) => setAutoOpenQuoteAfterSave(event.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span>
+                      <span className="block font-semibold">Open Quote Builder after saving this lead?</span>
+                      <span className="mt-1 block text-emerald-700">Use when buyer/supplier type, products, market coverage, and follow-up date are ready enough for the quote checklist.</span>
+                    </span>
+                  </label>
+                ) : null}
                 <ProductMarketsSection
                   categoryTree={categoryTree}
                   coverageSelections={coverageSelections}
@@ -1410,7 +1426,7 @@ export function LeadDrawer({
                   inputClassName={inputClassName}
                   notesValue={notes}
                   onNotesChange={setNotes}
-                  showInterestSelectors={!isQuickMode}
+                  showInterestSelectors={true}
                   onAddMarket={handleAddMarket}
                 />
 

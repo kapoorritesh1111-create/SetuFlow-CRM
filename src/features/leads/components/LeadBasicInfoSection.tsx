@@ -268,18 +268,26 @@ export default function LeadBasicInfoSection({
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-2">
+        <div className="space-y-2 sm:col-span-2">
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Lead type</span>
-          <select
-            name="lead_type"
-            value={leadType}
-            onChange={(event) => setLeadType(event.target.value as 'buyer' | 'supplier')}
-            className={inputClassName()}
-          >
-            <option value="buyer">Buyer</option>
-            <option value="supplier">Supplier</option>
-          </select>
-        </label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {(['buyer', 'supplier'] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setLeadType(type)}
+                className={[
+                  'rounded-2xl border px-4 py-3 text-left transition',
+                  leadType === type ? 'border-slate-900 bg-slate-900 text-white shadow-soft' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+                ].join(' ')}
+              >
+                <span className="block text-sm font-semibold">{type === 'buyer' ? 'Buyer' : 'Supplier'}</span>
+                <span className={['mt-1 block text-xs', leadType === type ? 'text-slate-200' : 'text-slate-500'].join(' ')}>{type === 'buyer' ? 'Importing / purchasing' : 'Supplying / sourcing'}</span>
+              </button>
+            ))}
+          </div>
+          <input type="hidden" name="lead_type" value={leadType} />
+        </div>
         <label className="space-y-2">
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Trade event</span>
           <select name="trade_event_id" value={tradeEventId} onChange={(event) => setTradeEventId(event.target.value)} className={inputClassName()}>
