@@ -1675,19 +1675,17 @@ export function QuoteWorkspace({
         String(version.status ?? "").toLowerCase() === "approved",
     ) ?? null;
   const focusApprovalAction = focusQuote ? getApprovalAction(focusQuote) : null;
-  const focusTrustContract = (() => {
-    if (!focusQuoteMeta) {
-      return null;
-    }
+  const focusTrustContract = focusQuote
+    ? (() => {
+        const quoteApprovalState = getQuoteApprovalStateValue(focusQuote);
 
-    const { status, approvalRequired, approvalState } = focusQuoteMeta;
-
-    return getQuoteTrustContract({
-      status,
-      approvalRequired,
-      approvalState: approvalState as any,
-    });
-  })();
+        return getQuoteTrustContract({
+          status: quoteApprovalState.status,
+          approvalRequired: quoteApprovalState.approvalRequired,
+          approvalState: quoteApprovalState.approvalState as any,
+        });
+      })()
+    : null;
   const focusSendAction = focusQuote
     ? getSendAction(focusQuote)
     : null;
