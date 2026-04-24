@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SETU Flow CRM - Orders Execution Desk</title>
+<style>
+:root{
+  --navy:#0b2e4a;--navy-deep:#061c2e;--brand:#0c7fff;
+  --emerald:#059669;--amber:#d97706;--rose:#dc2626;--violet:#7c3aed;--sky:#0284c7;
+  --s950:#0f172a;--s900:#1e293b;--s700:#334155;--s600:#475569;
+  --s500:#64748b;--s400:#94a3b8;--s300:#cbd5e1;--s200:#e2e8f0;--s100:#f1f5f9;--s50:#f8fafc;
+  --e50:#ecfdf5;--e100:#d1fae5;--e200:#a7f3d0;--e600:#059669;
+  --a50:#fffbeb;--a100:#fef3c7;--a200:#fde68a;--a600:#d97706;
+  --r50:#fff1f2;--r100:#ffe4e6;--r200:#fecaca;--r600:#dc2626;
+  --border:#e2e8f0;--page-bg:#f0f4f8;
+  --shadow-sm:0 1px 3px rgba(15,23,42,.06);--shadow-md:0 4px 14px rgba(15,23,42,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:var(--page-bg);color:var(--s900);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.app{display:flex;min-height:100vh}
+
+/* sidebar */
+.sidebar{width:68px;background:linear-gradient(180deg,var(--navy-deep),var(--navy));display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:4px;position:sticky;top:0;height:100vh;flex-shrink:0}
+.sb-logo{width:38px;height:38px;background:linear-gradient(135deg,#1F487C,#359F91);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;overflow:hidden;cursor:pointer}
+.nav-item{width:44px;height:44px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;color:rgba(255,255,255,.38);font-size:16px;transition:background .15s}
+.nav-item.active{background:rgba(255,255,255,.12);color:white}
+.nav-item:hover:not(.active){background:rgba(255,255,255,.07);color:rgba(255,255,255,.7)}
+.nav-lbl{font-size:8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.sb-spacer{flex:1}
+.sb-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a5fa0,var(--brand));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;margin-top:6px}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* topbar */
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.tb-left{display:flex;align-items:center;gap:14px}
+.brand-badge{display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:6px;background:rgba(31,72,124,.06);border:1px solid rgba(31,72,124,.12)}
+.brand-name{font-size:11px;font-weight:800;color:#1F487C;letter-spacing:-.1px}
+.brand-name span{color:#279491}
+.brand-sub{font-size:8px;color:var(--s400);letter-spacing:.1em;text-transform:uppercase}
+.divider{width:1px;height:24px;background:var(--border)}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--brand)}
+.page-title{font-size:16px;font-weight:700;color:var(--s900);letter-spacing:-.3px}
+.tb-right{display:flex;align-items:center;gap:10px}
+.btn-ghost{padding:7px 12px;border-radius:6px;border:1px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--s700);cursor:pointer}
+.mode-switch{display:flex;background:var(--s100);border-radius:6px;padding:3px;border:1px solid var(--border);gap:2px}
+.mode-btn{padding:4px 11px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--s500)}
+.mode-btn.active{background:var(--navy);color:white}
+
+/* filter bar */
+.filter-bar{background:white;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fw{display:flex;align-items:center;border:1px solid var(--border);border-radius:6px;background:var(--s50);padding:0 10px;height:32px;gap:6px;cursor:pointer;min-width:110px}
+.fw-top{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s400);line-height:1}
+.fw-val{font-size:11px;font-weight:600;color:var(--s900);line-height:1.4}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid;cursor:pointer}
+.chip-rose{background:var(--r50);border-color:var(--r200);color:#9f1239}
+.chip-amber{background:var(--a50);border-color:var(--a200);color:#92400e}
+.filter-sum{margin-left:auto;font-size:10px;font-weight:600;color:var(--s400)}
+
+/* stats strip */
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:16px 24px 0}
+.stat{background:white;border:1px solid var(--border);border-radius:16px;padding:13px 15px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;cursor:pointer}
+.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+.stat.rose::before{background:var(--rose)}
+.stat.amber::before{background:var(--amber)}
+.stat.emerald::before{background:var(--emerald)}
+.stat.brand::before{background:var(--brand)}
+.stat.violet::before{background:var(--violet)}
+.stat.neutral::before{background:var(--s300)}
+.stat-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--s400);margin-bottom:7px}
+.stat-val{font-size:22px;font-weight:800;letter-spacing:-.03em;color:var(--s950);line-height:1}
+.stat-val.rose{color:var(--rose)}
+.stat-val.amber{color:var(--amber)}
+.stat-val.emerald{color:var(--emerald)}
+.stat-meta{font-size:10px;color:var(--s400);margin-top:4px;font-weight:600}
+
+/* content */
+.content{padding:14px 24px 40px;display:flex;flex-direction:column;gap:14px}
+
+/* order cards */
+.order-card{background:white;border:1px solid var(--border);border-radius:22px;overflow:hidden;box-shadow:var(--shadow-sm);cursor:pointer;transition:box-shadow .12s,transform .12s}
+.order-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.order-card.blocked{border-left:4px solid var(--rose)}
+.order-card.warn{border-left:4px solid var(--amber)}
+.order-card.ok{border-left:4px solid var(--emerald)}
+
+.oc-header{padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border)}
+.oc-company{font-size:17px;font-weight:800;color:var(--s950);margin-bottom:3px}
+.oc-meta{font-size:11px;color:var(--s500);line-height:1.55}
+.oc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.oc-val{font-size:20px;font-weight:800;color:var(--navy);letter-spacing:-.4px}
+.oc-val-lbl{font-size:9px;color:var(--s400);letter-spacing:.1em;text-transform:uppercase}
+.oc-actions{display:flex;gap:6px;margin-top:4px}
+
+/* state machine strip */
+.state-strip{display:flex;align-items:center;gap:0;padding:10px 20px;border-bottom:1px solid var(--border);overflow-x:auto}
+.ss-stage{display:flex;align-items:center;gap:0;flex-shrink:0}
+.ss-node{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;cursor:pointer;min-width:90px}
+.ss-node.done{background:var(--e50)}
+.ss-node.current{background:rgba(12,127,255,.08);border:1px solid rgba(12,127,255,.2)}
+.ss-node.blocked{background:var(--r50);border:1px solid var(--r200)}
+.ss-node.upcoming{background:transparent}
+.ss-dot{width:8px;height:8px;border-radius:50%}
+.ss-node.done .ss-dot{background:var(--emerald)}
+.ss-node.current .ss-dot{background:var(--brand);box-shadow:0 0 0 3px rgba(12,127,255,.2)}
+.ss-node.blocked .ss-dot{background:var(--rose)}
+.ss-node.upcoming .ss-dot{background:var(--s300)}
+.ss-lbl{font-size:9px;font-weight:700;text-align:center;letter-spacing:.04em;line-height:1.3}
+.ss-node.done .ss-lbl{color:var(--emerald)}
+.ss-node.current .ss-lbl{color:var(--brand)}
+.ss-node.blocked .ss-lbl{color:var(--rose)}
+.ss-node.upcoming .ss-lbl{color:var(--s400)}
+.ss-arrow{color:var(--s300);font-size:14px;flex-shrink:0;padding-bottom:8px;margin:0 2px}
+
+/* signal grid */
+.signal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--border)}
+.signal-cell{padding:12px 16px;border-right:1px solid var(--border)}
+.signal-cell:last-child{border-right:none}
+.sig-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--s400);margin-bottom:5px}
+.sig-val{font-size:13px;font-weight:700;color:var(--s900)}
+.sig-sub{font-size:10px;color:var(--s400);margin-top:2px}
+.sig-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid}
+.sb-ok{background:var(--e50);border-color:var(--e200);color:var(--e600)}
+.sb-warn{background:var(--a50);border-color:var(--a200);color:#92400e}
+.sb-block{background:var(--r50);border-color:var(--r200);color:#9f1239}
+.sb-neutral{background:var(--s100);border-color:var(--s200);color:var(--s600)}
+
+/* compliance checklist */
+.compliance-list{padding:12px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.comp-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid}
+.comp-item.ok{background:var(--e50);border-color:var(--e200)}
+.comp-item.miss{background:var(--r50);border-color:var(--r200)}
+.comp-item.pending{background:var(--a50);border-color:var(--a200)}
+.comp-icon{font-size:14px;flex-shrink:0}
+.comp-text{flex:1;font-size:12px;font-weight:600}
+.comp-item.ok .comp-text{color:var(--e600)}
+.comp-item.miss .comp-text{color:#9f1239}
+.comp-item.pending .comp-text{color:#92400e}
+.comp-action{font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;border:1px solid;cursor:pointer;white-space:nowrap}
+.comp-item.miss .comp-action{background:white;border-color:var(--r200);color:var(--r600)}
+.comp-item.pending .comp-action{background:white;border-color:var(--a200);color:var(--a600)}
+
+/* card footer */
+.oc-footer{padding:12px 20px;display:flex;align-items:center;justify-content:space-between;background:var(--s50);border-top:1px solid var(--border)}
+.oc-footer-left{font-size:11px;color:var(--s500)}
+.oc-footer-right{display:flex;gap:8px}
+.btn-sm{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;border:1px solid;cursor:pointer}
+.btn-sm.primary{background:var(--navy);color:white;border-color:var(--navy)}
+.btn-sm.ghost{background:white;color:var(--s700);border-color:var(--border)}
+.btn-sm.danger{background:var(--r50);color:var(--r600);border-color:var(--r200)}
+.btn-sm.success{background:var(--e50);color:var(--e600);border-color:var(--e200)}
+
+/* detail panel */
+.dp-overlay{display:none;position:fixed;inset:0;z-index:90;background:rgba(5,15,30,.35);backdrop-filter:blur(2px)}
+.dp-overlay.open{display:block}
+.dp{position:fixed;top:0;right:0;bottom:0;width:480px;background:white;box-shadow:-12px 0 40px rgba(15,23,42,.12);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:91}
+.dp.open{transform:translateX(0)}
+.dp-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between}
+.dp-close{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--s500)}
+.dp-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.dp-sec{background:var(--s50);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.dp-sec-title{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin-bottom:8px}
+.dp-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid rgba(0,0,0,.03)}
+.dp-row:last-child{border-bottom:none}
+.dp-row .k{color:var(--s500)}
+.dp-row .v{font-weight:700;color:var(--s800,#1e293b)}
+.dp-row .v.ok{color:var(--e600)}
+.dp-row .v.warn{color:var(--a600)}
+.dp-row .v.rose{color:var(--r600)}
+.dp-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px}
+.dp-btn-p{flex:1;padding:9px;border-radius:6px;background:var(--navy);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer}
+.dp-btn-g{padding:9px 14px;border-radius:6px;background:white;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--s600);cursor:pointer}
+
+/* progress bar */
+.prog-bar{background:var(--s100);border-radius:99px;height:6px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:99px;transition:width .3s}
+</style>
+</head>
+<body>
+
+<!-- announcement bar -->
+<div style="background:linear-gradient(135deg,#1F487C,#2a6070);color:white;padding:9px 20px;display:flex;align-items:center;justify-content:space-between;font-size:11px">
+  <div style="display:flex;align-items:center;gap:14px">
+    <div style="display:flex;align-items:center;gap:8px;padding:3px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:6px">
+      <svg viewBox="80 170 870 580" xmlns="http://www.w3.org/2000/svg" width="24" height="16"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#9df0e4"/></linearGradient></defs><path fill="url(#g1)" d="M80.9,631.6c0.3-2.5,0.4-4.2,0.8-5.8c3-12.4,6.1-24.8,9.1-36.5c4.6-3,82.2-31.6,90.3-33.4c35.3,27,72.7,28.9,107.9,1.5c34.2-26.6,41.2-62.6,24.2-103.7c53.3-17.5,107.4-26.8,163.4-29.9c2-18.6,3.9-36.2,5.8-54.2c7.4-6.3,14.9-12.6,23.4-18.1c9.3,4.2,15.6,12.2,23.7,16.9c3.6,18.3,3.4,36.5,6.8,55.4c55.5,2.8,109.8,12.8,163.3,29.9c-16.7,42.3-9.4,78.8,26.7,106c26,19.6,64.7,27.7,106.1-3.4c5,0.6,82.2,28.5,90,32.7c3.2,13.5,6.6,27.6,10,41.4c-2.4,1.9-4,0.8-5.5,0.4c-51.2-14.1-103.4-23.7-155.9-31.5c-31.7-4.7-63.6-8.3-95.5-10.8c-46.2-3.7-92.4-5.5-138.8-6.6c-35.3-0.8-70.5-0.2-105.6,1c-54.2,1.9-108.4,5.7-162.3,12.9c-62,8.3-123.5,18.9-183.9,35.4z"/><circle fill="url(#g1)" cx="238" cy="492" r="71"/><circle fill="url(#g1)" cx="775" cy="492" r="71"/><path fill="url(#g1)" d="M506.1,330.1c-25.7,17.5-77,51.1-77.5,50.7c25.5-59.8,50.9-119.5,76.4-179.3c0.8-0.1,52.8,119.1,78.1,178.8z"/></svg>
+      <div><div style="font-size:10px;font-weight:800;color:white">SETU <span style="color:#9df0e4">Flow</span> CRM</div><div style="font-size:8px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.1em">SETU Groups LLC</div></div>
+    </div>
+    <div><strong>Orders Execution Desk</strong><span style="color:rgba(255,255,255,.5);margin-left:10px">State machine &middot; Document compliance &middot; Dispatch readiness &middot; Commercial lock</span></div>
+  </div>
+  <span style="background:rgba(53,159,145,.7);color:white;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700">Interactive</span>
+</div>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <svg viewBox="80 170 870 580" xmlns="http://www.w3.org/2000/svg" width="28" height="20"><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#9df0e4"/></linearGradient></defs><path fill="url(#g2)" d="M80.9,631.6c0.3-2.5,0.4-4.2,0.8-5.8c3-12.4,6.1-24.8,9.1-36.5c4.6-3,82.2-31.6,90.3-33.4c35.3,27,72.7,28.9,107.9,1.5c34.2-26.6,41.2-62.6,24.2-103.7c53.3-17.5,107.4-26.8,163.4-29.9c2-18.6,3.9-36.2,5.8-54.2c7.4-6.3,14.9-12.6,23.4-18.1c9.3,4.2,15.6,12.2,23.7,16.9c3.6,18.3,3.4,36.5,6.8,55.4c55.5,2.8,109.8,12.8,163.3,29.9c-16.7,42.3-9.4,78.8,26.7,106c26,19.6,64.7,27.7,106.1-3.4c5,0.6,82.2,28.5,90,32.7c3.2,13.5,6.6,27.6,10,41.4c-2.4,1.9-4,0.8-5.5,0.4c-51.2-14.1-103.4-23.7-155.9-31.5c-31.7-4.7-63.6-8.3-95.5-10.8c-46.2-3.7-92.4-5.5-138.8-6.6c-35.3-0.8-70.5-0.2-105.6,1c-54.2,1.9-108.4,5.7-162.3,12.9c-62,8.3-123.5,18.9-183.9,35.4z"/><circle fill="url(#g2)" cx="238" cy="492" r="71"/><circle fill="url(#g2)" cx="775" cy="492" r="71"/><path fill="url(#g2)" d="M506.1,330.1c-25.7,17.5-77,51.1-77.5,50.7c25.5-59.8,50.9-119.5,76.4-179.3c0.8-0.1,52.8,119.1,78.1,178.8z"/></svg>
+    </div>
+    <div class="nav-item"><span>&#8862;</span><span class="nav-lbl">Dash</span></div>
+    <div class="nav-item"><span>&#8853;</span><span class="nav-lbl">Leads</span></div>
+    <div class="nav-item"><span>&#10005;</span><span class="nav-lbl">Pipeline</span></div>
+    <div class="nav-item"><span>&#9671;</span><span class="nav-lbl">Quotes</span></div>
+    <div class="nav-item active"><span>&#11043;</span><span class="nav-lbl">Orders</span></div>
+    <div class="nav-item"><span>&#9638;</span><span class="nav-lbl">Catalog</span></div>
+    <div class="sb-spacer"></div>
+    <div class="nav-item"><span>&#9881;</span><span class="nav-lbl">Admin</span></div>
+    <div class="sb-av">RK</div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="brand-badge">
+          <div><div class="brand-name">SETU <span>Flow</span> CRM</div><div class="brand-sub">SETU Groups LLC</div></div>
+        </div>
+        <div class="divider"></div>
+        <div><div class="eyebrow">Execution</div><div class="page-title">Orders Desk</div></div>
+      </div>
+      <div class="tb-right">
+        <div class="mode-switch">
+          <button class="mode-btn active" onclick="setMode(this)">All</button>
+          <button class="mode-btn" onclick="setMode(this)">Buyers</button>
+          <button class="mode-btn" onclick="setMode(this)">Suppliers</button>
+        </div>
+        <button class="btn-ghost">Export</button>
+        <div class="sb-av" style="width:32px;height:32px;font-size:11px">RK</div>
+      </div>
+    </header>
+
+    <div class="filter-bar">
+      <div class="fw"><div><div class="fw-top">Execution state</div><div class="fw-val">All states</div></div></div>
+      <div class="fw"><div><div class="fw-top">Compliance</div><div class="fw-val">All</div></div></div>
+      <div class="fw"><div><div class="fw-top">Owner</div><div class="fw-val">All owners</div></div></div>
+      <div class="fw"><div><div class="fw-top">Market</div><div class="fw-val">All markets</div></div></div>
+      <span class="chip chip-rose">Dispatch blocked (1)</span>
+      <span class="chip chip-amber">Docs pending (2)</span>
+      <div class="filter-sum">6 active orders &middot; $836K execution value</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat rose"><div class="stat-lbl">Dispatch blocked</div><div class="stat-val rose">1</div><div class="stat-meta">Compliance doc missing</div></div>
+      <div class="stat amber"><div class="stat-lbl">Docs pending</div><div class="stat-val amber">2</div><div class="stat-meta">Upload required</div></div>
+      <div class="stat brand"><div class="stat-lbl">In execution</div><div class="stat-val">3</div><div class="stat-meta">Docs complete, dispatching</div></div>
+      <div class="stat emerald"><div class="stat-lbl">Delivered</div><div class="stat-val emerald">2</div><div class="stat-meta">Awaiting payment confirmation</div></div>
+      <div class="stat violet"><div class="stat-lbl">Execution value</div><div class="stat-val" style="font-size:17px;color:var(--violet)">$836K</div><div class="stat-meta">All active orders</div></div>
+      <div class="stat neutral"><div class="stat-lbl">Avg cycle time</div><div class="stat-val" style="font-size:17px">34d</div><div class="stat-meta">Accepted to delivered</div></div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── ORDER 1: BLOCKED ── -->
+      <div class="order-card blocked" onclick="openOrder('Al Marai Group','blocked')">
+        <div class="oc-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+              <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#5b21b6,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0">AM</div>
+              <div class="oc-company">Al Marai Group</div>
+              <span class="sig-badge sb-block">Dispatch blocked</span>
+            </div>
+            <div class="oc-meta">Saudi Arabia &middot; Buyer &middot; Quote Q-2025-0082 &middot; Dehydrated Garlic Flakes &middot; 20 MT &middot; FOB</div>
+          </div>
+          <div class="oc-right">
+            <div class="oc-val">$320,000</div>
+            <div class="oc-val-lbl">USD &middot; FOB</div>
+            <div class="oc-actions">
+              <button class="btn-sm ghost" onclick="event.stopPropagation()">View quote</button>
+              <button class="btn-sm primary" onclick="event.stopPropagation();openOrder('Al Marai Group','blocked')">Open order</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state-strip">
+          <div class="ss-stage"><div class="ss-node done"><div class="ss-dot"></div><div class="ss-lbl">Quote<br>Accepted</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node done"><div class="ss-dot"></div><div class="ss-lbl">Order<br>Confirmed</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node blocked" onclick="event.stopPropagation();openOrder('Al Marai Group','blocked')"><div class="ss-dot"></div><div class="ss-lbl">Docs<br>Required</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node upcoming"><div class="ss-dot"></div><div class="ss-lbl">Dispatch<br>Ready</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node upcoming"><div class="ss-dot"></div><div class="ss-lbl">Shipped</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node upcoming"><div class="ss-dot"></div><div class="ss-lbl">Delivered</div></div></div>
+        </div>
+
+        <div class="signal-grid">
+          <div class="signal-cell">
+            <div class="sig-label">Execution state</div>
+            <span class="sig-badge sb-block">Dispatch blocked</span>
+            <div class="sig-sub">FSSAI cert missing</div>
+          </div>
+          <div class="signal-cell">
+            <div class="sig-label">Commercial lock</div>
+            <span class="sig-badge sb-ok">Locked</span>
+            <div class="sig-sub">v1 accepted &middot; $320K</div>
+          </div>
+          <div class="signal-cell">
+            <div class="sig-label">Documents</div>
+            <span class="sig-badge sb-block">1 of 4 missing</span>
+            <div class="sig-sub">FSSAI certificate</div>
+          </div>
+          <div class="signal-cell">
+            <div class="sig-label">Payment status</div>
+            <span class="sig-badge sb-ok">30% received</span>
+            <div class="sig-sub">$96K of $320K</div>
+          </div>
+        </div>
+
+        <div class="compliance-list">
+          <div class="comp-item ok"><span class="comp-icon">&#10003;</span><span class="comp-text">Commercial invoice</span><span style="font-size:10px;color:var(--e600)">Uploaded 22 Apr</span></div>
+          <div class="comp-item ok"><span class="comp-icon">&#10003;</span><span class="comp-text">Packing list</span><span style="font-size:10px;color:var(--e600)">Uploaded 22 Apr</span></div>
+          <div class="comp-item ok"><span class="comp-icon">&#10003;</span><span class="comp-text">Certificate of origin</span><span style="font-size:10px;color:var(--e600)">Uploaded 21 Apr</span></div>
+          <div class="comp-item miss"><span class="comp-icon">&#10007;</span><span class="comp-text">FSSAI registration certificate &mdash; required for Saudi import clearance</span><button class="comp-action" onclick="event.stopPropagation();uploadDoc('FSSAI')">Upload now</button></div>
+        </div>
+
+        <div class="oc-footer">
+          <div class="oc-footer-left">Order created 20 Apr &middot; Dispatch target: 30 Apr &middot; <strong style="color:var(--rose)">Blocked: upload FSSAI certificate to unblock</strong></div>
+          <div class="oc-footer-right">
+            <button class="btn-sm danger" onclick="event.stopPropagation()">Mark on hold</button>
+            <button class="btn-sm primary" onclick="event.stopPropagation();uploadDoc('FSSAI')">Upload FSSAI cert</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ORDER 2: DOCS PENDING ── -->
+      <div class="order-card warn" onclick="openOrder('NatureMark India','pending')">
+        <div class="oc-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+              <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#0c7fff,#2da0ff);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0">NM</div>
+              <div class="oc-company">NatureMark India</div>
+              <span class="sig-badge sb-warn">Docs pending</span>
+            </div>
+            <div class="oc-meta">India &middot; Buyer &middot; Quote Q-2025-0097 &middot; Mango Powder + Beetroot &middot; 25 MT &middot; FOB</div>
+          </div>
+          <div class="oc-right">
+            <div class="oc-val">$130,750</div>
+            <div class="oc-val-lbl">USD &middot; FOB</div>
+            <div class="oc-actions">
+              <button class="btn-sm ghost" onclick="event.stopPropagation()">View quote</button>
+              <button class="btn-sm primary" onclick="event.stopPropagation();openOrder('NatureMark India','pending')">Open order</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state-strip">
+          <div class="ss-stage"><div class="ss-node done"><div class="ss-dot"></div><div class="ss-lbl">Quote<br>Accepted</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node done"><div class="ss-dot"></div><div class="ss-lbl">Order<br>Confirmed</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node current"><div class="ss-dot"></div><div class="ss-lbl">Docs<br>Required</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node upcoming"><div class="ss-dot"></div><div class="ss-lbl">Dispatch<br>Ready</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node upcoming"><div class="ss-dot"></div><div class="ss-lbl">Shipped</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node upcoming"><div class="ss-dot"></div><div class="ss-lbl">Delivered</div></div></div>
+        </div>
+
+        <div class="signal-grid">
+          <div class="signal-cell">
+            <div class="sig-label">Execution state</div>
+            <span class="sig-badge sb-warn">Docs pending</span>
+            <div class="sig-sub">2 docs needed</div>
+          </div>
+          <div class="signal-cell">
+            <div class="sig-label">Commercial lock</div>
+            <span class="sig-badge sb-ok">Locked</span>
+            <div class="sig-sub">v1 accepted &middot; $130,750</div>
+          </div>
+          <div class="signal-cell">
+            <div class="sig-label">Documents</div>
+            <span class="sig-badge sb-warn">2 of 4 pending</span>
+            <div class="sig-sub">Phytosanitary + BL draft</div>
+          </div>
+          <div class="signal-cell">
+            <div class="sig-label">Payment status</div>
+            <span class="sig-badge sb-ok">30% received</span>
+            <div class="sig-sub">$39,225 of $130,750</div>
+          </div>
+        </div>
+
+        <div class="compliance-list">
+          <div class="comp-item ok"><span class="comp-icon">&#10003;</span><span class="comp-text">Commercial invoice</span><span style="font-size:10px;color:var(--e600)">Uploaded 24 Apr</span></div>
+          <div class="comp-item ok"><span class="comp-icon">&#10003;</span><span class="comp-text">Packing list</span><span style="font-size:10px;color:var(--e600)">Uploaded 24 Apr</span></div>
+          <div class="comp-item pending"><span class="comp-icon">&#8987;</span><span class="comp-text">Phytosanitary certificate &mdash; awaiting issuing authority</span><button class="comp-action" onclick="event.stopPropagation();alert('Opens upload form with issuing authority info')">Upload when ready</button></div>
+          <div class="comp-item pending"><span class="comp-icon">&#8987;</span><span class="comp-text">Bill of lading draft &mdash; pending shipper confirmation</span><button class="comp-action" onclick="event.stopPropagation()">Upload BL draft</button></div>
+        </div>
+
+        <div class="oc-footer">
+          <div class="oc-footer-left">Order created 24 Apr &middot; Dispatch target: 5 May &middot; On track if docs arrive by 1 May</div>
+          <div class="oc-footer-right">
+            <button class="btn-sm ghost" onclick="event.stopPropagation()">Add note</button>
+            <button class="btn-sm primary" onclick="event.stopPropagation();uploadDoc('Phytosanitary')">Upload phytosanitary</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ORDER 3: IN EXECUTION ── -->
+      <div class="order-card ok" onclick="openOrder('Metro Retail DE','executing')">
+        <div class="oc-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+              <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#059669,#10b981);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0">MR</div>
+              <div class="oc-company">Metro Retail DE</div>
+              <span class="sig-badge sb-ok">In transit</span>
+            </div>
+            <div class="oc-meta">Germany &middot; Buyer &middot; Quote Q-2025-0088 &middot; Beetroot Powder + Mango &middot; 30 MT &middot; FOB</div>
+          </div>
+          <div class="oc-right">
+            <div class="oc-val">$142,000</div>
+            <div class="oc-val-lbl">USD &middot; FOB</div>
+            <div class="oc-actions">
+              <button class="btn-sm success" onclick="event.stopPropagation();alert('Mark as delivered - triggers payment collection state')">Mark delivered</button>
+              <button class="btn-sm ghost" onclick="event.stopPropagation();openOrder('Metro Retail DE','executing')">Open</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state-strip">
+          <div class="ss-stage"><div class="ss-node done"><div class="ss-dot"></div><div class="ss-lbl">Quote<br>Accepted</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node done"><div class="ss-dot"></div><div class="ss-lbl">Order<br>Confirmed</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node done"><div class="ss-dot"></div><div class="ss-lbl">Docs<br>Complete</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node done"><div class="ss-dot"></div><div class="ss-lbl">Dispatch<br>Ready</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node current"><div class="ss-dot"></div><div class="ss-lbl">Shipped</div></div></div>
+          <div class="ss-arrow">&#8250;</div>
+          <div class="ss-stage"><div class="ss-node upcoming"><div class="ss-dot"></div><div class="ss-lbl">Delivered</div></div></div>
+        </div>
+
+        <div class="signal-grid">
+          <div class="signal-cell">
+            <div class="sig-label">Execution state</div>
+            <span class="sig-badge sb-ok">Shipped</span>
+            <div class="sig-sub">ETA Hamburg: 2 May</div>
+          </div>
+          <div class="signal-cell">
+            <div class="sig-label">Commercial lock</div>
+            <span class="sig-badge sb-ok">Locked</span>
+            <div class="sig-sub">v3 accepted &middot; $142K</div>
+          </div>
+          <div class="signal-cell">
+            <div class="sig-label">Documents</div>
+            <span class="sig-badge sb-ok">4 of 4 complete</span>
+            <div class="sig-sub">All docs uploaded</div>
+          </div>
+          <div class="signal-cell">
+            <div class="sig-label">Payment</div>
+            <span class="sig-badge sb-warn">30% received</span>
+            <div class="sig-sub">70% due on BL presentation</div>
+          </div>
+        </div>
+
+        <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px">
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--s700);margin-bottom:4px">
+              <span>Transit progress</span><span>Shipped 22 Apr &middot; ETA 2 May</span>
+            </div>
+            <div class="prog-bar"><div class="prog-fill" style="width:55%;background:var(--emerald)"></div></div>
+          </div>
+          <div style="font-size:18px;font-weight:800;color:var(--emerald)">55%</div>
+        </div>
+
+        <div class="oc-footer">
+          <div class="oc-footer-left">All docs complete &middot; Shipment in transit &middot; 70% payment ($99,400) due on BL presentation</div>
+          <div class="oc-footer-right">
+            <button class="btn-sm ghost" onclick="event.stopPropagation()">Track shipment</button>
+            <button class="btn-sm success" onclick="event.stopPropagation();alert('Delivered confirmation recorded. Payment collection state activated.')">Mark delivered</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:14px;color:var(--s400);font-size:12px;font-weight:600">+ 3 more orders (2 delivered, 1 closed) &middot; <span style="color:var(--brand);cursor:pointer">Load all</span></div>
+
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="dp-overlay" id="dp-overlay" onclick="closeOrder()"></div>
+<div class="dp" id="dp">
+  <div class="dp-header">
+    <div>
+      <div style="font-size:17px;font-weight:800;color:var(--s950);margin-bottom:3px" id="dp-company">Al Marai Group</div>
+      <div style="font-size:11px;color:var(--s500)" id="dp-ref">ORD-2025-0012 &middot; Q-2025-0082 &middot; Dispatch blocked</div>
+    </div>
+    <button class="dp-close" onclick="closeOrder()">x</button>
+  </div>
+  <div class="dp-body">
+    <div id="dp-alert-sec" style="padding:12px 14px;background:var(--r50);border:1px solid var(--r200);border-radius:12px">
+      <div style="font-size:12px;font-weight:800;color:#9f1239;margin-bottom:4px">Dispatch blocked &mdash; FSSAI certificate missing</div>
+      <div style="font-size:11px;color:#9f1239;margin-bottom:10px">Upload the FSSAI registration certificate to unblock dispatch. This is required for Saudi Arabia import clearance.</div>
+      <button style="padding:7px 16px;border-radius:6px;background:var(--rose);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;width:100%" onclick="uploadDoc('FSSAI')">Upload FSSAI certificate</button>
+    </div>
+    <div class="dp-sec">
+      <div class="dp-section-title" style="font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin-bottom:8px">Order details</div>
+      <div class="dp-row"><span class="k">Company</span><span class="v" id="dp-cname">Al Marai Group</span></div>
+      <div class="dp-row"><span class="k">Market</span><span class="v">Saudi Arabia &middot; FOB</span></div>
+      <div class="dp-row"><span class="k">Products</span><span class="v">Dehydrated Garlic Flakes 20 MT</span></div>
+      <div class="dp-row"><span class="k">Order value</span><span class="v">$320,000 USD</span></div>
+      <div class="dp-row"><span class="k">Payment received</span><span class="v ok">$96,000 (30%)</span></div>
+      <div class="dp-row"><span class="k">Payment due</span><span class="v warn">$224,000 on BL presentation</span></div>
+    </div>
+    <div class="dp-sec">
+      <div class="dp-section-title" style="font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin-bottom:8px">Execution state machine</div>
+      <div class="dp-row"><span class="k">Current state</span><span class="v rose">Docs required &mdash; blocked</span></div>
+      <div class="dp-row"><span class="k">Next state</span><span class="v">Dispatch ready (after FSSAI upload)</span></div>
+      <div class="dp-row"><span class="k">Dispatch target</span><span class="v warn">30 Apr 2025</span></div>
+      <div class="dp-row"><span class="k">Commercial lock</span><span class="v ok">Locked &middot; v1 accepted &middot; no overrides</span></div>
+    </div>
+    <div class="dp-sec">
+      <div class="dp-section-title" style="font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin-bottom:8px">Document status</div>
+      <div class="dp-row"><span class="k">Commercial invoice</span><span class="v ok">Uploaded 22 Apr</span></div>
+      <div class="dp-row"><span class="k">Packing list</span><span class="v ok">Uploaded 22 Apr</span></div>
+      <div class="dp-row"><span class="k">Certificate of origin</span><span class="v ok">Uploaded 21 Apr</span></div>
+      <div class="dp-row"><span class="k">FSSAI certificate</span><span class="v rose">Missing &mdash; required</span></div>
+    </div>
+    <div class="dp-sec">
+      <div class="dp-section-title" style="font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin-bottom:8px">Activity log</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;gap:8px;font-size:11px;padding:5px 0;border-bottom:1px solid var(--s50)"><span style="color:var(--s400);white-space:nowrap">24 Apr</span><span style="color:var(--s700)">Certificate of origin uploaded by Priya Singh</span></div>
+        <div style="display:flex;gap:8px;font-size:11px;padding:5px 0;border-bottom:1px solid var(--s50)"><span style="color:var(--s400);white-space:nowrap">22 Apr</span><span style="color:var(--s700)">Commercial invoice + packing list uploaded</span></div>
+        <div style="display:flex;gap:8px;font-size:11px;padding:5px 0;border-bottom:1px solid var(--s50)"><span style="color:var(--s400);white-space:nowrap">20 Apr</span><span style="color:var(--rose);font-weight:600">Order confirmed &mdash; FSSAI missing, dispatch blocked</span></div>
+        <div style="display:flex;gap:8px;font-size:11px;padding:5px 0"><span style="color:var(--s400);white-space:nowrap">18 Apr</span><span style="color:var(--s700)">Quote Q-2025-0082 accepted by buyer</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dp-footer">
+    <button class="dp-btn-p" onclick="uploadDoc('FSSAI')">Upload FSSAI cert</button>
+    <button class="dp-btn-g" onclick="closeOrder()">Close</button>
+    <button class="dp-btn-g" onclick="alert('Exports order sheet as PDF')">Export PDF</button>
+  </div>
+</div>
+
+<script>
+function setMode(btn) {
+  var btns = document.querySelectorAll('.mode-btn');
+  for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active'); }
+  btn.classList.add('active');
+}
+
+function openOrder(company, state) {
+  var ov = document.getElementById('dp-overlay');
+  var dp = document.getElementById('dp');
+  var dpco = document.getElementById('dp-company');
+  var dpcn = document.getElementById('dp-cname');
+  var dpref = document.getElementById('dp-ref');
+  var alert_sec = document.getElementById('dp-alert-sec');
+
+  if (dpco) { dpco.textContent = company; }
+  if (dpcn) { dpcn.textContent = company; }
+
+  if (state === 'blocked') {
+    if (dpref) { dpref.textContent = 'ORD-2025-0012 - Dispatch blocked - FSSAI missing'; }
+    if (alert_sec) { alert_sec.style.display = 'block'; }
+  } else if (state === 'pending') {
+    if (dpref) { dpref.textContent = 'ORD-2025-0014 - Documents pending'; }
+    if (alert_sec) { alert_sec.style.display = 'none'; }
+  } else {
+    if (dpref) { dpref.textContent = 'ORD-2025-0011 - In transit'; }
+    if (alert_sec) { alert_sec.style.display = 'none'; }
+  }
+
+  if (ov) { ov.classList.add('open'); }
+  if (dp) { dp.classList.add('open'); }
+}
+
+function closeOrder() {
+  var ov = document.getElementById('dp-overlay');
+  var dp = document.getElementById('dp');
+  if (ov) { ov.classList.remove('open'); }
+  if (dp) { dp.classList.remove('open'); }
+}
+
+function uploadDoc(docName) {
+  alert('Upload ' + docName + ' certificate\n\nIn production: opens file picker, uploads to Supabase storage, logs to audit trail, and re-evaluates the order execution state.\n\nOnce FSSAI is uploaded, order state advances from Blocked to Dispatch Ready automatically.');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { closeOrder(); }
+});
+</script>
+</body>
+</html>

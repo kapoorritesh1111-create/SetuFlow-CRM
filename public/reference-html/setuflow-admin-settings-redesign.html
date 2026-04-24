@@ -204,7 +204,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
   <div style="display:flex;align-items:center;gap:16px">
     <div style="display:flex;align-items:center;gap:8px;padding:4px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px">
       <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#0c7fff,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:white">BO</div>
-      <div><div style="font-size:11px;font-weight:800;color:white">Blue Orbit International</div><div style="font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.1em;text-transform:uppercase">SETU Flow · Admin + Settings Redesign</div></div>
+      <div><div style="font-size:11px;font-weight:800;color:white">SETU Groups LLC</div><div style="font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.1em;text-transform:uppercase">SETU Flow · Admin + Settings Redesign</div></div>
     </div>
     <div><strong>Workspace Control — Admin + Settings Combined</strong><span style="margin-left:10px;color:rgba(255,255,255,.5);font-size:11px">7 scattered pages → 1 unified workspace · Left nav + content area · Review below</span></div>
   </div>
@@ -230,7 +230,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
     <!-- TOPBAR -->
     <header class="topbar">
       <div style="display:flex;align-items:center;gap:14px">
-        <div class="company-badge"><div class="company-mark">BO</div><div><div class="company-name">Blue Orbit Int'l</div><div class="company-sub">SETU Flow CRM</div></div></div>
+        <div class="company-badge"><div class="company-mark">BO</div><div><div class="company-name">SETU Groups LLC</div><div class="company-sub">SETU Flow CRM</div></div></div>
         <div class="divider-v"></div>
         <div><div class="topbar-eyebrow">Workspace Control</div><div class="topbar-title" id="page-title">Organization Overview</div></div>
       </div>
@@ -276,6 +276,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
         </div>
         <div class="ln-item" onclick="showSection('pipelines',this,'Pipeline Configuration','＋ Add pipeline')">
           <span class="ln-icon">⊕</span> Pipelines
+        </div>
+        <div class="ln-item" onclick="showSection('tradeevents',this,'Trade Events &amp; Capture','+ Add event')">
+          <span class="ln-icon">&#127981;</span> Trade events
         </div>
         <div class="ln-separator"></div>
         <div class="ln-section">Governance</div>
@@ -325,8 +328,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
               </div>
 
               <div>
-                <div class="org-detail-row"><span class="odr-key">Organization name</span><input class="odr-input" value="Blue Orbit International"/></div>
-                <div class="org-detail-row"><span class="odr-key">Organization slug</span><div class="odr-val" style="font-family:monospace;font-size:11px">blue-orbit-international</div></div>
+                <div class="org-detail-row"><span class="odr-key">Organization name</span><input class="odr-input" value="SETU Groups LLC"/></div>
+                <div class="org-detail-row"><span class="odr-key">Organization slug</span><div class="odr-val" style="font-family:monospace;font-size:11px">setu-groups-llc</div></div>
                 <div class="org-detail-row"><span class="odr-key">Default currency</span><select class="odr-input" style="font-size:12px;appearance:auto"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option><option>AED</option></select></div>
                 <div class="org-detail-row"><span class="odr-key">Approval threshold</span><div style="display:flex;align-items:center;gap:8px"><input class="odr-input" value="10" style="width:70px;text-align:right"/><span style="font-size:11px;color:var(--slate-500)">% override before approval required</span></div></div>
                 <div class="org-detail-row"><span class="odr-key">My role in workspace</span><div class="odr-val"><span style="background:#ede9fe;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;color:#5b21b6">Owner</span></div></div>
@@ -369,7 +372,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
               <div id="user-list">
                 <div class="user-row">
                   <div class="user-avatar" style="background:linear-gradient(135deg,var(--navy-deep),var(--brand))">RK</div>
-                  <div><div class="user-name">Ritesh Kumar</div><div class="user-email">ritesh@blueorbit.com</div></div>
+                  <div><div class="user-name">Ritesh Kumar</div><div class="user-email">ritesh@setugroups.com</div></div>
                   <div><span class="role-badge role-owner">Owner</span></div>
                   <div><span class="status-active">Active</span></div>
                   <div style="font-size:10px;color:var(--slate-400)">Just now</div>
@@ -377,7 +380,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
                 </div>
                 <div class="user-row">
                   <div class="user-avatar" style="background:#059669">PS</div>
-                  <div><div class="user-name">Priya Singh</div><div class="user-email">priya@blueorbit.com</div></div>
+                  <div><div class="user-name">Priya Singh</div><div class="user-email">priya@setugroups.com</div></div>
                   <div><span class="role-badge role-sales">Sales</span></div>
                   <div><span class="status-active">Active</span></div>
                   <div style="font-size:10px;color:var(--slate-400)">2h ago</div>
@@ -385,7 +388,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
                 </div>
                 <div class="user-row">
                   <div class="user-avatar" style="background:#7c3aed">AK</div>
-                  <div><div class="user-name">Arjun Kumar</div><div class="user-email">arjun@blueorbit.com</div></div>
+                  <div><div class="user-name">Arjun Kumar</div><div class="user-email">arjun@setugroups.com</div></div>
                   <div><span class="role-badge role-sourcing">Sourcing</span></div>
                   <div><span class="status-active">Active</span></div>
                   <div style="font-size:10px;color:var(--slate-400)">Yesterday</div>
@@ -393,7 +396,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
                 </div>
                 <div class="user-row">
                   <div class="user-avatar" style="background:#d97706">SM</div>
-                  <div><div class="user-name">Sara Mehta</div><div class="user-email">sara@blueorbit.com</div></div>
+                  <div><div class="user-name">Sara Mehta</div><div class="user-email">sara@setugroups.com</div></div>
                   <div><span class="role-badge role-admin">Admin</span></div>
                   <div><span class="status-active">Active</span></div>
                   <div style="font-size:10px;color:var(--slate-400)">3 days ago</div>
@@ -543,6 +546,196 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
           </div>
         </div>
 
+
+        <!-- TRADE EVENTS & CAPTURE -->
+        <div id="section-tradeevents" style="display:none">
+
+          <!-- Stats strip -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+            <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 15px;box-shadow:var(--shadow-sm)">
+              <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate-400);margin-bottom:7px">Active events</div>
+              <div style="font-size:22px;font-weight:800;color:var(--slate-950);line-height:1">3</div>
+              <div style="font-size:10px;color:var(--slate-400);margin-top:4px">Upcoming + in progress</div>
+            </div>
+            <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 15px;box-shadow:var(--shadow-sm)">
+              <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate-400);margin-bottom:7px">Captured contacts</div>
+              <div style="font-size:22px;font-weight:800;color:var(--slate-950);line-height:1">47</div>
+              <div style="font-size:10px;color:var(--slate-400);margin-top:4px">Across all events</div>
+            </div>
+            <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 15px;box-shadow:var(--shadow-sm);border-top:3px solid var(--amber-500)">
+              <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate-400);margin-bottom:7px">Pending conversion</div>
+              <div style="font-size:22px;font-weight:800;color:var(--amber-600);line-height:1">12</div>
+              <div style="font-size:10px;color:var(--slate-400);margin-top:4px">Not yet converted to leads</div>
+            </div>
+            <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 15px;box-shadow:var(--shadow-sm);border-top:3px solid var(--emerald-500)">
+              <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate-400);margin-bottom:7px">Converted to leads</div>
+              <div style="font-size:22px;font-weight:800;color:var(--emerald-600);line-height:1">35</div>
+              <div style="font-size:10px;color:var(--slate-400);margin-top:4px">Live in follow-up queue</div>
+            </div>
+          </div>
+
+          <!-- Trade events list -->
+          <div class="sc" style="margin-bottom:14px">
+            <div class="sc-header">
+              <div>
+                <div class="sc-eyebrow">Trade events</div>
+                <div class="sc-title">Shows &amp; source touchpoints</div>
+                <div class="sc-desc">Track the trade events that generate buyer and supplier relationships. Each event has its own capture log.</div>
+              </div>
+              <div class="sc-actions">
+                <button class="btn-primary" onclick="addEvent()">+ Add event</button>
+              </div>
+            </div>
+            <div class="sc-body">
+              <!-- Event cards -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+                <div style="padding:14px 16px;border-radius:var(--r-xl);border:2px solid var(--brand);background:rgba(12,127,255,.04)">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                    <div>
+                      <div style="font-size:13px;font-weight:800;color:var(--slate-900)">Gulfood 2025</div>
+                      <div style="font-size:11px;color:var(--slate-500);margin-top:2px">Dubai, UAE</div>
+                    </div>
+                    <span style="background:rgba(12,127,255,.1);color:var(--brand);border-radius:999px;padding:2px 8px;font-size:9px;font-weight:700">Active</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+                    <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--slate-400)">Starts</div><div style="font-size:12px;font-weight:600;color:var(--slate-800)">17 Feb 2025</div></div>
+                    <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--slate-400)">Ends</div><div style="font-size:12px;font-weight:600;color:var(--slate-800)">21 Feb 2025</div></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:11px;font-weight:700;color:var(--slate-600)">22 contacts captured</span>
+                    <button class="ur-action" style="color:var(--brand)" onclick="showCaptureLog('Gulfood 2025')">View log</button>
+                  </div>
+                </div>
+                <div style="padding:14px 16px;border-radius:var(--r-xl);border:1px solid var(--border);background:var(--slate-50)">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                    <div>
+                      <div style="font-size:13px;font-weight:800;color:var(--slate-900)">IndusFood 2025</div>
+                      <div style="font-size:11px;color:var(--slate-500);margin-top:2px">New Delhi, India</div>
+                    </div>
+                    <span style="background:var(--emerald-50);color:var(--emerald-600);border-radius:999px;padding:2px 8px;font-size:9px;font-weight:700">Completed</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+                    <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--slate-400)">Starts</div><div style="font-size:12px;font-weight:600;color:var(--slate-800)">10 Jan 2025</div></div>
+                    <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--slate-400)">Ends</div><div style="font-size:12px;font-weight:600;color:var(--slate-800)">12 Jan 2025</div></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:11px;font-weight:700;color:var(--slate-600)">18 contacts &#183; 14 converted</span>
+                    <button class="ur-action" onclick="showCaptureLog('IndusFood 2025')">View log</button>
+                  </div>
+                </div>
+                <div style="padding:14px 16px;border-radius:var(--r-xl);border:1px dashed var(--border);background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer" onclick="addEvent()">
+                  <div style="font-size:28px;color:var(--slate-300)">+</div>
+                  <div style="font-size:12px;font-weight:600;color:var(--slate-400)">Add next event</div>
+                  <div style="font-size:10px;color:var(--slate-300);text-align:center">Anuga, FoodEx Japan, SIAL...</div>
+                </div>
+              </div>
+
+              <!-- Add event form (collapsed) -->
+              <div id="add-event-form" style="display:none;padding:16px;background:var(--slate-50);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:14px">
+                <div style="font-size:12px;font-weight:700;color:var(--slate-700);margin-bottom:12px">New trade event</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+                  <div><label style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);display:block;margin-bottom:4px">Event name *</label><input style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);font-size:12px;outline:none" placeholder="e.g. Anuga 2025"/></div>
+                  <div><label style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);display:block;margin-bottom:4px">City</label><input style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);font-size:12px;outline:none" placeholder="Cologne"/></div>
+                  <div><label style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);display:block;margin-bottom:4px">Country</label><input style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);font-size:12px;outline:none" placeholder="Germany"/></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+                  <div><label style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);display:block;margin-bottom:4px">Start date</label><input type="date" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);font-size:12px;outline:none"/></div>
+                  <div><label style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);display:block;margin-bottom:4px">End date</label><input type="date" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);font-size:12px;outline:none"/></div>
+                  <div><label style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);display:block;margin-bottom:4px">Notes</label><input style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);font-size:12px;outline:none" placeholder="Optional notes..."/></div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button style="padding:8px 18px;border-radius:6px;background:var(--navy);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer" onclick="saveEvent()">Save event</button>
+                  <button style="padding:8px 14px;border-radius:6px;border:1px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer" onclick="document.getElementById('add-event-form').style.display='none'">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Capture log -->
+          <div class="sc">
+            <div class="sc-header">
+              <div>
+                <div class="sc-eyebrow">Capture intake</div>
+                <div class="sc-title">Raw captured contacts &mdash; <span id="capture-event-label">Gulfood 2025</span></div>
+                <div class="sc-desc">Contacts captured at trade shows waiting for review, deduplication, or conversion to leads.</div>
+              </div>
+              <div class="sc-actions">
+                <button class="btn-ghost" onclick="alert('Opens scan / vCard capture form for this event')">Scan vCard</button>
+                <button class="btn-primary" onclick="alert('Opens manual entry form for this event')">+ Add contact</button>
+              </div>
+            </div>
+            <div class="sc-body">
+              <!-- Pending conversion bar -->
+              <div style="padding:10px 14px;background:var(--amber-50);border:1px solid var(--amber-200);border-radius:var(--r-md);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:12px;color:#92400e;font-weight:600">8 contacts pending review &mdash; deduplication check recommended before converting</div>
+                <button style="padding:4px 12px;border-radius:6px;background:var(--amber-500);color:white;border:none;font-size:11px;font-weight:700;cursor:pointer" onclick="alert('Opens bulk review and deduplication flow')">Review all</button>
+              </div>
+
+              <!-- Capture table -->
+              <div style="overflow-x:auto;border-radius:var(--r-lg);border:1px solid var(--border)">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:700px">
+                  <thead>
+                    <tr style="background:var(--slate-50);text-align:left">
+                      <th style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);border-bottom:1px solid var(--border)">Company</th>
+                      <th style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);border-bottom:1px solid var(--border)">Contact</th>
+                      <th style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);border-bottom:1px solid var(--border)">Event</th>
+                      <th style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);border-bottom:1px solid var(--border)">Status</th>
+                      <th style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);border-bottom:1px solid var(--border)">Captured</th>
+                      <th style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);border-bottom:1px solid var(--border)">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="border-top:1px solid var(--border)">
+                      <td style="padding:10px 14px"><div style="font-weight:700;color:var(--slate-900)">Pacific Foods JP</div><div style="font-size:10px;color:var(--slate-400)">Interest: Moringa, Mango Powder</div></td>
+                      <td style="padding:10px 14px;color:var(--slate-600)">Yuki Tanaka &middot; Import Mgr</td>
+                      <td style="padding:10px 14px;color:var(--slate-600)">Gulfood 2025</td>
+                      <td style="padding:10px 14px"><span style="background:var(--amber-50);border:1px solid var(--amber-200);border-radius:999px;padding:2px 8px;font-size:9px;font-weight:700;color:#92400e">New</span></td>
+                      <td style="padding:10px 14px;color:var(--slate-400);font-size:11px">18 Feb 2025</td>
+                      <td style="padding:10px 14px">
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                          <button class="ur-action" style="color:var(--emerald-600);border-color:var(--emerald-200)" onclick="convertToLead('Pacific Foods JP')">Convert to lead</button>
+                          <button class="ur-action" onclick="convertToLead('Pacific Foods JP - with quote')">Lead + Draft quote</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr style="border-top:1px solid var(--border)">
+                      <td style="padding:10px 14px"><div style="font-weight:700;color:var(--slate-900)">Spice Italy SRL</div><div style="font-size:10px;color:var(--slate-400)">Interest: Beetroot, Jaggery</div></td>
+                      <td style="padding:10px 14px;color:var(--slate-600)">Marco Ricci &middot; Buyer</td>
+                      <td style="padding:10px 14px;color:var(--slate-600)">Gulfood 2025</td>
+                      <td style="padding:10px 14px"><span style="background:var(--amber-50);border:1px solid var(--amber-200);border-radius:999px;padding:2px 8px;font-size:9px;font-weight:700;color:#92400e">Pending review</span></td>
+                      <td style="padding:10px 14px;color:var(--slate-400);font-size:11px">18 Feb 2025</td>
+                      <td style="padding:10px 14px">
+                        <div style="display:flex;gap:6px">
+                          <button class="ur-action" style="color:var(--emerald-600);border-color:var(--emerald-200)" onclick="convertToLead('Spice Italy SRL')">Convert to lead</button>
+                          <button class="ur-action" onclick="alert('Opens duplicate check')">Check duplicate</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr style="border-top:1px solid var(--border);opacity:.6">
+                      <td style="padding:10px 14px"><div style="font-weight:700;color:var(--slate-900)">Metro Retail DE</div><div style="font-size:10px;color:var(--slate-400)">Interest: All vacuum-cooked snacks</div></td>
+                      <td style="padding:10px 14px;color:var(--slate-600)">Klaus Weber &middot; Cat Mgr</td>
+                      <td style="padding:10px 14px;color:var(--slate-600)">Gulfood 2025</td>
+                      <td style="padding:10px 14px"><span style="background:var(--emerald-50);border:1px solid var(--emerald-200);border-radius:999px;padding:2px 8px;font-size:9px;font-weight:700;color:var(--emerald-600)">Converted</span></td>
+                      <td style="padding:10px 14px;color:var(--slate-400);font-size:11px">17 Feb 2025</td>
+                      <td style="padding:10px 14px">
+                        <div style="display:flex;gap:6px">
+                          <a href="#" style="padding:3px 10px;border-radius:6px;border:1px solid var(--emerald-200);color:var(--emerald-600);font-size:10px;font-weight:700;text-decoration:none">Open lead</a>
+                          <a href="#" style="padding:3px 10px;border-radius:6px;border:1px solid var(--border);color:var(--slate-600);font-size:10px;font-weight:700;text-decoration:none">Open quote</a>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr style="border-top:1px solid var(--border)">
+                      <td style="padding:10px 14px;text-align:center;color:var(--slate-400);font-size:11px;font-weight:600" colspan="6">+ 19 more captured contacts &middot; <span style="color:var(--brand);cursor:pointer">Load all</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <!-- /section-tradeevents -->
+
         <!-- ═══════════════════ AUDIT LOG ═══════════════════ -->
         <div id="section-audit" style="display:none">
           <div class="sc">
@@ -606,7 +799,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
       <button onclick="document.getElementById('vcard-modal').style.display='none'" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,.15);border:none;color:white;width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer">✕</button>
       <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0c7fff,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:white;border:3px solid rgba(255,255,255,.3);margin-bottom:10px">RK</div>
       <div style="font-size:16px;font-weight:800">Ritesh Kumar</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:2px">Director · Blue Orbit International</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:2px">Director · SETU Groups LLC</div>
     </div>
     <div style="padding:18px 24px;display:flex;flex-direction:column;gap:7px">
       <button style="padding:10px;border-radius:10px;font-size:12px;font-weight:700;border:none;background:var(--navy);color:white;cursor:pointer">⬇ Download .vcf card</button>
@@ -622,7 +815,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
   <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
     <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:var(--r-sm);background:rgba(11,46,74,.06);border:1px solid rgba(11,46,74,.12)">
       <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--navy-deep),var(--brand));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white">BO</div>
-      <div><div style="font-size:11px;font-weight:800;color:var(--navy)">Blue Orbit International · Roohted</div><div style="font-size:9px;color:var(--slate-400);letter-spacing:.1em;text-transform:uppercase">SETU Flow — Admin + Settings Redesign</div></div>
+      <div><div style="font-size:11px;font-weight:800;color:var(--navy)">SETU Groups LLC · Roohted</div><div style="font-size:9px;color:var(--slate-400);letter-spacing:.1em;text-transform:uppercase">SETU Flow — Admin + Settings Redesign</div></div>
     </div>
     <span style="font-size:11px;color:var(--slate-400)">Admin + Settings redesign · combined workspace · Phase 1</span>
   </div>
@@ -700,7 +893,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 
 <script>
 // LEFT NAV SECTION SWITCHING
-const sections=['overview','team','invites','markets','categories','nextsteps','pipelines','audit','ai','security'];
+const sections=['overview','team','invites','markets','categories','nextsteps','pipelines','tradeevents','audit','ai','security'];
 function showSection(id,el,title,cta){
   sections.forEach(s=>{
     const sec=document.getElementById('section-'+s);
@@ -728,6 +921,25 @@ function filterUsers(q){
     row.style.opacity=(!q||name.includes(q)||email.includes(q))?'1':'0.2';
   });
 }
+
+// TRADE EVENTS
+function addEvent() {
+  var form = document.getElementById('add-event-form');
+  if (form) { form.style.display = form.style.display === 'none' ? 'block' : 'none'; }
+}
+function saveEvent() {
+  alert('Event saved. It will appear in the trade events list and capture log.');
+  var form = document.getElementById('add-event-form');
+  if (form) { form.style.display = 'none'; }
+}
+function showCaptureLog(eventName) {
+  var label = document.getElementById('capture-event-label');
+  if (label) { label.textContent = eventName; }
+}
+function convertToLead(company) {
+  alert('Lead created for ' + company + '. Now visible in Follow-up queue. Continue in Leads to qualify and open a quote.');
+}
+
 </script>
 </body>
 </html>

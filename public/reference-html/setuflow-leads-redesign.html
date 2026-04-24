@@ -421,6 +421,152 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .card-title{font-size:14px;font-weight:700;color:var(--slate-950);letter-spacing:-.2px}
 .card-desc{font-size:11px;color:var(--slate-500);margin-top:2px}
 .card-body{padding:14px 18px}
+
+/* Quote Builder */
+.qb-wrap{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.qb-hero{background:linear-gradient(135deg,#061c2e 0%,#0b2e4a 55%,#1a5fa0 100%);border-radius:22px;padding:18px 22px;color:white;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.qbh-left{display:flex;gap:12px;align-items:flex-start}
+.qbh-av{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#1a5fa0,#0c7fff);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;flex-shrink:0}
+.qbh-name{font-size:19px;font-weight:800;letter-spacing:-.4px;margin-bottom:3px}
+.qbh-meta{font-size:11px;color:rgba(255,255,255,.6);line-height:1.55}
+.qbh-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.qbh-tag{padding:2px 9px;border-radius:999px;font-size:9px;font-weight:700;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);letter-spacing:.04em;text-transform:uppercase}
+.qbh-tag.warn{background:rgba(217,119,6,.25);border-color:rgba(217,119,6,.5);color:#fde68a}
+.qbh-right{text-align:right;flex-shrink:0}
+.qbh-total{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.qbh-lbl{font-size:9px;color:rgba(255,255,255,.5);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+.qbh-btns{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
+.qbh-btn{padding:5px 12px;border-radius:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:white;font-size:10px;font-weight:700;cursor:pointer}
+.qbh-btn:hover{background:rgba(255,255,255,.2)}
+
+.qb-stepper{background:white;border:1px solid #e2e8f0;border-radius:22px;padding:16px 20px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.qbs-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.qbs-title{font-size:13px;font-weight:700;color:#0f172a}
+.qbs-badge{font-size:9px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(12,127,255,.08);border:1px solid rgba(12,127,255,.2);color:#0c7fff;letter-spacing:.08em;text-transform:uppercase}
+.qbs-crumb{margin-left:auto;font-size:10px;color:#94a3b8}
+.qbs-crumb strong{color:#0b2e4a}
+.qb-track{display:flex;align-items:center;position:relative;margin-bottom:12px}
+.qb-track::before{content:"";position:absolute;top:13px;left:24px;right:24px;height:2px;background:#e2e8f0;z-index:0}
+.qb-node{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;position:relative;z-index:1;cursor:pointer}
+.qb-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;transition:all .15s}
+.qb-node.done .qb-circle{background:#059669;color:white;box-shadow:0 0 0 3px #d1fae5}
+.qb-node.cur .qb-circle{background:#0b2e4a;color:white;box-shadow:0 0 0 3px rgba(11,46,74,.1)}
+.qb-node.fut .qb-circle{background:white;color:#94a3b8;border:2px solid #e2e8f0}
+.qb-nlbl{font-size:9px;font-weight:700;text-align:center;letter-spacing:.02em}
+.qb-node.done .qb-nlbl{color:#059669}
+.qb-node.cur .qb-nlbl{color:#0b2e4a}
+.qb-node.fut .qb-nlbl{color:#94a3b8}
+.qb-conn{height:2px;flex:1;position:relative;z-index:1;margin-top:14px;align-self:flex-start}
+.qb-conn.done{background:#059669}
+.qb-conn.empty{background:#e2e8f0}
+.qbs-desc{font-size:11px;color:#64748b;line-height:1.6;padding:8px 12px;background:#f8fafc;border-radius:6px;border-left:3px solid #0c7fff}
+.qbs-desc strong{color:#1e293b}
+
+.qb-grid{display:grid;grid-template-columns:1fr 228px;gap:14px}
+.qb-main{display:flex;flex-direction:column;gap:12px}
+.qb-sidebar{display:flex;flex-direction:column;gap:10px}
+.qb-panel{background:white;border:1px solid #e2e8f0;border-radius:22px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.qbp-hdr{padding:13px 18px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.qbp-eye{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#0c7fff;margin-bottom:2px}
+.qbp-title{font-size:14px;font-weight:700;color:#0f172a}
+.qbp-body{padding:16px 18px}
+.qb-step{display:none}
+.qb-step.on{display:block}
+
+.li-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.li-tbl th{text-align:left;padding:6px 10px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;border-bottom:1px solid #e2e8f0;background:#f8fafc}
+.li-tbl td{padding:10px;border-bottom:1px solid #e2e8f0;vertical-align:middle}
+.li-tbl tr:last-child td{border-bottom:none}
+.li-tbl tr:hover td{background:#f8fafc}
+.li-pname{font-size:12px;font-weight:700;color:#0f172a}
+.li-psub{font-size:10px;color:#94a3b8;margin-top:1px}
+.li-ref{font-size:9px;font-family:monospace;color:#94a3b8;margin-top:2px}
+.q-inp{width:68px;padding:5px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;text-align:center;outline:none}
+.p-inp{width:90px;padding:5px 7px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:700;text-align:right;outline:none;transition:border .12s}
+.p-inp:focus{border-color:#0c7fff}
+.p-inp.ov{border-color:#f59e0b;background:#fffbeb;color:#92400e}
+.delt{font-size:10px;font-weight:800}
+.delt.ok{color:#059669}
+.delt.wn{color:#d97706}
+.delt.bd{color:#dc2626}
+.add-ln{padding:7px;border-radius:6px;border:1.5px dashed #cbd5e1;background:transparent;font-size:11px;font-weight:700;color:#0c7fff;cursor:pointer;width:100%;text-align:center;margin-top:8px}
+.totals-box{background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;margin-top:12px}
+.tot-r{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
+.tot-r .k{color:#64748b}
+.tot-r .v{font-weight:700;color:#1e293b}
+.tot-r.grand .k{font-size:13px;font-weight:700;color:#0f172a;padding-top:6px}
+.tot-r.grand .v{font-size:16px;font-weight:800;color:#0b2e4a;padding-top:6px}
+.tot-div{height:1px;background:#e2e8f0;margin:5px 0}
+.ov-box{padding:9px 13px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e;margin-top:10px;display:flex;gap:7px;line-height:1.55}
+
+.qb-fg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qb-f{display:flex;flex-direction:column;gap:4px}
+.qb-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8}
+.qb-i{padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#1e293b;background:white;outline:none;width:100%}
+.qb-i:focus{border-color:#0c7fff}
+.qb-s{padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;background:white;width:100%;outline:none;color:#1e293b}
+.qb-ta{padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;background:white;width:100%;outline:none;min-height:68px;resize:vertical;color:#334155}
+
+.rv-g{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.rv-c{padding:11px 13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px}
+.rv-ct{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:7px}
+.rv-r{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(0,0,0,.03)}
+.rv-r:last-child{border-bottom:none}
+.rv-r .rk{color:#64748b}
+.rv-r .rv{font-weight:700;color:#1e293b}
+.rv-r .rv.ov{color:#d97706}
+
+.sg{border-radius:22px;border:2px solid;overflow:hidden;margin-bottom:10px}
+.sg.blk{border-color:#fecaca;background:#fff1f2}
+.sg.rdy{border-color:#a7f3d0;background:#ecfdf5;display:none}
+.sg-hdr{padding:14px 18px;display:flex;align-items:center;gap:12px}
+.sg-ic{font-size:22px}
+.sg-tt{font-size:14px;font-weight:800}
+.sg.blk .sg-tt{color:#9f1239}
+.sg.rdy .sg-tt{color:#047857}
+.sg-st{font-size:11px;margin-top:2px}
+.sg.blk .sg-st{color:#e11d48}
+.sg.rdy .sg-st{color:#059669}
+.sg-cks{padding:0 18px 12px;display:flex;flex-direction:column;gap:4px}
+.sgck{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid}
+.sgck.ok{background:#ecfdf5;border-color:#a7f3d0;color:#047857}
+.sgck.fl{background:#fff1f2;border-color:#fecaca;color:#9f1239}
+.sgck.na{background:white;border-color:#e2e8f0;color:#475569}
+.sg-ft{padding:12px 18px;border-top:1px solid}
+.sg.blk .sg-ft{border-color:#fecaca}
+.sg.rdy .sg-ft{border-color:#a7f3d0}
+.sg-acts{display:flex;gap:8px;margin-top:10px}
+.sg-send{flex:1;padding:10px;border-radius:6px;font-size:13px;font-weight:800;border:none;cursor:pointer}
+.sg-send.on{background:#0b2e4a;color:white}
+.sg-send.off{background:#e2e8f0;color:#94a3b8;cursor:not-allowed}
+.sg-app{flex:1;padding:10px;border-radius:6px;background:#f59e0b;color:white;border:none;font-size:13px;font-weight:800;cursor:pointer}
+.sg-gh{padding:10px 14px;border-radius:6px;background:white;border:1px solid #e2e8f0;font-size:12px;font-weight:700;cursor:pointer;color:#475569}
+
+.tb-bar{height:6px;border-radius:99px;background:#f1f5f9;margin:4px 0;overflow:hidden}
+.tb-fill{height:100%;border-radius:99px;transition:width .3s}
+.tb-fill.ok{background:#059669}
+.tb-fill.wn{background:#f59e0b}
+
+.qb-rc{background:white;border:1px solid #e2e8f0;border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.qb-re{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#94a3b8;margin-bottom:8px}
+.qb-rv{font-size:14px;font-weight:800;color:#0f172a;margin-bottom:6px}
+.rl-r{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #f8fafc}
+.rl-r:last-child{border-bottom:none}
+.rl-r .k{color:#64748b}
+.rl-r .v{font-weight:700;color:#1e293b}
+.sn-btn{width:100%;padding:7px 10px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid #e2e8f0;background:white;color:#475569;cursor:pointer;text-align:left;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.sn-btn:hover{background:#f8fafc}
+.sn-btn.cur{background:rgba(12,127,255,.06);border-color:#0c7fff;color:#0b2e4a}
+.sn-btn.dn{background:#ecfdf5;border-color:#a7f3d0;color:#047857}
+.sn-dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0}
+.sn-btn.cur .sn-dot{background:#0b2e4a;color:white}
+.sn-btn.dn .sn-dot{background:#059669;color:white}
+.sn-btn .sn-dot{background:#f1f5f9;color:#94a3b8;border:1.5px solid #e2e8f0}
+.sn-btn.cur .sn-dot,.sn-btn.dn .sn-dot{border:none}
+
+.st-acts{display:flex;gap:8px;margin-top:14px}
+.st-bk{padding:8px 14px;border-radius:6px;background:white;border:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#475569;cursor:pointer}
+.st-nx{flex:1;padding:9px;border-radius:6px;background:#0b2e4a;color:white;border:none;font-size:13px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -536,6 +682,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
       <div class="page-tab" id="tab-cc" onclick="showView('cc')">
         🎯 Command Center
         <span class="page-tab-badge info" id="cc-badge">NatureMark India</span>
+      </div>
+      <div class="page-tab" id="tab-quote" onclick="showView('quote')">
+        &#9671; Quote Builder
+        <span class="page-tab-badge info">5 steps</span>
       </div>
       <div class="page-tab" id="tab-pipeline" onclick="showView('list')" style="margin-left:auto">
         ⊕ View in Pipeline →
@@ -913,7 +1063,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
                 </div>
               </div>
               <div class="lhc-actions">
-                <button class="btn-primary" id="cc-quote-btn" onclick="togglePanel('commercial')">🖊 Create quote</button>
+                <button class="btn-primary" id="cc-quote-btn" onclick="openQuote()">🖊 Create quote</button>
                 <button class="btn-ghost-md" onclick="openFollowUp()">📅 Schedule follow-up</button>
                 <div style="position:relative">
                   <button class="btn-tools" onclick="toggleTools(this)">⋯ Lead tools</button>
@@ -1145,7 +1295,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
                 </div>
                 <div style="margin-top:14px;font-size:12px;color:var(--slate-500)">Catalog baseline prices will pre-fill once the quote is opened. Any override requires a reason.</div>
                 <div class="ip-actions">
-                  <button class="ip-save" onclick="openQuote()">→ Open Quote Builder</button>
+                  <button class="ip-save" onclick="openQuote()">Open Quote Builder</button>
                   <button class="ip-cancel" onclick="closePanel('commercial')">Cancel</button>
                 </div>
               </div>
@@ -1197,7 +1347,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
               </div>
               <div class="qpc-cta">
                 <div class="qpc-cta-note">Resolve blockers above first</div>
-                <button class="qpc-cta-btn" onclick="openQuote()">→ Open Quote Builder</button>
+                <button class="qpc-cta-btn" onclick="openQuote()">Open Quote Builder</button>
               </div>
             </div>
 
@@ -1252,7 +1402,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
         <!-- STICKY ACTION BAR -->
         <div class="sticky-bar">
           <div class="sab-left">
-            <button class="btn-primary" onclick="togglePanel('commercial')">🖊 Create quote</button>
+            <button class="btn-primary" onclick="openQuote()">🖊 Create quote</button>
             <button class="btn-ghost-md" onclick="openFollowUp()">📅 Schedule follow-up</button>
             <button class="btn-ghost-md" onclick="openDrawer()">＋ Quick edit</button>
           </div>
@@ -1262,6 +1412,324 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
       </div>
     </div>
     <!-- end view-cc -->
+
+
+    <!-- Quote Builder View -->
+    <div class="view" id="view-quote">
+      <div class="qb-wrap">
+
+        <div class="qb-hero">
+          <div class="qbh-left">
+            <div class="qbh-av" id="qb-av">NM</div>
+            <div>
+              <div class="qbh-name" id="qb-co">NatureMark India</div>
+              <div class="qbh-meta">Buyer &middot; Priya Singh &middot; Mumbai, India &middot; Negotiation stage</div>
+              <div class="qbh-tags">
+                <span class="qbh-tag">Mango Powder</span>
+                <span class="qbh-tag">Beetroot Powder</span>
+                <span class="qbh-tag">India &middot; FOB</span>
+                <span class="qbh-tag">USD</span>
+                <span class="qbh-tag warn">1 pricing override</span>
+              </div>
+            </div>
+          </div>
+          <div class="qbh-right">
+            <div class="qbh-total" id="qb-htotal">$130,750</div>
+            <div class="qbh-lbl">Draft quote total</div>
+            <div class="qbh-btns">
+              <button class="qbh-btn" onclick="showView('cc')">Back to CC</button>
+              <button class="qbh-btn" onclick="qbSaveDraft()">Save draft</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="qb-stepper">
+          <div class="qbs-header">
+            <div class="qbs-title">Quote Builder</div>
+            <div class="qbs-badge" id="qb-badge">Step 2 of 5 &middot; Pricing</div>
+            <div class="qbs-crumb">Capture &rarr; Lead &rarr; <strong>Quote</strong> &rarr; Order</div>
+          </div>
+          <div class="qb-track">
+            <div class="qb-node done" onclick="qbGo(0)"><div class="qb-circle">1</div><div class="qb-nlbl">Product</div></div>
+            <div class="qb-conn done" id="qbcon0"></div>
+            <div class="qb-node cur" id="qbn1" onclick="qbGo(1)"><div class="qb-circle">2</div><div class="qb-nlbl">Pricing</div></div>
+            <div class="qb-conn empty" id="qbcon1"></div>
+            <div class="qb-node fut" id="qbn2" onclick="qbGo(2)"><div class="qb-circle">3</div><div class="qb-nlbl">Terms</div></div>
+            <div class="qb-conn empty" id="qbcon2"></div>
+            <div class="qb-node fut" id="qbn3" onclick="qbGo(3)"><div class="qb-circle">4</div><div class="qb-nlbl">Review</div></div>
+            <div class="qb-conn empty" id="qbcon3"></div>
+            <div class="qb-node fut" id="qbn4" onclick="qbGo(4)"><div class="qb-circle">5</div><div class="qb-nlbl">Send gate</div></div>
+          </div>
+          <div class="qbs-desc" id="qb-desc"><strong>Step 2 &mdash; Pricing:</strong> Build the quote line by line. Catalog baseline prices pre-fill from your reference pricing. Overrides above 10% require manager approval before send.</div>
+        </div>
+
+        <div class="qb-grid">
+          <div class="qb-main">
+
+            <!-- Step 0: Product lock -->
+            <div class="qb-step" id="qbs0">
+              <div class="qb-panel">
+                <div class="qbp-hdr">
+                  <div><div class="qbp-eye">Step 1 &mdash; Complete</div><div class="qbp-title">Product &amp; buyer lock</div></div>
+                  <button class="btn-ghost-md" onclick="qbGo(0)" style="font-size:11px">Edit</button>
+                </div>
+                <div class="qbp-body">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div class="rv-c"><div class="rv-ct">Buyer context</div>
+                      <div class="rv-r"><span class="rk">Company</span><span class="rv">NatureMark India</span></div>
+                      <div class="rv-r"><span class="rk">Contact</span><span class="rv">Ananya Sharma</span></div>
+                      <div class="rv-r"><span class="rk">Market</span><span class="rv">India</span></div>
+                      <div class="rv-r"><span class="rk">Incoterm</span><span class="rv">FOB</span></div>
+                      <div class="rv-r"><span class="rk">Currency</span><span class="rv">USD</span></div>
+                    </div>
+                    <div class="rv-c"><div class="rv-ct">Quote basis</div>
+                      <div class="rv-r"><span class="rk">RFQ ref</span><span class="rv">None &mdash; new quote</span></div>
+                      <div class="rv-r"><span class="rk">Template</span><span class="rv">Standard FOB</span></div>
+                      <div class="rv-r"><span class="rk">Lead stage</span><span class="rv">Negotiation</span></div>
+                      <div class="rv-r"><span class="rk">Version</span><span class="rv">v1 &middot; Draft</span></div>
+                    </div>
+                  </div>
+                  <div style="margin-top:10px;padding:9px 13px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;font-size:12px;color:#047857">Context locked from qualified lead. Catalog reference pricing loaded for India / FOB.</div>
+                  <div class="st-acts"><button class="st-nx" onclick="qbGo(1)">Next: Pricing &rarr;</button></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 1: Pricing -->
+            <div class="qb-step on" id="qbs1">
+              <div class="qb-panel">
+                <div class="qbp-hdr">
+                  <div><div class="qbp-eye">Step 2 &mdash; Active</div><div class="qbp-title">Pricing &mdash; line items</div></div>
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <div style="display:flex;background:#f1f5f9;border-radius:6px;padding:3px;border:1px solid #e2e8f0">
+                      <button class="mode-btn active" id="pm-u" onclick="qbPM(this)">Per unit</button>
+                      <button class="mode-btn" id="pm-k" onclick="qbPM(this)">Per kg</button>
+                      <button class="mode-btn" id="pm-c" onclick="qbPM(this)">Per case</button>
+                    </div>
+                    <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:#fffbeb;border:1px solid #fde68a;color:#d97706">1 override</span>
+                  </div>
+                </div>
+                <div class="qbp-body">
+                  <table class="li-tbl">
+                    <thead>
+                      <tr>
+                        <th style="min-width:160px">Product</th>
+                        <th style="text-align:center">Qty (MT)</th>
+                        <th style="text-align:right">Catalog FOB</th>
+                        <th style="text-align:right">Quote price</th>
+                        <th style="text-align:right">Delta</th>
+                        <th style="text-align:right">Line total</th>
+                        <th style="width:24px"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <div class="li-pname">Mango Powder (Spray-Dried)</div>
+                          <div class="li-psub">BO-MP-101 &middot; 100kg bags</div>
+                          <div class="li-ref">Catalog ref: $4.85/kg FOB India</div>
+                        </td>
+                        <td style="text-align:center"><input type="number" class="q-inp" id="qq1" value="15" min="0.1" step="0.1" oninput="qbCalc()"></td>
+                        <td style="text-align:right;font-size:12px;color:#94a3b8;font-weight:600">$4.85</td>
+                        <td style="text-align:right">
+                          <input type="number" class="p-inp" id="qp1" value="4.85" step="0.01" oninput="qbOv(this,4.85,'qd1')">
+                          <div style="font-size:9px;color:#94a3b8;text-align:center;margin-top:1px">per kg</div>
+                        </td>
+                        <td style="text-align:right"><span class="delt ok" id="qd1">0%</span></td>
+                        <td style="text-align:right;font-size:12px;font-weight:800;color:#0f172a" id="ql1">$72,750</td>
+                        <td><button style="background:none;border:none;cursor:pointer;color:#e2e8f0;font-size:16px;line-height:1" onclick="this.closest('tr').remove();qbCalc()">x</button></td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <div class="li-pname">Beetroot Powder</div>
+                          <div class="li-psub">BO-BP-102 &middot; 25kg bags</div>
+                          <div class="li-ref">Catalog ref: $6.40/kg FOB India</div>
+                        </td>
+                        <td style="text-align:center"><input type="number" class="q-inp" id="qq2" value="10" min="0.1" step="0.1" oninput="qbCalc()"></td>
+                        <td style="text-align:right;font-size:12px;color:#94a3b8;font-weight:600">$6.40</td>
+                        <td style="text-align:right">
+                          <input type="number" class="p-inp ov" id="qp2" value="5.80" step="0.01" oninput="qbOv(this,6.40,'qd2')">
+                          <div style="font-size:9px;color:#d97706;text-align:center;margin-top:1px">Overridden</div>
+                        </td>
+                        <td style="text-align:right"><span class="delt wn" id="qd2">-9.4%</span></td>
+                        <td style="text-align:right;font-size:12px;font-weight:800;color:#0f172a" id="ql2">$58,000</td>
+                        <td><button style="background:none;border:none;cursor:pointer;color:#e2e8f0;font-size:16px;line-height:1" onclick="this.closest('tr').remove();qbCalc()">x</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <button class="add-ln" onclick="alert('Opens product selector from catalog')">+ Add product from catalog</button>
+                  <div class="ov-box"><span style="font-size:14px;flex-shrink:0">!</span><div><strong>Approval required:</strong> Beetroot at -9.4% below baseline exceeds the 10% threshold. An approval request fires automatically when you proceed. The quote cannot be sent until it clears.</div></div>
+                  <div class="totals-box">
+                    <div class="tot-r"><span class="k">Mango Powder</span><span class="v" id="ts1">$72,750</span></div>
+                    <div class="tot-r"><span class="k">Beetroot Powder</span><span class="v" id="ts2">$58,000</span></div>
+                    <div class="tot-div"></div>
+                    <div class="tot-r"><span class="k">Subtotal</span><span class="v" id="tsub">$130,750</span></div>
+                    <div class="tot-r"><span class="k">Freight / insurance</span><span class="v" style="color:#94a3b8">Buyer arranged (FOB)</span></div>
+                    <div class="tot-div"></div>
+                    <div class="tot-r grand"><span class="k">Quote total</span><span class="v" id="tgrand">$130,750</span></div>
+                  </div>
+                  <div class="st-acts">
+                    <button class="st-bk" onclick="qbGo(0)">Product</button>
+                    <button class="st-nx" onclick="qbGo(2)">Save pricing: Terms &rarr;</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Terms -->
+            <div class="qb-step" id="qbs2">
+              <div class="qb-panel">
+                <div class="qbp-hdr"><div><div class="qbp-eye">Step 3</div><div class="qbp-title">Terms &amp; commercial conditions</div></div></div>
+                <div class="qbp-body">
+                  <div class="qb-fg">
+                    <div class="qb-f"><label class="qb-lbl">Currency</label><select class="qb-s"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select></div>
+                    <div class="qb-f"><label class="qb-lbl">Incoterm</label><select class="qb-s"><option>FOB</option><option>CIF</option><option>Ex-Factory</option><option>DDP</option></select></div>
+                    <div class="qb-f"><label class="qb-lbl">Port of loading</label><input class="qb-i" value="Nhava Sheva (Mumbai)"></div>
+                    <div class="qb-f"><label class="qb-lbl">Port of destination</label><input class="qb-i" placeholder="Buyer port..."></div>
+                    <div class="qb-f"><label class="qb-lbl">Payment terms</label><select class="qb-s"><option>30% advance, 70% on BL</option><option>LC at sight</option><option>Net 30</option><option>Net 60</option></select></div>
+                    <div class="qb-f"><label class="qb-lbl">Quote validity</label><select class="qb-s"><option>30 days</option><option>15 days</option><option>45 days</option><option>60 days</option></select></div>
+                    <div class="qb-f"><label class="qb-lbl">Approval posture</label><select class="qb-s"><option>Standard (override needs approval)</option><option>Pre-approved by director</option></select></div>
+                    <div class="qb-f"><label class="qb-lbl">Dispatch timeline</label><input class="qb-i" placeholder="e.g. 30-45 days from PO"></div>
+                  </div>
+                  <div class="qb-f" style="margin-top:10px"><label class="qb-lbl">Internal workflow notes</label><textarea class="qb-ta">Ananya negotiated a discount on Beetroot citing 3-year commitment. Director approval expected. Do not send until confirmed.</textarea></div>
+                  <div style="margin-top:10px;padding:9px 13px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:12px;color:#92400e">Beetroot override (-9.4%) requires explicit approval before this quote can be sent. Notes above visible to reviewer.</div>
+                  <div class="st-acts">
+                    <button class="st-bk" onclick="qbGo(1)">Pricing</button>
+                    <button class="st-nx" onclick="qbGo(3)">Save terms: Review &rarr;</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Review -->
+            <div class="qb-step" id="qbs3">
+              <div class="qb-panel">
+                <div class="qbp-hdr"><div><div class="qbp-eye">Step 4</div><div class="qbp-title">Review before send decision</div></div></div>
+                <div class="qbp-body">
+                  <div class="rv-g">
+                    <div class="rv-c"><div class="rv-ct">Buyer</div>
+                      <div class="rv-r"><span class="rk">Company</span><span class="rv">NatureMark India</span></div>
+                      <div class="rv-r"><span class="rk">Contact</span><span class="rv">Ananya Sharma</span></div>
+                      <div class="rv-r"><span class="rk">Market</span><span class="rv">India</span></div>
+                    </div>
+                    <div class="rv-c"><div class="rv-ct">Commercial</div>
+                      <div class="rv-r"><span class="rk">Incoterm</span><span class="rv">FOB &middot; Nhava Sheva</span></div>
+                      <div class="rv-r"><span class="rk">Currency</span><span class="rv">USD</span></div>
+                      <div class="rv-r"><span class="rk">Payment</span><span class="rv">30% adv / 70% BL</span></div>
+                    </div>
+                    <div class="rv-c"><div class="rv-ct">Line items</div>
+                      <div class="rv-r"><span class="rk">Mango 15 MT</span><span class="rv">$4.85/kg &middot; $72,750</span></div>
+                      <div class="rv-r"><span class="rk">Beetroot 10 MT</span><span class="rv ov">$5.80/kg &middot; $58,000 (override)</span></div>
+                    </div>
+                    <div class="rv-c"><div class="rv-ct">Totals</div>
+                      <div class="rv-r"><span class="rk">Subtotal</span><span class="rv">$130,750</span></div>
+                      <div class="rv-r"><span class="rk">Validity</span><span class="rv">30 days</span></div>
+                      <div class="rv-r" style="margin-top:4px"><span class="rk" style="font-weight:700;color:#0f172a;font-size:13px">Total</span><span class="rv" style="font-size:16px;color:#0b2e4a">$130,750</span></div>
+                    </div>
+                  </div>
+                  <div style="padding:9px 13px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:12px;color:#92400e;margin-bottom:12px">Beetroot override (-9.4%) requires approval before send. An approval request fires automatically when you proceed.</div>
+                  <div class="st-acts">
+                    <button class="st-bk" onclick="qbGo(2)">Terms</button>
+                    <button class="st-nx" onclick="qbGo(4)">Confirm: Send gate &rarr;</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: Send gate -->
+            <div class="qb-step" id="qbs4">
+              <div class="sg blk" id="sg-blk">
+                <div class="sg-hdr"><div class="sg-ic">&#128274;</div><div><div class="sg-tt">Send gate &mdash; approval pending</div><div class="sg-st">One pricing override must clear before this quote can be sent</div></div></div>
+                <div class="sg-cks">
+                  <div class="sgck ok"><span style="font-size:13px">&#10003;</span>Lead qualified &mdash; decision authority confirmed</div>
+                  <div class="sgck ok"><span style="font-size:13px">&#10003;</span>Products mapped &mdash; catalog prices loaded</div>
+                  <div class="sgck ok"><span style="font-size:13px">&#10003;</span>Terms complete &mdash; FOB &middot; USD &middot; 30 days</div>
+                  <div class="sgck ok"><span style="font-size:13px">&#10003;</span>Compliance clear &mdash; FSSAI not blocking</div>
+                  <div class="sgck fl"><span style="font-size:13px">&#10007;</span>Beetroot Powder -9.4% override &mdash; approval required (threshold: 10%)</div>
+                  <div class="sgck na"><span style="font-size:13px">&#9675;</span>Approval request not yet submitted</div>
+                </div>
+                <div class="sg-ft">
+                  <div style="padding:9px 13px;background:#fff1f2;border:1px solid #fecaca;border-radius:6px;font-size:12px;color:#9f1239">This quote cannot be sent until the override is approved. Submit a request &mdash; the quote moves to Pending approval and you will be notified when it clears.</div>
+                  <div class="sg-acts">
+                    <button class="sg-gh" onclick="qbGo(3)">Review</button>
+                    <button class="sg-app" onclick="qbApprove()">Request manager approval</button>
+                    <button class="sg-gh" onclick="qbSaveDraft()">Save draft</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sg rdy" id="sg-rdy">
+                <div class="sg-hdr"><div class="sg-ic">&#9989;</div><div><div class="sg-tt">Approval cleared &mdash; ready to send</div><div class="sg-st">Director approved the Beetroot override. Q-2025-0097 is release-ready.</div></div></div>
+                <div class="sg-cks">
+                  <div class="sgck ok"><span style="font-size:13px">&#10003;</span>All 5 checks passed</div>
+                  <div class="sgck ok"><span style="font-size:13px">&#10003;</span>Override approved by: Ritesh Kumar</div>
+                  <div class="sgck na"><span style="font-size:13px">&#9675;</span>Sending this version locks it permanently</div>
+                </div>
+                <div class="sg-ft">
+                  <div class="sg-acts">
+                    <button class="sg-gh" onclick="qbGo(3)">Back</button>
+                    <button class="sg-send on" onclick="qbSend()">Send quote to NatureMark India</button>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:10px;padding:9px 13px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;font-size:11px;color:#075985">
+                <strong>After send:</strong> Lead stage advances to Quote Sent in the pipeline. Order creation becomes available after buyer acceptance.
+                <button onclick="qbSimApprove()" style="margin-left:10px;color:#0c7fff;font-weight:700;background:none;border:none;cursor:pointer;font-size:11px">Simulate approval cleared &rarr;</button>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="qb-sidebar">
+            <div class="qb-rc">
+              <div class="qb-re">Builder steps</div>
+              <button class="sn-btn dn" onclick="qbGo(0)"><div class="sn-dot">1</div>1 &middot; Product</button>
+              <button class="sn-btn cur" id="snb1" onclick="qbGo(1)"><div class="sn-dot">2</div>2 &middot; Pricing</button>
+              <button class="sn-btn" id="snb2" onclick="qbGo(2)"><div class="sn-dot">3</div>3 &middot; Terms</button>
+              <button class="sn-btn" id="snb3" onclick="qbGo(3)"><div class="sn-dot">4</div>4 &middot; Review</button>
+              <button class="sn-btn" id="snb4" onclick="qbGo(4)"><div class="sn-dot">5</div>5 &middot; Send gate</button>
+            </div>
+            <div class="qb-rc">
+              <div class="qb-re">Quote snapshot</div>
+              <div class="qb-rv" id="qb-snaptot">$130,750 USD</div>
+              <div class="rl-r"><span class="k">Version</span><span class="v">v1 &middot; Draft</span></div>
+              <div class="rl-r"><span class="k">Lines</span><span class="v">2 products</span></div>
+              <div class="rl-r"><span class="k">Override</span><span class="v" style="color:#d97706">1 &mdash; needs approval</span></div>
+              <div class="rl-r"><span class="k">Status</span><span class="v">Draft &middot; Unsent</span></div>
+              <div class="rl-r"><span class="k">Validity</span><span class="v">30 days after send</span></div>
+            </div>
+            <div class="qb-rc">
+              <div class="qb-re">Approval threshold</div>
+              <div style="font-size:11px;color:#475569;margin-bottom:6px">10% override limit per workspace rule</div>
+              <div style="font-size:11px;color:#64748b">Beetroot: -9.4% override</div>
+              <div class="tb-bar"><div class="tb-fill wn" style="width:94%"></div></div>
+              <div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:8px">94% of limit &mdash; approval required</div>
+              <div style="font-size:11px;color:#64748b">Mango: no override</div>
+              <div class="tb-bar"><div class="tb-fill ok" style="width:1%"></div></div>
+              <div style="font-size:10px;font-weight:700;color:#059669">Within baseline</div>
+            </div>
+            <div class="qb-rc">
+              <div class="qb-re">Lead context</div>
+              <div class="rl-r"><span class="k">Stage</span><span class="v">Negotiation</span></div>
+              <div class="rl-r"><span class="k">Follow-up</span><span class="v" style="color:#dc2626">Overdue</span></div>
+              <div class="rl-r"><span class="k">Compliance</span><span class="v" style="color:#059669">Clear</span></div>
+              <div class="rl-r"><span class="k">Deal est.</span><span class="v">$240K</span></div>
+              <button class="rail-ghost" onclick="showView('cc')" style="width:100%;margin-top:8px;text-align:center">Back to Command Center</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sticky-bar">
+          <div class="sab-left">
+            <button class="btn-primary" id="qb-sb-next" onclick="qbGo(2)">Next: Terms</button>
+            <button class="btn-ghost-md" onclick="qbSaveDraft()">Save draft</button>
+            <button class="btn-ghost-md" onclick="qbApprove()">Request approval</button>
+          </div>
+          <div class="sab-status" id="qb-sb-status">Quote Builder &middot; Step 2 of 5 &middot; Pricing</div>
+        </div>
+
+      </div>
+    </div>
+    <!-- /view-quote -->
 
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1614,83 +2082,100 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 <script>
 // ── VIEW SWITCHING ─────────────────────────────────────────────
 function showView(v) {
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.page-tab').forEach(el => el.classList.remove('active'));
-  document.getElementById('view-' + v).classList.add('active');
-  document.getElementById('tab-' + (v === 'cc' ? 'cc' : 'list')).classList.add('active');
+  var views = document.querySelectorAll('.view');
+  for (var i = 0; i < views.length; i++) { views[i].classList.remove('active'); }
+  var tabs = document.querySelectorAll('.page-tab');
+  for (var j = 0; j < tabs.length; j++) { tabs[j].classList.remove('active'); }
+  var vEl = document.getElementById('view-' + v);
+  if (vEl) { vEl.classList.add('active'); }
+  var tId = v === 'cc' ? 'tab-cc' : v === 'quote' ? 'tab-quote' : 'tab-list';
+  var tEl = document.getElementById(tId);
+  if (tEl) { tEl.classList.add('active'); }
+  window.scrollTo(0, 0);
 }
 
 function openCC(company, stage, type) {
-  document.getElementById('cc-company-name').textContent = company;
-  document.getElementById('cc-meta').textContent = type + ' · Owner: Ritesh Kumar · Source: Trade event · ' + (stage.includes('Negotiation') ? 'Mumbai, India' : '—');
-  document.getElementById('cc-badge').textContent = company;
-  const btn = document.getElementById('cc-quote-btn');
-  btn.textContent = stage === 'Quote Sent' ? '🖊 Continue quote' : '🖊 Create quote';
-  // Close any open panels
-  document.querySelectorAll('.inline-panel').forEach(el => el.classList.remove('open'));
-  document.querySelectorAll('.wf-pillar').forEach(el => el.classList.remove('active-panel'));
+  var nameEl = document.getElementById('cc-company-name');
+  if (nameEl) { nameEl.textContent = company; }
+  var metaEl = document.getElementById('cc-meta');
+  if (metaEl) { metaEl.textContent = type + ' - Owner: Ritesh Kumar - Source: Trade event'; }
+  var badgeEl = document.getElementById('cc-badge');
+  if (badgeEl) { badgeEl.textContent = company; }
+  var btnEl = document.getElementById('cc-quote-btn');
+  if (btnEl) { btnEl.textContent = stage === 'Quote Sent' ? 'Continue quote' : 'Create quote'; }
+  var panels = document.querySelectorAll('.inline-panel');
+  for (var i = 0; i < panels.length; i++) { panels[i].classList.remove('open'); }
+  var pillars = document.querySelectorAll('.wf-pillar');
+  for (var j = 0; j < pillars.length; j++) { pillars[j].classList.remove('active-panel'); }
   showView('cc');
-  window.scrollTo(0,0);
 }
 
 // ── WORKFLOW PANELS ─────────────────────────────────────────────
-let openPanel = null;
+var openPanel = null;
 function togglePanel(key) {
-  const panel = document.getElementById('panel-' + key);
-  const pillar = document.getElementById('pillar-' + key);
+  var panel = document.getElementById('panel-' + key);
+  var pillar = document.getElementById('pillar-' + key);
   if (openPanel === key) {
     closePanel(key);
   } else {
-    if (openPanel) closePanel(openPanel);
-    panel.classList.add('open');
-    if (pillar) pillar.classList.add('active-panel');
+    if (openPanel) { closePanel(openPanel); }
+    if (panel) { panel.classList.add('open'); }
+    if (pillar) { pillar.classList.add('active-panel'); }
     openPanel = key;
-    setTimeout(() => panel.scrollIntoView({behavior:'smooth',block:'nearest'}), 80);
   }
 }
 function closePanel(key) {
-  const panel = document.getElementById('panel-' + key);
-  const pillar = document.getElementById('pillar-' + key);
-  if (panel) panel.classList.remove('open');
-  if (pillar) pillar.classList.remove('active-panel');
+  var panel = document.getElementById('panel-' + key);
+  var pillar = document.getElementById('pillar-' + key);
+  if (panel) { panel.classList.remove('open'); }
+  if (pillar) { pillar.classList.remove('active-panel'); }
   openPanel = null;
 }
 
 // ── SAVE ACTIONS ────────────────────────────────────────────────
 function saveFollowUp() {
   closePanel('follow_up');
-  // Update the follow-up pillar to show scheduled state
-  const pillar = document.getElementById('pillar-follow_up');
-  pillar.className = 'wf-pillar ready';
-  pillar.querySelector('.wf-state').textContent = 'Scheduled · 24 Apr 10:00';
-  pillar.querySelector('.wf-helper').textContent = 'Follow-up set with Ananya Sharma. Call confirmed.';
-  pillar.querySelector('.wf-badge').textContent = 'Scheduled';
-  pillar.querySelector('.wf-badge').className = 'wf-badge ok';
+  var pillar = document.getElementById('pillar-follow_up');
+  if (pillar) {
+    pillar.className = 'wf-pillar ready';
+    var st = pillar.querySelector('.wf-state');
+    var hp = pillar.querySelector('.wf-helper');
+    var bg = pillar.querySelector('.wf-badge');
+    if (st) { st.textContent = 'Scheduled - 24 Apr 10:00'; }
+    if (hp) { hp.textContent = 'Follow-up set with Ananya Sharma. Call confirmed.'; }
+    if (bg) { bg.textContent = 'Scheduled'; bg.className = 'wf-badge ok'; }
+  }
 }
 function saveCoverage() {
   closePanel('coverage');
-  const pillar = document.getElementById('pillar-coverage');
-  pillar.className = 'wf-pillar ready';
-  pillar.querySelector('.wf-badge').textContent = 'Ready';
-  pillar.querySelector('.wf-badge').className = 'wf-badge ok';
-  pillar.querySelector('.wf-state').textContent = '3 products · 1 market';
+  var pillar = document.getElementById('pillar-coverage');
+  if (pillar) {
+    pillar.className = 'wf-pillar ready';
+    var bg = pillar.querySelector('.wf-badge');
+    var st = pillar.querySelector('.wf-state');
+    if (bg) { bg.textContent = 'Ready'; bg.className = 'wf-badge ok'; }
+    if (st) { st.textContent = '3 products - 1 market'; }
+  }
 }
 function addProduct() {
-  const tags = document.querySelector('#panel-coverage .ip-body div');
-  const newTag = document.createElement('span');
-  newTag.className = 'ip-product-tag';
-  newTag.textContent = '🌿 Moringa Powder ×';
-  tags.insertBefore(newTag, tags.lastElementChild);
+  var container = document.querySelector('#panel-coverage .ip-body div');
+  if (container) {
+    var tag = document.createElement('span');
+    tag.className = 'ip-product-tag';
+    tag.textContent = 'Moringa Powder x';
+    container.insertBefore(tag, container.lastElementChild);
+  }
 }
 function openQuote() {
   closePanel('commercial');
-  alert('→ Would navigate to /leads/[leadId]/quote?quoteId=new\n\nIn production this opens the Quote Builder with catalog prices pre-filled.');
+  showView('quote');
 }
 function openFollowUp() { togglePanel('follow_up'); }
 
 // ── TOOLS MENU ──────────────────────────────────────────────────
 function toggleTools(btn) {
-  const menu = document.getElementById('tools-menu');
+  var menu = document.getElementById('tools-menu');
+  if (!menu) { return; }
   menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
   document.addEventListener('click', function hide(e) {
     if (!btn.contains(e.target)) {
@@ -1700,65 +2185,207 @@ function toggleTools(btn) {
   });
 }
 
-// ── PIPELINE STAGE CONFIRM ──────────────────────────────────────
+// ── PIPELINE STAGE ──────────────────────────────────────────────
 function confirmStage(el, stageName) {
-  if (confirm('Move lead to "' + stageName + '"?\nThis will update the pipeline and log a stage change.')) {
-    document.querySelectorAll('.ps-node').forEach(n => { n.className = 'ps-node upcoming'; });
+  if (confirm('Move lead to ' + stageName + '?')) {
+    var nodes = document.querySelectorAll('.ps-node');
+    for (var i = 0; i < nodes.length; i++) { nodes[i].className = 'ps-node upcoming'; }
     el.className = 'ps-node current';
-    // mark previous as done
-    let prev = el.closest('.ps-stage').previousElementSibling;
+    var prev = el.closest('.ps-stage').previousElementSibling;
     while (prev) {
-      const node = prev.querySelector('.ps-node');
-      if (node) node.className = 'ps-node done';
+      var node = prev.querySelector('.ps-node');
+      if (node) { node.className = 'ps-node done'; }
       prev = prev.previousElementSibling;
     }
   }
 }
 
 // ── BATCH SELECT ────────────────────────────────────────────────
-let checkedCount = 0;
+var checkedCount = 0;
 function rowCheck(cb) {
   checkedCount += cb.checked ? 1 : -1;
-  document.getElementById('batch-bar').style.display = checkedCount > 0 ? 'flex' : 'none';
+  var bar = document.getElementById('batch-bar');
+  if (bar) { bar.style.display = checkedCount > 0 ? 'flex' : 'none'; }
 }
 function toggleAll(cb) {
-  document.querySelectorAll('.lr-check').forEach(c => { c.checked = cb.checked; });
-  checkedCount = cb.checked ? document.querySelectorAll('.lr-check').length : 0;
-  document.getElementById('batch-bar').style.display = checkedCount > 0 ? 'flex' : 'none';
+  var boxes = document.querySelectorAll('.lr-check');
+  for (var i = 0; i < boxes.length; i++) { boxes[i].checked = cb.checked; }
+  checkedCount = cb.checked ? boxes.length : 0;
+  var bar = document.getElementById('batch-bar');
+  if (bar) { bar.style.display = checkedCount > 0 ? 'flex' : 'none'; }
 }
 function clearBatch() {
-  document.querySelectorAll('.lr-check').forEach(c => c.checked = false);
-  document.getElementById('select-all').checked = false;
+  var boxes = document.querySelectorAll('.lr-check');
+  for (var i = 0; i < boxes.length; i++) { boxes[i].checked = false; }
+  var sa = document.getElementById('select-all');
+  if (sa) { sa.checked = false; }
   checkedCount = 0;
-  document.getElementById('batch-bar').style.display = 'none';
+  var bar = document.getElementById('batch-bar');
+  if (bar) { bar.style.display = 'none'; }
 }
 
 // ── SAVED VIEWS ─────────────────────────────────────────────────
 function setSV(el) {
-  document.querySelectorAll('.sv-item').forEach(e => e.classList.remove('active'));
+  var svs = document.querySelectorAll('.sv-item');
+  for (var i = 0; i < svs.length; i++) { svs[i].classList.remove('active'); }
   el.classList.add('active');
 }
 
 // ── MODE SWITCH ──────────────────────────────────────────────────
-function setMode(btn, mode) {
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+function setMode(btn) {
+  var btns = document.querySelectorAll('.mode-btn');
+  for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active'); }
   btn.classList.add('active');
 }
 
 // ── DRAWER ──────────────────────────────────────────────────────
-function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); }
-function closeDrawer() { document.getElementById('drawer-overlay').classList.remove('open'); }
+function openDrawer() {
+  var el = document.getElementById('drawer-overlay');
+  if (el) { el.classList.add('open'); }
+}
+function closeDrawer() {
+  var el = document.getElementById('drawer-overlay');
+  if (el) { el.classList.remove('open'); }
+}
 function setType(t) {
-  document.getElementById('type-buyer').className = 'type-btn' + (t==='buyer' ? ' active-buyer' : '');
-  document.getElementById('type-supplier').className = 'type-btn' + (t==='supplier' ? ' active-supplier' : '');
+  var b = document.getElementById('type-buyer');
+  var s = document.getElementById('type-supplier');
+  if (b) { b.className = 'type-btn' + (t === 'buyer' ? ' active-buyer' : ''); }
+  if (s) { s.className = 'type-btn' + (t === 'supplier' ? ' active-supplier' : ''); }
 }
 
-// Navigate back to dashboard simulation
 function goTo(page) {
-  if (page === 'dashboard') {
-    alert('→ Would navigate to /dashboard\n\n(Same topbar, filter bar, sidebar — consistent across all pages)');
-  }
+  if (page === 'dashboard') { alert('Navigate to Dashboard'); }
 }
+
+// ── QUOTE BUILDER ───────────────────────────────────────────────
+var qbStep = 1;
+var qbBadges = ['Step 1 of 5 - Product','Step 2 of 5 - Pricing','Step 3 of 5 - Terms','Step 4 of 5 - Review','Step 5 of 5 - Send gate'];
+var qbDescs = [
+  '<strong>Step 1 - Product lock:</strong> Lock the quote to the right buyer, incoterm, market and pricing basis from the qualified lead context.',
+  '<strong>Step 2 - Pricing:</strong> Build line by line. Catalog baseline prices pre-fill from your reference pricing. Overrides above 10% require manager approval before send.',
+  '<strong>Step 3 - Terms:</strong> Set currency, incoterm, payment terms, validity, approval posture and internal workflow notes.',
+  '<strong>Step 4 - Review:</strong> Confirm totals, structure and posture. All blockers stay visible before the send decision.',
+  '<strong>Step 5 - Send gate:</strong> All blockers must clear before send. Approval and compliance must be explicit.'
+];
+
+function qbGo(n) {
+  qbStep = n;
+  // substeps
+  for (var i = 0; i < 5; i++) {
+    var ss = document.getElementById('qbs' + i);
+    if (ss) { ss.className = i === n ? 'qb-step on' : 'qb-step'; }
+  }
+  // nodes 1-4 (node 0 always done)
+  var nodeIds = ['qbn1','qbn2','qbn3','qbn4'];
+  for (var j = 0; j < nodeIds.length; j++) {
+    var nd = document.getElementById(nodeIds[j]);
+    if (!nd) { continue; }
+    var step = j + 1;
+    nd.className = step < n ? 'qb-node done' : step === n ? 'qb-node cur' : 'qb-node fut';
+    var circ = nd.querySelector('.qb-circle');
+    if (circ) { circ.textContent = step < n ? 'v' : String(step + 1); }
+  }
+  // connectors
+  var connIds = ['qbcon0','qbcon1','qbcon2','qbcon3'];
+  for (var k = 0; k < connIds.length; k++) {
+    var cn = document.getElementById(connIds[k]);
+    if (cn) { cn.className = k < n ? 'qb-conn done' : 'qb-conn empty'; }
+  }
+  // sidebar nav buttons
+  for (var m = 1; m <= 4; m++) {
+    var sb = document.getElementById('snb' + m);
+    if (!sb) { continue; }
+    sb.className = m < n ? 'sn-btn dn' : m === n ? 'sn-btn cur' : 'sn-btn';
+    var dot = sb.querySelector('.sn-dot');
+    if (dot) { dot.textContent = m < n ? 'v' : String(m + 1); }
+  }
+  // badge and desc
+  var badge = document.getElementById('qb-badge');
+  if (badge && qbBadges[n]) { badge.textContent = qbBadges[n]; }
+  var desc = document.getElementById('qb-desc');
+  if (desc && qbDescs[n]) { desc.innerHTML = qbDescs[n]; }
+  // sticky bar
+  var sbStatus = document.getElementById('qb-sb-status');
+  if (sbStatus) { sbStatus.textContent = 'Quote Builder - ' + qbBadges[n]; }
+  var sbNext = document.getElementById('qb-sb-next');
+  if (sbNext) {
+    if (n < 4) {
+      sbNext.textContent = 'Next: ' + ['Pricing','Terms','Review','Send gate'][n];
+      sbNext.onclick = function(step) { return function() { qbGo(step + 1); }; }(n);
+    } else {
+      sbNext.textContent = 'Save draft';
+      sbNext.onclick = qbSaveDraft;
+    }
+  }
+  window.scrollTo(0, 0);
+}
+
+function qbCalc() {
+  var q1 = parseFloat((document.getElementById('qq1') || {value:'15'}).value) * 1000;
+  var q2 = parseFloat((document.getElementById('qq2') || {value:'10'}).value) * 1000;
+  var p1 = parseFloat((document.getElementById('qp1') || {value:'4.85'}).value);
+  var p2 = parseFloat((document.getElementById('qp2') || {value:'5.80'}).value);
+  var t1 = q1 * p1;
+  var t2 = q2 * p2;
+  var total = t1 + t2;
+  function fmt(v) { return '$' + Math.round(v).toLocaleString(); }
+  function set(id, val) { var el = document.getElementById(id); if (el) { el.textContent = val; } }
+  set('ql1', fmt(t1));
+  set('ql2', fmt(t2));
+  set('ts1', fmt(t1));
+  set('ts2', fmt(t2));
+  set('tsub', fmt(total));
+  set('tgrand', fmt(total));
+  set('qb-htotal', fmt(total));
+  set('qb-snaptot', fmt(total) + ' USD');
+}
+
+function qbOv(input, base, deltaId) {
+  var val = parseFloat(input.value);
+  if (isNaN(val) || base === 0) { return; }
+  var pct = ((val - base) / base) * 100;
+  var el = document.getElementById(deltaId);
+  if (el) {
+    el.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+    el.className = 'delt ' + (pct > 0 ? 'ok' : pct < -10 ? 'bd' : pct < 0 ? 'wn' : 'ok');
+  }
+  if (Math.abs(pct) > 1 && pct < 0) {
+    input.className = 'p-inp ov';
+  } else {
+    input.className = 'p-inp';
+  }
+  qbCalc();
+}
+
+function qbPM(btn) {
+  var btns = document.querySelectorAll('#pm-u,#pm-k,#pm-c');
+  for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active'); }
+  btn.classList.add('active');
+}
+
+function qbSaveDraft() {
+  alert('Draft saved: Quote Q-2025-0097. Status remains draft until sent.');
+}
+
+function qbApprove() {
+  alert('Approval request sent to Ritesh Kumar. Quote Q-2025-0097 is now Pending approval. You will be notified when the override clears.');
+}
+
+function qbSimApprove() {
+  var blk = document.getElementById('sg-blk');
+  var rdy = document.getElementById('sg-rdy');
+  if (blk) { blk.style.display = 'none'; }
+  if (rdy) { rdy.style.display = 'block'; }
+}
+
+function qbSend() {
+  alert('Quote Q-2025-0097 sent to NatureMark India. Lead stage advances to Quote Sent. Order creation available after buyer acceptance.');
+  showView('cc');
+}
+
+// initialise
+qbCalc();
 </script>
 </body>
 </html>
