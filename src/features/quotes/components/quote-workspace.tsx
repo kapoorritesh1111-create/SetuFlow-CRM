@@ -1716,10 +1716,12 @@ export function QuoteWorkspace({
       Boolean(version.sent_at) &&
       !focusSendSnapshots.some((snapshot) => snapshot.versionId === version.id),
   );
+  const currentFocusedVersionId = currentFocusedVersion?.id ?? null;
+  const sentFocusedVersionId = sentFocusedVersion?.id ?? null;
   const currentVersionSupersedesSentVersion = Boolean(
-    currentFocusedVersion?.id &&
-      sentFocusedVersion?.id &&
-      currentFocusedVersion.id !== sentFocusedVersion.id,
+    currentFocusedVersionId &&
+      sentFocusedVersionId &&
+      currentFocusedVersionId !== sentFocusedVersionId,
   );
   const focusNegotiationEvents = focusQuote
     ? (negotiationEventsByQuote.get(focusQuote.id) ?? [])
@@ -2310,8 +2312,8 @@ export function QuoteWorkspace({
                             const isLatestSentVersion = version.id === sentFocusedVersion?.id;
                             const isSupersededSentVersion = Boolean(
                               isSentVersion &&
-                                currentFocusedVersion?.id &&
-                                currentFocusedVersion.id !== version.id,
+                                currentFocusedVersionId &&
+                                currentFocusedVersionId !== version.id,
                             );
                             return (
                               <div
@@ -2402,14 +2404,14 @@ export function QuoteWorkspace({
                           <p className="mt-2 font-semibold text-slate-900">
                             {currentVersionSupersedesSentVersion
                               ? `Current draft ${currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "current version"} supersedes sent ${sentFocusedVersion?.version_no ? `v${sentFocusedVersion.version_no}` : "version"}`
-                              : sentFocusedVersion?.id && currentFocusedVersion?.id === sentFocusedVersion.id
+                              : sentFocusedVersionId && currentFocusedVersionId === sentFocusedVersionId
                                 ? "Current version matches the latest customer-facing version"
                                 : "No customer-facing version exists yet"}
                           </p>
                           <p className="mt-1 text-xs text-slate-500">
                             {currentVersionSupersedesSentVersion
                               ? "The customer still has the latest sent version until the current draft is deliberately sent. This prevents draft/sent confusion."
-                              : sentFocusedVersion?.id && currentFocusedVersion?.id === sentFocusedVersion.id
+                              : sentFocusedVersionId && currentFocusedVersionId === sentFocusedVersionId
                                 ? "Internal and customer-facing truth point to the same governed version."
                                 : "Once a version is sent, it will remain visible here as the customer-facing checkpoint."}
                           </p>
