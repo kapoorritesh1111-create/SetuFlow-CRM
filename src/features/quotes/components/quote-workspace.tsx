@@ -23,6 +23,7 @@ import {
   QuoteEditWizardForm,
 } from "@/features/quotes/components/quote-wizard-form";
 import { QuoteTrustContractPreview } from "@/features/quotes/components/quote-trust-contract-preview";
+import { ReferenceQuoteBuilderFlow } from "@/features/quotes/components/reference-quote-builder-flow";
 import { FilterField } from "@/features/quotes/ui/filter-field";
 import { formatQuoteMoney } from "@/features/quotes/logic/formatting";
 import {
@@ -1228,6 +1229,20 @@ export function QuoteWorkspace({
   sendReadOnlyMessage?: string | null;
   pricingEngineThresholdPercent?: number | null;
 }) {
+  return (
+    <ReferenceQuoteBuilderFlow
+      leadId={leadId}
+      quotes={quotes}
+      products={products}
+      leadCommandHref={leadCommandHref}
+      quoteSendGuard={quoteSendGuard}
+      canManageQuotes={canManageQuotes}
+      canSendQuotes={canSendQuotes}
+      readOnlyMessage={readOnlyMessage}
+      sendReadOnlyMessage={sendReadOnlyMessage}
+    />
+  );
+
   const [createOpen, setCreateOpen] = useState(false);
   const [quoteRecords, setQuoteRecords] = useState<QuoteRecord[]>(quotes);
   const [activeQuote, setActiveQuote] = useState<QuoteRecord | null>(null);
