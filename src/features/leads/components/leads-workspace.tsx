@@ -22,7 +22,7 @@ import { WorkspaceWorkflowShell } from '@/features/workspace/components/Workspac
 import { CollapsiblePanel } from '@/components/ui/collapsible-panel';
 import { workspaceInsetClass, workspaceTableShellClass } from '@/components/ui/workspace-surfaces';
 import { buildTodayLayerState } from '@/features/workspace/today';
-import { LeadTableRow, type LeadTableRowProps } from '@/features/leads/ui/lead-table-row';
+import { LeadTableRow, LeadTableHeader, type LeadTableRowProps } from '@/features/leads/ui/lead-table-row';
 import type { LeadDrawerSavePayload, LeadsWorkspaceProps } from '@/features/leads/types/workspace';
 import type {
   TodayFilterKey,
@@ -1085,15 +1085,27 @@ export function LeadsWorkspace({
 
         <div>
           {visibleLeads.length ? (
-            groupedLeadSections.map((section) => (
+            <>
+              {/* PR03 spec: 7-column sticky table header */}
+              <LeadTableHeader
+                allSelected={selectedAllVisible}
+                onSelectAll={(checked) => {
+                  if (checked) {
+                    setSelectedLeadIds((current) => [...new Set([...current, ...visibleLeads.map((lead) => lead.id)])]);
+                  } else {
+                    setSelectedLeadIds((current) => current.filter((leadId) => !visibleLeads.some((lead) => lead.id === leadId)));
+                  }
+                }}
+              />
+              {groupedLeadSections.map((section) => (
               <section key={section.id}>
                 <div className="px-4 pt-2.5 pb-1">
                   <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
-                    {/* Include emoji based on section id */}
                     {section.id === 'critical' ? '🔴' : section.id === 'due-today' ? '🟡' : '🟢'}{' '}
                     {section.id === 'critical' ? 'Critical — needs action now' : section.id === 'due-today' ? 'Due today — scheduled actions' : 'Active / upcoming'} ({section.leads.length})
                   </p>
                 </div>
+                <div className="px-4 py-1">
                 {section.leads.map((lead) => (
                   <LeadTableRow
                     key={lead.id}
@@ -1116,8 +1128,10 @@ export function LeadsWorkspace({
                     handleLeadCommandCenterKeyDown={handleLeadCommandCenterKeyDown}
                   />
                 ))}
+                </div>
               </section>
-            ))
+            ))}
+            </>
           ) : (
             <div className="p-6">
               <WorkspaceState
