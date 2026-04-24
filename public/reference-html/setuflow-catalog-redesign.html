@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SETU Flow — Catalog Redesign</title>
+<style>
+:root{
+  --navy:#0b2e4a;--navy-deep:#061c2e;--brand:#0c7fff;
+  --slate-950:#0f172a;--slate-900:#111827;--slate-800:#1e293b;--slate-700:#334155;
+  --slate-600:#475569;--slate-500:#64748b;--slate-400:#94a3b8;--slate-300:#cbd5e1;
+  --slate-200:#e2e8f0;--slate-100:#f1f5f9;--slate-50:#f8fafc;
+  --emerald-600:#059669;--emerald-500:#10b981;--emerald-200:#a7f3d0;--emerald-100:#d1fae5;--emerald-50:#ecfdf5;
+  --amber-600:#d97706;--amber-500:#f59e0b;--amber-200:#fde68a;--amber-100:#fef3c7;--amber-50:#fffbeb;
+  --rose-600:#e11d48;--rose-200:#fecaca;--rose-100:#ffe4e6;--rose-50:#fff1f2;
+  --sky-600:#0284c7;--sky-100:#e0f2fe;--sky-50:#f0f9ff;
+  --violet-600:#7c3aed;--violet-100:#ede9fe;--violet-50:#f5f3ff;
+  --indigo-600:#4f46e5;--indigo-100:#e0e7ff;--indigo-50:#eef2ff;
+  --border:#e2e8f0;--border-md:#cbd5e1;--page-bg:#f0f4f8;
+  --r-sm:6px;--r-md:12px;--r-lg:16px;--r-xl:22px;
+  --shadow-sm:0 1px 3px rgba(15,23,42,.06);--shadow-md:0 4px 14px rgba(15,23,42,.08);--shadow-lg:0 12px 32px rgba(15,23,42,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;background:var(--page-bg);color:var(--slate-900);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ── SHELL ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:68px;background:linear-gradient(180deg,var(--navy-deep),var(--navy));display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:4px;position:sticky;top:0;height:100vh;flex-shrink:0}
+.sb-logo{width:38px;height:38px;background:linear-gradient(135deg,var(--brand),#2da0ff);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;font-weight:800;font-size:13px;color:white}
+.nav-item{width:44px;height:44px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;color:rgba(255,255,255,.38);font-size:17px;transition:background .15s}
+.nav-item.active{background:rgba(255,255,255,.12);color:white}
+.nav-item:hover:not(.active){background:rgba(255,255,255,.07);color:rgba(255,255,255,.7)}
+.nav-label{font-size:8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.sb-spacer{flex:1}
+.sb-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a5fa0,var(--brand));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;margin-top:6px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:50}
+.company-badge{display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:var(--r-sm);background:rgba(11,46,74,.06);border:1px solid rgba(11,46,74,.12)}
+.company-mark{width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,var(--navy-deep),var(--brand));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:white}
+.company-name{font-size:10px;font-weight:800;color:var(--navy)}
+.company-sub{font-size:8px;color:var(--slate-400);letter-spacing:.1em;text-transform:uppercase}
+.divider-v{width:1px;height:24px;background:var(--border)}
+.topbar-eyebrow{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--brand)}
+.topbar-title{font-size:16px;font-weight:700;color:var(--slate-900);letter-spacing:-.3px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.vcard-btn{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:var(--r-sm);background:linear-gradient(135deg,#0b2e4a,#0c7fff 160%);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(12,127,255,.35)}
+.mode-switch{display:flex;background:var(--slate-100);border-radius:var(--r-sm);padding:3px;border:1px solid var(--border);gap:2px}
+.mode-btn{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--slate-500);transition:all .15s}
+.mode-btn.active{background:var(--navy);color:white}
+.btn-primary{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer}
+.btn-ghost{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--slate-700);cursor:pointer}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--brand));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white}
+
+/* ── VIEW TABS ── */
+.view-tabs{background:white;border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:0}
+.vt{padding:11px 16px;font-size:12px;font-weight:700;color:var(--slate-400);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px}
+.vt.active{color:var(--navy);border-bottom-color:var(--brand)}
+.vt:hover:not(.active){color:var(--slate-600)}
+.vt-badge{background:var(--slate-100);border-radius:999px;padding:1px 6px;font-size:9px;font-weight:800;color:var(--slate-600)}
+.vt-badge.warn{background:var(--amber-100);color:var(--amber-600)}
+.vt-badge.ok{background:var(--emerald-100);color:var(--emerald-600)}
+
+/* ── FILTER BAR ── */
+.filter-bar{background:white;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filter-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400)}
+.fw{display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--slate-50);padding:0 10px;height:32px;gap:6px;min-width:110px;cursor:pointer}
+.fw-top{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--slate-400);line-height:1}
+.fw-val{font-size:11px;font-weight:600;color:var(--slate-800);line-height:1.4}
+.search-box{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:white;height:32px;min-width:220px}
+.search-box input{border:none;outline:none;font-size:11px;color:var(--slate-800);background:transparent;width:100%}
+.search-box input::placeholder{color:var(--slate-400)}
+.gap-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;background:var(--amber-50);border:1px solid var(--amber-200);color:#92400e;cursor:pointer}
+.filter-summary{margin-left:auto;font-size:10px;font-weight:600;color:var(--slate-400)}
+
+/* ── STATS STRIP ── */
+.stats-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:16px 24px 0}
+.sc{background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 15px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;cursor:pointer}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-lg) var(--r-lg) 0 0;background:var(--sc-accent,transparent)}
+.sc.brand{--sc-accent:var(--brand)}
+.sc.success{--sc-accent:var(--emerald-600)}
+.sc.warning{--sc-accent:var(--amber-500)}
+.sc.danger{--sc-accent:var(--rose-600)}
+.sc.violet{--sc-accent:var(--violet-600)}
+.sc.neutral{--sc-accent:var(--slate-400)}
+.sc-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate-400);margin-bottom:7px}
+.sc-val{font-size:24px;font-weight:800;letter-spacing:-.03em;color:var(--slate-950);line-height:1}
+.sc-val.warn{color:var(--amber-600)}
+.sc-val.ok{color:var(--emerald-600)}
+.sc-val.danger{color:var(--rose-600)}
+.sc-meta{font-size:10px;color:var(--slate-400);margin-top:4px;font-weight:600}
+.sc-action{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--brand);margin-top:7px;cursor:pointer}
+
+/* ── CONTENT ── */
+.content{padding:14px 24px 24px;display:flex;flex-direction:column;gap:14px}
+
+/* ── PRODUCT TABLE ── */
+.table-card{background:white;border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-sm)}
+.table-header-row{display:grid;grid-template-columns:24px 1fr 100px 80px 90px 90px 90px 110px 80px;gap:0;padding:10px 16px;background:var(--slate-50);border-bottom:1px solid var(--border);font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate-400);align-items:center}
+.product-row{display:grid;grid-template-columns:24px 1fr 100px 80px 90px 90px 90px 110px 80px;gap:0;padding:11px 16px;border-bottom:1px solid var(--border);align-items:center;cursor:pointer;transition:background .1s}
+.product-row:hover{background:var(--slate-50)}
+.product-row:last-child{border-bottom:none}
+.pr-check{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--border-md);cursor:pointer}
+.pr-name-col{display:flex;align-items:center;gap:10px;min-width:0}
+.pr-cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pr-name{font-size:12px;font-weight:700;color:var(--slate-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-sku{font-size:10px;color:var(--slate-400);font-family:monospace}
+.pr-cat{font-size:11px;color:var(--slate-600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-variants{font-size:11px;font-weight:600;color:var(--slate-700);text-align:center}
+.price-cell{font-size:12px;font-weight:700;color:var(--slate-800);cursor:pointer;padding:4px 6px;border-radius:4px;border:1px solid transparent;transition:border-color .1s;text-align:right}
+.price-cell:hover{border-color:var(--brand);background:rgba(12,127,255,.04)}
+.price-cell.missing{color:var(--slate-300);font-weight:500}
+.gap-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.04em}
+.gap-complete{background:var(--emerald-50);border:1px solid var(--emerald-200);color:var(--emerald-600)}
+.gap-partial{background:var(--amber-50);border:1px solid var(--amber-200);color:var(--amber-600)}
+.gap-missing{background:var(--rose-50);border:1px solid var(--rose-200);color:var(--rose-600)}
+.pr-status-dot{width:8px;height:8px;border-radius:50%;margin:0 auto}
+.dot-active{background:var(--emerald-500)}
+.dot-inactive{background:var(--slate-300)}
+.pr-action-btn{padding:3px 10px;border-radius:var(--r-sm);font-size:10px;font-weight:700;border:1px solid var(--border);background:white;color:var(--slate-600);cursor:pointer}
+.pr-action-btn:hover{background:var(--slate-50)}
+
+/* category color map */
+.cat-snacks{background:#7c3aed}
+.cat-powders{background:#0c7fff}
+.cat-sweeteners{background:#059669}
+.cat-onion{background:#d97706}
+.cat-fz{background:#e11d48}
+
+/* ── PRODUCT DETAIL DRAWER ── */
+.drawer-overlay{display:none;position:fixed;inset:0;z-index:90;background:rgba(5,15,30,.4);backdrop-filter:blur(2px)}
+.drawer-overlay.open{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:540px;background:white;box-shadow:-16px 0 48px rgba(15,23,42,.15);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:91}
+.drawer.open{transform:translateX(0)}
+.drawer-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;background:white;z-index:10}
+.dh-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;border:1px solid}
+.pill-active{background:var(--emerald-50);border-color:var(--emerald-200);color:var(--emerald-600)}
+.pill-inactive{background:var(--slate-100);border-color:var(--border-md);color:var(--slate-500)}
+.drawer-close{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--slate-500)}
+.drawer-tabs{display:flex;padding:0 22px;border-bottom:1px solid var(--border);background:white}
+.dtab{padding:10px 14px;font-size:11px;font-weight:700;color:var(--slate-400);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.dtab.active{color:var(--navy);border-bottom-color:var(--brand)}
+.drawer-body{flex:1;overflow-y:auto;padding:18px 22px}
+.d-section{margin-bottom:20px}
+.d-section-title{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--slate-400);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.d-field{display:flex;flex-direction:column;gap:4px}
+.d-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400)}
+.d-value{font-size:13px;font-weight:600;color:var(--slate-800);padding:7px 10px;background:var(--slate-50);border-radius:var(--r-sm);border:1px solid var(--border)}
+.d-input{font-size:13px;font-weight:600;color:var(--slate-800);padding:7px 10px;background:white;border-radius:var(--r-sm);border:1px solid var(--border);width:100%;outline:none;transition:border-color .12s}
+.d-input:focus{border-color:var(--brand);box-shadow:0 0 0 2px rgba(12,127,255,.1)}
+.d-select{font-size:12px;padding:7px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;width:100%;outline:none}
+.d-toggle{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--slate-50);border-radius:var(--r-sm);border:1px solid var(--border)}
+.toggle-track{width:36px;height:20px;border-radius:999px;background:var(--emerald-500);cursor:pointer;position:relative;transition:background .15s;flex-shrink:0}
+.toggle-track.off{background:var(--slate-200)}
+.toggle-thumb{width:16px;height:16px;border-radius:50%;background:white;position:absolute;top:2px;left:18px;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-track.off .toggle-thumb{left:2px}
+.toggle-label{font-size:12px;font-weight:600;color:var(--slate-700)}
+
+/* Pricing table in drawer */
+.pricing-table{width:100%;border-collapse:collapse;font-size:12px}
+.pricing-table th{text-align:left;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);padding:6px 8px;border-bottom:1px solid var(--border)}
+.pricing-table td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.pricing-table tr:last-child td{border-bottom:none}
+.price-edit-input{width:90px;padding:4px 6px;border-radius:4px;border:1px solid var(--brand);font-size:12px;font-weight:700;outline:none;text-align:right;color:var(--slate-800)}
+.market-tag{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:600;background:var(--sky-50);border:1px solid var(--sky-100);color:var(--sky-600)}
+
+.drawer-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;position:sticky;bottom:0;background:white}
+.df-save{flex:1;padding:9px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer}
+.df-delete{padding:9px 14px;border-radius:var(--r-sm);background:var(--rose-50);color:var(--rose-600);border:1px solid var(--rose-200);font-size:12px;font-weight:700;cursor:pointer}
+.df-cancel{padding:9px 14px;border-radius:var(--r-sm);background:white;color:var(--slate-600);border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer}
+
+/* ── ADD PRODUCT WIZARD DRAWER ── */
+.wizard-overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(5,15,30,.5);backdrop-filter:blur(3px)}
+.wizard-overlay.open{display:block}
+.wizard-drawer{position:fixed;top:0;right:0;bottom:0;width:520px;background:white;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s;z-index:101;box-shadow:var(--shadow-lg)}
+.wizard-drawer.open{transform:translateX(0)}
+.wizard-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.wizard-title{font-size:15px;font-weight:800;color:var(--slate-950)}
+.wizard-steps{display:flex;padding:14px 22px;gap:0;border-bottom:1px solid var(--border)}
+.wstep{flex:1;display:flex;align-items:center;gap:6px;padding:6px 0}
+.wstep-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
+.wstep.done .wstep-num{background:var(--emerald-500);color:white}
+.wstep.current .wstep-num{background:var(--navy);color:white}
+.wstep.upcoming .wstep-num{background:var(--slate-200);color:var(--slate-500)}
+.wstep-label{font-size:11px;font-weight:700}
+.wstep.done .wstep-label{color:var(--emerald-600)}
+.wstep.current .wstep-label{color:var(--navy)}
+.wstep.upcoming .wstep-label{color:var(--slate-400)}
+.wstep-line{flex:1;height:1px;background:var(--border);margin:0 6px}
+.wizard-body{flex:1;overflow-y:auto;padding:20px 22px}
+.w-section-label{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate-400);margin-bottom:10px;margin-top:16px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.w-section-label:first-child{margin-top:0}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-row.single{grid-template-columns:1fr}
+.form-field{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-500)}
+.form-label .req{color:var(--rose-600)}
+.form-input{padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:13px;background:var(--slate-50);color:var(--slate-800);outline:none;transition:border-color .12s;width:100%}
+.form-input:focus{border-color:var(--brand);background:white}
+.form-select{padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:12px;background:white;width:100%;outline:none}
+.wizard-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;background:white}
+.wf-next{flex:1;padding:10px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:13px;font-weight:700;cursor:pointer}
+.wf-back{padding:10px 16px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer}
+.wf-step-label{font-size:10px;font-weight:600;color:var(--slate-400);padding:4px 10px;background:var(--slate-50);border-radius:999px;border:1px solid var(--border)}
+
+/* Review step */
+.review-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:var(--r-sm);background:var(--slate-50);border:1px solid var(--border);margin-bottom:5px;font-size:12px}
+.review-key{color:var(--slate-500);font-weight:500}
+.review-val{font-weight:700;color:var(--slate-800)}
+
+/* ── REVIEW PANEL ── */
+.review-panel{background:white;border-top:3px solid var(--brand);padding:32px 40px}
+.review-title{font-size:26px;font-weight:800;color:var(--slate-950);letter-spacing:-.5px;margin-bottom:8px}
+.review-subtitle{font-size:14px;color:var(--slate-500);max-width:680px;line-height:1.7;margin-bottom:28px}
+.rs{margin-bottom:28px}
+.rs-title{font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.rs-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ci{border-radius:var(--r-lg);padding:15px 17px;border:1px solid;display:flex;gap:12px}
+.ci.win{background:var(--emerald-50);border-color:var(--emerald-100)}
+.ci.fix{background:var(--amber-50);border-color:var(--amber-100)}
+.ci.new{background:var(--sky-50);border-color:var(--sky-100)}
+.ci.kill{background:var(--rose-50);border-color:var(--rose-100)}
+.ci-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.ci-type{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
+.ci.win .ci-type{color:var(--emerald-600)}
+.ci.fix .ci-type{color:var(--amber-600)}
+.ci.new .ci-type{color:var(--sky-600)}
+.ci.kill .ci-type{color:var(--rose-600)}
+.ci-title{font-size:13px;font-weight:700;color:var(--slate-900);margin-bottom:3px}
+.ci-desc{font-size:12px;color:var(--slate-500);line-height:1.6}
+.verdict-box{background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 60%,#1a5fa0 100%);border-radius:var(--r-xl);padding:26px 30px;color:white;display:flex;gap:22px}
+.vq{font-size:14px;font-weight:800;margin-bottom:9px}
+.vt{font-size:13px;color:rgba(255,255,255,.75);line-height:1.75}
+.vt strong{color:white}
+</style>
+</head>
+<body>
+
+<!-- ANNOTATION BAR -->
+<div style="background:linear-gradient(90deg,#061c2e,#0b2e4a);color:white;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;font-size:12px">
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px">
+      <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#0c7fff,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:white">BO</div>
+      <div><div style="font-size:11px;font-weight:800;color:white">Blue Orbit International</div><div style="font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.1em;text-transform:uppercase">SETU Flow · Catalog Redesign</div></div>
+    </div>
+    <div><strong>Catalog — Products, Pricing &amp; Variants</strong><span style="margin-left:10px;color:rgba(255,255,255,.5);font-size:11px">Click rows to open · Edit prices inline · Add product wizard · Review below</span></div>
+  </div>
+  <div><span style="background:#0c7fff;color:white;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;margin-left:6px">Interactive</span><span style="background:rgba(255,255,255,.12);color:white;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;margin-left:6px">Phase 1</span></div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-logo">SF</div>
+    <div class="nav-item"><span>⊞</span><span class="nav-label">Dash</span></div>
+    <div class="nav-item"><span>◎</span><span class="nav-label">Leads</span></div>
+    <div class="nav-item"><span>◇</span><span class="nav-label">Quotes</span></div>
+    <div class="nav-item"><span>⬡</span><span class="nav-label">Orders</span></div>
+    <div class="nav-item"><span>⊕</span><span class="nav-label">Pipeline</span></div>
+    <div class="nav-item active"><span>▦</span><span class="nav-label">Catalog</span></div>
+    <div class="sb-spacer"></div>
+    <div class="nav-item"><span>⚙</span><span class="nav-label">Admin</span></div>
+    <div class="sb-avatar">RK</div>
+  </nav>
+
+  <div class="main">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="company-badge"><div class="company-mark">BO</div><div><div class="company-name">Blue Orbit Int'l</div><div class="company-sub">SETU Flow CRM</div></div></div>
+        <div class="divider-v"></div>
+        <div><div class="topbar-eyebrow">Catalog</div><div class="topbar-title">Products &amp; Pricing</div></div>
+      </div>
+      <div class="topbar-right">
+        <button class="vcard-btn" onclick="document.getElementById('vcard-modal').style.display='flex'">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="10" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="5" y1="10" x2="9" y2="10"/></svg>
+          Share my vCard
+        </button>
+        <div class="divider-v"></div>
+        <div class="mode-switch">
+          <button class="mode-btn active" onclick="setVM(this,'products')">Products</button>
+          <button class="mode-btn" onclick="setVM(this,'pricing')">Pricing view</button>
+          <button class="mode-btn" onclick="setVM(this,'spreadsheet')">Spreadsheet</button>
+        </div>
+        <button class="btn-ghost" onclick="alert('→ Downloads catalog as Excel spreadsheet\nIncludes all variants and pricing data')">⬇ Export</button>
+        <button class="btn-primary" onclick="openWizard()">＋ Add product</button>
+        <div class="tb-avatar">RK</div>
+      </div>
+    </header>
+
+    <!-- VIEW TABS -->
+    <div class="view-tabs">
+      <div class="vt active">▦ All products <span class="vt-badge">47</span></div>
+      <div class="vt">📦 Snacks &amp; crisps <span class="vt-badge">12</span></div>
+      <div class="vt">🌿 Powders <span class="vt-badge">14</span></div>
+      <div class="vt">🍯 Sweeteners <span class="vt-badge">8</span></div>
+      <div class="vt">🧅 Onion &amp; garlic <span class="vt-badge">9</span></div>
+      <div class="vt">❄ Freeze-dried <span class="vt-badge">4</span></div>
+      <div class="vt" style="color:var(--rose-600)">⚠ Pricing gaps <span class="vt-badge warn">11</span></div>
+      <div class="vt">✓ Quote-ready <span class="vt-badge ok">36</span></div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <span class="filter-label">Filter:</span>
+      <div class="search-box">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#94a3b8" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>
+        <input placeholder="Search SKU, product name, brand…" oninput="filterTable(this.value)"/>
+      </div>
+      <div class="fw"><div><div class="fw-top">Category</div><div class="fw-val">All ▾</div></div></div>
+      <div class="fw"><div><div class="fw-top">Pricing mode</div><div class="fw-val">Per unit ▾</div></div></div>
+      <div class="fw"><div><div class="fw-top">Gaps</div><div class="fw-val">All ▾</div></div></div>
+      <div class="fw"><div><div class="fw-top">Status</div><div class="fw-val">Active ▾</div></div></div>
+      <div class="fw"><div><div class="fw-top">In quotes</div><div class="fw-val">All ▾</div></div></div>
+      <span class="gap-chip">⚠ 11 with pricing gaps <span style="opacity:.6">×</span></span>
+      <div class="filter-summary">47 products · 36 quote-ready · $0.85–$12.40 range</div>
+    </div>
+
+    <!-- STATS STRIP -->
+    <div class="stats-strip">
+      <div class="sc brand"><div class="sc-lbl">Total products</div><div class="sc-val">47</div><div class="sc-meta">Across 5 categories</div><div class="sc-action">All active</div></div>
+      <div class="sc success"><div class="sc-lbl">Quote-ready</div><div class="sc-val ok">36</div><div class="sc-meta">Priced + in catalog</div><div class="sc-action">→ Filter</div></div>
+      <div class="sc warning"><div class="sc-lbl">Pricing gaps</div><div class="sc-val warn">11</div><div class="sc-meta">Missing market prices</div><div class="sc-action">→ Fix gaps</div></div>
+      <div class="sc neutral"><div class="sc-lbl">Total variants</div><div class="sc-val">142</div><div class="sc-meta">Pack sizes &amp; formats</div></div>
+      <div class="sc danger"><div class="sc-lbl">Inactive</div><div class="sc-val danger">4</div><div class="sc-meta">Deactivated from quotes</div><div class="sc-action">→ Review</div></div>
+      <div class="sc violet"><div class="sc-lbl">Active markets</div><div class="sc-val" style="color:var(--violet-600)">9</div><div class="sc-meta">With live pricing rules</div></div>
+    </div>
+
+    <!-- PRODUCT TABLE -->
+    <div class="content">
+      <div class="table-card">
+        <div class="table-header-row">
+          <div></div>
+          <div>Product / SKU</div>
+          <div>Category</div>
+          <div style="text-align:center">Variants</div>
+          <div style="text-align:right">Ex-Factory</div>
+          <div style="text-align:right">FOB</div>
+          <div style="text-align:right">CIF</div>
+          <div style="text-align:center">Coverage</div>
+          <div style="text-align:center">Status</div>
+        </div>
+
+        <!-- Snacks category header -->
+        <div style="padding:7px 16px;background:rgba(124,58,237,.04);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+          <div style="width:8px;height:8px;border-radius:50%;background:#7c3aed"></div>
+          <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--violet-600)">Vacuum-Cooked Snacks</span>
+          <span style="font-size:10px;color:var(--slate-400);margin-left:auto">12 products · $1.20–$4.80/unit</span>
+        </div>
+
+        <div class="product-row" onclick="openProduct('sweet-potato')">
+          <input type="checkbox" class="pr-check" onclick="e=>e.stopPropagation()"/>
+          <div class="pr-name-col"><div class="pr-cat-dot cat-snacks"></div><div><div class="pr-name">Sweet Potato Crisps</div><div class="pr-sku">BO-SPC-001 · Roohted</div></div></div>
+          <div class="pr-cat" style="color:var(--violet-600);font-weight:600">Snacks</div>
+          <div class="pr-variants">4</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$1.85</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$2.10</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$2.45</div>
+          <div style="text-align:center"><span class="gap-badge gap-complete">✓ 9/9 markets</span></div>
+          <div style="text-align:center"><div class="pr-status-dot dot-active" title="Active"></div></div>
+        </div>
+
+        <div class="product-row" onclick="openProduct('mango-crisps')">
+          <input type="checkbox" class="pr-check" onclick="e=>e.stopPropagation()"/>
+          <div class="pr-name-col"><div class="pr-cat-dot cat-snacks"></div><div><div class="pr-name">Mango Crisps</div><div class="pr-sku">BO-MC-002 · Roohted</div></div></div>
+          <div class="pr-cat" style="color:var(--violet-600);font-weight:600">Snacks</div>
+          <div class="pr-variants">3</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$2.20</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$2.55</div>
+          <div class="price-cell missing">— add</div>
+          <div style="text-align:center"><span class="gap-badge gap-partial">⚠ 6/9 markets</span></div>
+          <div style="text-align:center"><div class="pr-status-dot dot-active" title="Active"></div></div>
+        </div>
+
+        <div class="product-row" onclick="openProduct('banana-crisps')">
+          <input type="checkbox" class="pr-check" onclick="e=>e.stopPropagation()"/>
+          <div class="pr-name-col"><div class="pr-cat-dot cat-snacks"></div><div><div class="pr-name">Banana Crisps</div><div class="pr-sku">BO-BC-003 · Roohted</div></div></div>
+          <div class="pr-cat" style="color:var(--violet-600);font-weight:600">Snacks</div>
+          <div class="pr-variants">3</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$1.60</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$1.90</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$2.20</div>
+          <div style="text-align:center"><span class="gap-badge gap-complete">✓ 9/9 markets</span></div>
+          <div style="text-align:center"><div class="pr-status-dot dot-active"></div></div>
+        </div>
+
+        <!-- Powders category header -->
+        <div style="padding:7px 16px;background:rgba(12,127,255,.04);border-bottom:1px solid var(--border);border-top:1px solid var(--border);display:flex;align-items:center;gap:8px">
+          <div style="width:8px;height:8px;border-radius:50%;background:#0c7fff"></div>
+          <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--brand)">Dehydrated &amp; Spray-Dried Powders</span>
+          <span style="font-size:10px;color:var(--slate-400);margin-left:auto">14 products · $3.50–$12.40/kg</span>
+        </div>
+
+        <div class="product-row" onclick="openProduct('mango-powder')">
+          <input type="checkbox" class="pr-check" onclick="e=>e.stopPropagation()"/>
+          <div class="pr-name-col"><div class="pr-cat-dot cat-powders"></div><div><div class="pr-name">Mango Powder (Spray-Dried)</div><div class="pr-sku">BO-MP-101 · HSN 0813</div></div></div>
+          <div class="pr-cat" style="color:var(--brand);font-weight:600">Powders</div>
+          <div class="pr-variants">2</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$4.20/kg</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$4.85/kg</div>
+          <div class="price-cell missing">— add</div>
+          <div style="text-align:center"><span class="gap-badge gap-partial">⚠ 7/9 markets</span></div>
+          <div style="text-align:center"><div class="pr-status-dot dot-active"></div></div>
+        </div>
+
+        <div class="product-row" onclick="openProduct('beetroot-powder')">
+          <input type="checkbox" class="pr-check" onclick="e=>e.stopPropagation()"/>
+          <div class="pr-name-col"><div class="pr-cat-dot cat-powders"></div><div><div class="pr-name">Beetroot Powder</div><div class="pr-sku">BO-BP-102 · HSN 0813</div></div></div>
+          <div class="pr-cat" style="color:var(--brand);font-weight:600">Powders</div>
+          <div class="pr-variants">2</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$5.60/kg</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$6.40/kg</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$7.20/kg</div>
+          <div style="text-align:center"><span class="gap-badge gap-complete">✓ 9/9 markets</span></div>
+          <div style="text-align:center"><div class="pr-status-dot dot-active"></div></div>
+        </div>
+
+        <div class="product-row" onclick="openProduct('moringa-powder')">
+          <input type="checkbox" class="pr-check" onclick="e=>e.stopPropagation()"/>
+          <div class="pr-name-col"><div class="pr-cat-dot cat-powders"></div><div><div class="pr-name">Moringa Powder</div><div class="pr-sku">BO-MO-103 · Organic cert</div></div></div>
+          <div class="pr-cat" style="color:var(--brand);font-weight:600">Powders</div>
+          <div class="pr-variants">1</div>
+          <div class="price-cell missing">— add</div>
+          <div class="price-cell missing">— add</div>
+          <div class="price-cell missing">— add</div>
+          <div style="text-align:center"><span class="gap-badge gap-missing">✕ 0/9 markets</span></div>
+          <div style="text-align:center"><div class="pr-status-dot dot-active"></div></div>
+        </div>
+
+        <!-- Sweeteners -->
+        <div style="padding:7px 16px;background:rgba(5,150,105,.04);border-bottom:1px solid var(--border);border-top:1px solid var(--border);display:flex;align-items:center;gap:8px">
+          <div style="width:8px;height:8px;border-radius:50%;background:#059669"></div>
+          <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emerald-600)">Natural Sweeteners</span>
+          <span style="font-size:10px;color:var(--slate-400);margin-left:auto">8 products · $0.85–$2.40/unit</span>
+        </div>
+
+        <div class="product-row" onclick="openProduct('jaggery')">
+          <input type="checkbox" class="pr-check" onclick="e=>e.stopPropagation()"/>
+          <div class="pr-name-col"><div class="pr-cat-dot cat-sweeteners"></div><div><div class="pr-name">Jaggery Blocks</div><div class="pr-sku">BO-JG-201 · Palm &amp; Cane</div></div></div>
+          <div class="pr-cat" style="color:var(--emerald-600);font-weight:600">Sweeteners</div>
+          <div class="pr-variants">3</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$0.95/kg</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$1.15/kg</div>
+          <div class="price-cell" onclick="event.stopPropagation();startInlineEdit(this)">$1.30/kg</div>
+          <div style="text-align:center"><span class="gap-badge gap-complete">✓ 9/9 markets</span></div>
+          <div style="text-align:center"><div class="pr-status-dot dot-active"></div></div>
+        </div>
+
+        <div style="text-align:center;padding:14px;color:var(--slate-400);font-size:12px;font-weight:600">
+          + 40 more products · <span style="color:var(--brand);cursor:pointer">Load all</span>
+        </div>
+      </div>
+    </div>
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- PRODUCT DETAIL DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeProduct()"></div>
+<div class="drawer" id="product-drawer">
+  <div class="drawer-header">
+    <div>
+      <div style="font-size:17px;font-weight:800;color:var(--slate-950);margin-bottom:4px" id="pd-name">Sweet Potato Crisps</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="dh-pill pill-active">✓ Active</span>
+        <span style="font-size:11px;color:var(--slate-400);font-family:monospace">BO-SPC-001</span>
+        <span style="font-size:11px;color:var(--slate-400)">· Snacks · 4 variants</span>
+      </div>
+    </div>
+    <button class="drawer-close" onclick="closeProduct()">✕</button>
+  </div>
+  <div class="drawer-tabs">
+    <div class="dtab active" onclick="setDTab(this,'overview')">Overview</div>
+    <div class="dtab" onclick="setDTab(this,'pricing')">Pricing</div>
+    <div class="dtab" onclick="setDTab(this,'variants')">Variants</div>
+    <div class="dtab" onclick="setDTab(this,'attributes')">Trade attrs</div>
+    <div class="dtab" onclick="setDTab(this,'history')">History</div>
+  </div>
+  <div class="drawer-body" id="drawer-body">
+
+    <!-- OVERVIEW TAB -->
+    <div id="tab-overview">
+      <div class="d-section">
+        <div class="d-section-title">Basic details</div>
+        <div class="d-grid">
+          <div class="d-field"><div class="d-label">Product name</div><input class="d-input" value="Sweet Potato Crisps"/></div>
+          <div class="d-field"><div class="d-label">Brand</div><input class="d-input" value="Roohted"/></div>
+          <div class="d-field"><div class="d-label">SKU / code</div><div class="d-value">BO-SPC-001</div></div>
+          <div class="d-field"><div class="d-label">HSN code</div><input class="d-input" value="2008199000"/></div>
+          <div class="d-field"><div class="d-label">Category</div>
+            <select class="d-select"><option selected>Vacuum-Cooked Snacks</option><option>Dehydrated Powders</option><option>Natural Sweeteners</option></select>
+          </div>
+          <div class="d-field"><div class="d-label">Supplier</div><input class="d-input" value="Blue Orbit Processing Unit 1"/></div>
+        </div>
+        <div class="d-field" style="margin-top:8px"><div class="d-label">Description</div><textarea class="d-input" rows="2" style="resize:vertical">Vacuum-cooked sweet potato crisps with no added preservatives. Available in 4 pack formats for retail and foodservice buyers.</textarea></div>
+      </div>
+      <div class="d-section">
+        <div class="d-section-title">Active status</div>
+        <div class="d-toggle">
+          <div class="toggle-track" onclick="toggleStatus(this)"><div class="toggle-thumb"></div></div>
+          <span class="toggle-label">Active — visible in quotes and catalog</span>
+        </div>
+      </div>
+      <div class="d-section">
+        <div class="d-section-title">Coverage summary</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div style="padding:10px;background:var(--emerald-50);border:1px solid var(--emerald-200);border-radius:var(--r-md);text-align:center"><div style="font-size:20px;font-weight:800;color:var(--emerald-600)">9/9</div><div style="font-size:10px;color:var(--emerald-600);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Markets priced</div></div>
+          <div style="padding:10px;background:var(--brand);border-radius:var(--r-md);text-align:center"><div style="font-size:20px;font-weight:800;color:white">4</div><div style="font-size:10px;color:rgba(255,255,255,.8);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Variants</div></div>
+          <div style="padding:10px;background:var(--slate-50);border:1px solid var(--border);border-radius:var(--r-md);text-align:center"><div style="font-size:20px;font-weight:800;color:var(--slate-700)">24</div><div style="font-size:10px;color:var(--slate-400);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Active quotes</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICING TAB -->
+    <div id="tab-pricing" style="display:none">
+      <div class="d-section">
+        <div class="d-section-title">Baseline pricing by market</div>
+        <div style="margin-bottom:10px;display:flex;gap:8px">
+          <div class="fw" style="min-width:90px"><div><div class="fw-top">View mode</div><div class="fw-val">Per unit ▾</div></div></div>
+          <div class="fw" style="min-width:90px"><div><div class="fw-top">Currency</div><div class="fw-val">USD ▾</div></div></div>
+          <div class="fw" style="min-width:100px"><div><div class="fw-top">Variant</div><div class="fw-val">All variants ▾</div></div></div>
+        </div>
+        <table class="pricing-table">
+          <thead><tr><th>Market</th><th>Variant</th><th>Ex-Factory</th><th>FOB</th><th>CIF</th><th>Valid from</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><span class="market-tag">🇮🇳 India</span></td><td style="color:var(--slate-600)">100g Pouch</td><td><input type="number" class="price-edit-input" value="1.85"/></td><td><input type="number" class="price-edit-input" value="2.10"/></td><td><input type="number" class="price-edit-input" value="2.45"/></td><td style="color:var(--slate-400);font-size:11px">Jan 2025</td><td><button class="pr-action-btn" onclick="alert('✓ Price saved')">Save</button></td></tr>
+            <tr><td><span class="market-tag">🇦🇪 UAE</span></td><td style="color:var(--slate-600)">100g Pouch</td><td><input type="number" class="price-edit-input" value="2.05"/></td><td><input type="number" class="price-edit-input" value="2.35"/></td><td><input type="number" class="price-edit-input" value="2.70"/></td><td style="color:var(--slate-400);font-size:11px">Jan 2025</td><td><button class="pr-action-btn" onclick="alert('✓ Price saved')">Save</button></td></tr>
+            <tr><td><span class="market-tag">🇩🇪 Germany</span></td><td style="color:var(--slate-600)">100g Pouch</td><td><input type="number" class="price-edit-input" value="2.20"/></td><td><input type="number" class="price-edit-input" value="2.55"/></td><td><input type="number" class="price-edit-input" value="2.95"/></td><td style="color:var(--slate-400);font-size:11px">Jan 2025</td><td><button class="pr-action-btn" onclick="alert('✓ Price saved')">Save</button></td></tr>
+            <tr><td><span class="market-tag">🇬🇧 UK</span></td><td style="color:var(--slate-600)">100g Pouch</td><td><input type="number" class="price-edit-input" value="2.30"/></td><td><input type="number" class="price-edit-input" value="2.65"/></td><td style="color:var(--slate-300);font-size:11px">Not set</td><td style="color:var(--slate-400);font-size:11px">Feb 2025</td><td><button class="pr-action-btn" onclick="alert('✓ Price saved')">Save</button></td></tr>
+            <tr style="background:var(--amber-50)"><td><span class="market-tag" style="background:var(--amber-50);border-color:var(--amber-200);color:var(--amber-600)">🇸🇬 Singapore</span></td><td style="color:var(--slate-600)">—</td><td style="color:var(--rose-600);font-weight:700">Missing</td><td style="color:var(--rose-600);font-weight:700">Missing</td><td style="color:var(--rose-600);font-weight:700">Missing</td><td>—</td><td><button class="pr-action-btn" style="color:var(--brand);border-color:var(--brand)">+ Add</button></td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:12px;padding:10px 14px;background:var(--amber-50);border:1px solid var(--amber-200);border-radius:var(--r-md);font-size:12px;color:#92400e">
+          <strong>Pricing hint:</strong> Per-unit mode enables inline editing. Switch to per-case or per-kg for bulk order pricing. All edits save to the catalog baseline — they will pre-fill in any new quote using this product.
+        </div>
+      </div>
+    </div>
+
+    <!-- VARIANTS TAB -->
+    <div id="tab-variants" style="display:none">
+      <div class="d-section">
+        <div class="d-section-title">Pack formats &amp; variants</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:13px;font-weight:700;color:var(--slate-900)">100g Retail Pouch</div><div style="font-size:11px;color:var(--slate-500);margin-top:2px">12 units/case · Net wt 100g · Pack code SPC-100R</div></div>
+            <button class="pr-action-btn">Edit</button>
+          </div>
+          <div style="padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:13px;font-weight:700;color:var(--slate-900)">200g Retail Pouch</div><div style="font-size:11px;color:var(--slate-500);margin-top:2px">6 units/case · Net wt 200g · Pack code SPC-200R</div></div>
+            <button class="pr-action-btn">Edit</button>
+          </div>
+          <div style="padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:13px;font-weight:700;color:var(--slate-900)">500g Foodservice Bag</div><div style="font-size:11px;color:var(--slate-500);margin-top:2px">4 units/case · Net wt 500g · Pack code SPC-500F</div></div>
+            <button class="pr-action-btn">Edit</button>
+          </div>
+          <div style="padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:13px;font-weight:700;color:var(--slate-900)">1kg Bulk Bag</div><div style="font-size:11px;color:var(--slate-500);margin-top:2px">2 units/case · Net wt 1kg · Pack code SPC-1KBK</div></div>
+            <button class="pr-action-btn">Edit</button>
+          </div>
+          <button style="padding:9px;border-radius:var(--r-sm);border:1.5px dashed var(--border-md);background:transparent;font-size:12px;font-weight:600;color:var(--brand);cursor:pointer;width:100%;text-align:center">＋ Add new variant</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTRIBUTES TAB -->
+    <div id="tab-attributes" style="display:none">
+      <div class="d-section">
+        <div class="d-section-title">Trade &amp; logistics attributes</div>
+        <div class="d-grid">
+          <div class="d-field"><div class="d-label">Country of origin</div><input class="d-input" value="India"/></div>
+          <div class="d-field"><div class="d-label">HSN code</div><input class="d-input" value="2008199000"/></div>
+          <div class="d-field"><div class="d-label">Packaging type</div><input class="d-input" value="Multi-layer BOPP pouch"/></div>
+          <div class="d-field"><div class="d-label">Shelf life</div><input class="d-input" value="12 months from MFG"/></div>
+          <div class="d-field"><div class="d-label">Storage conditions</div><input class="d-input" value="Cool &amp; dry, below 25°C"/></div>
+          <div class="d-field"><div class="d-label">Certifications</div><input class="d-input" value="FSSAI, Organic India"/></div>
+        </div>
+        <div class="d-field" style="margin-top:8px"><div class="d-label">Export metadata / additional notes</div><textarea class="d-input" rows="2" style="resize:vertical">Suitable for EU import under Novel Foods. Phytosanitary certificate required for AUS market. Lab test report available on request.</textarea></div>
+      </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="tab-history" style="display:none">
+      <div class="d-section">
+        <div class="d-section-title">Change history</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;gap:10px;padding:9px 12px;border-radius:var(--r-sm);background:var(--slate-50);border:1px solid var(--border)">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white;flex-shrink:0">RK</div>
+            <div><div style="font-size:12px;font-weight:700;color:var(--slate-900)">Updated FOB price for Germany market</div><div style="font-size:11px;color:var(--slate-400)">Ritesh Kumar · 20 Apr 2025 · $2.40 → $2.55</div></div>
+          </div>
+          <div style="display:flex;gap:10px;padding:9px 12px;border-radius:var(--r-sm);background:var(--slate-50);border:1px solid var(--border)">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--emerald-600);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white;flex-shrink:0">PS</div>
+            <div><div style="font-size:12px;font-weight:700;color:var(--slate-900)">Added 200g Retail Pouch variant</div><div style="font-size:11px;color:var(--slate-400)">Priya Singh · 15 Mar 2025</div></div>
+          </div>
+          <div style="display:flex;gap:10px;padding:9px 12px;border-radius:var(--r-sm);background:var(--slate-50);border:1px solid var(--border)">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white;flex-shrink:0">RK</div>
+            <div><div style="font-size:12px;font-weight:700;color:var(--slate-900)">Product created and set active</div><div style="font-size:11px;color:var(--slate-400)">Ritesh Kumar · 10 Jan 2025</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="drawer-footer">
+    <button class="df-save" onclick="alert('✓ Product saved to catalog')">✓ Save changes</button>
+    <button class="df-cancel" onclick="closeProduct()">Cancel</button>
+    <button class="df-delete" onclick="if(confirm('Delete this product?'))closeProduct()">Delete</button>
+  </div>
+</div>
+
+<!-- ADD PRODUCT WIZARD -->
+<div class="wizard-overlay" id="wizard-overlay" onclick="if(event.target===this)closeWizard()"></div>
+<div class="wizard-drawer" id="wizard-drawer">
+  <div class="wizard-header">
+    <div class="wizard-title">Add product to catalog</div>
+    <button class="drawer-close" onclick="closeWizard()">✕</button>
+  </div>
+  <div class="wizard-steps">
+    <div class="wstep" id="wstep-0">
+      <div class="wstep-num">1</div>
+      <div class="wstep-label">Basics</div>
+    </div>
+    <div class="wstep-line"></div>
+    <div class="wstep" id="wstep-1">
+      <div class="wstep-num">2</div>
+      <div class="wstep-label">Details</div>
+    </div>
+    <div class="wstep-line"></div>
+    <div class="wstep" id="wstep-2">
+      <div class="wstep-num">3</div>
+      <div class="wstep-label">Review</div>
+    </div>
+  </div>
+
+  <div class="wizard-body">
+    <!-- Step 0: Basics -->
+    <div id="wbody-0">
+      <div class="w-section-label">Core product identity</div>
+      <div class="form-row">
+        <div class="form-field"><label class="form-label">Product name <span class="req">*</span></label><input class="form-input" placeholder="e.g. Jackfruit Crisps"/></div>
+        <div class="form-field"><label class="form-label">Category <span class="req">*</span></label><select class="form-select"><option value="">Select category…</option><option>Vacuum-Cooked Snacks</option><option>Dehydrated Powders</option><option>Natural Sweeteners</option><option>Onion &amp; Garlic Products</option><option>Freeze-Dried Products</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label class="form-label">SKU code</label><input class="form-input" placeholder="e.g. BO-JC-012"/></div>
+        <div class="form-field"><label class="form-label">Brand name</label><input class="form-input" placeholder="e.g. Roohted"/></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-field"><label class="form-label">Short description</label><textarea class="form-input" rows="2" placeholder="What is this product and who is it for?"></textarea></div>
+      </div>
+      <div class="w-section-label">Active status</div>
+      <div class="d-toggle"><div class="toggle-track" onclick="toggleStatus(this)"><div class="toggle-thumb"></div></div><span class="toggle-label">Active — visible in quotes immediately after saving</span></div>
+    </div>
+
+    <!-- Step 1: Details -->
+    <div id="wbody-1" style="display:none">
+      <div class="w-section-label">Trade &amp; export details</div>
+      <div class="form-row">
+        <div class="form-field"><label class="form-label">HSN code</label><input class="form-input" placeholder="e.g. 2008199000"/></div>
+        <div class="form-field"><label class="form-label">Country of origin</label><select class="form-select"><option>India</option><option>Sri Lanka</option><option>Thailand</option><option>Vietnam</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label class="form-label">Supplier name</label><input class="form-input" placeholder="Processing unit or supplier name"/></div>
+        <div class="form-field"><label class="form-label">Certifications</label><input class="form-input" placeholder="e.g. FSSAI, Organic, HACCP"/></div>
+      </div>
+      <div class="w-section-label">Packaging &amp; variants</div>
+      <div class="form-row">
+        <div class="form-field"><label class="form-label">Default pricing mode</label><select class="form-select"><option>Per unit</option><option>Per kg (bulk)</option><option>Per case</option></select></div>
+        <div class="form-field"><label class="form-label">Pack size (initial variant)</label><input class="form-input" placeholder="e.g. 100g Pouch, 1kg Bag"/></div>
+      </div>
+      <div style="padding:10px 12px;background:var(--sky-50);border:1px solid var(--sky-100);border-radius:var(--r-md);font-size:12px;color:#075985;margin-top:8px">
+        💡 More variants can be added from the product detail drawer after saving. Start with your most common pack size.
+      </div>
+    </div>
+
+    <!-- Step 2: Review -->
+    <div id="wbody-2" style="display:none">
+      <div class="w-section-label">Review before saving</div>
+      <div class="review-item"><span class="review-key">Product name</span><span class="review-val">Jackfruit Crisps</span></div>
+      <div class="review-item"><span class="review-key">Category</span><span class="review-val">Vacuum-Cooked Snacks</span></div>
+      <div class="review-item"><span class="review-key">SKU</span><span class="review-val">BO-JC-012</span></div>
+      <div class="review-item"><span class="review-key">Brand</span><span class="review-val">Roohted</span></div>
+      <div class="review-item"><span class="review-key">Country of origin</span><span class="review-val">India</span></div>
+      <div class="review-item"><span class="review-key">HSN code</span><span class="review-val">2008199000</span></div>
+      <div class="review-item"><span class="review-key">Pricing mode</span><span class="review-val">Per unit</span></div>
+      <div class="review-item"><span class="review-key">Status</span><span class="review-val" style="color:var(--emerald-600)">✓ Active</span></div>
+      <div style="margin-top:12px;padding:10px 12px;background:var(--amber-50);border:1px solid var(--amber-200);border-radius:var(--r-md);font-size:12px;color:#92400e">
+        <strong>Next after saving:</strong> Open the product to add pricing by market. Without pricing, the product will appear in quotes with no baseline price pre-filled.
+      </div>
+    </div>
+  </div>
+
+  <div class="wizard-footer">
+    <button class="wf-back" id="wiz-back" onclick="wizardBack()" style="display:none">← Back</button>
+    <span class="wf-step-label" id="wiz-step-label">Step 1 of 3 · Basics</span>
+    <button class="wf-next" id="wiz-next" onclick="wizardNext()">Next → Details</button>
+  </div>
+</div>
+
+<!-- vCARD MODAL -->
+<div id="vcard-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(5,15,30,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:white;border-radius:20px;width:340px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.3)">
+    <div style="background:linear-gradient(135deg,#0f172a 0%,#0b2e4a 55%,#0c7fff 140%);padding:24px;color:white;position:relative">
+      <button onclick="document.getElementById('vcard-modal').style.display='none'" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,.15);border:none;color:white;width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer">✕</button>
+      <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0c7fff,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:white;border:3px solid rgba(255,255,255,.3);margin-bottom:10px">RK</div>
+      <div style="font-size:16px;font-weight:800">Ritesh Kumar</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:2px">Director · Blue Orbit International</div>
+    </div>
+    <div style="padding:18px 24px;display:flex;flex-direction:column;gap:7px">
+      <button style="padding:10px;border-radius:10px;font-size:12px;font-weight:700;border:none;background:var(--navy);color:white;cursor:pointer">⬇ Download .vcf card</button>
+      <button style="padding:10px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--slate-50);cursor:pointer">🔗 Copy share link</button>
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW PANEL -->
+<div class="review-panel">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:var(--r-sm);background:rgba(11,46,74,.06);border:1px solid rgba(11,46,74,.12)">
+      <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--navy-deep),var(--brand));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white">BO</div>
+      <div><div style="font-size:11px;font-weight:800;color:var(--navy)">Blue Orbit International · Roohted</div><div style="font-size:9px;color:var(--slate-400);letter-spacing:.1em;text-transform:uppercase">SETU Flow — Catalog Redesign</div></div>
+    </div>
+    <span style="font-size:11px;color:var(--slate-400)">Catalog page redesign · builder handoff · Phase 1</span>
+  </div>
+  <div class="review-title">Catalog Redesign — Code Review &amp; Builder Guide</div>
+  <div class="review-subtitle">The catalog is functionally solid — products, variants, pricing, and the spreadsheet view all exist. The problems are navigability (mode switch confusion), the "gap" concept being unexplained, and the buried pricing UX. These changes surface pricing gaps immediately, make the product detail a proper 5-tab drawer, and add a clean 3-step wizard for new products.</div>
+
+  <div class="rs">
+    <div class="rs-title">1 — What changed in the product table</div>
+    <div class="cg">
+      <div class="ci new"><div class="ci-icon">＋</div><div><div class="ci-type">New</div><div class="ci-title">Category group headers in table</div><div class="ci-desc">Products are now grouped by category with a coloured header row between groups. Eliminates the need to filter by category to find products. Color-coded dot per row for quick scan. Builder: add a section divider row between category groups in products-table.tsx renderRows().</div></div></div>
+      <div class="ci new"><div class="ci-icon">＋</div><div><div class="ci-type">New</div><div class="ci-title">Three price columns visible (Ex-Factory / FOB / CIF)</div><div class="ci-desc">Current: one "Latest price" column. New: three price columns per row, each inline-editable in unit mode. Missing = "— add" in faded text. Builder: add ex_factory, fob, cif columns to products-table-columns.ts with EditablePriceCell per column.</div></div></div>
+      <div class="ci fix"><div class="ci-icon">⟳</div><div><div class="ci-type">Fix</div><div class="ci-title">Gap badge replaces "gap filter" concept</div><div class="ci-desc">Current: "Has gap / Complete" filter requires the user to know what a gap is. New: visible gap badge on every row (✓ 9/9 markets / ⚠ 6/9 / ✕ 0/9). The ⚠ tab filters to gap products. No filter needed. Replace products-gap-badge.tsx with this inline badge.</div></div></div>
+      <div class="ci fix"><div class="ci-icon">⟳</div><div><div class="ci-type">Fix</div><div class="ci-title">Mode switch — Products / Pricing / Spreadsheet</div><div class="ci-desc">Current: "products" vs "catalog" mode naming is confusing (both are catalog). New: "Products" (current list view) / "Pricing view" (market-matrix grid) / "Spreadsheet" (full editable spreadsheet). Plain English. Maps to existing WorkspaceMode type — just rename the labels.</div></div></div>
+    </div>
+  </div>
+
+  <div class="rs">
+    <div class="rs-title">2 — Product detail drawer: 5 tabs instead of 1</div>
+    <div class="cg">
+      <div class="ci win"><div class="ci-icon">✓</div><div><div class="ci-type">Keep</div><div class="ci-title">3-step wizard for Add Product</div><div class="ci-desc">The WizardShell with Basics / Details / Review steps is the right pattern. Keep it. The main improvement: make the step labels more descriptive and add a progress indicator that visually shows which step you're on. Basics → Details → Review is already intuitive.</div></div></div>
+      <div class="ci new"><div class="ci-icon">＋</div><div><div class="ci-type">New</div><div class="ci-title">Product detail with 5 tabs</div><div class="ci-desc">Current ProductDetailDrawer has a flat form for name/brand/description/isActive. New: 5 tabs — Overview (edit basics), Pricing (market price table, inline editable), Variants (add/edit pack formats), Trade attrs (HSN, origin, certs), History (audit log). This replaces AuditHistoryDrawer as a separate drawer.</div></div></div>
+      <div class="ci new"><div class="ci-icon">＋</div><div><div class="ci-type">New</div><div class="ci-title">Inline price editing with market rows</div><div class="ci-desc">The pricing tab shows a table with one row per market, three editable price columns (Ex-Factory / FOB / CIF), and a Save button per row. This replaces the distributed pricing UI in products-manager.tsx. Builder: move the CatalogPricingDraft save logic into the drawer Pricing tab component.</div></div></div>
+      <div class="ci kill"><div class="ci-icon">✕</div><div><div class="ci-type">Remove</div><div class="ci-title">AuditHistoryDrawer as separate component</div><div class="ci-desc">Currently a separate drawer opened from the product card. Move audit history into the History tab of the product detail drawer. One drawer, all context. Removes the second overlay and the extra "Audit history" CTA from the product row actions.</div></div></div>
+    </div>
+  </div>
+
+  <div class="rs">
+    <div class="rs-title">3 — View tabs: replace invisible mode switch</div>
+    <div class="cg">
+      <div class="ci fix"><div class="ci-icon">⟳</div><div><div class="ci-type">Fix</div><div class="ci-title">Category tabs replace the dropdown filter</div><div class="ci-desc">Current: category is a dropdown inside the toolbar. New: horizontal tabs across the top (All / Snacks / Powders / Sweeteners / Onion &amp; Garlic / Freeze-dried / ⚠ Gaps). Active tab shows count. Builder: render these as page-nav tabs that drive the category filter state.</div></div></div>
+      <div class="ci new"><div class="ci-icon">＋</div><div><div class="ci-type">New</div><div class="ci-title">6-stat strip above the table</div><div class="ci-desc">Total products / Quote-ready / Pricing gaps / Variants / Inactive / Active markets. Same 6-card strip pattern from dashboard and pipeline. Each card is clickable and filters the table. Builder: build as shared PipelineStatsStrip — same component, different props.</div></div></div>
+    </div>
+  </div>
+
+  <div class="verdict-box">
+    <div style="font-size:38px;flex-shrink:0">▦</div>
+    <div>
+      <div class="vq">Builder sprint plan — Catalog page</div>
+      <div class="vt">
+        <strong>Sprint 1 (quick — 1 day):</strong> Add category group headers to table · Add gap badge (✓/⚠/✕ markets) per row · Add Ex-Factory + FOB + CIF columns · Rename mode switch labels from "products/catalog" to "Products/Pricing/Spreadsheet".<br><br>
+        <strong>Sprint 2 (core — 2 days):</strong> Expand ProductDetailDrawer to 5 tabs (Overview, Pricing, Variants, Trade attrs, History) · Move pricing edit into Pricing tab · Move audit history into History tab · Remove AuditHistoryDrawer as separate drawer.<br><br>
+        <strong>Sprint 3 (polish — 1 day):</strong> Add 6-stat strip · Add category tabs (replacing dropdown) · Replace filter toolbar with filter bar (consistent with dashboard/leads/pipeline).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// VIEW MODE SWITCH
+function setVM(btn,mode){document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+
+// PRODUCT DETAIL DRAWER
+function openProduct(id){document.getElementById('drawer-overlay').classList.add('open');document.getElementById('product-drawer').classList.add('open')}
+function closeProduct(){document.getElementById('drawer-overlay').classList.remove('open');document.getElementById('product-drawer').classList.remove('open')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeProduct();closeWizard()}})
+
+function setDTab(el,tab){
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['overview','pricing','variants','attributes','history'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
+  })
+}
+
+// INLINE PRICE EDIT
+function startInlineEdit(cell){
+  const current=cell.textContent.trim();
+  const input=document.createElement('input');
+  input.type='text';input.value=current;
+  input.style.cssText='width:80px;padding:3px 6px;border-radius:4px;border:1.5px solid #0c7fff;font-size:12px;font-weight:700;outline:none;text-align:right;color:#1e293b;background:white';
+  cell.innerHTML='';cell.appendChild(input);input.focus();input.select();
+  input.onblur=()=>{cell.textContent=input.value||current;cell.classList.remove('missing')};
+  input.onkeydown=e=>{if(e.key==='Enter'){cell.textContent=input.value||current;showSavedToast()}if(e.key==='Escape')cell.textContent=current};
+}
+function showSavedToast(){const t=document.getElementById('save-toast');if(t){t.style.display='block';setTimeout(()=>t.style.display='none',2000)}}
+
+// TOGGLE STATUS
+function toggleStatus(track){track.classList.toggle('off')}
+
+// FILTER TABLE (visual)
+function filterTable(q){
+  q=q.toLowerCase();
+  document.querySelectorAll('.product-row').forEach(row=>{
+    const name=row.querySelector('.pr-name')?.textContent.toLowerCase()||'';
+    const sku=row.querySelector('.pr-sku')?.textContent.toLowerCase()||'';
+    row.style.opacity=(!q||name.includes(q)||sku.includes(q))?'1':'0.2';
+  })
+}
+
+// ADD PRODUCT WIZARD
+let wizStep=0;
+const wizStepLabels=['Step 1 of 3 · Basics','Step 2 of 3 · Details','Step 3 of 3 · Review & Save'];
+const wizNextLabels=['Next → Details','Next → Review','✓ Save product'];
+function openWizard(){wizStep=0;updateWizard();document.getElementById('wizard-overlay').classList.add('open');document.getElementById('wizard-drawer').classList.add('open')}
+function closeWizard(){document.getElementById('wizard-overlay').classList.remove('open');document.getElementById('wizard-drawer').classList.remove('open')}
+function updateWizard(){
+  [0,1,2].forEach(i=>{
+    const s=document.getElementById('wbody-'+i);
+    const ws=document.getElementById('wstep-'+i);
+    if(s)s.style.display=i===wizStep?'block':'none';
+    if(ws){ws.className='wstep '+(i<wizStep?'done':i===wizStep?'current':'upcoming')}
+  });
+  document.getElementById('wiz-step-label').textContent=wizStepLabels[wizStep];
+  document.getElementById('wiz-next').textContent=wizNextLabels[wizStep];
+  document.getElementById('wiz-back').style.display=wizStep>0?'block':'none';
+}
+function wizardNext(){
+  if(wizStep===2){alert('✓ Jackfruit Crisps saved to catalog!\n\nOpen the product to add pricing by market.');closeWizard();return}
+  wizStep=Math.min(2,wizStep+1);updateWizard()
+}
+function wizardBack(){wizStep=Math.max(0,wizStep-1);updateWizard()}
+</script>
+
+<!-- save toast -->
+<div id="save-toast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--emerald-600);color:white;padding:10px 18px;border-radius:12px;font-size:12px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:300">✓ Price updated in catalog baseline</div>
+
+</body>
+</html>

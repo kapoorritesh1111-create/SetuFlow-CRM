@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SETU Flow — Pipeline Redesign</title>
+<style>
+:root {
+  --navy:#0b2e4a; --navy-deep:#061c2e; --brand:#0c7fff; --brand-mid:#1a6fd8;
+  --slate-950:#0f172a; --slate-900:#111827; --slate-800:#1e293b; --slate-700:#334155;
+  --slate-600:#475569; --slate-500:#64748b; --slate-400:#94a3b8; --slate-300:#cbd5e1;
+  --slate-200:#e2e8f0; --slate-100:#f1f5f9; --slate-50:#f8fafc;
+  --emerald-600:#059669; --emerald-500:#10b981; --emerald-200:#a7f3d0; --emerald-100:#d1fae5; --emerald-50:#ecfdf5;
+  --amber-600:#d97706; --amber-500:#f59e0b; --amber-200:#fde68a; --amber-100:#fef3c7; --amber-50:#fffbeb;
+  --rose-600:#e11d48; --rose-500:#f43f5e; --rose-200:#fecaca; --rose-100:#ffe4e6; --rose-50:#fff1f2;
+  --sky-600:#0284c7; --sky-200:#bae6fd; --sky-100:#e0f2fe; --sky-50:#f0f9ff;
+  --violet-600:#7c3aed; --violet-100:#ede9fe; --violet-50:#f5f3ff;
+  --indigo-600:#4f46e5; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+  --orange-500:#f97316; --orange-100:#ffedd5; --orange-50:#fff7ed;
+  --surface:#fff; --page-bg:#f0f4f8; --border:#e2e8f0; --border-md:#cbd5e1;
+  --r-sm:6px; --r-md:12px; --r-lg:16px; --r-xl:22px; --r-2xl:28px;
+  --shadow-sm:0 1px 3px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04);
+  --shadow-md:0 4px 14px rgba(15,23,42,.08),0 1px 3px rgba(15,23,42,.05);
+  --shadow-lg:0 12px 32px rgba(15,23,42,.1),0 2px 6px rgba(15,23,42,.06);
+  --shadow-xl:0 20px 48px rgba(15,23,42,.13),0 4px 10px rgba(15,23,42,.07);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;background:var(--page-bg);color:var(--slate-900);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* ── APP SHELL ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:68px;background:linear-gradient(180deg,var(--navy-deep) 0%,var(--navy) 100%);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:4px;position:sticky;top:0;height:100vh;flex-shrink:0;z-index:60}
+.sb-logo{width:38px;height:38px;background:linear-gradient(135deg,var(--brand),#2da0ff);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;font-weight:800;font-size:13px;color:white;letter-spacing:-.5px}
+.nav-item{width:44px;height:44px;border-radius:var(--r-md);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;color:rgba(255,255,255,.38);font-size:17px;transition:background .15s}
+.nav-item.active{background:rgba(255,255,255,.12);color:white}
+.nav-item:hover:not(.active){background:rgba(255,255,255,.07);color:rgba(255,255,255,.7)}
+.nav-label{font-size:8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.sb-spacer{flex:1}
+.sb-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a5fa0,var(--brand));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;margin-top:6px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:50}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.company-badge{display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:var(--r-sm);background:rgba(11,46,74,.06);border:1px solid rgba(11,46,74,.12)}
+.company-mark{width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,var(--navy-deep),var(--brand));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:white}
+.company-name{font-size:10px;font-weight:800;color:var(--navy);letter-spacing:.02em}
+.company-sub{font-size:8px;color:var(--slate-400);letter-spacing:.1em;text-transform:uppercase}
+.divider-v{width:1px;height:24px;background:var(--border)}
+.topbar-eyebrow{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--brand)}
+.topbar-title{font-size:16px;font-weight:700;color:var(--slate-900);letter-spacing:-.3px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.vcard-btn{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:var(--r-sm);background:linear-gradient(135deg,#0b2e4a,#0c7fff 160%);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(12,127,255,.35);transition:opacity .15s}
+.vcard-btn:hover{opacity:.9}
+.mode-switch{display:flex;background:var(--slate-100);border-radius:var(--r-sm);padding:3px;border:1px solid var(--border);gap:2px}
+.mode-btn{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--slate-500);transition:all .15s}
+.mode-btn.active{background:var(--navy);color:white}
+.tb-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--brand));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white}
+
+/* ── FILTER BAR ── */
+.filter-bar{background:white;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filter-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);margin-right:4px}
+.filter-wrap{display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--slate-50);padding:0 10px;height:32px;gap:6px;min-width:115px;cursor:pointer}
+.filter-icon{font-size:13px}
+.filter-inner{display:flex;flex-direction:column}
+.filter-top{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--slate-400);line-height:1}
+.filter-val{font-size:11px;font-weight:600;color:var(--slate-800);line-height:1.4}
+.filter-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid;cursor:pointer}
+.chip-rose{background:var(--rose-50);border-color:var(--rose-200);color:#991b1b}
+.chip-amber{background:var(--amber-50);border-color:var(--amber-200);color:#92400e}
+.chip-blue{background:var(--sky-50);border-color:var(--sky-200);color:#075985}
+.chip-x{opacity:.6}
+.filter-summary{margin-left:auto;font-size:10px;font-weight:600;color:var(--slate-400)}
+.search-box{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:white;height:32px;min-width:180px}
+.search-box input{border:none;outline:none;font-size:11px;color:var(--slate-800);background:transparent;width:100%}
+.search-box input::placeholder{color:var(--slate-400)}
+
+/* ── PAGE NAV ── */
+.page-nav{background:white;border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:0}
+.page-tab{padding:12px 16px;font-size:12px;font-weight:700;color:var(--slate-400);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:color .1s}
+.page-tab.active{color:var(--navy);border-bottom-color:var(--brand)}
+.page-tab:hover:not(.active){color:var(--slate-600)}
+.pt-badge{background:var(--rose-500);color:white;border-radius:999px;padding:1px 6px;font-size:9px;font-weight:800}
+.pt-badge.ok{background:var(--emerald-500)}
+.pt-badge.info{background:var(--brand)}
+
+/* ── PIPELINE STATS STRIP ── */
+.stats-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:16px 24px 0}
+.stat-card{background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;box-shadow:var(--shadow-sm);cursor:pointer;transition:box-shadow .12s,border-color .12s;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-lg) var(--r-lg) 0 0;background:var(--accent-color,transparent)}
+.stat-card:hover{box-shadow:var(--shadow-md);border-color:var(--border-md)}
+.stat-card.danger{--accent-color:var(--rose-500)}
+.stat-card.warning{--accent-color:var(--amber-500)}
+.stat-card.success{--accent-color:var(--emerald-500)}
+.stat-card.brand{--accent-color:var(--brand)}
+.stat-card.violet{--accent-color:var(--violet-600)}
+.stat-lbl{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--slate-400);margin-bottom:8px}
+.stat-val{font-size:26px;font-weight:800;letter-spacing:-.04em;color:var(--slate-950);line-height:1}
+.stat-val.danger{color:var(--rose-600)}
+.stat-val.warning{color:var(--amber-600)}
+.stat-val.success{color:var(--emerald-600)}
+.stat-meta{font-size:10px;font-weight:600;color:var(--slate-400);margin-top:5px}
+.stat-action{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);margin-top:8px;cursor:pointer}
+
+/* ── KANBAN BOARD ── */
+.board-wrap{padding:14px 24px 24px;overflow-x:auto;display:flex;gap:12px;min-height:0;-webkit-overflow-scrolling:touch}
+.board-wrap::-webkit-scrollbar{height:4px}
+.board-wrap::-webkit-scrollbar-track{background:transparent}
+.board-wrap::-webkit-scrollbar-thumb{background:var(--slate-300);border-radius:99px}
+
+/* ── LANE ── */
+.lane{flex-shrink:0;width:256px;display:flex;flex-direction:column;gap:8px}
+.lane-header{background:white;border:1px solid var(--border);border-radius:var(--r-xl);padding:12px 14px;box-shadow:var(--shadow-sm)}
+.lane-accent{height:3px;border-radius:99px;margin-bottom:10px}
+.lane-title-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
+.lane-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.lane-title{font-size:13px;font-weight:800;color:var(--slate-900);letter-spacing:-.2px}
+.lane-count{background:var(--slate-100);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:800;color:var(--slate-600)}
+.lane-signals{display:flex;gap:8px;flex-wrap:wrap}
+.lane-sig{font-size:10px;font-weight:700}
+.lane-sig.danger{color:var(--rose-600)}
+.lane-sig.warning{color:var(--amber-600)}
+.lane-sig.ok{color:var(--slate-400)}
+.lane-value{font-size:11px;font-weight:700;color:var(--slate-600);margin-top:4px;padding-top:6px;border-top:1px solid var(--border)}
+
+.lane-cards{display:flex;flex-direction:column;gap:7px;min-height:60px}
+
+/* ── LEAD CARD ── */
+.lead-card{background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:12px;box-shadow:var(--shadow-sm);cursor:grab;transition:box-shadow .15s,transform .15s,border-color .15s;position:relative}
+.lead-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--border-md)}
+.lead-card.dragging{opacity:.6;transform:rotate(2deg);box-shadow:var(--shadow-xl)}
+.lead-card.blocked-card{border-left:3px solid var(--rose-500)}
+.lead-card.overdue-card{border-left:3px solid var(--amber-500)}
+.lead-card.healthy-card{border-left:3px solid var(--emerald-500)}
+
+/* Card top row */
+.lc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:8px}
+.lc-flag-avatar{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.lc-company{flex:1;min-width:0}
+.lc-name{font-size:12px;font-weight:800;color:var(--slate-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lc-contact{font-size:10px;color:var(--slate-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lc-open-btn{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--slate-500);cursor:pointer;flex-shrink:0;transition:background .1s}
+.lc-open-btn:hover{background:var(--slate-50);color:var(--slate-800)}
+
+/* Badge row — MAX 2 badges visible */
+.lc-badges{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.04em;border:1px solid;white-space:nowrap}
+.badge-overdue{background:var(--rose-50);border-color:var(--rose-200);color:var(--rose-600)}
+.badge-today{background:var(--amber-50);border-color:var(--amber-200);color:var(--amber-600)}
+.badge-healthy{background:var(--emerald-50);border-color:var(--emerald-200);color:var(--emerald-600)}
+.badge-blocked{background:var(--rose-100);border-color:var(--rose-200);color:#9f1239}
+.badge-atrisk{background:var(--orange-50);border-color:var(--orange-100);color:#9a3412}
+.badge-buyer{background:var(--sky-50);border-color:var(--sky-200);color:#0369a1}
+.badge-supplier{background:var(--violet-50);border-color:var(--violet-100);color:var(--violet-600)}
+.badge-pricing{background:var(--indigo-50);border-color:var(--indigo-100);color:var(--indigo-600)}
+
+/* Move readiness bar */
+.lc-move{border-radius:var(--r-sm);padding:6px 8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10px;font-weight:700}
+.lc-move.move-ok{background:var(--emerald-50);border:1px solid var(--emerald-200);color:var(--emerald-600)}
+.lc-move.move-warn{background:var(--amber-50);border:1px solid var(--amber-200);color:var(--amber-600)}
+.lc-move.move-blocked{background:var(--rose-50);border:1px solid var(--rose-200);color:var(--rose-600)}
+.lc-move-reason{font-size:9px;font-weight:500;opacity:.85;margin-top:2px;text-align:left}
+
+/* Card action row */
+.lc-actions{display:flex;gap:4px;flex-wrap:wrap}
+.lc-btn{padding:3px 8px;border-radius:var(--r-sm);font-size:9px;font-weight:700;border:1px solid var(--border);background:white;color:var(--slate-600);cursor:pointer;white-space:nowrap;transition:background .1s}
+.lc-btn:hover{background:var(--slate-50)}
+.lc-btn.advance{background:var(--navy);color:white;border-color:var(--navy)}
+.lc-btn.advance:hover{background:var(--navy-deep)}
+.lc-btn.blocked-btn{background:var(--rose-50);color:var(--rose-600);border-color:var(--rose-200);cursor:not-allowed;opacity:.6}
+
+/* Card footer */
+.lc-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
+.lc-owner{font-size:9px;font-weight:600;color:var(--slate-400)}
+.lc-meta{font-size:9px;font-weight:600;color:var(--slate-400)}
+
+/* Drop zone */
+.lane-drop-zone{border:2px dashed var(--brand);border-radius:var(--r-lg);padding:16px;text-align:center;font-size:11px;font-weight:600;color:var(--brand);background:rgba(12,127,255,.04);display:none}
+.lane.drag-over .lane-drop-zone{display:block}
+.lane.drag-over .lead-card{opacity:.6}
+
+/* ── SLIDE-IN DETAIL PANEL ── */
+.detail-overlay{display:none;position:fixed;inset:0;z-index:90;background:rgba(5,15,30,.4);backdrop-filter:blur(2px)}
+.detail-overlay.open{display:block}
+.detail-panel{position:fixed;top:0;right:0;bottom:0;width:420px;background:white;box-shadow:-16px 0 48px rgba(15,23,42,.15);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:91}
+.detail-panel.open{transform:translateX(0)}
+.dp-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.dp-close{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--slate-500);flex-shrink:0}
+.dp-company{font-size:18px;font-weight:800;color:var(--slate-950);margin-bottom:2px}
+.dp-meta{font-size:11px;color:var(--slate-500)}
+.dp-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.dp-section{background:var(--slate-50);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px}
+.dp-section-title{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--slate-400);margin-bottom:8px}
+.dp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px}
+.dp-row:last-child{margin-bottom:0}
+.dp-key{color:var(--slate-500);font-weight:500}
+.dp-val{font-weight:700;color:var(--slate-800)}
+.dp-val.danger{color:var(--rose-600)}
+.dp-val.success{color:var(--emerald-600)}
+.dp-val.warning{color:var(--amber-600)}
+.dp-stage-bar{background:var(--slate-100);border-radius:99px;height:6px;margin-top:8px}
+.dp-stage-fill{height:6px;border-radius:99px}
+.dp-blockers{display:flex;flex-direction:column;gap:5px}
+.dp-blocker-item{display:flex;align-items:flex-start;gap:7px;padding:7px 10px;border-radius:var(--r-sm);background:var(--rose-50);border:1px solid var(--rose-100);font-size:11px;color:var(--rose-700)}
+.dp-action-area{display:flex;flex-direction:column;gap:7px}
+.dp-action-btn{padding:9px 14px;border-radius:var(--r-sm);font-size:12px;font-weight:700;border:none;cursor:pointer;width:100%;text-align:center}
+.dp-action-btn.primary{background:var(--navy);color:white}
+.dp-action-btn.secondary{background:white;color:var(--slate-700);border:1px solid var(--border)}
+.dp-action-btn.danger-btn{background:var(--rose-500);color:white}
+.dp-move-select{display:flex;flex-direction:column;gap:5px}
+.dp-move-opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer;font-size:11px;font-weight:600;color:var(--slate-700);transition:background .1s}
+.dp-move-opt:hover:not(.disabled){background:var(--slate-50)}
+.dp-move-opt.current{background:rgba(12,127,255,.07);border-color:var(--brand);color:var(--brand)}
+.dp-move-opt.disabled{opacity:.4;cursor:not-allowed}
+.dp-move-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dp-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px}
+.dp-footer-btn{flex:1;padding:9px;border-radius:var(--r-sm);font-size:12px;font-weight:700;border:none;cursor:pointer}
+.dp-footer-btn.primary{background:var(--navy);color:white}
+.dp-footer-btn.ghost{background:white;color:var(--slate-600);border:1px solid var(--border)}
+
+/* ── ANNOTATION BAR ── */
+.annotation-bar{background:linear-gradient(90deg,var(--navy-deep),var(--navy));color:white;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.anno-badge{background:var(--brand);color:white;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.06em;margin-left:6px}
+.anno-badge.ghost{background:rgba(255,255,255,.12)}
+
+/* ── REVIEW PANEL ── */
+.review-panel{background:white;border-top:3px solid var(--brand);padding:32px 40px}
+.review-title{font-size:26px;font-weight:800;color:var(--slate-950);letter-spacing:-.5px;margin-bottom:8px}
+.review-subtitle{font-size:14px;color:var(--slate-500);max-width:680px;line-height:1.7;margin-bottom:32px}
+.review-section{margin-bottom:32px}
+.review-section-title{font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.review-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.change-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.change-item{border-radius:var(--r-lg);padding:16px 18px;border:1px solid;display:flex;gap:12px}
+.change-item.win{background:var(--emerald-50);border-color:var(--emerald-100)}
+.change-item.fix{background:var(--amber-50);border-color:var(--amber-100)}
+.change-item.new{background:var(--sky-50);border-color:var(--sky-100)}
+.change-item.kill{background:var(--rose-50);border-color:var(--rose-100)}
+.change-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+.change-type{font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin-bottom:3px}
+.change-item.win .change-type{color:var(--emerald-600)}
+.change-item.fix .change-type{color:var(--amber-600)}
+.change-item.new .change-type{color:var(--sky-600)}
+.change-item.kill .change-type{color:var(--rose-600)}
+.change-title{font-size:13px;font-weight:700;color:var(--slate-900);margin-bottom:4px}
+.change-desc{font-size:12px;color:var(--slate-500);line-height:1.6}
+.flow-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.flow-col h4{font-size:11px;font-weight:700;color:var(--slate-500);margin-bottom:10px}
+.flow-list{display:flex;flex-direction:column;gap:4px}
+.flow-row{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:var(--r-sm);font-size:12px;font-weight:600;border:1px solid var(--border)}
+.flow-row.was{background:var(--rose-50);border-color:var(--rose-100);color:var(--rose-600);opacity:.7}
+.flow-row.now{background:var(--emerald-50);border-color:var(--emerald-100);color:var(--emerald-600)}
+.flow-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
+.flow-row.was .flow-num{background:var(--rose-100)}
+.flow-row.now .flow-num{background:var(--emerald-100)}
+.card-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card-compare-col{padding:16px;border-radius:var(--r-lg);border:1px solid var(--border)}
+.card-compare-col.was{background:var(--rose-50);border-color:var(--rose-100)}
+.card-compare-col.now{background:var(--emerald-50);border-color:var(--emerald-100)}
+.card-compare-col h4{font-size:11px;font-weight:700;margin-bottom:10px}
+.card-compare-col.was h4{color:var(--rose-600)}
+.card-compare-col.now h4{color:var(--emerald-600)}
+.card-element{padding:5px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.card-element.removed{background:var(--rose-100);color:var(--rose-700)}
+.card-element.added{background:var(--emerald-100);color:var(--emerald-700)}
+.card-element.kept{background:white;border:1px solid var(--border);color:var(--slate-600)}
+.verdict-box{background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 60%,#1a5fa0 100%);border-radius:var(--r-xl);padding:28px 32px;color:white;display:flex;gap:24px}
+.verdict-icon{font-size:40px;flex-shrink:0}
+.verdict-q{font-size:14px;font-weight:800;margin-bottom:10px}
+.verdict-text{font-size:13px;color:rgba(255,255,255,.75);line-height:1.75}
+.verdict-text strong{color:white}
+</style>
+</head>
+<body>
+
+<!-- ANNOTATION BAR -->
+<div class="annotation-bar">
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px">
+      <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#0c7fff,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:white">BO</div>
+      <div>
+        <div style="font-size:11px;font-weight:800;color:white">Blue Orbit International</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.1em;text-transform:uppercase">SETU Flow · Pipeline Redesign</div>
+      </div>
+    </div>
+    <div>
+      <strong>Pipeline / Risks — Kanban Redesign</strong>
+      <span style="margin-left:10px;color:rgba(255,255,255,.5);font-size:11px">Drag cards · Click to inspect · Slide-in detail panel · Review below</span>
+    </div>
+  </div>
+  <div><span class="anno-badge">Interactive</span><span class="anno-badge ghost">Phase 1</span></div>
+</div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-logo">SF</div>
+    <div class="nav-item">
+      <span>⊞</span><span class="nav-label">Dash</span>
+    </div>
+    <div class="nav-item">
+      <span>◎</span><span class="nav-label">Leads</span>
+    </div>
+    <div class="nav-item">
+      <span>◇</span><span class="nav-label">Quotes</span>
+    </div>
+    <div class="nav-item">
+      <span>⬡</span><span class="nav-label">Orders</span>
+    </div>
+    <div class="nav-item active">
+      <span>⊕</span><span class="nav-label">Pipeline</span>
+    </div>
+    <div class="nav-item">
+      <span>▦</span><span class="nav-label">Catalog</span>
+    </div>
+    <div class="sb-spacer"></div>
+    <div class="nav-item"><span>⚙</span><span class="nav-label">Admin</span></div>
+    <div class="sb-avatar">RK</div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="company-badge">
+          <div class="company-mark">BO</div>
+          <div>
+            <div class="company-name">Blue Orbit Int'l</div>
+            <div class="company-sub">SETU Flow CRM</div>
+          </div>
+        </div>
+        <div class="divider-v"></div>
+        <div>
+          <div class="topbar-eyebrow">Pipeline / Risks</div>
+          <div class="topbar-title">Kanban Board</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="vcard-btn" onclick="document.getElementById('vcard-modal').style.display='flex'">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="10" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="5" y1="10" x2="9" y2="10"/></svg>
+          Share my vCard
+        </button>
+        <div class="divider-v"></div>
+        <div class="mode-switch">
+          <button class="mode-btn active" onclick="setMode(this)">All</button>
+          <button class="mode-btn" onclick="setMode(this)">Buyers</button>
+          <button class="mode-btn" onclick="setMode(this)">Suppliers</button>
+        </div>
+        <button class="tb-btn" onclick="alert('→ /leads?quickLead=1\nOpens Quick Lead drawer')">＋ Quick Lead</button>
+        <div class="tb-avatar">RK</div>
+      </div>
+    </header>
+
+    <!-- PAGE NAV -->
+    <div class="page-nav">
+      <div class="page-tab active">⊕ Kanban Board <span class="pt-badge info">47</span></div>
+      <div class="page-tab" onclick="alert('→ /leads\nOpen Follow-up queue')">📋 Follow-up Queue <span class="pt-badge">11</span></div>
+      <div class="page-tab" onclick="alert('→ /dashboard\nReturn to trade map')">⊞ Dashboard →</div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <span class="filter-label">Filter:</span>
+
+      <div class="search-box">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#94a3b8" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>
+        <input placeholder="Search company, contact, country…" oninput="filterBoard(this.value)"/>
+      </div>
+
+      <div class="filter-wrap">
+        <span class="filter-icon">⏰</span>
+        <div class="filter-inner"><span class="filter-top">Follow-up</span><span class="filter-val">All timing ▾</span></div>
+      </div>
+      <div class="filter-wrap">
+        <span class="filter-icon">👤</span>
+        <div class="filter-inner"><span class="filter-top">Owner</span><span class="filter-val">All owners ▾</span></div>
+      </div>
+      <div class="filter-wrap">
+        <span class="filter-icon">📦</span>
+        <div class="filter-inner"><span class="filter-top">Product</span><span class="filter-val">All products ▾</span></div>
+      </div>
+      <div class="filter-wrap">
+        <span class="filter-icon">🌍</span>
+        <div class="filter-inner"><span class="filter-top">Market</span><span class="filter-val">All markets ▾</span></div>
+      </div>
+
+      <span class="filter-chip chip-rose">⚠ 11 overdue <span class="chip-x">×</span></span>
+      <span class="filter-chip chip-amber">📅 6 due today <span class="chip-x">×</span></span>
+
+      <div class="filter-summary">47 leads · 6 stages · $1.2M pipeline</div>
+    </div>
+
+    <!-- PIPELINE STATS STRIP -->
+    <div class="stats-strip">
+      <div class="stat-card danger" onclick="openDetail('NatureMark India','Negotiation','Buyer','overdue')">
+        <div class="stat-lbl">Overdue follow-ups</div>
+        <div class="stat-val danger">11</div>
+        <div class="stat-meta">Across 4 stages · $420K at risk</div>
+        <div class="stat-action">→ Filter board</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-lbl">Move-blocked records</div>
+        <div class="stat-val danger">5</div>
+        <div class="stat-meta">Compliance · document blockers</div>
+        <div class="stat-action">→ View blockers</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-lbl">Due today</div>
+        <div class="stat-val warning">6</div>
+        <div class="stat-meta">4 calls · 2 follow-up emails</div>
+        <div class="stat-action">→ Filter today</div>
+      </div>
+      <div class="stat-card brand">
+        <div class="stat-lbl">Pipeline value</div>
+        <div class="stat-val" style="font-size:20px">$1.24M</div>
+        <div class="stat-meta">USD weighted · all stages</div>
+        <div class="stat-action">→ See by stage</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-lbl">Hot — close now</div>
+        <div class="stat-val success">3</div>
+        <div class="stat-meta">High intent · respond fast</div>
+        <div class="stat-action">→ Filter hot</div>
+      </div>
+      <div class="stat-card violet">
+        <div class="stat-lbl">At risk (aging)</div>
+        <div class="stat-val" style="color:var(--violet-600)">8</div>
+        <div class="stat-meta">Stalled · no activity 7d+</div>
+        <div class="stat-action">→ Rescue</div>
+      </div>
+    </div>
+
+    <!-- KANBAN BOARD -->
+    <div class="board-wrap" id="board">
+
+      <!-- LANE 1: New Lead -->
+      <div class="lane" id="lane-new" ondragover="allowDrop(event)" ondrop="drop(event,'new')">
+        <div class="lane-header">
+          <div class="lane-accent" style="background:#94a3b8"></div>
+          <div class="lane-title-row">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="lane-icon" style="background:#f1f5f9">✨</div>
+              <span class="lane-title">New Lead</span>
+            </div>
+            <span class="lane-count">19</span>
+          </div>
+          <div class="lane-signals">
+            <span class="lane-sig danger">2 overdue</span>
+            <span class="lane-sig ok">· 17 waiting</span>
+          </div>
+          <div class="lane-value">$380K pipeline</div>
+        </div>
+        <div class="lane-cards" id="cards-new">
+
+          <div class="lead-card overdue-card" draggable="true" ondragstart="drag(event,'pacific-foods')" onclick="openDetail('Pacific Foods JP','New Lead','Buyer','overdue')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇯🇵</div>
+              <div class="lc-company">
+                <div class="lc-name">Pacific Foods JP</div>
+                <div class="lc-contact">Yuki Tanaka · Import Mgr</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation();openDetail('Pacific Foods JP','New Lead','Buyer','overdue')">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge badge-overdue">⚠ 5d overdue</span>
+            </div>
+            <div class="lc-move move-warn">
+              <span>Move guarded</span>
+              <span>→ Qualify</span>
+            </div>
+            <div style="font-size:10px;color:var(--amber-600);margin-bottom:8px">Follow-up intro call was 18 Apr — no contact yet</div>
+            <div class="lc-actions">
+              <button class="lc-btn" onclick="event.stopPropagation();scheduleFollowUp('Pacific Foods JP')">📅 Schedule</button>
+              <button class="lc-btn" onclick="event.stopPropagation()">📝 Note</button>
+              <button class="lc-btn advance" onclick="event.stopPropagation();moveCard('pacific-foods','qualified')">→ Qualify</button>
+            </div>
+            <div class="lc-footer">
+              <span class="lc-owner">Ritesh Kumar</span>
+              <span class="lc-meta">FoodEx JP · 1 follow-up</span>
+            </div>
+          </div>
+
+          <div class="lead-card healthy-card" draggable="true" ondragstart="drag(event,'thai-harvest')" onclick="openDetail('Thai Harvest Co','New Lead','Supplier','healthy')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇹🇭</div>
+              <div class="lc-company">
+                <div class="lc-name">Thai Harvest Co</div>
+                <div class="lc-contact">Somchai P. · Export Dir</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation();openDetail('Thai Harvest Co','New Lead','Supplier','healthy')">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-supplier">Supplier</span>
+              <span class="badge badge-healthy">✓ Healthy</span>
+            </div>
+            <div class="lc-move move-ok">
+              <span>Move ready</span>
+              <span>→ Qualify</span>
+            </div>
+            <div class="lc-actions">
+              <button class="lc-btn" onclick="event.stopPropagation()">📅 Schedule</button>
+              <button class="lc-btn advance" onclick="event.stopPropagation();moveCard('thai-harvest','qualified')">→ Qualify</button>
+            </div>
+            <div class="lc-footer">
+              <span class="lc-owner">Priya Singh</span>
+              <span class="lc-meta">Referral · 26 Apr call</span>
+            </div>
+          </div>
+
+          <div class="lead-card healthy-card" draggable="true" ondragstart="drag(event,'spice-italy')" onclick="openDetail('Spice Italy SRL','New Lead','Buyer','healthy')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇮🇹</div>
+              <div class="lc-company">
+                <div class="lc-name">Spice Italy SRL</div>
+                <div class="lc-contact">Marco Ricci · Buyer</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation()">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge badge-healthy">📅 28 Apr</span>
+            </div>
+            <div class="lc-move move-ok"><span>Move ready</span><span>→ Qualify</span></div>
+            <div class="lc-actions">
+              <button class="lc-btn advance" onclick="event.stopPropagation();moveCard('spice-italy','qualified')">→ Qualify</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Ritesh Kumar</span><span class="lc-meta">LinkedIn · $42K est</span></div>
+          </div>
+
+          <div style="text-align:center;font-size:10px;color:var(--slate-400);padding:6px;font-weight:600">+16 more</div>
+        </div>
+        <div class="lane-drop-zone">Drop here to move to New Lead</div>
+      </div>
+
+      <!-- LANE 2: Qualified -->
+      <div class="lane" id="lane-qualified" ondragover="allowDrop(event)" ondrop="drop(event,'qualified')">
+        <div class="lane-header">
+          <div class="lane-accent" style="background:#0c7fff"></div>
+          <div class="lane-title-row">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="lane-icon" style="background:#eff6ff">✓</div>
+              <span class="lane-title">Qualified</span>
+            </div>
+            <span class="lane-count">12</span>
+          </div>
+          <div class="lane-signals">
+            <span class="lane-sig danger">3 overdue</span>
+            <span class="lane-sig warning"> · 2 today</span>
+          </div>
+          <div class="lane-value">$290K pipeline</div>
+        </div>
+        <div class="lane-cards" id="cards-qualified">
+
+          <div class="lead-card overdue-card" draggable="true" ondragstart="drag(event,'metro-de')" onclick="openDetail('Metro Retail DE','Qualified','Buyer','overdue')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇩🇪</div>
+              <div class="lc-company">
+                <div class="lc-name">Metro Retail DE</div>
+                <div class="lc-contact">Klaus Weber · Cat Mgr</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation();openDetail('Metro Retail DE','Qualified','Buyer','overdue')">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge badge-today">📅 Today 3PM</span>
+            </div>
+            <div class="lc-move move-ok"><span>Move ready</span><span>→ Sample</span></div>
+            <div class="lc-actions">
+              <button class="lc-btn" onclick="event.stopPropagation()">📝 Prepare</button>
+              <button class="lc-btn advance" onclick="event.stopPropagation();moveCard('metro-de','sample')">→ Sample</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Ritesh Kumar</span><span class="lc-meta">FoodEx · $95K</span></div>
+          </div>
+
+          <div class="lead-card overdue-card" draggable="true" ondragstart="drag(event,'green-sg')" onclick="openDetail('GreenSource SG','Qualified','Buyer','overdue')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇸🇬</div>
+              <div class="lc-company">
+                <div class="lc-name">GreenSource SG</div>
+                <div class="lc-contact">Li Wei · Procurement</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation()">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge badge-overdue">RFQ 5d overdue</span>
+            </div>
+            <div class="lc-move move-warn"><span>Move guarded</span><span>→ Sample</span></div>
+            <div style="font-size:10px;color:var(--amber-600);margin-bottom:8px">RFQ not started · Moringa Powder</div>
+            <div class="lc-actions">
+              <button class="lc-btn advance" onclick="event.stopPropagation()">→ Start quote</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Priya Singh</span><span class="lc-meta">Referral · $68K</span></div>
+          </div>
+
+          <div style="text-align:center;font-size:10px;color:var(--slate-400);padding:6px;font-weight:600">+10 more</div>
+        </div>
+        <div class="lane-drop-zone">Drop here for Qualified</div>
+      </div>
+
+      <!-- LANE 3: Sample Sent -->
+      <div class="lane" id="lane-sample" ondragover="allowDrop(event)" ondrop="drop(event,'sample')">
+        <div class="lane-header">
+          <div class="lane-accent" style="background:#7c3aed"></div>
+          <div class="lane-title-row">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="lane-icon" style="background:#f5f3ff">📦</div>
+              <span class="lane-title">Sample Sent</span>
+            </div>
+            <span class="lane-count">7</span>
+          </div>
+          <div class="lane-signals">
+            <span class="lane-sig danger">2 overdue</span>
+            <span class="lane-sig warning"> · 1 blocked</span>
+          </div>
+          <div class="lane-value">$245K pipeline</div>
+        </div>
+        <div class="lane-cards" id="cards-sample">
+
+          <div class="lead-card overdue-card" draggable="true" ondragstart="drag(event,'spice-au')" onclick="openDetail('Spice Valley AU','Sample Sent','Buyer','overdue')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇦🇺</div>
+              <div class="lc-company">
+                <div class="lc-name">Spice Valley AU</div>
+                <div class="lc-contact">Helen O'Brien · Buyer</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation()">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge badge-overdue">8d no feedback</span>
+            </div>
+            <div class="lc-move move-warn"><span>Move guarded</span><span>→ Negotiate</span></div>
+            <div style="font-size:10px;color:var(--amber-600);margin-bottom:8px">Sample dispatched 15 Apr — no response yet</div>
+            <div class="lc-actions">
+              <button class="lc-btn" onclick="event.stopPropagation()">📅 Follow up</button>
+              <button class="lc-btn advance" onclick="event.stopPropagation();moveCard('spice-au','negotiation')">→ Negotiate</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Ritesh Kumar</span><span class="lc-meta">Direct · $85K</span></div>
+          </div>
+
+          <div class="lead-card blocked-card" draggable="true" ondragstart="drag(event,'fresh-uk')" onclick="openDetail('FreshBridge UK','Sample Sent','Buyer','blocked')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇬🇧</div>
+              <div class="lc-company">
+                <div class="lc-name">FreshBridge UK</div>
+                <div class="lc-contact">Sarah Johnson · MD</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation();openDetail('FreshBridge UK','Sample Sent','Buyer','blocked')">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge badge-blocked">🚫 Compliance</span>
+            </div>
+            <div class="lc-move move-blocked">
+              <div>
+                <div>Move blocked</div>
+                <div class="lc-move-reason">UKCA approval missing · cannot advance</div>
+              </div>
+            </div>
+            <div class="lc-actions">
+              <button class="lc-btn" onclick="event.stopPropagation()">🔍 View blockers</button>
+              <button class="lc-btn blocked-btn" disabled>→ Negotiate</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Priya Singh</span><span class="lc-meta">LinkedIn · $78K</span></div>
+          </div>
+
+          <div style="text-align:center;font-size:10px;color:var(--slate-400);padding:6px;font-weight:600">+5 more</div>
+        </div>
+        <div class="lane-drop-zone">Drop here for Sample Sent</div>
+      </div>
+
+      <!-- LANE 4: Negotiation -->
+      <div class="lane" id="lane-negotiation" ondragover="allowDrop(event)" ondrop="drop(event,'negotiation')">
+        <div class="lane-header">
+          <div class="lane-accent" style="background:#f59e0b"></div>
+          <div class="lane-title-row">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="lane-icon" style="background:#fffbeb">🤝</div>
+              <span class="lane-title">Negotiation</span>
+            </div>
+            <span class="lane-count">5</span>
+          </div>
+          <div class="lane-signals">
+            <span class="lane-sig danger">1 critical</span>
+            <span class="lane-sig warning"> · 2 at risk</span>
+          </div>
+          <div class="lane-value">$185K pipeline</div>
+        </div>
+        <div class="lane-cards" id="cards-negotiation">
+
+          <div class="lead-card blocked-card" draggable="true" ondragstart="drag(event,'naturemark')" onclick="openDetail('NatureMark India','Negotiation','Buyer','blocked')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇮🇳</div>
+              <div class="lc-company">
+                <div class="lc-name">NatureMark India</div>
+                <div class="lc-contact">Ananya Sharma · Proc HD</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation();openDetail('NatureMark India','Negotiation','Buyer','blocked')">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge badge-blocked">21d no contact</span>
+            </div>
+            <div class="lc-move move-blocked">
+              <div>
+                <div>Move blocked</div>
+                <div class="lc-move-reason">Follow-up 21d overdue · qualification incomplete</div>
+              </div>
+            </div>
+            <div class="lc-actions">
+              <button class="lc-btn" onclick="event.stopPropagation();scheduleFollowUp('NatureMark India')">📅 Schedule now</button>
+              <button class="lc-btn blocked-btn" disabled>→ Quote</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Priya Singh</span><span class="lc-meta">Trade show · $240K</span></div>
+          </div>
+
+          <div class="lead-card healthy-card" draggable="true" ondragstart="drag(event,'fresh-world')" onclick="openDetail('FreshWorld UK','Negotiation','Buyer','healthy')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇬🇧</div>
+              <div class="lc-company">
+                <div class="lc-name">FreshWorld UK</div>
+                <div class="lc-contact">James Carter · Buyer</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation();openDetail('FreshWorld UK','Negotiation','Buyer','healthy')">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge badge-healthy">🔥 Hot · 26 Apr call</span>
+            </div>
+            <div class="lc-move move-ok"><span>Move ready</span><span>→ Quote</span></div>
+            <div class="lc-actions">
+              <button class="lc-btn" onclick="event.stopPropagation()">📝 Note</button>
+              <button class="lc-btn advance" onclick="event.stopPropagation();moveCard('fresh-world','quote')">→ Send Quote</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Ritesh Kumar</span><span class="lc-meta">LinkedIn · $142K</span></div>
+          </div>
+
+          <div style="text-align:center;font-size:10px;color:var(--slate-400);padding:6px;font-weight:600">+3 more</div>
+        </div>
+        <div class="lane-drop-zone">Drop here for Negotiation</div>
+      </div>
+
+      <!-- LANE 5: Quote Sent -->
+      <div class="lane" id="lane-quote" ondragover="allowDrop(event)" ondrop="drop(event,'quote')">
+        <div class="lane-header">
+          <div class="lane-accent" style="background:#e11d48"></div>
+          <div class="lane-title-row">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="lane-icon" style="background:#fff1f2">◇</div>
+              <span class="lane-title">Quote Sent</span>
+            </div>
+            <span class="lane-count">3</span>
+          </div>
+          <div class="lane-signals">
+            <span class="lane-sig danger">2 expiring</span>
+            <span class="lane-sig warning"> · $90K hot</span>
+          </div>
+          <div class="lane-value">$90K pipeline</div>
+        </div>
+        <div class="lane-cards" id="cards-quote">
+
+          <div class="lead-card blocked-card" draggable="true" ondragstart="drag(event,'zara-uae')" onclick="openDetail('Zara Foods UAE','Quote Sent','Buyer','blocked')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇦🇪</div>
+              <div class="lc-company">
+                <div class="lc-name">Zara Foods UAE</div>
+                <div class="lc-contact">M. Al-Rashid · Purchasing</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation();openDetail('Zara Foods UAE','Quote Sent','Buyer','blocked')">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge badge-blocked">Expires in 2 days</span>
+            </div>
+            <div class="lc-move move-blocked">
+              <div>
+                <div>Urgent — respond or revise</div>
+                <div class="lc-move-reason">Q-2024-0091 · 14 days no response</div>
+              </div>
+            </div>
+            <div class="lc-actions">
+              <button class="lc-btn" onclick="event.stopPropagation()">📅 Follow up</button>
+              <button class="lc-btn advance" onclick="event.stopPropagation()">🔄 Revise</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Ritesh Kumar</span><span class="lc-meta">Direct · $180K</span></div>
+          </div>
+
+          <div class="lead-card healthy-card" draggable="true" ondragstart="drag(event,'freshbridge2')" onclick="openDetail('FreshBridge UK — Q2','Quote Sent','Buyer','healthy')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇬🇧</div>
+              <div class="lc-company">
+                <div class="lc-name">FreshBridge UK — Q2</div>
+                <div class="lc-contact">Sarah Johnson · MD</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation()">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-buyer">Buyer</span>
+              <span class="badge" style="background:#ede9fe;border-color:#c4b5fd;color:#5b21b6">Approval pending</span>
+            </div>
+            <div class="lc-move move-warn"><span>Awaiting approval</span><span>3d</span></div>
+            <div class="lc-actions">
+              <button class="lc-btn advance" onclick="event.stopPropagation()">→ Approve</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Ritesh Kumar</span><span class="lc-meta">LinkedIn · $48K</span></div>
+          </div>
+
+        </div>
+        <div class="lane-drop-zone">Drop here for Quote Sent</div>
+      </div>
+
+      <!-- LANE 6: Won -->
+      <div class="lane" id="lane-won" ondragover="allowDrop(event)" ondrop="drop(event,'won')">
+        <div class="lane-header">
+          <div class="lane-accent" style="background:#059669"></div>
+          <div class="lane-title-row">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="lane-icon" style="background:#ecfdf5">🏆</div>
+              <span class="lane-title">Won ✓</span>
+            </div>
+            <span class="lane-count">1</span>
+          </div>
+          <div class="lane-signals">
+            <span class="lane-sig ok">1 execution</span>
+          </div>
+          <div class="lane-value">$48K closed</div>
+        </div>
+        <div class="lane-cards" id="cards-won">
+          <div class="lead-card healthy-card" draggable="true" ondragstart="drag(event,'almarai2')" onclick="openDetail('Al Marai Group','Won','Supplier','won')">
+            <div class="lc-top">
+              <div class="lc-flag-avatar">🇸🇦</div>
+              <div class="lc-company">
+                <div class="lc-name">Al Marai Group</div>
+                <div class="lc-contact">F. Al-Zahrawi · QA</div>
+              </div>
+              <button class="lc-open-btn" onclick="event.stopPropagation()">↗</button>
+            </div>
+            <div class="lc-badges">
+              <span class="badge badge-supplier">Supplier</span>
+              <span class="badge badge-healthy">✓ Won</span>
+            </div>
+            <div class="lc-move move-ok"><span>In execution</span><span>→ Orders</span></div>
+            <div class="lc-actions">
+              <button class="lc-btn advance" onclick="event.stopPropagation();alert('→ /orders\nOpens order execution workspace')">→ Open Order</button>
+            </div>
+            <div class="lc-footer"><span class="lc-owner">Ritesh Kumar</span><span class="lc-meta">Long-term · $48K</span></div>
+          </div>
+        </div>
+        <div class="lane-drop-zone">Drop here for Won</div>
+      </div>
+
+    </div><!-- /board -->
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- SLIDE-IN DETAIL PANEL -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detail-panel">
+  <div class="dp-header">
+    <div>
+      <div class="dp-company" id="dp-company">NatureMark India</div>
+      <div class="dp-meta" id="dp-meta">Buyer · Negotiation · Priya Singh</div>
+    </div>
+    <button class="dp-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="dp-body">
+
+    <div class="dp-section">
+      <div class="dp-section-title">Contact</div>
+      <div class="dp-row"><span class="dp-key">Contact</span><span class="dp-val" id="dp-contact">Ananya Sharma</span></div>
+      <div class="dp-row"><span class="dp-key">Country</span><span class="dp-val" id="dp-country">🇮🇳 India</span></div>
+      <div class="dp-row"><span class="dp-key">Source</span><span class="dp-val">Trade show · FoodEx</span></div>
+      <div class="dp-row"><span class="dp-key">Deal value</span><span class="dp-val" id="dp-value">$240K USD</span></div>
+    </div>
+
+    <div class="dp-section" id="dp-status-section">
+      <div class="dp-section-title">Status</div>
+      <div class="dp-row"><span class="dp-key">Follow-up</span><span class="dp-val danger" id="dp-followup">21 days overdue</span></div>
+      <div class="dp-row"><span class="dp-key">Health</span><span class="dp-val danger" id="dp-health">At risk · stalled</span></div>
+      <div class="dp-row"><span class="dp-key">Pricing</span><span class="dp-val warning" id="dp-pricing">Partial · 2 products</span></div>
+      <div class="dp-row"><span class="dp-key">Move readiness</span><span class="dp-val" id="dp-readiness">Blocked</span></div>
+      <div class="dp-stage-bar">
+        <div class="dp-stage-fill" id="dp-stage-fill" style="width:65%;background:var(--amber-500)"></div>
+      </div>
+    </div>
+
+    <div class="dp-section" id="dp-blockers-section">
+      <div class="dp-section-title">Blockers — resolve before advancing</div>
+      <div class="dp-blockers" id="dp-blockers">
+        <div class="dp-blocker-item">⚠ Follow-up 21 days overdue — schedule a call with Ananya Sharma before anything else</div>
+        <div class="dp-blocker-item">⚠ Budget authority not captured — required for commercial routing above $100K</div>
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-title">Move to stage</div>
+      <div class="dp-move-select" id="dp-move-select">
+        <div class="dp-move-opt disabled"><span class="dp-move-dot" style="background:var(--slate-300)"></span>New Lead</div>
+        <div class="dp-move-opt disabled"><span class="dp-move-dot" style="background:var(--brand)"></span>Qualified</div>
+        <div class="dp-move-opt disabled"><span class="dp-move-dot" style="background:var(--violet-600)"></span>Sample Sent</div>
+        <div class="dp-move-opt current"><span class="dp-move-dot" style="background:var(--amber-500)"></span>Negotiation ← current</div>
+        <div class="dp-move-opt disabled"><span class="dp-move-dot" style="background:var(--rose-500)"></span>Quote Sent — blocked until follow-up resolved</div>
+        <div class="dp-move-opt disabled"><span class="dp-move-dot" style="background:var(--emerald-500)"></span>Won</div>
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-title">Quick actions</div>
+      <div class="dp-action-area">
+        <button class="dp-action-btn primary" onclick="scheduleFollowUp('NatureMark India');closeDetail()">📅 Schedule follow-up now</button>
+        <button class="dp-action-btn secondary" onclick="closeDetail();alert('→ /leads/[id]\nOpens Lead Command Center')">→ Open Command Center</button>
+        <button class="dp-action-btn secondary" onclick="closeDetail()">📝 Add note to pipeline log</button>
+      </div>
+    </div>
+
+  </div>
+  <div class="dp-footer">
+    <button class="dp-footer-btn primary" onclick="closeDetail();alert('→ /leads/[id]\nCommand Center for NatureMark India')">Open full record →</button>
+    <button class="dp-footer-btn ghost" onclick="closeDetail()">Close</button>
+  </div>
+</div>
+
+<!-- FOLLOW-UP TOAST -->
+<div id="follow-up-toast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--slate-900);color:white;padding:12px 20px;border-radius:var(--r-lg);font-size:12px;font-weight:600;box-shadow:var(--shadow-xl);z-index:200;transition:opacity .3s">
+  ✓ Follow-up scheduled for <span id="toast-company"></span>
+</div>
+
+<!-- MOVE TOAST -->
+<div id="move-toast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--emerald-600);color:white;padding:12px 20px;border-radius:var(--r-lg);font-size:12px;font-weight:600;box-shadow:var(--shadow-xl);z-index:200">
+  ✓ Card moved successfully
+</div>
+
+<!-- vCARD MODAL -->
+<div id="vcard-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(5,15,30,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:white;border-radius:20px;width:360px;box-shadow:0 32px 80px rgba(0,0,0,.3);overflow:hidden">
+    <div style="background:linear-gradient(135deg,#0f172a 0%,#0b2e4a 55%,#0c7fff 140%);padding:28px;color:white;position:relative">
+      <button onclick="document.getElementById('vcard-modal').style.display='none'" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,.15);border:none;color:white;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer">✕</button>
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0c7fff,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:white;border:3px solid rgba(255,255,255,.3);margin-bottom:12px">RK</div>
+      <div style="font-size:18px;font-weight:800">Ritesh Kumar</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:3px">Director · Blue Orbit International</div>
+      <div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,.45)">ritesh@blueorbit.com · SETU Flow CRM</div>
+    </div>
+    <div style="padding:20px 28px;display:flex;flex-direction:column;gap:8px">
+      <button style="padding:11px 14px;border-radius:10px;font-size:13px;font-weight:700;border:none;background:var(--navy);color:white;cursor:pointer">⬇ Download .vcf card</button>
+      <button style="padding:11px 14px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--slate-50);color:var(--slate-800);cursor:pointer">🔗 Copy share link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+  REVIEW PANEL
+═══════════════════════════════════════════════════════ -->
+<div class="review-panel">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:var(--r-sm);background:rgba(11,46,74,.06);border:1px solid rgba(11,46,74,.12)">
+      <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--navy-deep),var(--brand));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white">BO</div>
+      <div>
+        <div style="font-size:11px;font-weight:800;color:var(--navy)">Blue Orbit International · Roohted</div>
+        <div style="font-size:9px;color:var(--slate-400);letter-spacing:.1em;text-transform:uppercase">SETU Flow — Pipeline Redesign</div>
+      </div>
+    </div>
+    <span style="font-size:11px;color:var(--slate-400)">Pipeline page redesign · for builder handoff · Phase 1</span>
+  </div>
+
+  <div class="review-title">Pipeline Redesign — Code Review &amp; Builder Guide</div>
+  <div class="review-subtitle">The pipeline board is the best module in the system — the kanban pattern is correct and drag-and-drop works. These changes tighten the signal-to-noise on cards, add a slide-in detail panel, and remove the heavy prose layer that sits above the board. Consistent with dashboard and leads design system throughout.</div>
+
+  <!-- Section 1: What changed above the board -->
+  <div class="review-section">
+    <div class="review-section-title">1 — Above the board: what changed</div>
+    <div class="flow-compare">
+      <div class="flow-col">
+        <h4>❌ Current (too much reads before board loads)</h4>
+        <div class="flow-list">
+          <div class="flow-row was"><span class="flow-num">1</span>WorkspaceWorkflowShell (today filter + mode)</div>
+          <div class="flow-row was"><span class="flow-num">2</span>"Where am I" / "What is blocking me" 2-panel prose</div>
+          <div class="flow-row was"><span class="flow-num">3</span>PipelineAIStrip (AI message above board)</div>
+          <div class="flow-row was"><span class="flow-num">4</span>CollapsiblePanel "Board status" with 3 StateMessages inside</div>
+          <div class="flow-row was"><span class="flow-num">5</span>5-column ToolbarStat row</div>
+          <div class="flow-row was"><span class="flow-num">6</span>Filter panel (hidden by default)</div>
+          <div class="flow-row was"><span class="flow-num">7</span>Lane summary grid (5 cards)</div>
+          <div class="flow-row was"><span class="flow-num">8</span>Board (finally!)</div>
+        </div>
+      </div>
+      <div class="flow-col">
+        <h4>✅ Proposed (stats → board immediately)</h4>
+        <div class="flow-list">
+          <div class="flow-row now"><span class="flow-num">1</span>Topbar (consistent, vCard + mode switch)</div>
+          <div class="flow-row now"><span class="flow-num">2</span>Filter bar (search + 4 dropdowns, same as dashboard/leads)</div>
+          <div class="flow-row now"><span class="flow-num">3</span>6-stat strip with colour-coded KPIs + clickable</div>
+          <div class="flow-row now"><span class="flow-num">4</span>Board — immediately visible</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:12px 16px;background:var(--amber-50);border:1px solid var(--amber-100);border-radius:var(--r-md);font-size:12px;color:#92400e;line-height:1.7">
+      <strong>Why:</strong> The "Where am I" + "What is blocking me" boxes + AI strip + CollapsiblePanel with StateMessages = the operator reads ~200 words of internal documentation before seeing a single pipeline card. For a client demo this is fatal. The stats strip conveys the same information in 6 numbers.
+    </div>
+  </div>
+
+  <!-- Section 2: Lead card redesign -->
+  <div class="review-section">
+    <div class="review-section-title">2 — Lead card: signal reduction (most impactful code change)</div>
+    <div class="card-compare">
+      <div class="card-compare-col was">
+        <h4>❌ Current card — 8 visible elements</h4>
+        <div class="card-element removed">❌ Health badge (at_risk / healthy / stalled)</div>
+        <div class="card-element removed">❌ Follow-up badge (with icon)</div>
+        <div class="card-element removed">❌ Pricing readiness badge (ready / partial / missing)</div>
+        <div class="card-element removed">❌ Move readiness box + next action label</div>
+        <div class="card-element kept">→ AI suggestion text (full sentence)</div>
+        <div class="card-element kept">→ Stage blockers list (rose box)</div>
+        <div class="card-element kept">→ Action items pills (up to 2)</div>
+        <div class="card-element kept">→ Coverage summary (sky box)</div>
+        <div style="margin-top:8px;font-size:11px;color:var(--rose-600)">Result: 8-10 visual elements per card · impossible to scan across 20+ cards</div>
+      </div>
+      <div class="card-compare-col now">
+        <h4>✅ Proposed card — 4 elements + expand</h4>
+        <div class="card-element added">✓ Company + flag + contact (always)</div>
+        <div class="card-element added">✓ 2 badges MAX: type pill + most urgent signal</div>
+        <div class="card-element added">✓ Move readiness bar (compact: ok / warn / blocked)</div>
+        <div class="card-element added">✓ 2 action buttons (advance or schedule)</div>
+        <div class="card-element kept">→ Footer: owner + value/source</div>
+        <div style="margin-top:8px;font-size:11px;color:var(--emerald-600)">Blockers, AI guidance, coverage, history → click to open slide-in detail panel. Never on the card surface.</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:12px 16px;background:var(--sky-50);border:1px solid var(--sky-100);border-radius:var(--r-md);font-size:12px;color:#075985;line-height:1.7">
+      <strong>Builder note:</strong> In <code>lead-card.tsx</code>, remove <code>suggestedAction</code> div, <code>visibleReadinessReasons</code> block, <code>visibleActionItems</code> pills, and <code>coverageSummary</code> div from the card body. Move all of these into a <code>LeadCardDetailPanel</code> component that renders in the slide-in. The card click opens the slide-in, not the full command center.
+    </div>
+  </div>
+
+  <!-- Section 3: New slide-in detail panel -->
+  <div class="review-section">
+    <div class="review-section-title">3 — New component: slide-in detail panel</div>
+    <div class="change-grid">
+      <div class="change-item new">
+        <div class="change-icon">＋</div>
+        <div>
+          <div class="change-type">New component</div>
+          <div class="change-title">LeadCardDetailPanel (slide-in)</div>
+          <div class="change-desc">A 420px right-side panel that opens when a card is clicked. Shows: contact detail, status row, blockers, stage move selector, quick actions (schedule / note / open full record). Does not navigate away from the board. Escape key closes it. Click overlay closes it.</div>
+        </div>
+      </div>
+      <div class="change-item new">
+        <div class="change-icon">＋</div>
+        <div>
+          <div class="change-type">New UX pattern</div>
+          <div class="change-title">Stage move inside the panel</div>
+          <div class="change-desc">Instead of the move dropdown on the card (or in a card-opened inline form), stage moves happen inside the detail panel. The panel shows all stages with move-readiness state (ready/blocked/current). One click to move — no form, no dropdown.</div>
+        </div>
+      </div>
+      <div class="change-item win">
+        <div class="change-icon">✓</div>
+        <div>
+          <div class="change-type">Keep</div>
+          <div class="change-title">Drag-and-drop between lanes</div>
+          <div class="change-desc">The HTML5 drag-and-drop implementation is correct and needs no changes. The drop highlight (isActiveDropTarget) is good UX. Keep the readiness check on drop — blocking invalid moves via drag is important for governance. Just make the drag handle more visible.</div>
+        </div>
+      </div>
+      <div class="change-item win">
+        <div class="change-icon">✓</div>
+        <div>
+          <div class="change-type">Keep &amp; improve</div>
+          <div class="change-title">Lane headers with signal counts</div>
+          <div class="change-desc">Lane headers showing overdue count + blocked count + value total is exactly right. Add pipeline value total ($) per lane — currently only shows count. This is the one number trading leadership looks at first. Add it with a thin separator line.</div>
+        </div>
+      </div>
+      <div class="change-item kill">
+        <div class="change-icon">✕</div>
+        <div>
+          <div class="change-type">Remove from board surface</div>
+          <div class="change-title">PipelineAIStrip</div>
+          <div class="change-desc">The AI strip is positioned between the stats and the board and displays a generic AI message about overdue leads. This adds nothing a number doesn't already say. Remove from above the board. AI guidance moves into the slide-in detail panel as a "Next safe action" field per lead.</div>
+        </div>
+      </div>
+      <div class="change-item kill">
+        <div class="change-icon">✕</div>
+        <div>
+          <div class="change-type">Remove</div>
+          <div class="change-title">CollapsiblePanel "Board status and route shortcuts"</div>
+          <div class="change-desc">This collapsible contains 3 StateMessage components and route links (Dashboard / Follow-up / Orders). The route links move to the page nav tabs. The StateMessage content moves to the 6-stat strip. The CollapsiblePanel is removed entirely — it adds a collapsible interaction before the operator can see the board.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Filter bar -->
+  <div class="review-section">
+    <div class="review-section-title">4 — Filter bar: consistent with dashboard + leads</div>
+    <div class="change-grid">
+      <div class="change-item fix">
+        <div class="change-icon">⟳</div>
+        <div>
+          <div class="change-type">Move + restructure</div>
+          <div class="change-title">Filters move from secondary panel to filter bar</div>
+          <div class="change-desc">Currently: filters are inside a `filtersOpen` collapsible triggered by a toolbar button. This is a second click before the operator can filter. New: all 4 filters (follow-up, owner, category, market) + search are always visible in the filter bar — same pattern as dashboard and leads pages.</div>
+        </div>
+      </div>
+      <div class="change-item new">
+        <div class="change-icon">＋</div>
+        <div>
+          <div class="change-type">New</div>
+          <div class="change-title">Active filter chips below filter bar</div>
+          <div class="change-desc">Same active-chip pattern from dashboard: "11 overdue ×" and "UAE ×" chips appear when filters are active. Clicking × clears that filter. Result summary "47 leads · $1.2M" is right-aligned. This replaces the verbose "active filter count" badge on the toolbar button.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Component-by-component mapping -->
+  <div class="review-section">
+    <div class="review-section-title">5 — Component changes mapped to existing files</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:8px 12px;border-bottom:2px solid var(--border);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate-400)">File</th>
+            <th style="text-align:left;padding:8px 12px;border-bottom:2px solid var(--border);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate-400)">Change</th>
+            <th style="text-align:left;padding:8px 12px;border-bottom:2px solid var(--border);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate-400)">Effort</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:9px 12px;font-family:monospace;font-size:11px;color:var(--navy)">pipeline-board.tsx</td>
+            <td style="padding:9px 12px;color:var(--slate-700)">Remove "Where am I" panel, AI strip, CollapsiblePanel. Replace with stats strip (new component). Move filter bar outside WorkspaceWorkflowShell.</td>
+            <td style="padding:9px 12px;color:var(--amber-600);font-weight:700">3h</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:9px 12px;font-family:monospace;font-size:11px;color:var(--navy)">lead-card.tsx</td>
+            <td style="padding:9px 12px;color:var(--slate-700)">Remove suggestedAction div, visibleReadinessReasons, visibleActionItems, coverageSummary. Add onClick→openPanel(leadId) handler. Keep move readiness bar and max 2 badges.</td>
+            <td style="padding:9px 12px;color:var(--amber-600);font-weight:700">2h</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:9px 12px;font-family:monospace;font-size:11px;color:var(--emerald-600)">NEW: LeadCardDetailPanel.tsx</td>
+            <td style="padding:9px 12px;color:var(--slate-700)">New component. Takes leadId + isOpen prop. Fetches or receives full lead data. Shows: contact, status, blockers, stage mover, quick actions. 420px slide-in with overlay.</td>
+            <td style="padding:9px 12px;color:var(--rose-600);font-weight:700">6h</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:9px 12px;font-family:monospace;font-size:11px;color:var(--emerald-600)">NEW: PipelineStatsStrip.tsx</td>
+            <td style="padding:9px 12px;color:var(--slate-700)">6-card stat strip: overdue / blocked / due today / pipeline value / hot / at risk. Each card is clickable and applies a filter to the board. Replace ToolbarStat row + CollapsiblePanel content.</td>
+            <td style="padding:9px 12px;color:var(--amber-600);font-weight:700">2h</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:9px 12px;font-family:monospace;font-size:11px;color:var(--navy)">PipelineLaneSection.tsx</td>
+            <td style="padding:9px 12px;color:var(--slate-700)">Add pipeline value total ($) to lane header. Keep overdue/blocked/today counts. Add drop zone hint text. No other structural changes needed.</td>
+            <td style="padding:9px 12px;color:var(--emerald-600);font-weight:700">1h</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:9px 12px;font-family:monospace;font-size:11px;color:var(--navy)">PipelineAIStrip.tsx</td>
+            <td style="padding:9px 12px;color:var(--slate-700)">Remove from pipeline-board.tsx render. Move AI guidance logic into LeadCardDetailPanel as a "Next safe action" field generated per-lead. The file can stay but is no longer used on the board page.</td>
+            <td style="padding:9px 12px;color:var(--emerald-600);font-weight:700">30m</td>
+          </tr>
+          <tr>
+            <td style="padding:9px 12px;font-family:monospace;font-size:11px;color:var(--navy)">PipelineBoardFilters.tsx</td>
+            <td style="padding:9px 12px;color:var(--slate-700)">Flatten into the shared filter-bar pattern. Same filter-select-wrap components used in dashboard + leads. Remove the filtersOpen toggle — all 4 filters always visible. Active chips replace the "Filters (N)" badge.</td>
+            <td style="padding:9px 12px;color:var(--amber-600);font-weight:700">2h</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="verdict-box">
+    <div class="verdict-icon">⊕</div>
+    <div>
+      <div class="verdict-q">Builder sprint plan — Pipeline page</div>
+      <div class="verdict-text">
+        <strong>Sprint 1 (quick — 1 day):</strong> Remove AI strip from board · Remove "Where am I" prose boxes · Remove CollapsiblePanel · Replace with 6-stat strip. Board appears immediately on load. This alone transforms the demo experience.<br><br>
+        <strong>Sprint 2 (core — 2 days):</strong> Add LeadCardDetailPanel slide-in · Simplify lead card to 4 elements · Move blockers/AI/coverage into the panel. Stage move selector inside the panel replaces the card's move dropdown.<br><br>
+        <strong>Sprint 3 (polish — 1 day):</strong> Flatten filter bar (always visible, consistent with dashboard/leads) · Add pipeline value ($) to lane headers · Add active filter chips. The board now feels like part of the same product family.<br><br>
+        <strong>Drag-and-drop:</strong> Keep exactly as-is. The HTML5 DnD implementation is solid. The readiness gate on drop is important for trade governance — do not remove it. Just make the drag cursor more obvious (use a grab cursor CSS + drag ghost opacity).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DRAG AND DROP ────────────────────────────────────────────
+let dragged = null;
+function drag(e, id) {
+  dragged = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => { if(e.target) e.target.classList.add('dragging'); }, 0);
+}
+function allowDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+function drop(e, laneId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragged) {
+    showMoveToast();
+    dragged = null;
+  }
+}
+document.addEventListener('dragend', () => {
+  document.querySelectorAll('.lead-card').forEach(c => c.classList.remove('dragging'));
+  document.querySelectorAll('.lane').forEach(l => l.classList.remove('drag-over'));
+});
+
+function moveCard(cardId, targetLane) {
+  showMoveToast();
+}
+
+function showMoveToast() {
+  const t = document.getElementById('move-toast');
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2500);
+}
+
+// ── SLIDE-IN DETAIL PANEL ───────────────────────────────────
+const detailData = {
+  'NatureMark India': { contact:'Ananya Sharma · Head of Procurement', country:'🇮🇳 India', value:'$240K USD', followup:'21 days overdue', health:'At risk · stalled', pricing:'Partial · 2 products', readiness:'Blocked', stageWidth:'65%', stageColor:'var(--rose-500)', blockers:['Follow-up 21 days overdue — schedule a call with Ananya Sharma','Budget authority not captured — required for commercial routing above $100K'] },
+  'Zara Foods UAE': { contact:'Mohammed Al-Rashid · Purchasing Director', country:'🇦🇪 UAE', value:'$180K USD', followup:'14 days no response', health:'At risk · expiring', pricing:'Quote sent · expires in 2 days', readiness:'Urgent', stageWidth:'85%', stageColor:'var(--rose-500)', blockers:['Quote Q-2024-0091 expiring — follow up or revise immediately','No response from buyer in 14 days'] },
+  'FreshBridge UK': { contact:'Sarah Johnson · Managing Director', country:'🇬🇧 United Kingdom', value:'$78K USD', followup:'Scheduled · 27 Apr', health:'Blocked · compliance', pricing:'Partial · UKCA missing', readiness:'Blocked', stageWidth:'50%', stageColor:'var(--rose-400)', blockers:['UKCA approval certificate missing — cannot advance to Negotiation','EU food labelling doc pending'] },
+  'FreshWorld UK': { contact:'James Carter · Senior Buyer', country:'🇬🇧 United Kingdom', value:'$142K USD', followup:'📅 26 Apr call', health:'🔥 Hot', pricing:'Ready · FOB', readiness:'Ready', stageWidth:'75%', stageColor:'var(--emerald-500)', blockers:[] },
+  'Al Marai Group': { contact:'Fatima Al-Zahrawi · QA Manager', country:'🇸🇦 Saudi Arabia', value:'$48K USD', followup:'Completed · Won', health:'✓ Won · in execution', pricing:'Accepted', readiness:'Won', stageWidth:'100%', stageColor:'var(--emerald-500)', blockers:[] },
+  'Pacific Foods JP': { contact:'Yuki Tanaka · Import Manager', country:'🇯🇵 Japan', value:'Estimate pending', followup:'5 days overdue', health:'Needs attention', pricing:'Missing · no products', readiness:'Guarded', stageWidth:'10%', stageColor:'var(--amber-400)', blockers:['Follow-up intro call was 18 Apr — no contact made','No products mapped — cannot qualify without product interest'] },
+  'Metro Retail DE': { contact:'Klaus Weber · Category Manager', country:'🇩🇪 Germany', value:'$95K USD', followup:'📅 Today 3:00 PM', health:'Due today · action needed', pricing:'Partial · Beetroot only', readiness:'Ready', stageWidth:'30%', stageColor:'var(--brand)', blockers:[] },
+  'Spice Valley AU': { contact:"Helen O'Brien · Senior Buyer", country:'🇦🇺 Australia', value:'$85K USD', followup:'8 days no feedback on samples', health:'At risk · sample pending', pricing:'Partial', readiness:'Guarded', stageWidth:'55%', stageColor:'var(--amber-500)', blockers:['Sample dispatched 15 Apr — no response from buyer','Negotiation cannot start until sample feedback is received'] },
+};
+
+function openDetail(company, stage, type, status) {
+  const d = detailData[company] || {};
+  document.getElementById('dp-company').textContent = company;
+  document.getElementById('dp-meta').textContent = `${type} · ${stage} · ${d.contact ? d.contact.split('·')[0].trim() : 'Unknown'}`;
+  document.getElementById('dp-contact').textContent = d.contact || '—';
+  document.getElementById('dp-country').textContent = d.country || '—';
+  document.getElementById('dp-value').textContent = d.value || '—';
+  document.getElementById('dp-followup').textContent = d.followup || '—';
+  document.getElementById('dp-followup').className = 'dp-val ' + (status === 'overdue' || status === 'blocked' ? 'danger' : status === 'healthy' ? 'success' : 'warning');
+  document.getElementById('dp-health').textContent = d.health || '—';
+  document.getElementById('dp-health').className = 'dp-val ' + (status === 'blocked' ? 'danger' : status === 'healthy' || status === 'won' ? 'success' : 'warning');
+  document.getElementById('dp-pricing').textContent = d.pricing || '—';
+  document.getElementById('dp-readiness').textContent = d.readiness || '—';
+  document.getElementById('dp-stage-fill').style.width = d.stageWidth || '30%';
+  document.getElementById('dp-stage-fill').style.background = d.stageColor || 'var(--brand)';
+
+  const bEl = document.getElementById('dp-blockers');
+  bEl.innerHTML = (d.blockers || []).length
+    ? (d.blockers).map(b => `<div class="dp-blocker-item">⚠ ${b}</div>`).join('')
+    : '<div style="font-size:12px;color:var(--emerald-600);font-weight:600">✓ No blockers — move is clear</div>';
+  document.getElementById('dp-blockers-section').style.display = (d.blockers||[]).length ? 'block' : 'block';
+
+  document.getElementById('detail-overlay').classList.add('open');
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-overlay').classList.remove('open');
+  document.getElementById('detail-panel').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+// ── FOLLOW-UP TOAST ──────────────────────────────────────────
+function scheduleFollowUp(company) {
+  document.getElementById('toast-company').textContent = company;
+  const t = document.getElementById('follow-up-toast');
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+
+// ── MODE SWITCH ──────────────────────────────────────────────
+function setMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── SEARCH FILTER (visual only) ─────────────────────────────
+function filterBoard(query) {
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll('.lead-card').forEach(card => {
+    const name = card.querySelector('.lc-name')?.textContent.toLowerCase() || '';
+    const contact = card.querySelector('.lc-contact')?.textContent.toLowerCase() || '';
+    card.style.opacity = (!q || name.includes(q) || contact.includes(q)) ? '1' : '0.2';
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SETU Flow — Leads Page Redesign</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS — identical to dashboard
+═══════════════════════════════════════════════════════════════ */
+:root {
+  --navy:       #0b2e4a;
+  --navy-deep:  #061c2e;
+  --brand:      #0c7fff;
+  --brand-mid:  #1a6fd8;
+  --slate-950:  #0f172a;
+  --slate-900:  #111827;
+  --slate-800:  #1e293b;
+  --slate-700:  #334155;
+  --slate-600:  #475569;
+  --slate-500:  #64748b;
+  --slate-400:  #94a3b8;
+  --slate-300:  #cbd5e1;
+  --slate-200:  #e2e8f0;
+  --slate-100:  #f1f5f9;
+  --slate-50:   #f8fafc;
+  --emerald-600:#059669; --emerald-500:#10b981; --emerald-100:#d1fae5; --emerald-50:#ecfdf5;
+  --amber-600:  #d97706; --amber-500:#f59e0b;  --amber-100:#fef3c7;  --amber-50:#fffbeb;
+  --rose-600:   #e11d48; --rose-500:#f43f5e;   --rose-100:#ffe4e6;   --rose-50:#fff1f2;
+  --sky-600:    #0284c7; --sky-100:#e0f2fe;    --sky-50:#f0f9ff;
+  --violet-600: #7c3aed; --violet-100:#ede9fe; --violet-50:#f5f3ff;
+  --surface:    #ffffff;
+  --page-bg:    #f0f4f8;
+  --border:     #e2e8f0;
+  --border-md:  #cbd5e1;
+  --r-sm:6px; --r-md:12px; --r-lg:16px; --r-xl:22px; --r-2xl:28px;
+  --shadow-sm:  0 1px 3px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04);
+  --shadow-md:  0 4px 14px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.05);
+  --shadow-lg:  0 12px 32px rgba(15,23,42,.09),0 2px 6px rgba(15,23,42,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;background:var(--page-bg);color:var(--slate-900);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ── LAYOUT ── */
+.app{display:flex;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{width:68px;background:linear-gradient(180deg,var(--navy-deep) 0%,var(--navy) 100%);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:4px;position:sticky;top:0;height:100vh;flex-shrink:0}
+.sb-logo{width:38px;height:38px;background:linear-gradient(135deg,var(--brand) 0%,#2da0ff 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;font-weight:800;font-size:13px;color:white;letter-spacing:-.5px;flex-shrink:0}
+.nav-item{width:44px;height:44px;border-radius:var(--r-md);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;color:rgba(255,255,255,.38);font-size:17px;transition:background .15s}
+.nav-item.active{background:rgba(255,255,255,.12);color:white}
+.nav-item:hover:not(.active){background:rgba(255,255,255,.07);color:rgba(255,255,255,.7)}
+.nav-label{font-size:8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.sb-spacer{flex:1}
+.sb-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a5fa0,var(--brand));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;margin-top:6px}
+
+/* ── MAIN ── */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:50}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.topbar-eyebrow{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--brand)}
+.topbar-title{font-size:16px;font-weight:700;color:var(--slate-900);letter-spacing:-.3px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.vcard-btn{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:var(--r-sm);background:linear-gradient(135deg,#0b2e4a 0%,#0c7fff 160%);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:-.1px;box-shadow:0 2px 8px rgba(12,127,255,.35);transition:opacity .15s}
+.vcard-btn:hover{opacity:.9}
+.divider-v{width:1px;height:24px;background:var(--border)}
+.mode-switch{display:flex;background:var(--slate-100);border-radius:var(--r-sm);padding:3px;border:1px solid var(--border);gap:2px}
+.mode-btn{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--slate-500);transition:all .15s}
+.mode-btn.active{background:var(--navy);color:white}
+.filter-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;font-size:11px;font-weight:600;color:var(--slate-700);cursor:pointer}
+.quick-lead-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--navy) 0%,var(--brand) 140%);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white}
+
+/* ── COMPANY LOGO BADGE ── */
+.company-badge{display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:var(--r-sm);background:rgba(11,46,74,.06);border:1px solid rgba(11,46,74,.12)}
+.company-mark{width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,var(--navy-deep),var(--brand));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:white;letter-spacing:-.3px}
+.company-name{font-size:10px;font-weight:700;color:var(--navy);letter-spacing:.04em}
+.company-sub{font-size:8px;color:var(--slate-400);letter-spacing:.06em;text-transform:uppercase}
+
+/* ── PAGE NAV (List ↔ Command Center) ── */
+.page-nav{background:white;border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:0}
+.page-tab{padding:12px 16px;font-size:12px;font-weight:700;color:var(--slate-400);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+.page-tab.active{color:var(--navy);border-bottom-color:var(--brand)}
+.page-tab-badge{background:var(--rose-500);color:white;border-radius:999px;padding:1px 6px;font-size:9px;font-weight:800}
+.page-tab-badge.info{background:var(--brand)}
+.page-tab-badge.ok{background:var(--emerald-600)}
+
+/* ── FILTER BAR ── */
+.filter-bar{background:white;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filter-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);margin-right:4px}
+.filter-select-wrap{display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--slate-50);padding:0 10px;height:32px;gap:6px;min-width:120px;cursor:pointer}
+.filter-icon{font-size:13px}
+.filter-inner{display:flex;flex-direction:column}
+.filter-top{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--slate-400);line-height:1}
+.filter-val{font-size:11px;font-weight:600;color:var(--slate-800);line-height:1.4}
+.active-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid;cursor:pointer}
+.chip-overdue{background:var(--rose-50);border-color:#fecaca;color:#991b1b}
+.chip-market{background:var(--amber-50);border-color:#fde68a;color:#92400e}
+.chip-x{opacity:.6;font-size:12px}
+.filter-summary{margin-left:auto;font-size:10px;font-weight:600;color:var(--slate-400);letter-spacing:.04em}
+
+/* ── SAVED VIEWS ── */
+.saved-views{background:white;border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:0;overflow-x:auto}
+.sv-item{padding:8px 14px;font-size:11px;font-weight:600;color:var(--slate-500);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;margin-bottom:-1px;transition:color .1s}
+.sv-item.active{color:var(--navy);border-bottom-color:var(--brand)}
+.sv-item:hover:not(.active){color:var(--slate-700)}
+.sv-count{background:var(--slate-100);border-radius:999px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:4px;color:var(--slate-600)}
+.sv-count.danger{background:var(--rose-100);color:var(--rose-600)}
+.sv-count.warn{background:var(--amber-100);color:var(--amber-600)}
+
+/* ── CONTENT ── */
+.content{padding:0;flex:1}
+.view{display:none}
+.view.active{display:block}
+
+/* ══════════════════════════════════════════════════════════════
+   LEADS LIST VIEW
+══════════════════════════════════════════════════════════════ */
+.leads-list-wrap{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+
+/* Batch toolbar */
+.batch-bar{background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-sm)}
+.batch-label{font-size:11px;font-weight:600;color:var(--slate-600)}
+.batch-select{padding:5px 10px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:11px;background:white;color:var(--slate-700)}
+.batch-btn{padding:5px 12px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:11px;font-weight:600;background:white;color:var(--slate-700);cursor:pointer}
+.batch-btn:hover{background:var(--slate-50)}
+.batch-spacer{flex:1}
+
+/* Lead table */
+.lead-table-header{display:grid;grid-template-columns:28px 1fr 130px 110px 110px 100px 100px;gap:10px;padding:8px 16px;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate-400);border-bottom:1px solid var(--border)}
+.lead-section-label{font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--slate-400);padding:10px 16px 4px;margin-top:4px}
+
+/* Lead row — the key redesigned component */
+.lead-row{display:grid;grid-template-columns:28px 1fr 130px 110px 110px 100px 100px;gap:10px;padding:11px 16px;background:white;border:1px solid var(--border);border-radius:var(--r-lg);cursor:pointer;transition:box-shadow .12s,border-color .12s;align-items:center;margin-bottom:5px}
+.lead-row:hover{box-shadow:var(--shadow-md);border-color:var(--border-md)}
+.lead-row.critical{border-left:3px solid var(--rose-500)}
+.lead-row.warning{border-left:3px solid var(--amber-500)}
+.lead-row.ok{border-left:3px solid var(--emerald-500)}
+
+.lr-check{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border-md);cursor:pointer;flex-shrink:0}
+.lr-company{display:flex;align-items:center;gap:10px;min-width:0}
+.lr-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:white;flex-shrink:0}
+.lr-av-blue{background:linear-gradient(135deg,#0b2e4a,#0c7fff)}
+.lr-av-teal{background:linear-gradient(135deg,#0f766e,#0d9488)}
+.lr-av-violet{background:linear-gradient(135deg,#5b21b6,#7c3aed)}
+.lr-av-rose{background:linear-gradient(135deg,#9f1239,#e11d48)}
+.lr-av-amber{background:linear-gradient(135deg,#92400e,#d97706)}
+.lr-body{min-width:0}
+.lr-name{font-size:13px;font-weight:700;color:var(--slate-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lr-contact{font-size:11px;color:var(--slate-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lr-pills{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap}
+
+/* Signal pills — reduced to 2 max per row */
+.pill{display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.04em;border:1px solid;white-space:nowrap}
+.pill-buyer{background:var(--sky-50);border-color:#7dd3fc;color:#0369a1}
+.pill-supplier{background:var(--violet-50);border-color:#c4b5fd;color:#6d28d9}
+.pill-stage{background:var(--slate-100);border-color:var(--border-md);color:var(--slate-600)}
+.pill-stage-q{background:#ede9fe;border-color:#c4b5fd;color:#5b21b6}
+.pill-stage-n{background:#fef3c7;border-color:#fde68a;color:#92400e}
+.pill-stage-s{background:#d1fae5;border-color:#6ee7b7;color:#047857}
+
+.lr-stage-col{display:flex;flex-direction:column;gap:4px}
+.lr-stage-name{font-size:11px;font-weight:600;color:var(--slate-700)}
+.lr-stage-bar{height:3px;border-radius:99px;background:var(--slate-100);width:100%}
+.lr-stage-fill{height:3px;border-radius:99px}
+
+.lr-followup{display:flex;flex-direction:column;gap:2px}
+.fu-label{font-size:10px;font-weight:700;letter-spacing:.04em}
+.fu-overdue{color:var(--rose-600);background:var(--rose-50);padding:2px 7px;border-radius:4px;border:1px solid var(--rose-100)}
+.fu-today{color:var(--amber-600);background:var(--amber-50);padding:2px 7px;border-radius:4px;border:1px solid var(--amber-100)}
+.fu-upcoming{color:var(--slate-600);font-size:10px}
+.fu-date{font-size:10px;color:var(--slate-500)}
+
+.lr-value{font-size:12px;font-weight:700;color:var(--slate-900)}
+.lr-value-sub{font-size:10px;color:var(--slate-400)}
+
+.lr-owner{font-size:11px;font-weight:600;color:var(--slate-600)}
+.lr-source{font-size:10px;color:var(--slate-400)}
+
+.lr-actions{display:flex;gap:5px;justify-content:flex-end}
+.lr-action-btn{padding:4px 10px;border-radius:var(--r-sm);font-size:10px;font-weight:700;border:1px solid var(--border);background:white;color:var(--slate-600);cursor:pointer;white-space:nowrap}
+.lr-action-btn:hover{background:var(--slate-50)}
+.lr-action-btn.primary-sm{background:var(--navy);color:white;border-color:var(--navy)}
+
+/* ══════════════════════════════════════════════════════════════
+   COMMAND CENTER VIEW  (individual lead)
+══════════════════════════════════════════════════════════════ */
+.cc-wrap{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+
+/* Lead header card */
+.lead-header-card{background:white;border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-sm)}
+.lhc-top{padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.lhc-chips{display:flex;gap:6px;flex-wrap:wrap}
+.lhc-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid}
+.chip-green{background:var(--emerald-50);border-color:#a7f3d0;color:#047857}
+.chip-amber{background:var(--amber-50);border-color:#fde68a;color:#92400e}
+.chip-slate{background:var(--slate-100);border-color:var(--border-md);color:var(--slate-600)}
+.chip-blue{background:var(--sky-50);border-color:#7dd3fc;color:#0369a1}
+
+.lhc-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.lhc-company-row{display:flex;align-items:center;gap:14px}
+.lhc-company-avatar{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--navy-deep),var(--brand));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:white;flex-shrink:0}
+.lhc-company-name{font-size:26px;font-weight:800;color:var(--slate-950);letter-spacing:-.5px}
+.lhc-company-meta{font-size:12px;color:var(--slate-500);margin-top:3px}
+.lhc-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn-primary{padding:9px 18px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:background .12s}
+.btn-primary:hover{background:var(--navy-deep)}
+.btn-ghost-md{padding:8px 14px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--slate-700);cursor:pointer;transition:background .12s}
+.btn-ghost-md:hover{background:var(--slate-50)}
+.btn-tools{padding:8px 14px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--slate-700);cursor:pointer;position:relative}
+
+.next-move-bar{background:var(--slate-50);border-left:3px solid var(--brand);padding:9px 14px;font-size:12px;color:var(--slate-700);border-radius:0 var(--r-sm) var(--r-sm) 0;margin:0 22px 14px}
+.next-move-bar strong{color:var(--slate-900)}
+
+/* Pipeline stage strip */
+.pipeline-strip{border-top:1px solid var(--border);padding:12px 22px;display:flex;align-items:center;gap:0;overflow-x:auto}
+.ps-stage{display:flex;align-items:center;gap:0;flex-shrink:0}
+.ps-node{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .12s;min-width:80px}
+.ps-node.done{background:var(--emerald-50)}
+.ps-node.current{background:rgba(12,127,255,.1)}
+.ps-node.upcoming{background:transparent}
+.ps-node-label{font-size:10px;font-weight:700;letter-spacing:.04em;text-align:center}
+.ps-node.done .ps-node-label{color:var(--emerald-600)}
+.ps-node.current .ps-node-label{color:var(--navy)}
+.ps-node.upcoming .ps-node-label{color:var(--slate-400)}
+.ps-node-dot{width:10px;height:10px;border-radius:50%}
+.ps-node.done .ps-node-dot{background:var(--emerald-500)}
+.ps-node.current .ps-node-dot{background:var(--brand);box-shadow:0 0 0 3px rgba(12,127,255,.2)}
+.ps-node.upcoming .ps-node-dot{background:var(--slate-300)}
+.ps-arrow{color:var(--slate-300);font-size:16px;flex-shrink:0;margin:0 2px;padding-bottom:8px}
+
+/* Main command grid */
+.cc-grid{display:grid;grid-template-columns:1fr 220px;gap:14px}
+.cc-left{display:flex;flex-direction:column;gap:12px}
+
+/* Workflow cards — 4 pillars */
+.workflow-pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.wf-pillar{border-radius:var(--r-lg);padding:14px 16px;border:1px solid;cursor:pointer;transition:box-shadow .12s,border-color .12s;position:relative}
+.wf-pillar:hover{box-shadow:var(--shadow-md)}
+.wf-pillar.needs-action{border-color:#fde68a;background:var(--amber-50)}
+.wf-pillar.blocked{border-color:#fca5a5;background:var(--rose-50)}
+.wf-pillar.ready{border-color:#6ee7b7;background:var(--emerald-50)}
+.wf-pillar.default{border-color:var(--border);background:white}
+.wf-pillar.active-panel{border-color:var(--brand);background:rgba(12,127,255,.04);box-shadow:0 0 0 2px rgba(12,127,255,.2)}
+
+.wf-icon{font-size:20px;margin-bottom:8px}
+.wf-title{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.wf-pillar.needs-action .wf-title{color:var(--amber-600)}
+.wf-pillar.blocked .wf-title{color:var(--rose-600)}
+.wf-pillar.ready .wf-title{color:var(--emerald-600)}
+.wf-pillar.default .wf-title{color:var(--slate-600)}
+.wf-pillar.active-panel .wf-title{color:var(--brand)}
+.wf-state{font-size:13px;font-weight:700;color:var(--slate-900);margin-bottom:3px}
+.wf-helper{font-size:11px;color:var(--slate-500);line-height:1.5}
+.wf-badge{position:absolute;top:10px;right:10px;background:var(--rose-500);color:white;font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;letter-spacing:.04em}
+.wf-badge.warn{background:var(--amber-500)}
+.wf-badge.ok{background:var(--emerald-500)}
+.wf-badge.info{background:var(--brand)}
+.wf-open-btn{margin-top:10px;padding:4px 10px;border-radius:var(--r-sm);font-size:10px;font-weight:700;border:1px solid;cursor:pointer;background:white}
+.wf-pillar.needs-action .wf-open-btn{border-color:#fde68a;color:var(--amber-600)}
+.wf-pillar.blocked .wf-open-btn{border-color:#fca5a5;color:var(--rose-600)}
+.wf-pillar.ready .wf-open-btn{border-color:#6ee7b7;color:var(--emerald-600)}
+.wf-pillar.default .wf-open-btn{border-color:var(--border);color:var(--slate-600)}
+.wf-pillar.active-panel .wf-open-btn{border-color:rgba(12,127,255,.4);color:var(--brand)}
+
+/* Inline workflow panel */
+.inline-panel{background:white;border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-md);overflow:hidden;display:none}
+.inline-panel.open{display:block}
+.ip-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ip-title{font-size:14px;font-weight:700;color:var(--slate-900)}
+.ip-close{padding:4px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;font-size:11px;font-weight:600;color:var(--slate-600);cursor:pointer}
+.ip-body{padding:18px 20px}
+.ip-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ip-field{display:flex;flex-direction:column;gap:5px}
+.ip-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate-400)}
+.ip-value{font-size:13px;font-weight:600;color:var(--slate-800);padding:8px 12px;background:var(--slate-50);border-radius:var(--r-sm);border:1px solid var(--border)}
+.ip-input{font-size:13px;font-weight:600;color:var(--slate-800);padding:8px 12px;background:white;border-radius:var(--r-sm);border:1px solid var(--border);width:100%;outline:none}
+.ip-input:focus{border-color:var(--brand);box-shadow:0 0 0 2px rgba(12,127,255,.12)}
+.ip-actions{display:flex;gap:8px;margin-top:14px}
+.ip-save{padding:8px 16px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer}
+.ip-cancel{padding:8px 14px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer}
+.ip-checklist{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ip-check-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--slate-50)}
+.ip-check-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:var(--emerald-500)}
+.dot-miss{background:var(--rose-500)}
+.dot-warn{background:var(--amber-500)}
+.ip-check-label{font-size:12px;font-weight:600;color:var(--slate-700)}
+.ip-check-sub{font-size:10px;color:var(--slate-400);margin-left:auto}
+.ip-product-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:var(--slate-100);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--slate-700);margin:3px}
+.ip-product-add{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:rgba(12,127,255,.08);border:1px dashed var(--brand);font-size:11px;font-weight:600;color:var(--brand);margin:3px;cursor:pointer}
+
+/* Quote prep checklist */
+.qpc-card{background:white;border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-sm);overflow:hidden}
+.qpc-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.qpc-title{font-size:13px;font-weight:700;color:var(--slate-900)}
+.qpc-body{padding:12px 18px;display:flex;flex-direction:column;gap:8px}
+.qpc-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--r-md);border:1px solid}
+.qpc-item.done{background:var(--emerald-50);border-color:var(--emerald-100)}
+.qpc-item.todo{background:var(--amber-50);border-color:var(--amber-100)}
+.qpc-item.blocked{background:var(--rose-50);border-color:var(--rose-100)}
+.qpc-check{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px}
+.qpc-item.done .qpc-check{background:var(--emerald-500);color:white}
+.qpc-item.todo .qpc-check{background:var(--amber-100);color:var(--amber-700);border:1.5px solid var(--amber-300)}
+.qpc-item.blocked .qpc-check{background:var(--rose-100);color:var(--rose-600);border:1.5px solid var(--rose-300)}
+.qpc-item-title{font-size:12px;font-weight:700;color:var(--slate-800);margin-bottom:2px}
+.qpc-item.done .qpc-item-title{color:var(--emerald-700)}
+.qpc-item.blocked .qpc-item-title{color:var(--rose-700)}
+.qpc-item-sub{font-size:11px;color:var(--slate-500);line-height:1.5}
+.qpc-item.todo .qpc-item-sub{color:var(--amber-700)}
+.qpc-item.blocked .qpc-item-sub{color:var(--rose-600)}
+.qpc-cta{margin-top:12px;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)}
+.qpc-cta-btn{padding:8px 18px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:13px;font-weight:700;cursor:pointer}
+.qpc-cta-note{font-size:10px;color:var(--slate-400)}
+
+/* Right rail */
+.cc-right{display:flex;flex-direction:column;gap:10px}
+.rail-card{background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;box-shadow:var(--shadow-sm)}
+.rail-eyebrow{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--slate-400);margin-bottom:8px}
+.rail-title{font-size:13px;font-weight:700;color:var(--slate-900);margin-bottom:4px}
+.rail-body{font-size:12px;color:var(--slate-500);line-height:1.6;margin-bottom:10px}
+.rail-action{width:100%;padding:7px 12px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;text-align:center}
+.rail-ghost{width:100%;padding:7px 12px;border-radius:var(--r-sm);background:white;color:var(--slate-600);border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;text-align:center;margin-top:6px}
+.rail-queue{display:flex;flex-direction:column;gap:5px}
+.rail-queue-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer;transition:background .1s}
+.rail-queue-item:hover{background:var(--slate-50)}
+.rq-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.rq-name{font-size:11px;font-weight:600;color:var(--slate-700);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rq-stage{font-size:9px;color:var(--slate-400)}
+.compliance-items{display:flex;flex-direction:column;gap:4px}
+.ci-row{display:flex;align-items:center;gap:8px;font-size:11px}
+.ci-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ci-label{flex:1;color:var(--slate-600)}
+.ci-status{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+
+/* Sticky action bar */
+.sticky-bar{position:sticky;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-top:1px solid var(--border);border-radius:var(--r-xl) var(--r-xl) 0 0;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 -8px 24px rgba(15,23,42,.08);z-index:30;margin:0 -24px -20px}
+.sab-left{display:flex;gap:8px}
+.sab-status{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-400);padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--slate-50)}
+
+/* ══════════════════════════════════════════════════════════════
+   ADD LEAD DRAWER (slide-in simulation)
+══════════════════════════════════════════════════════════════ */
+.drawer-overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(5,15,30,.5);backdrop-filter:blur(3px);align-items:flex-start;justify-content:flex-end}
+.drawer-overlay.open{display:flex}
+.drawer{background:white;width:520px;height:100vh;overflow-y:auto;box-shadow:-16px 0 48px rgba(15,23,42,.15)}
+.drawer-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:10}
+.drawer-title{font-size:16px;font-weight:800;color:var(--slate-900)}
+.drawer-close{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--slate-500)}
+.drawer-body{padding:24px}
+.drawer-section{margin-bottom:24px}
+.drawer-section-title{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--slate-400);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.single{grid-template-columns:1fr}
+.form-field{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-500)}
+.form-input{padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:13px;font-weight:500;color:var(--slate-800);background:var(--slate-50);outline:none;transition:border-color .12s}
+.form-input:focus{border-color:var(--brand);background:white;box-shadow:0 0 0 2px rgba(12,127,255,.1)}
+.form-select{padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:13px;background:var(--slate-50);color:var(--slate-800);outline:none;width:100%;appearance:none}
+.drawer-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;position:sticky;bottom:0;background:white}
+.drawer-save{flex:1;padding:10px;border-radius:var(--r-sm);background:var(--navy);color:white;border:none;font-size:13px;font-weight:700;cursor:pointer}
+.drawer-cancel{padding:10px 16px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer}
+.type-switch{display:flex;gap:8px;margin-bottom:12px}
+.type-btn{flex:1;padding:10px;border-radius:var(--r-sm);border:1px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--slate-500);cursor:pointer;text-align:center}
+.type-btn.active-buyer{background:var(--sky-50);border-color:#7dd3fc;color:var(--sky-600);font-weight:700}
+.type-btn.active-supplier{background:var(--violet-50);border-color:#c4b5fd;color:var(--violet-600);font-weight:700}
+
+/* ══════════════════════════════════════════════════════════════
+   ANNOTATION BAR + REVIEW PANEL
+══════════════════════════════════════════════════════════════ */
+.annotation-bar{background:linear-gradient(90deg,var(--navy-deep),var(--navy));color:white;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.anno-badge{background:var(--brand);color:white;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.06em;margin-left:8px}
+.anno-badge.ghost{background:rgba(255,255,255,.12)}
+
+.review-panel{background:white;border-top:3px solid var(--brand);padding:32px 40px}
+.review-header{margin-bottom:32px}
+.review-title{font-size:26px;font-weight:800;color:var(--slate-950);letter-spacing:-.5px;margin-bottom:8px}
+.review-subtitle{font-size:14px;color:var(--slate-500);max-width:680px;line-height:1.7}
+.review-section{margin-bottom:32px}
+.review-section-title{font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.review-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.change-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.change-item{border-radius:var(--r-lg);padding:16px 18px;border:1px solid;display:flex;gap:12px}
+.change-item.win{background:var(--emerald-50);border-color:var(--emerald-100)}
+.change-item.fix{background:var(--amber-50);border-color:var(--amber-100)}
+.change-item.new{background:var(--sky-50);border-color:var(--sky-100)}
+.change-item.kill{background:var(--rose-50);border-color:var(--rose-100)}
+.change-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+.change-type{font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin-bottom:3px}
+.change-item.win .change-type{color:var(--emerald-600)}
+.change-item.fix .change-type{color:var(--amber-600)}
+.change-item.new .change-type{color:var(--sky-600)}
+.change-item.kill .change-type{color:var(--rose-600)}
+.change-title{font-size:13px;font-weight:700;color:var(--slate-900);margin-bottom:4px}
+.change-desc{font-size:12px;color:var(--slate-500);line-height:1.6}
+.verdict-box{background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 60%,#1a5fa0 100%);border-radius:var(--r-xl);padding:28px 32px;color:white;display:flex;align-items:flex-start;gap:24px}
+.verdict-body .verdict-q{font-size:14px;font-weight:800;margin-bottom:10px;letter-spacing:-.2px}
+.verdict-body .verdict-text{font-size:13px;color:rgba(255,255,255,.75);line-height:1.75}
+.verdict-body .verdict-text strong{color:white}
+
+/* flow compare */
+.flow-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.flow-col h4{font-size:11px;font-weight:700;color:var(--slate-500);margin-bottom:10px;letter-spacing:.05em}
+.flow-list{display:flex;flex-direction:column;gap:4px}
+.flow-row{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:var(--r-sm);font-size:12px;font-weight:600;border:1px solid var(--border)}
+.flow-row.was{background:var(--rose-50);border-color:var(--rose-100);color:var(--rose-600);opacity:.7}
+.flow-row.now{background:var(--emerald-50);border-color:var(--emerald-100);color:var(--emerald-600)}
+.flow-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
+.flow-row.was .flow-num{background:var(--rose-100)}
+.flow-row.now .flow-num{background:var(--emerald-100)}
+
+/* tooltip for row columns */
+.col-hint{font-size:9px;color:var(--slate-400);letter-spacing:.06em;font-weight:600}
+
+/* section card (re-use) */
+.section-card{background:white;border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-sm);overflow:hidden}
+.card-header{padding:14px 18px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border)}
+.card-eyebrow{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);margin-bottom:3px}
+.card-title{font-size:14px;font-weight:700;color:var(--slate-950);letter-spacing:-.2px}
+.card-desc{font-size:11px;color:var(--slate-500);margin-top:2px}
+.card-body{padding:14px 18px}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+  ANNOTATION BAR
+══════════════════════════════════════════════════════════════ -->
+<div class="annotation-bar">
+  <div style="display:flex;align-items:center;gap:16px">
+    <!-- Blue Orbit Logo -->
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px">
+      <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#0c7fff,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:white;letter-spacing:-.5px">BO</div>
+      <div>
+        <div style="font-size:11px;font-weight:800;color:white;letter-spacing:.02em">Blue Orbit International</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.1em;text-transform:uppercase">SETU Flow · Leads Redesign</div>
+      </div>
+    </div>
+    <div>
+      <strong>Follow-up &amp; Lead Command Center</strong>
+      <span style="margin-left:10px;color:rgba(255,255,255,.5);font-size:11px">Interactive mockup for builders · Two views: List + Command Center</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="anno-badge">Interactive</span>
+    <span class="anno-badge ghost">Phase 1</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  APP LAYOUT
+══════════════════════════════════════════════════════════════ -->
+<div class="app">
+
+  <!-- SIDEBAR — identical to dashboard -->
+  <nav class="sidebar">
+    <div class="sb-logo">SF</div>
+    <div class="nav-item" onclick="goTo('dashboard')">
+      <span>⊞</span>
+      <span class="nav-label">Dash</span>
+    </div>
+    <div class="nav-item active" id="nav-leads">
+      <span>◎</span>
+      <span class="nav-label">Leads</span>
+    </div>
+    <div class="nav-item">
+      <span>◇</span>
+      <span class="nav-label">Quotes</span>
+    </div>
+    <div class="nav-item">
+      <span>⬡</span>
+      <span class="nav-label">Orders</span>
+    </div>
+    <div class="nav-item">
+      <span>⊕</span>
+      <span class="nav-label">Pipeline</span>
+    </div>
+    <div class="nav-item">
+      <span>▦</span>
+      <span class="nav-label">Catalog</span>
+    </div>
+    <div class="sb-spacer"></div>
+    <div class="nav-item">
+      <span>⚙</span>
+      <span class="nav-label">Admin</span>
+    </div>
+    <div class="sb-avatar">RK</div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR — consistent with dashboard -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- Blue Orbit company badge in topbar -->
+        <div class="company-badge">
+          <div class="company-mark">BO</div>
+          <div>
+            <div class="company-name">Blue Orbit Int'l</div>
+            <div class="company-sub">SETU Flow CRM</div>
+          </div>
+        </div>
+        <div style="width:1px;height:24px;background:var(--border)"></div>
+        <div>
+          <div class="topbar-eyebrow">Follow-up</div>
+          <div class="topbar-title">Lead Workspace</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="vcard-btn" onclick="document.getElementById('vcard-modal').style.display='flex'">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="10" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="5" y1="10" x2="9" y2="10"/></svg>
+          Share my vCard
+        </button>
+        <div class="divider-v"></div>
+        <div class="mode-switch">
+          <button class="mode-btn active" onclick="setMode(this,'all')">All</button>
+          <button class="mode-btn" onclick="setMode(this,'buyers')">Buyers</button>
+          <button class="mode-btn" onclick="setMode(this,'suppliers')">Suppliers</button>
+        </div>
+        <button class="quick-lead-btn" onclick="openDrawer()">
+          <span style="font-size:15px;line-height:1">＋</span> Quick Lead
+        </button>
+        <div class="tb-avatar">RK</div>
+      </div>
+    </header>
+
+    <!-- PAGE NAV — List View ↔ Command Center -->
+    <div class="page-nav">
+      <div class="page-tab active" id="tab-list" onclick="showView('list')">
+        📋 Lead Queue
+        <span class="page-tab-badge">47</span>
+      </div>
+      <div class="page-tab" id="tab-cc" onclick="showView('cc')">
+        🎯 Command Center
+        <span class="page-tab-badge info" id="cc-badge">NatureMark India</span>
+      </div>
+      <div class="page-tab" id="tab-pipeline" onclick="showView('list')" style="margin-left:auto">
+        ⊕ View in Pipeline →
+      </div>
+    </div>
+
+    <!-- FILTER BAR — identical pattern to dashboard -->
+    <div class="filter-bar">
+      <span class="filter-label">Filter:</span>
+
+      <div class="filter-select-wrap">
+        <span class="filter-icon">🌍</span>
+        <div class="filter-inner">
+          <span class="filter-top">Market</span>
+          <span class="filter-val">All markets ▾</span>
+        </div>
+      </div>
+
+      <div class="filter-select-wrap">
+        <span class="filter-icon">📦</span>
+        <div class="filter-inner">
+          <span class="filter-top">Product</span>
+          <span class="filter-val">All products ▾</span>
+        </div>
+      </div>
+
+      <div class="filter-select-wrap">
+        <span class="filter-icon">◎</span>
+        <div class="filter-inner">
+          <span class="filter-top">Stage</span>
+          <span class="filter-val">All stages ▾</span>
+        </div>
+      </div>
+
+      <div class="filter-select-wrap">
+        <span class="filter-icon">👤</span>
+        <div class="filter-inner">
+          <span class="filter-top">Owner</span>
+          <span class="filter-val">All owners ▾</span>
+        </div>
+      </div>
+
+      <div class="filter-select-wrap">
+        <span class="filter-icon">📅</span>
+        <div class="filter-inner">
+          <span class="filter-top">Follow-up</span>
+          <span class="filter-val">All timing ▾</span>
+        </div>
+      </div>
+
+      <span class="active-chip chip-overdue">Overdue <span class="chip-x">×</span></span>
+      <span class="active-chip chip-market">UAE <span class="chip-x">×</span></span>
+
+      <div class="filter-summary">11 overdue · 47 total leads</div>
+    </div>
+
+    <!-- SAVED VIEWS BAR -->
+    <div class="saved-views" id="saved-views">
+      <div class="sv-item active" onclick="setSV(this)">All leads <span class="sv-count">47</span></div>
+      <div class="sv-item" onclick="setSV(this)">My leads <span class="sv-count">12</span></div>
+      <div class="sv-item" onclick="setSV(this)">Overdue <span class="sv-count danger">11</span></div>
+      <div class="sv-item" onclick="setSV(this)">Due today <span class="sv-count warn">6</span></div>
+      <div class="sv-item" onclick="setSV(this)">Trade event <span class="sv-count">8</span></div>
+      <div class="sv-item" onclick="setSV(this)">Buyers <span class="sv-count">19</span></div>
+      <div class="sv-item" onclick="setSV(this)">Suppliers <span class="sv-count">28</span></div>
+    </div>
+
+    <!-- ══════════════ VIEW: LEADS LIST ══════════════ -->
+    <div class="view active" id="view-list">
+      <div class="leads-list-wrap">
+
+        <!-- Batch toolbar — only shows when rows are selected -->
+        <div class="batch-bar" id="batch-bar" style="display:none">
+          <span class="batch-label">2 selected —</span>
+          <select class="batch-select"><option>Schedule follow-up…</option></select>
+          <select class="batch-select"><option>Move to stage…</option></select>
+          <button class="batch-btn">Apply</button>
+          <span class="batch-spacer"></span>
+          <button class="batch-btn" onclick="clearBatch()">Clear selection</button>
+        </div>
+
+        <!-- Table header -->
+        <div class="lead-table-header">
+          <div><input type="checkbox" id="select-all" onchange="toggleAll(this)"/></div>
+          <div>Company / Contact <span class="col-hint">· stage · type</span></div>
+          <div>Stage progress</div>
+          <div>Follow-up</div>
+          <div>Deal value</div>
+          <div>Owner</div>
+          <div style="text-align:right">Action</div>
+        </div>
+
+        <!-- SECTION: Critical / Overdue -->
+        <div class="lead-section-label">🔴 Critical — needs action now (3)</div>
+
+        <!-- Lead row 1 — CRITICAL -->
+        <div class="lead-row critical" onclick="openCC('NatureMark India','Negotiation','Buyer')">
+          <input type="checkbox" class="lr-check" onclick="e=>e.stopPropagation()" onchange="rowCheck(this)"/>
+          <div class="lr-company">
+            <div class="lr-avatar lr-av-rose">NM</div>
+            <div class="lr-body">
+              <div class="lr-name">NatureMark India</div>
+              <div class="lr-contact">Ananya Sharma · Head of Procurement</div>
+              <div class="lr-pills">
+                <span class="pill pill-buyer">Buyer</span>
+                <span class="pill pill-stage-n">Negotiation</span>
+              </div>
+            </div>
+          </div>
+          <div class="lr-stage-col">
+            <div class="lr-stage-name" style="color:var(--amber-600)">Negotiation</div>
+            <div class="lr-stage-bar"><div class="lr-stage-fill" style="width:70%;background:var(--amber-400)"></div></div>
+            <div style="font-size:9px;color:var(--rose-600);font-weight:600">21 days no contact</div>
+          </div>
+          <div class="lr-followup">
+            <span class="fu-label fu-overdue">⚠ 21 days overdue</span>
+            <span class="fu-date">Was 2 Apr · Uncontacted</span>
+          </div>
+          <div>
+            <div class="lr-value">$240K</div>
+            <div class="lr-value-sub">USD · Mango Powder</div>
+          </div>
+          <div>
+            <div class="lr-owner">Priya Singh</div>
+            <div class="lr-source">Trade show</div>
+          </div>
+          <div class="lr-actions">
+            <button class="lr-action-btn primary-sm" onclick="event.stopPropagation();openCC('NatureMark India','Negotiation','Buyer')">Open →</button>
+          </div>
+        </div>
+
+        <!-- Lead row 2 — CRITICAL -->
+        <div class="lead-row critical" onclick="openCC('Zara Foods UAE','Quote Sent','Buyer')">
+          <input type="checkbox" class="lr-check" onchange="rowCheck(this)"/>
+          <div class="lr-company">
+            <div class="lr-avatar lr-av-amber">ZF</div>
+            <div class="lr-body">
+              <div class="lr-name">Zara Foods UAE</div>
+              <div class="lr-contact">Mohammed Al-Rashid · Purchasing Director</div>
+              <div class="lr-pills">
+                <span class="pill pill-buyer">Buyer</span>
+                <span class="pill pill-stage-n">Quote Sent</span>
+              </div>
+            </div>
+          </div>
+          <div class="lr-stage-col">
+            <div class="lr-stage-name" style="color:var(--amber-600)">Quote Sent</div>
+            <div class="lr-stage-bar"><div class="lr-stage-fill" style="width:82%;background:var(--rose-400)"></div></div>
+            <div style="font-size:9px;color:var(--rose-600);font-weight:600">Quote expires in 2 days</div>
+          </div>
+          <div class="lr-followup">
+            <span class="fu-label fu-overdue">⚠ 14 days no response</span>
+            <span class="fu-date">Quote Q-2024-0091</span>
+          </div>
+          <div>
+            <div class="lr-value">$180K</div>
+            <div class="lr-value-sub">USD · Sweet Potato</div>
+          </div>
+          <div>
+            <div class="lr-owner">Ritesh Kumar</div>
+            <div class="lr-source">Direct inquiry</div>
+          </div>
+          <div class="lr-actions">
+            <button class="lr-action-btn primary-sm" onclick="event.stopPropagation()">Follow up</button>
+          </div>
+        </div>
+
+        <!-- Lead row 3 — CRITICAL compliance -->
+        <div class="lead-row critical" onclick="openCC('Al Marai Group','Order','Supplier')">
+          <input type="checkbox" class="lr-check" onchange="rowCheck(this)"/>
+          <div class="lr-company">
+            <div class="lr-avatar lr-av-violet">AM</div>
+            <div class="lr-body">
+              <div class="lr-name">Al Marai Group</div>
+              <div class="lr-contact">Fatima Al-Zahrawi · QA Manager</div>
+              <div class="lr-pills">
+                <span class="pill pill-supplier">Supplier</span>
+                <span class="pill" style="background:#fff1f2;border-color:#fca5a5;color:#9f1239">🚫 Compliance blocker</span>
+              </div>
+            </div>
+          </div>
+          <div class="lr-stage-col">
+            <div class="lr-stage-name" style="color:var(--rose-600)">Order — Blocked</div>
+            <div class="lr-stage-bar"><div class="lr-stage-fill" style="width:90%;background:var(--rose-500)"></div></div>
+            <div style="font-size:9px;color:var(--rose-600);font-weight:600">FSSAI cert missing</div>
+          </div>
+          <div class="lr-followup">
+            <span class="fu-label fu-overdue">🚫 Dispatch blocked</span>
+            <span class="fu-date">Upload required today</span>
+          </div>
+          <div>
+            <div class="lr-value">$320K</div>
+            <div class="lr-value-sub">USD · Dehydrated Onion</div>
+          </div>
+          <div>
+            <div class="lr-owner">Ritesh Kumar</div>
+            <div class="lr-source">Long-term account</div>
+          </div>
+          <div class="lr-actions">
+            <button class="lr-action-btn primary-sm" onclick="event.stopPropagation()">Upload doc</button>
+          </div>
+        </div>
+
+        <!-- SECTION: Active / Due today -->
+        <div class="lead-section-label" style="margin-top:8px">🟡 Due today — scheduled actions (6)</div>
+
+        <div class="lead-row warning" onclick="openCC('Metro Retail DE','Qualified','Buyer')">
+          <input type="checkbox" class="lr-check" onchange="rowCheck(this)"/>
+          <div class="lr-company">
+            <div class="lr-avatar lr-av-teal">MR</div>
+            <div class="lr-body">
+              <div class="lr-name">Metro Retail DE</div>
+              <div class="lr-contact">Klaus Weber · Category Manager</div>
+              <div class="lr-pills">
+                <span class="pill pill-buyer">Buyer</span>
+                <span class="pill pill-stage-q">Qualified</span>
+              </div>
+            </div>
+          </div>
+          <div class="lr-stage-col">
+            <div class="lr-stage-name">Qualified</div>
+            <div class="lr-stage-bar"><div class="lr-stage-fill" style="width:30%;background:var(--brand)"></div></div>
+          </div>
+          <div class="lr-followup">
+            <span class="fu-label fu-today">📅 Today 3:00 PM</span>
+            <span class="fu-date">Call · Beetroot Powder pricing</span>
+          </div>
+          <div>
+            <div class="lr-value">$95K</div>
+            <div class="lr-value-sub">USD · Beetroot</div>
+          </div>
+          <div>
+            <div class="lr-owner">Ritesh Kumar</div>
+            <div class="lr-source">Trade event — FoodEx</div>
+          </div>
+          <div class="lr-actions">
+            <button class="lr-action-btn" onclick="event.stopPropagation()">Prepare</button>
+            <button class="lr-action-btn primary-sm" onclick="event.stopPropagation();openCC('Metro Retail DE','Qualified','Buyer')">Open →</button>
+          </div>
+        </div>
+
+        <div class="lead-row warning" onclick="openCC('GreenSource SG','Sample Sent','Buyer')">
+          <input type="checkbox" class="lr-check" onchange="rowCheck(this)"/>
+          <div class="lr-company">
+            <div class="lr-avatar lr-av-blue">GS</div>
+            <div class="lr-body">
+              <div class="lr-name">GreenSource SG</div>
+              <div class="lr-contact">Li Wei · Procurement Lead</div>
+              <div class="lr-pills">
+                <span class="pill pill-buyer">Buyer</span>
+                <span class="pill pill-stage-q">Sample Sent</span>
+              </div>
+            </div>
+          </div>
+          <div class="lr-stage-col">
+            <div class="lr-stage-name">Sample Sent</div>
+            <div class="lr-stage-bar"><div class="lr-stage-fill" style="width:50%;background:#7c3aed"></div></div>
+          </div>
+          <div class="lr-followup">
+            <span class="fu-label fu-today">📅 Today · RFQ due</span>
+            <span class="fu-date">5 days no quote · Moringa</span>
+          </div>
+          <div>
+            <div class="lr-value">$68K</div>
+            <div class="lr-value-sub">USD · Moringa Powder</div>
+          </div>
+          <div>
+            <div class="lr-owner">Priya Singh</div>
+            <div class="lr-source">Referral</div>
+          </div>
+          <div class="lr-actions">
+            <button class="lr-action-btn primary-sm" onclick="event.stopPropagation()">Start quote</button>
+          </div>
+        </div>
+
+        <!-- SECTION: Active pipeline -->
+        <div class="lead-section-label" style="margin-top:8px">🟢 Active — healthy pipeline (38)</div>
+
+        <div class="lead-row ok">
+          <input type="checkbox" class="lr-check" onchange="rowCheck(this)"/>
+          <div class="lr-company">
+            <div class="lr-avatar lr-av-blue">FW</div>
+            <div class="lr-body">
+              <div class="lr-name">FreshWorld UK</div>
+              <div class="lr-contact">Sarah Johnson · Buyer</div>
+              <div class="lr-pills">
+                <span class="pill pill-buyer">Buyer</span>
+                <span class="pill pill-stage-s">Negotiation</span>
+              </div>
+            </div>
+          </div>
+          <div class="lr-stage-col">
+            <div class="lr-stage-name" style="color:var(--emerald-600)">Negotiation</div>
+            <div class="lr-stage-bar"><div class="lr-stage-fill" style="width:65%;background:var(--emerald-500)"></div></div>
+          </div>
+          <div class="lr-followup">
+            <span class="fu-label" style="color:var(--slate-500);font-size:10px">📅 26 Apr</span>
+            <span class="fu-date">Contract review call</span>
+          </div>
+          <div>
+            <div class="lr-value">$142K</div>
+            <div class="lr-value-sub">USD · Sweet Potato + Mango</div>
+          </div>
+          <div>
+            <div class="lr-owner">Ritesh Kumar</div>
+            <div class="lr-source">LinkedIn outbound</div>
+          </div>
+          <div class="lr-actions">
+            <button class="lr-action-btn primary-sm" onclick="event.stopPropagation();showView('cc')">Open →</button>
+          </div>
+        </div>
+
+        <div class="lead-row ok">
+          <input type="checkbox" class="lr-check" onchange="rowCheck(this)"/>
+          <div class="lr-company">
+            <div class="lr-avatar lr-av-teal">PF</div>
+            <div class="lr-body">
+              <div class="lr-name">Pacific Foods JP</div>
+              <div class="lr-contact">Yuki Tanaka · Import Manager</div>
+              <div class="lr-pills">
+                <span class="pill pill-buyer">Buyer</span>
+                <span class="pill pill-stage">New lead</span>
+              </div>
+            </div>
+          </div>
+          <div class="lr-stage-col">
+            <div class="lr-stage-name">New lead</div>
+            <div class="lr-stage-bar"><div class="lr-stage-fill" style="width:10%;background:var(--slate-400)"></div></div>
+          </div>
+          <div class="lr-followup">
+            <span class="fu-label" style="color:var(--slate-500);font-size:10px">📅 28 Apr</span>
+            <span class="fu-date">Intro call — FoodEx contact</span>
+          </div>
+          <div>
+            <div class="lr-value">—</div>
+            <div class="lr-value-sub">Not set yet</div>
+          </div>
+          <div>
+            <div class="lr-owner">Ritesh Kumar</div>
+            <div class="lr-source">FoodEx Japan</div>
+          </div>
+          <div class="lr-actions">
+            <button class="lr-action-btn primary-sm" onclick="event.stopPropagation();showView('cc')">Open →</button>
+          </div>
+        </div>
+
+        <div style="text-align:center;padding:20px;color:var(--slate-400);font-size:12px;font-weight:600">
+          + 43 more leads · <span style="color:var(--brand);cursor:pointer">Load all</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ VIEW: COMMAND CENTER ══════════════ -->
+    <div class="view" id="view-cc">
+      <div class="cc-wrap">
+
+        <!-- LEAD HEADER CARD -->
+        <div class="lead-header-card">
+          <div class="lhc-top">
+            <!-- Status chips -->
+            <div class="lhc-chips">
+              <span class="lhc-chip chip-amber">⚠ Pricing partial — map 2 products</span>
+              <span class="lhc-chip chip-green">✓ Compliance clear</span>
+              <span class="lhc-chip chip-slate">📅 Next follow-up: 2 Apr (overdue)</span>
+              <span class="lhc-chip chip-blue">Buyer · INR + USD</span>
+            </div>
+
+            <!-- Hero row -->
+            <div class="lhc-hero">
+              <div class="lhc-company-row">
+                <div class="lhc-company-avatar" id="cc-avatar">NM</div>
+                <div>
+                  <div class="lhc-company-name" id="cc-company-name">NatureMark India</div>
+                  <div class="lhc-company-meta" id="cc-meta">Buyer · Owner: Priya Singh · Source: Trade show · Mumbai, India</div>
+                </div>
+              </div>
+              <div class="lhc-actions">
+                <button class="btn-primary" id="cc-quote-btn" onclick="togglePanel('commercial')">🖊 Create quote</button>
+                <button class="btn-ghost-md" onclick="openFollowUp()">📅 Schedule follow-up</button>
+                <div style="position:relative">
+                  <button class="btn-tools" onclick="toggleTools(this)">⋯ Lead tools</button>
+                  <div id="tools-menu" style="display:none;position:absolute;right:0;top:40px;background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:6px;box-shadow:var(--shadow-lg);min-width:180px;z-index:20">
+                    <div style="padding:7px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--slate-700);" onmouseover="this.style.background='var(--slate-50)'" onmouseout="this.style.background=''">✏ Edit lead details</div>
+                    <div style="padding:7px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--slate-700);" onmouseover="this.style.background='var(--slate-50)'" onmouseout="this.style.background=''">📦 Adjust coverage</div>
+                    <div style="padding:7px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--slate-700);" onmouseover="this.style.background='var(--slate-50)'" onmouseout="this.style.background=''">📝 Add note to log</div>
+                    <div style="padding:7px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--slate-700);" onmouseover="this.style.background='var(--slate-50)'" onmouseout="this.style.background=''" onclick="document.getElementById('tools-menu').style.display='none'">✦ Ask AI for help</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Next move bar -->
+          <div class="next-move-bar">
+            <strong>Next move:</strong> <span id="cc-next-move">Schedule a follow-up call with Ananya Sharma — this lead has been silent for 21 days. Deal value is $240K. Confirm product interest in Mango Powder and Beetroot before opening a quote.</span>
+          </div>
+
+          <!-- Pipeline stage strip -->
+          <div class="pipeline-strip">
+            <div class="ps-stage">
+              <div class="ps-node done"><div class="ps-node-dot"></div><div class="ps-node-label">New Lead</div></div>
+            </div>
+            <div class="ps-arrow">›</div>
+            <div class="ps-stage">
+              <div class="ps-node done"><div class="ps-node-dot"></div><div class="ps-node-label">Qualified</div></div>
+            </div>
+            <div class="ps-arrow">›</div>
+            <div class="ps-stage">
+              <div class="ps-node done"><div class="ps-node-dot"></div><div class="ps-node-label">Contacted</div></div>
+            </div>
+            <div class="ps-arrow">›</div>
+            <div class="ps-stage">
+              <div class="ps-node done"><div class="ps-node-dot"></div><div class="ps-node-label">Sample Sent</div></div>
+            </div>
+            <div class="ps-arrow">›</div>
+            <div class="ps-stage">
+              <div class="ps-node current"><div class="ps-node-dot"></div><div class="ps-node-label">Negotiation</div></div>
+            </div>
+            <div class="ps-arrow">›</div>
+            <div class="ps-stage">
+              <div class="ps-node upcoming" onclick="confirmStage(this,'Quote Sent')"><div class="ps-node-dot"></div><div class="ps-node-label">Quote Sent</div></div>
+            </div>
+            <div class="ps-arrow">›</div>
+            <div class="ps-stage">
+              <div class="ps-node upcoming"><div class="ps-node-dot"></div><div class="ps-node-label">Won ✓</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN GRID -->
+        <div class="cc-grid">
+          <div class="cc-left">
+
+            <!-- WORKFLOW PILLARS — 4 cards, click to open panel -->
+            <div class="section-card">
+              <div class="card-header">
+                <div>
+                  <div class="card-eyebrow">Workflow</div>
+                  <div class="card-title">Four pillars — click any to inspect</div>
+                  <div class="card-desc">Each card shows current state. Click to open the detail panel inline below.</div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="workflow-pillars">
+
+                  <!-- Follow-up -->
+                  <div class="wf-pillar blocked" id="pillar-follow_up" onclick="togglePanel('follow_up')">
+                    <div class="wf-badge">21d overdue</div>
+                    <div class="wf-icon">📅</div>
+                    <div class="wf-title">Follow-up</div>
+                    <div class="wf-state">Overdue · 2 Apr</div>
+                    <div class="wf-helper">Ananya Sharma has not been contacted in 21 days. This is the top priority.</div>
+                    <button class="wf-open-btn">Schedule now →</button>
+                  </div>
+
+                  <!-- Qualification -->
+                  <div class="wf-pillar needs-action" id="pillar-qualification" onclick="togglePanel('qualification')">
+                    <div class="wf-badge warn">2 missing</div>
+                    <div class="wf-icon">✓</div>
+                    <div class="wf-title">Qualification</div>
+                    <div class="wf-state">Partial — 2 missing</div>
+                    <div class="wf-helper">Budget authority and order frequency not recorded. Required for quote.</div>
+                    <button class="wf-open-btn">Complete →</button>
+                  </div>
+
+                  <!-- Coverage -->
+                  <div class="wf-pillar needs-action" id="pillar-coverage" onclick="togglePanel('coverage')">
+                    <div class="wf-badge warn">Partial</div>
+                    <div class="wf-icon">📦</div>
+                    <div class="wf-title">Coverage</div>
+                    <div class="wf-state">2 products · 1 market</div>
+                    <div class="wf-helper">Mango Powder + Beetroot mapped. Market: India. Confirm quantities before quoting.</div>
+                    <button class="wf-open-btn">Edit →</button>
+                  </div>
+
+                  <!-- Commercial / Quote -->
+                  <div class="wf-pillar default" id="pillar-commercial" onclick="togglePanel('commercial')">
+                    <div class="wf-icon">◇</div>
+                    <div class="wf-title">Commercial</div>
+                    <div class="wf-state">No quote yet</div>
+                    <div class="wf-helper">Resolve follow-up and qualification first. Then create governed quote from catalog baseline.</div>
+                    <button class="wf-open-btn">Create quote →</button>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- INLINE PANEL HOST -->
+            <div class="inline-panel" id="panel-follow_up">
+              <div class="ip-header">
+                <div class="ip-title">📅 Follow-up — schedule next contact</div>
+                <button class="ip-close" onclick="closePanel('follow_up')">✕ Close</button>
+              </div>
+              <div class="ip-body">
+                <div class="ip-grid">
+                  <div class="ip-field">
+                    <div class="ip-label">Next contact date &amp; time</div>
+                    <input type="datetime-local" class="ip-input" value="2025-04-24T10:00"/>
+                  </div>
+                  <div class="ip-field">
+                    <div class="ip-label">Contact method</div>
+                    <select class="ip-input" style="appearance:auto">
+                      <option>📞 Phone call</option>
+                      <option>✉ Email</option>
+                      <option>💬 WhatsApp</option>
+                      <option>🤝 In-person meeting</option>
+                    </select>
+                  </div>
+                  <div class="ip-field" style="grid-column:1/-1">
+                    <div class="ip-label">Notes for this contact</div>
+                    <input class="ip-input" placeholder="e.g. Confirm product interest, ask about Q3 import plan…" style="width:100%"/>
+                  </div>
+                </div>
+                <div style="margin-top:14px;padding:12px;background:var(--slate-50);border-radius:var(--r-md);font-size:12px;color:var(--slate-600)">
+                  <strong style="color:var(--slate-800)">AI draft assist:</strong> Generate a personalised follow-up email for Ananya Sharma based on the last conversation. <span style="color:var(--brand);cursor:pointer;font-weight:700">Generate draft →</span>
+                </div>
+                <div class="ip-actions">
+                  <button class="ip-save" onclick="saveFollowUp()">✓ Save follow-up</button>
+                  <button class="ip-cancel" onclick="closePanel('follow_up')">Cancel</button>
+                  <button class="ip-cancel" style="margin-left:auto;color:var(--emerald-600);border-color:var(--emerald-100)">✓ Mark previous complete</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="inline-panel" id="panel-qualification">
+              <div class="ip-header">
+                <div class="ip-title">✓ Qualification — buyer fit checklist</div>
+                <button class="ip-close" onclick="closePanel('qualification')">✕ Close</button>
+              </div>
+              <div class="ip-body">
+                <div class="ip-checklist">
+                  <div class="ip-check-item"><span class="ip-check-dot dot-ok"></span><span class="ip-check-label">Company size verified</span><span class="ip-check-sub">Mid-market · 500 employees</span></div>
+                  <div class="ip-check-item"><span class="ip-check-dot dot-ok"></span><span class="ip-check-label">Import capability confirmed</span><span class="ip-check-sub">Established importer · IN</span></div>
+                  <div class="ip-check-item"><span class="ip-check-dot dot-ok"></span><span class="ip-check-label">Product requirements noted</span><span class="ip-check-sub">Mango Powder · Beetroot</span></div>
+                  <div class="ip-check-item" style="background:var(--rose-50);border-color:var(--rose-100)"><span class="ip-check-dot dot-miss"></span><span class="ip-check-label" style="color:var(--rose-700)">Budget authority identified</span><span class="ip-check-sub" style="color:var(--rose-500)">Missing — ask on next call</span></div>
+                  <div class="ip-check-item" style="background:var(--rose-50);border-color:var(--rose-100)"><span class="ip-check-dot dot-miss"></span><span class="ip-check-label" style="color:var(--rose-700)">Order frequency / volume</span><span class="ip-check-sub" style="color:var(--rose-500)">Missing — needed for pricing</span></div>
+                  <div class="ip-check-item"><span class="ip-check-dot dot-warn"></span><span class="ip-check-label">Decision timeline</span><span class="ip-check-sub" style="color:var(--amber-600)">Vague — "Q3 if pricing works"</span></div>
+                </div>
+                <div class="ip-field" style="margin-top:14px">
+                  <div class="ip-label">Qualification notes</div>
+                  <textarea class="ip-input" rows="3" placeholder="Add context from last call…" style="resize:vertical">Met at FoodEx India. Interested in vacuum-cooked snacks and powders. Procurement head Ananya has authority but needs board sign-off above $100K.</textarea>
+                </div>
+                <div class="ip-actions">
+                  <button class="ip-save" onclick="closePanel('qualification')">✓ Save qualification</button>
+                  <button class="ip-cancel" onclick="closePanel('qualification')">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="inline-panel" id="panel-coverage">
+              <div class="ip-header">
+                <div class="ip-title">📦 Coverage — products &amp; markets</div>
+                <button class="ip-close" onclick="closePanel('coverage')">✕ Close</button>
+              </div>
+              <div class="ip-body">
+                <div class="ip-label" style="margin-bottom:8px">Mapped products</div>
+                <div style="margin-bottom:14px">
+                  <span class="ip-product-tag">🥭 Mango Powder ×</span>
+                  <span class="ip-product-tag">🥦 Beetroot Powder ×</span>
+                  <span class="ip-product-add" onclick="addProduct()">＋ Add product</span>
+                </div>
+                <div class="ip-label" style="margin-bottom:8px">Mapped markets</div>
+                <div style="margin-bottom:14px">
+                  <span class="ip-product-tag">🇮🇳 India ×</span>
+                  <span class="ip-product-add">＋ Add market</span>
+                </div>
+                <div class="ip-grid">
+                  <div class="ip-field">
+                    <div class="ip-label">Incoterm</div>
+                    <select class="ip-input" style="appearance:auto">
+                      <option>FOB</option><option>CIF</option><option>Ex-Factory</option><option>DDP</option>
+                    </select>
+                  </div>
+                  <div class="ip-field">
+                    <div class="ip-label">Currency</div>
+                    <select class="ip-input" style="appearance:auto">
+                      <option>USD</option><option>EUR</option><option>INR</option><option>AED</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="ip-actions">
+                  <button class="ip-save" onclick="saveCoverage()">✓ Save coverage</button>
+                  <button class="ip-cancel" onclick="closePanel('coverage')">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="inline-panel" id="panel-commercial">
+              <div class="ip-header">
+                <div class="ip-title">◇ Commercial — quote workspace</div>
+                <button class="ip-close" onclick="closePanel('commercial')">✕ Close</button>
+              </div>
+              <div class="ip-body">
+                <div style="padding:12px;background:var(--amber-50);border:1px solid var(--amber-100);border-radius:var(--r-md);font-size:12px;color:var(--amber-700);margin-bottom:14px">
+                  <strong>2 blockers before quoting:</strong> Follow-up overdue (schedule call first) · Budget authority not qualified.
+                </div>
+                <div class="ip-grid">
+                  <div class="ip-field">
+                    <div class="ip-label">Pricing basis</div>
+                    <select class="ip-input" style="appearance:auto"><option>FOB</option><option>CIF</option><option>Ex-Factory</option></select>
+                  </div>
+                  <div class="ip-field">
+                    <div class="ip-label">Quote currency</div>
+                    <select class="ip-input" style="appearance:auto"><option>USD</option><option>EUR</option><option>INR</option></select>
+                  </div>
+                </div>
+                <div style="margin-top:14px;font-size:12px;color:var(--slate-500)">Catalog baseline prices will pre-fill once the quote is opened. Any override requires a reason.</div>
+                <div class="ip-actions">
+                  <button class="ip-save" onclick="openQuote()">→ Open Quote Builder</button>
+                  <button class="ip-cancel" onclick="closePanel('commercial')">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- QUOTE PREP CHECKLIST -->
+            <div class="qpc-card">
+              <div class="qpc-header">
+                <div class="card-eyebrow" style="margin-bottom:2px">Quote prep</div>
+                <div class="qpc-title">Readiness for first governed quote</div>
+                <span style="font-size:10px;color:var(--slate-400)">2 of 5 complete</span>
+              </div>
+              <div class="qpc-body">
+                <div class="qpc-item blocked">
+                  <div class="qpc-check">!</div>
+                  <div>
+                    <div class="qpc-item-title">Follow-up — 21 days overdue</div>
+                    <div class="qpc-item-sub">Contact Ananya Sharma before creating a quote. Sending without confirmation loses the deal.</div>
+                  </div>
+                </div>
+                <div class="qpc-item todo">
+                  <div class="qpc-check">?</div>
+                  <div>
+                    <div class="qpc-item-title">Budget authority not captured</div>
+                    <div class="qpc-item-sub">Ask: who signs the PO above $100K? Needed for commercial decision routing.</div>
+                  </div>
+                </div>
+                <div class="qpc-item done">
+                  <div class="qpc-check">✓</div>
+                  <div>
+                    <div class="qpc-item-title">Products mapped — Mango Powder + Beetroot</div>
+                    <div class="qpc-item-sub">Coverage is ready to pull catalog baseline pricing.</div>
+                  </div>
+                </div>
+                <div class="qpc-item done">
+                  <div class="qpc-check">✓</div>
+                  <div>
+                    <div class="qpc-item-title">Market confirmed — India · FOB</div>
+                    <div class="qpc-item-sub">Incoterm and market are set. Pricing basis is ready.</div>
+                  </div>
+                </div>
+                <div class="qpc-item todo">
+                  <div class="qpc-check">?</div>
+                  <div>
+                    <div class="qpc-item-title">Order frequency / volume estimate</div>
+                    <div class="qpc-item-sub">Needed to select correct price tier from catalog.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="qpc-cta">
+                <div class="qpc-cta-note">Resolve blockers above first</div>
+                <button class="qpc-cta-btn" onclick="openQuote()">→ Open Quote Builder</button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT RAIL -->
+          <div class="cc-right">
+
+            <div class="rail-card" style="border-left:3px solid var(--rose-500)">
+              <div class="rail-eyebrow">Priority action</div>
+              <div class="rail-title" style="color:var(--rose-700)">Follow-up overdue</div>
+              <div class="rail-body">21 days without contact. Ananya Sharma is the decision-maker. Schedule a call before anything else.</div>
+              <button class="rail-action" onclick="togglePanel('follow_up')">📅 Schedule now</button>
+            </div>
+
+            <div class="rail-card">
+              <div class="rail-eyebrow">Lead queue</div>
+              <div class="rail-title">Hot list</div>
+              <div class="rail-queue">
+                <div class="rail-queue-item" onclick="openCC('Zara Foods UAE','Quote Sent','Buyer')"><span class="rq-dot" style="background:var(--rose-500)"></span><span class="rq-name">Zara Foods UAE</span><span class="rq-stage">Overdue</span></div>
+                <div class="rail-queue-item" onclick="openCC('FreshWorld UK','Negotiation','Buyer')"><span class="rq-dot" style="background:var(--amber-500)"></span><span class="rq-name">FreshWorld UK</span><span class="rq-stage">Due today</span></div>
+                <div class="rail-queue-item" onclick="openCC('Metro Retail DE','Qualified','Buyer')"><span class="rq-dot" style="background:var(--brand)"></span><span class="rq-name">Metro Retail DE</span><span class="rq-stage">Call today</span></div>
+                <div class="rail-queue-item"><span class="rq-dot" style="background:var(--emerald-500)"></span><span class="rq-name">GreenSource SG</span><span class="rq-stage">RFQ due</span></div>
+              </div>
+              <button class="rail-ghost" onclick="showView('list')">← Back to queue</button>
+            </div>
+
+            <div class="rail-card">
+              <div class="rail-eyebrow">Compliance</div>
+              <div class="rail-title">Gate status</div>
+              <div class="compliance-items">
+                <div class="ci-row"><span class="ci-dot" style="background:var(--emerald-500)"></span><span class="ci-label">Import licence</span><span class="ci-status" style="color:var(--emerald-600)">Clear</span></div>
+                <div class="ci-row"><span class="ci-dot" style="background:var(--emerald-500)"></span><span class="ci-label">FSSAI registration</span><span class="ci-status" style="color:var(--emerald-600)">Clear</span></div>
+                <div class="ci-row"><span class="ci-dot" style="background:var(--slate-300)"></span><span class="ci-label">Phytosanitary cert</span><span class="ci-status" style="color:var(--slate-400)">N/A</span></div>
+              </div>
+              <button class="rail-ghost" style="margin-top:10px">View compliance →</button>
+            </div>
+
+            <div class="rail-card">
+              <div class="rail-eyebrow">Quick links</div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <button class="rail-ghost" style="text-align:left;font-size:11px">⊕ View in pipeline</button>
+                <button class="rail-ghost" style="text-align:left;font-size:11px">📋 Lead log / activity</button>
+                <button class="rail-ghost" style="text-align:left;font-size:11px">✦ Ask AI for summary</button>
+                <button class="rail-ghost" style="text-align:left;font-size:11px">📤 Share lead brief</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- STICKY ACTION BAR -->
+        <div class="sticky-bar">
+          <div class="sab-left">
+            <button class="btn-primary" onclick="togglePanel('commercial')">🖊 Create quote</button>
+            <button class="btn-ghost-md" onclick="openFollowUp()">📅 Schedule follow-up</button>
+            <button class="btn-ghost-md" onclick="openDrawer()">＋ Quick edit</button>
+          </div>
+          <div class="sab-status">Command center · Negotiation stage</div>
+        </div>
+
+      </div>
+    </div>
+    <!-- end view-cc -->
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════════════════════
+  ADD LEAD DRAWER
+══════════════════════════════════════════════════════════════ -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="if(event.target===this)closeDrawer()">
+  <div class="drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">Quick Add Lead</div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Lead type</div>
+        <div class="type-switch">
+          <div class="type-btn active-buyer" id="type-buyer" onclick="setType('buyer')">🛒 Buyer<br><span style="font-size:10px;font-weight:500">Importing / purchasing</span></div>
+          <div class="type-btn" id="type-supplier" onclick="setType('supplier')">🏭 Supplier<br><span style="font-size:10px;font-weight:500">Sourcing / manufacturing</span></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Company &amp; contact</div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">Company name *</label>
+            <input class="form-input" placeholder="e.g. Metro Retail GmbH"/>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Country *</label>
+            <select class="form-select"><option>Select country…</option><option>India</option><option>UAE</option><option>Germany</option><option>UK</option><option>Singapore</option><option>Japan</option><option>USA</option><option>China</option></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">Contact name</label>
+            <input class="form-input" placeholder="Primary contact person"/>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Job title</label>
+            <input class="form-input" placeholder="e.g. Procurement Director"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">Email</label>
+            <input class="form-input" type="email" placeholder="contact@company.com"/>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Phone</label>
+            <input class="form-input" placeholder="+49 151…"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Source &amp; pipeline</div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">Lead source</label>
+            <select class="form-select"><option>Trade show</option><option>Direct inquiry</option><option>Referral</option><option>LinkedIn</option><option>Website</option><option>vCard scan</option><option>Other</option></select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Event / source label</label>
+            <input class="form-input" placeholder="e.g. FoodEx Japan 2025"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">Owner</label>
+            <select class="form-select"><option>Ritesh Kumar</option><option>Priya Singh</option><option>Unassigned</option></select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Deal value estimate</label>
+            <input class="form-input" placeholder="e.g. 50000"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Products &amp; next action</div>
+        <div class="form-row single">
+          <div class="form-field">
+            <label class="form-label">Products of interest</label>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--slate-50);min-height:42px">
+              <span class="ip-product-add" style="margin:0;font-size:11px">＋ Mango Powder</span>
+              <span class="ip-product-add" style="margin:0;font-size:11px">＋ Beetroot Powder</span>
+              <span class="ip-product-add" style="margin:0;font-size:11px">＋ Sweet Potato</span>
+              <span class="ip-product-add" style="margin:0;font-size:11px;background:rgba(12,127,255,.04)">＋ Add more</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">Next follow-up</label>
+            <input class="form-input" type="datetime-local"/>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Auto-advance to quote?</label>
+            <select class="form-select"><option>No — stay in Follow-up</option><option>Yes — open quote after save</option></select>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="drawer-footer">
+      <button class="drawer-save">✓ Save lead</button>
+      <button class="drawer-cancel" onclick="closeDrawer()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- vCARD MODAL -->
+<div id="vcard-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(5,15,30,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:white;border-radius:20px;width:360px;box-shadow:0 32px 80px rgba(0,0,0,.3);overflow:hidden">
+    <div style="background:linear-gradient(135deg,#0f172a 0%,#0b2e4a 55%,#0c7fff 140%);padding:28px 28px 24px;color:white;position:relative">
+      <button onclick="document.getElementById('vcard-modal').style.display='none'" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,.15);border:none;color:white;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+      <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#0c7fff,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:white;border:3px solid rgba(255,255,255,.3);margin-bottom:14px">RK</div>
+      <div style="font-size:20px;font-weight:800;letter-spacing:-.3px">Ritesh Kumar</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.65);margin-top:3px">Director · Blue Orbit International</div>
+      <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,.5)">ritesh@blueorbit.com · SETU Flow CRM</div>
+    </div>
+    <div style="padding:22px 28px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:700;border:none;background:var(--navy);color:white;cursor:pointer">⬇ Download .vcf card</button>
+        <button style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--slate-50);color:var(--slate-800);cursor:pointer">🔗 Copy share link</button>
+        <button style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--slate-50);color:var(--slate-800);cursor:pointer">✉ Send via email</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+  REVIEW PANEL
+══════════════════════════════════════════════════════════════ -->
+<div class="review-panel">
+  <div class="review-header">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+      <!-- Blue Orbit logo in review -->
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:var(--r-sm);background:rgba(11,46,74,.06);border:1px solid rgba(11,46,74,.12)">
+        <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--navy-deep),var(--brand));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white">BO</div>
+        <div>
+          <div style="font-size:11px;font-weight:800;color:var(--navy);letter-spacing:.02em">Blue Orbit International</div>
+          <div style="font-size:9px;color:var(--slate-400);letter-spacing:.1em;text-transform:uppercase">Roohted · SETU Flow</div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:var(--slate-400)">Leads page redesign · for builder handoff</span>
+    </div>
+    <div class="review-title">Leads Page Redesign — Code Review &amp; Builder Guide</div>
+    <div class="review-subtitle">
+      Two surfaces redesigned: the Lead Queue (list view) and the Lead Command Center (individual lead). Every change maps to an existing component in the codebase. Consistent with the dashboard design system.
+    </div>
+  </div>
+
+  <!-- Section order -->
+  <div class="review-section">
+    <div class="review-section-title">1 — Lead queue: what changed in the list view</div>
+    <div class="flow-compare">
+      <div class="flow-col">
+        <h4>❌ Current (cognitive overload)</h4>
+        <div class="flow-list">
+          <div class="flow-row was"><span class="flow-num">1</span>StateMessage (mode explanation)</div>
+          <div class="flow-row was"><span class="flow-num">2</span>LeadsWorkspace (1,456 lines, everything visible)</div>
+          <div class="flow-row was"><span class="flow-num">3</span>6 signal pills per lead row</div>
+          <div class="flow-row was"><span class="flow-num">4</span>AI brief sentence on every row</div>
+          <div class="flow-row was"><span class="flow-num">5</span>Batch controls always visible</div>
+          <div class="flow-row was"><span class="flow-num">6</span>No visual hierarchy between urgent/normal leads</div>
+        </div>
+      </div>
+      <div class="flow-col">
+        <h4>✅ Proposed (action-first)</h4>
+        <div class="flow-list">
+          <div class="flow-row now"><span class="flow-num">1</span>Saved views bar (always visible, no StateMessage)</div>
+          <div class="flow-row now"><span class="flow-num">2</span>Sectioned rows: Critical → Due today → Active</div>
+          <div class="flow-row now"><span class="flow-num">3</span>2 signal pills max per row (type + stage only)</div>
+          <div class="flow-row now"><span class="flow-num">4</span>Left accent bar = severity (rose/amber/emerald)</div>
+          <div class="flow-row now"><span class="flow-num">5</span>Batch controls only appear after checkbox selection</div>
+          <div class="flow-row now"><span class="flow-num">6</span>AI brief removed from rows — moved to Command Center</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Command Center -->
+  <div class="review-section">
+    <div class="review-section-title">2 — Command Center: workflow panel redesign</div>
+    <div class="change-grid">
+      <div class="change-item win">
+        <div class="change-icon">✓</div>
+        <div>
+          <div class="change-type">Keep &amp; elevate</div>
+          <div class="change-title">LeadPipelineStageStrip</div>
+          <div class="change-desc">The stage strip is excellent. Visual state (done/current/upcoming) is clear. Add: clickable upcoming stages trigger a confirmation tooltip before moving. Remove the wall of detail text that appears on click — keep it compact.</div>
+        </div>
+      </div>
+      <div class="change-item win">
+        <div class="change-icon">✓</div>
+        <div>
+          <div class="change-type">Keep &amp; elevate</div>
+          <div class="change-title">QuotePrepChecklist</div>
+          <div class="change-desc">This is the best UX concept in the system — a visual readiness checklist before quote creation. Keep it, make it the primary focus below the workflow pillars instead of hiding it behind the WorkflowTab structure.</div>
+        </div>
+      </div>
+      <div class="change-item new">
+        <div class="change-icon">＋</div>
+        <div>
+          <div class="change-type">New pattern</div>
+          <div class="change-title">4-pillar workflow cards</div>
+          <div class="change-desc">Replace the WorkflowTab accordion with 4 visible cards (Follow-up, Qualification, Coverage, Commercial). Each shows current state at a glance. Click opens the panel inline below — no page switch, no deep nesting.</div>
+        </div>
+      </div>
+      <div class="change-item new">
+        <div class="change-icon">＋</div>
+        <div>
+          <div class="change-type">New pattern</div>
+          <div class="change-title">Inline panel host (no drawers)</div>
+          <div class="change-desc">Workflow detail opens inline between the pillars and the checklist — not in a side drawer. This means the operator never loses page context. Only one panel open at a time. Close returns to the pillar grid view.</div>
+        </div>
+      </div>
+      <div class="change-item fix">
+        <div class="change-icon">⟳</div>
+        <div>
+          <div class="change-type">Restructure</div>
+          <div class="change-title">LeadCommandHeader — strip status chips</div>
+          <div class="change-desc">Currently shows 3 chips in a row above the company name. Problem: "Pricing partial" and "Compliance clear" mean nothing without context. Fix: make each chip clickable, opening the relevant workflow panel directly. Add urgency colour (rose for overdue chip).</div>
+        </div>
+      </div>
+      <div class="change-item fix">
+        <div class="change-icon">⟳</div>
+        <div>
+          <div class="change-type">Restructure</div>
+          <div class="change-title">SupportingRecordPanel simplification</div>
+          <div class="change-desc">Currently: "Supporting record stays collapsed until the blocker is explicitly inspected" — this is developer language shown to users. Fix: rename to "Lead log" and "Quote record". Remove the prose explanation entirely. Toggle with simple tabs at the bottom of the page.</div>
+        </div>
+      </div>
+      <div class="change-item kill">
+        <div class="change-icon">✕</div>
+        <div>
+          <div class="change-type">Remove</div>
+          <div class="change-title">StateMessage on command center</div>
+          <div class="change-desc">"Stay in this command center until qualification, coverage, and next action are explicit." — an operator who opens a lead does not need to be told why they're there. Remove this entirely. The QuotePrepChecklist communicates this more effectively through action items.</div>
+        </div>
+      </div>
+      <div class="change-item kill">
+        <div class="change-icon">✕</div>
+        <div>
+          <div class="change-type">Remove / demote</div>
+          <div class="change-title">LeadAiAssistPopover from primary actions</div>
+          <div class="change-desc">AI popover is currently triggered from the header action row alongside "Create quote". This competes with the primary action. Move it to the "Lead tools" dropdown menu. AI assist stays accessible but does not compete with the commercial CTA.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Lead flow -->
+  <div class="review-section">
+    <div class="review-section-title">3 — Add Lead drawer: what changed</div>
+    <div class="change-grid">
+      <div class="change-item new">
+        <div class="change-icon">＋</div>
+        <div>
+          <div class="change-type">New</div>
+          <div class="change-title">Type switch — Buyer vs Supplier at top</div>
+          <div class="change-desc">Current: lead type is a dropdown buried in the form. New: large toggle at the top of the drawer. This changes which fields appear and which pipeline is pre-selected. Reduces friction for the most common trade-show fast-lane use case.</div>
+        </div>
+      </div>
+      <div class="change-item new">
+        <div class="change-icon">＋</div>
+        <div>
+          <div class="change-type">New</div>
+          <div class="change-title">Product pre-selection in the add form</div>
+          <div class="change-desc">Products of interest can be selected at creation time (not after). This removes the separate "Coverage" step for most leads. Show common products as quick-tap chips so the trade-show operator can capture a lead in under 60 seconds.</div>
+        </div>
+      </div>
+      <div class="change-item fix">
+        <div class="change-icon">⟳</div>
+        <div>
+          <div class="change-type">Improve</div>
+          <div class="change-title">"Auto-advance to quote" option</div>
+          <div class="change-desc">The existing initialQuickCapture.autoOpenQuoteAfterSave prop is already implemented but invisible to the user. Expose it as a visible toggle in the drawer: "Open Quote Builder after saving this lead?" This saves the double-navigation for qualified inbound leads.</div>
+        </div>
+      </div>
+      <div class="change-item fix">
+        <div class="change-icon">⟳</div>
+        <div>
+          <div class="change-type">Improve</div>
+          <div class="change-title">Follow-up date in the add form</div>
+          <div class="change-desc">Current: follow-up must be set after creation, inside the command center. New: set it during lead creation. For trade-show leads especially, the operator knows immediately when to follow up. One less step after saving.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consistency section -->
+  <div class="review-section">
+    <div class="review-section-title">4 — Cross-page consistency with dashboard</div>
+    <div class="change-grid">
+      <div class="change-item win">
+        <div class="change-icon">✓</div>
+        <div>
+          <div class="change-type">Consistent</div>
+          <div class="change-title">Topbar — same structure as dashboard</div>
+          <div class="change-desc">Company badge · vCard button · mode switch (All/Buyers/Suppliers) · Quick Lead · avatar. Identical position and style across both pages. Builder can reuse the topbar component with zero changes.</div>
+        </div>
+      </div>
+      <div class="change-item win">
+        <div class="change-icon">✓</div>
+        <div>
+          <div class="change-type">Consistent</div>
+          <div class="change-title">Filter bar — identical pattern</div>
+          <div class="change-desc">Same filter-select-wrap components, same active-chip pattern, same result-summary right-aligned. Filter bar is a shared component between dashboard and leads. Add: "Follow-up timing" filter (Overdue / Today / Upcoming / All) — leads-specific.</div>
+        </div>
+      </div>
+      <div class="change-item win">
+        <div class="change-icon">✓</div>
+        <div>
+          <div class="change-type">Consistent</div>
+          <div class="change-title">Design tokens — same colours, radii, shadows</div>
+          <div class="change-desc">All CSS variables match the dashboard exactly: navy, brand blue, slate scale, emerald/amber/rose semantic colours. Section cards, pills, avatar styles are identical. Build once, apply everywhere.</div>
+        </div>
+      </div>
+      <div class="change-item new">
+        <div class="change-icon">＋</div>
+        <div>
+          <div class="change-type">New addition</div>
+          <div class="change-title">Blue Orbit company badge in topbar</div>
+          <div class="change-desc">Added to both dashboard and leads topbar: BO mark + company name + "SETU Flow CRM" sub-label. Appears left of the page title. Reinforces brand identity for client demo without cluttering the nav. Implemented as a shared CompanyBadge component.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="verdict-box">
+    <div style="font-size:40px;flex-shrink:0">🎯</div>
+    <div class="verdict-body">
+      <div class="verdict-q">Builder checklist — what to implement first</div>
+      <div class="verdict-text">
+        <strong>Sprint 1 (quick wins):</strong> Add left-accent severity bar to lead rows · Section rows into Critical/Today/Active · Move batch toolbar to appear on checkbox · Remove StateMessage from Command Center · Add Blue Orbit company badge to topbar.<br><br>
+        <strong>Sprint 2 (structure):</strong> Replace WorkflowTab accordion with 4-pillar card grid · Build inline panel host (no drawers) · Move AI assist to tools dropdown · Make header status chips clickable.<br><br>
+        <strong>Sprint 3 (add lead UX):</strong> Buyer/Supplier toggle at top of drawer · Product pre-selection chips · Follow-up date in creation form · Auto-advance to quote toggle.<br><br>
+        <strong>Always consistent:</strong> Every page uses the same topbar, filter bar, mode switch, section-card pattern, and pill components. Build them as shared components from day one.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── VIEW SWITCHING ─────────────────────────────────────────────
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.page-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.getElementById('tab-' + (v === 'cc' ? 'cc' : 'list')).classList.add('active');
+}
+
+function openCC(company, stage, type) {
+  document.getElementById('cc-company-name').textContent = company;
+  document.getElementById('cc-meta').textContent = type + ' · Owner: Ritesh Kumar · Source: Trade event · ' + (stage.includes('Negotiation') ? 'Mumbai, India' : '—');
+  document.getElementById('cc-badge').textContent = company;
+  const btn = document.getElementById('cc-quote-btn');
+  btn.textContent = stage === 'Quote Sent' ? '🖊 Continue quote' : '🖊 Create quote';
+  // Close any open panels
+  document.querySelectorAll('.inline-panel').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.wf-pillar').forEach(el => el.classList.remove('active-panel'));
+  showView('cc');
+  window.scrollTo(0,0);
+}
+
+// ── WORKFLOW PANELS ─────────────────────────────────────────────
+let openPanel = null;
+function togglePanel(key) {
+  const panel = document.getElementById('panel-' + key);
+  const pillar = document.getElementById('pillar-' + key);
+  if (openPanel === key) {
+    closePanel(key);
+  } else {
+    if (openPanel) closePanel(openPanel);
+    panel.classList.add('open');
+    if (pillar) pillar.classList.add('active-panel');
+    openPanel = key;
+    setTimeout(() => panel.scrollIntoView({behavior:'smooth',block:'nearest'}), 80);
+  }
+}
+function closePanel(key) {
+  const panel = document.getElementById('panel-' + key);
+  const pillar = document.getElementById('pillar-' + key);
+  if (panel) panel.classList.remove('open');
+  if (pillar) pillar.classList.remove('active-panel');
+  openPanel = null;
+}
+
+// ── SAVE ACTIONS ────────────────────────────────────────────────
+function saveFollowUp() {
+  closePanel('follow_up');
+  // Update the follow-up pillar to show scheduled state
+  const pillar = document.getElementById('pillar-follow_up');
+  pillar.className = 'wf-pillar ready';
+  pillar.querySelector('.wf-state').textContent = 'Scheduled · 24 Apr 10:00';
+  pillar.querySelector('.wf-helper').textContent = 'Follow-up set with Ananya Sharma. Call confirmed.';
+  pillar.querySelector('.wf-badge').textContent = 'Scheduled';
+  pillar.querySelector('.wf-badge').className = 'wf-badge ok';
+}
+function saveCoverage() {
+  closePanel('coverage');
+  const pillar = document.getElementById('pillar-coverage');
+  pillar.className = 'wf-pillar ready';
+  pillar.querySelector('.wf-badge').textContent = 'Ready';
+  pillar.querySelector('.wf-badge').className = 'wf-badge ok';
+  pillar.querySelector('.wf-state').textContent = '3 products · 1 market';
+}
+function addProduct() {
+  const tags = document.querySelector('#panel-coverage .ip-body div');
+  const newTag = document.createElement('span');
+  newTag.className = 'ip-product-tag';
+  newTag.textContent = '🌿 Moringa Powder ×';
+  tags.insertBefore(newTag, tags.lastElementChild);
+}
+function openQuote() {
+  closePanel('commercial');
+  alert('→ Would navigate to /leads/[leadId]/quote?quoteId=new\n\nIn production this opens the Quote Builder with catalog prices pre-filled.');
+}
+function openFollowUp() { togglePanel('follow_up'); }
+
+// ── TOOLS MENU ──────────────────────────────────────────────────
+function toggleTools(btn) {
+  const menu = document.getElementById('tools-menu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  document.addEventListener('click', function hide(e) {
+    if (!btn.contains(e.target)) {
+      menu.style.display = 'none';
+      document.removeEventListener('click', hide);
+    }
+  });
+}
+
+// ── PIPELINE STAGE CONFIRM ──────────────────────────────────────
+function confirmStage(el, stageName) {
+  if (confirm('Move lead to "' + stageName + '"?\nThis will update the pipeline and log a stage change.')) {
+    document.querySelectorAll('.ps-node').forEach(n => { n.className = 'ps-node upcoming'; });
+    el.className = 'ps-node current';
+    // mark previous as done
+    let prev = el.closest('.ps-stage').previousElementSibling;
+    while (prev) {
+      const node = prev.querySelector('.ps-node');
+      if (node) node.className = 'ps-node done';
+      prev = prev.previousElementSibling;
+    }
+  }
+}
+
+// ── BATCH SELECT ────────────────────────────────────────────────
+let checkedCount = 0;
+function rowCheck(cb) {
+  checkedCount += cb.checked ? 1 : -1;
+  document.getElementById('batch-bar').style.display = checkedCount > 0 ? 'flex' : 'none';
+}
+function toggleAll(cb) {
+  document.querySelectorAll('.lr-check').forEach(c => { c.checked = cb.checked; });
+  checkedCount = cb.checked ? document.querySelectorAll('.lr-check').length : 0;
+  document.getElementById('batch-bar').style.display = checkedCount > 0 ? 'flex' : 'none';
+}
+function clearBatch() {
+  document.querySelectorAll('.lr-check').forEach(c => c.checked = false);
+  document.getElementById('select-all').checked = false;
+  checkedCount = 0;
+  document.getElementById('batch-bar').style.display = 'none';
+}
+
+// ── SAVED VIEWS ─────────────────────────────────────────────────
+function setSV(el) {
+  document.querySelectorAll('.sv-item').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── MODE SWITCH ──────────────────────────────────────────────────
+function setMode(btn, mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── DRAWER ──────────────────────────────────────────────────────
+function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); }
+function closeDrawer() { document.getElementById('drawer-overlay').classList.remove('open'); }
+function setType(t) {
+  document.getElementById('type-buyer').className = 'type-btn' + (t==='buyer' ? ' active-buyer' : '');
+  document.getElementById('type-supplier').className = 'type-btn' + (t==='supplier' ? ' active-supplier' : '');
+}
+
+// Navigate back to dashboard simulation
+function goTo(page) {
+  if (page === 'dashboard') {
+    alert('→ Would navigate to /dashboard\n\n(Same topbar, filter bar, sidebar — consistent across all pages)');
+  }
+}
+</script>
+</body>
+</html>
