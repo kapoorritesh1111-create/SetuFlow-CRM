@@ -1,6 +1,6 @@
 import { formatDate } from '@/lib/utils'
 import type { GateStatus, LeadProfileSnapshot, PricingReadiness, QuoteFocusSummary } from './types'
-import { Sparkles, getActionIcon, getStageAccent, getStageIcon, getStatusIcon, ICON_CONTAINER_CLASS } from './ui-system'
+import { getActionIcon, getStageAccent, getStageIcon, getStatusIcon, ICON_CONTAINER_CLASS } from './ui-system'
 
 function chipClass(tone: 'blue' | 'emerald' | 'amber' | 'slate') {
   if (tone === 'blue') return 'border-brand-primary/20 bg-brand-primary/10 text-brand-dark'
@@ -40,9 +40,9 @@ export function LeadCommandHeader({
   nextActionSummary,
   onOpenQuote,
   onQuickEdit,
-  onOpenAiAssist,
   onEditCoverage,
   onOpenActivity,
+  onScheduleFollowUp,
 }: {
   lead: LeadProfileSnapshot['lead']
   currentStageLabel?: string
@@ -53,12 +53,11 @@ export function LeadCommandHeader({
   nextActionSummary: string
   onOpenQuote: () => void
   onQuickEdit: () => void
-  onOpenAiAssist: () => void
   onEditCoverage: () => void
   onOpenActivity: () => void
+  onScheduleFollowUp: () => void
 }) {
   const StageIcon = getStageIcon(currentStageLabel)
-  const QuoteActionIcon = getActionIcon('open')
   const NoteIcon = getActionIcon('add_note')
 
   return (
@@ -87,9 +86,9 @@ export function LeadCommandHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-          <button type="button" onClick={onOpenQuote} className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-brand-primary px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-dark">
-            <span className={ICON_CONTAINER_CLASS}><QuoteActionIcon className="h-4 w-4 text-neutral-900" /></span>
-            {quoteFocus.hasActiveQuote ? 'Continue quote' : 'Create quote'}
+          <button type="button" onClick={onOpenQuote} className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-brand-primary px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-dark">🖊 Create quote</button>
+          <button type="button" onClick={onScheduleFollowUp} className="inline-flex h-11 items-center gap-2 rounded-[10px] border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-soft transition hover:border-neutral-600/30 hover:bg-neutral-50">
+            📅 Schedule follow-up
           </button>
           <details className="group relative">
             <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-[10px] border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-soft transition hover:border-neutral-600/30">
@@ -108,10 +107,6 @@ export function LeadCommandHeader({
               <button type="button" onClick={onOpenActivity} className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2.5 text-left text-sm text-neutral-600 hover:bg-neutral-50">
                 <span className={ICON_CONTAINER_CLASS}><NoteIcon className="h-4 w-4 text-neutral-600" /></span>
                 Add note
-              </button>
-              <button type="button" onClick={onOpenAiAssist} className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2.5 text-left text-sm text-neutral-600 hover:bg-neutral-50">
-                <span className={ICON_CONTAINER_CLASS}><Sparkles className="h-4 w-4 text-brand-primary" /></span>
-                Ask AI for help
               </button>
             </div>
           </details>

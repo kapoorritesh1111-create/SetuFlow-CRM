@@ -151,13 +151,6 @@ export default async function Page({ params, searchParams }: { params: { leadId:
   return (
     <div className="space-y-4">
       {handoff ? <StateMessage title={handoff === 'capture-converted' ? 'Capture handoff is complete' : handoff === 'quote-live-follow-up' ? 'Quote response work continues here' : handoff === 'quote-requalify' ? 'Quote decision now needs follow-up' : handoff === 'approval-send-fix-blocker' ? 'Sending blocker needs follow-up' : 'Workflow handoff is active'} description={handoff === 'capture-converted' ? 'This record was just created from Capture. Qualify it here first, then open Quote only when the commercial path is explicit.' : handoff === 'quote-live-follow-up' ? 'The quote is already live. Stay in this lead workflow to manage the buyer response and next commercial move.' : handoff === 'quote-requalify' ? 'This quote is no longer active. Make the next qualification or close decision here instead of lingering in Quote.' : handoff === 'approval-send-fix-blocker' ? 'Approvals & Sending found a blocker. Use this lead view to fix the missing context before another send attempt.' : 'The route transition preserved context so the next working step stays obvious.'} tone="success" /> : null}
-      <StateMessage
-        title={leadType === 'supplier' ? 'Supplier command mode is active' : 'Buyer command mode is active'}
-        description={leadType === 'supplier'
-          ? 'This page is showing a supplier record. Keep the main action on qualification, coverage, and quote readiness before pushing work downstream.'
-          : 'This page is showing a buyer record. Keep the main action on qualification, quote preparation, and a clean move into Orders once the quote is accepted.'}
-        tone="neutral"
-      />
       <LeadCommandCenterPage
         snapshot={snapshot}
         availableProducts={data.products.map((product) => ({ id: product.id, name: product.name }))}

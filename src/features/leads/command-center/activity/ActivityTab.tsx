@@ -12,7 +12,7 @@ export function ActivityTab({
   onAskAiSummary,
 }: {
   snapshot: LeadProfileSnapshot
-  onAskAiSummary: () => void
+  onAskAiSummary?: () => void
 }) {
   return (
     <div className="space-y-5">
