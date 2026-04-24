@@ -379,19 +379,21 @@ function getStepClasses(state: QuoteStepState) {
 }
 
 function getCurrentBuilderStep(steps: BuilderFocusStep[] | undefined) {
-  if (!steps?.length) return null;
+  const builderSteps = steps ?? [];
+  if (!builderSteps.length) return null;
   return (
-    steps.find((step) => step.state === "current") ??
-    steps.find((step) => step.state === "upcoming") ??
-    steps[steps.length - 1] ??
+    builderSteps.find((step) => step.state === "current") ??
+    builderSteps.find((step) => step.state === "upcoming") ??
+    builderSteps[builderSteps.length - 1] ??
     null
   );
 }
 
 function getCompactProgressLabel(steps: BuilderFocusStep[] | undefined) {
-  if (!steps?.length) return "No builder progress yet";
-  const completed = steps.filter((step) => step.state === "done").length;
-  return `${completed}/${steps.length} steps complete`;
+  const builderSteps = steps ?? [];
+  if (!builderSteps.length) return "No builder progress yet";
+  const completed = builderSteps.filter((step) => step.state === "done").length;
+  return `${completed}/${builderSteps.length} steps complete`;
 }
 
 function getPrimaryBlockerLabel(
@@ -832,45 +834,65 @@ function readQuoteSendSnapshots(communications: QuoteCommunication[], quoteId: s
     })
     .map((item) => {
       const metadata = item.metadata && typeof item.metadata === "object" ? (item.metadata as Record<string, unknown>) : null;
-      const readiness = metadata?.send_readiness_object && typeof metadata.send_readiness_object === "object"
+      const sendReadinessObject = metadata && metadata.send_readiness_object && typeof metadata.send_readiness_object === "object"
         ? (metadata.send_readiness_object as Record<string, unknown>)
         : null;
-      const thresholdPayload = readiness?.margin_threshold_evaluation && typeof readiness.margin_threshold_evaluation === "object"
-        ? (readiness.margin_threshold_evaluation as Record<string, unknown>)
+      const thresholdPayload = sendReadinessObject && sendReadinessObject.margin_threshold_evaluation && typeof sendReadinessObject.margin_threshold_evaluation === "object"
+        ? (sendReadinessObject.margin_threshold_evaluation as Record<string, unknown>)
         : null;
-      const blockers = Array.isArray(readiness?.blockers)
-        ? readiness?.blockers.map((blocker) => {
-            const payload = blocker && typeof blocker === "object" ? (blocker as Record<string, unknown>) : null;
-            return {
-              code: typeof payload?.code === "string" ? payload.code : "UNKNOWN_BLOCKER",
-              scope: "quote_version" as const,
-              label: typeof payload?.code === "string" ? payload.code.replaceAll("_", " ") : "Unknown blocker",
-              detail: typeof payload?.detail === "string" ? payload.detail : "Send blocker detail missing from snapshot.",
-            };
-          })
+      const readinessBlockersValue = sendReadinessObject?.blockers;
+      const readinessBlockers = Array.isArray(readinessBlockersValue)
+        ? readinessBlockersValue
         : [];
+      const blockers = readinessBlockers.map((blocker) => {
+        const payload = blocker && typeof blocker === "object" ? (blocker as Record<string, unknown>) : null;
+        const payloadCode = payload?.code;
+        const payloadDetail = payload?.detail;
+        const code = typeof payloadCode === "string" ? payloadCode : "UNKNOWN_BLOCKER";
+        const detail = typeof payloadDetail === "string" ? payloadDetail : "Send blocker detail missing from snapshot.";
+        return {
+          code,
+          scope: "quote_version" as const,
+          label: code.replaceAll("_", " "),
+          detail,
+        };
+      });
+      const configuredPercentValue = thresholdPayload?.configured_percent;
+      const actualMarginPercentValue = thresholdPayload?.actual_margin_percent;
+      const actualOverrideDeltaPercentValue = thresholdPayload?.actual_override_delta_percent;
+      const governedMetricLabelValue = thresholdPayload?.governed_metric_label;
+      const thresholdSource = thresholdPayload?.governed_metric_source;
+      const governedMetricPercentValue = thresholdPayload?.governed_metric_percent;
+      const deltaToThresholdPercentValue = thresholdPayload?.delta_to_threshold_percent;
+      const marginExposedValue = thresholdPayload?.margin_exposed;
+      const thresholdNarrativeValue = thresholdPayload?.narrative;
       const threshold: QuoteThresholdEvaluation = {
-        configuredPercent: typeof thresholdPayload?.configured_percent === "number" ? normalizePercent(Number(thresholdPayload.configured_percent)) : null,
-        actualMarginPercent: typeof thresholdPayload?.actual_margin_percent === "number" ? normalizePercent(Number(thresholdPayload.actual_margin_percent)) : null,
-        actualOverrideDeltaPercent: typeof thresholdPayload?.actual_override_delta_percent === "number" ? normalizePercent(Number(thresholdPayload.actual_override_delta_percent)) : null,
-        governedMetricLabel: typeof thresholdPayload?.governed_metric_label === "string" ? thresholdPayload.governed_metric_label : "Governed approval metric",
-        governedMetricSource: thresholdPayload?.governed_metric_source === "margin" || thresholdPayload?.governed_metric_source === "override_delta" ? thresholdPayload.governed_metric_source : "unavailable",
-        governedMetricPercent: typeof thresholdPayload?.governed_metric_percent === "number" ? normalizePercent(Number(thresholdPayload.governed_metric_percent)) : null,
-        deltaToThresholdPercent: typeof thresholdPayload?.delta_to_threshold_percent === "number" ? normalizePercent(Number(thresholdPayload.delta_to_threshold_percent)) : null,
-        marginExposed: thresholdPayload?.margin_exposed === true,
-        narrative: typeof thresholdPayload?.narrative === "string" ? thresholdPayload.narrative : "Threshold narrative missing from snapshot.",
+        configuredPercent: typeof configuredPercentValue === "number" ? normalizePercent(Number(configuredPercentValue)) : null,
+        actualMarginPercent: typeof actualMarginPercentValue === "number" ? normalizePercent(Number(actualMarginPercentValue)) : null,
+        actualOverrideDeltaPercent: typeof actualOverrideDeltaPercentValue === "number" ? normalizePercent(Number(actualOverrideDeltaPercentValue)) : null,
+        governedMetricLabel: typeof governedMetricLabelValue === "string" ? governedMetricLabelValue : "Governed approval metric",
+        governedMetricSource: thresholdSource === "margin" || thresholdSource === "override_delta" ? thresholdSource : "unavailable",
+        governedMetricPercent: typeof governedMetricPercentValue === "number" ? normalizePercent(Number(governedMetricPercentValue)) : null,
+        deltaToThresholdPercent: typeof deltaToThresholdPercentValue === "number" ? normalizePercent(Number(deltaToThresholdPercentValue)) : null,
+        marginExposed: marginExposedValue === true,
+        narrative: typeof thresholdNarrativeValue === "string" ? thresholdNarrativeValue : "Threshold narrative missing from snapshot.",
       };
+      const readinessVersionId = sendReadinessObject?.version_id;
+      const readinessVersionLabel = sendReadinessObject?.version_label;
+      const readinessSafeToSend = sendReadinessObject?.safe_to_send;
+      const readinessApprovalStatus = sendReadinessObject?.approval_status;
+      const readinessAiRecommendation = sendReadinessObject?.ai_recommendation;
       return {
         communicationId: item.id,
         recordedAt: item.created_at,
         sentAt: item.sent_at ?? null,
-        versionId: typeof readiness?.version_id === "string" ? readiness.version_id : null,
-        versionLabel: typeof readiness?.version_label === "string" ? readiness.version_label : "Unknown version",
-        safeToSend: readiness?.safe_to_send === true,
-        approvalStatus: typeof readiness?.approval_status === "string" ? readiness.approval_status : "unknown",
+        versionId: typeof readinessVersionId === "string" ? readinessVersionId : null,
+        versionLabel: typeof readinessVersionLabel === "string" ? readinessVersionLabel : "Unknown version",
+        safeToSend: readinessSafeToSend === true,
+        approvalStatus: typeof readinessApprovalStatus === "string" ? readinessApprovalStatus : "unknown",
         blockers,
         threshold,
-        aiRecommendation: typeof readiness?.ai_recommendation === "string" ? readiness.ai_recommendation : "AI recommendation not preserved in snapshot.",
+        aiRecommendation: typeof readinessAiRecommendation === "string" ? readinessAiRecommendation : "AI recommendation not preserved in snapshot.",
         legacy: false,
       } satisfies QuoteSendSnapshotRecord;
     })
@@ -929,7 +951,10 @@ function buildQuoteVersionSendReadiness(input: {
       detail: "Add at least one priced commercial line before any send decision can be trusted.",
     });
   }
-  if (!currentVersion?.id) {
+  const currentVersionId = currentVersion?.id ?? null;
+  const currentVersionNo = currentVersion?.version_no ?? null;
+
+  if (!currentVersionId) {
     blockers.push({
       code: "QUOTE_VERSION_EVALUATING",
       scope: "quote_version",
@@ -977,15 +1002,15 @@ function buildQuoteVersionSendReadiness(input: {
   if (!lineItems.length) evaluationState = "empty";
   else if (status === "sent") evaluationState = "sent";
   else if (status === "revised") evaluationState = "revised";
-  else if (!currentVersion?.id) evaluationState = "evaluating";
+  else if (!currentVersionId) evaluationState = "evaluating";
   else if (approvalRequired && approvalState !== "approved") evaluationState = "approval_required";
   else if (blockers.some((item) => item.code === "SEND_PERMISSION_REQUIRED")) evaluationState = "blocked";
 
   const safeToSend = evaluationState === "approved" && blockers.length === 0;
 
   return {
-    versionId: currentVersion?.id ?? null,
-    versionLabel: currentVersion?.version_no ? `v${currentVersion.version_no}` : "No current version",
+    versionId: currentVersionId,
+    versionLabel: currentVersionNo ? `v${currentVersionNo}` : "No current version",
     approvalStatus: approvalRequired ? approvalState : "not_required",
     blockers,
     override: {
@@ -1295,13 +1320,17 @@ export function QuoteWorkspace({
   useEffect(() => {
     const matched = savedViews.find((view) => view.id === savedView);
     if (matched) {
+      const matchedFilterModel = matched.filterModel ?? null;
+      const matchedSortModel = matched.sortModel ?? null;
+      const matchedStatusFilter = matchedFilterModel?.statusFilter;
+      const matchedSortMode = matchedSortModel?.sortMode;
       const nextStatus =
-        typeof matched.filterModel?.statusFilter === "string"
-          ? matched.filterModel.statusFilter
+        typeof matchedStatusFilter === "string"
+          ? matchedStatusFilter
           : "";
       const nextSort =
-        typeof matched.sortModel?.sortMode === "string"
-          ? (matched.sortModel.sortMode as QuoteSortMode)
+        typeof matchedSortMode === "string"
+          ? (matchedSortMode as QuoteSortMode)
           : "updated";
       setStatusFilter(nextStatus);
       setSortMode(nextSort);
@@ -1532,7 +1561,8 @@ export function QuoteWorkspace({
             });
             return;
           }
-          if (result?.record) upsertQuoteRecord(result.record as QuoteRecord);
+          const resultRecord = result?.record;
+          if (resultRecord) upsertQuoteRecord(resultRecord as QuoteRecord);
           setComposer(null);
           setComposerNote("");
           const normalizedStatus = String(action.run?.status ?? "").trim().toLowerCase();
@@ -1675,6 +1705,21 @@ export function QuoteWorkspace({
         String(version.status ?? "").toLowerCase() === "approved",
     ) ?? null;
   const focusApprovalAction = focusQuote ? getApprovalAction(focusQuote) : null;
+  const focusQuoteStatus = focusQuoteMeta?.status ?? focusQuote?.status ?? "draft";
+  const focusQuoteApprovalRequired = focusQuoteApprovalRequired;
+  const focusQuoteApprovalState = focusQuoteApprovalState;
+  const currentFocusedVersionNo = currentFocusedVersion?.version_no ?? null;
+  const currentFocusedVersionCreatedAt = currentFocusedVersion?.created_at ?? null;
+  const currentFocusedVersionLabel = currentFocusedVersionNo
+    ? `v${currentFocusedVersionNo}`
+    : "current version";
+  const sentFocusedVersionNo = sentFocusedVersion?.version_no ?? null;
+  const sentFocusedVersionSentAt = sentFocusedVersion?.sent_at ?? null;
+  const sentFocusedVersionLabel = sentFocusedVersionNo
+    ? `v${sentFocusedVersionNo}`
+    : "version";
+  const approvedFocusedVersionNo = approvedFocusedVersion?.version_no ?? null;
+  const approvedFocusedVersionApprovedAt = approvedFocusedVersion?.approved_at ?? null;
   const focusTrustContract = focusQuote
     ? (() => {
         const quoteApprovalState = getQuoteApprovalStateValue(focusQuote);
@@ -1730,8 +1775,9 @@ export function QuoteWorkspace({
     focusNegotiationEvents[0]?.message ??
     focusCommunications[0]?.summary ??
     null;
-  const activeComposerMode =
-    focusQuote && composer?.quoteId === focusQuote.id ? composer.mode : null;
+  const activeComposer =
+    focusQuote && composer && composer.quoteId === focusQuote.id ? composer : null;
+  const activeComposerMode = activeComposer?.mode ?? null;
   const composerActive = activeComposerMode
     ? getNegotiationComposerCopy(activeComposerMode)
     : null;
@@ -1807,7 +1853,7 @@ export function QuoteWorkspace({
               has reached a terminal or customer-facing status. Action
               buttons remain visible but disabled via canManageQuotes logic;
               this banner explains why. */}
-          {focusQuote && isQuoteLocked(focusQuoteMeta?.status ?? focusQuote.status) ? (
+          {focusQuote && isQuoteLocked(focusQuoteStatus) ? (
             <div className="flex items-start gap-3 border-b border-amber-200 bg-amber-50 px-5 py-3 sm:px-6">
               <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold text-amber-900">
                 ⊘
@@ -1815,10 +1861,10 @@ export function QuoteWorkspace({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-amber-900">
                   Quote locked —{" "}
-                  {String(focusQuoteMeta?.status ?? focusQuote.status).replaceAll("_", " ")}
+                  {String(focusQuoteStatus).replaceAll("_", " ")}
                 </p>
                 <p className="mt-0.5 text-sm text-amber-800">
-                  {getQuoteLockReason(focusQuoteMeta?.status ?? focusQuote.status)}
+                  {getQuoteLockReason(focusQuoteStatus)}
                 </p>
               </div>
             </div>
@@ -1840,7 +1886,7 @@ export function QuoteWorkspace({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                    Workflow {String(focusQuoteMeta?.status ?? "draft").replaceAll("_", " ")}
+                    Workflow {String(focusQuoteStatus).replaceAll("_", " ")}
                   </span>
                 </div>
               </div>
@@ -1854,7 +1900,7 @@ export function QuoteWorkspace({
                   {focusQuoteTotals?.lineItemCount ?? 0} line items
                 </span>
                 <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                  Current version {currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "pending sync"}
+                  Current version {currentFocusedVersionNo ? `v${currentFocusedVersionNo}` : "pending sync"}
                 </span>
               </div>
               <div className="mt-3">
@@ -1938,8 +1984,8 @@ export function QuoteWorkspace({
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${focusSendDecision.badgeClasses}`}>
                           {focusSendDecision.label}
                         </span>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((focusQuoteMeta?.approvalState ?? "not_required") as any)}`}>
-                          approval {String(focusQuoteMeta?.approvalState ?? "not_required").replaceAll("_", " ")}
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((focusQuoteApprovalState) as any)}`}>
+                          approval {String(focusQuoteApprovalState).replaceAll("_", " ")}
                         </span>
                       </div>
                       <h4 className="mt-4 text-2xl font-semibold text-slate-900">
@@ -2307,9 +2353,9 @@ export function QuoteWorkspace({
                         {focusQuoteVersions.length ? (
                           focusQuoteVersions.map((version) => {
                             const snapshotForVersion = focusSendSnapshots.find((snapshot) => snapshot.versionId === version.id);
-                            const isCurrentVersion = version.id === currentFocusedVersion?.id;
+                            const isCurrentVersion = version.id === currentFocusedVersionId;
                             const isSentVersion = Boolean(version.sent_at);
-                            const isLatestSentVersion = version.id === sentFocusedVersion?.id;
+                            const isLatestSentVersion = version.id === sentFocusedVersionId;
                             const isSupersededSentVersion = Boolean(
                               isSentVersion &&
                                 currentFocusedVersionId &&
@@ -2333,16 +2379,16 @@ export function QuoteWorkspace({
                                   <span>{version.sent_at ? "Sent" : "Not sent"}</span>
                                   <span>{isCurrentVersion ? "Current version" : "Prior version"}</span>
                                   {isLatestSentVersion ? <span>Latest customer-facing version</span> : null}
-                                  {isSupersededSentVersion ? <span>Superseded by {currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "current version"}</span> : null}
+                                  {isSupersededSentVersion ? <span>Superseded by {currentFocusedVersionLabel}</span> : null}
                                   {snapshotForVersion ? <span>Snapshot recorded</span> : isSentVersion ? <span>Legacy send without snapshot</span> : null}
                                 </div>
                                 <p className="mt-2 text-xs text-slate-500">
                                   {isCurrentVersion && isLatestSentVersion
                                     ? "This is both the current internal version and the latest customer-facing version."
                                     : isCurrentVersion && currentVersionSupersedesSentVersion
-                                      ? `This draft supersedes customer-facing ${sentFocusedVersion?.version_no ? `v${sentFocusedVersion.version_no}` : "the prior sent version"}. The customer still has the prior sent version until this one is sent.`
+                                      ? `This draft supersedes customer-facing ${sentFocusedVersionNo ? `v${sentFocusedVersionNo}` : "the prior sent version"}. The customer still has the prior sent version until this one is sent.`
                                       : isSupersededSentVersion
-                                        ? `This version was sent, but the governed draft has moved forward to ${currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "a newer version"}.`
+                                        ? `This version was sent, but the governed draft has moved forward to ${currentFocusedVersionNo ? `v${currentFocusedVersionNo}` : "a newer version"}.`
                                         : snapshotForVersion
                                           ? `Send snapshot recorded ${formatDateTime(snapshotForVersion.recordedAt)}.`
                                           : isSentVersion
@@ -2372,13 +2418,13 @@ export function QuoteWorkspace({
                             Current version
                           </p>
                           <p className="mt-2 font-semibold text-slate-900">
-                            {currentFocusedVersion?.version_no
-                              ? `v${currentFocusedVersion.version_no}`
+                            {currentFocusedVersionNo
+                              ? `v${currentFocusedVersionNo}`
                               : "Pending sync"}
                           </p>
                           <p className="mt-1 text-xs text-slate-500">
-                            {currentFocusedVersion
-                              ? `Created ${formatDateTime(currentFocusedVersion.created_at)}`
+                            {currentFocusedVersionCreatedAt
+                              ? `Created ${formatDateTime(currentFocusedVersionCreatedAt)}`
                               : "No linked version has been created yet."}
                           </p>
                         </div>
@@ -2387,13 +2433,13 @@ export function QuoteWorkspace({
                             Latest sent
                           </p>
                           <p className="mt-2 font-semibold text-slate-900">
-                            {sentFocusedVersion?.version_no
-                              ? `v${sentFocusedVersion.version_no}`
+                            {sentFocusedVersionNo
+                              ? `v${sentFocusedVersionNo}`
                               : "Not sent yet"}
                           </p>
                           <p className="mt-1 text-xs text-slate-500">
-                            {sentFocusedVersion?.sent_at
-                              ? `Sent ${formatDateTime(sentFocusedVersion.sent_at)}`
+                            {sentFocusedVersionSentAt
+                              ? `Sent ${formatDateTime(sentFocusedVersionSentAt)}`
                               : "The quote has not been sent from a synced version yet."}
                           </p>
                         </div>
@@ -2403,7 +2449,7 @@ export function QuoteWorkspace({
                           </p>
                           <p className="mt-2 font-semibold text-slate-900">
                             {currentVersionSupersedesSentVersion
-                              ? `Current draft ${currentFocusedVersion?.version_no ? `v${currentFocusedVersion.version_no}` : "current version"} supersedes sent ${sentFocusedVersion?.version_no ? `v${sentFocusedVersion.version_no}` : "version"}`
+                              ? `Current draft ${currentFocusedVersionLabel} supersedes sent ${sentFocusedVersionLabel}`
                               : sentFocusedVersionId && currentFocusedVersionId === sentFocusedVersionId
                                 ? "Current version matches the latest customer-facing version"
                                 : "No customer-facing version exists yet"}
@@ -2421,13 +2467,13 @@ export function QuoteWorkspace({
                             Approval checkpoint
                           </p>
                           <p className="mt-2 font-semibold text-slate-900">
-                            {approvedFocusedVersion?.version_no
-                              ? `v${approvedFocusedVersion.version_no}`
+                            {approvedFocusedVersionNo
+                              ? `v${approvedFocusedVersionNo}`
                               : "No approved version yet"}
                           </p>
                           <p className="mt-1 text-xs text-slate-500">
-                            {approvedFocusedVersion?.approved_at
-                              ? `Approved ${formatDateTime(approvedFocusedVersion.approved_at)}`
+                            {approvedFocusedVersionApprovedAt
+                              ? `Approved ${formatDateTime(approvedFocusedVersionApprovedAt)}`
                               : "Approval timing will appear here once a synced version is approved."}
                           </p>
                         </div>
@@ -2660,10 +2706,9 @@ export function QuoteWorkspace({
                                   run: {
                                     status: "revised",
                                     approvalRequired:
-                                      focusQuoteMeta?.approvalRequired ?? false,
+                                      focusQuoteApprovalRequired,
                                     approvalState:
-                                      focusQuoteMeta?.approvalState ??
-                                      "not_required",
+                                      focusQuoteApprovalState,
                                     plainNotes:
                                       composerNote.trim() ||
                                       "Quote revised and ready from the fast lane.",
@@ -3241,10 +3286,11 @@ export function QuoteWorkspace({
                                     unknown
                                   >)
                                 : null;
+                            const operatorNotesValue = metadata?.operator_notes;
                             const operatorNote =
-                              typeof metadata?.operator_notes === "string" &&
-                              metadata.operator_notes.trim()
-                                ? metadata.operator_notes.trim()
+                              typeof operatorNotesValue === "string" &&
+                              operatorNotesValue.trim()
+                                ? operatorNotesValue.trim()
                                 : null;
                             return (
                               <div
