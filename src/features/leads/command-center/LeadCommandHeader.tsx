@@ -1,33 +1,33 @@
 import { formatDate } from '@/lib/utils'
 import type { GateStatus, LeadProfileSnapshot, PricingReadiness, QuoteFocusSummary } from './types'
-import { getActionIcon, getStageAccent, getStageIcon, getStatusIcon, ICON_CONTAINER_CLASS } from './ui-system'
 
-function chipClass(tone: 'blue' | 'emerald' | 'amber' | 'slate') {
-  if (tone === 'blue') return 'border-brand-primary/20 bg-brand-primary/10 text-brand-dark'
-  if (tone === 'emerald') return 'border-status-ready/15 bg-status-ready/10 text-status-ready'
-  if (tone === 'amber') return 'border-status-progress/30 bg-status-progress/15 text-amber-800'
-  return 'border-neutral-200 bg-neutral-50 text-neutral-600'
+/**
+ * PR03 spec match: Lead header card (.lead-header-card) from SetuFlow-Leads-Redesign_Updated.html
+ * Structure:
+ *   .lhc-top
+ *     .lhc-chips  — status chip row
+ *     .lhc-hero   — avatar + company name + actions
+ *   .next-move-bar
+ * Pipeline strip is rendered separately by LeadPipelineStageStrip
+ */
+
+function getAvatarGradient(companyName: string): string {
+  const gradients = [
+    'linear-gradient(135deg,#0b2e4a,#0c7fff)',
+    'linear-gradient(135deg,#0f766e,#0d9488)',
+    'linear-gradient(135deg,#5b21b6,#7c3aed)',
+    'linear-gradient(135deg,#9f1239,#e11d48)',
+    'linear-gradient(135deg,#92400e,#d97706)',
+  ];
+  let hash = 0;
+  for (let i = 0; i < companyName.length; i++) {
+    hash = (hash * 31 + companyName.charCodeAt(i)) & 0xffff;
+  }
+  return gradients[hash % gradients.length];
 }
 
-function pricingReadinessLabel(value: PricingReadiness) {
-  if (value === 'ready') return 'Pricing ready'
-  if (value === 'partial') return 'Pricing partial'
-  return 'Pricing missing'
-}
-
-function complianceLabel(value: GateStatus) {
-  if (value === 'CLEAR') return 'Compliance clear'
-  if (value === 'WARNING') return 'Compliance watch'
-  return 'Compliance blocked'
-}
-
-function StatusChip({ label, tone, Icon }: { label: string; tone: 'blue' | 'emerald' | 'amber' | 'slate'; Icon: ReturnType<typeof getStatusIcon> | ReturnType<typeof getStageIcon> }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${chipClass(tone)}`}>
-      <Icon className="h-3.5 w-3.5" />
-      {label}
-    </span>
-  )
+function getLeadInitials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
 }
 
 export function LeadCommandHeader({
@@ -57,64 +57,113 @@ export function LeadCommandHeader({
   onOpenActivity: () => void
   onScheduleFollowUp: () => void
 }) {
-  const StageIcon = getStageIcon(currentStageLabel)
-  const NoteIcon = getActionIcon('add_note')
+  const avatarGradient = getAvatarGradient(lead.companyName);
+  const initials = getLeadInitials(lead.companyName);
+
+  // Status chips — spec: .lhc-chip variants
+  const chips: Array<{ label: string; tone: 'amber' | 'green' | 'slate' | 'blue' }> = [
+    {
+      label: pricingReadiness === 'ready' ? '✓ Pricing ready' : pricingReadiness === 'partial' ? '⚠ Pricing partial' : '⚠ Pricing missing',
+      tone: pricingReadiness === 'ready' ? 'green' : 'amber',
+    },
+    {
+      label: complianceGate === 'CLEAR' ? '✓ Compliance clear' : complianceGate === 'WARNING' ? '⚠ Compliance watch' : '🚫 Compliance blocked',
+      tone: complianceGate === 'CLEAR' ? 'green' : 'amber',
+    },
+    ...(nextFollowUpAt
+      ? [{ label: `📅 Next follow-up: ${formatDate(nextFollowUpAt)}`, tone: 'slate' as const }]
+      : []),
+    {
+      label: `${lead.leadType === 'buyer' ? 'Buyer' : 'Supplier'}`,
+      tone: 'blue' as const,
+    },
+  ];
+
+  const chipStyle = (tone: 'amber' | 'green' | 'slate' | 'blue') => {
+    if (tone === 'green') return { background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857' };
+    if (tone === 'amber') return { background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' };
+    if (tone === 'blue') return { background: '#f0f9ff', border: '1px solid #7dd3fc', color: '#0369a1' };
+    return { background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569' };
+  };
 
   return (
-    <div className="space-y-3 px-5 py-3.5 md:px-6 md:py-4">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap gap-2">
-            <StatusChip label={pricingReadinessLabel(pricingReadiness)} tone={pricingReadiness === 'ready' ? 'emerald' : pricingReadiness === 'partial' ? 'amber' : 'slate'} Icon={getStatusIcon(pricingReadiness === 'ready' ? 'ready' : pricingReadiness === 'partial' ? 'progress' : 'cold')} />
-            <StatusChip label={complianceLabel(complianceGate)} tone={complianceGate === 'CLEAR' ? 'emerald' : 'amber'} Icon={getStatusIcon(complianceGate === 'CLEAR' ? 'ready' : complianceGate === 'WARNING' ? 'progress' : 'blocked')} />
-            {nextFollowUpAt ? <StatusChip label={`Next follow-up ${formatDate(nextFollowUpAt)}`} tone="slate" Icon={getStatusIcon('ontrack')} /> : null}
-          </div>
+    <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '22px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15,23,42,.06)' }}>
+      {/* .lhc-top */}
+      <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-          <div className="mt-3 flex min-w-0 items-start gap-3">
-            <div className={ICON_CONTAINER_CLASS} style={{ borderTop: `2px solid ${getStageAccent(currentStageLabel)}` }}>
-              <StageIcon className="h-[18px] w-[18px] text-neutral-600" />
+        {/* Status chip row — .lhc-chips */}
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {chips.map((chip) => (
+            <span
+              key={chip.label}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '999px', fontSize: '10px', fontWeight: 700, ...chipStyle(chip.tone) }}
+            >
+              {chip.label}
+            </span>
+          ))}
+        </div>
+
+        {/* Hero row — .lhc-hero */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+          {/* Company identity — .lhc-company-row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            {/* Avatar — spec: 48px, 12px border-radius, navy-to-brand gradient */}
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: avatarGradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 800, color: 'white', flexShrink: 0 }}>
+              {initials}
             </div>
-            <div className="min-w-0">
-              <h1 className="text-[2rem] font-semibold tracking-tight text-neutral-900 md:text-[2.2rem]">{lead.companyName}</h1>
-              <p className="mt-1 text-sm text-neutral-600">
+            <div>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', letterSpacing: '-.5px' }}>{lead.companyName}</div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>
                 {lead.leadType}
                 {lead.ownerName ? ` · Owner: ${lead.ownerName}` : ''}
                 {lead.sourceLabel ? ` · Source: ${lead.sourceLabel}` : ''}
-              </p>
+                {lead.country ? ` · ${lead.country}` : ''}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-          <button type="button" onClick={onOpenQuote} className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-brand-primary px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-dark">🖊 Create quote</button>
-          <button type="button" onClick={onScheduleFollowUp} className="inline-flex h-11 items-center gap-2 rounded-[10px] border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-soft transition hover:border-neutral-600/30 hover:bg-neutral-50">
-            📅 Schedule follow-up
-          </button>
-          <details className="group relative">
-            <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-[10px] border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-soft transition hover:border-neutral-600/30">
-              <span className="text-lg leading-none">⋯</span>
-              Lead tools
-            </summary>
-            <div className="absolute right-0 z-20 mt-2 w-60 rounded-[10px] border border-neutral-200 bg-white p-2 shadow-premium">
-              <button type="button" onClick={onQuickEdit} className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2.5 text-left text-sm text-neutral-600 hover:bg-neutral-50">
-                <span className={ICON_CONTAINER_CLASS}><NoteIcon className="h-4 w-4 text-neutral-600" /></span>
-                Edit lead details
-              </button>
-              <button type="button" onClick={onEditCoverage} className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2.5 text-left text-sm text-neutral-600 hover:bg-neutral-50">
-                <span className={ICON_CONTAINER_CLASS}><StageIcon className="h-4 w-4 text-neutral-600" /></span>
-                Adjust coverage
-              </button>
-              <button type="button" onClick={onOpenActivity} className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2.5 text-left text-sm text-neutral-600 hover:bg-neutral-50">
-                <span className={ICON_CONTAINER_CLASS}><NoteIcon className="h-4 w-4 text-neutral-600" /></span>
-                Add note
-              </button>
-            </div>
-          </details>
+          {/* CTA buttons — .lhc-actions */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Primary: Create quote */}
+            <button type="button" onClick={onOpenQuote}
+              style={{ padding: '9px 18px', borderRadius: '6px', background: '#0b2e4a', color: 'white', border: 'none', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              🖊 {quoteFocus.hasActiveQuote ? 'View quote' : 'Create quote'}
+            </button>
+            {/* Secondary: Schedule follow-up */}
+            <button type="button" onClick={onScheduleFollowUp}
+              style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}
+            >
+              📅 Schedule follow-up
+            </button>
+            {/* Tools dropdown */}
+            <details style={{ position: 'relative' }}>
+              <summary style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ fontSize: '18px', lineHeight: 1 }}>⋯</span> Lead tools
+              </summary>
+              <div style={{ position: 'absolute', right: 0, top: '40px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '6px', boxShadow: '0 12px 32px rgba(15,23,42,.09)', minWidth: '180px', zIndex: 20 }}>
+                {[
+                  { label: '✏ Edit lead details', onClick: onQuickEdit },
+                  { label: '📦 Adjust coverage', onClick: onEditCoverage },
+                  { label: '📝 Add note to log', onClick: onOpenActivity },
+                ].map((item) => (
+                  <button key={item.label} type="button" onClick={item.onClick}
+                    style={{ display: 'block', width: '100%', padding: '7px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#334155', border: 'none', background: 'none', textAlign: 'left' }}
+                    onMouseOver={(e) => { (e.target as HTMLElement).style.background = '#f8fafc'; }}
+                    onMouseOut={(e) => { (e.target as HTMLElement).style.background = ''; }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </details>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-[10px] bg-neutral-50/90 px-4 py-2 text-sm text-neutral-600" style={{ borderLeft: `3px solid ${getStageAccent(currentStageLabel)}` }}>
-        <span className="font-semibold text-neutral-900">Next move:</span> {nextActionSummary}
+      {/* Next move bar — spec: .next-move-bar, blue left border */}
+      <div style={{ background: '#f8fafc', borderLeft: '3px solid #0c7fff', padding: '9px 14px', fontSize: '12px', color: '#475569', margin: '0 22px 14px', borderRadius: '0 6px 6px 0' }}>
+        <strong style={{ color: '#0f172a' }}>Next move:</strong> {nextActionSummary}
       </div>
     </div>
   )

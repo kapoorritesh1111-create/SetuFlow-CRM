@@ -920,220 +920,284 @@ export function LeadsWorkspace({
   ].filter(Boolean).length;
 
   return (
-    <div className="space-y-4">
-      <WorkspaceWorkflowShell
-        title="Leads"
-        description="Open leads. Run follow-up. Move stage."
-        mode={workspaceMode}
-        onModeChange={() => {}}
-        todayState={todayState}
-        onTodayFilterChange={setTodayFilter}
-        showAllOpen={false}
-        todayCompact
-        showHeader={false}
-        utilities={(
-          <div className="flex w-full flex-col gap-2 lg:min-w-[440px] lg:flex-row lg:items-center lg:justify-end">
-            <ToolbarSearchInput
-              id="lead-search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search company, contact, country..."
-              className="h-11 rounded-[1rem] bg-slate-50/90 lg:min-w-[300px]"
-            />
-            <ToolbarActionButton type="button" onClick={() => setShowFilters((current) => !current)} className="min-h-11 rounded-[1rem] px-4 py-2">
-              {activeFilterCount ? `Filters (${activeFilterCount})` : 'Filters'}
-            </ToolbarActionButton>
-            {(search || activeFilterCount) ? (
-              <ToolbarActionButton type="button" onClick={resetWorkspaceChrome} className="min-h-11 rounded-[1rem] px-4 py-2">
-                Reset
-              </ToolbarActionButton>
-            ) : null}
+    <div className="flex flex-col" style={{ background: '#f0f4f8', minHeight: '100vh' }}>
+
+      {/* ═══ TOPBAR — matches spec .topbar ═══ */}
+      <header style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', position: 'sticky', top: 0, zIndex: 50 }}>
+        {/* Left: Company badge + divider + eyebrow/title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 12px', borderRadius: '6px', background: 'rgba(11,46,74,.06)', border: '1px solid rgba(11,46,74,.12)' }}>
+            <div style={{ width: '22px', height: '22px', borderRadius: '4px', background: 'linear-gradient(135deg,#061c2e,#0c7fff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 800, color: 'white', letterSpacing: '-.3px' }}>BO</div>
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#0b2e4a', letterSpacing: '.04em' }}>Blue Orbit Int&apos;l</div>
+              <div style={{ fontSize: '8px', color: '#94a3b8', letterSpacing: '.06em', textTransform: 'uppercase' }}>SETU Flow CRM</div>
+            </div>
           </div>
-        )}
-      />
+          <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }} />
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#0c7fff' }}>Follow-up</div>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: '#111827', letterSpacing: '-.3px' }}>Lead Workspace</div>
+          </div>
+        </div>
+        {/* Right: vCard + divider + mode switch + Quick Lead + avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <a
+            href={PRODUCT_ROUTES.app.myCard}
+            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 14px', borderRadius: '6px', background: 'linear-gradient(135deg,#0b2e4a 0%,#0c7fff 160%)', color: 'white', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', letterSpacing: '-.1px', boxShadow: '0 2px 8px rgba(12,127,255,.35)', textDecoration: 'none' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="1" y="3" width="14" height="10" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="5" y1="10" x2="9" y2="10"/></svg>
+            Share my vCard
+          </a>
+          <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }} />
+          <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '6px', padding: '3px', border: '1px solid #e2e8f0', gap: '2px' }}>
+            {(['all', 'buyers', 'suppliers'] as const).map((mode) => {
+              const active = currentMode === mode;
+              return (
+                <button key={mode} type="button" onClick={() => handleModeSwitch(mode)}
+                  style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: 'none', background: active ? '#0b2e4a' : 'transparent', color: active ? 'white' : '#64748b', transition: 'all .15s' }}
+                >
+                  {mode === 'all' ? 'All' : mode === 'buyers' ? 'Buyers' : 'Suppliers'}
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" onClick={openQuickAdd} disabled={!canManageLeads}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '6px', background: '#0b2e4a', color: 'white', border: 'none', fontSize: '12px', fontWeight: 700, cursor: canManageLeads ? 'pointer' : 'not-allowed', opacity: canManageLeads ? 1 : 0.5 }}
+          >
+            <span style={{ fontSize: '15px', lineHeight: 1 }}>＋</span> Quick Lead
+          </button>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg,#0b2e4a 0%,#0c7fff 140%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: 'white' }}>RK</div>
+        </div>
+      </header>
 
-      <SavedViewsBar
-        items={savedViews.map((view) => ({
-          id: view.id,
-          label: `${view.label} (${view.count})`,
-          description: view.description,
-        }))}
-        activeId={savedView}
-        onChange={(viewId) => setSavedView(viewId as SavedView)}
-        trailing={
-          !canManageLeads && readOnlyMessage ? (
-            <ToolbarStat label="Read-only queue" tone="warning" />
-          ) : canManageLeads ? (
-            <ToolbarStat label="Lead create + quick add enabled" tone="success" />
-          ) : null
-        }
-      />
+      {/* ═══ PAGE NAV TABS — matches spec .page-nav ═══ */}
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center' }}>
+        <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#0b2e4a', cursor: 'pointer', borderBottom: '2px solid #0c7fff', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          📋 Lead Queue
+          <span style={{ background: summary.overdue > 0 ? '#f43f5e' : '#64748b', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{sortedLeads.length}</span>
+        </div>
+        <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', cursor: 'pointer', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          🎯 Command Center
+          <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>Select a lead →</span>
+        </div>
+        <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', cursor: 'pointer', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          ◇ Quote Builder
+          <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
+        </div>
+        <div style={{ marginLeft: 'auto', padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', cursor: 'pointer', borderBottom: '2px solid transparent', marginBottom: '-1px' }}>
+          ⊕ View in Pipeline →
+        </div>
+      </div>
 
-      {showFilters ? (
-        <LeadsFiltersPanel
-          leadTypeFilter={leadTypeFilter}
-          onLeadTypeFilterChange={(value) => setLeadTypeFilter(value as '' | LeadJourney)}
-          ownerId={ownerId}
-          onOwnerIdChange={setOwnerId}
-          pipelineIdFilter={pipelineIdFilter}
-          onPipelineIdFilterChange={setPipelineIdFilter}
-          stageIdFilter={stageIdFilter}
-          onStageIdFilterChange={setStageIdFilter}
-          countryIdFilter={countryIdFilter}
-          onCountryIdFilterChange={setCountryIdFilter}
-          marketIdFilter={marketIdFilter}
-          onMarketIdFilterChange={setMarketIdFilter}
-          productIdFilter={productIdFilter}
-          onProductIdFilterChange={setProductIdFilter}
-          profiles={profiles}
-          countries={countries}
-          pipelines={availablePipelines}
-          stages={availableStages}
-          markets={markets}
-          products={products}
-          onClear={clearFilters}
-          lockedLeadType={initialLeadType}
-        />
-      ) : null}
+      {/* ═══ FILTER BAR — matches spec .filter-bar ═══ */}
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#94a3b8', marginRight: '4px' }}>Filter:</span>
 
-      {!canManageLeads && readOnlyMessage ? (
-        <StateMessage title="Read-only lead queue" tone="warning" description={`${readOnlyMessage} Open leads and review status. Ask an admin to enable edits.`} />
-      ) : null}
+        {/* Search box inline */}
+        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '200px' }}>
+          <span style={{ fontSize: '13px' }}>🔍</span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search company, contact…"
+            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', width: '100%' }}
+          />
+        </div>
 
-      <section className={workspaceTableShellClass}>
-        <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700/70">
-          <div className="grid gap-3 xl:grid-cols-[1fr_auto]">
-            <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">Lead Queue</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">{summary.overdue}</p>
-              <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">Critical follow-ups</p>
-              <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${summary.overdue > 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200'}`}>
-                {summary.overdue > 0 ? 'Urgent recovery needed now' : 'No overdue pressure'}
-              </p>
-            </div>
-            {/* PR03 topbar actions: Share vCard button, mode switch, Quick Lead button */}
-            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-              {/* Share my vCard button */}
-              <a
-                href={PRODUCT_ROUTES.app.myCard}
-                className="inline-flex items-center gap-2 rounded-md bg-gradient-to-br from-[#0b2e4a] to-[#0c7fff] px-3.5 py-2 text-[12px] font-bold text-white shadow-[0_2px_8px_rgba(12,127,255,0.35)] hover:opacity-90"
-              >
-                <span className="text-sm">💳</span>
-                <span>Share my vCard</span>
-              </a>
-              {/* Mode switch toggle */}
-              <div className="inline-flex items-center rounded-md border border-slate-200 bg-slate-100 p-0.5">
-                {(['all', 'buyers', 'suppliers'] as const).map((mode) => {
-                  const active = currentMode === mode;
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => handleModeSwitch(mode)}
-                      className={`rounded-[6px] px-3 py-1 text-[11px] font-semibold transition ${active ? 'bg-[#0b2e4a] text-white' : 'bg-transparent text-slate-500 hover:bg-white hover:text-slate-700'}`}
-                    >
-                      {mode === 'all' ? 'All' : mode === 'buyers' ? 'Buyers' : 'Suppliers'}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Quick Lead button */}
-              <button
-                type="button"
-                onClick={openQuickAdd}
-                disabled={!canManageLeads}
-                className="inline-flex items-center gap-1 rounded-md bg-[#0b2e4a] px-3.5 py-2 text-[12px] font-bold text-white shadow-[0_2px_8px_rgba(12,127,255,0.35)] disabled:cursor-not-allowed disabled:bg-slate-300"
-              >
-                ＋ Quick Lead
-              </button>
-            </div>
+        {/* Stage filter */}
+        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
+          <span style={{ fontSize: '13px' }}>◎</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Stage</span>
+            <select value={stageIdFilter} onChange={(e) => setStageIdFilter(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
+            >
+              <option value="">All stages ▾</option>
+              {availableStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
           </div>
         </div>
 
-        {batchState.error ? <div className="px-5 pt-3"><StateMessage title="Bulk follow-up update failed" tone="danger" description={batchState.error} /></div> : null}
-        {batchState.success ? <div className="px-5 pt-3"><StateMessage title="Bulk follow-up update applied" tone="success" description={batchState.success} /></div> : null}
-        {batchStageState.error ? <div className="px-5 pt-1"><StateMessage title="Batch stage move failed" tone="danger" description={batchStageState.error} /></div> : null}
-        {batchStageState.success ? <div className="px-5 pt-1"><StateMessage title="Batch stage move applied" tone="success" description={batchStageState.success} /></div> : null}
+        {/* Owner filter */}
+        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
+          <span style={{ fontSize: '13px' }}>👤</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Owner</span>
+            <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
+            >
+              <option value="">All owners ▾</option>
+              {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name ?? p.username ?? p.id}</option>)}
+            </select>
+          </div>
+        </div>
 
+        {/* Market filter */}
+        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
+          <span style={{ fontSize: '13px' }}>🌍</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Market</span>
+            <select value={marketIdFilter} onChange={(e) => setMarketIdFilter(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
+            >
+              <option value="">All markets ▾</option>
+              {markets.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Product filter */}
+        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
+          <span style={{ fontSize: '13px' }}>📦</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Product</span>
+            <select value={productIdFilter} onChange={(e) => setProductIdFilter(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
+            >
+              <option value="">All products ▾</option>
+              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Active filter chips */}
+        {activeFilterCount > 0 ? (
+          <button type="button" onClick={clearFilters}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '999px', fontSize: '10px', fontWeight: 700, border: '1px solid #fecaca', background: '#fff1f2', color: '#991b1b', cursor: 'pointer' }}
+          >
+            {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active <span style={{ opacity: .6 }}>×</span>
+          </button>
+        ) : null}
+
+        {/* Summary count */}
+        <div style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: '#94a3b8', letterSpacing: '.04em' }}>
+          {summary.overdue > 0 ? `${summary.overdue} overdue · ` : ''}{sortedLeads.length} total leads
+        </div>
+      </div>
+
+      {/* ═══ SAVED VIEWS BAR — matches spec .saved-views ═══ */}
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
+        {savedViews.map((view) => {
+          const active = savedView === view.id;
+          const isOverdue = view.id === 'overdue';
+          const isToday = view.id === 'today';
+          return (
+            <button key={view.id} type="button" onClick={() => setSavedView(view.id as SavedView)}
+              style={{ padding: '8px 14px', fontSize: '11px', fontWeight: 600, color: active ? '#0b2e4a' : '#64748b', cursor: 'pointer', borderBottom: active ? '2px solid #0c7fff' : '2px solid transparent', background: 'none', border: 'none', borderBottom: active ? '2px solid #0c7fff' : '2px solid transparent', whiteSpace: 'nowrap', marginBottom: '-1px', transition: 'color .1s', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              {view.label}
+              <span style={{ background: isOverdue ? '#fee2e2' : isToday ? '#fef3c7' : '#f1f5f9', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 700, color: isOverdue ? '#dc2626' : isToday ? '#d97706' : '#475569' }}>
+                {view.count}
+              </span>
+            </button>
+          );
+        })}
+        {!canManageLeads && readOnlyMessage ? (
+          <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: '#d97706', padding: '6px 12px' }}>⚠ Read-only</span>
+        ) : null}
+      </div>
+
+      {/* ═══ MAIN TABLE SECTION ═══ */}
+      <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+        {!canManageLeads && readOnlyMessage ? (
+          <StateMessage title="Read-only lead queue" tone="warning" description={`${readOnlyMessage} Open leads and review status. Ask an admin to enable edits.`} />
+        ) : null}
+
+        {/* Batch bar — shows when rows are selected */}
         {selectedLeadIds.length ? (
-          <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-5 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.06)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{selectedLeadIds.length} selected</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Batch tools appear only after checkbox selection.</p>
-              </div>
-              <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                <button type="button" onClick={toggleVisibleSelection} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                  {selectedAllVisible ? 'Unselect shown' : 'Select shown'}
-                </button>
-                <input type="datetime-local" value={batchFollowUpAt} onChange={(event) => setBatchFollowUpAt(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
-                <select value={batchNextStepId} onChange={(event) => setBatchNextStepId(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                  <option value="">Default next step</option>
-                  {nextSteps.map((step) => <option key={step.id} value={step.id}>{step.name}</option>)}
-                </select>
-                <ToolbarActionButton type="button" onClick={handleBatchFollowUpSubmit} disabled={isBatchPending || !batchFollowUpAt} className="h-10 rounded-xl px-3 py-2">Set follow-up</ToolbarActionButton>
-                <select value={batchStageId} onChange={(event) => setBatchStageId(event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                  <option value="">Move stage...</option>
-                  {availableBatchStages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
-                </select>
-                <ToolbarActionButton type="button" onClick={handleBatchStageSubmit} disabled={isBatchStagePending || !batchStageId} className="h-10 rounded-xl px-3 py-2">Move</ToolbarActionButton>
-                <ToolbarActionButton type="button" onClick={() => setSelectedLeadIds([])} className="h-10 rounded-xl px-3 py-2">Clear</ToolbarActionButton>
-              </div>
-            </div>
+          <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 1px 3px rgba(15,23,42,.06)', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{selectedLeadIds.length} selected —</span>
+            <input type="datetime-local" value={batchFollowUpAt} onChange={(e) => setBatchFollowUpAt(e.target.value)}
+              style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', color: '#334155' }}
+            />
+            <select value={batchNextStepId} onChange={(e) => setBatchNextStepId(e.target.value)}
+              style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', color: '#334155' }}
+            >
+              <option value="">Schedule follow-up…</option>
+              {nextSteps.map((step) => <option key={step.id} value={step.id}>{step.name}</option>)}
+            </select>
+            <button type="button" onClick={handleBatchFollowUpSubmit} disabled={isBatchPending || !batchFollowUpAt}
+              style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600, background: 'white', color: '#334155', cursor: 'pointer' }}
+            >Set follow-up</button>
+            <select value={batchStageId} onChange={(e) => setBatchStageId(e.target.value)}
+              style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', color: '#334155' }}
+            >
+              <option value="">Move to stage…</option>
+              {availableBatchStages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
+            </select>
+            <button type="button" onClick={handleBatchStageSubmit} disabled={isBatchStagePending || !batchStageId}
+              style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600, background: 'white', color: '#334155', cursor: 'pointer' }}
+            >Apply</button>
+            <div style={{ flex: 1 }} />
+            <button type="button" onClick={() => setSelectedLeadIds([])}
+              style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600, background: 'white', color: '#334155', cursor: 'pointer' }}
+            >Clear selection</button>
           </div>
         ) : null}
 
-        <div>
+        {/* Batch state messages */}
+        {batchState.error ? <StateMessage title="Bulk follow-up update failed" tone="danger" description={batchState.error} /> : null}
+        {batchState.success ? <StateMessage title="Bulk follow-up update applied" tone="success" description={batchState.success} /> : null}
+        {batchStageState.error ? <StateMessage title="Batch stage move failed" tone="danger" description={batchStageState.error} /> : null}
+        {batchStageState.success ? <StateMessage title="Batch stage move applied" tone="success" description={batchStageState.success} /> : null}
+
+        {/* Lead Table */}
+        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15,23,42,.06)' }}>
+
+          {/* Table header */}
+          <LeadTableHeader
+            allSelected={selectedAllVisible}
+            onSelectAll={(checked) => {
+              if (checked) {
+                setSelectedLeadIds((cur) => [...new Set([...cur, ...visibleLeads.map((l) => l.id)])]);
+              } else {
+                setSelectedLeadIds((cur) => cur.filter((id) => !visibleLeads.some((l) => l.id === id)));
+              }
+            }}
+          />
+
           {visibleLeads.length ? (
             <>
-              {/* PR03 spec: 7-column sticky table header */}
-              <LeadTableHeader
-                allSelected={selectedAllVisible}
-                onSelectAll={(checked) => {
-                  if (checked) {
-                    setSelectedLeadIds((current) => [...new Set([...current, ...visibleLeads.map((lead) => lead.id)])]);
-                  } else {
-                    setSelectedLeadIds((current) => current.filter((leadId) => !visibleLeads.some((lead) => lead.id === leadId)));
-                  }
-                }}
-              />
               {groupedLeadSections.map((section) => (
-              <section key={section.id}>
-                <div className="px-4 pt-2.5 pb-1">
-                  <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
-                    {section.id === 'critical' ? '🔴' : section.id === 'due-today' ? '🟡' : '🟢'}{' '}
-                    {section.id === 'critical' ? 'Critical — needs action now' : section.id === 'due-today' ? 'Due today — scheduled actions' : 'Active / upcoming'} ({section.leads.length})
-                  </p>
-                </div>
-                <div className="px-4 py-1">
-                {section.leads.map((lead) => (
-                  <LeadTableRow
-                    key={lead.id}
-                    lead={lead}
-                    selected={selectedLeadIds.includes(lead.id)}
-                    isSpotlight={spotlightLead?.id === lead.id}
-                    toggleSelect={toggleLeadSelection}
-                    setSpotlightLead={setSpotlightLeadId}
-                    stageMap={stageMap}
-                    nextStepMap={nextStepMap}
-                    ownerMap={ownerMap}
-                    safeFormatDateTime={safeFormatDateTime}
-                    activityMap={activityMap}
-                    stageHistoryMap={stageHistoryMap}
-                    stageMetaMap={stageMetaMap}
-                    readinessMap={readinessByLeadId}
-                    getLeadCommandCenterHref={getLeadCommandCenterHref}
-                    openLeadCommandCenter={openLeadCommandCenter}
-                    shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
-                    handleLeadCommandCenterKeyDown={handleLeadCommandCenterKeyDown}
-                  />
-                ))}
-                </div>
-              </section>
-            ))}
+                <section key={section.id}>
+                  {/* Section label */}
+                  <div style={{ padding: '10px 16px 4px', marginTop: section.id === 'critical' ? 0 : 8 }}>
+                    <p style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', color: '#94a3b8' }}>
+                      {section.id === 'critical' ? '🔴' : section.id === 'due-today' ? '🟡' : '🟢'}{' '}
+                      {section.id === 'critical' ? 'Critical — needs action now' : section.id === 'due-today' ? 'Due today — scheduled actions' : 'Active / upcoming'} ({section.leads.length})
+                    </p>
+                  </div>
+                  {/* Lead rows */}
+                  <div style={{ padding: '0 8px 4px' }}>
+                    {section.leads.map((lead) => (
+                      <LeadTableRow
+                        key={lead.id}
+                        lead={lead}
+                        selected={selectedLeadIds.includes(lead.id)}
+                        isSpotlight={spotlightLead?.id === lead.id}
+                        toggleSelect={toggleLeadSelection}
+                        setSpotlightLead={setSpotlightLeadId}
+                        stageMap={stageMap}
+                        nextStepMap={nextStepMap}
+                        ownerMap={ownerMap}
+                        safeFormatDateTime={safeFormatDateTime}
+                        activityMap={activityMap}
+                        stageHistoryMap={stageHistoryMap}
+                        stageMetaMap={stageMetaMap}
+                        readinessMap={readinessByLeadId}
+                        getLeadCommandCenterHref={getLeadCommandCenterHref}
+                        openLeadCommandCenter={openLeadCommandCenter}
+                        shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
+                        handleLeadCommandCenterKeyDown={handleLeadCommandCenterKeyDown}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
             </>
           ) : (
-            <div className="p-6">
+            <div className="p-8">
               <WorkspaceState
                 eyebrow="Lead queue"
                 title={isWorkspaceEmpty && !search && activeFilterCount === 0 ? 'No leads in this workspace yet' : 'No leads match the current view'}
@@ -1146,27 +1210,25 @@ export function LeadsWorkspace({
                 }
                 primaryActionHref={isWorkspaceEmpty && !search && activeFilterCount === 0 && canManageLeads ? PRODUCT_ROUTES.app.leads : undefined}
                 primaryActionLabel={isWorkspaceEmpty && !search && activeFilterCount === 0 && canManageLeads ? 'Stay on leads' : undefined}
-                secondaryActionHref={!canManageLeads ? '/admin/organization' : undefined}
-                secondaryActionLabel={!canManageLeads ? 'Review workspace roles' : undefined}
               />
             </div>
           )}
-        </div>
 
-        <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 dark:border-slate-700/70 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500 dark:text-slate-300">Showing {visibleLeads.length} of {sortedLeads.length} leads</p>
-          {visibleCount < sortedLeads.length ? (
-            <ToolbarActionButton
-              type="button"
-              onClick={() => setVisibleCount((current) => current + 50)}
-              className="min-h-11 rounded-[1rem] px-4 py-2"
-            >
-              Load more
-            </ToolbarActionButton>
-          ) : null}
+          {/* Footer */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', padding: '12px 16px' }}>
+            <p style={{ fontSize: '12px', color: '#64748b' }}>Showing {visibleLeads.length} of {sortedLeads.length} leads</p>
+            {visibleCount < sortedLeads.length ? (
+              <button type="button" onClick={() => setVisibleCount((c) => c + 50)}
+                style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}
+              >
+                Load more
+              </button>
+            ) : null}
+          </div>
         </div>
-      </section>
+      </div>
 
+      {/* Lead drawer for new lead creation */}
       <LeadDrawer
         key={`${drawerState.mode}-${drawerState.leadId ?? 'new'}`}
         open={drawerState.open && (!drawerState.leadId || drawerState.mode === 'quick')}
@@ -1206,7 +1268,6 @@ export function LeadsWorkspace({
       />
     </div>
   );
-}
 
 function MetricMiniCard({ label, value, tone }: { label: string; value: number; tone: 'slate' | 'blue' | 'amber' }) {
   const toneClass =
