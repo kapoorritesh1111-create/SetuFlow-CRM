@@ -1083,7 +1083,7 @@ export function LeadsWorkspace({
           const isToday = view.id === 'today';
           return (
             <button key={view.id} type="button" onClick={() => setSavedView(view.id as SavedView)}
-              style={{ padding: '8px 14px', fontSize: '11px', fontWeight: 600, color: active ? '#0b2e4a' : '#64748b', cursor: 'pointer', borderBottom: active ? '2px solid #0c7fff' : '2px solid transparent', background: 'none', border: 'none', borderBottom: active ? '2px solid #0c7fff' : '2px solid transparent', whiteSpace: 'nowrap', marginBottom: '-1px', transition: 'color .1s', display: 'flex', alignItems: 'center', gap: '4px' }}
+              style={{ padding: '8px 14px', fontSize: '11px', fontWeight: 600, color: active ? '#0b2e4a' : '#64748b', cursor: 'pointer', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: active ? '2px solid #0c7fff' : '2px solid transparent', background: 'none', whiteSpace: 'nowrap', marginBottom: '-1px', transition: 'color .1s', display: 'flex', alignItems: 'center', gap: '4px' }}
             >
               {view.label}
               <span style={{ background: isOverdue ? '#fee2e2' : isToday ? '#fef3c7' : '#f1f5f9', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 700, color: isOverdue ? '#dc2626' : isToday ? '#d97706' : '#475569' }}>
@@ -1268,6 +1268,7 @@ export function LeadsWorkspace({
       />
     </div>
   );
+}
 
 function MetricMiniCard({ label, value, tone }: { label: string; value: number; tone: 'slate' | 'blue' | 'amber' }) {
   const toneClass =
