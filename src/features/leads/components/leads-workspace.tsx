@@ -841,6 +841,35 @@ export function LeadsWorkspace({
   };
   const closeDrawer = () => setDrawerState((current) => ({ ...current, open: false }));
 
+  // ---------------------------------------------------------------------------
+  // PR03 realignment: leads topbar mode switch and vCard button helpers
+  // Determine the current mode from the leadTypeFilter. `all` corresponds to no
+  // specific filter, `buyers` for buyer-only, and `suppliers` for supplier-only.
+  const currentMode: 'all' | 'buyers' | 'suppliers' =
+    leadTypeFilter === 'buyer' ? 'buyers' : leadTypeFilter === 'supplier' ? 'suppliers' : 'all';
+
+  /**
+   * Handle mode switch toggles. Updates the lead type filter and saved view
+   * simultaneously so the rest of the workspace reflects the new mode.
+   */
+  const handleModeSwitch = (mode: 'all' | 'buyers' | 'suppliers') => {
+    switch (mode) {
+      case 'buyers':
+        setLeadTypeFilter('buyer');
+        setSavedView('buyers');
+        break;
+      case 'suppliers':
+        setLeadTypeFilter('supplier');
+        setSavedView('suppliers');
+        break;
+      default:
+        // Reset to initial lead type filter (blank) and all view
+        setLeadTypeFilter(initialLeadType);
+        setSavedView('all');
+        break;
+    }
+  };
+
 
   useEffect(() => {
     if (!initialQuickCapture || !canManageLeads) return;
@@ -982,10 +1011,41 @@ export function LeadsWorkspace({
                 {summary.overdue > 0 ? 'Urgent recovery needed now' : 'No overdue pressure'}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 xl:justify-end">
-              <ToolbarActionButton type="button" tone="primary" onClick={openQuickAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">Quick Lead</ToolbarActionButton>
-              <a href={PRODUCT_ROUTES.app.myCard} className="inline-flex min-h-11 items-center justify-center rounded-[1rem] px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 border border-slate-200 bg-slate-100/90 text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.05)] hover:bg-white dark:border-slate-700 dark:bg-slate-800/78 dark:text-slate-200">Share my card</a>
-              <ToolbarActionButton type="button" onClick={openFullAdd} disabled={!canManageLeads} className="min-h-11 rounded-[1rem] px-4 py-2">Full Lead</ToolbarActionButton>
+            {/* PR03 topbar actions: Share vCard button, mode switch, Quick Lead button */}
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+              {/* Share my vCard button */}
+              <a
+                href={PRODUCT_ROUTES.app.myCard}
+                className="inline-flex items-center gap-2 rounded-md bg-gradient-to-br from-[#0b2e4a] to-[#0c7fff] px-3.5 py-2 text-[12px] font-bold text-white shadow-[0_2px_8px_rgba(12,127,255,0.35)] hover:opacity-90"
+              >
+                <span className="text-sm">💳</span>
+                <span>Share my vCard</span>
+              </a>
+              {/* Mode switch toggle */}
+              <div className="inline-flex items-center rounded-md border border-slate-200 bg-slate-100 p-0.5">
+                {(['all', 'buyers', 'suppliers'] as const).map((mode) => {
+                  const active = currentMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => handleModeSwitch(mode)}
+                      className={`rounded-[6px] px-3 py-1 text-[11px] font-semibold transition ${active ? 'bg-[#0b2e4a] text-white' : 'bg-transparent text-slate-500 hover:bg-white hover:text-slate-700'}`}
+                    >
+                      {mode === 'all' ? 'All' : mode === 'buyers' ? 'Buyers' : 'Suppliers'}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Quick Lead button */}
+              <button
+                type="button"
+                onClick={openQuickAdd}
+                disabled={!canManageLeads}
+                className="inline-flex items-center gap-1 rounded-md bg-[#0b2e4a] px-3.5 py-2 text-[12px] font-bold text-white shadow-[0_2px_8px_rgba(12,127,255,0.35)] disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                ＋ Quick Lead
+              </button>
             </div>
           </div>
         </div>
@@ -1027,8 +1087,12 @@ export function LeadsWorkspace({
           {visibleLeads.length ? (
             groupedLeadSections.map((section) => (
               <section key={section.id}>
-                <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-2.5 dark:border-slate-700 dark:bg-slate-800/70">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">{section.label} ({section.leads.length})</p>
+                <div className="px-4 pt-2.5 pb-1">
+                  <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                    {/* Include emoji based on section id */}
+                    {section.id === 'critical' ? '🔴' : section.id === 'due-today' ? '🟡' : '🟢'}{' '}
+                    {section.id === 'critical' ? 'Critical — needs action now' : section.id === 'due-today' ? 'Due today — scheduled actions' : 'Active / upcoming'} ({section.leads.length})
+                  </p>
                 </div>
                 {section.leads.map((lead) => (
                   <LeadTableRow
