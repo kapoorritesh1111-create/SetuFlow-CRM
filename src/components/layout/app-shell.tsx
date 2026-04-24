@@ -270,7 +270,7 @@ export function AppShell({
                       <span>Filters</span>
                     </button>
 
-                    <a href={withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode)} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] border border-[#0b2e4a] bg-[#0b2e4a] px-4 text-sm font-semibold text-white hover:bg-[#061c2e]">
+                    <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] border border-[#0b2e4a] bg-[#0b2e4a] px-4 text-sm font-semibold text-white hover:bg-[#061c2e]">
                       <span>＋</span>
                       <span>Quick Lead</span>
                     </a>

@@ -920,73 +920,42 @@ export function LeadsWorkspace({
   ].filter(Boolean).length;
 
   return (
-    <div className="flex flex-col" style={{ background: '#f0f4f8', minHeight: '100vh' }}>
+    <div className="flex flex-col">
 
-      {/* ═══ TOPBAR — matches spec .topbar ═══ */}
-      <header style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', position: 'sticky', top: 0, zIndex: 50 }}>
-        {/* Left: Company badge + divider + eyebrow/title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 12px', borderRadius: '6px', background: 'rgba(11,46,74,.06)', border: '1px solid rgba(11,46,74,.12)' }}>
-            <div style={{ width: '22px', height: '22px', borderRadius: '4px', background: 'linear-gradient(135deg,#061c2e,#0c7fff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 800, color: 'white', letterSpacing: '-.3px' }}>BO</div>
-            <div>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#0b2e4a', letterSpacing: '.04em' }}>Blue Orbit Int&apos;l</div>
-              <div style={{ fontSize: '8px', color: '#94a3b8', letterSpacing: '.06em', textTransform: 'uppercase' }}>SETU Flow CRM</div>
-            </div>
-          </div>
-          <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }} />
-          <div>
-            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#0c7fff' }}>Follow-up</div>
-            <div style={{ fontSize: '16px', fontWeight: 700, color: '#111827', letterSpacing: '-.3px' }}>Lead Workspace</div>
-          </div>
-        </div>
-        {/* Right: vCard + divider + mode switch + Quick Lead + avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <a
-            href={PRODUCT_ROUTES.app.myCard}
-            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 14px', borderRadius: '6px', background: 'linear-gradient(135deg,#0b2e4a 0%,#0c7fff 160%)', color: 'white', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', letterSpacing: '-.1px', boxShadow: '0 2px 8px rgba(12,127,255,.35)', textDecoration: 'none' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="1" y="3" width="14" height="10" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="5" y1="10" x2="9" y2="10"/></svg>
-            Share my vCard
-          </a>
-          <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }} />
-          <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '6px', padding: '3px', border: '1px solid #e2e8f0', gap: '2px' }}>
-            {(['all', 'buyers', 'suppliers'] as const).map((mode) => {
-              const active = currentMode === mode;
-              return (
-                <button key={mode} type="button" onClick={() => handleModeSwitch(mode)}
-                  style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: 'none', background: active ? '#0b2e4a' : 'transparent', color: active ? 'white' : '#64748b', transition: 'all .15s' }}
-                >
-                  {mode === 'all' ? 'All' : mode === 'buyers' ? 'Buyers' : 'Suppliers'}
-                </button>
-              );
-            })}
-          </div>
-          <button type="button" onClick={openQuickAdd} disabled={!canManageLeads}
-            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '6px', background: '#0b2e4a', color: 'white', border: 'none', fontSize: '12px', fontWeight: 700, cursor: canManageLeads ? 'pointer' : 'not-allowed', opacity: canManageLeads ? 1 : 0.5 }}
-          >
-            <span style={{ fontSize: '15px', lineHeight: 1 }}>＋</span> Quick Lead
-          </button>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg,#0b2e4a 0%,#0c7fff 140%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: 'white' }}>RK</div>
-        </div>
-      </header>
-
-      {/* ═══ PAGE NAV TABS — matches spec .page-nav ═══ */}
+      {/* ═══ PAGE NAV TABS — links to CC and Quote for selected lead ═══ */}
       <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center' }}>
-        <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#0b2e4a', cursor: 'pointer', borderBottom: '2px solid #0c7fff', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {/* Lead Queue — always active on this page */}
+        <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#0b2e4a', borderBottom: '2px solid #0c7fff', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           📋 Lead Queue
           <span style={{ background: summary.overdue > 0 ? '#f43f5e' : '#64748b', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{sortedLeads.length}</span>
         </div>
-        <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', cursor: 'pointer', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          🎯 Command Center
-          <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>Select a lead →</span>
-        </div>
-        <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', cursor: 'pointer', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          ◇ Quote Builder
-          <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
-        </div>
-        <div style={{ marginLeft: 'auto', padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', cursor: 'pointer', borderBottom: '2px solid transparent', marginBottom: '-1px' }}>
+        {/* Command Center — active link when a lead is selected/spotlighted */}
+        {spotlightLead ? (
+          <a href={getLeadCommandCenterHref(spotlightLead.id)} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
+            🎯 Command Center
+            <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spotlightLead.company_name}</span>
+          </a>
+        ) : (
+          <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#cbd5e1', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            🎯 Command Center
+            <span style={{ background: '#e2e8f0', color: '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>Select a lead →</span>
+          </div>
+        )}
+        {/* Quote Builder — links to quote route for spotlighted lead */}
+        {spotlightLead ? (
+          <a href={`/leads/${spotlightLead.id}/quote?source=lead-queue`} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
+            ◇ Quote Builder
+            <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
+          </a>
+        ) : (
+          <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#cbd5e1', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            ◇ Quote Builder
+            <span style={{ background: '#e2e8f0', color: '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
+          </div>
+        )}
+        <a href="/pipeline" style={{ marginLeft: 'auto', padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', textDecoration: 'none' }}>
           ⊕ View in Pipeline →
-        </div>
+        </a>
       </div>
 
       {/* ═══ FILTER BAR — matches spec .filter-bar ═══ */}
@@ -1056,6 +1025,20 @@ export function LeadsWorkspace({
             >
               <option value="">All products ▾</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Country filter — required on all pages */}
+        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
+          <span style={{ fontSize: '13px' }}>🌐</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Country</span>
+            <select value={countryIdFilter} onChange={(e) => setCountryIdFilter(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
+            >
+              <option value="">All countries ▾</option>
+              {countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
         </div>

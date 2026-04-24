@@ -1089,6 +1089,77 @@ export function LeadDrawer({
       ))}
 
       <div className="space-y-5 px-5 py-5">
+        {/* ── SCAN CAPTURE HERO — spec: Quick Lead opens with scan as primary action ── */}
+        {!isEditingExistingLead && isQuickMode ? (
+          <div style={{ borderRadius: '16px', border: '1px solid #e0f2fe', background: 'linear-gradient(135deg,#f0f9ff 0%,#f8fafc 100%)', padding: '16px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <div>
+                <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#0c7fff', marginBottom: '4px' }}>Smart capture</p>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', letterSpacing: '-.2px' }}>Scan a business card, document or PDF</h3>
+                <p style={{ fontSize: '11px', color: '#64748b', marginTop: '3px', lineHeight: 1.5 }}>Use your camera or upload a file — the AI will extract and prefill the form fields automatically.</p>
+              </div>
+              <span style={{ borderRadius: '999px', border: '1px solid #bae6fd', background: 'white', padding: '3px 10px', fontSize: '10px', fontWeight: 700, color: '#0369a1', letterSpacing: '.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>AI-powered OCR</span>
+            </div>
+            {/* Scan method buttons — camera + file */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <label
+                htmlFor="ql-camera-input"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '8px 16px', borderRadius: '8px', background: '#0b2e4a', color: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer', border: 'none' }}
+              >
+                📷 Use camera
+                <input
+                  id="ql-camera-input"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    // Dispatch to the ContactScanTrigger via hidden file input below
+                    const hidden = document.getElementById('ql-hidden-upload') as HTMLInputElement | null;
+                    if (hidden) {
+                      const dt = new DataTransfer();
+                      dt.items.add(file);
+                      hidden.files = dt.files;
+                      hidden.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                  }}
+                />
+              </label>
+              <label
+                htmlFor="ql-file-input"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#334155', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+              >
+                📄 Upload file or PDF
+                <input
+                  id="ql-file-input"
+                  type="file"
+                  accept="image/*,.pdf,text/plain,.txt"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const hidden = document.getElementById('ql-hidden-upload') as HTMLInputElement | null;
+                    if (hidden) {
+                      const dt = new DataTransfer();
+                      dt.items.add(file);
+                      hidden.files = dt.files;
+                      hidden.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                  }}
+                />
+              </label>
+              <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '10px', color: '#94a3b8', gap: '4px' }}>
+                Supports: JPG, PNG, PDF, TXT · Max 10 MB
+              </span>
+            </div>
+            <p style={{ marginTop: '10px', fontSize: '10px', color: '#94a3b8', letterSpacing: '.02em' }}>
+              📌 Or fill the form below manually — scan is optional
+            </p>
+          </div>
+        ) : null}
+
         {!isEditingExistingLead && prefill ? (
           <div className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50/80 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
