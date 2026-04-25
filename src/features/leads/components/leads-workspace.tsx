@@ -1526,6 +1526,7 @@ function InlineLeadWorkspace({
           onMoveToStage={onMoveToStage}
           onOpenQuoteBuilder={onOpenQuoteBuilder}
           onOpenOrCreateQuote={onOpenOrCreateQuote}
+          onBackToList={onBackToList}
         />
       )}
     </div>
@@ -1558,6 +1559,7 @@ function InlineCommandCenter({
   onMoveToStage,
   onOpenQuoteBuilder,
   onOpenOrCreateQuote,
+  onBackToList,
 }: {
   lead: LeadRow;
   stageName: string;
@@ -1584,6 +1586,7 @@ function InlineCommandCenter({
   onMoveToStage: (leadId: string, stageId: string) => void;
   onOpenQuoteBuilder: () => void;
   onOpenOrCreateQuote: (leadId: string) => void;
+  onBackToList: () => void;
 }) {
   const [activePillar, setActivePillar] = React.useState<'follow_up' | 'qualification' | 'coverage' | 'commercial' | null>(null);
   const nextFollowUp = [...followUps].sort((a, b) => String(a.scheduled_at ?? '').localeCompare(String(b.scheduled_at ?? '')))[0] ?? null;
