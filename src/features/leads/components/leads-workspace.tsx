@@ -966,7 +966,6 @@ export function LeadsWorkspace({
 
       {/* ═══ FILTER BAR — matches spec .filter-bar ═══ */}
       <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#94a3b8', marginRight: '4px' }}>Filter:</span>
 
         {/* Search box inline */}
         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '200px' }}>
@@ -977,34 +976,6 @@ export function LeadsWorkspace({
             placeholder="Search company, contact…"
             style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', width: '100%' }}
           />
-        </div>
-
-        {/* Stage filter */}
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
-          <span style={{ fontSize: '13px' }}>◎</span>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Stage</span>
-            <select value={stageIdFilter} onChange={(e) => setStageIdFilter(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
-            >
-              <option value="">All stages ▾</option>
-              {availableStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {/* Owner filter */}
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
-          <span style={{ fontSize: '13px' }}>👤</span>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Owner</span>
-            <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
-            >
-              <option value="">All owners ▾</option>
-              {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name ?? p.username ?? p.id}</option>)}
-            </select>
-          </div>
         </div>
 
         {/* Market filter */}
@@ -1031,6 +1002,34 @@ export function LeadsWorkspace({
             >
               <option value="">All products ▾</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Stage filter */}
+        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
+          <span style={{ fontSize: '13px' }}>◎</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Stage</span>
+            <select value={stageIdFilter} onChange={(e) => setStageIdFilter(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
+            >
+              <option value="">All stages ▾</option>
+              {availableStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Owner filter */}
+        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
+          <span style={{ fontSize: '13px' }}>👤</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Owner</span>
+            <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
+            >
+              <option value="">All owners ▾</option>
+              {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name ?? p.username ?? p.id}</option>)}
             </select>
           </div>
         </div>
@@ -1434,76 +1433,384 @@ function InlineCommandCenter({
   safeFormatDateTime: (value?: string | null) => string;
   onOpenQuoteBuilder: () => void;
 }) {
-  const nextFollowUp = followUps.sort((a, b) => String(a.scheduled_at ?? '').localeCompare(String(b.scheduled_at ?? '')))[0] ?? null;
-  const latestActivity = activities.sort((a, b) => String(b.occurred_at ?? '').localeCompare(String(a.occurred_at ?? '')))[0] ?? null;
-  const latestQuote = quotes.sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
+  const [activePillar, setActivePillar] = React.useState<'follow_up' | 'qualification' | 'coverage' | 'commercial' | null>(null);
+  const nextFollowUp = [...followUps].sort((a, b) => String(a.scheduled_at ?? '').localeCompare(String(b.scheduled_at ?? '')))[0] ?? null;
+  const latestActivity = [...activities].sort((a, b) => String(b.occurred_at ?? '').localeCompare(String(a.occurred_at ?? '')))[0] ?? null;
+  const latestQuote = [...quotes].sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
+  const blockerCount = readiness?.blockerCount ?? complianceItems.length;
+  const pricingReady = readiness?.pricingReadiness === 'ready';
   const canContinueQuote = Boolean(latestQuote || selectedProductNames.length || rfqs.length);
 
+  // Status chips data
+  const chips = [
+    { label: pricingReady ? '✓ Pricing ready' : '⚠ Pricing partial', cls: pricingReady ? 'bg-[#ecfdf5] border-[#a7f3d0] text-[#047857]' : 'bg-[#fffbeb] border-[#fde68a] text-[#92400e]' },
+    { label: blockerCount > 0 ? `⚠ ${blockerCount} compliance item${blockerCount === 1 ? '' : 's'}` : '✓ Compliance clear', cls: blockerCount > 0 ? 'bg-[#fffbeb] border-[#fde68a] text-[#92400e]' : 'bg-[#ecfdf5] border-[#a7f3d0] text-[#047857]' },
+    { label: nextFollowUp?.scheduled_at ? `📅 Next follow-up: ${safeFormatDateTime(nextFollowUp.scheduled_at)}` : '📅 No follow-up set', cls: 'bg-[#f1f5f9] border-[#cbd5e1] text-[#475569]' },
+    { label: lead.lead_type === 'buyer' ? 'Buyer' : 'Supplier', cls: 'bg-[#f0f9ff] border-[#7dd3fc] text-[#0369a1]' },
+  ];
+
+  // Pipeline stages
+  const pipelineStages = [
+    { label: 'New Lead', state: 'done' },
+    { label: 'Qualified', state: stageName === 'Qualified' ? 'current' : ['Sample Sent', 'Negotiation', 'Quote Sent', 'Won'].some(s => stageName.includes(s)) ? 'done' : 'upcoming' },
+    { label: 'Contacted', state: stageName === 'Contacted' ? 'current' : ['Sample Sent', 'Negotiation', 'Quote Sent', 'Won', 'Qualified'].some(s => stageName.includes(s)) ? 'done' : 'upcoming' },
+    { label: 'Sample Sent', state: stageName.includes('Sample') ? 'current' : ['Negotiation', 'Quote Sent', 'Won'].some(s => stageName.includes(s)) ? 'done' : 'upcoming' },
+    { label: stageName.includes('Negoti') || stageName.includes('Quote') || stageName.includes('Won') ? stageName : 'Negotiation', state: stageName.includes('Negoti') ? 'current' : stageName.includes('Quote') || stageName.includes('Won') ? 'done' : 'upcoming' },
+    { label: 'Quote Sent', state: stageName.includes('Quote') ? 'current' : stageName.includes('Won') ? 'done' : 'upcoming' },
+    { label: 'Won ✓', state: stageName.includes('Won') ? 'current' : 'upcoming' },
+  ];
+
+  // Workflow pillars
+  const pillars = [
+    {
+      key: 'follow_up' as const,
+      icon: '↗',
+      title: 'Follow-up',
+      state: nextFollowUp ? (new Date(nextFollowUp.scheduled_at ?? '') < new Date() ? 'blocked' : 'needs-action') : 'default',
+      stateLabel: nextFollowUp ? safeFormatDateTime(nextFollowUp.scheduled_at) : 'Not scheduled',
+      helper: nextFollowUp ? (new Date(nextFollowUp.scheduled_at ?? '') < new Date() ? 'Overdue — reschedule now' : 'Scheduled follow-up active') : 'Set a follow-up date to keep this lead moving.',
+      badge: nextFollowUp && new Date(nextFollowUp.scheduled_at ?? '') < new Date() ? { label: 'OVERDUE', cls: 'bg-[#f43f5e]' } : null,
+    },
+    {
+      key: 'qualification' as const,
+      icon: '◎',
+      title: 'Qualification',
+      state: readiness?.qualificationStatus === 'qualified' ? 'ready' : (readiness?.qualificationStatus === 'not_started' ? 'needs-action' : 'default') as 'ready' | 'needs-action' | 'default',
+      stateLabel: readiness?.qualificationStatus ?? 'Not started',
+      helper: selectedProductNames.length ? `${selectedProductNames.length} product${selectedProductNames.length === 1 ? '' : 's'} of interest mapped` : '1 input still needs attention',
+      badge: !readiness?.qualificationStatus ? { label: 'NEEDS INPUT', cls: 'bg-[#f59e0b]' } : null,
+    },
+    {
+      key: 'coverage' as const,
+      icon: '▦',
+      title: 'Coverage',
+      state: (selectedProductNames.length > 0 && selectedMarketNames.length > 0 ? 'ready' : 'blocked') as 'ready' | 'blocked',
+      stateLabel: selectedProductNames.length ? `${selectedProductNames.length} product · ${selectedMarketNames.length || 1} market` : '0 products · 0 markets',
+      helper: selectedProductNames.length ? 'Coverage ready for commercial work' : 'Map at least one product and market',
+      badge: selectedProductNames.length === 0 ? { label: 'BLOCKED', cls: 'bg-[#f43f5e]' } : null,
+    },
+    {
+      key: 'commercial' as const,
+      icon: '◇',
+      title: 'Commercial',
+      state: latestQuote ? 'ready' : 'default' as 'ready' | 'default',
+      stateLabel: latestQuote ? `Quote active` : 'No quote yet',
+      helper: latestQuote ? 'Create or review the current quote and pricing basis' : 'Create or review the current quote and pricing basis',
+      badge: null,
+    },
+  ];
+
+  const pillarBg: Record<string, string> = {
+    'needs-action': 'bg-[#fffbeb] border-[#fde68a]',
+    'blocked': 'bg-[#fff1f2] border-[#fca5a5]',
+    'ready': 'bg-[#ecfdf5] border-[#6ee7b7]',
+    'default': 'bg-white border-[#e2e8f0]',
+  };
+  const pillarTitleColor: Record<string, string> = {
+    'needs-action': 'text-[#d97706]',
+    'blocked': 'text-[#e11d48]',
+    'ready': 'text-[#059669]',
+    'default': 'text-[#475569]',
+  };
+
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
-      <div className="space-y-4">
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white">{getLeadInitials(lead.company_name) || 'SF'}</div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-500">Trade Command Center</p>
-              <h2 className="mt-1 text-2xl font-black text-slate-950">{lead.company_name}</h2>
-              <p className="mt-1 text-sm text-slate-500">{lead.lead_type} · Owner: {ownerLabel} · {lead.country ?? 'No country set'}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{readiness?.pricingReadiness === 'ready' ? 'Pricing ready' : 'Pricing needs review'}</span>
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{stageName}</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{selectedProductNames[0] ?? 'Product not mapped'}</span>
+    <div className="flex flex-col gap-3 px-6 py-4" style={{ background: '#f0f4f8' }}>
+
+      {/* Lead header card — spec .lead-header-card */}
+      <div className="overflow-hidden rounded-[22px] border border-[#e2e8f0] bg-white shadow-sm">
+        <div className="flex flex-col gap-[14px] p-[18px_22px]">
+
+          {/* Status chips — spec .lhc-chips */}
+          <div className="flex flex-wrap gap-[6px]">
+            {chips.map((chip) => (
+              <span key={chip.label} className={`inline-flex items-center gap-[5px] rounded-full border px-[10px] py-[3px] text-[10px] font-bold ${chip.cls}`}>
+                {chip.label}
+              </span>
+            ))}
+          </div>
+
+          {/* Hero row — spec .lhc-hero */}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-[14px]">
+              {/* 48px avatar — spec .lhc-company-avatar */}
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-base font-black text-white" style={{ background: 'linear-gradient(135deg,#061c2e,#0c7fff)' }}>
+                {getLeadInitials(lead.company_name) || 'SF'}
+              </div>
+              <div>
+                {/* 26px 800-weight name — spec .lhc-company-name */}
+                <div className="text-[26px] font-extrabold leading-tight tracking-tight text-[#0f172a]">{lead.company_name}</div>
+                <div className="mt-[3px] text-[12px] text-[#64748b]">
+                  {lead.lead_type} · Owner: {ownerLabel} · Source: {lead.source_label ?? lead.source_type ?? 'Trade event'} · {lead.country ?? 'No country set'}
+                </div>
               </div>
             </div>
-            <button type="button" onClick={onOpenQuoteBuilder} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-slate-800">{canContinueQuote ? 'Continue quote' : 'Open Quote Builder'}</button>
+            {/* CTA buttons — spec .lhc-actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={onOpenQuoteBuilder}
+                className="rounded-[6px] bg-[#0b2e4a] px-[18px] py-[9px] text-[13px] font-bold text-white hover:bg-[#061c2e]">
+                🖊 {canContinueQuote ? 'View quote' : 'Create quote'}
+              </button>
+              <button type="button"
+                className="rounded-[6px] border border-[#e2e8f0] bg-white px-[14px] py-[8px] text-[12px] font-semibold text-[#334155] hover:bg-[#f8fafc]">
+                📅 Schedule follow-up
+              </button>
+              <button type="button"
+                className="rounded-[6px] border border-[#e2e8f0] bg-white px-[14px] py-[8px] text-[12px] font-semibold text-[#334155]">
+                ⋯ Lead tools
+              </button>
+            </div>
           </div>
-        </section>
+        </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Next move</p>
-              <h3 className="mt-1 text-xl font-black text-slate-950">{nextStepLabel}</h3>
-              <p className="mt-1 text-sm text-slate-500">{nextFollowUp?.scheduled_at ? `Scheduled ${safeFormatDateTime(nextFollowUp.scheduled_at)}` : 'No follow-up scheduled yet.'}</p>
-            </div>
-            <div className="flex gap-2">
-              <button type="button" className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Schedule follow-up</button>
-              <button type="button" className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Lead tools</button>
-            </div>
-          </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-4">
-            <InlineMetric label="Quotes" value={String(quotes.length)} />
-            <InlineMetric label="RFQs" value={String(rfqs.length)} />
-            <InlineMetric label="Blockers" value={String(readiness?.blockerCount ?? complianceItems.length)} />
-            <InlineMetric label="Last activity" value={latestActivity ? safeFormatDateTime(latestActivity.occurred_at) : 'None'} />
-          </div>
-        </section>
+        {/* Next move bar — spec .next-move-bar */}
+        <div className="mx-[22px] mb-[14px] rounded-r-[6px] border-l-[3px] border-[#0c7fff] bg-[#f8fafc] px-[14px] py-[9px] text-[12px] text-[#475569]">
+          <strong className="text-[#0f172a]">Next move:</strong> {nextStepLabel || 'Schedule a follow-up call and confirm product interest before opening a quote.'}
+          {latestActivity ? ` · Last activity: ${safeFormatDateTime(latestActivity.occurred_at)}` : ''}
+        </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quote record</p>
-              <h3 className="mt-1 text-xl font-black text-slate-950">Commercial path</h3>
-            </div>
-            <button type="button" onClick={onOpenQuoteBuilder} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white">Open builder</button>
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Selected products</p>
-              <p className="mt-2 text-sm font-semibold text-slate-800">{selectedProductNames.length ? selectedProductNames.join(', ') : 'No products mapped yet'}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Markets</p>
-              <p className="mt-2 text-sm font-semibold text-slate-800">{selectedMarketNames.length ? selectedMarketNames.join(', ') : lead.country ?? 'Market not set'}</p>
-            </div>
-          </div>
-        </section>
+        {/* Pipeline stage strip — spec .pipeline-strip */}
+        <div className="flex items-center gap-0 overflow-x-auto border-t border-[#e2e8f0] px-[22px] py-[12px]">
+          {pipelineStages.map((stage, index) => (
+            <React.Fragment key={stage.label}>
+              <div className={`flex cursor-pointer flex-col items-center gap-[3px] rounded-[6px] px-[10px] py-[4px] transition-colors ${stage.state === 'done' ? 'bg-[#ecfdf5]' : stage.state === 'current' ? 'bg-[rgba(12,127,255,.1)]' : 'bg-transparent'}`}
+                style={{ minWidth: '80px' }}>
+                <div className={`h-[10px] w-[10px] rounded-full ${stage.state === 'done' ? 'bg-[#10b981]' : stage.state === 'current' ? 'bg-[#0c7fff] shadow-[0_0_0_3px_rgba(12,127,255,.2)]' : 'bg-[#cbd5e1]'}`} />
+                <div className={`text-center text-[10px] font-bold ${stage.state === 'done' ? 'text-[#059669]' : stage.state === 'current' ? 'text-[#0b2e4a]' : 'text-[#94a3b8]'}`}>
+                  {stage.label}
+                </div>
+              </div>
+              {index < pipelineStages.length - 1 ? <div className="flex-shrink-0 px-[2px] pb-[8px] text-[16px] text-[#cbd5e1]">›</div> : null}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
-      <aside className="space-y-3">
-        <InlineSideCard title="Lead queue" value={lead.lead_type === 'supplier' ? 'Supplier mode' : 'Buyer mode'} detail={stageName} />
-        <InlineSideCard title="Compliance" value={(readiness?.blockerCount ?? complianceItems.length) > 0 ? 'Needs attention' : 'Clear'} detail={`${complianceItems.length} active item${complianceItems.length === 1 ? '' : 's'}`} />
-        <InlineSideCard title="Quick links" value="Pipeline · Lead log · Share brief" detail="Use inline actions without leaving Leads." />
-      </aside>
+
+      {/* Main CC grid — spec .cc-grid */}
+      <div className="grid gap-[14px] xl:grid-cols-[1fr_220px]">
+        <div className="flex flex-col gap-3">
+
+          {/* Workflow pillars — spec .workflow-pillars */}
+          <div className="grid gap-[10px] grid-cols-2 xl:grid-cols-4">
+            {pillars.map((pillar) => (
+              <div key={pillar.key}
+                onClick={() => setActivePillar(activePillar === pillar.key ? null : pillar.key)}
+                className={`relative cursor-pointer rounded-[16px] border p-[14px_16px] transition-shadow hover:shadow-md ${activePillar === pillar.key ? 'border-[#0c7fff] bg-[rgba(12,127,255,.04)] shadow-[0_0_0_2px_rgba(12,127,255,.2)]' : pillarBg[pillar.state]}`}>
+                {pillar.badge ? (
+                  <span className={`absolute right-[10px] top-[10px] rounded-full px-[7px] py-[2px] text-[9px] font-extrabold text-white ${pillar.badge.cls}`}>
+                    {pillar.badge.label}
+                  </span>
+                ) : null}
+                <div className="mb-2 text-[20px]">{pillar.icon}</div>
+                <div className={`mb-1 text-[11px] font-extrabold uppercase tracking-[.06em] ${activePillar === pillar.key ? 'text-[#0c7fff]' : pillarTitleColor[pillar.state]}`}>{pillar.title}</div>
+                <div className="mb-[3px] text-[13px] font-bold text-[#0f172a]">{pillar.stateLabel}</div>
+                <div className="text-[11px] leading-[1.5] text-[#64748b]">{pillar.helper}</div>
+                <button type="button" className={`mt-[10px] rounded-[6px] border px-[10px] py-[4px] text-[10px] font-bold ${activePillar === pillar.key ? 'border-[rgba(12,127,255,.4)] bg-white text-[#0c7fff]' : 'border-[#e2e8f0] bg-white text-[#475569]'}`}>
+                  {activePillar === pillar.key ? 'Close panel' : 'Inspect →'}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Inline panel — spec .inline-panel */}
+          {activePillar ? (
+            <div className="overflow-hidden rounded-[22px] border border-[#e2e8f0] bg-white shadow-md">
+              <div className="flex items-center justify-between border-b border-[#e2e8f0] px-[20px] py-[16px]">
+                <div className="text-[14px] font-bold text-[#0f172a]">
+                  {activePillar === 'follow_up' ? 'Follow-up — scheduling and cadence' :
+                   activePillar === 'qualification' ? 'Qualification — buyer/supplier fit' :
+                   activePillar === 'coverage' ? 'Coverage — product and market mapping' :
+                   'Commercial — quote and pricing'}
+                </div>
+                <button type="button" onClick={() => setActivePillar(null)}
+                  className="rounded-[6px] border border-[#e2e8f0] bg-white px-[10px] py-[4px] text-[11px] font-semibold text-[#475569]">
+                  Close panel
+                </button>
+              </div>
+              <div className="p-[18px_20px]">
+                {activePillar === 'follow_up' ? (
+                  <div>
+                    <p className="text-[12px] text-[#64748b] leading-[1.6] mb-3">Resolve overdue follow-up and keep the lead cadence active.</p>
+                    {nextFollowUp ? (
+                      <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px]">
+                        <div className="text-[11px] font-bold uppercase tracking-[.14em] text-[#94a3b8] mb-1">Next follow-up</div>
+                        <div className="text-[13px] font-semibold text-[#1e293b]">{safeFormatDateTime(nextFollowUp.scheduled_at)}</div>
+                      </div>
+                    ) : (
+                      <div className="rounded-[12px] border border-dashed border-[#e2e8f0] p-[16px] text-center text-[13px] text-[#94a3b8]">
+                        No follow-up scheduled. Use the Schedule follow-up button above.
+                      </div>
+                    )}
+                  </div>
+                ) : activePillar === 'qualification' ? (
+                  <div>
+                    <p className="text-[12px] text-[#64748b] leading-[1.6] mb-3">Keep buyer fit and operator context current before pushing downstream commercial work.</p>
+                    <div className="flex flex-col gap-[6px]">
+                      {[
+                        { label: 'Lead type confirmed', ok: Boolean(lead.lead_type) },
+                        { label: 'Country set', ok: Boolean(lead.country) },
+                        { label: 'Contact name set', ok: Boolean(lead.contact_name) },
+                        { label: 'Products mapped', ok: selectedProductNames.length > 0 },
+                      ].map((item) => (
+                        <div key={item.label} className={`flex items-center gap-[8px] rounded-[8px] border p-[8px_12px] ${item.ok ? 'border-[#d1fae5] bg-[#ecfdf5]' : 'border-[#fecaca] bg-[#fff1f2]'}`}>
+                          <div className={`h-[8px] w-[8px] rounded-full flex-shrink-0 ${item.ok ? 'bg-[#10b981]' : 'bg-[#f43f5e]'}`} />
+                          <span className="text-[12px] font-semibold text-[#334155] flex-1">{item.label}</span>
+                          <span className={`text-[9px] font-bold uppercase tracking-[.06em] ${item.ok ? 'text-[#059669]' : 'text-[#e11d48]'}`}>{item.ok ? 'OK' : 'MISSING'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : activePillar === 'coverage' ? (
+                  <div>
+                    <p className="text-[12px] text-[#64748b] leading-[1.6] mb-3">Products and markets define the commercial scope of this lead.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px]">
+                        <div className="text-[11px] font-bold uppercase tracking-[.14em] text-[#94a3b8] mb-2">Products</div>
+                        {selectedProductNames.length ? selectedProductNames.map((p) => (
+                          <span key={p} className="inline-flex items-center rounded-full bg-[#f1f5f9] border border-[#e2e8f0] px-[10px] py-[4px] text-[11px] font-semibold text-[#334155] m-[2px]">{p}</span>
+                        )) : <div className="text-[12px] text-[#94a3b8]">No products mapped</div>}
+                      </div>
+                      <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px]">
+                        <div className="text-[11px] font-bold uppercase tracking-[.14em] text-[#94a3b8] mb-2">Markets</div>
+                        {selectedMarketNames.length ? selectedMarketNames.map((m) => (
+                          <span key={m} className="inline-flex items-center rounded-full bg-[#f1f5f9] border border-[#e2e8f0] px-[10px] py-[4px] text-[11px] font-semibold text-[#334155] m-[2px]">{m}</span>
+                        )) : <div className="text-[12px] text-[#94a3b8]">{lead.country ?? 'No market set'}</div>}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[12px] text-[#64748b] leading-[1.6] mb-3">Create or review the current quote and pricing basis.</p>
+                    {latestQuote ? (
+                      <div className="rounded-[12px] border border-[#d1fae5] bg-[#ecfdf5] p-[12px]">
+                        <div className="text-[11px] font-bold uppercase tracking-[.14em] text-[#059669] mb-1">Active quote</div>
+                        <div className="text-[13px] font-semibold text-[#047857]">{latestQuote.quote_number ?? latestQuote.id?.slice(0, 8) ?? 'Draft quote'}</div>
+                        <div className="text-[11px] text-[#64748b] mt-1">{latestQuote.status?.replace(/_/g, ' ') ?? 'draft'}</div>
+                      </div>
+                    ) : (
+                      <div className="rounded-[12px] border border-dashed border-[#e2e8f0] p-[16px] text-center">
+                        <div className="text-[13px] text-[#94a3b8] mb-2">No quote yet</div>
+                        <button type="button" onClick={onOpenQuoteBuilder}
+                          className="rounded-[6px] bg-[#0b2e4a] px-[14px] py-[7px] text-[12px] font-bold text-white">
+                          Create quote
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Quote prep checklist — spec .qpc-card */}
+          <div className="overflow-hidden rounded-[22px] border border-[#e2e8f0] bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#e2e8f0] px-[18px] py-[14px]">
+              <div className="text-[13px] font-bold text-[#0f172a]">Quote prep checklist</div>
+              <button type="button" onClick={onOpenQuoteBuilder}
+                className="rounded-[6px] bg-[#0b2e4a] px-[14px] py-[7px] text-[11px] font-bold text-white">
+                {canContinueQuote ? 'Continue quote →' : 'Create quote →'}
+              </button>
+            </div>
+            <div className="flex flex-col gap-[8px] p-[12px_18px]">
+              {[
+                { label: 'Buyer qualification', sub: selectedProductNames.length ? 'qualified' : 'not yet qualified', status: selectedProductNames.length > 0 ? 'done' : 'todo' as 'done' | 'todo' },
+                { label: 'Coverage mapped', sub: selectedProductNames.length > 0 && selectedMarketNames.length > 0 ? `${selectedProductNames.length} products · ${selectedMarketNames.length} markets` : 'Map at least one product and market', status: (selectedProductNames.length > 0 && selectedMarketNames.length > 0) ? 'done' : 'todo' as 'done' | 'todo' },
+                { label: 'Pricing ready', sub: pricingReady ? 'Catalog pricing is ready' : 'Map products to enable pricing', status: pricingReady ? 'done' : 'blocked' as 'done' | 'blocked' },
+                { label: 'Quote draft', sub: latestQuote ? `${latestQuote.status?.replace(/_/g, ' ') ?? 'draft'} · ${safeFormatDateTime(latestQuote.updated_at)}` : 'No quote started yet', status: latestQuote ? 'done' : 'todo' as 'done' | 'todo' },
+                { label: 'Compliance clear', sub: blockerCount > 0 ? `${blockerCount} item${blockerCount === 1 ? '' : 's'} need attention` : 'No active blockers', status: blockerCount > 0 ? 'blocked' : 'done' as 'done' | 'blocked' },
+              ].map((item) => (
+                <div key={item.label} className={`flex items-start gap-[10px] rounded-[12px] border p-[10px_12px] ${item.status === 'done' ? 'border-[#d1fae5] bg-[#ecfdf5]' : item.status === 'blocked' ? 'border-[#fecaca] bg-[#fff1f2]' : 'border-[#fde68a] bg-[#fffbeb]'}`}>
+                  <div className={`mt-[1px] flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${item.status === 'done' ? 'bg-[#10b981] text-white' : item.status === 'blocked' ? 'border-[1.5px] border-[#fca5a5] bg-[#fee2e2] text-[#e11d48]' : 'border-[1.5px] border-[#fcd34d] bg-[#fef3c7] text-[#92400e]'}`}>
+                    {item.status === 'done' ? '✓' : item.status === 'blocked' ? '✕' : '!'}
+                  </div>
+                  <div>
+                    <div className={`text-[12px] font-bold ${item.status === 'done' ? 'text-[#047857]' : item.status === 'blocked' ? 'text-[#9f1239]' : 'text-[#334155]'}`}>{item.label}</div>
+                    <div className={`text-[11px] leading-[1.5] ${item.status === 'done' ? 'text-[#059669]' : item.status === 'blocked' ? 'text-[#e11d48]' : 'text-[#92400e]'}`}>{item.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right rail — spec .cc-right */}
+        <aside className="flex flex-col gap-[10px]">
+          {/* Priority action */}
+          <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
+            <div className="mb-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Priority action</div>
+            <div className="mb-[4px] text-[13px] font-bold text-[#0f172a]">
+              {nextFollowUp && new Date(nextFollowUp.scheduled_at ?? '') < new Date() ? 'Follow-up overdue' :
+               !pricingReady ? 'Map pricing before quote' :
+               !latestQuote ? 'Create first quote' : 'Review quote status'}
+            </div>
+            <div className="mb-[10px] text-[12px] leading-[1.6] text-[#64748b]">
+              {nextFollowUp ? `Next follow-up: ${safeFormatDateTime(nextFollowUp.scheduled_at)}. Keep the commercial thread moving.` : 'Set a follow-up to keep this lead active.'}
+            </div>
+            <button type="button" onClick={onOpenQuoteBuilder}
+              className="w-full rounded-[6px] bg-[#0b2e4a] px-[12px] py-[7px] text-center text-[12px] font-bold text-white">
+              Open follow-up lane
+            </button>
+          </div>
+
+          {/* Lead queue hot list */}
+          <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
+            <div className="mb-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Lead queue</div>
+            <div className="mb-[8px] text-[13px] font-bold text-[#0f172a]">Hot list</div>
+            <div className="flex flex-col gap-[5px]">
+              {activities.slice(0, 4).map((act, i) => (
+                <div key={act.id ?? i} className="flex cursor-pointer items-center gap-[8px] rounded-[6px] border border-[#e2e8f0] px-[10px] py-[7px] hover:bg-[#f8fafc]">
+                  <div className="h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#f43f5e]" />
+                  <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[11px] font-semibold text-[#334155]">{lead.company_name}</span>
+                  <span className="text-[9px] text-[#94a3b8]">{stageName}</span>
+                </div>
+              ))}
+              {activities.length === 0 ? (
+                <div className="py-2 text-center text-[11px] text-[#94a3b8]">No recent activity</div>
+              ) : null}
+            </div>
+            <button type="button" className="mt-2 w-full rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-center text-[12px] font-semibold text-[#334155]">
+              Back to queue
+            </button>
+          </div>
+
+          {/* Compliance gate */}
+          <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
+            <div className="mb-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Compliance</div>
+            <div className="mb-[4px] text-[13px] font-bold text-[#0f172a]">Gate status</div>
+            <div className="flex flex-col gap-[4px] mt-2">
+              {complianceItems.length > 0 ? complianceItems.slice(0, 3).map((item) => (
+                <div key={item.id} className="flex items-center gap-[8px] text-[11px]">
+                  <div className="h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#f59e0b]" />
+                  <span className="flex-1 text-[#475569]">{item.definition_id ?? 'Compliance item'}</span>
+                  <span className="text-[9px] font-bold uppercase tracking-[.06em] text-[#d97706]">PENDING</span>
+                </div>
+              )) : (
+                <div className="text-[12px] text-[#059669] font-semibold">Compliance is currently clear.</div>
+              )}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      {/* Sticky action bar — spec .sticky-bar */}
+      <div className="sticky bottom-3 z-10 mx-[-24px] flex items-center justify-between rounded-[22px_22px_0_0] border-t border-[#e2e8f0] bg-white/95 px-[22px] py-[12px] shadow-[0_-8px_24px_rgba(15,23,42,.08)] backdrop-blur">
+        <div className="flex gap-2">
+          <button type="button" onClick={onOpenQuoteBuilder}
+            className="rounded-[10px] bg-[#0b2e4a] px-[16px] py-[9px] text-[13px] font-bold text-white">
+            🖊 {canContinueQuote ? 'Continue quote' : 'Create quote'}
+          </button>
+          <button type="button"
+            className="rounded-[10px] border border-[#e2e8f0] bg-white px-[14px] py-[8px] text-[12px] font-semibold text-[#334155]">
+            📅 Schedule follow-up
+          </button>
+          <button type="button"
+            className="rounded-[10px] border border-[#e2e8f0] bg-white px-[14px] py-[8px] text-[12px] font-semibold text-[#334155]">
+            ✏ Quick edit
+          </button>
+        </div>
+        <div className="rounded-full border border-[#e2e8f0] bg-[#f8fafc] px-[12px] py-[6px] text-[10px] font-bold uppercase tracking-[.12em] text-[#94a3b8]">
+          COMMAND CENTER · WORKFLOW PILLARS · {stageName.toUpperCase()}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1541,8 +1848,8 @@ function InlineQuoteBuilder({
 }) {
   const [builderStep, setBuilderStep] = React.useState(1);
   const steps = ['Product', 'Pricing', 'Terms', 'Review', 'Send gate'];
-  const latestQuote = quotes.sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
-  const latestVersion = latestQuote ? quoteVersions.filter((version) => version.quote_id === latestQuote.id).sort((a, b) => Number(b.version_no ?? 0) - Number(a.version_no ?? 0))[0] : null;
+  const latestQuote = [...quotes].sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
+  const latestVersion = latestQuote ? quoteVersions.filter((v) => v.quote_id === latestQuote.id).sort((a, b) => Number(b.version_no ?? 0) - Number(a.version_no ?? 0))[0] : null;
   const lineItems = latestQuote?.lineItems ?? rfqs.flatMap((rfq) => rfq.lineItems ?? []);
   const subtotal = lineItems.reduce((sum, item) => sum + Number(item.quantity ?? 1) * Number(item.unit_price ?? item.catalog_price_amount ?? 0), 0);
   const currency = latestQuote?.currency ?? lineItems[0]?.currency ?? lineItems[0]?.catalog_price_currency ?? lead.deal_currency ?? 'USD';
@@ -1551,166 +1858,281 @@ function InlineQuoteBuilder({
   const sendReady = blockerCount === 0 && pricingReady;
 
   return (
-    <div className="space-y-4 pb-20">
-      <section className="rounded-[28px] bg-gradient-to-br from-slate-950 via-[#0b2e4a] to-blue-700 p-5 text-white shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500 text-lg font-black">{getLeadInitials(lead.company_name) || 'SF'}</div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-100">Quote Builder</p>
-              <h2 className="mt-1 text-2xl font-black">{lead.company_name}</h2>
-              <p className="mt-1 text-sm text-blue-100">{lead.lead_type} · {ownerLabel} · {selectedMarketNames[0] ?? lead.country ?? 'Market not set'}</p>
-              <div className="mt-3 flex flex-wrap gap-2">{(selectedProductNames.length ? selectedProductNames : ['Map product before send']).slice(0, 3).map((item) => <span key={item} className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white ring-1 ring-white/15">{item}</span>)}</div>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-3xl font-black">{subtotal > 0 ? `${currency} ${subtotal.toLocaleString()}` : `${quotes.length} quote${quotes.length === 1 ? '' : 's'}`}</p>
-            <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-blue-100">Draft total</p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={onOpenCommandCenter} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white ring-1 ring-white/20">← Back to CC</button>
-              <button type="button" className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-900">Save draft</button>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="flex flex-col gap-3 px-6 py-4 pb-20" style={{ background: '#f0f4f8' }}>
 
-      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2"><h3 className="text-sm font-black text-slate-950">Quote Builder</h3><span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-600">Step {builderStep + 1} of 5 · {steps[builderStep]}</span></div>
-          <p className="text-xs text-slate-400">Capture → Lead → Quote → Order</p>
+      {/* Hero — spec .qb-hero */}
+      <div className="flex flex-wrap items-start justify-between gap-4 rounded-[22px] p-[18px_22px] text-white" style={{ background: 'linear-gradient(135deg,#061c2e 0%,#0b2e4a 55%,#1a5fa0 100%)' }}>
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[10px] text-[14px] font-extrabold text-white" style={{ background: 'linear-gradient(135deg,#1a5fa0,#0c7fff)' }}>
+            {getLeadInitials(lead.company_name) || 'SF'}
+          </div>
+          <div>
+            <div className="text-[19px] font-extrabold leading-tight tracking-[-0.4px]">{lead.company_name}</div>
+            <div className="mt-[3px] text-[11px] text-white/60">{lead.lead_type} · {ownerLabel} · {selectedMarketNames[0] ?? lead.country ?? 'No market'} · {stageName}</div>
+            <div className="mt-[7px] flex flex-wrap gap-[6px]">
+              {selectedProductNames.slice(0, 3).map((p) => (
+                <span key={p} className="rounded-full border border-white/18 bg-white/12 px-[9px] py-[2px] text-[9px] font-bold uppercase tracking-[.04em] text-white/85">{p}</span>
+              ))}
+              {blockerCount > 0 ? <span className="rounded-full px-[9px] py-[2px] text-[9px] font-bold text-[#fde68a]" style={{ background: 'rgba(217,119,6,.25)', border: '1px solid rgba(217,119,6,.5)' }}>{blockerCount} send blocker{blockerCount === 1 ? '' : 's'}</span> : null}
+            </div>
+          </div>
         </div>
-        <div className="mt-5 flex items-start gap-2">
+        <div className="text-right">
+          <div className="text-[24px] font-extrabold tracking-[-0.5px]">{subtotal > 0 ? `${currency} ${subtotal.toLocaleString()}` : (quotes.length > 0 ? `${quotes.length} quote${quotes.length === 1 ? '' : 's'}` : '—')}</div>
+          <div className="mt-[2px] text-[9px] uppercase tracking-[.12em] text-white/50">Draft quote total</div>
+          <div className="mt-[10px] flex justify-end gap-[6px]">
+            <button type="button" onClick={onOpenCommandCenter} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white" style={{ background: 'rgba(255,255,255,.12)' }}>← Back to CC</button>
+            <button type="button" className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white" style={{ background: 'rgba(255,255,255,.12)' }}>Save draft</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stepper — spec .qb-stepper */}
+      <div className="rounded-[22px] border border-[#e2e8f0] bg-white p-[16px_20px] shadow-sm">
+        <div className="mb-[14px] flex items-center gap-[10px]">
+          <div className="text-[13px] font-bold text-[#0f172a]">Quote Builder</div>
+          <div className="rounded-full border border-[rgba(12,127,255,.2)] px-[9px] py-[2px] text-[9px] font-bold uppercase tracking-[.08em] text-[#0c7fff]" style={{ background: 'rgba(12,127,255,.08)' }}>
+            Step {builderStep + 1} of 5 · {steps[builderStep]}
+          </div>
+          <div className="ml-auto text-[10px] text-[#94a3b8]">Capture → Lead → <strong className="text-[#0b2e4a]">Quote</strong> → Order</div>
+        </div>
+        {/* Step track — spec .qb-track */}
+        <div className="relative mb-[12px] flex items-center">
           {steps.map((step, index) => (
             <React.Fragment key={step}>
-              <button type="button" onClick={() => setBuilderStep(index)} className="flex flex-1 flex-col items-center gap-1">
-                <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black ${index < builderStep ? 'bg-emerald-600 text-white' : index === builderStep ? 'bg-slate-900 text-white' : 'border-2 border-slate-200 bg-white text-slate-400'}`}>{index < builderStep ? '✓' : index + 1}</span>
-                <span className={`text-[10px] font-bold ${index === builderStep ? 'text-slate-900' : index < builderStep ? 'text-emerald-700' : 'text-slate-400'}`}>{step}</span>
+              <button type="button" onClick={() => setBuilderStep(index)} className="relative z-[1] flex flex-1 flex-col items-center gap-[4px]">
+                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-extrabold transition-all ${index < builderStep ? 'bg-[#059669] text-white shadow-[0_0_0_3px_#d1fae5]' : index === builderStep ? 'bg-[#0b2e4a] text-white shadow-[0_0_0_3px_rgba(11,46,74,.1)]' : 'border-2 border-[#e2e8f0] bg-white text-[#94a3b8]'}`}>
+                  {index < builderStep ? '✓' : index + 1}
+                </div>
+                <div className={`text-center text-[9px] font-bold ${index < builderStep ? 'text-[#059669]' : index === builderStep ? 'text-[#0b2e4a]' : 'text-[#94a3b8]'}`}>{step}</div>
               </button>
-              {index < steps.length - 1 ? <span className={`mt-4 h-0.5 flex-1 ${index < builderStep ? 'bg-emerald-600' : 'bg-slate-200'}`} /> : null}
+              {index < steps.length - 1 ? (
+                <div className={`h-[2px] flex-1 ${index < builderStep ? 'bg-[#059669]' : 'bg-[#e2e8f0]'}`} style={{ marginTop: '14px', alignSelf: 'flex-start', position: 'relative', zIndex: 1 }} />
+              ) : null}
             </React.Fragment>
           ))}
         </div>
-        <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600"><strong>Step {builderStep + 1} — {steps[builderStep]}:</strong> {getQuoteStepDescription(builderStep)}</p>
-      </section>
+        <div className="rounded-[6px] border-l-[3px] border-[#0c7fff] bg-[#f8fafc] px-[12px] py-[8px] text-[11px] leading-[1.6] text-[#64748b]">
+          <strong className="text-[#1e293b]">Step {builderStep + 1} — {steps[builderStep]}:</strong>{' '}
+          {builderStep === 0 ? 'Confirm the product or category promise before pricing starts.' :
+           builderStep === 1 ? 'Build the quote line by line. Catalog baseline prices pre-fill from your reference pricing. Overrides above 10% require manager approval before send.' :
+           builderStep === 2 ? 'Lock currency, incoterm, payment terms, port context, and quote validity.' :
+           builderStep === 3 ? 'Review pricing, compliance, and document posture before release.' :
+           'Send only after blockers, approval posture, and audit records are clear.'}
+        </div>
+      </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
-        <main className="space-y-4">
-          <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{steps[builderStep]} workspace</p>
-                <h3 className="mt-1 text-xl font-black text-slate-950">{getQuoteStepTitle(builderStep)}</h3>
+      {/* QB grid — spec .qb-grid (1fr 228px) */}
+      <div className="grid gap-[14px] xl:grid-cols-[1fr_228px]">
+
+        {/* Main step panel — spec .qb-main > .qb-panel */}
+        <div className="overflow-hidden rounded-[22px] border border-[#e2e8f0] bg-white shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-[#e2e8f0] px-[18px] py-[13px]">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[.18em] text-[#0c7fff]">Step {builderStep + 1} — {steps[builderStep]}</div>
+              <div className="text-[14px] font-bold text-[#0f172a]">
+                {builderStep === 0 ? 'Product & buyer lock' : builderStep === 1 ? 'Build pricing lines' : builderStep === 2 ? 'Set commercial terms' : builderStep === 3 ? 'Review quote package' : 'Approve and send safely'}
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'}</span>
             </div>
-            <QuoteStepBody
-              step={builderStep}
-              selectedProductNames={selectedProductNames}
-              selectedMarketNames={selectedMarketNames}
-              lineItems={lineItems}
-              currency={currency}
-              subtotal={subtotal}
-              blockerCount={blockerCount}
-              pricingReady={pricingReady}
-              sendReady={sendReady}
-              documents={documents}
-              complianceItems={complianceItems}
-              safeFormatDateTime={safeFormatDateTime}
-              stableNowIso={stableNowIso}
-            />
-          </section>
-        </main>
-        <aside className="space-y-3">
-          <InlineSideCard title="Quote snapshot" value={latestQuote?.quote_number ?? latestQuote?.id?.slice(0, 8) ?? 'Draft not numbered'} detail={`Updated ${latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'not saved yet'}`} />
-          <InlineSideCard title="Pricing guard" value={pricingReady ? 'Ready to review' : 'Needs line items'} detail={readiness?.blockerReasons?.[0] ?? `${lineItems.length} line item${lineItems.length === 1 ? '' : 's'}`} />
-          <InlineSideCard title="Approval threshold" value={blockerCount > 0 ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'}` : 'No blockers'} detail={sendReady ? 'Send gate clear' : 'Resolve before sending'} />
-          <InlineSideCard title="Lead context" value={stageName} detail={`${lead.country ?? 'No country'} · ${lead.lead_type}`} />
-          <InlineSideCard title="Current version" value={latestVersion?.version_no ? `v${latestVersion.version_no}` : 'v1 draft'} detail={latestVersion?.status ?? 'Ready for draft edits'} />
+            <button type="button" className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155]">Edit</button>
+          </div>
+          <div className="p-[16px_18px]">
+            {builderStep === 0 ? (
+              <div className="grid grid-cols-2 gap-[10px]">
+                <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px]">
+                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Buyer context</div>
+                  {[['Company', lead.company_name], ['Lead type', lead.lead_type], ['Market', selectedMarketNames[0] ?? lead.country ?? '—'], ['Currency', currency]].map(([k, v]) => (
+                    <div key={k} className="flex justify-between border-b border-[#f8fafc] py-[3px] text-[11px]">
+                      <span className="text-[#64748b]">{k}</span><span className="font-bold text-[#1e293b]">{v}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px]">
+                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Product scope</div>
+                  {selectedProductNames.length ? selectedProductNames.map((p) => (
+                    <div key={p} className="mb-[4px] text-[11px] font-semibold text-[#334155]">· {p}</div>
+                  )) : <div className="text-[11px] text-[#94a3b8]">No products mapped yet</div>}
+                </div>
+              </div>
+            ) : builderStep === 1 ? (
+              <div className="space-y-3">
+                <table className="w-full border-collapse text-[12px]">
+                  <thead>
+                    <tr className="bg-[#f8fafc] text-left text-[9px] font-extrabold uppercase tracking-[.12em] text-[#94a3b8]">
+                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Product</th>
+                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Qty</th>
+                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Unit price</th>
+                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lineItems.length ? lineItems.map((item) => {
+                      const qty = Number(item.quantity ?? 1);
+                      const price = Number(item.unit_price ?? item.catalog_price_amount ?? 0);
+                      return (
+                        <tr key={item.id} className="border-t border-[#f1f5f9] hover:bg-[#f8fafc]">
+                          <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.product_id ?? 'Catalog line'}</div></td>
+                          <td className="px-[10px] py-[10px]"><input className="w-[68px] rounded-[6px] border border-[#e2e8f0] p-[5px] text-center text-[12px] font-semibold outline-none" defaultValue={qty} /></td>
+                          <td className="px-[10px] py-[10px]"><input className="w-[90px] rounded-[6px] border border-[#e2e8f0] p-[5px_7px] text-right text-[12px] font-bold outline-none" defaultValue={price.toLocaleString()} /></td>
+                          <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{currency} {(qty * price).toLocaleString()}</td>
+                        </tr>
+                      );
+                    }) : (
+                      <tr><td colSpan={4} className="px-[10px] py-[24px] text-center text-[12px] text-[#94a3b8]">No quote lines yet. Add a product line or pull lines from RFQ.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+                <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px_14px]">
+                  {[['Subtotal', `${currency} ${subtotal.toLocaleString()}`], ['Freight (est.)', '—'], ['Taxes', '—']].map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-[3px] text-[12px]"><span className="text-[#64748b]">{k}</span><span className="font-bold text-[#1e293b]">{v}</span>
+                    </div>
+                  ))}
+                  <div className="mt-[5px] h-px bg-[#e2e8f0]" />
+                  <div className="flex justify-between py-[6px] text-[13px]"><span className="font-bold text-[#0f172a]">Grand total</span><span className="text-[16px] font-extrabold text-[#0b2e4a]">{currency} {subtotal.toLocaleString()}</span></div>
+                </div>
+                {subtotal > 0 && (subtotal / (lineItems.length || 1)) > 10000 ? (
+                  <div className="rounded-[6px] border border-[#fde68a] bg-[#fffbeb] p-[9px_13px] text-[11px] leading-[1.55] text-[#92400e]">⚠ Pricing override detected — overrides above 10% require manager approval before send.</div>
+                ) : null}
+              </div>
+            ) : builderStep === 2 ? (
+              <div className="grid grid-cols-2 gap-[10px]">
+                {[
+                  { label: 'Currency', val: currency, type: 'select', opts: ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'JPY'] },
+                  { label: 'Incoterm', val: 'FOB', type: 'select', opts: ['FOB', 'CIF', 'EXW', 'DDP', 'CFR'] },
+                  { label: 'Payment terms', val: '30% advance, 70% on BL', type: 'text' },
+                  { label: 'Quote validity (days)', val: '30', type: 'text' },
+                  { label: 'Port of loading', val: '', type: 'text', placeholder: 'e.g. JNPT Mumbai' },
+                  { label: 'Delivery notes', val: '', type: 'textarea', placeholder: 'Packaging, labelling, or shipping notes…' },
+                ].map((field) => (
+                  <div key={field.label} className={`flex flex-col gap-[4px] ${field.type === 'textarea' ? 'col-span-2' : ''}`}>
+                    <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">{field.label}</label>
+                    {field.type === 'select' ? (
+                      <select className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#1e293b] outline-none" defaultValue={field.val}>
+                        {field.opts?.map((o) => <option key={o}>{o}</option>)}
+                      </select>
+                    ) : field.type === 'textarea' ? (
+                      <textarea className="w-full resize-y rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] text-[#334155] outline-none" defaultValue={field.val} placeholder={field.placeholder} style={{ minHeight: '68px' }} />
+                    ) : (
+                      <input className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#1e293b] outline-none" defaultValue={field.val} placeholder={field.placeholder ?? ''} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : builderStep === 3 ? (
+              <div className="grid grid-cols-2 gap-[8px]">
+                {[
+                  { label: 'Pricing check', items: [['Subtotal', `${currency} ${subtotal.toLocaleString()}`], ['Line items', String(lineItems.length)], ['Status', pricingReady ? 'Ready ✓' : 'Incomplete']] },
+                  { label: 'Documents check', items: [['Linked files', String(documents.length)], ['Latest', documents[0]?.file_name ?? 'None linked'], ['Status', documents.length > 0 ? 'Ready ✓' : 'Missing']] },
+                  { label: 'Compliance check', items: [['Active items', String(complianceItems.length)], ['Blockers', String(blockerCount)], ['Gate', blockerCount === 0 ? 'Clear ✓' : 'Blocked']] },
+                  { label: 'Quote version', items: [['Version', latestVersion?.version_no ? `v${latestVersion.version_no}` : 'v1 draft'], ['Status', latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'], ['Updated', latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'Not saved']] },
+                ].map((card) => (
+                  <div key={card.label} className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[11px_13px]">
+                    <div className="mb-[7px] text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">{card.label}</div>
+                    {card.items.map(([k, v]) => (
+                      <div key={k} className="flex justify-between border-b border-[rgba(0,0,0,.03)] py-[3px] text-[11px]">
+                        <span className="text-[#64748b]">{k}</span>
+                        <span className={`font-bold ${String(v).includes('✓') ? 'text-[#059669]' : String(v).includes('Blocked') ? 'text-[#e11d48]' : 'text-[#1e293b]'}`}>{v}</span>
+                      </div>
+                    ))}
+                    <div className="mt-[4px] h-[6px] rounded-full bg-[#f1f5f9] overflow-hidden">
+                      <div className={`h-full rounded-full ${pricingReady && blockerCount === 0 ? 'bg-[#059669]' : 'bg-[#f59e0b]'}`} style={{ width: pricingReady && blockerCount === 0 ? '100%' : '50%' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Step 4: Send gate — spec .sg
+              <div className={`overflow-hidden rounded-[22px] border-2 ${sendReady ? 'border-[#a7f3d0] bg-[#ecfdf5]' : 'border-[#fecaca] bg-[#fff1f2]'} mb-[10px]`}>
+                <div className="flex items-center gap-3 p-[14px_18px]">
+                  <span className="text-[22px]">{sendReady ? '✓' : '⚠'}</span>
+                  <div>
+                    <div className={`text-[14px] font-extrabold ${sendReady ? 'text-[#047857]' : 'text-[#9f1239]'}`}>
+                      {sendReady ? 'This quote version is safe to send.' : 'Send blocked — resolve before sending.'}
+                    </div>
+                    <div className={`mt-[2px] text-[11px] ${sendReady ? 'text-[#059669]' : 'text-[#e11d48]'}`}>
+                      {sendReady ? 'Version binding, approval posture, and explicit blockers all point to send-safe.' : `${blockerCount} blocker${blockerCount === 1 ? '' : 's'} or pricing gap${blockerCount === 1 ? '' : 's'} remain.`}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-[4px] px-[18px] pb-[12px]">
+                  {[
+                    { label: 'No active blockers', ok: blockerCount === 0 },
+                    { label: 'Pricing complete', ok: pricingReady },
+                    { label: 'Compliance clear', ok: complianceItems.length === 0 },
+                    { label: 'Quote draft exists', ok: Boolean(latestQuote) },
+                  ].map((ck) => (
+                    <div key={ck.label} className={`flex items-center gap-[8px] rounded-[6px] border p-[6px_10px] text-[12px] ${ck.ok ? 'border-[#a7f3d0] bg-[#ecfdf5] text-[#047857]' : 'border-[#fecaca] bg-[#fff1f2] text-[#9f1239]'}`}>
+                      <span className="font-bold">{ck.ok ? '✓' : '✕'}</span> {ck.label}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-[8px] border-t p-[12px_18px]" style={{ borderColor: sendReady ? '#a7f3d0' : '#fecaca' }}>
+                  <button type="button" className={`flex-1 rounded-[6px] p-[10px] text-[13px] font-extrabold border-none ${sendReady ? 'bg-[#0b2e4a] text-white cursor-pointer' : 'bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed'}`} disabled={!sendReady}>
+                    Send quote
+                  </button>
+                  <button type="button" className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none cursor-pointer">
+                    Request approval
+                  </button>
+                  <button type="button" className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569]">
+                    Save draft
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar — spec .qb-sidebar */}
+        <aside className="flex flex-col gap-[10px]">
+          {/* Quote summary card — spec .qb-rc */}
+          <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
+            <div className="mb-[6px] text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Quote v1</div>
+            <div className="mb-[6px] text-[14px] font-extrabold text-[#0f172a]">{currency} {subtotal.toLocaleString()}</div>
+            {[['Lines', String(lineItems.length)], ['Status', latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'], ['Version', latestVersion ? `v${latestVersion.version_no}` : 'v1'], ['Updated', latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'Not saved']].map(([k, v]) => (
+              <div key={k} className="flex justify-between border-b border-[#f8fafc] py-[3px] text-[11px]">
+                <span className="text-[#64748b]">{k}</span><span className="font-bold text-[#1e293b]">{v}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Step nav buttons — spec .sn-btn */}
+          <div className="flex flex-col gap-[4px]">
+            {steps.map((step, index) => (
+              <button key={step} type="button" onClick={() => setBuilderStep(index)}
+                className={`flex w-full items-center gap-[8px] rounded-[6px] border p-[7px_10px] text-left text-[11px] font-bold transition-colors ${index < builderStep ? 'border-[#a7f3d0] bg-[#ecfdf5] text-[#047857]' : index === builderStep ? 'border-[#0c7fff] bg-[rgba(12,127,255,.06)] text-[#0b2e4a]' : 'border-[#e2e8f0] bg-white text-[#475569] hover:bg-[#f8fafc]'}`}>
+                <span className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold ${index < builderStep ? 'bg-[#059669] text-white' : index === builderStep ? 'bg-[#0b2e4a] text-white' : 'border-[1.5px] border-[#e2e8f0] bg-[#f1f5f9] text-[#94a3b8]'}`}>
+                  {index < builderStep ? '✓' : index + 1}
+                </span>
+                {step}
+              </button>
+            ))}
+          </div>
+
+          {/* Context card */}
+          <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
+            <div className="mb-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Approval threshold</div>
+            <div className="mb-[6px] text-[13px] font-bold text-[#0f172a]">{blockerCount > 0 ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'}` : 'No blockers'}</div>
+            <div className="text-[11px] leading-[1.6] text-[#64748b]">{sendReady ? 'Send gate clear — quote is safe to send.' : 'Resolve blockers before the send gate opens.'}</div>
+          </div>
         </aside>
       </div>
 
-      <div className="sticky bottom-3 z-10 rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur">
+      {/* Sticky bottom bar */}
+      <div className="sticky bottom-3 z-10 rounded-[24px] border border-[#e2e8f0] bg-white/95 p-3 shadow-xl backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setBuilderStep((step) => Math.min(step + 1, steps.length - 1))} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white shadow-sm">{builderStep < steps.length - 1 ? `Continue ${steps[Math.min(builderStep + 1, steps.length - 1)]} step` : sendReady ? 'Send quote' : 'Review blockers'}</button>
-          <button type="button" className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700">Save draft</button>
-          <button type="button" className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700">Request approval</button>
-          <span className="ml-auto rounded-full bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Command Center · Quote Builder · {steps[builderStep]}</span>
+          <button type="button" onClick={() => setBuilderStep((s) => Math.min(s + 1, steps.length - 1))}
+            className="rounded-[22px] bg-[#0b2e4a] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm">
+            {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : sendReady ? 'Send quote' : 'Review blockers'}
+          </button>
+          <button type="button" className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155]">Save draft</button>
+          <button type="button" className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155]">Request approval</button>
+          <span className="ml-auto rounded-full bg-[#f1f5f9] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#64748b]">
+            Command Center · Quote Builder · {steps[builderStep]}
+          </span>
         </div>
       </div>
     </div>
   );
-}
-
-function QuoteStepBody({
-  step,
-  selectedProductNames,
-  selectedMarketNames,
-  lineItems,
-  currency,
-  subtotal,
-  blockerCount,
-  pricingReady,
-  sendReady,
-  documents,
-  complianceItems,
-  safeFormatDateTime,
-  stableNowIso,
-}: {
-  step: number;
-  selectedProductNames: string[];
-  selectedMarketNames: string[];
-  lineItems: Array<RfqLineItem | QuoteLineItem>;
-  currency: string;
-  subtotal: number;
-  blockerCount: number;
-  pricingReady: boolean;
-  sendReady: boolean;
-  documents: LeadDocument[];
-  complianceItems: ComplianceItem[];
-  safeFormatDateTime: (value?: string | null) => string;
-  stableNowIso: string;
-}) {
-  if (step === 0) {
-    return <div className="mt-4 grid gap-3 md:grid-cols-2"><BuilderInfoCard title="Selected catalog products" value={selectedProductNames.length ? selectedProductNames.join(', ') : 'No product selected'} detail="Use catalog-backed products before pricing." /><BuilderInfoCard title="Target markets" value={selectedMarketNames.length ? selectedMarketNames.join(', ') : 'Market not selected'} detail="Market coverage controls documents, freight, and pricing posture." /></div>;
-  }
-  if (step === 1) {
-    return <div className="mt-4 space-y-3"><div className="overflow-hidden rounded-2xl border border-slate-200"><div className="grid grid-cols-[1.4fr_.6fr_.8fr_.8fr] bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400"><span>Product</span><span>Qty</span><span>Unit price</span><span>Total</span></div>{lineItems.length ? lineItems.map((item) => { const qty = Number(item.quantity ?? 1); const price = Number(item.unit_price ?? item.catalog_price_amount ?? 0); return <div key={item.id} className="grid grid-cols-[1.4fr_.6fr_.8fr_.8fr] border-t border-slate-100 px-4 py-3 text-sm text-slate-700"><span>{item.product_id ?? 'Catalog line'}</span><span>{qty}</span><span>{currency} {price.toLocaleString()}</span><span className="font-bold text-slate-950">{currency} {(qty * price).toLocaleString()}</span></div>; }) : <div className="px-4 py-6 text-sm text-slate-500">No quote lines yet. Add a product line or pull lines from RFQ.</div>}</div><div className="flex justify-end text-lg font-black text-slate-950">Subtotal: {currency} {subtotal.toLocaleString()}</div></div>;
-  }
-  if (step === 2) {
-    return <div className="mt-4 grid gap-3 md:grid-cols-2"><BuilderInfoCard title="Currency" value={currency} detail="Quote currency follows lead/catalog defaults." /><BuilderInfoCard title="Incoterm" value="FOB / CIF pending" detail="Confirm logistics before review." /><BuilderInfoCard title="Payment terms" value="30% advance, 70% on BL" detail="Default export terms ready to adjust." /><BuilderInfoCard title="Validity" value="30 days" detail="Keep pricing validity visible for sales." /></div>;
-  }
-  if (step === 3) {
-    return <div className="mt-4 grid gap-3 md:grid-cols-3"><BuilderInfoCard title="Pricing" value={pricingReady ? 'Ready' : 'Incomplete'} detail="Complete quantity and unit price on every line before review." /><BuilderInfoCard title="Documents" value={`${documents.length} linked`} detail={documents[0]?.file_name ?? 'No quote PDF linked yet.'} /><BuilderInfoCard title="Compliance" value={complianceItems.length ? `${complianceItems.length} item(s)` : 'Clear'} detail="Gate status before send." /></div>;
-  }
-  return <div className="mt-4 grid gap-3 md:grid-cols-2"><BuilderInfoCard title="Send readiness" value={sendReady ? 'Safe to send' : 'Not ready'} detail={sendReady ? 'No blockers are visible on this quote.' : `${blockerCount} blocker(s) or pricing gap(s) remain.`} /><BuilderInfoCard title="Audit trail" value={safeFormatDateTime(stableNowIso)} detail="A send decision snapshot will be recorded before customer-facing release." /></div>;
-}
-
-function InlineMetric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</p><p className="mt-2 text-base font-black text-slate-950">{value}</p></div>;
-}
-
-function InlineSideCard({ title, value, detail }: { title: string; value: string; detail: string }) {
-  return <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{title}</p><p className="mt-2 text-base font-black text-slate-950">{value}</p><p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p></div>;
-}
-
-function BuilderInfoCard({ title, value, detail }: { title: string; value: string; detail: string }) {
-  return <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{title}</p><p className="mt-2 text-sm font-black text-slate-950">{value}</p><p className="mt-2 text-xs leading-5 text-slate-500">{detail}</p></div>;
-}
-
-function getQuoteStepDescription(step: number) {
-  if (step === 0) return 'Confirm the product or category promise before pricing starts.';
-  if (step === 1) return 'Build the quote line by line. Overrides should stay visible before approval.';
-  if (step === 2) return 'Lock currency, incoterm, payment terms, port context, and quote validity.';
-  if (step === 3) return 'Review pricing, compliance, and document posture before release.';
-  return 'Send only after blockers, approval posture, and audit records are clear.';
-}
-
-function getQuoteStepTitle(step: number) {
-  if (step === 0) return 'Confirm product scope';
-  if (step === 1) return 'Build pricing lines';
-  if (step === 2) return 'Set commercial terms';
-  if (step === 3) return 'Review quote package';
-  return 'Approve and send safely';
 }
 
 

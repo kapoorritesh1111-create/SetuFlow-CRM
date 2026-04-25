@@ -1419,6 +1419,24 @@ export function LeadDrawer({
                   />
                 </div>
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Owner</label>
+                  <select name="owner_user_id" value={ownerUserId} onChange={(e) => setOwnerUserId(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', background: '#f8fafc', color: '#1e293b', appearance: 'none' }}
+                  >
+                    {profiles.map((p) => (
+                      <option key={p.id} value={p.id}>{p.full_name ?? p.username ?? 'Unassigned'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Deal value estimate</label>
+                  <input name="deal_value_estimate" type="number" placeholder="e.g. 50000"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Next follow-up */}
