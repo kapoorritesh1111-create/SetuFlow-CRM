@@ -1341,6 +1341,7 @@ function InlineLeadWorkspace({
   activities,
   followUps,
   complianceItems,
+  complianceDefinitions,
   documents,
   safeFormatDateTime,
   stableNowIso,
@@ -1419,6 +1420,7 @@ function InlineCommandCenter({
   activities,
   followUps,
   complianceItems,
+  complianceDefinitions,
   safeFormatDateTime,
   onOpenQuoteBuilder,
 }: {
@@ -1832,6 +1834,7 @@ function InlineQuoteBuilder({
   quoteVersions,
   documents,
   complianceItems,
+  complianceDefinitions,
   safeFormatDateTime,
   stableNowIso,
   onOpenCommandCenter,
