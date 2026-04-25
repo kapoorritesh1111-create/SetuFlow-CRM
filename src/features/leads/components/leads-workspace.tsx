@@ -288,7 +288,7 @@ export function LeadsWorkspace({
   const [spotlightLeadId, setSpotlightLeadId] = useState<string | null>(null);
   // PR03 spec: track which lead is open in the CC tab (avoids full navigation)
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
-  const [activeLeadView, setActiveLeadView] = useState<'list' | 'cc' | 'quote'>('list');
+  const [activeLeadView, setActiveLeadView] = useState<string>('list');
   const [visibleCount, setVisibleCount] = useState(50);
   const [actionsExpanded, setActionsExpanded] = useState(false);
   const [isBatchPending, startBatchTransition] = useTransition();

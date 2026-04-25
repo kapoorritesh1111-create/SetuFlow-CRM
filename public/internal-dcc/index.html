@@ -144,6 +144,56 @@
       </div>
     </section>
 
+    <section class="section card" style="border-left: 3px solid #dc2626;">
+      <h2 style="color:#dc2626;">⚠ Known Schema Issues — Needs Fix</h2>
+      <p class="muted" style="margin-top:8px">These database column errors were observed live in the recording (Apr 25, 2026) on the AI Help / AI Suggestions page. They must be addressed in the next Supabase migration before the AI workflow features are usable.</p>
+
+      <table class="table" style="margin-top:14px">
+        <thead>
+          <tr><th>Error</th><th>Table</th><th>Missing Column</th><th>Affected Page</th><th>Fix</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="status warn">Column missing</span></td>
+            <td><code>lead_markets</code></td>
+            <td><code>organization_id</code></td>
+            <td>AI Help / <code>/ai-suggestions</code></td>
+            <td>Add <code>organization_id uuid references organizations(id)</code> to <code>lead_markets</code> table. Backfill from parent <code>leads.organization_id</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="status warn">Column missing</span></td>
+            <td><code>lead_product_interests</code></td>
+            <td><code>organization_id</code></td>
+            <td>AI Help / <code>/ai-suggestions</code></td>
+            <td>Add <code>organization_id uuid references organizations(id)</code> to <code>lead_product_interests</code>. Backfill from parent lead.</td>
+          </tr>
+          <tr>
+            <td><span class="status warn">Column missing</span></td>
+            <td><code>contract_line_items</code></td>
+            <td><code>organization_id</code></td>
+            <td>AI Help / <code>/ai-suggestions</code></td>
+            <td>Add <code>organization_id uuid references organizations(id)</code> to <code>contract_line_items</code>. Backfill from parent contract.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:16px; padding:12px 16px; background:#fef2f2; border-radius:8px; border:1px solid #fecaca;">
+        <p style="font-size:12px; font-weight:700; color:#991b1b; margin-bottom:6px;">Migration steps required:</p>
+        <ol style="font-size:12px; color:#7f1d1d; margin-left:16px; line-height:2">
+          <li>Add <code>organization_id</code> column to <code>lead_markets</code>, <code>lead_product_interests</code>, and <code>contract_line_items</code></li>
+          <li>Create foreign key constraints to <code>organizations(id)</code></li>
+          <li>Backfill existing rows by joining through parent tables (leads → organization_id)</li>
+          <li>Add RLS policies on the new column for each table</li>
+          <li>Add index: <code>CREATE INDEX ON lead_markets(organization_id);</code> etc.</li>
+          <li>Re-test <code>/ai-suggestions</code> page — the "Some live data could not be loaded" banner should disappear</li>
+        </ol>
+      </div>
+
+      <div style="margin-top:12px; padding:10px 14px; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0; font-size:12px; color:#166534;">
+        <strong>Until fixed:</strong> The AI Help page loads with partial data warnings but remains usable. Lead queue, command center, quote builder, and all non-AI pages are unaffected.
+      </div>
+    </section>
+
     <div class="footer">
       <div>SETU Flow Internal DCC · Light mode · NorthStar rebuild plan reset</div>
       <div>CURRENTLY WORKING ON: PR-NS-03 · NEXT PR: PR-NS-04</div>
