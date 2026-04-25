@@ -101,6 +101,8 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   const canSendQuotes = hasWorkspaceCapability(workspace.currentRoles, 'quote.send');
   const readOnlyMessage = getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage');
   const sendReadOnlyMessage = getReadOnlyWorkspaceMessage(workspace.currentRoles, 'quote.send');
+  // Admin and owner can approve any quote regardless of approval posture
+  const canApproveAsAdmin = (workspace.currentRoles ?? []).some((r: string) => ['owner', 'admin'].includes(r));
   const requestedQuoteId = readSearchParam(searchParams?.quoteId).trim() || null;
   const leadCommandHref = `/leads/${leadId}?tab=quotes`;
 
@@ -399,6 +401,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
         initialQuoteId={requestedQuoteId}
         canManageQuotes={canManageQuotes}
         canSendQuotes={canSendQuotes}
+        canApproveAsAdmin={canApproveAsAdmin}
         readOnlyMessage={readOnlyMessage}
         sendReadOnlyMessage={sendReadOnlyMessage}
         rfqWorkspaceHref={`/leads/${leadId}/rfq/new`}

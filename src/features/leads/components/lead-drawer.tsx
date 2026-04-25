@@ -1326,6 +1326,130 @@ export function LeadDrawer({
             </div>
           </div>
         ) : null}
+        {/* ── QUICK MODE: compact single-screen form matching spec HTML drawer ── */}
+        {isQuickMode && !isEditingExistingLead ? (
+          <div className="space-y-4">
+            {/* Lead type switch */}
+            <div>
+              <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Lead type</p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {(['buyer', 'supplier'] as const).map((type) => (
+                  <button key={type} type="button" onClick={() => setLeadType(type)}
+                    style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${leadType === type ? (type === 'buyer' ? '#7dd3fc' : '#c4b5fd') : '#e2e8f0'}`, background: leadType === type ? (type === 'buyer' ? '#f0f9ff' : '#f5f3ff') : 'white', color: leadType === type ? (type === 'buyer' ? '#0369a1' : '#6d28d9') : '#64748b', fontSize: '12px', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}
+                  >
+                    {type === 'buyer' ? '🛒 Buyer' : '🏭 Supplier'}<br />
+                    <span style={{ fontSize: '10px', fontWeight: 500 }}>{type === 'buyer' ? 'Importing / purchasing' : 'Sourcing / manufacturing'}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Company & contact */}
+            <div>
+              <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Company &amp; contact</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Company name *</label>
+                  <input name="company_name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g. Metro Retail GmbH" required
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Country *</label>
+                  <select name="country_id" value={countryId} onChange={(e) => setCountryId(e.target.value)} required
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', background: '#f8fafc', color: '#1e293b', appearance: 'none' }}
+                  >
+                    <option value="">Select country…</option>
+                    {countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Contact name</label>
+                  <input name="contact_name" value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Primary contact person"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Job title</label>
+                  <input name="job_title" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="e.g. Procurement Director"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Email</label>
+                  <input name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@company.com"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Phone</label>
+                  <input name="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+49 151…"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Source & pipeline */}
+            <div>
+              <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Source &amp; pipeline</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Lead source</label>
+                  <select name="source_type" value={sourceType} onChange={(e) => setSourceType(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', background: '#f8fafc', color: '#1e293b', appearance: 'none' }}
+                  >
+                    <option value="trade_show">Trade show</option>
+                    <option value="direct_inquiry">Direct inquiry</option>
+                    <option value="referral">Referral</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="website">Website</option>
+                    <option value="contact_scan_upload">vCard scan</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Event / source label</label>
+                  <input name="source_label" value={sourceLabel} onChange={(e) => setSourceLabel(e.target.value)} placeholder="e.g. FoodEx Japan 2025"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Next follow-up */}
+            <div>
+              <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Next action</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Next follow-up</label>
+                  <input name="follow_up_at" type="datetime-local" value={followUpAt} onChange={(e) => setFollowUpAt(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>After save</label>
+                  <select value={shouldAutoOpenQuoteAfterSave ? 'quote' : 'stay'}
+                    onChange={(e) => setAutoOpenQuoteAfterSave(e.target.value === 'quote')}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', background: '#f8fafc', color: '#1e293b', appearance: 'none' }}
+                  >
+                    <option value="stay">Stay in Follow-up</option>
+                    <option value="quote">Open Quote Builder after save</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Validation */}
+            {validationIssues.length > 0 ? (
+              <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#fff1f2', border: '1px solid #fecaca', fontSize: '12px', color: '#b91c1c', fontWeight: 600 }}>{validationIssues[0]}</div>
+            ) : null}
+          </div>
+        ) : (
         <WizardShell
           steps={wizardSteps}
           activeStepId={activeStepId}
@@ -1683,6 +1807,7 @@ export function LeadDrawer({
             </WizardStepBody>
           ) : null}
         </WizardShell>
+        )}
       </div>
     </form>
   );

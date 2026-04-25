@@ -454,7 +454,8 @@ function getFocusQuoteBuilderGuidance(
     quote.currency,
   );
   const reviewReady = productReady && pricingReady && termsReady;
-  const approvalGateClear = !approvalRequired || approvalState === "approved";
+  // Admin/owner can approve any quote inline — bypasses the pending-approval gate
+  const approvalGateClear = !approvalRequired || approvalState === "approved" || canApproveAsAdmin;
   const sendGuardClear = !quoteSendGuard?.blockerCount;
   const sendReady = reviewReady && approvalGateClear && sendGuardClear;
 
@@ -1232,6 +1233,7 @@ export function QuoteWorkspace({
   readOnlyMessage = null,
   sendReadOnlyMessage = null,
   pricingEngineThresholdPercent = null,
+  canApproveAsAdmin = false,
 }: {
   leadId: string;
   rfqs: RfqOption[];
@@ -1253,21 +1255,8 @@ export function QuoteWorkspace({
   readOnlyMessage?: string | null;
   sendReadOnlyMessage?: string | null;
   pricingEngineThresholdPercent?: number | null;
+  canApproveAsAdmin?: boolean;
 }) {
-  return (
-    <ReferenceQuoteBuilderFlow
-      leadId={leadId}
-      quotes={quotes}
-      products={products}
-      leadCommandHref={leadCommandHref}
-      quoteSendGuard={quoteSendGuard}
-      canManageQuotes={canManageQuotes}
-      canSendQuotes={canSendQuotes}
-      readOnlyMessage={readOnlyMessage}
-      sendReadOnlyMessage={sendReadOnlyMessage}
-    />
-  );
-
   const [createOpen, setCreateOpen] = useState(false);
   const [quoteRecords, setQuoteRecords] = useState<QuoteRecord[]>(quotes);
   const [activeQuote, setActiveQuote] = useState<QuoteRecord | null>(null);

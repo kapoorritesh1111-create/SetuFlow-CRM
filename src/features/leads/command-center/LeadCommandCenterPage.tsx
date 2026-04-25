@@ -14,6 +14,9 @@ import { LeadRightRail } from './LeadRightRail'
 import { LeadTodayContextBar, type LeadTodayContext } from './LeadTodayContextBar'
 import { LeadStickyActionBar } from './LeadStickyActionBar'
 import { WorkflowTab } from './workflow/WorkflowTab'
+import { LeadCommandTabs } from './LeadCommandTabs'
+import { ActivityTab } from './activity/ActivityTab'
+import { QuotesTab } from './quotes/QuotesTab'
 import { StateMessage } from '@/components/ui/state-message'
 
 type Option = { id: string; name: string; categoryName?: string | null }
@@ -418,16 +421,36 @@ export default function LeadCommandCenterPage({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px] xl:gap-6">
         <main className="space-y-6">
+          {/* ── Tab bar — Command center / Quote record / Lead log ── */}
+          <LeadCommandTabs
+            tabs={getVisibleLeadTabs(liveSnapshot, hasActiveQuoteRecord)}
+            activeTab={activeTab}
+            onSelect={setActiveTab}
+          />
+
           <div className="space-y-5">
-            <WorkflowTab
-              snapshot={liveSnapshot}
-              leadId={leadState.id}
-              pendingFollowUpId={workflowState.pendingFollowUpId}
-              activePanel={activeWorkflowPanel}
-              onPanelChange={setActiveWorkflowPanel}
-              onEditCoverage={() => openDrawer('coverage')}
-              onOpenQuote={() => void handleOpenQuoteWorkspace()}
-            />
+            {activeTab === 'workflow' ? (
+              <WorkflowTab
+                snapshot={liveSnapshot}
+                leadId={leadState.id}
+                pendingFollowUpId={workflowState.pendingFollowUpId}
+                activePanel={activeWorkflowPanel}
+                onPanelChange={setActiveWorkflowPanel}
+                onEditCoverage={() => openDrawer('coverage')}
+                onOpenQuote={() => void handleOpenQuoteWorkspace()}
+              />
+            ) : activeTab === 'quotes' ? (
+              <QuotesTab
+                quoteFocus={liveSnapshot.quoteFocus}
+                commercial={liveSnapshot.commercial}
+                activity={liveSnapshot.activity}
+                onOpenQuote={() => void handleOpenQuoteWorkspace()}
+              />
+            ) : activeTab === 'activity' ? (
+              <ActivityTab
+                snapshot={liveSnapshot}
+              />
+            ) : null}
           </div>
         </main>
 
