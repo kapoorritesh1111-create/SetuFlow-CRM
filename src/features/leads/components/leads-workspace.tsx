@@ -1475,10 +1475,10 @@ function InlineCommandCenter({
       key: 'qualification' as const,
       icon: '◎',
       title: 'Qualification',
-      state: readiness?.qualificationStatus === 'qualified' ? 'ready' : (readiness?.qualificationStatus === 'not_started' ? 'needs-action' : 'default') as 'ready' | 'needs-action' | 'default',
-      stateLabel: readiness?.qualificationStatus ?? 'Not started',
+      state: (selectedProductNames.length > 0 ? 'ready' : 'needs-action') as 'ready' | 'needs-action' | 'default',
+      stateLabel: selectedProductNames.length > 0 ? 'qualified' : 'not started',
       helper: selectedProductNames.length ? `${selectedProductNames.length} product${selectedProductNames.length === 1 ? '' : 's'} of interest mapped` : '1 input still needs attention',
-      badge: !readiness?.qualificationStatus ? { label: 'NEEDS INPUT', cls: 'bg-[#f59e0b]' } : null,
+      badge: selectedProductNames.length === 0 ? { label: 'NEEDS INPUT', cls: 'bg-[#f59e0b]' } : null,
     },
     {
       key: 'coverage' as const,
