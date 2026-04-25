@@ -1915,7 +1915,7 @@ function InlineCommandCenter({
             <div className="mb-[10px] text-[12px] leading-[1.6] text-[#64748b]">
               {nextFollowUp ? `Next follow-up: ${safeFormatDateTime(nextFollowUp.scheduled_at)}. Keep the commercial thread moving.` : 'Set a follow-up to keep this lead active.'}
             </div>
-            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)}
+            <button type="button" onClick={() => setActivePillar('follow_up')}
               className="w-full rounded-[6px] bg-[#0b2e4a] px-[12px] py-[7px] text-center text-[12px] font-bold text-white">
               Open follow-up lane
             </button>
@@ -1937,7 +1937,7 @@ function InlineCommandCenter({
                 <div className="py-2 text-center text-[11px] text-[#94a3b8]">No recent activity</div>
               ) : null}
             </div>
-            <button type="button" className="mt-2 w-full rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-center text-[12px] font-semibold text-[#334155]">
+            <button type="button" onClick={onBackToList} className="mt-2 w-full rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-center text-[12px] font-semibold text-[#334155]">
               Back to queue
             </button>
           </div>
@@ -1968,11 +1968,11 @@ function InlineCommandCenter({
             className="rounded-[10px] bg-[#0b2e4a] px-[16px] py-[9px] text-[13px] font-bold text-white">
             🖊 {canContinueQuote ? 'Continue quote' : 'Create quote'}
           </button>
-          <button type="button"
+          <button type="button" onClick={() => setActivePillar("follow_up")}
             className="rounded-[10px] border border-[#e2e8f0] bg-white px-[14px] py-[8px] text-[12px] font-semibold text-[#334155]">
             📅 Schedule follow-up
           </button>
-          <button type="button"
+          <button type="button" onClick={() => onOpenEditDrawer(lead.id, "basics")}
             className="rounded-[10px] border border-[#e2e8f0] bg-white px-[14px] py-[8px] text-[12px] font-semibold text-[#334155]">
             ✏ Quick edit
           </button>
@@ -2150,8 +2150,8 @@ function InlineQuoteBuilder({
                       return (
                         <tr key={item.id} className="border-t border-[#f1f5f9] hover:bg-[#f8fafc]">
                           <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.product_id ?? 'Catalog line'}</div></td>
-                          <td className="px-[10px] py-[10px]"><input className="w-[68px] rounded-[6px] border border-[#e2e8f0] p-[5px] text-center text-[12px] font-semibold outline-none" defaultValue={qty} /></td>
-                          <td className="px-[10px] py-[10px]"><input className="w-[90px] rounded-[6px] border border-[#e2e8f0] p-[5px_7px] text-right text-[12px] font-bold outline-none" defaultValue={price.toLocaleString()} /></td>
+                          <td className="px-[10px] py-[10px]"><input readOnly title="Line edits persist through the saved quote workflow. Use Save draft/Open draft to edit governed quote lines." className="w-[68px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px] text-center text-[12px] font-semibold text-[#64748b] outline-none" value={qty} /></td>
+                          <td className="px-[10px] py-[10px]"><input readOnly title="Price edits persist through the saved quote workflow. Use Save draft/Open draft to edit governed pricing." className="w-[90px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px_7px] text-right text-[12px] font-bold text-[#64748b] outline-none" value={price.toLocaleString()} /></td>
                           <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{currency} {(qty * price).toLocaleString()}</td>
                         </tr>
                       );
@@ -2185,13 +2185,13 @@ function InlineQuoteBuilder({
                   <div key={field.label} className={`flex flex-col gap-[4px] ${field.type === 'textarea' ? 'col-span-2' : ''}`}>
                     <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">{field.label}</label>
                     {field.type === 'select' ? (
-                      <select className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#1e293b] outline-none" defaultValue={field.val}>
+                      <select disabled title="Terms persist through the saved quote workflow. Use Save draft/Open draft to edit governed terms." className="w-full rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] font-semibold text-[#64748b] outline-none" value={field.val}>
                         {field.opts?.map((o) => <option key={o}>{o}</option>)}
                       </select>
                     ) : field.type === 'textarea' ? (
-                      <textarea className="w-full resize-y rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] text-[#334155] outline-none" defaultValue={field.val} placeholder={field.placeholder} style={{ minHeight: '68px' }} />
+                      <textarea readOnly title="Terms persist through the saved quote workflow. Use Save draft/Open draft to edit governed terms." className="w-full resize-y rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] text-[#64748b] outline-none" value={field.val} placeholder={field.placeholder} style={{ minHeight: '68px' }} />
                     ) : (
-                      <input className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#1e293b] outline-none" defaultValue={field.val} placeholder={field.placeholder ?? ''} />
+                      <input readOnly title="Terms persist through the saved quote workflow. Use Save draft/Open draft to edit governed terms." className="w-full rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] font-semibold text-[#64748b] outline-none" value={field.val} placeholder={field.placeholder ?? ''} />
                     )}
                   </div>
                 ))}
@@ -2245,7 +2245,7 @@ function InlineQuoteBuilder({
                   ))}
                 </div>
                 <div className="flex gap-[8px] border-t p-[12px_18px]" style={{ borderColor: sendReady ? '#a7f3d0' : '#fecaca' }}>
-                  <button type="button" className={`flex-1 rounded-[6px] p-[10px] text-[13px] font-extrabold border-none ${sendReady ? 'bg-[#0b2e4a] text-white cursor-pointer' : 'bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed'}`} disabled={!sendReady}>
+                  <button type="button" disabled title="Send quote is disabled in the inline builder until the governed quote send workflow is connected." className="flex-1 rounded-[6px] bg-[#e2e8f0] p-[10px] text-[13px] font-extrabold text-[#94a3b8] border-none cursor-not-allowed">
                     Send quote
                   </button>
                   <button type="button" disabled title="Approval request is disabled here until a saved quote version exists in the quote workflow." className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none cursor-not-allowed opacity-60">
@@ -2298,9 +2298,9 @@ function InlineQuoteBuilder({
       {/* Sticky bottom bar */}
       <div className="sticky bottom-3 z-10 rounded-[24px] border border-[#e2e8f0] bg-white/95 p-3 shadow-xl backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setBuilderStep((s) => Math.min(s + 1, steps.length - 1))}
-            className="rounded-[22px] bg-[#0b2e4a] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm">
-            {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : sendReady ? 'Send quote' : 'Review blockers'}
+          <button type="button" onClick={() => setBuilderStep((s) => Math.min(s + 1, steps.length - 1))} disabled={builderStep >= steps.length - 1}
+            className="rounded-[22px] bg-[#0b2e4a] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" title={builderStep >= steps.length - 1 ? 'Send is disabled in the inline builder until the governed quote send workflow is connected.' : undefined}>
+            {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : sendReady ? 'Send disabled here' : 'Review blockers'}
           </button>
           <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Save draft</button>
           <button type="button" disabled title="Approval request is disabled until a governed quote version is saved." className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] opacity-60 cursor-not-allowed">Request approval</button>
