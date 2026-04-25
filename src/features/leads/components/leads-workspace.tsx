@@ -1101,6 +1101,7 @@ export function LeadsWorkspace({
           activities={activities.filter((activity) => activity.lead_id === activeLeadId)}
           followUps={workspaceFollowUps.filter((followUp) => followUp.lead_id === activeLeadId)}
           complianceItems={complianceItems.filter((item) => item.lead_id === activeLeadId)}
+          complianceDefinitions={complianceDefinitions}
           documents={documents.filter((document) => document.related_id === activeLeadId || (document.linked_quote_id ? quotes.some((quote) => quote.lead_id === activeLeadId && quote.id === document.linked_quote_id) : false))}
           safeFormatDateTime={safeFormatDateTime}
           stableNowIso={stableNowIso}
@@ -1316,6 +1317,7 @@ type InlineLeadWorkspaceProps = {
   activities: Activity[];
   followUps: FollowUp[];
   complianceItems: ComplianceItem[];
+  complianceDefinitions: ComplianceDefinition[];
   documents: LeadDocument[];
   safeFormatDateTime: (value?: string | null) => string;
   stableNowIso: string;
@@ -1376,6 +1378,7 @@ function InlineLeadWorkspace({
           quoteVersions={quoteVersions}
           documents={documents}
           complianceItems={complianceItems}
+          complianceDefinitions={complianceDefinitions}
           safeFormatDateTime={safeFormatDateTime}
           stableNowIso={stableNowIso}
           onOpenCommandCenter={onOpenCommandCenter}
@@ -1394,6 +1397,7 @@ function InlineLeadWorkspace({
           activities={activities}
           followUps={followUps}
           complianceItems={complianceItems}
+          complianceDefinitions={complianceDefinitions}
           safeFormatDateTime={safeFormatDateTime}
           onOpenQuoteBuilder={onOpenQuoteBuilder}
         />
@@ -1430,6 +1434,7 @@ function InlineCommandCenter({
   activities: Activity[];
   followUps: FollowUp[];
   complianceItems: ComplianceItem[];
+  complianceDefinitions: ComplianceDefinition[];
   safeFormatDateTime: (value?: string | null) => string;
   onOpenQuoteBuilder: () => void;
 }) {
@@ -1780,7 +1785,7 @@ function InlineCommandCenter({
               {complianceItems.length > 0 ? complianceItems.slice(0, 3).map((item) => (
                 <div key={item.id} className="flex items-center gap-[8px] text-[11px]">
                   <div className="h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#f59e0b]" />
-                  <span className="flex-1 text-[#475569]">{item.definition_id ?? 'Compliance item'}</span>
+                  <span className="flex-1 text-[#475569]">{complianceDefinitions.find((definition) => definition.id === item.compliance_item_id)?.description ?? complianceDefinitions.find((definition) => definition.id === item.compliance_item_id)?.code ?? 'Compliance item'}</span>
                   <span className="text-[9px] font-bold uppercase tracking-[.06em] text-[#d97706]">PENDING</span>
                 </div>
               )) : (
@@ -1842,6 +1847,7 @@ function InlineQuoteBuilder({
   quoteVersions: QuoteVersion[];
   documents: LeadDocument[];
   complianceItems: ComplianceItem[];
+  complianceDefinitions: ComplianceDefinition[];
   safeFormatDateTime: (value?: string | null) => string;
   stableNowIso: string;
   onOpenCommandCenter: () => void;
