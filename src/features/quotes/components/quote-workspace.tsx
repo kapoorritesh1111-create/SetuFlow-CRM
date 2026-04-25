@@ -410,6 +410,7 @@ function getPrimaryBlockerLabel(
 function getFocusQuoteBuilderGuidance(
   quote: QuoteRecord,
   quoteSendGuard?: ProgressionGuardSummary,
+  canApproveAsAdmin = false,
 ): BuilderGuidance {
   const { parsed, status, approvalRequired, approvalState } =
     getQuoteApprovalStateValue(quote);
@@ -1475,7 +1476,7 @@ export function QuoteWorkspace({
   }, [communications]);
 
   const getPreferredEditorStep = (quote: QuoteRecord): BuilderStepId => {
-    const guidance = getFocusQuoteBuilderGuidance(quote, quoteSendGuard);
+    const guidance = getFocusQuoteBuilderGuidance(quote, quoteSendGuard, canApproveAsAdmin);
     return (
       guidance.steps.find((step) => step.state === "current")?.id ??
       guidance.steps.find((step) => step.state === "upcoming")?.id ??
@@ -1658,7 +1659,7 @@ export function QuoteWorkspace({
     ? getQuoteApprovalStateValue(focusQuote)
     : null;
   const focusBuilderGuidance = focusQuote
-    ? getFocusQuoteBuilderGuidance(focusQuote, quoteSendGuard)
+    ? getFocusQuoteBuilderGuidance(focusQuote, quoteSendGuard, canApproveAsAdmin)
     : null;
   const focusQuoteTotals = focusQuote
     ? computeQuoteTotals(focusQuote.lineItems ?? [], focusQuote.currency)
