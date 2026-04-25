@@ -194,7 +194,8 @@ export function LeadTableRow({
   // ── Deal value ────────────────────────────────────────────────────────────
   const dealValue = typeof lead.deal_value === 'number' && lead.deal_value > 0 ? lead.deal_value : null;
   const dealCurrency = lead.deal_currency ?? 'USD';
-  const dueLabel = dueDate ? safeFormatDateTime(lead.next_follow_up_at) : '—';
+  const hasDueDate = Boolean(lead.next_follow_up_at);
+  const dueLabel = hasDueDate ? safeFormatDateTime(lead.next_follow_up_at) : '—';
   const formattedDealValue = dealValue
     ? new Intl.NumberFormat('en-US', { style: 'currency', currency: dealCurrency, maximumFractionDigits: 0 }).format(dealValue)
     : '—';
@@ -286,7 +287,7 @@ export function LeadTableRow({
             </span>
             <span className="text-[10px] text-slate-400">{dueLabel}</span>
           </>
-        ) : dueDate ? (
+        ) : hasDueDate ? (
           <span className="text-[10px] font-semibold text-slate-600">{dueLabel}</span>
         ) : (
           <span className="text-[10px] text-slate-400">No date set</span>
