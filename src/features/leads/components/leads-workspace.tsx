@@ -1211,7 +1211,6 @@ export function LeadsWorkspace({
         </div>
       </div>
 
-      </div>
       {/* Lead drawer for new lead creation */}
       <LeadDrawer
         key={`${drawerState.mode}-${drawerState.leadId ?? 'new'}`}
@@ -1252,7 +1251,9 @@ export function LeadsWorkspace({
       />
     </div>
   );
-}({ label, value, tone }: { label: string; value: number; tone: 'slate' | 'blue' | 'amber' }) {
+}
+
+function LeadQueueStat({ label, value, tone }: { label: string; value: number; tone: 'slate' | 'blue' | 'amber' }) {
   const toneClass =
     tone === 'blue'
       ? 'border-blue-100 bg-blue-50 text-blue-700'
