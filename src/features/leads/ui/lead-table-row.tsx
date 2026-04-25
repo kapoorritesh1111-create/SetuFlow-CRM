@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { type KeyboardEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -25,6 +24,8 @@ export interface LeadTableRowProps {
   openLeadCommandCenter: (router: ReturnType<typeof useRouter>, href: string) => void;
   shouldIgnoreLeadNavigationTarget: (target: EventTarget | null) => boolean;
   handleLeadCommandCenterKeyDown: (event: KeyboardEvent<HTMLElement>, router: ReturnType<typeof useRouter>, href: string) => void;
+  openQuoteBuilder?: (leadId: string) => void;
+  openQuickEdit?: (leadId: string) => void;
 }
 
 function getLeadInitials(companyName: string) {
@@ -110,6 +111,8 @@ export function LeadTableRow({
   openLeadCommandCenter,
   shouldIgnoreLeadNavigationTarget,
   handleLeadCommandCenterKeyDown,
+  openQuoteBuilder,
+  openQuickEdit,
 }: LeadTableRowProps) {
   const [hydratedNowIso, setHydratedNowIso] = useState<string | null>(null);
 
@@ -120,7 +123,6 @@ export function LeadTableRow({
   const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, hydratedNowIso);
   const readiness = readinessMap.get(lead.id);
   const commandCenterHref = getLeadCommandCenterHref(lead.id);
-  const quoteBuilderHref = `/leads/${lead.id}/quote?source=lead-queue`;
   const router = useRouter();
   const stageName = stageMap.get(lead.stage_id ?? '') ?? 'Unstaged';
   const nextStepName = nextStepMap.get(lead.next_step_id ?? '') ?? 'Review next step';
@@ -318,13 +320,30 @@ export function LeadTableRow({
         >
           Open →
         </button>
-        <Link
-          href={quoteBuilderHref}
-          onClick={(event) => event.stopPropagation()}
-          className="inline-flex items-center rounded-md border border-slate-200 bg-white px-[10px] py-[4px] text-[10px] font-bold text-slate-600 transition hover:bg-slate-50"
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            openQuoteBuilder?.(lead.id);
+          }}
+          className="inline-flex items-center rounded-md border border-slate-200 bg-white px-[10px] py-[4px] text-[10px] font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={!openQuoteBuilder}
+          title={openQuoteBuilder ? 'Open inline Quote Builder' : 'Quote Builder unavailable'}
         >
           Quote
-        </Link>
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            openQuickEdit?.(lead.id);
+          }}
+          className="inline-flex items-center rounded-md border border-slate-200 bg-white px-[8px] py-[4px] text-[10px] font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={!openQuickEdit}
+          title={openQuickEdit ? 'Open lead edit drawer' : 'Lead edit unavailable'}
+        >
+          Edit
+        </button>
       </div>
     </article>
   );

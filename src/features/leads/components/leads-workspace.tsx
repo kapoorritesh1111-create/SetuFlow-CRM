@@ -9,7 +9,7 @@ import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
 import { SavedViewsBar, ToolbarActionButton, ToolbarSearchInput, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { batchScheduleLeadFollowUps, batchMoveLeadsToStage } from '@/features/leads/server/actions';
+import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft } from '@/features/leads/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
 import { JOURNEY_COPY, isPipelineInJourney, type LeadJourney } from '@/lib/journey';
@@ -306,6 +306,9 @@ export function LeadsWorkspace({
   const [visibleCount, setVisibleCount] = useState(50);
   const [actionsExpanded, setActionsExpanded] = useState(false);
   const [isBatchPending, startBatchTransition] = useTransition();
+  const [inlineActionState, setInlineActionState] = useState<FormState>({});
+  const [inlineFollowUpAt, setInlineFollowUpAt] = useState(getDefaultFollowUpLocalValue());
+  const [isInlineActionPending, startInlineActionTransition] = useTransition();
 
   useEffect(() => {
     setWorkspaceMode(initialMode);
@@ -845,6 +848,83 @@ export function LeadsWorkspace({
       });
     });
   };
+ 
+  const openLeadInlineCommandCenter = (leadId: string) => {
+    setActiveLeadId(leadId);
+    setSpotlightLeadId(leadId);
+    setActiveView('cc');
+  };
+
+  const openLeadInlineQuoteBuilder = (leadId: string) => {
+    setActiveLeadId(leadId);
+    setSpotlightLeadId(leadId);
+    setActiveView('quote');
+  };
+
+  const openLeadEditDrawer = (leadId: string, stepId: LeadOpenStep = 'basics') => {
+    if (!canManageLeads) return;
+    setActiveLeadId(leadId);
+    setSpotlightLeadId(leadId);
+    setDrawerState({ open: true, mode: 'full', leadId, initialStepId: stepId });
+  };
+
+  const handleInlineScheduleFollowUp = (leadId: string, scheduledAt: string) => {
+    if (!scheduledAt) {
+      setInlineActionState({ error: 'Choose a follow-up date and time.' });
+      return;
+    }
+    const formData = new FormData();
+    formData.set('lead_id', leadId);
+    formData.set('scheduled_at', scheduledAt);
+    setInlineActionState({});
+    startInlineActionTransition(() => {
+      void scheduleLeadFollowUp(undefined, formData).then((result) => {
+        setInlineActionState(result ?? {});
+        if (result?.success) router.refresh();
+      });
+    });
+  };
+
+  const handleInlineCompleteFollowUp = (leadId: string, followUpId?: string | null) => {
+    if (!followUpId) {
+      setInlineActionState({ error: 'No active follow-up is available to complete.' });
+      return;
+    }
+    const formData = new FormData();
+    formData.set('lead_id', leadId);
+    formData.set('follow_up_id', followUpId);
+    setInlineActionState({});
+    startInlineActionTransition(() => {
+      void completeLeadFollowUp(undefined, formData).then((result) => {
+        setInlineActionState(result ?? {});
+        if (result?.success) router.refresh();
+      });
+    });
+  };
+
+  const handleInlineMoveLeadToStage = (leadId: string, stageId: string) => {
+    const formData = new FormData();
+    formData.append('lead_ids', leadId);
+    formData.set('stage_id', stageId);
+    setInlineActionState({});
+    startInlineActionTransition(() => {
+      void batchMoveLeadsToStage(undefined, formData).then((result) => {
+        setInlineActionState(result ?? {});
+        if (result?.success) router.refresh();
+      });
+    });
+  };
+
+  const handleInlineOpenOrCreateQuote = (leadId: string) => {
+    openLeadInlineQuoteBuilder(leadId);
+    setInlineActionState({});
+    startInlineActionTransition(() => {
+      void openOrCreateLeadQuoteDraft(leadId).then((result) => {
+        setInlineActionState(result ?? {});
+        if (result?.success) router.refresh();
+      });
+    });
+  };
 
   const selectedAllVisible =
     visibleLeads.length > 0 && visibleLeads.every((lead) => selectedLeadIds.includes(lead.id));
@@ -1092,9 +1172,9 @@ export function LeadsWorkspace({
           stageName={stageMap.get((workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead)?.stage_id ?? '') ?? 'New Lead'}
           ownerLabel={ownerMap.get((workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead)?.owner_user_id ?? '') ?? 'Unassigned'}
           nextStepLabel={nextStepMap.get((workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead)?.next_step_id ?? '') ?? 'Next commercial move'}
-          selectedProductNames={(leadProductsMap.get(activeLeadId) ?? []).map((productId) => products.find((product) => product.id === productId)?.name).filter((name): name is string => Boolean(name))}
-          selectedMarketNames={(leadMarketsMap.get(activeLeadId) ?? []).map((marketId) => markets.find((market) => market.id === marketId)?.name).filter((name): name is string => Boolean(name))}
-          readiness={readinessByLeadId.get(activeLeadId)}
+          selectedProductNames={(leadProductsMap.get(activeLeadId ?? '') ?? []).map((productId) => products.find((product) => product.id === productId)?.name).filter((name): name is string => Boolean(name))}
+          selectedMarketNames={(leadMarketsMap.get(activeLeadId ?? '') ?? []).map((marketId) => markets.find((market) => market.id === marketId)?.name).filter((name): name is string => Boolean(name))}
+          readiness={readinessByLeadId.get(activeLeadId ?? '')}
           rfqs={rfqs.filter((rfq) => rfq.lead_id === activeLeadId)}
           quotes={quotes.filter((quote) => quote.lead_id === activeLeadId)}
           quoteVersions={quoteVersions}
@@ -1105,6 +1185,16 @@ export function LeadsWorkspace({
           documents={documents.filter((document) => document.related_id === activeLeadId || (document.linked_quote_id ? quotes.some((quote) => quote.lead_id === activeLeadId && quote.id === document.linked_quote_id) : false))}
           safeFormatDateTime={safeFormatDateTime}
           stableNowIso={stableNowIso}
+          stages={stages}
+          inlineActionState={inlineActionState}
+          inlineFollowUpAt={inlineFollowUpAt}
+          setInlineFollowUpAt={setInlineFollowUpAt}
+          isInlineActionPending={isInlineActionPending}
+          onOpenEditDrawer={openLeadEditDrawer}
+          onScheduleFollowUp={handleInlineScheduleFollowUp}
+          onCompleteFollowUp={handleInlineCompleteFollowUp}
+          onMoveToStage={handleInlineMoveLeadToStage}
+          onOpenOrCreateQuote={handleInlineOpenOrCreateQuote}
           onBackToList={() => setActiveView('list')}
           onOpenCommandCenter={() => setActiveView('cc')}
           onOpenQuoteBuilder={() => setActiveView('quote')}
@@ -1211,6 +1301,8 @@ export function LeadsWorkspace({
                             openLeadCommandCenter(_router, href);
                           }
                         }}
+                        openQuoteBuilder={openLeadInlineQuoteBuilder}
+                        openQuickEdit={(leadId) => openLeadEditDrawer(leadId, 'basics')}
                         shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
                         handleLeadCommandCenterKeyDown={(_event, _router, href) => {
                           const match = /\/leads\/([^/?#]+)/.exec(href);
@@ -1263,12 +1355,12 @@ export function LeadsWorkspace({
       {/* Lead drawer for new lead creation */}
       <LeadDrawer
         key={`${drawerState.mode}-${drawerState.leadId ?? 'new'}`}
-        open={drawerState.open && (!drawerState.leadId || drawerState.mode === 'quick')}
+        open={drawerState.open}
         onClose={closeDrawer}
         onSaved={handleLeadSaved}
         mode={drawerState.mode}
         lead={drawerState.leadId ? selectedLead : undefined}
-        title={drawerState.mode === 'quick' ? 'Quick Add Lead' : 'Full Add Lead'}
+        title={drawerState.leadId ? 'Edit Lead' : drawerState.mode === 'quick' ? 'Quick Add Lead' : 'Full Add Lead'}
         currentUserId={currentUserId}
         stages={stages}
         pipelines={pipelines}
@@ -1295,7 +1387,7 @@ export function LeadsWorkspace({
         selectedProductIds={drawerState.leadId && selectedLead ? leadProductsMap.get(selectedLead.id) ?? [] : []}
         canNavigatePrev={false}
         canNavigateNext={false}
-        navigationMeta="Existing leads now open through /leads/[leadId]. The drawer is reserved for new lead creation only."
+        navigationMeta={drawerState.leadId ? 'Editing selected lead in the inline Leads workspace.' : 'Create a new lead from the inline Leads workspace.'}
         prefill={drawerState.open && !drawerState.leadId ? initialQuickCapture : null}
       />
     </div>
@@ -1321,6 +1413,16 @@ type InlineLeadWorkspaceProps = {
   documents: LeadDocument[];
   safeFormatDateTime: (value?: string | null) => string;
   stableNowIso: string;
+  stages: Stage[];
+  inlineActionState: FormState;
+  inlineFollowUpAt: string;
+  setInlineFollowUpAt: (value: string) => void;
+  isInlineActionPending: boolean;
+  onOpenEditDrawer: (leadId: string, stepId?: LeadOpenStep) => void;
+  onScheduleFollowUp: (leadId: string, scheduledAt: string) => void;
+  onCompleteFollowUp: (leadId: string, followUpId?: string | null) => void;
+  onMoveToStage: (leadId: string, stageId: string) => void;
+  onOpenOrCreateQuote: (leadId: string) => void;
   onBackToList: () => void;
   onOpenCommandCenter: () => void;
   onOpenQuoteBuilder: () => void;
@@ -1345,6 +1447,16 @@ function InlineLeadWorkspace({
   documents,
   safeFormatDateTime,
   stableNowIso,
+  stages,
+  inlineActionState,
+  inlineFollowUpAt,
+  setInlineFollowUpAt,
+  isInlineActionPending,
+  onOpenEditDrawer,
+  onScheduleFollowUp,
+  onCompleteFollowUp,
+  onMoveToStage,
+  onOpenOrCreateQuote,
   onBackToList,
   onOpenCommandCenter,
   onOpenQuoteBuilder,
@@ -1363,7 +1475,7 @@ function InlineLeadWorkspace({
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={onBackToList} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">← Back to Lead Queue</button>
         <button type="button" onClick={onOpenCommandCenter} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'cc' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Command Center</button>
-        <button type="button" onClick={onOpenQuoteBuilder} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'quote' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Quote Builder</button>
+        <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'quote' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Quote Builder</button>
         <span className="ml-auto rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">One page workspace · no nested route</span>
       </div>
       {activeView === 'quote' ? (
@@ -1382,6 +1494,9 @@ function InlineLeadWorkspace({
           complianceDefinitions={complianceDefinitions}
           safeFormatDateTime={safeFormatDateTime}
           stableNowIso={stableNowIso}
+          inlineActionState={inlineActionState}
+          isInlineActionPending={isInlineActionPending}
+          onOpenOrCreateQuote={onOpenOrCreateQuote}
           onOpenCommandCenter={onOpenCommandCenter}
         />
       ) : (
@@ -1400,7 +1515,17 @@ function InlineLeadWorkspace({
           complianceItems={complianceItems}
           complianceDefinitions={complianceDefinitions}
           safeFormatDateTime={safeFormatDateTime}
+          stages={stages}
+          inlineActionState={inlineActionState}
+          inlineFollowUpAt={inlineFollowUpAt}
+          setInlineFollowUpAt={setInlineFollowUpAt}
+          isInlineActionPending={isInlineActionPending}
+          onOpenEditDrawer={onOpenEditDrawer}
+          onScheduleFollowUp={onScheduleFollowUp}
+          onCompleteFollowUp={onCompleteFollowUp}
+          onMoveToStage={onMoveToStage}
           onOpenQuoteBuilder={onOpenQuoteBuilder}
+          onOpenOrCreateQuote={onOpenOrCreateQuote}
         />
       )}
     </div>
@@ -1422,7 +1547,17 @@ function InlineCommandCenter({
   complianceItems,
   complianceDefinitions,
   safeFormatDateTime,
+  stages,
+  inlineActionState,
+  inlineFollowUpAt,
+  setInlineFollowUpAt,
+  isInlineActionPending,
+  onOpenEditDrawer,
+  onScheduleFollowUp,
+  onCompleteFollowUp,
+  onMoveToStage,
   onOpenQuoteBuilder,
+  onOpenOrCreateQuote,
 }: {
   lead: LeadRow;
   stageName: string;
@@ -1438,7 +1573,17 @@ function InlineCommandCenter({
   complianceItems: ComplianceItem[];
   complianceDefinitions: ComplianceDefinition[];
   safeFormatDateTime: (value?: string | null) => string;
+  stages: Stage[];
+  inlineActionState: FormState;
+  inlineFollowUpAt: string;
+  setInlineFollowUpAt: (value: string) => void;
+  isInlineActionPending: boolean;
+  onOpenEditDrawer: (leadId: string, stepId?: LeadOpenStep) => void;
+  onScheduleFollowUp: (leadId: string, scheduledAt: string) => void;
+  onCompleteFollowUp: (leadId: string, followUpId?: string | null) => void;
+  onMoveToStage: (leadId: string, stageId: string) => void;
   onOpenQuoteBuilder: () => void;
+  onOpenOrCreateQuote: (leadId: string) => void;
 }) {
   const [activePillar, setActivePillar] = React.useState<'follow_up' | 'qualification' | 'coverage' | 'commercial' | null>(null);
   const nextFollowUp = [...followUps].sort((a, b) => String(a.scheduled_at ?? '').localeCompare(String(b.scheduled_at ?? '')))[0] ?? null;
@@ -1456,16 +1601,18 @@ function InlineCommandCenter({
     { label: lead.lead_type === 'buyer' ? 'Buyer' : 'Supplier', cls: 'bg-[#f0f9ff] border-[#7dd3fc] text-[#0369a1]' },
   ];
 
-  // Pipeline stages
-  const pipelineStages = [
-    { label: 'New Lead', state: 'done' },
-    { label: 'Qualified', state: stageName === 'Qualified' ? 'current' : ['Sample Sent', 'Negotiation', 'Quote Sent', 'Won'].some(s => stageName.includes(s)) ? 'done' : 'upcoming' },
-    { label: 'Contacted', state: stageName === 'Contacted' ? 'current' : ['Sample Sent', 'Negotiation', 'Quote Sent', 'Won', 'Qualified'].some(s => stageName.includes(s)) ? 'done' : 'upcoming' },
-    { label: 'Sample Sent', state: stageName.includes('Sample') ? 'current' : ['Negotiation', 'Quote Sent', 'Won'].some(s => stageName.includes(s)) ? 'done' : 'upcoming' },
-    { label: stageName.includes('Negoti') || stageName.includes('Quote') || stageName.includes('Won') ? stageName : 'Negotiation', state: stageName.includes('Negoti') ? 'current' : stageName.includes('Quote') || stageName.includes('Won') ? 'done' : 'upcoming' },
-    { label: 'Quote Sent', state: stageName.includes('Quote') ? 'current' : stageName.includes('Won') ? 'done' : 'upcoming' },
-    { label: 'Won ✓', state: stageName.includes('Won') ? 'current' : 'upcoming' },
-  ];
+  // Pipeline stages use real workspace stages so stage CTAs persist instead of acting as visual-only chips.
+  const pipelineStages = (stages.filter((stage) => stage.pipeline_id === lead.pipeline_id).length ? stages.filter((stage) => stage.pipeline_id === lead.pipeline_id) : stages)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((stage) => {
+      const isCurrent = stage.id === lead.stage_id || stage.name === stageName;
+      const currentOrder = stages.find((entry) => entry.id === lead.stage_id)?.sort_order ?? 0;
+      return {
+        id: stage.id,
+        label: stage.name,
+        state: isCurrent ? 'current' : (stage.sort_order ?? 0) < currentOrder ? 'done' : 'upcoming',
+      };
+    });
 
   // Workflow pillars
   const pillars = [
@@ -1522,6 +1669,8 @@ function InlineCommandCenter({
 
   return (
     <div className="flex flex-col gap-3 px-6 py-4" style={{ background: '#f0f4f8' }}>
+      {inlineActionState.error ? <StateMessage title="Lead action failed" tone="danger" description={inlineActionState.error} /> : null}
+      {inlineActionState.success ? <StateMessage title="Lead action applied" tone="success" description={inlineActionState.success} /> : null}
 
       {/* Lead header card — spec .lead-header-card */}
       <div className="overflow-hidden rounded-[22px] border border-[#e2e8f0] bg-white shadow-sm">
@@ -1553,17 +1702,17 @@ function InlineCommandCenter({
             </div>
             {/* CTA buttons — spec .lhc-actions */}
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={onOpenQuoteBuilder}
+              <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)}
                 className="rounded-[6px] bg-[#0b2e4a] px-[18px] py-[9px] text-[13px] font-bold text-white hover:bg-[#061c2e]">
                 🖊 {canContinueQuote ? 'View quote' : 'Create quote'}
               </button>
-              <button type="button"
+              <button type="button" onClick={() => setActivePillar('follow_up')}
                 className="rounded-[6px] border border-[#e2e8f0] bg-white px-[14px] py-[8px] text-[12px] font-semibold text-[#334155] hover:bg-[#f8fafc]">
                 📅 Schedule follow-up
               </button>
-              <button type="button"
-                className="rounded-[6px] border border-[#e2e8f0] bg-white px-[14px] py-[8px] text-[12px] font-semibold text-[#334155]">
-                ⋯ Lead tools
+              <button type="button" onClick={() => onOpenEditDrawer(lead.id, 'basics')}
+                className="rounded-[6px] border border-[#e2e8f0] bg-white px-[14px] py-[8px] text-[12px] font-semibold text-[#334155] hover:bg-[#f8fafc]">
+                ✎ Quick edit
               </button>
             </div>
           </div>
@@ -1575,17 +1724,23 @@ function InlineCommandCenter({
           {latestActivity ? ` · Last activity: ${safeFormatDateTime(latestActivity.occurred_at)}` : ''}
         </div>
 
-        {/* Pipeline stage strip — spec .pipeline-strip */}
+         {/* Pipeline stage strip — spec .pipeline-strip */}
         <div className="flex items-center gap-0 overflow-x-auto border-t border-[#e2e8f0] px-[22px] py-[12px]">
           {pipelineStages.map((stage, index) => (
-            <React.Fragment key={stage.label}>
-              <div className={`flex cursor-pointer flex-col items-center gap-[3px] rounded-[6px] px-[10px] py-[4px] transition-colors ${stage.state === 'done' ? 'bg-[#ecfdf5]' : stage.state === 'current' ? 'bg-[rgba(12,127,255,.1)]' : 'bg-transparent'}`}
-                style={{ minWidth: '80px' }}>
+            <React.Fragment key={stage.id}>
+              <button
+                type="button"
+                onClick={() => { if (stage.state !== 'current') onMoveToStage(lead.id, stage.id); }}
+                disabled={isInlineActionPending || stage.state === 'current'}
+                title={stage.state === 'current' ? 'Current stage' : `Move to ${stage.label}`}
+                className={`flex flex-col items-center gap-[3px] rounded-[6px] px-[10px] py-[4px] transition-colors disabled:cursor-not-allowed ${stage.state === 'done' ? 'bg-[#ecfdf5]' : stage.state === 'current' ? 'bg-[rgba(12,127,255,.1)]' : 'bg-transparent hover:bg-slate-50'}`}
+                style={{ minWidth: '80px' }}
+              >
                 <div className={`h-[10px] w-[10px] rounded-full ${stage.state === 'done' ? 'bg-[#10b981]' : stage.state === 'current' ? 'bg-[#0c7fff] shadow-[0_0_0_3px_rgba(12,127,255,.2)]' : 'bg-[#cbd5e1]'}`} />
                 <div className={`text-center text-[10px] font-bold ${stage.state === 'done' ? 'text-[#059669]' : stage.state === 'current' ? 'text-[#0b2e4a]' : 'text-[#94a3b8]'}`}>
                   {stage.label}
                 </div>
-              </div>
+              </button>
               {index < pipelineStages.length - 1 ? <div className="flex-shrink-0 px-[2px] pb-[8px] text-[16px] text-[#cbd5e1]">›</div> : null}
             </React.Fragment>
           ))}
@@ -1647,6 +1802,14 @@ function InlineCommandCenter({
                         No follow-up scheduled. Use the Schedule follow-up button above.
                       </div>
                     )}
+                    <div className="mt-3 flex flex-wrap items-end gap-2 rounded-[12px] border border-[#e2e8f0] bg-white p-[12px]">
+                      <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-[.12em] text-[#64748b]">
+                        Follow-up date
+                        <input type="datetime-local" value={inlineFollowUpAt} onChange={(event) => setInlineFollowUpAt(event.target.value)} className="rounded-[6px] border border-[#e2e8f0] px-2 py-1 text-[12px] font-semibold text-[#334155]" />
+                      </label>
+                      <button type="button" disabled={isInlineActionPending} onClick={() => onScheduleFollowUp(lead.id, inlineFollowUpAt)} className="rounded-[6px] bg-[#0b2e4a] px-[12px] py-[7px] text-[12px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-60">Schedule/reschedule</button>
+                      <button type="button" disabled={isInlineActionPending || !nextFollowUp} onClick={() => onCompleteFollowUp(lead.id, nextFollowUp?.id)} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[12px] font-bold text-[#334155] disabled:cursor-not-allowed disabled:opacity-60">Complete follow-up</button>
+                    </div>
                   </div>
                 ) : activePillar === 'qualification' ? (
                   <div>
@@ -1696,7 +1859,7 @@ function InlineCommandCenter({
                     ) : (
                       <div className="rounded-[12px] border border-dashed border-[#e2e8f0] p-[16px] text-center">
                         <div className="text-[13px] text-[#94a3b8] mb-2">No quote yet</div>
-                        <button type="button" onClick={onOpenQuoteBuilder}
+                        <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)}
                           className="rounded-[6px] bg-[#0b2e4a] px-[14px] py-[7px] text-[12px] font-bold text-white">
                           Create quote
                         </button>
@@ -1712,7 +1875,7 @@ function InlineCommandCenter({
           <div className="overflow-hidden rounded-[22px] border border-[#e2e8f0] bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-[#e2e8f0] px-[18px] py-[14px]">
               <div className="text-[13px] font-bold text-[#0f172a]">Quote prep checklist</div>
-              <button type="button" onClick={onOpenQuoteBuilder}
+              <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)}
                 className="rounded-[6px] bg-[#0b2e4a] px-[14px] py-[7px] text-[11px] font-bold text-white">
                 {canContinueQuote ? 'Continue quote →' : 'Create quote →'}
               </button>
@@ -1752,7 +1915,7 @@ function InlineCommandCenter({
             <div className="mb-[10px] text-[12px] leading-[1.6] text-[#64748b]">
               {nextFollowUp ? `Next follow-up: ${safeFormatDateTime(nextFollowUp.scheduled_at)}. Keep the commercial thread moving.` : 'Set a follow-up to keep this lead active.'}
             </div>
-            <button type="button" onClick={onOpenQuoteBuilder}
+            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)}
               className="w-full rounded-[6px] bg-[#0b2e4a] px-[12px] py-[7px] text-center text-[12px] font-bold text-white">
               Open follow-up lane
             </button>
@@ -1801,7 +1964,7 @@ function InlineCommandCenter({
       {/* Sticky action bar — spec .sticky-bar */}
       <div className="sticky bottom-3 z-10 mx-[-24px] flex items-center justify-between rounded-[22px_22px_0_0] border-t border-[#e2e8f0] bg-white/95 px-[22px] py-[12px] shadow-[0_-8px_24px_rgba(15,23,42,.08)] backdrop-blur">
         <div className="flex gap-2">
-          <button type="button" onClick={onOpenQuoteBuilder}
+          <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)}
             className="rounded-[10px] bg-[#0b2e4a] px-[16px] py-[9px] text-[13px] font-bold text-white">
             🖊 {canContinueQuote ? 'Continue quote' : 'Create quote'}
           </button>
@@ -1837,6 +2000,9 @@ function InlineQuoteBuilder({
   complianceDefinitions,
   safeFormatDateTime,
   stableNowIso,
+  inlineActionState,
+  isInlineActionPending,
+  onOpenOrCreateQuote,
   onOpenCommandCenter,
 }: {
   lead: LeadRow;
@@ -1853,6 +2019,9 @@ function InlineQuoteBuilder({
   complianceDefinitions: ComplianceDefinition[];
   safeFormatDateTime: (value?: string | null) => string;
   stableNowIso: string;
+  inlineActionState: FormState;
+  isInlineActionPending: boolean;
+  onOpenOrCreateQuote: (leadId: string) => void;
   onOpenCommandCenter: () => void;
 }) {
   const [builderStep, setBuilderStep] = React.useState(1);
@@ -1891,7 +2060,7 @@ function InlineQuoteBuilder({
           <div className="mt-[2px] text-[9px] uppercase tracking-[.12em] text-white/50">Draft quote total</div>
           <div className="mt-[10px] flex justify-end gap-[6px]">
             <button type="button" onClick={onOpenCommandCenter} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white" style={{ background: 'rgba(255,255,255,.12)' }}>← Back to CC</button>
-            <button type="button" className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white" style={{ background: 'rgba(255,255,255,.12)' }}>Save draft</button>
+            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white disabled:opacity-60" style={{ background: 'rgba(255,255,255,.12)' }}>Save draft</button>
           </div>
         </div>
       </div>
@@ -1943,7 +2112,7 @@ function InlineQuoteBuilder({
                 {builderStep === 0 ? 'Product & buyer lock' : builderStep === 1 ? 'Build pricing lines' : builderStep === 2 ? 'Set commercial terms' : builderStep === 3 ? 'Review quote package' : 'Approve and send safely'}
               </div>
             </div>
-            <button type="button" className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155]">Edit</button>
+            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155] disabled:opacity-60">Open draft</button>
           </div>
           <div className="p-[16px_18px]">
             {builderStep === 0 ? (
@@ -2079,10 +2248,10 @@ function InlineQuoteBuilder({
                   <button type="button" className={`flex-1 rounded-[6px] p-[10px] text-[13px] font-extrabold border-none ${sendReady ? 'bg-[#0b2e4a] text-white cursor-pointer' : 'bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed'}`} disabled={!sendReady}>
                     Send quote
                   </button>
-                  <button type="button" className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none cursor-pointer">
+                  <button type="button" disabled title="Approval request is disabled here until a saved quote version exists in the quote workflow." className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none cursor-not-allowed opacity-60">
                     Request approval
                   </button>
-                  <button type="button" className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569]">
+                  <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569] disabled:opacity-60">
                     Save draft
                   </button>
                 </div>
@@ -2133,8 +2302,8 @@ function InlineQuoteBuilder({
             className="rounded-[22px] bg-[#0b2e4a] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm">
             {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : sendReady ? 'Send quote' : 'Review blockers'}
           </button>
-          <button type="button" className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155]">Save draft</button>
-          <button type="button" className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155]">Request approval</button>
+          <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Save draft</button>
+          <button type="button" disabled title="Approval request is disabled until a governed quote version is saved." className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] opacity-60 cursor-not-allowed">Request approval</button>
           <span className="ml-auto rounded-full bg-[#f1f5f9] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#64748b]">
             Command Center · Quote Builder · {steps[builderStep]}
           </span>
