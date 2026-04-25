@@ -1844,7 +1844,7 @@ export function LeadDrawer({
       open={open}
       onClose={onClose ?? (() => {})}
       title={panelTitle}
-      widthClassName="max-w-5xl"
+      widthClassName={isQuickMode && !isEditingExistingLead ? 'max-w-[540px]' : 'max-w-5xl'}
       headerActions={headerActions}
       footer={
         <LeadDrawerFooter

@@ -42,7 +42,7 @@ export default function LeadDrawerFooter({
 
   return (
     <div className="space-y-3">
-      {wizard ? (
+      {wizard && !isQuickMode ? (
         <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -110,7 +110,7 @@ export default function LeadDrawerFooter({
             disabled={isPending || disableSubmit}
             className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
-            {isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : isQuickMode ? 'Save and continue' : isEditingExistingLead ? 'Save lead' : 'Create lead'}
+            {isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : isQuickMode ? '✓ Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead'}
           </button>
         )}
         {isEditingExistingLead && !isQuickMode && isFinalStep && onCreateQuote ? (

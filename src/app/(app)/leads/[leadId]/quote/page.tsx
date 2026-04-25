@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
-import { PageHeader } from '@/components/ui/page-header';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getLeadProfileData } from '@/lib/queries/leads';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -234,205 +233,146 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   const openQuoteCount = data.quotes.filter((quote) => !['accepted', 'rejected', 'expired', 'cancelled'].includes(String(quote.status ?? '').toLowerCase())).length;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5 p-4 md:space-y-6">
-      <StateMessage
-        title={lead.lead_type === 'supplier' ? 'Supplier quote context is active' : 'Buyer quote context is active'}
-        description={lead.lead_type === 'supplier'
-          ? 'This quote workspace is being used from the supplier side. Keep the primary action on building commercially usable coverage, then move accepted work into Orders.'
-          : 'This quote workspace is being used from the buyer side. Keep the primary action on finishing the live quote, sending it cleanly, and moving accepted work into Orders.'}
-        tone="neutral"
-      />
-      <PageHeader
-        className="rounded-[12px] px-5 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:px-6 sm:py-[18px]"
-        eyebrow="Quote workspace"
-        title={lead.company_name}
-        description="Stay in the same lead workflow here. Review pricing, clear blockers, send the quote, and move accepted commercial work into the order workspace."
-        actions={[
-          { label: 'Back to lead', href: leadCommandHref },
-          { label: 'Quote AI review', href: `/ai-suggestions?family=quote&leadId=${leadId}` },
-          { label: 'Open orders', href: '/orders', type: 'primary' },
-        ]}
-      />
+    <div style={{ background: '#f0f4f8', minHeight: '100vh' }}>
+      <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-      {mappingNote ? <StateMessage title="Lead continuity is active" description={mappingNote} tone="neutral" /> : null}
+        {missingMarketCoverage ? (
+          <div style={{ padding: '10px 16px', borderRadius: '10px', background: '#fffbeb', border: '1px solid #fde68a', fontSize: '12px', color: '#92400e', fontWeight: 600 }}>
+            No markets mapped to this lead yet — pricing context will be limited.
+          </div>
+        ) : null}
+        {readOnlyMessage ? (
+          <div style={{ padding: '10px 16px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '12px', color: '#64748b' }}>{readOnlyMessage}</div>
+        ) : null}
 
-      <StateMessage
-        title="What to do next in Quote"
-        description={acceptedQuoteCount > 0
-          ? 'At least one quote is accepted. Open Orders to confirm execution readiness, documents, and compliance before treating the work as operational.'
-          : openQuoteCount > 0
-            ? 'Finish pricing, clear blockers, send the quote, and only move to Orders after the customer accepts.'
-            : 'Create or reopen a quote draft, then move through Product, Pricing, Terms, Review, and Send from this workspace.'}
-        tone={acceptedQuoteCount > 0 ? 'success' : 'neutral'}
-      />
-
-      <div className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">
-        <div className="premium-surface rounded-[12px] p-5 md:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Quote command lane</p>
-              <h2 className="mt-2 text-xl font-semibold text-slate-900">Move through Product, Pricing, Terms, Review, and Send inside one commercial surface</h2>
-              <p className="mt-2 text-sm text-slate-600">Stay anchored to the lead workspace while moving the current quote through Product, Pricing, Terms, Review, and Sending. Surface blockers once, keep one quote in focus, and move accepted work straight into the orders workspace.</p>
+        {/* Hero — spec .qb-hero */}
+        <div style={{ background: 'linear-gradient(135deg,#061c2e 0%,#0b2e4a 55%,#1a5fa0 100%)', borderRadius: '22px', padding: '18px 22px', color: 'white', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'linear-gradient(135deg,#1a5fa0,#0c7fff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 800, color: 'white', flexShrink: 0 }}>
+              {lead.company_name.split(' ').filter(Boolean).slice(0,2).map((w: string) => w[0]?.toUpperCase() ?? '').join('')}
             </div>
-            <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getPricingReadinessClasses(pricingSnapshot.pricingReadiness)}`}>
-              {getPricingReadinessLabel(pricingSnapshot.pricingReadiness)}
-            </span>
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{qualificationStatus.replaceAll('_', ' ')}</span>
-            <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{mappedProductCount} mapped products</span>
-            <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{mappedMarketCount} covered markets</span>
-            <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{openQuoteCount} open quotes</span>
-            <span className="rounded-full bg-neutral-50 px-3 py-1.5 text-sm font-medium text-slate-700">{quoteSendGuard.blockerCount} lead prerequisite blockers</span>
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link href={leadCommandHref} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Lead workspace</Link>
-            <Link href="/orders" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Orders workspace</Link>
-          </div>
-        </div>
-
-        <div className="premium-surface rounded-[12px] p-5 md:p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Operating rules</p>
-          <div className="mt-4 space-y-3 text-sm text-slate-600">
-            <div className="rounded-[10px] bg-neutral-50 p-4">
-              <p className="font-semibold text-slate-900">Keep one quote in focus</p>
-              <p className="mt-1">Use the fast lane for the current quote. Open the full editor only when pricing or approval needs deeper revision.</p>
-            </div>
-            <div className="rounded-[10px] bg-neutral-50 p-4">
-              <p className="font-semibold text-slate-900">Treat blockers as gates</p>
-              <p className="mt-1">Document and compliance blockers should stop send, not sit as soft reminders.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="premium-surface rounded-[12px] p-5 md:p-6">
-        <h3 className="text-lg font-semibold text-slate-900">Lead context and pricing linkage</h3>
-        <div className="mt-4 grid gap-4 text-sm text-slate-600 sm:grid-cols-2 xl:grid-cols-3">
-          <p><span className="font-medium text-slate-900">Company:</span> {lead.company_name}</p>
-          <p><span className="font-medium text-slate-900">Contact:</span> {lead.contact_name ?? 'No contact'}</p>
-          <p><span className="font-medium text-slate-900">Email:</span> {lead.email ?? 'No email'}</p>
-          <p><span className="font-medium text-slate-900">Phone:</span> {lead.phone ?? 'No phone'}</p>
-          <p><span className="font-medium text-slate-900">Country:</span> {lead.country ?? 'Not set'}</p>
-          <p><span className="font-medium text-slate-900">Lead type:</span> {lead.lead_type}</p>
-        </div>
-
-        <div className="mt-6 rounded-[10px] bg-neutral-50 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Pricing linkage</p>
-              <p className="mt-1 text-sm text-slate-600">The quote stays anchored to the same catalog, product coverage, and market context already visible on the lead.</p>
-            </div>
-            <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getPricingReadinessClasses(pricingSnapshot.pricingReadiness)}`}>
-              {getPricingReadinessLabel(pricingSnapshot.pricingReadiness)}
-            </span>
-          </div>
-
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[10px] bg-white px-3 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Priced products</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">{pricingSnapshot.linkedPricedProductCount}/{pricingSnapshot.linkedProductCount}</p>
-            </div>
-            <div className="rounded-[10px] bg-white px-3 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Covered markets</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">{pricingSnapshot.coveredMarketCount}</p>
-            </div>
-            <div className="rounded-[10px] bg-white px-3 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Quote line coverage</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">{pricingSnapshot.quotePricedLineCount}/{pricingSnapshot.quoteLinkedLineCount || 0}</p>
+              <div style={{ fontSize: '19px', fontWeight: 800, letterSpacing: '-.4px', marginBottom: '3px' }}>{lead.company_name}</div>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,.6)', lineHeight: 1.55 }}>
+                {lead.lead_type === 'buyer' ? 'Buyer' : 'Supplier'}
+                {data.linkedMarkets.length > 0 ? ` · ${(data.linkedMarkets as any[]).map((m) => m.name).join(', ')}` : ''}
+                {' · '}{lead.deal_currency ?? 'USD'}
+              </div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '7px' }}>
+                {(data.linkedProducts as any[]).slice(0,3).map((p) => (
+                  <span key={p.id} style={{ padding: '2px 9px', borderRadius: '999px', fontSize: '9px', fontWeight: 700, background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.18)', color: 'rgba(255,255,255,.85)', letterSpacing: '.04em', textTransform: 'uppercase' as const }}>{p.name}</span>
+                ))}
+                {quoteSendGuard.blockerCount > 0 && (
+                  <span style={{ padding: '2px 9px', borderRadius: '999px', fontSize: '9px', fontWeight: 700, background: 'rgba(217,119,6,.25)', border: '1px solid rgba(217,119,6,.5)', color: '#fde68a' }}>
+                    {quoteSendGuard.blockerCount} send blocker{quoteSendGuard.blockerCount === 1 ? '' : 's'}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="mt-4 rounded-[10px] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Order handoff</p>
-              <p className="mt-1 text-sm text-slate-600">Accepted quotes create order records automatically so the team can continue execution, signature, activation, and completion from the orders workspace.</p>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-.5px' }}>
+              {data.quotes.length === 0 ? '—' : `${data.quotes.length} quote${data.quotes.length === 1 ? '' : 's'}`}
             </div>
-            <Link href="/orders" className="rounded-2xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100">Open orders workspace</Link>
+            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,.5)', letterSpacing: '.12em', textTransform: 'uppercase' as const, marginTop: '2px' }}>Draft total</div>
+            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <Link href={leadCommandHref} style={{ padding: '5px 12px', borderRadius: '6px', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', color: 'white', fontSize: '10px', fontWeight: 700, textDecoration: 'none' }}>
+                ← Back to CC
+              </Link>
+              <Link href="/orders" style={{ padding: '5px 12px', borderRadius: '6px', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', color: 'white', fontSize: '10px', fontWeight: 700, textDecoration: 'none' }}>
+                Orders
+              </Link>
+            </div>
           </div>
-          <p className="mt-3 text-sm text-slate-600">
-            {contracts.length ? `${contracts.length} order workspace${contracts.length === 1 ? '' : 's'} already linked to this lead.` : 'No contract has been seeded for this lead yet. Once a quote is accepted, the order workspace will populate automatically.'}
-          </p>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <QuotePrintButton />
-          <span className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-400">Use browser print to save or share as PDF</span>
+        {/* 5-step stepper — spec .qb-stepper */}
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '22px', padding: '16px 20px', boxShadow: '0 1px 3px rgba(15,23,42,.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Quote Builder</div>
+            <div style={{ fontSize: '9px', fontWeight: 700, padding: '2px 9px', borderRadius: '999px', background: 'rgba(12,127,255,.08)', border: '1px solid rgba(12,127,255,.2)', color: '#0c7fff', letterSpacing: '.08em', textTransform: 'uppercase' as const }}>
+              {data.quotes.length === 0 ? 'Ready to start' : `${openQuoteCount} active`}
+            </div>
+            <div style={{ marginLeft: 'auto', fontSize: '10px', color: '#94a3b8' }}>
+              Capture → Lead → <strong style={{ color: '#0b2e4a' }}>Quote</strong> → Order
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: '12px' }}>
+            {([
+              { label: 'Product', done: mappedProductCount > 0, cur: mappedProductCount === 0, n: 1 },
+              { label: 'Pricing', done: false, cur: mappedProductCount > 0 && data.quotes.length === 0, n: 2 },
+              { label: 'Terms', done: false, cur: false, n: 3 },
+              { label: 'Review', done: false, cur: false, n: 4 },
+              { label: 'Send gate', done: false, cur: false, n: 5 },
+            ] as const).map((step, i) => {
+              const circleStyle = step.done
+                ? { background: '#059669', color: 'white', boxShadow: '0 0 0 3px #d1fae5' }
+                : step.cur
+                  ? { background: '#0b2e4a', color: 'white', boxShadow: '0 0 0 3px rgba(11,46,74,.1)' }
+                  : { background: 'white', color: '#94a3b8', border: '2px solid #e2e8f0' };
+              const labelColor = step.done ? '#059669' : step.cur ? '#0b2e4a' : '#94a3b8';
+              return (
+                <div key={step.n} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, ...circleStyle }}>
+                      {step.done ? '✓' : step.n}
+                    </div>
+                    <div style={{ fontSize: '9px', fontWeight: 700, textAlign: 'center', color: labelColor }}>{step.label}</div>
+                  </div>
+                  {i < 4 ? <div style={{ height: '2px', flex: 1, background: step.done ? '#059669' : '#e2e8f0', alignSelf: 'flex-start', marginTop: '14px' }} /> : null}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.6, padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', borderLeft: '3px solid #0c7fff' }}>
+            <strong style={{ color: '#1e293b' }}>Quote workspace:</strong>{' '}
+            {data.quotes.length === 0
+              ? 'Create a quote draft below. Catalog pricing pre-fills from your reference data.'
+              : quoteSendGuard.blockerCount > 0
+                ? `${openQuoteCount} open · ${quoteSendGuard.blockerCount} blocker${quoteSendGuard.blockerCount === 1 ? '' : 's'} to clear before send.`
+                : `${openQuoteCount} open · Ready to move through review and send.`}
+          </div>
         </div>
-      </div>
 
-      {readOnlyMessage ? (
-        <StateMessage
-          tone="warning"
-          title="Read-only quote workspace"
-          description={`${readOnlyMessage} You can review pricing, RFQ context, and negotiation history here, but quote draft and revision actions stay disabled.`}
+        {/* Quote workspace */}
+        <QuoteWorkspace
+          leadId={leadId}
+          rfqs={data.rfqs}
+          quotes={normalizeQuoteRecords(data.quotes)}
+          products={catalogProducts}
+          savedViews={quoteSavedViews}
+          initialSavedView={quotePreference?.savedViewId ?? quotePreference?.builtInViewKey ?? 'all'}
+          redirectPath={`/leads/${leadId}/quote`}
+          leadCommandHref={leadCommandHref}
+          initialQuoteId={requestedQuoteId}
+          canManageQuotes={canManageQuotes}
+          canSendQuotes={canSendQuotes}
+          canApproveAsAdmin={canApproveAsAdmin}
+          readOnlyMessage={readOnlyMessage}
+          sendReadOnlyMessage={sendReadOnlyMessage}
+          rfqWorkspaceHref={`/leads/${leadId}/rfq/new`}
+          pricingSnapshot={pricingSnapshot}
+          quoteVersions={data.quoteVersions}
+          negotiationEvents={data.negotiationEvents}
+          pricingEngineThresholdPercent={pricingEngineThresholdPercent}
+          communications={data.communications.filter((item: any) => item.quote_id || item.related_entity === 'quote').map((item: any) => ({
+            id: item.id, quote_id: item.quote_id, related_entity: item.related_entity, related_id: item.related_id,
+            subject: item.subject, summary: item.summary, status: item.status, created_at: item.created_at,
+            sent_at: item.sent_at, draft_source: item.draft_source, metadata: item.metadata,
+          }))}
         />
-      ) : null}
 
-      {missingMarketCoverage ? (
-        <StateMessage
-          tone="warning"
-          title="Market coverage context is missing"
-          description="No markets are mapped to this lead yet. The quote workspace still loads, but market-based pricing and supplier coverage summaries should be treated as incomplete until market mapping is added on the lead."
-        />
-      ) : null}
-
-      {!data.rfqs.length ? (
-        <StateMessage
-          tone="neutral"
-          title="No RFQ context linked yet"
-          description="You can still draft a quote from mapped products, but RFQ-linked supplier context and response history will remain empty until an RFQ is created for this lead."
-        />
-      ) : null}
-
-      <QuoteWorkspace
-        leadId={leadId}
-        rfqs={data.rfqs}
-        quotes={normalizeQuoteRecords(data.quotes)}
-        products={catalogProducts}
-        savedViews={quoteSavedViews}
-        initialSavedView={quotePreference?.savedViewId ?? quotePreference?.builtInViewKey ?? 'all'}
-        redirectPath={`/leads/${leadId}/quote`}
-        leadCommandHref={leadCommandHref}
-        initialQuoteId={requestedQuoteId}
-        canManageQuotes={canManageQuotes}
-        canSendQuotes={canSendQuotes}
-        canApproveAsAdmin={canApproveAsAdmin}
-        readOnlyMessage={readOnlyMessage}
-        sendReadOnlyMessage={sendReadOnlyMessage}
-        rfqWorkspaceHref={`/leads/${leadId}/rfq/new`}
-        pricingSnapshot={pricingSnapshot}
-        quoteVersions={data.quoteVersions}
-        negotiationEvents={data.negotiationEvents}
-        pricingEngineThresholdPercent={pricingEngineThresholdPercent}
-        communications={data.communications.filter((item) => item.quote_id || item.related_entity === 'quote').map((item) => ({
-          id: item.id,
-          quote_id: item.quote_id,
-          related_entity: item.related_entity,
-          related_id: item.related_id,
-          subject: item.subject,
-          summary: item.summary,
-          status: item.status,
-          created_at: item.created_at,
-          sent_at: item.sent_at,
-          draft_source: item.draft_source,
-          metadata: item.metadata,
-        }))}
-      />
-
-      <div className="premium-surface rounded-[12px] p-5 md:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold text-slate-900">Commercial timeline</h3>
-          <span className="text-xs uppercase tracking-[0.16em] text-slate-400">Lead, RFQ, quote, compliance, contracts</span>
-        </div>
-        <div className="mt-4">
+        {/* Commercial timeline */}
+        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px 22px', boxShadow: '0 1px 3px rgba(15,23,42,.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Commercial timeline</h3>
+            <span style={{ fontSize: '9px', textTransform: 'uppercase' as const, letterSpacing: '.16em', color: '#94a3b8' }}>Lead · RFQ · Quote · Compliance</span>
+          </div>
           <ActivityTimeline events={timelineEvents} emptyLabel="No commercial activity logged yet." />
         </div>
+
       </div>
     </div>
   );
+
 }

@@ -286,6 +286,9 @@ export function LeadsWorkspace({
   const [isBatchStagePending, startBatchStageTransition] = useTransition();
   const [drawerState, setDrawerState] = useState<DrawerState>({ open: false, mode: 'quick', leadId: null, initialStepId: 'basics' });
   const [spotlightLeadId, setSpotlightLeadId] = useState<string | null>(null);
+  // PR03 spec: track which lead is open in the CC tab (avoids full navigation)
+  const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
+  const [activeLeadView, setActiveLeadView] = useState<'list' | 'cc' | 'quote'>('list');
   const [visibleCount, setVisibleCount] = useState(50);
   const [actionsExpanded, setActionsExpanded] = useState(false);
   const [isBatchPending, startBatchTransition] = useTransition();
@@ -924,29 +927,38 @@ export function LeadsWorkspace({
 
       {/* ═══ PAGE NAV TABS — links to CC and Quote for selected lead ═══ */}
       <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center' }}>
-        {/* Lead Queue — always active on this page */}
-        <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#0b2e4a', borderBottom: '2px solid #0c7fff', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {/* Lead Queue tab — always switches back to list view */}
+        <button type="button" onClick={() => setActiveLeadView('list')}
+          style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeLeadView === 'list' ? '#0b2e4a' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeLeadView === 'list' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'none', cursor: 'pointer' }}>
           📋 Lead Queue
           <span style={{ background: summary.overdue > 0 ? '#f43f5e' : '#64748b', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{sortedLeads.length}</span>
-        </div>
-        {/* Command Center — active link when a lead is selected/spotlighted */}
+        </button>
+        {/* Command Center tab — switches to CC view inline, no full navigation */}
         {spotlightLead ? (
-          <a href={getLeadCommandCenterHref(spotlightLead.id)} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
+          <button
+            type="button"
+            onClick={() => { setActiveLeadId(spotlightLead.id); setActiveLeadView('cc'); }}
+            style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeLeadView === 'cc' ? '#0b2e4a' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeLeadView === 'cc' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'none', cursor: 'pointer' }}
+          >
             🎯 Command Center
             <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spotlightLead.company_name}</span>
-          </a>
+          </button>
         ) : (
           <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#cbd5e1', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             🎯 Command Center
             <span style={{ background: '#e2e8f0', color: '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>Select a lead →</span>
           </div>
         )}
-        {/* Quote Builder — links to quote route for spotlighted lead */}
+        {/* Quote Builder tab — switches to quote iframe inline */}
         {spotlightLead ? (
-          <a href={`/leads/${spotlightLead.id}/quote?source=lead-queue`} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
+          <button
+            type="button"
+            onClick={() => { setActiveLeadId(spotlightLead.id); setActiveLeadView('quote'); }}
+            style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeLeadView === 'quote' ? '#0b2e4a' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeLeadView === 'quote' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'none', cursor: 'pointer' }}
+          >
             ◇ Quote Builder
-            <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
-          </a>
+            <span style={{ background: activeLeadView === 'quote' ? '#0c7fff' : '#e2e8f0', color: activeLeadView === 'quote' ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
+          </button>
         ) : (
           <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#cbd5e1', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             ◇ Quote Builder
@@ -1080,7 +1092,36 @@ export function LeadsWorkspace({
         ) : null}
       </div>
 
-      {/* ═══ MAIN TABLE SECTION ═══ */}
+      {/* ═══ MAIN CONTENT — list | CC iframe | Quote iframe ═══ */}
+      {activeLeadView !== 'list' && activeLeadId ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Back to list button */}
+          <div style={{ padding: '8px 24px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button type="button" onClick={() => setActiveLeadView('list')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
+              ← Back to Lead Queue
+            </button>
+            {activeLeadView === 'cc' ? (
+              <button type="button" onClick={() => setActiveLeadView('quote')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #0c7fff', background: '#f0f9ff', fontSize: '11px', fontWeight: 600, color: '#0c7fff', cursor: 'pointer' }}>
+                ◇ Open Quote Builder →
+              </button>
+            ) : (
+              <button type="button" onClick={() => setActiveLeadView('cc')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
+                🎯 Back to Command Center
+              </button>
+            )}
+          </div>
+          {/* Inline iframe — loads lead CC or Quote page without navigation */}
+          <iframe
+            key={`${activeLeadId}-${activeLeadView}`}
+            src={activeLeadView === 'cc' ? `/leads/${activeLeadId}` : `/leads/${activeLeadId}/quote`}
+            style={{ flex: 1, border: 'none', width: '100%', minHeight: 'calc(100vh - 200px)' }}
+            title={activeLeadView === 'cc' ? 'Command Center' : 'Quote Builder'}
+          />
+        </div>
+      ) : (
       <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
         {!canManageLeads && readOnlyMessage ? (
@@ -1170,9 +1211,16 @@ export function LeadsWorkspace({
                         stageMetaMap={stageMetaMap}
                         readinessMap={readinessByLeadId}
                         getLeadCommandCenterHref={getLeadCommandCenterHref}
-                        openLeadCommandCenter={openLeadCommandCenter}
+                        openLeadCommandCenter={(_r, href) => {
+                          const m = href.match(/\/leads\/([^/?#]+)/);
+                          if (m?.[1]) { setActiveLeadId(m[1]); setSpotlightLeadId(m[1]); setActiveLeadView('cc'); }
+                          else { openLeadCommandCenter(_r, href); }
+                        }}
                         shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
-                        handleLeadCommandCenterKeyDown={handleLeadCommandCenterKeyDown}
+                        handleLeadCommandCenterKeyDown={(_e, _r, href) => {
+                          const m = href.match(/\/leads\/([^/?#]+)/);
+                          if (m?.[1]) { setActiveLeadId(m[1]); setSpotlightLeadId(m[1]); setActiveLeadView('cc'); }
+                        }}
                       />
                     ))}
                   </div>
@@ -1210,6 +1258,9 @@ export function LeadsWorkspace({
           </div>
         </div>
       </div>
+
+      </div>
+      )} {/* end activeLeadView !== list ternary */}
 
       {/* Lead drawer for new lead creation */}
       <LeadDrawer
