@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import * as React from 'react';
 import { useEffect, useMemo, useState, useTransition, type KeyboardEvent, type SVGProps } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { LeadDrawer } from '@/features/leads/components/lead-drawer';
@@ -258,6 +259,8 @@ export function LeadsWorkspace({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [activeView, setActiveView] = React.useState<string>('list');
+  const [activeLeadId, setActiveLeadId] = React.useState<string | null>(null);
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(initialMode);
   const [todayFilter, setTodayFilter] = useState<TodayFilterKey>(initialTodayState?.activeFilter ?? getPreferredTodayFilter(initialTodayState));
   const [workspaceLeads, setWorkspaceLeads] = useState<LeadRow[]>(leads);
@@ -922,37 +925,20 @@ export function LeadsWorkspace({
   return (
     <div className="flex flex-col">
 
-      {/* ═══ PAGE NAV TABS — links to CC and Quote for selected lead ═══ */}
+      {/* ═══ PAGE NAV TABS — inline view switcher ═══ */}
       <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center' }}>
-        {/* Lead Queue tab — active on this page */}
-        <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#0b2e4a', borderBottom: '2px solid #0c7fff', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <button type="button" onClick={() => setActiveView('list')} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'list' ? '#0b2e4a' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'list' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: 'pointer' }}>
           📋 Lead Queue
           <span style={{ background: summary.overdue > 0 ? '#f43f5e' : '#64748b', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{sortedLeads.length}</span>
-        </div>
-        {/* Command Center — links to selected lead CC */}
-        {spotlightLead ? (
-          <a href={getLeadCommandCenterHref(spotlightLead.id)} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
-            🎯 Command Center
-            <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spotlightLead.company_name}</span>
-          </a>
-        ) : (
-          <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#cbd5e1', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            🎯 Command Center
-            <span style={{ background: '#e2e8f0', color: '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>Select a lead →</span>
-          </div>
-        )}
-        {/* Quote Builder — links to selected lead quote */}
-        {spotlightLead ? (
-          <a href={`/leads/${spotlightLead.id}/quote?source=lead-queue`} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
-            ◇ Quote Builder
-            <span style={{ background: '#0c7fff', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
-          </a>
-        ) : (
-          <div style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#cbd5e1', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            ◇ Quote Builder
-            <span style={{ background: '#e2e8f0', color: '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
-          </div>
-        )}
+        </button>
+        <button type="button" disabled={!spotlightLead} onClick={() => { if (!spotlightLead) return; setActiveLeadId(spotlightLead.id); setActiveView('cc'); }} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'cc' ? '#0b2e4a' : spotlightLead ? '#94a3b8' : '#cbd5e1', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'cc' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: spotlightLead ? 'pointer' : 'not-allowed', opacity: spotlightLead ? 1 : .65 }}>
+          🎯 Command Center
+          <span style={{ background: spotlightLead ? '#0c7fff' : '#e2e8f0', color: spotlightLead ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spotlightLead?.company_name ?? 'Select a lead →'}</span>
+        </button>
+        <button type="button" disabled={!spotlightLead} onClick={() => { if (!spotlightLead) return; setActiveLeadId(spotlightLead.id); setActiveView('quote'); }} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'quote' ? '#0b2e4a' : spotlightLead ? '#94a3b8' : '#cbd5e1', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'quote' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: spotlightLead ? 'pointer' : 'not-allowed', opacity: spotlightLead ? 1 : .65 }}>
+          ◇ Quote Builder
+          <span style={{ background: spotlightLead ? '#0c7fff' : '#e2e8f0', color: spotlightLead ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
+        </button>
         <a href="/pipeline" style={{ marginLeft: 'auto', padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', textDecoration: 'none' }}>
           ⊕ View in Pipeline →
         </a>
@@ -1080,6 +1066,23 @@ export function LeadsWorkspace({
         ) : null}
       </div>
 
+      {activeView !== 'list' && activeLeadId ? (
+        <div style={{ flex: 1, minHeight: 'calc(100vh - 160px)' }}>
+          <div style={{ padding: '6px 24px 6px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '8px' }}>
+            <button type="button" onClick={() => setActiveView('list')}
+              style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
+              ← Back to Lead Queue
+            </button>
+          </div>
+          <iframe
+            key={activeLeadId + activeView}
+            src={activeView === 'cc' ? `/leads/${activeLeadId}` : `/leads/${activeLeadId}/quote`}
+            style={{ width: '100%', border: 'none', height: 'calc(100vh - 200px)' }}
+            title={activeView === 'cc' ? 'Command Center' : 'Quote Builder'}
+          />
+        </div>
+      ) : (
+        <>
       {/* ═══ MAIN TABLE SECTION ═══ */}
       <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
@@ -1112,7 +1115,7 @@ export function LeadsWorkspace({
             <button type="button" onClick={handleBatchStageSubmit} disabled={isBatchStagePending || !batchStageId}
               style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600, background: 'white', color: '#334155', cursor: 'pointer' }}
             >Apply</button>
-            <div style={{ flex: 1 }} />
+            <div style={{ flex: 1 }}></div>
             <button type="button" onClick={() => setSelectedLeadIds([])}
               style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600, background: 'white', color: '#334155', cursor: 'pointer' }}
             >Clear selection</button>
@@ -1170,9 +1173,25 @@ export function LeadsWorkspace({
                         stageMetaMap={stageMetaMap}
                         readinessMap={readinessByLeadId}
                         getLeadCommandCenterHref={getLeadCommandCenterHref}
-                        openLeadCommandCenter={openLeadCommandCenter}
+                        openLeadCommandCenter={(_router, href) => {
+                          const match = /\/leads\/([^/?#]+)/.exec(href);
+                          if (match?.[1]) {
+                            setActiveLeadId(match[1]);
+                            setSpotlightLeadId(match[1]);
+                            setActiveView('cc');
+                          } else {
+                            openLeadCommandCenter(_router, href);
+                          }
+                        }}
                         shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
-                        handleLeadCommandCenterKeyDown={handleLeadCommandCenterKeyDown}
+                        handleLeadCommandCenterKeyDown={(_event, _router, href) => {
+                          const match = /\/leads\/([^/?#]+)/.exec(href);
+                          if (match?.[1]) {
+                            setActiveLeadId(match[1]);
+                            setSpotlightLeadId(match[1]);
+                            setActiveView('cc');
+                          }
+                        }}
                       />
                     ))}
                   </div>
@@ -1210,6 +1229,8 @@ export function LeadsWorkspace({
           </div>
         </div>
       </div>
+        </>
+      )}
 
       {/* Lead drawer for new lead creation */}
       <LeadDrawer
