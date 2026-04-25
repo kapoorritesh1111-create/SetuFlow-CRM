@@ -130,6 +130,19 @@ function getHealthIcon(health: string): IconComponent {
   return CalendarCheck;
 }
 
+function getStableFollowUpVisualState(scheduledAt?: string | null, nowIso?: string | null) {
+  if (!scheduledAt || !nowIso) return scheduledAt ? 'upcoming' : 'unscheduled';
+  const target = new Date(scheduledAt);
+  const now = new Date(nowIso);
+  if (Number.isNaN(target.getTime()) || Number.isNaN(now.getTime())) return 'unscheduled';
+  const start = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+  const targetDay = start(target);
+  const today = start(now);
+  if (targetDay < today) return 'overdue';
+  if (targetDay === today) return 'today';
+  return 'upcoming';
+}
+
 function getReadinessTone(readiness: string): SignalTone {
   if (readiness === 'ready') return 'emerald';
   if (readiness === 'partial') return 'amber';
@@ -261,6 +274,7 @@ export function LeadsWorkspace({
   const searchParams = useSearchParams();
   const [activeView, setActiveView] = React.useState<string>('list');
   const [activeLeadId, setActiveLeadId] = React.useState<string | null>(null);
+  const [hydratedNowIso, setHydratedNowIso] = React.useState<string | null>(null);
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(initialMode);
   const [todayFilter, setTodayFilter] = useState<TodayFilterKey>(initialTodayState?.activeFilter ?? getPreferredTodayFilter(initialTodayState));
   const [workspaceLeads, setWorkspaceLeads] = useState<LeadRow[]>(leads);
@@ -498,6 +512,12 @@ export function LeadsWorkspace({
   }, [nextSteps]);
 
   useEffect(() => {
+    setHydratedNowIso(new Date().toISOString());
+  }, []);
+
+  const stableNowIso = hydratedNowIso ?? initialTodayState?.updatedAtIso ?? '2026-04-24T00:00:00.000Z';
+
+  useEffect(() => {
     setVisibleCount(50);
     setSelectedLeadIds((current) =>
       current.filter((leadId) => workspaceLeads.some((lead) => lead.id === leadId)),
@@ -549,18 +569,18 @@ export function LeadsWorkspace({
   const todayState = useMemo(() => buildTodayLayerState({
     mode: workspaceMode,
     activeFilter: todayFilter,
-    nowIso: new Date().toISOString(),
+    nowIso: stableNowIso,
     leads: workspaceLeads,
     activities,
     complianceItems,
-  }), [activities, complianceItems, todayFilter, workspaceLeads, workspaceMode]);
+  }), [activities, complianceItems, stableNowIso, todayFilter, workspaceLeads, workspaceMode]);
   const todayLeadIdSet = useMemo(() => new Set(todayState.filteredLeadIds), [todayState.filteredLeadIds]);
 
   const preparedLeads = useMemo(() => {
     const needle = search.trim().toLowerCase();
 
     return workspaceLeads.filter((lead) => {
-      const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
+      const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso);
       const matchesSavedView = true;
 
       const matchesSearch =
@@ -586,7 +606,7 @@ export function LeadsWorkspace({
       const matchesToday = todayFilter === 'all-open' ? true : todayLeadIdSet.has(lead.id);
       return matchesSavedView && matchesSearch && matchesFilters && matchesToday;
     });
-  }, [currentUserId, leadTypeFilter, ownerId, savedView, search, pipelineIdFilter, stageIdFilter, countryIdFilter, marketIdFilter, productIdFilter, todayFilter, todayLeadIdSet, workspaceLeads, leadMarketsMap, leadProductsMap]);
+  }, [currentUserId, leadTypeFilter, ownerId, savedView, search, pipelineIdFilter, stageIdFilter, countryIdFilter, marketIdFilter, productIdFilter, todayFilter, todayLeadIdSet, workspaceLeads, leadMarketsMap, leadProductsMap, stableNowIso]);
 
   const sortedLeads = useMemo(() => {
     const items = [...preparedLeads];
@@ -654,8 +674,8 @@ export function LeadsWorkspace({
 
   const summary = useMemo(
     () => ({
-      overdue: sortedLeads.filter((lead) => getFollowUpVisualState(lead.next_follow_up_at) === 'overdue').length,
-      dueToday: sortedLeads.filter((lead) => getFollowUpVisualState(lead.next_follow_up_at) === 'today').length,
+      overdue: sortedLeads.filter((lead) => getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso) === 'overdue').length,
+      dueToday: sortedLeads.filter((lead) => getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso) === 'today').length,
       unassigned: sortedLeads.filter((lead) => !lead.owner_user_id).length,
       hot: sortedLeads.filter((lead) => {
         const health = computeLeadHealth({
@@ -691,15 +711,15 @@ export function LeadsWorkspace({
       }).length,
       blocked: sortedLeads.filter((lead) => (readinessByLeadId.get(lead.id)?.blockerCount ?? 0) > 0).length,
     }),
-    [sortedLeads, activityMap, stageHistoryMap, stageMetaMap, readinessByLeadId],
+    [sortedLeads, activityMap, stageHistoryMap, stageMetaMap, readinessByLeadId, stableNowIso],
   );
 
   const todaysActions = useMemo(() => {
     return sortedLeads.filter((lead) => {
-      const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
+      const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso);
       return followUpState === 'overdue' || followUpState === 'today';
     });
-  }, [sortedLeads]);
+  }, [sortedLeads, stableNowIso]);
 
   const actionPreview = useMemo(() => todaysActions.slice(0, actionsExpanded ? 10 : 3), [actionsExpanded, todaysActions]);
 
@@ -708,7 +728,7 @@ export function LeadsWorkspace({
       savedViewsBase.map((view) => ({
         ...view,
         count: workspaceLeads.filter((lead) => {
-          const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
+          const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso);
           return (
             view.id === 'all' ||
             (view.id === 'mine' && lead.owner_user_id === currentUserId) ||
@@ -720,7 +740,7 @@ export function LeadsWorkspace({
           );
         }).length,
       })),
-    [currentUserId, workspaceLeads],
+    [currentUserId, workspaceLeads, stableNowIso],
   );
 
   const selectedLead = useMemo(() => {
@@ -781,7 +801,7 @@ export function LeadsWorkspace({
 
     for (const lead of visibleLeads) {
       const readiness = readinessByLeadId.get(lead.id);
-      const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
+      const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso);
       if ((readiness?.blockerCount ?? 0) > 0 || followUpState === 'overdue') groups[0].leads.push(lead);
       else if (followUpState === 'today') groups[1].leads.push(lead);
       else groups[2].leads.push(lead);
@@ -1067,20 +1087,27 @@ export function LeadsWorkspace({
       </div>
 
       {activeView !== 'list' && activeLeadId ? (
-        <div style={{ flex: 1, minHeight: 'calc(100vh - 160px)' }}>
-          <div style={{ padding: '6px 24px 6px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '8px' }}>
-            <button type="button" onClick={() => setActiveView('list')}
-              style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
-              ← Back to Lead Queue
-            </button>
-          </div>
-          <iframe
-            key={activeLeadId + activeView}
-            src={activeView === 'cc' ? `/leads/${activeLeadId}` : `/leads/${activeLeadId}/quote`}
-            style={{ width: '100%', border: 'none', height: 'calc(100vh - 200px)' }}
-            title={activeView === 'cc' ? 'Command Center' : 'Quote Builder'}
-          />
-        </div>
+        <InlineLeadWorkspace
+          activeView={activeView === 'quote' ? 'quote' : 'cc'}
+          lead={workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead}
+          stageName={stageMap.get((workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead)?.stage_id ?? '') ?? 'New Lead'}
+          ownerLabel={ownerMap.get((workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead)?.owner_user_id ?? '') ?? 'Unassigned'}
+          nextStepLabel={nextStepMap.get((workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead)?.next_step_id ?? '') ?? 'Next commercial move'}
+          selectedProductNames={(leadProductsMap.get(activeLeadId) ?? []).map((productId) => products.find((product) => product.id === productId)?.name).filter((name): name is string => Boolean(name))}
+          selectedMarketNames={(leadMarketsMap.get(activeLeadId) ?? []).map((marketId) => markets.find((market) => market.id === marketId)?.name).filter((name): name is string => Boolean(name))}
+          readiness={readinessByLeadId.get(activeLeadId)}
+          rfqs={rfqs.filter((rfq) => rfq.lead_id === activeLeadId)}
+          quotes={quotes.filter((quote) => quote.lead_id === activeLeadId)}
+          quoteVersions={quoteVersions}
+          activities={activities.filter((activity) => activity.lead_id === activeLeadId)}
+          followUps={workspaceFollowUps.filter((followUp) => followUp.lead_id === activeLeadId)}
+          complianceItems={complianceItems.filter((item) => item.lead_id === activeLeadId)}
+          documents={documents.filter((document) => document.related_id === activeLeadId || (document.linked_quote_id ? quotes.some((quote) => quote.lead_id === activeLeadId && quote.id === document.linked_quote_id) : false))}
+          safeFormatDateTime={safeFormatDateTime}
+          onBackToList={() => setActiveView('list')}
+          onOpenCommandCenter={() => setActiveView('cc')}
+          onOpenQuoteBuilder={() => setActiveView('quote')}
+        />
       ) : (
         <>
       {/* ═══ MAIN TABLE SECTION ═══ */}
@@ -1273,6 +1300,413 @@ export function LeadsWorkspace({
     </div>
   );
 }
+
+type InlineLeadWorkspaceProps = {
+  activeView: 'cc' | 'quote';
+  lead?: LeadRow;
+  stageName: string;
+  ownerLabel: string;
+  nextStepLabel: string;
+  selectedProductNames: string[];
+  selectedMarketNames: string[];
+  readiness?: LeadCommercialReadiness;
+  rfqs: Rfq[];
+  quotes: Quote[];
+  quoteVersions: QuoteVersion[];
+  activities: Activity[];
+  followUps: FollowUp[];
+  complianceItems: ComplianceItem[];
+  documents: LeadDocument[];
+  safeFormatDateTime: (value?: string | null) => string;
+  onBackToList: () => void;
+  onOpenCommandCenter: () => void;
+  onOpenQuoteBuilder: () => void;
+};
+
+function InlineLeadWorkspace({
+  activeView,
+  lead,
+  stageName,
+  ownerLabel,
+  nextStepLabel,
+  selectedProductNames,
+  selectedMarketNames,
+  readiness,
+  rfqs,
+  quotes,
+  quoteVersions,
+  activities,
+  followUps,
+  complianceItems,
+  documents,
+  safeFormatDateTime,
+  onBackToList,
+  onOpenCommandCenter,
+  onOpenQuoteBuilder,
+}: InlineLeadWorkspaceProps) {
+  if (!lead) {
+    return (
+      <div className="flex min-h-[420px] flex-col gap-3 bg-slate-50 px-6 py-5">
+        <button type="button" onClick={onBackToList} className="w-fit rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">← Back to Lead Queue</button>
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">Select a lead to open the workspace.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col gap-4 bg-slate-50 px-6 py-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={onBackToList} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">← Back to Lead Queue</button>
+        <button type="button" onClick={onOpenCommandCenter} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'cc' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Command Center</button>
+        <button type="button" onClick={onOpenQuoteBuilder} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'quote' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Quote Builder</button>
+        <span className="ml-auto rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">One page workspace · no nested route</span>
+      </div>
+      {activeView === 'quote' ? (
+        <InlineQuoteBuilder
+          lead={lead}
+          stageName={stageName}
+          ownerLabel={ownerLabel}
+          selectedProductNames={selectedProductNames}
+          selectedMarketNames={selectedMarketNames}
+          readiness={readiness}
+          rfqs={rfqs}
+          quotes={quotes}
+          quoteVersions={quoteVersions}
+          documents={documents}
+          complianceItems={complianceItems}
+          safeFormatDateTime={safeFormatDateTime}
+          onOpenCommandCenter={onOpenCommandCenter}
+        />
+      ) : (
+        <InlineCommandCenter
+          lead={lead}
+          stageName={stageName}
+          ownerLabel={ownerLabel}
+          nextStepLabel={nextStepLabel}
+          selectedProductNames={selectedProductNames}
+          selectedMarketNames={selectedMarketNames}
+          readiness={readiness}
+          rfqs={rfqs}
+          quotes={quotes}
+          activities={activities}
+          followUps={followUps}
+          complianceItems={complianceItems}
+          safeFormatDateTime={safeFormatDateTime}
+          onOpenQuoteBuilder={onOpenQuoteBuilder}
+        />
+      )}
+    </div>
+  );
+}
+
+function InlineCommandCenter({
+  lead,
+  stageName,
+  ownerLabel,
+  nextStepLabel,
+  selectedProductNames,
+  selectedMarketNames,
+  readiness,
+  rfqs,
+  quotes,
+  activities,
+  followUps,
+  complianceItems,
+  safeFormatDateTime,
+  onOpenQuoteBuilder,
+}: {
+  lead: LeadRow;
+  stageName: string;
+  ownerLabel: string;
+  nextStepLabel: string;
+  selectedProductNames: string[];
+  selectedMarketNames: string[];
+  readiness?: LeadCommercialReadiness;
+  rfqs: Rfq[];
+  quotes: Quote[];
+  activities: Activity[];
+  followUps: FollowUp[];
+  complianceItems: ComplianceItem[];
+  safeFormatDateTime: (value?: string | null) => string;
+  onOpenQuoteBuilder: () => void;
+}) {
+  const nextFollowUp = followUps.sort((a, b) => String(a.scheduled_at ?? '').localeCompare(String(b.scheduled_at ?? '')))[0] ?? null;
+  const latestActivity = activities.sort((a, b) => String(b.occurred_at ?? '').localeCompare(String(a.occurred_at ?? '')))[0] ?? null;
+  const latestQuote = quotes.sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
+  const canContinueQuote = Boolean(latestQuote || selectedProductNames.length || rfqs.length);
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
+      <div className="space-y-4">
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white">{getLeadInitials(lead.company_name) || 'SF'}</div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-500">Trade Command Center</p>
+              <h2 className="mt-1 text-2xl font-black text-slate-950">{lead.company_name}</h2>
+              <p className="mt-1 text-sm text-slate-500">{lead.lead_type} · Owner: {ownerLabel} · {lead.country ?? 'No country set'}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{readiness?.pricingReadiness === 'ready' ? 'Pricing ready' : 'Pricing needs review'}</span>
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{stageName}</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{selectedProductNames[0] ?? 'Product not mapped'}</span>
+              </div>
+            </div>
+            <button type="button" onClick={onOpenQuoteBuilder} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-slate-800">{canContinueQuote ? 'Continue quote' : 'Open Quote Builder'}</button>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Next move</p>
+              <h3 className="mt-1 text-xl font-black text-slate-950">{nextStepLabel}</h3>
+              <p className="mt-1 text-sm text-slate-500">{nextFollowUp?.scheduled_at ? `Scheduled ${safeFormatDateTime(nextFollowUp.scheduled_at)}` : 'No follow-up scheduled yet.'}</p>
+            </div>
+            <div className="flex gap-2">
+              <button type="button" className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Schedule follow-up</button>
+              <button type="button" className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Lead tools</button>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            <InlineMetric label="Quotes" value={String(quotes.length)} />
+            <InlineMetric label="RFQs" value={String(rfqs.length)} />
+            <InlineMetric label="Blockers" value={String(readiness?.blockerCount ?? complianceItems.length)} />
+            <InlineMetric label="Last activity" value={latestActivity ? safeFormatDateTime(latestActivity.occurred_at) : 'None'} />
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quote record</p>
+              <h3 className="mt-1 text-xl font-black text-slate-950">Commercial path</h3>
+            </div>
+            <button type="button" onClick={onOpenQuoteBuilder} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white">Open builder</button>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Selected products</p>
+              <p className="mt-2 text-sm font-semibold text-slate-800">{selectedProductNames.length ? selectedProductNames.join(', ') : 'No products mapped yet'}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Markets</p>
+              <p className="mt-2 text-sm font-semibold text-slate-800">{selectedMarketNames.length ? selectedMarketNames.join(', ') : lead.country ?? 'Market not set'}</p>
+            </div>
+          </div>
+        </section>
+      </div>
+      <aside className="space-y-3">
+        <InlineSideCard title="Lead queue" value={lead.lead_type === 'supplier' ? 'Supplier mode' : 'Buyer mode'} detail={stageName} />
+        <InlineSideCard title="Compliance" value={(readiness?.blockerCount ?? complianceItems.length) > 0 ? 'Needs attention' : 'Clear'} detail={`${complianceItems.length} active item${complianceItems.length === 1 ? '' : 's'}`} />
+        <InlineSideCard title="Quick links" value="Pipeline · Lead log · Share brief" detail="Use inline actions without leaving Leads." />
+      </aside>
+    </div>
+  );
+}
+
+function InlineQuoteBuilder({
+  lead,
+  stageName,
+  ownerLabel,
+  selectedProductNames,
+  selectedMarketNames,
+  readiness,
+  rfqs,
+  quotes,
+  quoteVersions,
+  documents,
+  complianceItems,
+  safeFormatDateTime,
+  onOpenCommandCenter,
+}: {
+  lead: LeadRow;
+  stageName: string;
+  ownerLabel: string;
+  selectedProductNames: string[];
+  selectedMarketNames: string[];
+  readiness?: LeadCommercialReadiness;
+  rfqs: Rfq[];
+  quotes: Quote[];
+  quoteVersions: QuoteVersion[];
+  documents: LeadDocument[];
+  complianceItems: ComplianceItem[];
+  safeFormatDateTime: (value?: string | null) => string;
+  onOpenCommandCenter: () => void;
+}) {
+  const [builderStep, setBuilderStep] = React.useState(1);
+  const steps = ['Product', 'Pricing', 'Terms', 'Review', 'Send gate'];
+  const latestQuote = quotes.sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
+  const latestVersion = latestQuote ? quoteVersions.filter((version) => version.quote_id === latestQuote.id).sort((a, b) => Number(b.version_no ?? 0) - Number(a.version_no ?? 0))[0] : null;
+  const lineItems = latestQuote?.lineItems ?? rfqs.flatMap((rfq) => rfq.lineItems ?? []);
+  const subtotal = lineItems.reduce((sum, item) => sum + Number(item.quantity ?? 1) * Number(item.unit_price ?? item.catalog_price_amount ?? 0), 0);
+  const currency = latestQuote?.currency ?? lineItems[0]?.currency ?? lineItems[0]?.catalog_price_currency ?? lead.deal_currency ?? 'USD';
+  const blockerCount = readiness?.blockerCount ?? complianceItems.length;
+  const pricingReady = readiness?.pricingReadiness === 'ready' || lineItems.length > 0;
+  const sendReady = blockerCount === 0 && pricingReady;
+
+  return (
+    <div className="space-y-4 pb-20">
+      <section className="rounded-[28px] bg-gradient-to-br from-slate-950 via-[#0b2e4a] to-blue-700 p-5 text-white shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500 text-lg font-black">{getLeadInitials(lead.company_name) || 'SF'}</div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-100">Quote Builder</p>
+              <h2 className="mt-1 text-2xl font-black">{lead.company_name}</h2>
+              <p className="mt-1 text-sm text-blue-100">{lead.lead_type} · {ownerLabel} · {selectedMarketNames[0] ?? lead.country ?? 'Market not set'}</p>
+              <div className="mt-3 flex flex-wrap gap-2">{(selectedProductNames.length ? selectedProductNames : ['Map product before send']).slice(0, 3).map((item) => <span key={item} className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white ring-1 ring-white/15">{item}</span>)}</div>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-black">{subtotal > 0 ? `${currency} ${subtotal.toLocaleString()}` : `${quotes.length} quote${quotes.length === 1 ? '' : 's'}`}</p>
+            <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-blue-100">Draft total</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" onClick={onOpenCommandCenter} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white ring-1 ring-white/20">← Back to CC</button>
+              <button type="button" className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-900">Save draft</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2"><h3 className="text-sm font-black text-slate-950">Quote Builder</h3><span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-600">Step {builderStep + 1} of 5 · {steps[builderStep]}</span></div>
+          <p className="text-xs text-slate-400">Capture → Lead → Quote → Order</p>
+        </div>
+        <div className="mt-5 flex items-start gap-2">
+          {steps.map((step, index) => (
+            <React.Fragment key={step}>
+              <button type="button" onClick={() => setBuilderStep(index)} className="flex flex-1 flex-col items-center gap-1">
+                <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black ${index < builderStep ? 'bg-emerald-600 text-white' : index === builderStep ? 'bg-slate-900 text-white' : 'border-2 border-slate-200 bg-white text-slate-400'}`}>{index < builderStep ? '✓' : index + 1}</span>
+                <span className={`text-[10px] font-bold ${index === builderStep ? 'text-slate-900' : index < builderStep ? 'text-emerald-700' : 'text-slate-400'}`}>{step}</span>
+              </button>
+              {index < steps.length - 1 ? <span className={`mt-4 h-0.5 flex-1 ${index < builderStep ? 'bg-emerald-600' : 'bg-slate-200'}`} /> : null}
+            </React.Fragment>
+          ))}
+        </div>
+        <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600"><strong>Step {builderStep + 1} — {steps[builderStep]}:</strong> {getQuoteStepDescription(builderStep)}</p>
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
+        <main className="space-y-4">
+          <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{steps[builderStep]} workspace</p>
+                <h3 className="mt-1 text-xl font-black text-slate-950">{getQuoteStepTitle(builderStep)}</h3>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'}</span>
+            </div>
+            <QuoteStepBody
+              step={builderStep}
+              selectedProductNames={selectedProductNames}
+              selectedMarketNames={selectedMarketNames}
+              lineItems={lineItems}
+              currency={currency}
+              subtotal={subtotal}
+              blockerCount={blockerCount}
+              pricingReady={pricingReady}
+              sendReady={sendReady}
+              documents={documents}
+              complianceItems={complianceItems}
+              safeFormatDateTime={safeFormatDateTime}
+              stableNowIso={stableNowIso}
+            />
+          </section>
+        </main>
+        <aside className="space-y-3">
+          <InlineSideCard title="Quote snapshot" value={latestQuote?.quote_number ?? latestQuote?.id?.slice(0, 8) ?? 'Draft not numbered'} detail={`Updated ${latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'not saved yet'}`} />
+          <InlineSideCard title="Pricing guard" value={pricingReady ? 'Ready to review' : 'Needs line items'} detail={readiness?.blockerReasons?.[0] ?? `${lineItems.length} line item${lineItems.length === 1 ? '' : 's'}`} />
+          <InlineSideCard title="Approval threshold" value={blockerCount > 0 ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'}` : 'No blockers'} detail={sendReady ? 'Send gate clear' : 'Resolve before sending'} />
+          <InlineSideCard title="Lead context" value={stageName} detail={`${lead.country ?? 'No country'} · ${lead.lead_type}`} />
+          <InlineSideCard title="Current version" value={latestVersion?.version_no ? `v${latestVersion.version_no}` : 'v1 draft'} detail={latestVersion?.status ?? 'Ready for draft edits'} />
+        </aside>
+      </div>
+
+      <div className="sticky bottom-3 z-10 rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur">
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => setBuilderStep((step) => Math.min(step + 1, steps.length - 1))} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white shadow-sm">{builderStep < steps.length - 1 ? `Continue ${steps[Math.min(builderStep + 1, steps.length - 1)]} step` : sendReady ? 'Send quote' : 'Review blockers'}</button>
+          <button type="button" className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700">Save draft</button>
+          <button type="button" className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700">Request approval</button>
+          <span className="ml-auto rounded-full bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Command Center · Quote Builder · {steps[builderStep]}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuoteStepBody({
+  step,
+  selectedProductNames,
+  selectedMarketNames,
+  lineItems,
+  currency,
+  subtotal,
+  blockerCount,
+  pricingReady,
+  sendReady,
+  documents,
+  complianceItems,
+  safeFormatDateTime,
+  stableNowIso,
+}: {
+  step: number;
+  selectedProductNames: string[];
+  selectedMarketNames: string[];
+  lineItems: Array<RfqLineItem | QuoteLineItem>;
+  currency: string;
+  subtotal: number;
+  blockerCount: number;
+  pricingReady: boolean;
+  sendReady: boolean;
+  documents: LeadDocument[];
+  complianceItems: ComplianceItem[];
+  safeFormatDateTime: (value?: string | null) => string;
+  stableNowIso: string;
+}) {
+  if (step === 0) {
+    return <div className="mt-4 grid gap-3 md:grid-cols-2"><BuilderInfoCard title="Selected catalog products" value={selectedProductNames.length ? selectedProductNames.join(', ') : 'No product selected'} detail="Use catalog-backed products before pricing." /><BuilderInfoCard title="Target markets" value={selectedMarketNames.length ? selectedMarketNames.join(', ') : 'Market not selected'} detail="Market coverage controls documents, freight, and pricing posture." /></div>;
+  }
+  if (step === 1) {
+    return <div className="mt-4 space-y-3"><div className="overflow-hidden rounded-2xl border border-slate-200"><div className="grid grid-cols-[1.4fr_.6fr_.8fr_.8fr] bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400"><span>Product</span><span>Qty</span><span>Unit price</span><span>Total</span></div>{lineItems.length ? lineItems.map((item) => { const qty = Number(item.quantity ?? 1); const price = Number(item.unit_price ?? item.catalog_price_amount ?? 0); return <div key={item.id} className="grid grid-cols-[1.4fr_.6fr_.8fr_.8fr] border-t border-slate-100 px-4 py-3 text-sm text-slate-700"><span>{item.product_id ?? 'Catalog line'}</span><span>{qty}</span><span>{currency} {price.toLocaleString()}</span><span className="font-bold text-slate-950">{currency} {(qty * price).toLocaleString()}</span></div>; }) : <div className="px-4 py-6 text-sm text-slate-500">No quote lines yet. Add a product line or pull lines from RFQ.</div>}</div><div className="flex justify-end text-lg font-black text-slate-950">Subtotal: {currency} {subtotal.toLocaleString()}</div></div>;
+  }
+  if (step === 2) {
+    return <div className="mt-4 grid gap-3 md:grid-cols-2"><BuilderInfoCard title="Currency" value={currency} detail="Quote currency follows lead/catalog defaults." /><BuilderInfoCard title="Incoterm" value="FOB / CIF pending" detail="Confirm logistics before review." /><BuilderInfoCard title="Payment terms" value="30% advance, 70% on BL" detail="Default export terms ready to adjust." /><BuilderInfoCard title="Validity" value="30 days" detail="Keep pricing validity visible for sales." /></div>;
+  }
+  if (step === 3) {
+    return <div className="mt-4 grid gap-3 md:grid-cols-3"><BuilderInfoCard title="Pricing" value={pricingReady ? 'Ready' : 'Incomplete'} detail="Complete quantity and unit price on every line before review." /><BuilderInfoCard title="Documents" value={`${documents.length} linked`} detail={documents[0]?.file_name ?? 'No quote PDF linked yet.'} /><BuilderInfoCard title="Compliance" value={complianceItems.length ? `${complianceItems.length} item(s)` : 'Clear'} detail="Gate status before send." /></div>;
+  }
+  return <div className="mt-4 grid gap-3 md:grid-cols-2"><BuilderInfoCard title="Send readiness" value={sendReady ? 'Safe to send' : 'Not ready'} detail={sendReady ? 'No blockers are visible on this quote.' : `${blockerCount} blocker(s) or pricing gap(s) remain.`} /><BuilderInfoCard title="Audit trail" value={safeFormatDateTime(stableNowIso)} detail="A send decision snapshot will be recorded before customer-facing release." /></div>;
+}
+
+function InlineMetric({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</p><p className="mt-2 text-base font-black text-slate-950">{value}</p></div>;
+}
+
+function InlineSideCard({ title, value, detail }: { title: string; value: string; detail: string }) {
+  return <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{title}</p><p className="mt-2 text-base font-black text-slate-950">{value}</p><p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p></div>;
+}
+
+function BuilderInfoCard({ title, value, detail }: { title: string; value: string; detail: string }) {
+  return <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{title}</p><p className="mt-2 text-sm font-black text-slate-950">{value}</p><p className="mt-2 text-xs leading-5 text-slate-500">{detail}</p></div>;
+}
+
+function getQuoteStepDescription(step: number) {
+  if (step === 0) return 'Confirm the product or category promise before pricing starts.';
+  if (step === 1) return 'Build the quote line by line. Overrides should stay visible before approval.';
+  if (step === 2) return 'Lock currency, incoterm, payment terms, port context, and quote validity.';
+  if (step === 3) return 'Review pricing, compliance, and document posture before release.';
+  return 'Send only after blockers, approval posture, and audit records are clear.';
+}
+
+function getQuoteStepTitle(step: number) {
+  if (step === 0) return 'Confirm product scope';
+  if (step === 1) return 'Build pricing lines';
+  if (step === 2) return 'Set commercial terms';
+  if (step === 3) return 'Review quote package';
+  return 'Approve and send safely';
+}
+
 
 function LeadQueueStat({ label, value, tone }: { label: string; value: number; tone: 'slate' | 'blue' | 'amber' }) {
   const toneClass =

@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import { type KeyboardEvent } from 'react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getFollowUpVisualState } from '@/lib/lead-status';
 import type { LeadCommercialReadiness } from '@/lib/catalog-pricing-model';
 import type { LeadRow } from '@/features/leads/types/workspace';
 
@@ -73,6 +72,29 @@ function getStagePillClasses(stageName: string): string {
   return 'border-slate-300 bg-slate-100 text-slate-600'; // slate — default
 }
 
+function getStableFollowUpVisualState(scheduledAt?: string | null, nowIso?: string | null) {
+  if (!scheduledAt || !nowIso) return scheduledAt ? 'upcoming' : 'unscheduled';
+  const target = new Date(scheduledAt);
+  const now = new Date(nowIso);
+  if (Number.isNaN(target.getTime()) || Number.isNaN(now.getTime())) return 'unscheduled';
+  const start = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+  const targetDay = start(target);
+  const today = start(now);
+  if (targetDay < today) return 'overdue';
+  if (targetDay === today) return 'today';
+  return 'upcoming';
+}
+
+function getStableDayDiff(scheduledAt?: string | null, nowIso?: string | null) {
+  if (!scheduledAt || !nowIso) return null;
+  const target = new Date(scheduledAt);
+  const now = new Date(nowIso);
+  if (Number.isNaN(target.getTime()) || Number.isNaN(now.getTime())) return null;
+  const start = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+  const dayMs = 1000 * 60 * 60 * 24;
+  return Math.round((start(target) - start(now)) / dayMs);
+}
+
 export function LeadTableRow({
   lead,
   selected,
@@ -89,7 +111,13 @@ export function LeadTableRow({
   shouldIgnoreLeadNavigationTarget,
   handleLeadCommandCenterKeyDown,
 }: LeadTableRowProps) {
-  const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
+  const [hydratedNowIso, setHydratedNowIso] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHydratedNowIso(new Date().toISOString());
+  }, []);
+
+  const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, hydratedNowIso);
   const readiness = readinessMap.get(lead.id);
   const commandCenterHref = getLeadCommandCenterHref(lead.id);
   const quoteBuilderHref = `/leads/${lead.id}/quote?source=lead-queue`;
@@ -100,10 +128,7 @@ export function LeadTableRow({
   const blockerCount = readiness?.blockerCount ?? 0;
 
   // ── Severity left border (spec: .lead-row.critical / .warning / .ok) ──────
-  const dueDate = lead.next_follow_up_at ? new Date(lead.next_follow_up_at) : null;
-  const now = new Date();
-  const dayMs = 1000 * 60 * 60 * 24;
-  const diffDays = dueDate ? Math.floor((dueDate.getTime() - now.getTime()) / dayMs) : null;
+  const diffDays = getStableDayDiff(lead.next_follow_up_at, hydratedNowIso);
   const overdueDays = diffDays !== null && diffDays < 0 ? Math.abs(diffDays) : null;
 
   const severityBorderClass =
