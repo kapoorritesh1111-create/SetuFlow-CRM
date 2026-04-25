@@ -1258,8 +1258,7 @@ export function LeadsWorkspace({
           </div>
         </div>
       </div>
-
-      </div>
+    </div>
       )} {/* end activeLeadView !== list ternary */}
 
       {/* Lead drawer for new lead creation */}
