@@ -1536,6 +1536,7 @@ function InlineQuoteBuilder({
   documents: LeadDocument[];
   complianceItems: ComplianceItem[];
   safeFormatDateTime: (value?: string | null) => string;
+  stableNowIso: string;
   onOpenCommandCenter: () => void;
 }) {
   const [builderStep, setBuilderStep] = React.useState(1);
