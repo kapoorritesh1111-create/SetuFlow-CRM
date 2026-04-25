@@ -1104,6 +1104,7 @@ export function LeadsWorkspace({
           complianceItems={complianceItems.filter((item) => item.lead_id === activeLeadId)}
           documents={documents.filter((document) => document.related_id === activeLeadId || (document.linked_quote_id ? quotes.some((quote) => quote.lead_id === activeLeadId && quote.id === document.linked_quote_id) : false))}
           safeFormatDateTime={safeFormatDateTime}
+          stableNowIso={stableNowIso}
           onBackToList={() => setActiveView('list')}
           onOpenCommandCenter={() => setActiveView('cc')}
           onOpenQuoteBuilder={() => setActiveView('quote')}
@@ -1318,6 +1319,7 @@ type InlineLeadWorkspaceProps = {
   complianceItems: ComplianceItem[];
   documents: LeadDocument[];
   safeFormatDateTime: (value?: string | null) => string;
+  stableNowIso: string;
   onBackToList: () => void;
   onOpenCommandCenter: () => void;
   onOpenQuoteBuilder: () => void;
@@ -1340,6 +1342,7 @@ function InlineLeadWorkspace({
   complianceItems,
   documents,
   safeFormatDateTime,
+  stableNowIso,
   onBackToList,
   onOpenCommandCenter,
   onOpenQuoteBuilder,
@@ -1375,6 +1378,7 @@ function InlineLeadWorkspace({
           documents={documents}
           complianceItems={complianceItems}
           safeFormatDateTime={safeFormatDateTime}
+          stableNowIso={stableNowIso}
           onOpenCommandCenter={onOpenCommandCenter}
         />
       ) : (
@@ -1517,6 +1521,7 @@ function InlineQuoteBuilder({
   documents,
   complianceItems,
   safeFormatDateTime,
+  stableNowIso,
   onOpenCommandCenter,
 }: {
   lead: LeadRow;
