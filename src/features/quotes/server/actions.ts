@@ -56,6 +56,223 @@ async function insertCommunication(db: any, payload: CommunicationWritePayload) 
   });
 }
 
+
+function isMissingRpcFunction(error: any) {
+  const message = String(error?.message ?? '').toLowerCase();
+  return message.includes('could not find the function') || message.includes('schema cache') || message.includes('function public.');
+}
+
+async function createQuoteDirect(db: any, params: {
+  organizationId: string;
+  leadId: string;
+  rfqId: string | null;
+  createdBy: string;
+  currency: string;
+  status: string;
+  notes: string | null;
+  pricingBasis: string;
+  lineItems: any[];
+  approvalRequired: boolean;
+  approvalState: string;
+}) {
+  const { data: quote, error: quoteError } = await db
+    .from('quotes')
+    .insert({
+      organization_id: params.organizationId,
+      lead_id: params.leadId,
+      rfq_id: params.rfqId,
+      created_by: params.createdBy,
+      status: params.status,
+      currency: params.currency,
+      display_currency: params.currency,
+      pricing_basis: params.pricingBasis,
+      approval_required: params.approvalRequired,
+      approved_at: params.approvalState === 'approved' ? new Date().toISOString() : null,
+      approved_by: params.approvalState === 'approved' ? params.createdBy : null,
+      notes: params.notes,
+      source_type: params.rfqId ? 'rfq' : 'lead',
+    })
+    .select('id, lead_id, status, currency, current_version_id')
+    .single();
+
+  if (quoteError) return { data: null, error: quoteError };
+
+  const quoteId = quote.id;
+  if (params.lineItems.length) {
+    const { error: lineError } = await db.from('quote_line_items').insert(params.lineItems.map((line) => ({ ...line, quote_id: quoteId })));
+    if (lineError) return { data: null, error: lineError };
+  }
+
+  const { data: version, error: versionError } = await db
+    .from('quote_versions')
+    .insert({
+      quote_id: quoteId,
+      version_no: 1,
+      status: params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalRequired ? 'approval_pending' : 'draft',
+      pricing_basis: params.pricingBasis,
+      display_currency: params.currency,
+      internal_notes: params.notes,
+      total_line_count: params.lineItems.length,
+      created_by: params.createdBy,
+      approved_at: params.approvalState === 'approved' ? new Date().toISOString() : null,
+      approved_by: params.approvalState === 'approved' ? params.createdBy : null,
+      sent_at: params.status === 'sent' ? new Date().toISOString() : null,
+      sent_by: params.status === 'sent' ? params.createdBy : null,
+    })
+    .select('id')
+    .single();
+
+  if (versionError) return { data: null, error: versionError };
+
+  if (version?.id) {
+    const versionLines = params.lineItems.map((line, index) => ({
+      quote_version_id: version.id,
+      product_id: line.product_id,
+      product_variant_id: line.product_variant_id,
+      sku_code: `LINE-${index + 1}`,
+      product_name: line.notes || `Product ${index + 1}`,
+      category_type: 'powders',
+      basis_applied: params.pricingBasis,
+      pricing_mode: 'case',
+      moq: line.quantity,
+      final_unit_price: line.unit_price,
+      display_currency: line.currency ?? params.currency,
+      is_overridden: Boolean(line.is_price_overridden),
+      override_reason: line.override_reason,
+      overridden_by: line.overridden_by,
+      overridden_at: line.overridden_at,
+      line_notes: line.notes,
+      sort_order: index,
+    }));
+    if (versionLines.length) {
+      const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
+      if (versionLineError) return { data: null, error: versionLineError };
+    }
+    const { error: quoteVersionUpdateError } = await db.from('quotes').update({ current_version_id: version.id }).eq('id', quoteId);
+    if (quoteVersionUpdateError) return { data: null, error: quoteVersionUpdateError };
+  }
+
+  const activity = await db.from('lead_activities').insert({
+    organization_id: params.organizationId,
+    lead_id: params.leadId,
+    actor_user_id: params.createdBy,
+    kind: 'quote_created',
+    message: 'Quote draft created.',
+  });
+  if (activity.error) return { data: null, error: activity.error };
+
+  return { data: { quote_id: quoteId, lead_id: params.leadId }, error: null };
+}
+
+async function updateQuoteDirect(db: any, params: {
+  organizationId: string;
+  quoteId: string;
+  leadId: string;
+  actorUserId: string;
+  status: string;
+  currency: string;
+  notes: string | null;
+  pricingBasis: string;
+  quoteVersionId: string | null;
+  lineItems: any[];
+  approvalRequired: boolean;
+  approvalState: string;
+}) {
+  const nowIso = new Date().toISOString();
+  const { error: quoteError } = await db
+    .from('quotes')
+    .update({
+      status: params.status,
+      currency: params.currency,
+      display_currency: params.currency,
+      pricing_basis: params.pricingBasis,
+      approval_required: params.approvalRequired,
+      approved_at: params.approvalState === 'approved' ? nowIso : null,
+      approved_by: params.approvalState === 'approved' ? params.actorUserId : null,
+      notes: params.notes,
+      updated_at: nowIso,
+    })
+    .eq('organization_id', params.organizationId)
+    .eq('id', params.quoteId);
+  if (quoteError) return { data: null, error: quoteError };
+
+  const { error: deleteLinesError } = await db.from('quote_line_items').delete().eq('quote_id', params.quoteId);
+  if (deleteLinesError) return { data: null, error: deleteLinesError };
+  if (params.lineItems.length) {
+    const { error: insertLinesError } = await db.from('quote_line_items').insert(params.lineItems.map((line) => ({ ...line, quote_id: params.quoteId })));
+    if (insertLinesError) return { data: null, error: insertLinesError };
+  }
+
+  let versionId = params.quoteVersionId;
+  if (!versionId) {
+    const { data: version, error: versionError } = await db
+      .from('quote_versions')
+      .insert({
+        quote_id: params.quoteId,
+        version_no: 1,
+        status: params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalRequired ? 'approval_pending' : 'draft',
+        pricing_basis: params.pricingBasis,
+        display_currency: params.currency,
+        internal_notes: params.notes,
+        total_line_count: params.lineItems.length,
+        created_by: params.actorUserId,
+      })
+      .select('id')
+      .single();
+    if (versionError) return { data: null, error: versionError };
+    versionId = version.id;
+    const { error: quoteVersionUpdateError } = await db.from('quotes').update({ current_version_id: versionId }).eq('id', params.quoteId);
+    if (quoteVersionUpdateError) return { data: null, error: quoteVersionUpdateError };
+  } else {
+    const { error: versionUpdateError } = await db
+      .from('quote_versions')
+      .update({
+        status: params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalRequired ? 'approval_pending' : 'draft',
+        pricing_basis: params.pricingBasis,
+        display_currency: params.currency,
+        internal_notes: params.notes,
+        total_line_count: params.lineItems.length,
+        updated_at: nowIso,
+        approved_at: params.approvalState === 'approved' ? nowIso : null,
+        approved_by: params.approvalState === 'approved' ? params.actorUserId : null,
+        sent_at: params.status === 'sent' ? nowIso : null,
+        sent_by: params.status === 'sent' ? params.actorUserId : null,
+      })
+      .eq('id', versionId);
+    if (versionUpdateError) return { data: null, error: versionUpdateError };
+  }
+
+  if (versionId) {
+    const { error: deleteVersionLinesError } = await db.from('quote_version_line_items').delete().eq('quote_version_id', versionId);
+    if (deleteVersionLinesError) return { data: null, error: deleteVersionLinesError };
+    const versionLines = params.lineItems.map((line, index) => ({
+      quote_version_id: versionId,
+      product_id: line.product_id,
+      product_variant_id: line.product_variant_id,
+      sku_code: `LINE-${index + 1}`,
+      product_name: line.notes || `Product ${index + 1}`,
+      category_type: 'powders',
+      basis_applied: params.pricingBasis,
+      pricing_mode: 'case',
+      moq: line.quantity,
+      final_unit_price: line.unit_price,
+      display_currency: line.currency ?? params.currency,
+      is_overridden: Boolean(line.is_price_overridden),
+      override_reason: line.override_reason,
+      overridden_by: line.overridden_by,
+      overridden_at: line.overridden_at,
+      line_notes: line.notes,
+      sort_order: index,
+    }));
+    if (versionLines.length) {
+      const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
+      if (versionLineError) return { data: null, error: versionLineError };
+    }
+  }
+
+  return { data: { quote_id: params.quoteId, lead_id: params.leadId }, error: null };
+}
+
 async function writeQuoteAuditLog(input: {
   organizationId: string;
   actorUserId: string;
@@ -590,9 +807,26 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
     p_action_source: 'createQuote',
   });
 
-  if (createQuoteTxError) return { error: createQuoteTxError.message };
+  let quote = Array.isArray(createdQuoteResult) ? createdQuoteResult[0] : createdQuoteResult;
+  if (createQuoteTxError) {
+    if (!isMissingRpcFunction(createQuoteTxError)) return { error: createQuoteTxError.message };
+    const fallback = await createQuoteDirect(db, {
+      organizationId: organization.id,
+      leadId,
+      rfqId,
+      createdBy: currentUser.id,
+      currency: currency ?? 'USD',
+      status,
+      notes,
+      pricingBasis,
+      lineItems: lineItemsPayload,
+      approvalRequired,
+      approvalState,
+    });
+    if (fallback.error) return { error: fallback.error.message };
+    quote = fallback.data;
+  }
 
-  const quote = Array.isArray(createdQuoteResult) ? createdQuoteResult[0] : createdQuoteResult;
   if (!quote?.quote_id || !quote?.lead_id) return { error: 'Failed to create quote.' };
 
   const fetched = await fetchQuoteRecord(db, organization.id, quote.quote_id);
@@ -865,7 +1099,31 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
         p_approval_state: approvalState,
         p_action_source: 'updateQuoteWorkflow',
       });
-      if (sendFanoutError) return { error: sendFanoutError.message };
+      if (sendFanoutError) {
+        if (!isMissingRpcFunction(sendFanoutError)) return { error: sendFanoutError.message };
+        const sentAt = new Date().toISOString();
+        const [{ error: quoteSendError }, { error: versionSendError }] = await Promise.all([
+          db.from('quotes').update({ status: 'sent', updated_at: sentAt }).eq('organization_id', organization.id).eq('id', quoteId),
+          db.from('quote_versions').update({ status: 'sent', sent_at: sentAt, sent_by: currentUser.id, updated_at: sentAt }).eq('id', existing.current_version_id),
+        ]);
+        if (quoteSendError) return { error: quoteSendError.message };
+        if (versionSendError) return { error: versionSendError.message };
+        const sendCommunication = await insertCommunication(db, {
+          organization_id: organization.id,
+          lead_id: existing.lead_id,
+          related_entity: 'quote',
+          related_id: quoteId,
+          communication_type: 'quote_message',
+          direction: 'outbound',
+          channel: 'system',
+          subject: 'Quote sent',
+          body: plainNotes || 'Quote marked as sent.',
+          summary: 'Quote sent',
+          created_by: currentUser.id,
+          metadata: { source: 'direct_quote_send_fanout', quote_version_id: existing.current_version_id },
+        });
+        if (sendCommunication.error) return { error: sendCommunication.error.message };
+      }
 
       await writeQuoteAuditLog({
         organizationId: organization.id,
@@ -1030,9 +1288,27 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     p_action_source: 'updateQuoteWorkflow',
   });
 
-  if (updateQuoteTxError) return { error: updateQuoteTxError.message };
+  let updatedQuote = Array.isArray(updatedQuoteResult) ? updatedQuoteResult[0] : updatedQuoteResult;
+  if (updateQuoteTxError) {
+    if (!isMissingRpcFunction(updateQuoteTxError)) return { error: updateQuoteTxError.message };
+    const fallback = await updateQuoteDirect(db, {
+      organizationId: organization.id,
+      quoteId,
+      leadId: existing.lead_id,
+      actorUserId: currentUser.id,
+      status,
+      currency: currency ?? 'USD',
+      notes,
+      pricingBasis,
+      quoteVersionId: existing.current_version_id ?? null,
+      lineItems: lineItemsPayload,
+      approvalRequired,
+      approvalState,
+    });
+    if (fallback.error) return { error: fallback.error.message };
+    updatedQuote = fallback.data;
+  }
 
-  const updatedQuote = Array.isArray(updatedQuoteResult) ? updatedQuoteResult[0] : updatedQuoteResult;
   if (!updatedQuote?.quote_id) return { error: 'Failed to update quote.' };
 
   const fetched = await fetchQuoteRecord(db, organization.id, quoteId);

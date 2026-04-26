@@ -252,6 +252,203 @@ async function insertCommunication(db: any, payload: CommunicationPayload) {
   });
 }
 
+
+function isMissingRpcFunction(error: any) {
+  const message = String(error?.message ?? '').toLowerCase();
+  return message.includes('could not find the function') || message.includes('schema cache') || message.includes('function public.');
+}
+
+async function refreshLeadRelationsDirect(db: any, params: {
+  leadId: string;
+  marketIds: string[];
+  productIds: string[];
+}) {
+  const [{ error: deleteMarketsError }, { error: deleteProductsError }] = await Promise.all([
+    db.from('lead_markets').delete().eq('lead_id', params.leadId),
+    db.from('lead_product_interests').delete().eq('lead_id', params.leadId),
+  ]);
+  if (deleteMarketsError) return { error: deleteMarketsError };
+  if (deleteProductsError) return { error: deleteProductsError };
+
+  if (params.marketIds.length) {
+    const { error } = await db.from('lead_markets').insert(params.marketIds.map((marketId) => ({ lead_id: params.leadId, market_id: marketId })));
+    if (error) return { error };
+  }
+
+  if (params.productIds.length) {
+    const { error } = await db.from('lead_product_interests').insert(params.productIds.map((productId) => ({
+      lead_id: params.leadId,
+      product_id: productId,
+      interest_type: 'confirmed_product',
+      source_context: { source: 'lead_workspace' },
+    })));
+    if (error) return { error };
+  }
+
+  return { error: null };
+}
+
+async function replaceLeadFollowUpDirect(db: any, params: {
+  organizationId: string;
+  leadId: string;
+  scheduledAt: string;
+  actorUserId: string;
+}) {
+  await db
+    .from('lead_follow_ups')
+    .update({ status: 'cancelled' })
+    .eq('organization_id', params.organizationId)
+    .eq('lead_id', params.leadId)
+    .in('status', ['pending', 'scheduled']);
+
+  const { data, error } = await db
+    .from('lead_follow_ups')
+    .insert({
+      organization_id: params.organizationId,
+      lead_id: params.leadId,
+      scheduled_at: params.scheduledAt,
+      status: 'scheduled',
+      assigned_user_id: params.actorUserId,
+      created_by: params.actorUserId,
+    })
+    .select('id, lead_id, scheduled_at, status')
+    .single();
+
+  return { data, error };
+}
+
+async function recordLeadStageHistoryDirect(db: any, params: {
+  organizationId: string;
+  leadId: string;
+  fromStageId: string | null;
+  toStageId: string | null;
+  actorUserId: string;
+}) {
+  if (!params.toStageId || params.fromStageId === params.toStageId) return { data: { lead_id: params.leadId }, error: null };
+  const { data, error } = await db
+    .from('lead_stage_history')
+    .insert({
+      organization_id: params.organizationId,
+      lead_id: params.leadId,
+      from_stage_id: params.fromStageId,
+      to_stage_id: params.toStageId,
+      changed_by: params.actorUserId,
+    })
+    .select('id, lead_id')
+    .single();
+  return { data, error };
+}
+
+async function recordLeadStageFanoutDirect(db: any, params: {
+  organizationId: string;
+  leadId: string;
+  fromStageId: string | null;
+  toStageId: string | null;
+  actorUserId: string;
+  companyName: string;
+}) {
+  const { data: stage } = await db.from('pipeline_stages').select('name').eq('id', params.toStageId).maybeSingle();
+  const stageName = stage?.name ? String(stage.name) : 'new stage';
+  const activity = await insertActivity(db, {
+    organization_id: params.organizationId,
+    lead_id: params.leadId,
+    actor_user_id: params.actorUserId,
+    kind: 'stage_moved',
+    message: `${params.companyName} moved to ${stageName}.`,
+  });
+  if (activity.error) return { data: null, error: activity.error };
+  const communication = await insertCommunication(db, {
+    organization_id: params.organizationId,
+    lead_id: params.leadId,
+    related_entity: 'lead',
+    related_id: params.leadId,
+    communication_type: 'system_note',
+    direction: 'internal',
+    channel: 'system',
+    subject: 'Stage moved',
+    body: `Stage moved to ${stageName}.`,
+    summary: 'Stage moved',
+    created_by: params.actorUserId,
+    metadata: { source: 'direct_stage_fanout', from_stage_id: params.fromStageId, to_stage_id: params.toStageId },
+  });
+  if (communication.error) return { data: null, error: communication.error };
+  return { data: { lead_id: params.leadId }, error: null };
+}
+
+async function recordLeadNonStageFanoutDirect(db: any, params: {
+  organizationId: string;
+  leadId: string;
+  actorUserId: string;
+  payload: Record<string, any>;
+}) {
+  const payload = params.payload ?? {};
+  const baselineKind = String(payload.baseline_activity_kind ?? 'lead_updated');
+  const baselineMessage = String(payload.baseline_activity_message ?? 'Lead updated.');
+  const activity = await insertActivity(db, {
+    organization_id: params.organizationId,
+    lead_id: params.leadId,
+    actor_user_id: params.actorUserId,
+    kind: baselineKind,
+    message: baselineMessage,
+  });
+  if (activity.error) return { data: null, error: activity.error };
+
+  const baselineCommunication = await insertCommunication(db, {
+    organization_id: params.organizationId,
+    lead_id: params.leadId,
+    related_entity: 'lead',
+    related_id: params.leadId,
+    communication_type: 'system_note',
+    direction: 'internal',
+    channel: 'system',
+    subject: payload.baseline_subject ?? 'Lead updated',
+    body: payload.baseline_body ?? baselineMessage,
+    summary: payload.baseline_summary ?? 'Lead updated',
+    created_by: params.actorUserId,
+    metadata: { source: 'direct_non_stage_fanout' },
+  });
+  if (baselineCommunication.error) return { data: null, error: baselineCommunication.error };
+
+  const extraActivities: Array<{ kind: string; message: string }> = [];
+  if (payload.follow_up_changed) extraActivities.push({ kind: 'follow_up_scheduled', message: payload.follow_up_activity_message ?? 'Follow-up scheduled.' });
+  if (payload.products_changed) extraActivities.push({ kind: 'products_updated', message: payload.products_activity_message ?? 'Product interests updated.' });
+  if (payload.markets_changed) extraActivities.push({ kind: 'markets_updated', message: payload.markets_activity_message ?? 'Markets updated.' });
+  if (payload.note_added) extraActivities.push({ kind: 'note_updated', message: payload.note_activity_message ?? 'Notes updated.' });
+  if (payload.trade_event_linked) extraActivities.push({ kind: 'trade_event_linked', message: payload.trade_event_activity_message ?? 'Trade event linked.' });
+
+  for (const item of extraActivities) {
+    const extra = await insertActivity(db, {
+      organization_id: params.organizationId,
+      lead_id: params.leadId,
+      actor_user_id: params.actorUserId,
+      kind: item.kind,
+      message: item.message,
+    });
+    if (extra.error) return { data: null, error: extra.error };
+  }
+
+  if (payload.follow_up_changed && payload.follow_up_scheduled_at) {
+    const followUpCommunication = await insertCommunication(db, {
+      organization_id: params.organizationId,
+      lead_id: params.leadId,
+      related_entity: 'lead',
+      related_id: params.leadId,
+      communication_type: 'follow_up',
+      direction: 'internal',
+      channel: 'system',
+      subject: 'Follow-up scheduled',
+      body: payload.follow_up_body ?? payload.follow_up_activity_message ?? 'Follow-up scheduled.',
+      summary: 'Follow-up scheduled',
+      scheduled_at: payload.follow_up_scheduled_at,
+      created_by: params.actorUserId,
+      metadata: { source: 'direct_non_stage_fanout' },
+    });
+    if (followUpCommunication.error) return { data: null, error: followUpCommunication.error };
+  }
+
+  return { data: { lead_id: params.leadId }, error: null };
+}
+
 type QuoteCommunicationGate = {
   allowed: boolean;
   reason?: string;
@@ -1286,14 +1483,18 @@ const contactSourceContext = {
 
   if (!leadId) return { error: 'Unable to determine saved lead ID.' };
 
-  const { error: relationRefreshError } = await db.rpc('app_refresh_lead_relations_tx', {
+  const { error: relationRpcError } = await db.rpc('app_refresh_lead_relations_tx', {
     p_organization_id: organization.id,
     p_lead_id: leadId,
     p_market_ids: marketIds,
     p_product_ids: productIds,
   });
 
-  if (relationRefreshError) return { error: relationRefreshError.message };
+  if (relationRpcError) {
+    if (!isMissingRpcFunction(relationRpcError)) return { error: relationRpcError.message };
+    const relationFallback = await refreshLeadRelationsDirect(db, { leadId, marketIds, productIds });
+    if (relationFallback.error) return { error: relationFallback.error.message };
+  }
 
   const workflowWrite = await appendLeadWorkflowState(db, {
     organizationId: organization.id,
@@ -1308,16 +1509,26 @@ const contactSourceContext = {
   payload.notes = workflowWrite.notes;
 
   if (shouldWriteFollowUp && nextFollowUpAt) {
-    const { data: replacedFollowUp, error: replaceFollowUpError } = await db.rpc('app_replace_lead_follow_up_tx', {
+    const { data: replacedFollowUp, error: replaceFollowUpRpcError } = await db.rpc('app_replace_lead_follow_up_tx', {
       p_organization_id: organization.id,
       p_lead_id: leadId,
       p_scheduled_at: nextFollowUpAt,
       p_actor_user_id: currentUser.id,
     });
 
-    if (replaceFollowUpError) return { error: replaceFollowUpError.message };
+    let replacedFollowUpRow = Array.isArray(replacedFollowUp) ? replacedFollowUp[0] : replacedFollowUp;
+    if (replaceFollowUpRpcError) {
+      if (!isMissingRpcFunction(replaceFollowUpRpcError)) return { error: replaceFollowUpRpcError.message };
+      const fallback = await replaceLeadFollowUpDirect(db, {
+        organizationId: organization.id,
+        leadId,
+        scheduledAt: nextFollowUpAt,
+        actorUserId: currentUser.id,
+      });
+      if (fallback.error) return { error: fallback.error.message };
+      replacedFollowUpRow = fallback.data;
+    }
 
-    const replacedFollowUpRow = Array.isArray(replacedFollowUp) ? replacedFollowUp[0] : replacedFollowUp;
     if (!replacedFollowUpRow?.id) {
       return { error: 'Lead follow-up replacement did not return a saved follow-up record.' };
     }
@@ -1357,7 +1568,7 @@ const contactSourceContext = {
   };
 
   if (existingLead && existingLead.stage_id !== payload.stage_id) {
-    const { data: stageHistoryResult, error: stageHistoryError } = await db.rpc('app_record_save_lead_stage_history_tx', {
+    const { data: stageHistoryResult, error: stageHistoryRpcError } = await db.rpc('app_record_save_lead_stage_history_tx', {
       p_organization_id: organization.id,
       p_lead_id: leadId,
       p_from_stage_id: existingLead.stage_id,
@@ -1365,14 +1576,25 @@ const contactSourceContext = {
       p_actor_user_id: currentUser.id,
     });
 
-    if (stageHistoryError) return { error: stageHistoryError.message };
+    let stageHistoryRow = Array.isArray(stageHistoryResult) ? stageHistoryResult[0] : stageHistoryResult;
+    if (stageHistoryRpcError) {
+      if (!isMissingRpcFunction(stageHistoryRpcError)) return { error: stageHistoryRpcError.message };
+      const fallback = await recordLeadStageHistoryDirect(db, {
+        organizationId: organization.id,
+        leadId,
+        fromStageId: existingLead.stage_id,
+        toStageId: payload.stage_id,
+        actorUserId: currentUser.id,
+      });
+      if (fallback.error) return { error: fallback.error.message };
+      stageHistoryRow = fallback.data;
+    }
 
-    const stageHistoryRow = Array.isArray(stageHistoryResult) ? stageHistoryResult[0] : stageHistoryResult;
     if (!stageHistoryRow?.lead_id) {
       return { error: 'Lead stage history recording did not return a saved history payload.' };
     }
 
-    const { data: stageChangeFanoutResult, error: stageChangeFanoutError } = await db.rpc('app_record_save_lead_stage_change_fanout_tx', {
+    const { data: stageChangeFanoutResult, error: stageChangeFanoutRpcError } = await db.rpc('app_record_save_lead_stage_change_fanout_tx', {
       p_organization_id: organization.id,
       p_lead_id: leadId,
       p_from_stage_id: existingLead.stage_id,
@@ -1381,24 +1603,46 @@ const contactSourceContext = {
       p_company_name: companyName,
     });
 
-    if (stageChangeFanoutError) return { error: stageChangeFanoutError.message };
+    let stageChangeFanoutRow = Array.isArray(stageChangeFanoutResult) ? stageChangeFanoutResult[0] : stageChangeFanoutResult;
+    if (stageChangeFanoutRpcError) {
+      if (!isMissingRpcFunction(stageChangeFanoutRpcError)) return { error: stageChangeFanoutRpcError.message };
+      const fallback = await recordLeadStageFanoutDirect(db, {
+        organizationId: organization.id,
+        leadId,
+        fromStageId: existingLead.stage_id,
+        toStageId: payload.stage_id,
+        actorUserId: currentUser.id,
+        companyName,
+      });
+      if (fallback.error) return { error: fallback.error.message };
+      stageChangeFanoutRow = fallback.data;
+    }
 
-    const stageChangeFanoutRow = Array.isArray(stageChangeFanoutResult) ? stageChangeFanoutResult[0] : stageChangeFanoutResult;
     if (!stageChangeFanoutRow?.lead_id) {
       return { error: 'Lead stage-change fan-out did not return a saved side-effect payload.' };
     }
   }
 
-  const { data: nonStageFanoutResult, error: nonStageFanoutError } = await db.rpc('app_record_save_lead_non_stage_fanout_tx', {
+  const { data: nonStageFanoutResult, error: nonStageFanoutRpcError } = await db.rpc('app_record_save_lead_non_stage_fanout_tx', {
     p_organization_id: organization.id,
     p_lead_id: leadId,
     p_actor_user_id: currentUser.id,
     p_payload: nonStageFanoutPayload,
   });
 
-  if (nonStageFanoutError) return { error: nonStageFanoutError.message };
+  let nonStageFanoutRow = Array.isArray(nonStageFanoutResult) ? nonStageFanoutResult[0] : nonStageFanoutResult;
+  if (nonStageFanoutRpcError) {
+    if (!isMissingRpcFunction(nonStageFanoutRpcError)) return { error: nonStageFanoutRpcError.message };
+    const fallback = await recordLeadNonStageFanoutDirect(db, {
+      organizationId: organization.id,
+      leadId,
+      actorUserId: currentUser.id,
+      payload: nonStageFanoutPayload,
+    });
+    if (fallback.error) return { error: fallback.error.message };
+    nonStageFanoutRow = fallback.data;
+  }
 
-  const nonStageFanoutRow = Array.isArray(nonStageFanoutResult) ? nonStageFanoutResult[0] : nonStageFanoutResult;
   if (!nonStageFanoutRow?.lead_id) {
     return { error: 'Lead non-stage fan-out did not return a saved side-effect payload.' };
   }
@@ -2016,7 +2260,7 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
   const targetStage = stageRow as { id: string; name: string };
 
   const occurredAt = new Date().toISOString();
-  const { data: moveResults, error: moveError } = await db.rpc('app_batch_move_leads_stage_tx', {
+  const { data: moveResults, error: moveRpcError } = await db.rpc('app_batch_move_leads_stage_tx', {
     p_organization_id: organization.id,
     p_lead_ids: leadIds,
     p_stage_id: stageId,
@@ -2024,9 +2268,60 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
     p_occurred_at: occurredAt,
   });
 
-  if (moveError) return { error: moveError.message };
+  let movedRows = Array.isArray(moveResults) ? moveResults : [];
+  if (moveRpcError) {
+    if (!isMissingRpcFunction(moveRpcError)) return { error: moveRpcError.message };
 
-  const movedRows = Array.isArray(moveResults) ? moveResults : [];
+    const { data: currentLeads, error: currentLeadsError } = await db
+      .from('leads')
+      .select('id, company_name, stage_id')
+      .eq('organization_id', organization.id)
+      .in('id', leadIds);
+
+    if (currentLeadsError) return { error: currentLeadsError.message };
+    const currentLeadRows = Array.isArray(currentLeads) ? currentLeads : [];
+    if (currentLeadRows.length !== leadIds.length) return { error: 'One or more selected leads were not found.' };
+
+    const { error: updateError } = await db
+      .from('leads')
+      .update({ stage_id: stageId, updated_by: currentUser.id })
+      .eq('organization_id', organization.id)
+      .in('id', leadIds);
+
+    if (updateError) return { error: updateError.message };
+
+    const historyRows = currentLeadRows
+      .filter((lead: any) => lead.stage_id !== stageId)
+      .map((lead: any) => ({
+        organization_id: organization.id,
+        lead_id: lead.id,
+        from_stage_id: lead.stage_id ?? null,
+        to_stage_id: stageId,
+        changed_by: currentUser.id,
+        changed_at: occurredAt,
+      }));
+
+    if (historyRows.length) {
+      const { error: historyError } = await db.from('lead_stage_history').insert(historyRows);
+      if (historyError) return { error: historyError.message };
+    }
+
+    const activityRows = currentLeadRows.map((lead: any) => ({
+      organization_id: organization.id,
+      lead_id: lead.id,
+      actor_user_id: currentUser.id,
+      kind: 'stage_moved',
+      message: `${lead.company_name ?? 'Lead'} moved to ${targetStage.name}.`,
+      occurred_at: occurredAt,
+    }));
+    if (activityRows.length) {
+      const { error: activityError } = await db.from('lead_activities').insert(activityRows);
+      if (activityError) return { error: activityError.message };
+    }
+
+    movedRows = currentLeadRows.map((lead: any) => ({ lead_id: lead.id, stage_id: stageId }));
+  }
+
   if (movedRows.length !== leadIds.length) {
     return { error: 'Batch stage move did not return the expected lead count.' };
   }
