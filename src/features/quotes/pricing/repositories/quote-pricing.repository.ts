@@ -478,20 +478,120 @@ export class SupabaseQuotePricingRepository implements QuotePricingRepository {
       p_payload: payload,
     } as any);
 
-    if (error) {
+    if (!error) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row?.id || !row?.quote_id) {
+        throw new Error(`Transactional draft quote version RPC returned no rows for quote ${args.compiled.quoteId}.`);
+      }
+
+      return {
+        id: row.id,
+        quoteId: row.quote_id,
+        versionNo: Number(row.version_no ?? 0),
+        status: row.status as QuoteVersionStatus,
+      };
+    }
+
+    const missingRpc = /schema cache|function|app_create_draft_quote_version_from_compile_tx/i.test(error.message ?? '');
+    if (!missingRpc) {
       throw new Error(`Failed to create transactional draft quote version for quote ${args.compiled.quoteId}: ${error.message}`);
     }
 
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row?.id || !row?.quote_id) {
-      throw new Error(`Transactional draft quote version RPC returned no rows for quote ${args.compiled.quoteId}.`);
+    const { data: latestRows, error: latestError } = await this.db
+      .from('quote_versions')
+      .select('version_no')
+      .eq('quote_id', args.compiled.quoteId)
+      .order('version_no', { ascending: false })
+      .limit(1);
+    if (latestError) {
+      throw new Error(`Failed to inspect quote versions for fallback version freeze: ${latestError.message}`);
+    }
+    const nextVersionNo = Number(latestRows?.[0]?.version_no ?? 0) + 1;
+    const { data: versionRow, error: versionError } = await this.db
+      .from('quote_versions')
+      .insert({
+        quote_id: args.compiled.quoteId,
+        version_no: nextVersionNo,
+        status: 'draft',
+        pricing_basis: args.compiled.pricingBasis,
+        display_currency: args.compiled.displayCurrency,
+        valid_until: payload.validUntil,
+        customer_message: args.customerMessage ?? null,
+        internal_notes: args.internalNotes ?? 'Created by direct table fallback because app_create_draft_quote_version_from_compile_tx RPC is unavailable.',
+        total_line_count: args.compiled.totalLineCount,
+        created_by: args.actorUserId,
+        source_hash: args.compiled.sourceHash,
+      })
+      .select('id, quote_id, version_no, status')
+      .single();
+    if (versionError || !versionRow?.id) {
+      throw new Error(`Failed to create fallback quote version for quote ${args.compiled.quoteId}: ${versionError?.message ?? 'No row returned.'}`);
     }
 
+    const lineRows = args.compiled.lines.map((line) => ({
+      quote_version_id: versionRow.id,
+      product_id: line.productId ?? null,
+      product_variant_id: line.productVariantId ?? null,
+      sku_code: line.skuCode || 'UNMAPPED',
+      hsn_code: line.hsnCode ?? null,
+      product_name: line.productName || 'Quote line',
+      category_type: line.categoryType,
+      pack_label: line.packLabel ?? null,
+      basis_applied: line.basisApplied,
+      pricing_mode: line.pricingMode,
+      units_per_case: line.unitsPerCase ?? null,
+      moq: line.moq ?? null,
+      source_ex_factory_usd: line.sourceExFactoryUsd ?? null,
+      source_fob_usd: line.sourceFobUsd ?? null,
+      source_bulk_usd_per_kg: line.sourceBulkUsdPerKg ?? null,
+      source_ex_factory_inr: line.sourceExFactoryInr ?? null,
+      source_fob_inr: line.sourceFobInr ?? null,
+      source_bulk_inr_per_kg: line.sourceBulkInrPerKg ?? null,
+      freight_add_on_usd: line.freightAddOnUsd ?? null,
+      fx_rate: line.fxRate,
+      final_unit_price: line.finalUnitPrice ?? null,
+      final_case_price: line.finalCasePrice ?? null,
+      final_kg_price: line.finalKgPrice ?? null,
+      display_currency: line.displayCurrency,
+      is_overridden: Boolean(line.isOverridden),
+      override_reason: line.overrideReason ?? null,
+      line_notes: line.lineNotes ?? null,
+      sort_order: line.sortOrder,
+      calculation_meta: line.calculationMeta ?? {},
+    }));
+    if (lineRows.length) {
+      const { error: lineError } = await this.db.from('quote_version_line_items').insert(lineRows);
+      if (lineError) {
+        throw new Error(`Failed to create fallback quote version lines: ${lineError.message}`);
+      }
+    }
+
+    await this.db.from('quote_pricing_snapshots').insert({
+      quote_version_id: versionRow.id,
+      pricing_rule_set_id: args.compiled.pricingRuleSetId,
+      freight_profile_id: args.compiled.freightProfileId ?? null,
+      fx_base_currency: args.compiled.fx.baseCurrency,
+      fx_display_currency: args.compiled.displayCurrency,
+      fx_rate: args.compiled.fx.rate,
+      fx_provider: args.compiled.fx.provider,
+      fx_effective_at: args.compiled.fx.effectiveAt,
+      quote_context: args.compiled.quoteContext,
+      freight_context: args.compiled.freight ?? {},
+      calculation_payload: args.compiled.calculationPayload,
+      source_hash: args.compiled.sourceHash,
+    });
+
+    await this.db
+      .from('quotes')
+      .update({ current_version_id: versionRow.id, version_no: nextVersionNo, updated_at: new Date().toISOString() })
+      .eq('id', args.compiled.quoteId)
+      .eq('organization_id', args.organizationId);
+
     return {
-      id: row.id,
-      quoteId: row.quote_id,
-      versionNo: Number(row.version_no ?? 0),
-      status: row.status as QuoteVersionStatus,
+      id: versionRow.id,
+      quoteId: versionRow.quote_id,
+      versionNo: Number(versionRow.version_no ?? nextVersionNo),
+      status: versionRow.status as QuoteVersionStatus,
     };
   }
 
@@ -772,8 +872,37 @@ export class SupabaseQuotePricingRepository implements QuotePricingRepository {
       p_actor_user_id: args.actorUserId,
     } as any);
 
-    if (error) {
+    if (!error) return;
+
+    const missingRpc = /schema cache|function|app_send_quote_version_tx/i.test(error.message ?? '');
+    if (!missingRpc) {
       throw new Error(`Failed to send quote version ${args.quoteVersionId}: ${error.message}`);
+    }
+
+    const now = new Date().toISOString();
+    const { data: version, error: versionReadError } = await this.db
+      .from('quote_versions')
+      .select('id, quote_id')
+      .eq('id', args.quoteVersionId)
+      .single();
+    if (versionReadError || !version?.quote_id) {
+      throw new Error(`Failed to load quote version ${args.quoteVersionId} for send fallback: ${versionReadError?.message ?? 'No row returned.'}`);
+    }
+
+    const { error: versionError } = await this.db
+      .from('quote_versions')
+      .update({ status: 'sent', sent_at: now, sent_by: args.actorUserId, updated_at: now })
+      .eq('id', args.quoteVersionId);
+    if (versionError) {
+      throw new Error(`Failed to mark quote version ${args.quoteVersionId} as sent: ${versionError.message}`);
+    }
+
+    const { error: quoteError } = await this.db
+      .from('quotes')
+      .update({ status: 'sent', updated_at: now })
+      .eq('id', version.quote_id);
+    if (quoteError) {
+      throw new Error(`Failed to mark quote ${version.quote_id} as sent: ${quoteError.message}`);
     }
   }
 

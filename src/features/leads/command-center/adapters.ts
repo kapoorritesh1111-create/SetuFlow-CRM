@@ -401,7 +401,7 @@ export function toLeadProfileSnapshot(data: LeadProfileData): LeadProfileSnapsho
     ai,
     activity: getActivityFeed(data).slice(0, 16),
     links: {
-      quoteWorkspace: `/leads/${data.lead?.id}/quote`,
+      quoteWorkspace: `/leads?leadId=${data.lead?.id}&view=quote`,
       complianceWorkspace: '/compliance',
       documentsWorkspace: '/documents',
       tasksWorkspace: '/tasks',

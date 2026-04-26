@@ -732,7 +732,7 @@ export default function LeadQuickEditDrawer({
         quoteId: result.quoteId,
         quoteNumber: result?.quote?.quote_number ?? null,
       })
-      const targetHref = `/leads/${lead.id}/quote?quoteId=${result.quoteId}`
+      const targetHref = `/leads?leadId=${lead.id}&view=quote&quoteId=${result.quoteId}`
       setQuoteOpening(false)
       onClose?.()
       navigateToLeadCommandCenter(router, targetHref)

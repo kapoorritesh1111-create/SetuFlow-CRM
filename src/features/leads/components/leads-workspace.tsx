@@ -945,7 +945,7 @@ export function LeadsWorkspace({
       void recordLeadQuoteApprovalRequest({
         leadId,
         quoteId: quoteId ?? null,
-        note: 'Owner approval requested from the inline Leads Quote Builder.',
+        note: 'Owner approval requested from the inline Leads Quote Preview.',
       }).then((result) => {
         setInlineActionState(result ?? {});
         if (result?.success) router.refresh();
@@ -1001,6 +1001,20 @@ export function LeadsWorkspace({
     }
   };
 
+
+  useEffect(() => {
+    const requestedLeadId = searchParams.get('leadId');
+    const requestedView = searchParams.get('view');
+    if (!requestedLeadId || (requestedView !== 'cc' && requestedView !== 'quote')) return;
+    setActiveLeadId(requestedLeadId);
+    setSpotlightLeadId(requestedLeadId);
+    setActiveView(requestedView);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('leadId');
+    params.delete('view');
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   useEffect(() => {
     if (!initialQuickCapture || !canManageLeads) return;
@@ -1079,7 +1093,7 @@ export function LeadsWorkspace({
           <span style={{ background: spotlightLead ? '#0c7fff' : '#e2e8f0', color: spotlightLead ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spotlightLead?.company_name ?? 'Select a lead →'}</span>
         </button>
         <button type="button" disabled={!spotlightLead} onClick={() => { if (!spotlightLead) return; setActiveLeadId(spotlightLead.id); setActiveView('quote'); }} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'quote' ? '#0b2e4a' : spotlightLead ? '#94a3b8' : '#cbd5e1', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'quote' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: spotlightLead ? 'pointer' : 'not-allowed', opacity: spotlightLead ? 1 : .65 }}>
-          ◇ Quote Builder
+          ◇ Quote Preview
           <span style={{ background: spotlightLead ? '#0c7fff' : '#e2e8f0', color: spotlightLead ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
         </button>
         <a href="/pipeline" style={{ marginLeft: 'auto', padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', textDecoration: 'none' }}>
@@ -1548,7 +1562,7 @@ function InlineLeadWorkspace({
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={onBackToList} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">← Back to Lead Queue</button>
         <button type="button" onClick={onOpenCommandCenter} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'cc' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Command Center</button>
-        <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'quote' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Quote Builder</button>
+        <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'quote' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Quote Preview</button>
         <span className="ml-auto rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">One page workspace · no nested route</span>
       </div>
       {activeView === 'quote' ? (
@@ -2252,7 +2266,7 @@ function InlineQuoteBuilder({
       {/* Stepper — spec .qb-stepper */}
       <div className="rounded-[22px] border border-[#e2e8f0] bg-white p-[16px_20px] shadow-sm">
         <div className="mb-[14px] flex items-center gap-[10px]">
-          <div className="text-[13px] font-bold text-[#0f172a]">Quote Builder</div>
+          <div className="text-[13px] font-bold text-[#0f172a]">Quote Preview</div>
           <div className="rounded-full border border-[rgba(12,127,255,.2)] px-[9px] py-[2px] text-[9px] font-bold uppercase tracking-[.08em] text-[#0c7fff]" style={{ background: 'rgba(12,127,255,.08)' }}>
             Step {builderStep + 1} of 5 · {steps[builderStep]}
           </div>
@@ -2299,7 +2313,7 @@ function InlineQuoteBuilder({
             <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155] disabled:opacity-60">Open draft</button>
           </div>
           <div className="border-b border-[#e2e8f0] bg-[#f8fafc] px-[18px] py-[10px] text-[11px] leading-[1.6] text-[#475569]">
-            Inline builder is the Leads workspace preview. Use <strong>Open draft</strong> or <strong>Save draft</strong> to create/open the governed quote editor for persistent quantity, pricing, terms, PDF, approval, and send actions.
+            This inline view is a quote preview and readiness handoff. Use <strong>Open draft</strong> or <strong>Save draft</strong> to create/open the governed quote editor where quantity, pricing, terms, PDF, approval, and send actions persist.
           </div>
           <div className="p-[16px_18px]">
             {builderStep === 0 ? (
@@ -2492,7 +2506,7 @@ function InlineQuoteBuilder({
           <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Save draft</button>
           <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:cursor-not-allowed disabled:opacity-60">Request approval</button>
           <span className="ml-auto rounded-full bg-[#f1f5f9] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#64748b]">
-            Command Center · Quote Builder · {steps[builderStep]}
+            Command Center · Quote Preview · {steps[builderStep]}
           </span>
         </div>
       </div>

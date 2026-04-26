@@ -252,7 +252,7 @@ export function LeadCommandCenter(props: LeadCommandCenterProps) {
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <Link href="#rfq-workspace" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-brand-200 hover:text-brand-700">Review RFQ workspace</Link>
-              <Link href={`/leads/${props.leadId}/quote`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-brand-200 hover:text-brand-700">Open quote workspace (qualified leads)</Link>
+              <Link href={`/leads?leadId=${props.leadId}&view=quote`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-brand-200 hover:text-brand-700">Open quote workspace (qualified leads)</Link>
             </div>
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"><p className="font-medium text-slate-900">Commercial thread</p><p className="mt-1">Use the RFQ workspace for request orchestration, use the quote workspace for pricing/offer review, and keep notes plus follow-ups here to preserve context. Qualified leads with mapped products are now required before quote drafting starts.</p></div>
           </section>
@@ -288,7 +288,7 @@ export function LeadCommandCenter(props: LeadCommandCenterProps) {
 
         <section className="space-y-4">
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
-            <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">RFQs and quotes</p><h4 className="mt-2 text-lg font-semibold text-slate-900">Commercial execution visibility</h4></div><Link href={`/leads/${props.leadId}/quote`} className="text-sm font-medium text-brand-700">Open quotes (qualified leads)</Link></div>
+            <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">RFQs and quotes</p><h4 className="mt-2 text-lg font-semibold text-slate-900">Commercial execution visibility</h4></div><Link href={`/leads?leadId=${props.leadId}&view=quote`} className="text-sm font-medium text-brand-700">Open quotes (qualified leads)</Link></div>
             <div className="mt-4 space-y-3">
               <CompactListBlock title="RFQs" emptyLabel="No RFQs attached yet." items={props.rfqs.slice(0, 3).map((rfq) => ({ id: rfq.id, title: `RFQ · ${toTitleCase(rfq.status)}`, meta: `${rfq.lineItems.length} line items · ${rfq.currency ?? 'Currency pending'}`, timestamp: rfq.updated_at ?? rfq.created_at }))} />
               <CompactListBlock title="Quotes" emptyLabel="No quotes attached yet." items={props.quotes.slice(0, 3).map((quote) => ({ id: quote.id, title: `Quote · ${toTitleCase(quote.status)}`, meta: `${quote.lineItems.length} line items · ${quote.currency ?? 'Currency pending'}`, timestamp: quote.updated_at ?? quote.created_at }))} />
@@ -375,7 +375,7 @@ export function LeadCommandCenter(props: LeadCommandCenterProps) {
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">                <Link href="#rfq-workspace" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Open RFQ workspace</Link>
-                <Link href={`/leads/${props.leadId}/quote`} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Open quote workspace (qualified)</Link>
+                <Link href={`/leads?leadId=${props.leadId}&view=quote`} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Open quote workspace (qualified)</Link>
                 <Link href="/products" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Review catalog pricing</Link>
               </div>
             </div>

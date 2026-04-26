@@ -326,7 +326,7 @@ export default function LeadCommandCenterPage({
 
     try {
       if (commercialState.latestQuoteId) {
-        window.location.assign(`/leads/${leadState.id}/quote?quoteId=${commercialState.latestQuoteId}`)
+        window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${commercialState.latestQuoteId}`)
         return
       }
 
@@ -346,7 +346,7 @@ export default function LeadCommandCenterPage({
           latestQuoteNumber: nextQuoteNumber,
           activePricingBasis: nextBasis === 'FOB' || nextBasis === 'CIF' || nextBasis === 'EX_FACTORY' ? nextBasis : current.activePricingBasis,
         }))
-        window.location.assign(`/leads/${leadState.id}/quote?quoteId=${nextQuoteId}`)
+        window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${nextQuoteId}`)
         return
       }
 
@@ -501,7 +501,7 @@ export default function LeadCommandCenterPage({
         availableMarkets={availableMarkets}
         selectedProductIds={selectedProductIdState}
         selectedMarketIds={selectedMarketIdState}
-        quoteWorkspaceHref={commercialState.latestQuoteId ? `/leads/${leadState.id}/quote?quoteId=${commercialState.latestQuoteId}` : liveSnapshot.links.quoteWorkspace}
+        quoteWorkspaceHref={commercialState.latestQuoteId ? `/leads?leadId=${leadState.id}&view=quote&quoteId=${commercialState.latestQuoteId}` : liveSnapshot.links.quoteWorkspace}
         quoteCount={commercialState.quoteCount}
         latestQuoteNumber={commercialState.latestQuoteNumber}
         pendingFollowUpId={workflowState.pendingFollowUpId}

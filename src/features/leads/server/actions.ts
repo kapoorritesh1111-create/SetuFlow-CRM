@@ -1109,7 +1109,7 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
       metadata: { source: 'openOrCreateLeadQuoteDraft', mode: 'existing' },
     });
     if (communicationError?.message) return { error: communicationError.message };
-    revalidatePath(`/leads/${leadId}/quote`);
+    revalidatePath(`/leads`);
     revalidateLeadSurfaces(leadId);
     return {
       success: 'Lead is already in quote workflow. Opened the active quote workspace.',
@@ -1181,7 +1181,7 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
     },
   });
 
-  revalidatePath(`/leads/${leadId}/quote`);
+  revalidatePath(`/leads`);
   revalidateLeadSurfaces(leadId);
   return {
     success: 'Lead converted to quote workflow. Draft quote created.',
