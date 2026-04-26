@@ -11,6 +11,8 @@ import { parseNullableNumber, uniqueTrimmed } from '@/lib/utils';
 import { deriveProductMappingStatus, parseLeadWorkflow, serializeLeadWorkflow, type LeadQualificationStatus, type LeadCoverageSelection } from '@/lib/lead-workflow';
 import { createImportIssuePayload } from '@/lib/import-issues';
 import { type ActionState, type LeadRecord, type QuoteDraftActionState, normalizeLeadEmail, normalizeLeadInputText, normalizeLeadOptionalText } from '@/features/leads/server/shared';
+import { convertQuoteLinePrice, getQuoteFxLockFromNotes, resolveWeeklyQuoteFxLock, type QuoteFxLock } from '@/lib/quote-fx';
+import { parseQuoteWorkflow, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
 
 type ExistingLeadSnapshot = {
   id: string;
@@ -952,6 +954,31 @@ async function ensureQuoteLineItemsFromLeadCoverage(
   };
 
   const baselineByProductId = new Map(productIds.map((productId) => [productId, pickBaseline(productId)]));
+  const sourceCurrenciesNeedingFx = Array.from(new Set(Array.from(baselineByProductId.values()).map((baseline: any) => normalizeCurrency(baseline?.catalogPriceCurrency)).filter((code: string) => code !== quoteCurrency)));
+  let fxLock: QuoteFxLock | null = null;
+  if (sourceCurrenciesNeedingFx.length) {
+    const sourceCurrency = sourceCurrenciesNeedingFx.includes('USD') ? 'USD' : sourceCurrenciesNeedingFx[0];
+    const fxResult = await resolveWeeklyQuoteFxLock(db, { sourceCurrency, quoteCurrency, existingNotes: quote.notes ?? null });
+    if (fxResult.error) return { lineItems: [] as any[], error: fxResult.error };
+    fxLock = fxResult.fxLock;
+  }
+  const convertedUnitPrice = (baseline: any) => convertQuoteLinePrice({
+    catalogAmount: baseline?.catalogPriceAmount ?? null,
+    catalogCurrency: baseline?.catalogPriceCurrency ?? quoteCurrency,
+    quoteCurrency,
+    fxLock,
+  }) ?? baseline?.unitPrice ?? null;
+
+  if (fxLock && !getQuoteFxLockFromNotes(quote.notes ?? null)) {
+    const parsedQuoteNotes = parseQuoteWorkflow(quote.notes ?? null);
+    await db
+      .from('quotes')
+      .update({
+        notes: serializeQuoteWorkflow(parsedQuoteNotes.plainNotes, { ...parsedQuoteNotes.meta, fx: fxLock }),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', quote.id);
+  }
 
   const existingRowsList = existingRows ?? [];
   const existingProductIds = new Set(existingRowsList.map((row: { product_id?: string | null }) => row.product_id).filter(Boolean));
@@ -969,8 +996,8 @@ async function ensureQuoteLineItemsFromLeadCoverage(
         catalog_price_amount: row.catalog_price_amount ?? baseline.catalogPriceAmount,
         catalog_price_currency: row.catalog_price_currency ?? baseline.catalogPriceCurrency,
         quantity: row.quantity == null || Number(row.quantity) <= 1 ? baseline.quantity : row.quantity,
-        unit_price: row.unit_price ?? baseline.unitPrice,
-        currency: row.currency ?? baseline.catalogPriceCurrency ?? quoteCurrency,
+        unit_price: row.unit_price ?? convertedUnitPrice(baseline),
+        currency: row.currency ?? quoteCurrency,
       })
       .eq('id', row.id)
       .eq('quote_id', quote.id);
@@ -987,8 +1014,8 @@ async function ensureQuoteLineItemsFromLeadCoverage(
         catalog_price_amount: baseline?.catalogPriceAmount ?? null,
         catalog_price_currency: baseline?.catalogPriceCurrency ?? quoteCurrency,
         quantity: baseline?.quantity ?? 1,
-        unit_price: baseline?.unitPrice ?? null,
-        currency: baseline?.catalogPriceCurrency ?? quoteCurrency,
+        unit_price: convertedUnitPrice(baseline),
+        currency: quoteCurrency,
         notes: 'Seeded from lead coverage',
       };
     });
@@ -1013,9 +1040,9 @@ async function ensureQuoteLineItemsFromLeadCoverage(
           .from('quote_version_line_items')
           .update({
             product_variant_id: row.product_variant_id ?? baseline.productVariantId,
-            final_unit_price: row.final_unit_price ?? baseline.unitPrice,
+            final_unit_price: row.final_unit_price ?? convertedUnitPrice(baseline),
             moq: row.moq == null || Number(row.moq) <= 1 ? baseline.quantity : row.moq,
-            display_currency: row.display_currency ?? baseline.catalogPriceCurrency ?? quoteCurrency,
+            display_currency: row.display_currency ?? quoteCurrency,
             line_notes: 'Seeded from lead coverage',
           })
           .eq('id', row.id)
@@ -1032,8 +1059,8 @@ async function ensureQuoteLineItemsFromLeadCoverage(
             product_id: productId,
             product_variant_id: baseline?.productVariantId ?? null,
             moq: baseline?.quantity ?? 1,
-            final_unit_price: baseline?.unitPrice ?? null,
-            display_currency: baseline?.catalogPriceCurrency ?? quoteCurrency,
+            final_unit_price: convertedUnitPrice(baseline),
+            display_currency: quoteCurrency,
             line_notes: 'Seeded from lead coverage',
           };
         });

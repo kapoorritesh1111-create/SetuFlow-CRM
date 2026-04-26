@@ -13,6 +13,7 @@ import { parseLeadWorkflow } from '@/lib/lead-workflow';
 import { buildLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
 import { getLeadProgressionGuard } from '@/lib/document-requirements';
 import { writeAuditLog } from '@/lib/auditLog';
+import { convertQuoteLinePrice, getQuoteFxLockFromNotes, resolveWeeklyQuoteFxLock, type QuoteFxLock } from '@/lib/quote-fx';
 
 export type QuoteActionState = { error?: string; success?: string; record?: any; mode?: 'create' | 'update' };
 
@@ -665,6 +666,64 @@ async function normalizeLineItemsForSave(
   return { lineItems: normalized };
 }
 
+async function applyQuoteFxForSave(
+  db: any,
+  args: {
+    currency: string | null;
+    lineItems: ParsedLineItem[];
+    existingNotes?: string | null;
+  },
+): Promise<{ lineItems: ParsedLineItem[]; fxLock: QuoteFxLock | null; error?: string }> {
+  const quoteCurrency = normalizeCurrencyCode(args.currency) ?? 'USD';
+  const sourceCurrencies = Array.from(new Set(args.lineItems
+    .map((item) => normalizeCurrencyCode(item.catalog_price_currency ?? item.currency ?? quoteCurrency) ?? quoteCurrency)
+    .filter((code) => code !== quoteCurrency)));
+
+  if (!sourceCurrencies.length) {
+    return { lineItems: args.lineItems.map((item) => ({ ...item, currency: normalizeCurrencyCode(item.currency ?? quoteCurrency) ?? quoteCurrency })), fxLock: null };
+  }
+
+  const sourceCurrency = sourceCurrencies.includes('USD') ? 'USD' : sourceCurrencies[0];
+  const resolved = await resolveWeeklyQuoteFxLock(db, {
+    sourceCurrency,
+    quoteCurrency,
+    existingNotes: args.existingNotes ?? null,
+  });
+  if (resolved.error) return { lineItems: [], fxLock: null, error: resolved.error };
+  const fxLock = resolved.fxLock;
+
+  const lineItems = args.lineItems.map((item) => {
+    const catalogCurrency = normalizeCurrencyCode(item.catalog_price_currency ?? item.currency ?? quoteCurrency) ?? quoteCurrency;
+    const catalogAmount = typeof item.catalog_price_amount === 'number'
+      ? item.catalog_price_amount
+      : typeof item.unit_price === 'number' && catalogCurrency === quoteCurrency
+        ? item.unit_price
+        : undefined;
+    const converted = convertQuoteLinePrice({ catalogAmount, catalogCurrency, quoteCurrency, fxLock });
+    const unitPrice = typeof item.unit_price === 'number' && normalizeCurrencyCode(item.currency) === quoteCurrency
+      ? item.unit_price
+      : converted ?? (catalogCurrency === quoteCurrency ? catalogAmount : item.unit_price);
+    const convertedBaseline = converted ?? (catalogCurrency === quoteCurrency && typeof catalogAmount === 'number' ? catalogAmount : null);
+    const isPriceOverridden = item.is_price_overridden ?? (
+      typeof unitPrice === 'number' && typeof convertedBaseline === 'number'
+        ? Number(unitPrice.toFixed(2)) !== Number(convertedBaseline.toFixed(2))
+        : false
+    );
+
+    return {
+      ...item,
+      catalog_price_amount: typeof catalogAmount === 'number' ? catalogAmount : item.catalog_price_amount,
+      catalog_price_currency: catalogCurrency,
+      unit_price: typeof unitPrice === 'number' && Number.isFinite(unitPrice) ? Number(unitPrice.toFixed(2)) : item.unit_price,
+      currency: quoteCurrency,
+      is_price_overridden: isPriceOverridden,
+    };
+  });
+
+  return { lineItems, fxLock };
+}
+
+
 export async function createQuote(_: QuoteActionState | undefined, formData: FormData): Promise<QuoteActionState> {
   if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
 
@@ -706,6 +765,10 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
   const continuityResult = await withContinuityNotes(db, organization.id, lineItems);
   if (continuityResult.error) return { error: continuityResult.error };
   lineItems = continuityResult.lineItems;
+
+  const fxResult = await applyQuoteFxForSave(db, { currency, lineItems });
+  if (fxResult.error) return { error: fxResult.error };
+  lineItems = fxResult.lineItems;
 
   const readiness = await ensureLeadCommercialReadiness(db, organization.id, leadId);
   if (!readiness.ok) return { error: readiness.error };
@@ -763,6 +826,7 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
     },
     sentAt: status === 'sent' ? new Date().toISOString() : null,
     revisedAt: status === 'revised' ? new Date().toISOString() : null,
+    fx: fxResult.fxLock ?? null,
   });
 
   const lineItemsPayload = lineItems.map((item) => {
@@ -865,7 +929,7 @@ export async function logQuoteNegotiationResponse(_: QuoteActionState | undefine
 
   const { data: existing, error: existingError } = await db
     .from('quotes')
-    .select('id, lead_id, current_version_id, organization_id, status')
+    .select('id, lead_id, current_version_id, organization_id, status, notes')
     .eq('organization_id', organization.id)
     .eq('id', quoteId)
     .maybeSingle();
@@ -940,7 +1004,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
 
   const { data: existing, error: existingError } = await db
     .from('quotes')
-    .select('id, lead_id, current_version_id, organization_id, status')
+    .select('id, lead_id, current_version_id, organization_id, status, notes')
     .eq('organization_id', organization.id)
     .eq('id', quoteId)
     .maybeSingle();
@@ -1012,6 +1076,10 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
   const continuityResult = await withContinuityNotes(db, organization.id, lineItems);
   if (continuityResult.error) return { error: continuityResult.error };
   lineItems = continuityResult.lineItems;
+
+  const fxResult = await applyQuoteFxForSave(db, { currency, lineItems, existingNotes: existing.notes ?? null });
+  if (fxResult.error) return { error: fxResult.error };
+  lineItems = fxResult.lineItems;
 
   const readiness = await ensureLeadCommercialReadiness(db, organization.id, existing.lead_id);
   if (!readiness.ok) return { error: readiness.error };
@@ -1242,6 +1310,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     },
     sentAt: status === 'sent' ? new Date().toISOString() : null,
     revisedAt: status === 'revised' ? new Date().toISOString() : null,
+    fx: fxResult.fxLock ?? getQuoteFxLockFromNotes(existing.notes ?? null),
   });
 
   const lineItemsPayload = lineItems.map((item) => {

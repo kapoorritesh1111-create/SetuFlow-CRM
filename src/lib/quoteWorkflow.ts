@@ -22,6 +22,15 @@ export type QuoteWorkflowMeta = {
   approval?: ApprovalMeta;
   sentAt?: string | null;
   revisedAt?: string | null;
+  fx?: {
+    source_currency: string;
+    quote_currency: string;
+    fx_rate: number;
+    fx_week_start: string;
+    fx_valid_until: string;
+    provider?: string | null;
+    effective_at?: string | null;
+  } | null;
 };
 
 export function parseQuoteWorkflow(notes: string | null | undefined) {
