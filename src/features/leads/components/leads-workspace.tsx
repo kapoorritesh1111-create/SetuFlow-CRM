@@ -84,7 +84,7 @@ type ComplianceDefinition = { id: string; code: string; description: string };
 type LeadDocument = { id: string; related_entity?: string | null; related_id?: string | null; requirement_code: string | null; status: string | null; expires_at: string | null; uploaded_at?: string | null; doc_type?: string | null; file_name?: string | null; linked_quote_id?: string | null; source_related_entity?: string | null; review_notes?: string | null };
 type Variant = { id: string; name: string; product_id: string };
 type Price = { id: string; product_variant_id: string; market_id: string | null; price: number; currency: string; effective_from: string; effective_to: string | null };
-type PricingRule = { id: string; product_id?: string | null; product_variant_id?: string | null; effective_from?: string | null; effective_to?: string | null; ex_factory_usd?: number | null; fob_usd?: number | null; ex_factory_inr?: number | null; fob_inr?: number | null; ex_factory_usd_per_case?: number | null; ex_factory_usd_per_unit?: number | null; fob_usd_per_case?: number | null; fob_usd_per_unit?: number | null; bulk_usd_per_kg?: number | null; pricing_type?: string | null };
+type PricingRule = { id: string; product_id?: string | null; product_variant_id?: string | null; effective_from?: string | null; effective_to?: string | null; ex_factory_usd?: number | null; fob_usd?: number | null; ex_factory_inr?: number | null; fob_inr?: number | null; ex_factory_usd_per_case?: number | null; ex_factory_usd_per_unit?: number | null; fob_usd_per_case?: number | null; fob_usd_per_unit?: number | null; bulk_usd_per_kg?: number | null; pricing_type?: string | null; product_name?: string | null; sku_code?: string | null };
 type FormState = { error?: string; success?: string };
 type SavedView = 'all' | 'mine' | 'overdue' | 'today' | 'trade-event' | 'buyers' | 'suppliers';
 type SortMode = 'follow-up' | 'created' | 'company' | 'health';
@@ -1610,6 +1610,7 @@ function InlineLeadWorkspace({
           complianceItems={complianceItems}
           complianceDefinitions={complianceDefinitions}
           safeFormatDateTime={safeFormatDateTime}
+          stableNowIso={stableNowIso}
           stages={stages}
           inlineActionState={inlineActionState}
           inlineFollowUpAt={inlineFollowUpAt}
@@ -1643,6 +1644,7 @@ function InlineCommandCenter({
   complianceItems,
   complianceDefinitions,
   safeFormatDateTime,
+  stableNowIso,
   stages,
   inlineActionState,
   inlineFollowUpAt,
@@ -1670,6 +1672,7 @@ function InlineCommandCenter({
   complianceItems: ComplianceItem[];
   complianceDefinitions: ComplianceDefinition[];
   safeFormatDateTime: (value?: string | null) => string;
+  stableNowIso: string;
   stages: Stage[];
   inlineActionState: FormState;
   inlineFollowUpAt: string;
@@ -1718,10 +1721,10 @@ function InlineCommandCenter({
       key: 'follow_up' as const,
       icon: '↗',
       title: 'Follow-up',
-      state: nextFollowUp ? (new Date(nextFollowUp.scheduled_at ?? '') < new Date() ? 'blocked' : 'needs-action') : 'default',
+      state: nextFollowUp ? (new Date(nextFollowUp.scheduled_at ?? '').getTime() < new Date(stableNowIso).getTime() ? 'blocked' : 'needs-action') : 'default',
       stateLabel: nextFollowUp ? safeFormatDateTime(nextFollowUp.scheduled_at) : 'Not scheduled',
-      helper: nextFollowUp ? (new Date(nextFollowUp.scheduled_at ?? '') < new Date() ? 'Overdue — reschedule now' : 'Scheduled follow-up active') : 'Set a follow-up date to keep this lead moving.',
-      badge: nextFollowUp && new Date(nextFollowUp.scheduled_at ?? '') < new Date() ? { label: 'OVERDUE', cls: 'bg-[#f43f5e]' } : null,
+      helper: nextFollowUp ? (new Date(nextFollowUp.scheduled_at ?? '').getTime() < new Date(stableNowIso).getTime() ? 'Overdue — reschedule now' : 'Scheduled follow-up active') : 'Set a follow-up date to keep this lead moving.',
+      badge: nextFollowUp && new Date(nextFollowUp.scheduled_at ?? '').getTime() < new Date(stableNowIso).getTime() ? { label: 'OVERDUE', cls: 'bg-[#f43f5e]' } : null,
     },
     {
       key: 'qualification' as const,
@@ -2006,7 +2009,7 @@ function InlineCommandCenter({
           <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
             <div className="mb-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Priority action</div>
             <div className="mb-[4px] text-[13px] font-bold text-[#0f172a]">
-              {nextFollowUp && new Date(nextFollowUp.scheduled_at ?? '') < new Date() ? 'Follow-up overdue' :
+              {nextFollowUp && new Date(nextFollowUp.scheduled_at ?? '').getTime() < new Date(stableNowIso).getTime() ? 'Follow-up overdue' :
                !pricingReady ? 'Map pricing before quote' :
                !latestQuote ? 'Create first quote' : 'Review quote status'}
             </div>
@@ -2198,9 +2201,17 @@ function InlineQuoteBuilder({
           if (aMarketMatch !== bMarketMatch) return aMarketMatch - bMarketMatch;
           return String(b.effective_from ?? '').localeCompare(String(a.effective_from ?? ''));
         })[0] ?? null;
-      const selectedRule = pricingRules.find((rule) =>
-        rule.product_id === productId || (rule.product_variant_id ? variantIds.has(rule.product_variant_id) : false),
-      ) ?? null;
+      const productLabel = productNameMap.get(productId) ?? selectedProductNames[selectedProductIds.indexOf(productId)] ?? '';
+      const normalizedProductLabel = productLabel.trim().toLowerCase();
+      const selectedRule = pricingRules.find((rule) => {
+        if (rule.product_id === productId) return true;
+        if (rule.product_variant_id && variantIds.has(rule.product_variant_id)) return true;
+        const ruleName = String(rule.product_name ?? '').trim().toLowerCase();
+        const ruleSku = String(rule.sku_code ?? '').trim().toLowerCase();
+        const productSku = String(products.find((product) => product.id === productId)?.sku ?? '').trim().toLowerCase();
+        return Boolean(normalizedProductLabel && ruleName && (ruleName === normalizedProductLabel || ruleName.includes(normalizedProductLabel) || normalizedProductLabel.includes(ruleName)))
+          || Boolean(productSku && ruleSku && productSku === ruleSku);
+      }) ?? null;
       const rulePrice = selectedRule
         ? selectedRule.fob_usd_per_unit ?? selectedRule.ex_factory_usd_per_unit ?? selectedRule.fob_usd_per_case ?? selectedRule.ex_factory_usd_per_case ?? selectedRule.bulk_usd_per_kg ?? selectedRule.fob_usd ?? selectedRule.ex_factory_usd ?? selectedRule.fob_inr ?? selectedRule.ex_factory_inr ?? null
         : null;
@@ -2211,7 +2222,7 @@ function InlineQuoteBuilder({
       return {
         id: `coverage-${productId}`,
         productId,
-        productLabel: productNameMap.get(productId) ?? selectedProductNames[selectedProductIds.indexOf(productId)] ?? 'Mapped product',
+        productLabel: productLabel || 'Mapped product',
         variantLabel,
         quantity: 1,
         unitPrice,
@@ -2219,7 +2230,7 @@ function InlineQuoteBuilder({
         total: unitPrice == null ? 0 : unitPrice,
         source: 'coverage',
         priceStatus: unitPrice != null && unitPrice > 0 ? 'priced' : 'missing',
-        note: unitPrice == null ? `No catalog price found${marketLabel ? ` for ${marketLabel}` : ''}. Save draft creates the quote shell; fill price in governed quote workflow.` : `Catalog/reference price${marketLabel ? ` for ${marketLabel}` : ''}.`,
+        note: unitPrice == null ? `No catalog price found${marketLabel ? ` for ${marketLabel}` : ''}. Create/open draft preview creates the quote shell; fill price in saved quote workflow.` : `Catalog/reference price${marketLabel ? ` for ${marketLabel}` : ''}.`,
       };
     });
   }, [lead.deal_currency, latestQuote?.currency, marketNameMap, prices, pricingRules, productNameMap, quoteItems.length, selectedMarketIds, selectedMarketNames, selectedProductIds, selectedProductNames, sourceItems, variantNameMap, variants]);
@@ -2258,10 +2269,13 @@ function InlineQuoteBuilder({
           <div className="mt-[2px] text-[9px] uppercase tracking-[.12em] text-white/50">Draft quote total</div>
           <div className="mt-[10px] flex justify-end gap-[6px]">
             <button type="button" onClick={onOpenCommandCenter} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white" style={{ background: 'rgba(255,255,255,.12)' }}>← Back to CC</button>
-            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white disabled:opacity-60" style={{ background: 'rgba(255,255,255,.12)' }}>Save draft</button>
+            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white disabled:opacity-60" style={{ background: 'rgba(255,255,255,.12)' }}>Create/open draft preview</button>
           </div>
         </div>
       </div>
+
+      {inlineActionState.error ? <StateMessage title="Quote draft action failed" tone="danger" description={inlineActionState.error} /> : null}
+      {inlineActionState.success ? <StateMessage title="Quote draft action saved" tone="success" description={inlineActionState.success} /> : null}
 
       {/* Stepper — spec .qb-stepper */}
       <div className="rounded-[22px] border border-[#e2e8f0] bg-white p-[16px_20px] shadow-sm">
@@ -2310,10 +2324,10 @@ function InlineQuoteBuilder({
                 {builderStep === 0 ? 'Product & buyer lock' : builderStep === 1 ? 'Build pricing lines' : builderStep === 2 ? 'Set commercial terms' : builderStep === 3 ? 'Review quote package' : 'Approve and send safely'}
               </div>
             </div>
-            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155] disabled:opacity-60">Open draft</button>
+            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
           </div>
           <div className="border-b border-[#e2e8f0] bg-[#f8fafc] px-[18px] py-[10px] text-[11px] leading-[1.6] text-[#475569]">
-            This inline view is a quote preview and readiness handoff. Use <strong>Open draft</strong> or <strong>Save draft</strong> to create/open the governed quote editor where quantity, pricing, terms, PDF, approval, and send actions persist.
+            This inline view is a quote preview and readiness handoff. Use <strong>Create/open draft preview</strong> to create or refresh the governed draft. Detailed quantity, pricing, terms, PDF, approval, and send actions remain in the saved quote workflow.
           </div>
           <div className="p-[16px_18px]">
             {builderStep === 0 ? (
@@ -2351,8 +2365,8 @@ function InlineQuoteBuilder({
                       return (
                         <tr key={item.id} className="border-t border-[#f1f5f9] hover:bg-[#f8fafc]">
                           <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.productLabel}</div><div className="mt-1 text-[10px] text-[#64748b]">{item.variantLabel ? `${item.variantLabel} · ` : ''}{item.source === 'coverage' ? 'coverage/catalog fallback' : item.source === 'rfq' ? 'RFQ line' : 'quote draft line'}</div>{item.note ? <div className="mt-1 text-[10px] text-[#94a3b8]">{item.note}</div> : null}</td>
-                          <td className="px-[10px] py-[10px]"><input readOnly title="Line edits persist through the saved quote workflow. Use Save draft/Open draft to edit governed quote lines." className="w-[68px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px] text-center text-[12px] font-semibold text-[#64748b] outline-none" value={qty} /></td>
-                          <td className="px-[10px] py-[10px]">{price == null ? <span className="rounded-full bg-[#fff1f2] px-2 py-1 text-[10px] font-bold text-[#be123c]">Price missing</span> : <input readOnly title="Price edits persist through the saved quote workflow. Use Save draft/Open draft to edit governed pricing." className="w-[90px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px_7px] text-right text-[12px] font-bold text-[#64748b] outline-none" value={price.toLocaleString()} />}</td>
+                          <td className="px-[10px] py-[10px]"><input readOnly title="Line edits persist through the saved quote workflow. Use Create/open draft preview to edit governed quote lines." className="w-[68px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px] text-center text-[12px] font-semibold text-[#64748b] outline-none" value={qty} /></td>
+                          <td className="px-[10px] py-[10px]">{price == null ? <span className="rounded-full bg-[#fff1f2] px-2 py-1 text-[10px] font-bold text-[#be123c]">Price missing</span> : <input readOnly title="Price edits persist through the saved quote workflow. Use Create/open draft preview to edit governed pricing." className="w-[90px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px_7px] text-right text-[12px] font-bold text-[#64748b] outline-none" value={price.toLocaleString()} />}</td>
                           <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{item.currency} {item.total.toLocaleString()}</td>
                         </tr>
                       );
@@ -2386,13 +2400,13 @@ function InlineQuoteBuilder({
                   <div key={field.label} className={`flex flex-col gap-[4px] ${field.type === 'textarea' ? 'col-span-2' : ''}`}>
                     <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">{field.label}</label>
                     {field.type === 'select' ? (
-                      <select disabled title="Terms persist through the saved quote workflow. Use Save draft/Open draft to edit governed terms." className="w-full rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] font-semibold text-[#64748b] outline-none" value={field.val}>
+                      <select disabled title="Terms persist through the saved quote workflow. Use Create/open draft preview to edit governed terms." className="w-full rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] font-semibold text-[#64748b] outline-none" value={field.val}>
                         {field.opts?.map((o) => <option key={o}>{o}</option>)}
                       </select>
                     ) : field.type === 'textarea' ? (
-                      <textarea readOnly title="Terms persist through the saved quote workflow. Use Save draft/Open draft to edit governed terms." className="w-full resize-y rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] text-[#64748b] outline-none" value={field.val} placeholder={field.placeholder} style={{ minHeight: '68px' }} />
+                      <textarea readOnly title="Terms persist through the saved quote workflow. Use Create/open draft preview to edit governed terms." className="w-full resize-y rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] text-[#64748b] outline-none" value={field.val} placeholder={field.placeholder} style={{ minHeight: '68px' }} />
                     ) : (
-                      <input readOnly title="Terms persist through the saved quote workflow. Use Save draft/Open draft to edit governed terms." className="w-full rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] font-semibold text-[#64748b] outline-none" value={field.val} placeholder={field.placeholder ?? ''} />
+                      <input readOnly title="Terms persist through the saved quote workflow. Use Create/open draft preview to edit governed terms." className="w-full rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] font-semibold text-[#64748b] outline-none" value={field.val} placeholder={field.placeholder ?? ''} />
                     )}
                   </div>
                 ))}
@@ -2453,7 +2467,7 @@ function InlineQuoteBuilder({
                     Request approval
                   </button>
                   <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569] disabled:opacity-60">
-                    Save draft
+                    Create/open draft preview
                   </button>
                 </div>
               </div>
@@ -2503,7 +2517,7 @@ function InlineQuoteBuilder({
             className="rounded-[22px] bg-[#0b2e4a] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" title={builderStep >= steps.length - 1 ? 'Send is disabled in the inline builder until the governed quote send workflow is connected.' : undefined}>
             {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : canSendQuote ? 'Send ready in quote workflow' : 'Review blockers'}
           </button>
-          <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Save draft</button>
+          <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
           <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:cursor-not-allowed disabled:opacity-60">Request approval</button>
           <span className="ml-auto rounded-full bg-[#f1f5f9] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#64748b]">
             Command Center · Quote Preview · {steps[builderStep]}

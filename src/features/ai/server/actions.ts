@@ -392,9 +392,9 @@ function revalidateAiSurfaces(leadId: string, targetEntityType?: string | null, 
   revalidatePath('/tasks');
   revalidatePath('/quotes');
   revalidatePath(`/leads/${leadId}`);
-  revalidatePath(`/leads/${leadId}/quote`);
+  revalidatePath('/leads');
   if (targetEntityType === 'quote' && targetEntityId) {
-    revalidatePath(`/leads/${leadId}/quote`);
+    revalidatePath('/leads');
   }
 }
 

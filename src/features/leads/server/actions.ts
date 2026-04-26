@@ -71,7 +71,7 @@ async function getLeadQuoteGate(db: any, organizationId: string, leadId: string)
   if (productsError) return { ok: false as const, error: productsError.message };
   if (!leadRecord?.id) return { ok: false as const, error: 'Lead not found in the active workspace.' };
   const workflow = parseLeadWorkflow(leadRecord.notes).workflow;
-  if (workflow.qualificationStatus !== 'qualified') return { ok: false as const, error: 'Lead must be qualified before quote drafting can start.' };
+  if (workflow.qualificationStatus === 'disqualified') return { ok: false as const, error: 'Lead is disqualified. Reopen qualification before quote drafting can start.' };
   if (!Array.isArray(linkedProducts) || linkedProducts.length === 0) return { ok: false as const, error: 'Link at least one product before opening the quote workspace.' };
   return { ok: true as const, workflow };
 }

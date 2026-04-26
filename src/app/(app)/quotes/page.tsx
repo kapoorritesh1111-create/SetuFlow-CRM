@@ -99,7 +99,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   });
 
   const selected = viewModel.selectedItem;
-  const selectedLeadHref = selected ? `/leads/${selected.leadId}/quote?quoteId=${selected.id}` : PRODUCT_ROUTES.app.leads;
+  const selectedLeadHref = selected ? `/leads?leadId=${selected.leadId}&view=quote&quoteId=${selected.id}` : PRODUCT_ROUTES.app.leads;
   const selectedTrade = selected
     ? inferQuoteTradeWorkflow({ leadType: selected.leadType, notes: selected.notes, hasAcceptedContract: selected.hasAcceptedContract })
     : null;

@@ -103,7 +103,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   // Admin and owner can approve any quote regardless of approval posture
   const canApproveAsAdmin = (workspace.currentRoles ?? []).some((r: string) => ['owner', 'admin'].includes(r));
   const requestedQuoteId = readSearchParam(searchParams?.quoteId).trim() || null;
-  const leadCommandHref = `/leads/${leadId}?tab=quotes`;
+  const leadCommandHref = `/leads?leadId=&view=quote`;
 
   if (qualificationStatus !== 'qualified') {
     return (
@@ -342,7 +342,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
           products={catalogProducts}
           savedViews={quoteSavedViews}
           initialSavedView={quotePreference?.savedViewId ?? quotePreference?.builtInViewKey ?? 'all'}
-          redirectPath={`/leads/${leadId}/quote`}
+          redirectPath={`/leads?leadId=${leadId}&view=quote`}
           leadCommandHref={leadCommandHref}
           initialQuoteId={requestedQuoteId}
           canManageQuotes={canManageQuotes}

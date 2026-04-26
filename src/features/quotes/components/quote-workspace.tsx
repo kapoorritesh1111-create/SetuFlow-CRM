@@ -1226,7 +1226,7 @@ export function QuoteWorkspace({
   negotiationEvents = [],
   quoteVersions = [],
   communications = [],
-  leadCommandHref = `/leads/${leadId}?tab=quotes`,
+  leadCommandHref = `/leads?leadId=&view=quote`,
   rfqWorkspaceHref = `/leads/${leadId}/rfq/new`,
   initialQuoteId = null,
   canManageQuotes = true,

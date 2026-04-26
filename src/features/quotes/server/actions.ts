@@ -426,8 +426,8 @@ async function ensureLeadCommercialReadiness(db: any, organizationId: string, le
   if (!leadRecord?.id) return { error: 'Lead not found for commercial readiness checks.', ok: false as const };
 
   const workflow = parseLeadWorkflow(leadRecord.notes).workflow;
-  if (workflow.qualificationStatus !== 'qualified') {
-    return { error: 'Lead must be qualified before entering quote workflow.', ok: false as const };
+  if (workflow.qualificationStatus === 'disqualified') {
+    return { error: 'Lead is disqualified. Reopen qualification before entering quote workflow.', ok: false as const };
   }
   if (!Array.isArray(linkedProducts) || linkedProducts.length === 0) {
     return { error: 'Lead needs at least one linked product before entering quote workflow.', ok: false as const };

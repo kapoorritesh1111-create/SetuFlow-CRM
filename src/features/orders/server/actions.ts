@@ -143,6 +143,6 @@ export async function progressOrderExecution(formData: FormData) {
   revalidatePath('/compliance');
   revalidatePath('/pipeline');
   revalidatePath(`/leads/${leadId}`);
-  revalidatePath(`/leads/${leadId}/quote`);
+  revalidatePath('/leads');
   redirect(buildRedirect(`order-state-progressed:${nextState}`));
 }

@@ -1226,7 +1226,7 @@ export function QuoteWorkspace({
   negotiationEvents = [],
   quoteVersions = [],
   communications = [],
-  leadCommandHref = `/leads/${leadId}?tab=quotes`,
+  leadCommandHref = `/leads?leadId=&view=quote`,
   rfqWorkspaceHref = `/leads/${leadId}/rfq/new`,
   initialQuoteId = null,
   canManageQuotes = true,
@@ -2916,7 +2916,7 @@ export function QuoteWorkspace({
                     );
                     formData.set(
                       "redirect_path",
-                      redirectPath ?? `/leads/${leadId}/quote`,
+                      redirectPath ?? `/leads?leadId=${leadId}&view=quote`,
                     );
                     await saveWorkspaceView(formData);
                     setPreferenceFlash(
@@ -2938,7 +2938,7 @@ export function QuoteWorkspace({
                     formData.set("entity_type", "quotes");
                     formData.set(
                       "redirect_path",
-                      redirectPath ?? `/leads/${leadId}/quote`,
+                      redirectPath ?? `/leads?leadId=${leadId}&view=quote`,
                     );
                     if (savedViews.some((view) => view.id === savedView)) {
                       formData.set("saved_view_id", savedView);

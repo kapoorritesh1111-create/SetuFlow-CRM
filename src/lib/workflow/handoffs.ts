@@ -29,7 +29,7 @@ export function buildLeadWorkflowHref(leadId: string, mode?: WorkspaceModeParam,
 }
 
 export function buildLeadQuoteHref(leadId: string, quoteId?: string | null, mode?: WorkspaceModeParam, extra?: Record<string, string | null | undefined>) {
-  return appendQuery(`/leads/${leadId}/quote`, { mode: normalizeMode(mode), quoteId: quoteId ?? null, ...extra });
+  return appendQuery('/leads', { leadId, view: 'quote', mode: normalizeMode(mode), quoteId: quoteId ?? null, ...extra });
 }
 
 export function buildApprovalSendHref(extra?: Record<string, string | null | undefined>, mode?: WorkspaceModeParam) {

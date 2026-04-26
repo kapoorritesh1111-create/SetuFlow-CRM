@@ -138,7 +138,7 @@ function revalidateCommercialViews(leadId?: string) {
   revalidatePath('/pipeline');
   if (leadId) {
     revalidatePath(`/leads/${leadId}`);
-    revalidatePath(`/leads/${leadId}/quote`);
+    revalidatePath('/leads');
   }
 }
 

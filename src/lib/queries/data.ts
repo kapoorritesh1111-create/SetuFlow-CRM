@@ -256,7 +256,7 @@ async function getScopedPricingTables(
   if (rules.length === 0) {
     const { data, error } = await (admin as any)
       .from('product_pricing_rules')
-      .select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type')
+      .select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type, product_name, sku_code')
       .eq('organization_id', organizationId)
       .eq('is_active', true)
       .eq('is_quoteable', true)
@@ -1839,7 +1839,7 @@ export async function getDashboardData(
           reason: `Quote status: ${quote.status}`,
           severity: 'medium',
           ctaLabel: 'Open quote',
-          ctaHref: lead ? `/leads/${lead.id}/quote` : PRODUCT_ROUTES.app.quotes,
+          ctaHref: lead ? `/leads?leadId=${lead.id}&view=quote` : PRODUCT_ROUTES.app.quotes,
           leadId: lead?.id,
           companyName: lead?.company_name,
           dueAt: quote.updated_at,
@@ -2080,7 +2080,7 @@ export async function getDashboardData(
         iconKey: 'quote',
         message: `Quote ${quote.status} for ${lead?.company_name ?? 'lead'}`,
         timestamp: quote.updated_at,
-        href: quote.lead_id ? `/leads/${quote.lead_id}/quote` : undefined,
+        href: quote.lead_id ? `/leads?leadId=${quote.lead_id}&view=quote` : undefined,
         leadId: quote.lead_id ?? undefined,
         companyName: lead?.company_name,
         leadType: lead?.lead_type === 'supplier' ? 'supplier' : 'buyer',
@@ -2418,7 +2418,7 @@ export async function getLeadsPageData(organizationId: string): Promise<LeadsPag
   const pricingRulesQuery = interestedProductIds.size && activePricingRuleSetIds.length
     ? await (supabase as any)
         .from('product_pricing_rules')
-        .select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type')
+        .select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type, product_name, sku_code')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
         .eq('is_quoteable', true)
@@ -2649,7 +2649,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
   const profilePricingRulesResult = scopedProductIdsForPricing.length && activeProfilePricingRuleSetIds.length
     ? await (supabase as any)
         .from('product_pricing_rules')
-        .select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type')
+        .select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type, product_name, sku_code')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
         .eq('is_quoteable', true)
@@ -3037,7 +3037,7 @@ export async function getProductsData(organizationId: string): Promise<ProductsD
       .order('effective_from', { ascending: false })
       .limit(PRODUCT_PRICES_QUERY_LIMIT),
     supabase.from('markets').select('id, name, is_active').eq('organization_id', organizationId).order('sort_order').limit(PRODUCT_MARKETS_QUERY_LIMIT),
-    (supabase as any).from('product_pricing_rules').select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type').eq('organization_id', organizationId).eq('is_active', true).eq('is_quoteable', true),
+    (supabase as any).from('product_pricing_rules').select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type, product_name, sku_code').eq('organization_id', organizationId).eq('is_active', true).eq('is_quoteable', true),
     getAuditEvents(organizationId, {
       limit: 50,
       eventTypes: ['product_created', 'product_updated', 'product_deleted', 'pricing_shared', 'pricing_sent', 'pricing_exported'],
@@ -3430,7 +3430,7 @@ export async function getReportsData(organizationId: string): Promise<ReportsDat
     supabase.from('products').select('id, is_active').eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(240),
     supabase.from('markets').select('id, is_active').eq('organization_id', organizationId).order('sort_order', { ascending: true }).limit(120),
     supabase.from('product_variants').select('id, product_id, is_quoteable, units_per_case, pricing_mode_default, products!inner(organization_id)').eq('products.organization_id', organizationId).eq('is_quoteable', true).order('created_at', { ascending: false }).limit(PRODUCT_VARIANTS_QUERY_LIMIT),
-    (supabase as any).from('product_pricing_rules').select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type').eq('organization_id', organizationId).eq('is_active', true).eq('is_quoteable', true),
+    (supabase as any).from('product_pricing_rules').select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type, product_name, sku_code').eq('organization_id', organizationId).eq('is_active', true).eq('is_quoteable', true),
   ]);
 
   addIssue(issues, 'reports leads', leads.error);
