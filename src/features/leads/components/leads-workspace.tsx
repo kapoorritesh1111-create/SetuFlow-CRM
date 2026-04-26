@@ -311,10 +311,17 @@ export function LeadsWorkspace({
   const [isInlineActionPending, startInlineActionTransition] = useTransition();
 
   useEffect(() => {
+    const explicitMode = searchParams.get('mode');
+    if (!explicitMode && !initialLeadType) {
+      setWorkspaceMode('all');
+      setLeadTypeFilter('');
+      setSavedView('all');
+      return;
+    }
     setWorkspaceMode(initialMode);
     setLeadTypeFilter(initialLeadType);
     setSavedView(initialLeadType === 'buyer' ? 'buyers' : initialLeadType === 'supplier' ? 'suppliers' : 'all');
-  }, [initialLeadType, initialMode]);
+  }, [initialLeadType, initialMode, searchParams]);
 
   useEffect(() => {
     setTodayFilter(initialTodayState?.activeFilter ?? getPreferredTodayFilter(initialTodayState));
@@ -342,11 +349,17 @@ export function LeadsWorkspace({
       const stored = localStorage.getItem(storageKey);
       if (!stored) return;
       const parsed = JSON.parse(stored);
+      const explicitMode = searchParams.get('mode');
       const routeLockedView = initialLeadType === 'buyer' ? 'buyers' : initialLeadType === 'supplier' ? 'suppliers' : null;
       if (parsed.search) setSearch(parsed.search);
       if (routeLockedView) {
         setSavedView(routeLockedView);
         setLeadTypeFilter(initialLeadType);
+      } else if (!explicitMode && !initialLeadType) {
+        // Plain /leads must always reopen as All. Do not restore stale buyer/supplier filters.
+        setWorkspaceMode('all');
+        setSavedView('all');
+        setLeadTypeFilter('');
       } else {
         if (parsed.savedView) setSavedView(parsed.savedView as SavedView);
         if (parsed.leadTypeFilter) setLeadTypeFilter(parsed.leadTypeFilter);
@@ -359,7 +372,7 @@ export function LeadsWorkspace({
       if (parsed.productIdFilter) setProductIdFilter(parsed.productIdFilter);
       if (parsed.sortMode) setSortMode(parsed.sortMode as SortMode);
     } catch {}
-  }, [initialLeadType, storageKey]);
+  }, [initialLeadType, searchParams, storageKey]);
 
   useEffect(() => {
     setSearch(searchParams.get('q') ?? '');
@@ -1396,6 +1409,12 @@ export function LeadsWorkspace({
         open={drawerState.open}
         onClose={closeDrawer}
         onSaved={handleLeadSaved}
+        onOpenInlineQuote={(leadId) => {
+          setDrawerState((current) => ({ ...current, open: false }));
+          setActiveLeadId(leadId);
+          setSpotlightLeadId(leadId);
+          setActiveView('quote');
+        }}
         mode={drawerState.mode}
         lead={drawerState.leadId ? selectedLead : undefined}
         title={drawerState.leadId ? 'Edit Lead' : drawerState.mode === 'quick' ? 'Quick Add Lead' : 'Full Add Lead'}
@@ -2278,6 +2297,9 @@ function InlineQuoteBuilder({
               </div>
             </div>
             <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155] disabled:opacity-60">Open draft</button>
+          </div>
+          <div className="border-b border-[#e2e8f0] bg-[#f8fafc] px-[18px] py-[10px] text-[11px] leading-[1.6] text-[#475569]">
+            Inline builder is the Leads workspace preview. Use <strong>Open draft</strong> or <strong>Save draft</strong> to create/open the governed quote editor for persistent quantity, pricing, terms, PDF, approval, and send actions.
           </div>
           <div className="p-[16px_18px]">
             {builderStep === 0 ? (

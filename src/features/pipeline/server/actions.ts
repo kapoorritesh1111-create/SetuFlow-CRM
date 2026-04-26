@@ -133,9 +133,50 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
     p_occurred_at: occurredAt,
   });
 
-  if (moveError) return { error: moveError.message };
+  let updatedLeadRow = Array.isArray(moveResult) ? moveResult[0] : moveResult;
+  if (moveError) {
+    const canFallback = /schema cache|function|app_move_lead_stage_tx/i.test(moveError.message ?? '');
+    if (!canFallback) return { error: moveError.message };
 
-  const updatedLeadRow = Array.isArray(moveResult) ? moveResult[0] : moveResult;
+    const { data: fallbackLead, error: updateError } = await db
+      .from('leads')
+      .update({ stage_id: stageId, updated_by: workspace.user.id, updated_at: occurredAt })
+      .eq('id', leadId)
+      .eq('organization_id', workspace.organization.id)
+      .select('id, company_name, stage_id, updated_at')
+      .single();
+
+    if (updateError || !fallbackLead?.id) {
+      return { error: updateError?.message ?? 'Lead stage update fallback failed.' };
+    }
+
+    const { error: historyError } = await db.from('lead_stage_history').insert({
+      organization_id: workspace.organization.id,
+      lead_id: leadId,
+      from_stage_id: currentLead.stage_id,
+      to_stage_id: stageId,
+      changed_by: workspace.user.id,
+      changed_at: occurredAt,
+      note: 'Stage moved from pipeline board fallback because app_move_lead_stage_tx RPC is unavailable.',
+    });
+    if (historyError) return { error: historyError.message };
+
+    await db.from('lead_activities').insert({
+      organization_id: workspace.organization.id,
+      lead_id: leadId,
+      actor_user_id: workspace.user.id,
+      kind: 'stage_updated',
+      message: `Stage moved to ${targetStage.name}.`,
+      occurred_at: occurredAt,
+    });
+
+    updatedLeadRow = {
+      ...fallbackLead,
+      previous_stage_id: currentLead.stage_id,
+      stage_name: targetStage.name,
+    };
+  }
+
   if (!updatedLeadRow?.id) {
     return { error: 'Lead stage move did not return an updated lead record.' };
   }

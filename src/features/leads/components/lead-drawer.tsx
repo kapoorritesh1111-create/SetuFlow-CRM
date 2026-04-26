@@ -209,6 +209,7 @@ export function LeadDrawer({
   open = false,
   onClose,
   onSaved,
+  onOpenInlineQuote,
   mode = 'quick',
   title,
   canNavigatePrev = false,
@@ -778,7 +779,12 @@ export function LeadDrawer({
         }
         if (result?.quoteId) {
           setSelectedQuoteId(result.quoteId);
-          router.push(`/leads/${lead.id}/quote?quoteId=${result.quoteId}`);
+          if (onOpenInlineQuote) {
+            onOpenInlineQuote(lead.id, result.quoteId);
+            onClose?.();
+            return;
+          }
+          setQuoteActionError('Inline quote handoff is not available from this drawer context. Open the quote from the Leads workspace.');
           return;
         }
         router.refresh();
@@ -836,14 +842,20 @@ export function LeadDrawer({
         setActiveStepId('basics');
 
         if (shouldAutoOpenQuoteAfterSave && nextState.lead?.id) {
+          const savedLeadId = nextState.lead.id;
           setState((current) => ({ ...current, success: 'Lead saved. Opening quote draft…' }));
-          void openOrCreateLeadQuoteDraft(nextState.lead.id).then((quoteResult) => {
+          void openOrCreateLeadQuoteDraft(savedLeadId).then((quoteResult) => {
             if (quoteResult?.error) {
               setQuoteActionError(quoteResult.error);
               return;
             }
-            router.push(`/leads/${nextState.lead?.id}/quote${quoteResult?.quoteId ? `?quoteId=${quoteResult.quoteId}` : ''}`);
-            onClose?.();
+            if (onOpenInlineQuote) {
+              onOpenInlineQuote(savedLeadId, quoteResult?.quoteId ?? null);
+              onClose?.();
+              return;
+            }
+            setQuoteActionError('Inline quote handoff is not available from this drawer context. Open the quote from the Leads workspace.');
+            return;
           });
         }
 
@@ -1742,7 +1754,7 @@ export function LeadDrawer({
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <button type="button" onClick={() => setQuoteEditorOpen(true)} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Edit pricing</button>
-                              <button type="button" onClick={() => router.push(`/leads/${lead?.id}/quote?quoteId=${selectedQuoteRow.quote.id}`)} disabled={!lead?.id} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Open quote page</button>
+                              <button type="button" onClick={() => { if (lead?.id && onOpenInlineQuote) { onOpenInlineQuote(lead.id, selectedQuoteRow.quote.id); onClose?.(); } else { setQuoteActionError('Inline quote handoff is not available from this drawer context. Open the quote from the Leads workspace.'); } }} disabled={!lead?.id} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Open in Leads Quote Builder</button>
                             </div>
                           </div>
 

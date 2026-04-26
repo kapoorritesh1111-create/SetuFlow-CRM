@@ -149,6 +149,7 @@ export type LeadDrawerProps = {
   open?: boolean;
   onClose?: () => void;
   onSaved?: (result: LeadDrawerSavePayload) => void;
+  onOpenInlineQuote?: (leadId: string, quoteId?: string | null) => void;
   mode?: 'quick' | 'full';
   title?: string;
   canNavigatePrev?: boolean;
