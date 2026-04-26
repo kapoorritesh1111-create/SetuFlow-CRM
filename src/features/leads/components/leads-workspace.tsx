@@ -9,7 +9,7 @@ import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
 import { SavedViewsBar, ToolbarActionButton, ToolbarSearchInput, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft } from '@/features/leads/server/actions';
+import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, recordLeadQuoteApprovalRequest } from '@/features/leads/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
 import { JOURNEY_COPY, isPipelineInJourney, type LeadJourney } from '@/lib/journey';
@@ -926,6 +926,20 @@ export function LeadsWorkspace({
     });
   };
 
+  const handleInlineRequestQuoteApproval = (leadId: string, quoteId?: string | null) => {
+    setInlineActionState({});
+    startInlineActionTransition(() => {
+      void recordLeadQuoteApprovalRequest({
+        leadId,
+        quoteId: quoteId ?? null,
+        note: 'Owner approval requested from the inline Leads Quote Builder.',
+      }).then((result) => {
+        setInlineActionState(result ?? {});
+        if (result?.success) router.refresh();
+      });
+    });
+  };
+
   const selectedAllVisible =
     visibleLeads.length > 0 && visibleLeads.every((lead) => selectedLeadIds.includes(lead.id));
 
@@ -966,9 +980,10 @@ export function LeadsWorkspace({
         setSavedView('suppliers');
         break;
       default:
-        // Reset to initial lead type filter (blank) and all view
-        setLeadTypeFilter(initialLeadType);
+        setWorkspaceMode('all');
+        setLeadTypeFilter('');
         setSavedView('all');
+        setTodayFilter('all-open');
         break;
     }
   };
@@ -977,10 +992,25 @@ export function LeadsWorkspace({
   useEffect(() => {
     if (!initialQuickCapture || !canManageLeads) return;
     setDrawerState((current) => (current.open ? current : { open: true, mode: 'quick', leadId: null, initialStepId: 'basics' }));
-  }, [canManageLeads, initialQuickCapture]);
+    const params = new URLSearchParams(searchParams.toString());
+    let changed = false;
+    for (const key of ['quickLead', 'autoQuote', 'productId', 'sourceType', 'sourceLabel']) {
+      if (params.has(key)) {
+        params.delete(key);
+        changed = true;
+      }
+    }
+    if (changed) {
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    }
+  }, [canManageLeads, initialQuickCapture, pathname, router, searchParams]);
 
   const clearFilters = () => {
-    setLeadTypeFilter(initialLeadType);
+    setWorkspaceMode('all');
+    setLeadTypeFilter('');
+    setSavedView('all');
+    setTodayFilter('all-open');
     setOwnerId('');
     setPipelineIdFilter('');
     setStageIdFilter('');
@@ -1172,8 +1202,15 @@ export function LeadsWorkspace({
           stageName={stageMap.get((workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead)?.stage_id ?? '') ?? 'New Lead'}
           ownerLabel={ownerMap.get((workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead)?.owner_user_id ?? '') ?? 'Unassigned'}
           nextStepLabel={nextStepMap.get((workspaceLeads.find((lead) => lead.id === activeLeadId) ?? spotlightLead)?.next_step_id ?? '') ?? 'Next commercial move'}
+          selectedProductIds={leadProductsMap.get(activeLeadId ?? '') ?? []}
+          selectedMarketIds={leadMarketsMap.get(activeLeadId ?? '') ?? []}
           selectedProductNames={(leadProductsMap.get(activeLeadId ?? '') ?? []).map((productId) => products.find((product) => product.id === productId)?.name).filter((name): name is string => Boolean(name))}
           selectedMarketNames={(leadMarketsMap.get(activeLeadId ?? '') ?? []).map((marketId) => markets.find((market) => market.id === marketId)?.name).filter((name): name is string => Boolean(name))}
+          products={products}
+          markets={markets}
+          variants={variants}
+          prices={prices}
+          pricingRules={pricingRules}
           readiness={readinessByLeadId.get(activeLeadId ?? '')}
           rfqs={rfqs.filter((rfq) => rfq.lead_id === activeLeadId)}
           quotes={quotes.filter((quote) => quote.lead_id === activeLeadId)}
@@ -1195,6 +1232,7 @@ export function LeadsWorkspace({
           onCompleteFollowUp={handleInlineCompleteFollowUp}
           onMoveToStage={handleInlineMoveLeadToStage}
           onOpenOrCreateQuote={handleInlineOpenOrCreateQuote}
+          onRequestQuoteApproval={handleInlineRequestQuoteApproval}
           onBackToList={() => setActiveView('list')}
           onOpenCommandCenter={() => setActiveView('cc')}
           onOpenQuoteBuilder={() => setActiveView('quote')}
@@ -1400,8 +1438,15 @@ type InlineLeadWorkspaceProps = {
   stageName: string;
   ownerLabel: string;
   nextStepLabel: string;
+  selectedProductIds: string[];
+  selectedMarketIds: string[];
   selectedProductNames: string[];
   selectedMarketNames: string[];
+  products: Product[];
+  markets: Option[];
+  variants: Variant[];
+  prices: Price[];
+  pricingRules: PricingRule[];
   readiness?: LeadCommercialReadiness;
   rfqs: Rfq[];
   quotes: Quote[];
@@ -1423,6 +1468,7 @@ type InlineLeadWorkspaceProps = {
   onCompleteFollowUp: (leadId: string, followUpId?: string | null) => void;
   onMoveToStage: (leadId: string, stageId: string) => void;
   onOpenOrCreateQuote: (leadId: string) => void;
+  onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
   onBackToList: () => void;
   onOpenCommandCenter: () => void;
   onOpenQuoteBuilder: () => void;
@@ -1434,8 +1480,15 @@ function InlineLeadWorkspace({
   stageName,
   ownerLabel,
   nextStepLabel,
+  selectedProductIds,
+  selectedMarketIds,
   selectedProductNames,
   selectedMarketNames,
+  products,
+  markets,
+  variants,
+  prices,
+  pricingRules,
   readiness,
   rfqs,
   quotes,
@@ -1457,6 +1510,7 @@ function InlineLeadWorkspace({
   onCompleteFollowUp,
   onMoveToStage,
   onOpenOrCreateQuote,
+  onRequestQuoteApproval,
   onBackToList,
   onOpenCommandCenter,
   onOpenQuoteBuilder,
@@ -1483,8 +1537,15 @@ function InlineLeadWorkspace({
           lead={lead}
           stageName={stageName}
           ownerLabel={ownerLabel}
+          selectedProductIds={selectedProductIds}
+          selectedMarketIds={selectedMarketIds}
           selectedProductNames={selectedProductNames}
           selectedMarketNames={selectedMarketNames}
+          products={products}
+          markets={markets}
+          variants={variants}
+          prices={prices}
+          pricingRules={pricingRules}
           readiness={readiness}
           rfqs={rfqs}
           quotes={quotes}
@@ -1497,6 +1558,7 @@ function InlineLeadWorkspace({
           inlineActionState={inlineActionState}
           isInlineActionPending={isInlineActionPending}
           onOpenOrCreateQuote={onOpenOrCreateQuote}
+          onRequestQuoteApproval={onRequestQuoteApproval}
           onOpenCommandCenter={onOpenCommandCenter}
         />
       ) : (
@@ -1992,8 +2054,15 @@ function InlineQuoteBuilder({
   lead,
   stageName,
   ownerLabel,
+  selectedProductIds,
+  selectedMarketIds,
   selectedProductNames,
   selectedMarketNames,
+  products,
+  markets,
+  variants,
+  prices,
+  pricingRules,
   readiness,
   rfqs,
   quotes,
@@ -2006,13 +2075,21 @@ function InlineQuoteBuilder({
   inlineActionState,
   isInlineActionPending,
   onOpenOrCreateQuote,
+  onRequestQuoteApproval,
   onOpenCommandCenter,
 }: {
   lead: LeadRow;
   stageName: string;
   ownerLabel: string;
+  selectedProductIds: string[];
+  selectedMarketIds: string[];
   selectedProductNames: string[];
   selectedMarketNames: string[];
+  products: Product[];
+  markets: Option[];
+  variants: Variant[];
+  prices: Price[];
+  pricingRules: PricingRule[];
   readiness?: LeadCommercialReadiness;
   rfqs: Rfq[];
   quotes: Quote[];
@@ -2025,18 +2102,103 @@ function InlineQuoteBuilder({
   inlineActionState: FormState;
   isInlineActionPending: boolean;
   onOpenOrCreateQuote: (leadId: string) => void;
+  onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
   onOpenCommandCenter: () => void;
 }) {
   const [builderStep, setBuilderStep] = React.useState(1);
   const steps = ['Product', 'Pricing', 'Terms', 'Review', 'Send gate'];
   const latestQuote = [...quotes].sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
   const latestVersion = latestQuote ? quoteVersions.filter((v) => v.quote_id === latestQuote.id).sort((a, b) => Number(b.version_no ?? 0) - Number(a.version_no ?? 0))[0] : null;
-  const lineItems = latestQuote?.lineItems ?? rfqs.flatMap((rfq) => rfq.lineItems ?? []);
-  const subtotal = lineItems.reduce((sum, item) => sum + Number(item.quantity ?? 1) * Number(item.unit_price ?? item.catalog_price_amount ?? 0), 0);
-  const currency = latestQuote?.currency ?? lineItems[0]?.currency ?? lineItems[0]?.catalog_price_currency ?? lead.deal_currency ?? 'USD';
+  type DisplayLine = {
+    id: string;
+    productId: string | null;
+    productLabel: string;
+    variantLabel?: string | null;
+    quantity: number;
+    unitPrice: number | null;
+    currency: string;
+    total: number;
+    source: 'quote' | 'rfq' | 'coverage';
+    priceStatus: 'priced' | 'missing';
+    note?: string | null;
+  };
+
+  const productNameMap = React.useMemo(() => new Map(products.map((product) => [product.id, product.name])), [products]);
+  const variantNameMap = React.useMemo(() => new Map(variants.map((variant) => [variant.id, variant.name])), [variants]);
+  const marketNameMap = React.useMemo(() => new Map(markets.map((market) => [market.id, market.name])), [markets]);
+
+  const quoteItems = latestQuote?.lineItems ?? [];
+  const rfqItems = rfqs.flatMap((rfq) => rfq.lineItems ?? []);
+  const sourceItems = quoteItems.length ? quoteItems : rfqItems;
+
+  const displayLines = React.useMemo<DisplayLine[]>(() => {
+    if (sourceItems.length) {
+      return sourceItems.map((item) => {
+        const qty = Number(item.quantity ?? 1) || 1;
+        const rawPrice = item.unit_price ?? item.catalog_price_amount ?? null;
+        const unitPrice = rawPrice == null ? null : Number(rawPrice);
+        const lineCurrency = String(item.currency ?? item.catalog_price_currency ?? latestQuote?.currency ?? lead.deal_currency ?? 'USD');
+        return {
+          id: item.id,
+          productId: item.product_id ?? null,
+          productLabel: (item.product_id ? productNameMap.get(item.product_id) : null) ?? item.product_id ?? 'Catalog line',
+          variantLabel: item.product_variant_id ? variantNameMap.get(item.product_variant_id) ?? item.product_variant_id : null,
+          quantity: qty,
+          unitPrice,
+          currency: lineCurrency,
+          total: unitPrice == null ? 0 : qty * unitPrice,
+          source: quoteItems.length ? 'quote' : 'rfq',
+          priceStatus: unitPrice != null && unitPrice > 0 ? 'priced' : 'missing',
+          note: item.notes ?? null,
+        };
+      });
+    }
+
+    return selectedProductIds.map((productId) => {
+      const productVariants = variants.filter((variant) => variant.product_id === productId);
+      const variantIds = new Set(productVariants.map((variant) => variant.id));
+      const selectedPrice = prices
+        .filter((price) => variantIds.has(price.product_variant_id))
+        .sort((a, b) => {
+          const aMarketMatch = a.market_id && selectedMarketIds.includes(a.market_id) ? 0 : a.market_id ? 2 : 1;
+          const bMarketMatch = b.market_id && selectedMarketIds.includes(b.market_id) ? 0 : b.market_id ? 2 : 1;
+          if (aMarketMatch !== bMarketMatch) return aMarketMatch - bMarketMatch;
+          return String(b.effective_from ?? '').localeCompare(String(a.effective_from ?? ''));
+        })[0] ?? null;
+      const selectedRule = pricingRules.find((rule) =>
+        rule.product_id === productId || (rule.product_variant_id ? variantIds.has(rule.product_variant_id) : false),
+      ) ?? null;
+      const rulePrice = selectedRule
+        ? selectedRule.fob_usd_per_unit ?? selectedRule.ex_factory_usd_per_unit ?? selectedRule.fob_usd_per_case ?? selectedRule.ex_factory_usd_per_case ?? selectedRule.bulk_usd_per_kg ?? selectedRule.fob_usd ?? selectedRule.ex_factory_usd ?? selectedRule.fob_inr ?? selectedRule.ex_factory_inr ?? null
+        : null;
+      const unitPrice = selectedPrice ? Number(selectedPrice.price) : rulePrice == null ? null : Number(rulePrice);
+      const lineCurrency = selectedPrice?.currency ?? (selectedRule?.fob_inr || selectedRule?.ex_factory_inr ? 'INR' : latestQuote?.currency ?? lead.deal_currency ?? 'USD');
+      const variantLabel = selectedPrice ? variantNameMap.get(selectedPrice.product_variant_id) ?? productVariants[0]?.name ?? null : productVariants[0]?.name ?? null;
+      const marketLabel = selectedPrice?.market_id ? marketNameMap.get(selectedPrice.market_id) : selectedMarketNames[0];
+      return {
+        id: `coverage-${productId}`,
+        productId,
+        productLabel: productNameMap.get(productId) ?? selectedProductNames[selectedProductIds.indexOf(productId)] ?? 'Mapped product',
+        variantLabel,
+        quantity: 1,
+        unitPrice,
+        currency: String(lineCurrency ?? 'USD'),
+        total: unitPrice == null ? 0 : unitPrice,
+        source: 'coverage',
+        priceStatus: unitPrice != null && unitPrice > 0 ? 'priced' : 'missing',
+        note: unitPrice == null ? `No catalog price found${marketLabel ? ` for ${marketLabel}` : ''}. Save draft creates the quote shell; fill price in governed quote workflow.` : `Catalog/reference price${marketLabel ? ` for ${marketLabel}` : ''}.`,
+      };
+    });
+  }, [lead.deal_currency, latestQuote?.currency, marketNameMap, prices, pricingRules, productNameMap, quoteItems.length, selectedMarketIds, selectedMarketNames, selectedProductIds, selectedProductNames, sourceItems, variantNameMap, variants]);
+
+  const subtotal = displayLines.reduce((sum, item) => sum + item.total, 0);
+  const currency = latestQuote?.currency ?? displayLines.find((item) => item.currency)?.currency ?? lead.deal_currency ?? 'USD';
   const blockerCount = readiness?.blockerCount ?? complianceItems.length;
-  const pricingReady = readiness?.pricingReadiness === 'ready' || lineItems.length > 0;
-  const sendReady = blockerCount === 0 && pricingReady;
+  const pricingReady = displayLines.length > 0 && displayLines.every((item) => item.priceStatus === 'priced');
+  const hasQuoteDraft = Boolean(latestQuote);
+  const sendReady = blockerCount === 0 && pricingReady && hasQuoteDraft;
+  const approvalReady = hasQuoteDraft && displayLines.length > 0;
+  const canSendQuote = sendReady;
 
   return (
     <div className="flex flex-col gap-3 px-6 py-4 pb-20" style={{ background: '#f0f4f8' }}>
@@ -2147,19 +2309,19 @@ function InlineQuoteBuilder({
                     </tr>
                   </thead>
                   <tbody>
-                    {lineItems.length ? lineItems.map((item) => {
-                      const qty = Number(item.quantity ?? 1);
-                      const price = Number(item.unit_price ?? item.catalog_price_amount ?? 0);
+                    {displayLines.length ? displayLines.map((item) => {
+                      const qty = item.quantity;
+                      const price = item.unitPrice;
                       return (
                         <tr key={item.id} className="border-t border-[#f1f5f9] hover:bg-[#f8fafc]">
-                          <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.product_id ?? 'Catalog line'}</div></td>
+                          <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.productLabel}</div><div className="mt-1 text-[10px] text-[#64748b]">{item.variantLabel ? `${item.variantLabel} · ` : ''}{item.source === 'coverage' ? 'coverage/catalog fallback' : item.source === 'rfq' ? 'RFQ line' : 'quote draft line'}</div>{item.note ? <div className="mt-1 text-[10px] text-[#94a3b8]">{item.note}</div> : null}</td>
                           <td className="px-[10px] py-[10px]"><input readOnly title="Line edits persist through the saved quote workflow. Use Save draft/Open draft to edit governed quote lines." className="w-[68px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px] text-center text-[12px] font-semibold text-[#64748b] outline-none" value={qty} /></td>
-                          <td className="px-[10px] py-[10px]"><input readOnly title="Price edits persist through the saved quote workflow. Use Save draft/Open draft to edit governed pricing." className="w-[90px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px_7px] text-right text-[12px] font-bold text-[#64748b] outline-none" value={price.toLocaleString()} /></td>
-                          <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{currency} {(qty * price).toLocaleString()}</td>
+                          <td className="px-[10px] py-[10px]">{price == null ? <span className="rounded-full bg-[#fff1f2] px-2 py-1 text-[10px] font-bold text-[#be123c]">Price missing</span> : <input readOnly title="Price edits persist through the saved quote workflow. Use Save draft/Open draft to edit governed pricing." className="w-[90px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px_7px] text-right text-[12px] font-bold text-[#64748b] outline-none" value={price.toLocaleString()} />}</td>
+                          <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{item.currency} {item.total.toLocaleString()}</td>
                         </tr>
                       );
                     }) : (
-                      <tr><td colSpan={4} className="px-[10px] py-[24px] text-center text-[12px] text-[#94a3b8]">No quote lines yet. Add a product line or pull lines from RFQ.</td></tr>
+                      <tr><td colSpan={4} className="px-[10px] py-[24px] text-center text-[12px] text-[#94a3b8]">No quote lines yet. Map products in Coverage or create/open a quote draft.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -2171,7 +2333,7 @@ function InlineQuoteBuilder({
                   <div className="mt-[5px] h-px bg-[#e2e8f0]" />
                   <div className="flex justify-between py-[6px] text-[13px]"><span className="font-bold text-[#0f172a]">Grand total</span><span className="text-[16px] font-extrabold text-[#0b2e4a]">{currency} {subtotal.toLocaleString()}</span></div>
                 </div>
-                {subtotal > 0 && (subtotal / (lineItems.length || 1)) > 10000 ? (
+                {subtotal > 0 && (subtotal / (displayLines.length || 1)) > 10000 ? (
                   <div className="rounded-[6px] border border-[#fde68a] bg-[#fffbeb] p-[9px_13px] text-[11px] leading-[1.55] text-[#92400e]">⚠ Pricing override detected — overrides above 10% require manager approval before send.</div>
                 ) : null}
               </div>
@@ -2202,7 +2364,7 @@ function InlineQuoteBuilder({
             ) : builderStep === 3 ? (
               <div className="grid grid-cols-2 gap-[8px]">
                 {[
-                  { label: 'Pricing check', items: [['Subtotal', `${currency} ${subtotal.toLocaleString()}`], ['Line items', String(lineItems.length)], ['Status', pricingReady ? 'Ready ✓' : 'Incomplete']] },
+                  { label: 'Pricing check', items: [['Subtotal', `${currency} ${subtotal.toLocaleString()}`], ['Line items', String(displayLines.length)], ['Status', pricingReady ? 'Ready ✓' : 'Incomplete']] },
                   { label: 'Documents check', items: [['Linked files', String(documents.length)], ['Latest', documents[0]?.file_name ?? 'None linked'], ['Status', documents.length > 0 ? 'Ready ✓' : 'Missing']] },
                   { label: 'Compliance check', items: [['Active items', String(complianceItems.length)], ['Blockers', String(blockerCount)], ['Gate', blockerCount === 0 ? 'Clear ✓' : 'Blocked']] },
                   { label: 'Quote version', items: [['Version', latestVersion?.version_no ? `v${latestVersion.version_no}` : 'v1 draft'], ['Status', latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'], ['Updated', latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'Not saved']] },
@@ -2240,7 +2402,7 @@ function InlineQuoteBuilder({
                     { label: 'No active blockers', ok: blockerCount === 0 },
                     { label: 'Pricing complete', ok: pricingReady },
                     { label: 'Compliance clear', ok: complianceItems.length === 0 },
-                    { label: 'Quote draft exists', ok: Boolean(latestQuote) },
+                    { label: 'Quote draft exists', ok: hasQuoteDraft },
                   ].map((ck) => (
                     <div key={ck.label} className={`flex items-center gap-[8px] rounded-[6px] border p-[6px_10px] text-[12px] ${ck.ok ? 'border-[#a7f3d0] bg-[#ecfdf5] text-[#047857]' : 'border-[#fecaca] bg-[#fff1f2] text-[#9f1239]'}`}>
                       <span className="font-bold">{ck.ok ? '✓' : '✕'}</span> {ck.label}
@@ -2251,7 +2413,7 @@ function InlineQuoteBuilder({
                   <button type="button" disabled title="Send quote is disabled in the inline builder until the governed quote send workflow is connected." className="flex-1 rounded-[6px] bg-[#e2e8f0] p-[10px] text-[13px] font-extrabold text-[#94a3b8] border-none cursor-not-allowed">
                     Send quote
                   </button>
-                  <button type="button" disabled title="Approval request is disabled here until a saved quote version exists in the quote workflow." className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none cursor-not-allowed opacity-60">
+                  <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none disabled:cursor-not-allowed disabled:opacity-60">
                     Request approval
                   </button>
                   <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569] disabled:opacity-60">
@@ -2269,7 +2431,7 @@ function InlineQuoteBuilder({
           <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
             <div className="mb-[6px] text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Quote v1</div>
             <div className="mb-[6px] text-[14px] font-extrabold text-[#0f172a]">{currency} {subtotal.toLocaleString()}</div>
-            {[['Lines', String(lineItems.length)], ['Status', latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'], ['Version', latestVersion ? `v${latestVersion.version_no}` : 'v1'], ['Updated', latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'Not saved']].map(([k, v]) => (
+            {[['Lines', String(displayLines.length)], ['Status', latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'], ['Version', latestVersion ? `v${latestVersion.version_no}` : 'v1'], ['Updated', latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'Not saved']].map(([k, v]) => (
               <div key={k} className="flex justify-between border-b border-[#f8fafc] py-[3px] text-[11px]">
                 <span className="text-[#64748b]">{k}</span><span className="font-bold text-[#1e293b]">{v}</span>
               </div>
@@ -2303,10 +2465,10 @@ function InlineQuoteBuilder({
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => setBuilderStep((s) => Math.min(s + 1, steps.length - 1))} disabled={builderStep >= steps.length - 1}
             className="rounded-[22px] bg-[#0b2e4a] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" title={builderStep >= steps.length - 1 ? 'Send is disabled in the inline builder until the governed quote send workflow is connected.' : undefined}>
-            {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : sendReady ? 'Send disabled here' : 'Review blockers'}
+            {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : canSendQuote ? 'Send ready in quote workflow' : 'Review blockers'}
           </button>
           <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Save draft</button>
-          <button type="button" disabled title="Approval request is disabled until a governed quote version is saved." className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] opacity-60 cursor-not-allowed">Request approval</button>
+          <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:cursor-not-allowed disabled:opacity-60">Request approval</button>
           <span className="ml-auto rounded-full bg-[#f1f5f9] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#64748b]">
             Command Center · Quote Builder · {steps[builderStep]}
           </span>
