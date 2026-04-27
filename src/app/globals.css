@@ -4,20 +4,22 @@
 
 :root {
   color-scheme: light dark;
+  --page-bg: #f0f4f8;
+  --border: #e2e8f0;
+  --r-sm: 6px;
+  --r-lg: 16px;
+  --r-xl: 22px;
 }
 
 html,
 body {
-  max-width: 100%;
-  overflow-x: clip;
+  @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-[#0F172A] dark:text-neutral-50;
+  background: var(--page-bg);
 }
 
 body {
   @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-[#0F172A] dark:text-neutral-50;
-  background-image:
-    radial-gradient(circle at top, rgba(53, 159, 145, 0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(31, 72, 124, 0.12), transparent 30%),
-    linear-gradient(180deg, #f8fcfd 0%, #eef6fb 100%);
+  background: var(--page-bg);
 }
 
 .dark body {

@@ -174,7 +174,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
 
   return (
     <div className="space-y-6">
-      <div className={cn('p-6', workspaceHeroClass)}>
+      <div className="hidden">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">Catalog — Products, Pricing & Variants</div>
@@ -199,7 +199,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         </div>
       </div>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,.75fr)]">
+      <section className="hidden">
         <div className={workspacePanelClass}>
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl">

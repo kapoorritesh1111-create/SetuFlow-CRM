@@ -135,7 +135,7 @@ export default async function AdminOrganizationPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <div className="hidden"><PageHeader
         eyebrow="Admin"
         title="Organization workspace"
         badge={organization.name}
@@ -146,7 +146,7 @@ export default async function AdminOrganizationPage() {
           { label: 'Settings lists', href: '/settings/lists' },
           { label: 'Product management', href: '/admin/product-management', type: 'primary' },
         ]}
-      />
+      /></div>
 
       {!rows.length ? (
         <EmptyState
