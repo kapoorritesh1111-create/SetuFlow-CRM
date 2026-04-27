@@ -252,11 +252,13 @@ export function ProductsManager({
   products,
   markets,
   auditEvents,
+  canManageCatalog = true,
 }: {
   categories: ProductCategoryViewModel[];
   products: ProductViewModel[];
   markets: MarketOption[];
   auditEvents: AuditEventRecord[];
+  canManageCatalog?: boolean;
 }) {
   const [message, setMessage] = useState('');
   const [workspaceProducts, setWorkspaceProducts] = useState<ProductViewModel[]>(products);
