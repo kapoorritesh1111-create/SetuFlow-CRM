@@ -822,14 +822,14 @@ export function PipelineBoard({
                   <div style={{height:'3px',borderRadius:'99px',marginBottom:'10px',background:getStageAccent(group.stage.name)}}/>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'6px',marginBottom:'6px'}}>
                     <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                      <div style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',flexShrink:0,background:'rgba(12,127,255,.08)'}}>{(() => { const StageIcon = getStageIcon(group.stage.name); return <StageIcon size={15} color="#475569" strokeWidth={2.4} />; })()}</div>
+                      <div style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',flexShrink:0,background:'rgba(12,127,255,.08)'}}>{(() => { const StageIcon = getStageIcon(group.stage.name); return <StageIcon width={15} height={15} color="#475569" strokeWidth={2.4} />; })()}</div>
                       <span style={{fontSize:'13px',fontWeight:800,color:'#1e293b',letterSpacing:'-.2px'}}>{group.stage.name}</span>
                     </div>
                     <span style={{background:'#f1f5f9',borderRadius:'999px',padding:'2px 8px',fontSize:'11px',fontWeight:800,color:'#475569'}}>{group.leads.length}</span>
                   </div>
                   <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
                     {group.leads.filter(l=>getFollowUpVisualState(l.next_follow_up_at)==='overdue').length>0&&<span style={{fontSize:'10px',fontWeight:700,color:'#e11d48'}}>{group.leads.filter(l=>getFollowUpVisualState(l.next_follow_up_at)==='overdue').length} overdue</span>}
-                    {group.leads.filter(l=>buildStageMoveReadiness(l,group.stage,stages,quotes,rfqs,complianceItems,complianceDefinitions,documents,documentRequirementRules,localLeadMarkets,localLeadProductInterests,variants,prices,pricingRules).blockers.length>0).length>0&&<span style={{fontSize:'10px',fontWeight:700,color:'#dc2626'}}>{group.leads.filter(l=>buildStageMoveReadiness(l,group.stage,stages,quotes,rfqs,complianceItems,complianceDefinitions,documents,documentRequirementRules,localLeadMarkets,localLeadProductInterests,variants,prices,pricingRules).blockers.length>0).length} blocked</span>}
+                    {group.leads.filter(l=>getStageMoveReadinessForLead(l, group.stage).blockers.length>0).length>0&&<span style={{fontSize:'10px',fontWeight:700,color:'#dc2626'}}>{group.leads.filter(l=>getStageMoveReadinessForLead(l, group.stage).blockers.length>0).length} blocked</span>}
                   </div>
                   <div style={{fontSize:'11px',fontWeight:700,color:'#475569',marginTop:'4px',paddingTop:'6px',borderTop:'1px solid #e2e8f0'}}>
                     {valueCurrency} {Math.round(group.leads.reduce((s,l)=>s+(l.deal_value??0),0)).toLocaleString()}
@@ -838,13 +838,11 @@ export function PipelineBoard({
                 {/* Lane cards */}
                 <div style={{display:'flex',flexDirection:'column',gap:'7px',minHeight:'60px'}}>
                   {group.leads.map(lead=>{
-                    const readiness = buildStageMoveReadiness(lead,group.stage,stages,quotes,rfqs,complianceItems,complianceDefinitions,documents,documentRequirementRules,localLeadMarkets,localLeadProductInterests,variants,prices,pricingRules);
+                    const readiness = getStageMoveReadinessForLead(lead, group.stage);
                     const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
                     const isBlocked = readiness.blockers.length>0;
                     const cardBorderLeft = isBlocked?'3px solid #f43f5e':followUpState==='overdue'?'3px solid #f59e0b':'3px solid #10b981';
-                    const commercialReadiness = buildLeadCommercialReadiness(lead.id,localLeadProductInterests,prices,pricingRules);
-                    const commercialLabel = getPricingReadinessLabel(commercialReadiness);
-                    const commercialClass = getPricingReadinessClasses(commercialReadiness);
+                    const commercialReadiness = getLeadPricingReadiness(lead.id);
                     return (
                       <div key={lead.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'16px',padding:'12px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer',transition:'box-shadow .15s,transform .15s',borderLeft:cardBorderLeft}} onClick={()=>navigateToLeadCommandCenter(lead.id,router,pathname)}>
                         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'6px',marginBottom:'8px'}}>
