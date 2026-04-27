@@ -844,7 +844,7 @@ export function PipelineBoard({
                     const cardBorderLeft = isBlocked?'3px solid #f43f5e':followUpState==='overdue'?'3px solid #f59e0b':'3px solid #10b981';
                     const commercialReadiness = getLeadPricingReadiness(lead.id);
                     return (
-                      <div key={lead.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'16px',padding:'12px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer',transition:'box-shadow .15s,transform .15s',borderLeft:cardBorderLeft}} onClick={()=>navigateToLeadCommandCenter(lead.id,router,pathname)}>
+                      <div key={lead.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'16px',padding:'12px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer',transition:'box-shadow .15s,transform .15s',borderLeft:cardBorderLeft}} onClick={()=>navigateToLeadCommandCenter(router, buildLeadCommandCenterHref(lead.id))}>
                         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'6px',marginBottom:'8px'}}>
                           <div style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',flexShrink:0}}>
                             {lead.country?'🌍':'🏢'}
@@ -853,7 +853,7 @@ export function PipelineBoard({
                             <div style={{fontSize:'12px',fontWeight:800,color:'#1e293b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.company_name}</div>
                             <div style={{fontSize:'10px',color:'#64748b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.contact_name??'—'}</div>
                           </div>
-                          <button style={{width:'26px',height:'26px',borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',color:'#64748b',cursor:'pointer',flexShrink:0}} onClick={e=>{e.stopPropagation();navigateToLeadCommandCenter(lead.id,router,pathname);}}>→</button>
+                          <button style={{width:'26px',height:'26px',borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',color:'#64748b',cursor:'pointer',flexShrink:0}} onClick={e=>{e.stopPropagation();navigateToLeadCommandCenter(router, buildLeadCommandCenterHref(lead.id));}}>→</button>
                         </div>
                         <div style={{display:'flex',gap:'4px',marginBottom:'8px',flexWrap:'wrap'}}>
                           {followUpState==='overdue'&&<span style={{display:'inline-flex',alignItems:'center',padding:'1px 7px',borderRadius:'999px',fontSize:'9px',fontWeight:700,letterSpacing:'.04em',border:'1px solid',background:'#fff1f2',borderColor:'#fecaca',color:'#e11d48'}}>Overdue</span>}
@@ -870,7 +870,7 @@ export function PipelineBoard({
                         {/* Actions */}
                         <div style={{display:'flex',gap:'4px',flexWrap:'wrap'}}>
                           <button style={{padding:'3px 8px',borderRadius:'6px',fontSize:'9px',fontWeight:700,border:'1px solid #e2e8f0',background:isBlocked?'#fff1f2':'#0b2e4a',color:isBlocked?'#dc2626':'white',cursor:isBlocked?'not-allowed':'pointer'}} onClick={e=>{e.stopPropagation();}} disabled={isBlocked}>Advance</button>
-                          <button style={{padding:'3px 8px',borderRadius:'6px',fontSize:'9px',fontWeight:700,border:'1px solid #e2e8f0',background:'white',color:'#475569',cursor:'pointer'}} onClick={e=>{e.stopPropagation();navigateToLeadCommandCenter(lead.id,router,pathname);}}>Open</button>
+                          <button style={{padding:'3px 8px',borderRadius:'6px',fontSize:'9px',fontWeight:700,border:'1px solid #e2e8f0',background:'white',color:'#475569',cursor:'pointer'}} onClick={e=>{e.stopPropagation();navigateToLeadCommandCenter(router, buildLeadCommandCenterHref(lead.id));}}>Open</button>
                         </div>
                         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'6px',marginTop:'8px',paddingTop:'7px',borderTop:'1px solid #e2e8f0'}}>
                           <span style={{fontSize:'9px',fontWeight:600,color:'#94a3b8'}}>{lead.owner_user_id?ownerLabelMap.get(lead.owner_user_id)??'Unassigned':'Unassigned'}</span>
