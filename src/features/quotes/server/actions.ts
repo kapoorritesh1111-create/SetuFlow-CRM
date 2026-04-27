@@ -694,7 +694,7 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
     (approvalRequired ? 'pending' : 'not_required')) as ApprovalState;
   const plainNotes = String(formData.get('notes') ?? '').trim();
   const pricingBasisRaw = String(formData.get('pricing_basis') ?? 'fob').trim().toLowerCase();
-  const pricingBasis = ['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(pricingBasisRaw) ? pricingBasisRaw : 'fob';
+  const pricingBasis = (['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(pricingBasisRaw) ? pricingBasisRaw : 'fob') as 'ex_factory' | 'fob' | 'cif' | 'bulk_chips';
 
   let lineItems: ParsedLineItem[] = [];
   try {
@@ -1006,7 +1006,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     (approvalRequired ? 'pending' : 'not_required')) as ApprovalState;
   const plainNotes = String(formData.get('notes') ?? '').trim();
   const pricingBasisRaw = String(formData.get('pricing_basis') ?? 'fob').trim().toLowerCase();
-  const pricingBasis = ['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(pricingBasisRaw) ? pricingBasisRaw : 'fob';
+  const pricingBasis = (['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(pricingBasisRaw) ? pricingBasisRaw : 'fob') as 'ex_factory' | 'fob' | 'cif' | 'bulk_chips';
 
   let lineItems: ParsedLineItem[] = [];
   try {

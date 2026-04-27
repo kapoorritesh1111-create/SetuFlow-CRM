@@ -2311,6 +2311,7 @@ function QuoteReviewPanel({
   lineItems,
   templateId,
   products,
+  pricingBasis,
   quoteSendGuard,
 }: {
   currency: string;
@@ -3393,6 +3394,7 @@ function QuoteSummaryCards({
   lineItems,
   templateId,
   products,
+  pricingBasis,
   quoteSendGuard,
 }: {
   currency: string;
@@ -3402,6 +3404,7 @@ function QuoteSummaryCards({
   lineItems: DraftQuoteLine[];
   templateId: string;
   products: ProductOption[];
+  pricingBasis: PricingBasis;
   quoteSendGuard?: ProgressionGuardSummary;
 }) {
   const totals = computeQuoteTotals(lineItems, normalizeCurrency(currency));

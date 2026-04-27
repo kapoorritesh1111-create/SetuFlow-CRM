@@ -346,7 +346,7 @@ export type LeadsPageData = QueryIssuePayload & {
   >[];
   pipelines: Pick<PipelineRow, 'id' | 'name' | 'lead_type' | 'is_default'>[];
   nextSteps: Pick<NextStepRow, 'id' | 'name'>[];
-  tradeEvents: Pick<TradeEventRow, 'id' | 'name'>[];
+  tradeEvents: Pick<TradeEventRow, 'id' | 'name' | 'capture_defaults'>[];
   productCategories: Pick<ProductCategoryRow, 'id' | 'name' | 'is_active' | 'sort_order' | 'parent_id'>[];
   products: Pick<ProductRow, 'id' | 'name' | 'sku' | 'category_id'>[];
   markets: Pick<MarketRow, 'id' | 'name'>[];

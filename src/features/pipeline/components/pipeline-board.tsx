@@ -562,6 +562,7 @@ export function PipelineBoard({
     const blockedCount = stageLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0);
 
     return (
+      <>
       {selectedLeadIds.size >= 1 ? (
         <div className="sticky top-3 z-30 mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
           <span className="text-sm font-semibold text-slate-900">{selectedLeadIds.size} leads selected</span>
@@ -670,6 +671,7 @@ export function PipelineBoard({
         })}
         {!stageLeads.length ? <div className="rounded-[1.2rem] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">{stacked ? 'No leads match this stage right now.' : 'Drop a lead here or adjust filters to repopulate this stage.'}</div> : null}
       </PipelineLaneSection>
+      </>
     );
   };
 
