@@ -146,3 +146,45 @@ export async function progressOrderExecution(formData: FormData) {
   revalidatePath('/leads');
   redirect(buildRedirect(`order-state-progressed:${nextState}`));
 }
+
+export async function uploadOrderDocument(_: { error?: string; success?: string } | undefined, formData: FormData) {
+  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
+
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
+  const canManage = hasWorkspaceCapability(workspace.currentRoles, 'lead.manage');
+  const canReviewCompliance = hasWorkspaceCapability(workspace.currentRoles, 'compliance.review');
+  if (!canManage && !canReviewCompliance) return { error: getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage') ?? 'Your role cannot upload order documents.' };
+
+  const contractId = String(formData.get('contract_id') ?? '').trim();
+  const docType = String(formData.get('doc_type') ?? '').trim() || 'compliance_doc';
+  const requirementCode = String(formData.get('requirement_code') ?? '').trim() || null;
+  const fileValue = formData.get('file');
+  if (!contractId) return { error: 'Contract ID is required.' };
+  if (!(fileValue instanceof File) || fileValue.size <= 0) return { error: 'A document file is required.' };
+
+  const db = (await createClient()) as any;
+  const { data: contract, error: contractError } = await db.from('contracts').select('id, lead_id, quote_id, execution_state').eq('organization_id', workspace.organization.id).eq('id', contractId).maybeSingle();
+  if (contractError) return { error: contractError.message };
+  if (!contract?.id) return { error: 'Order contract not found.' };
+
+  const now = new Date().toISOString();
+  const safeName = fileValue.name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 120) || 'order-document';
+  const storagePath = `${workspace.organization.id}/orders/${contractId}/${Date.now()}-${safeName}`;
+  const upload = await db.storage.from('order-documents').upload(storagePath, fileValue, { upsert: false, contentType: fileValue.type || undefined });
+  if (upload.error) return { error: upload.error.message };
+
+  const { data: publicUrlData } = db.storage.from('order-documents').getPublicUrl(storagePath);
+  const fileUrl = publicUrlData?.publicUrl ?? `supabase://order-documents/${storagePath}`;
+  const { data: documentRow, error: documentError } = await db.from('documents').insert({ organization_id: workspace.organization.id, related_entity: 'contract', related_id: contractId, file_name: safeName, file_url: fileUrl, doc_type: docType, status: 'uploaded', uploaded_by: workspace.user.id, uploaded_at: now, version: 1, ...(requirementCode ? { requirement_code: requirementCode } : {}) }).select('id').single();
+  if (documentError) return { error: documentError.message };
+
+  await writeAuditLog({ organizationId: workspace.organization.id, action: 'document_status_changed', entityType: 'contract', entityId: contractId, actorUserId: workspace.user.id, payload: { previous: { execution_state: contract.execution_state ?? null }, new: { document_id: documentRow?.id ?? null, doc_type: docType, file_name: safeName }, metadata: { source: 'uploadOrderDocument', quote_id: contract.quote_id, lead_id: contract.lead_id, storage_bucket: 'order-documents', storage_path: storagePath } } });
+
+  revalidatePath('/orders');
+  revalidatePath('/documents');
+  revalidatePath('/contracts');
+  revalidatePath('/compliance');
+  if (contract.lead_id) revalidatePath(`/leads/${contract.lead_id}`);
+  return { success: 'Order document uploaded and linked.' };
+}

@@ -392,6 +392,12 @@ export function PipelineBoard({
     });
   }, [localLeads, search, followUpFilter, ownerFilter, productFilter, marketFilter, leadTypeFilter, leadCategoryMap, leadMarketsMap]);
 
+  const visualStageGroups = useMemo(() => filteredStageGroups.map((group) => ({
+    ...group,
+    stage: group.ref,
+    leads: filteredLeads.filter((lead) => group.stages.some((stage) => stage.id === lead.stage_id)),
+  })), [filteredStageGroups, filteredLeads]);
+
 
   const safeFormatDateTime = (value?: string | null) => {
     if (!value) return '—';
@@ -409,16 +415,25 @@ export function PipelineBoard({
       return;
     }
 
+    const previousStageId = lead.stage_id ?? null;
+    const optimisticUpdatedAt = new Date().toISOString();
+    setLocalLeads((current) => current.map((item) => (item.id === leadId ? { ...item, stage_id: stageId, updated_at: optimisticUpdatedAt } : item)));
+    setMessage('Saving stage move...');
+
     const formData = new FormData();
     formData.append('lead_id', leadId);
     formData.append('stage_id', stageId);
     startTransition(() => {
       void moveLeadToStage(undefined, formData).then((result) => {
         setMessage(result?.error ?? result?.success ?? '');
-        if (!result?.error) {
-          const nextLead = result?.lead;
-          setLocalLeads((current) => current.map((lead) => (lead.id === leadId ? { ...lead, stage_id: nextLead?.stage_id ?? stageId, updated_at: nextLead?.updated_at ?? new Date().toISOString() } : lead)));
+        if (result?.error) {
+          setLocalLeads((current) => current.map((item) => (item.id === leadId ? { ...item, stage_id: previousStageId, updated_at: lead.updated_at } : item)));
+          router.refresh();
+          return;
         }
+        const nextLead = result?.lead;
+        setLocalLeads((current) => current.map((item) => (item.id === leadId ? { ...item, stage_id: nextLead?.stage_id ?? stageId, updated_at: nextLead?.updated_at ?? optimisticUpdatedAt } : item)));
+        router.refresh();
       });
     });
   };
@@ -795,7 +810,7 @@ export function PipelineBoard({
             {filteredStageGroups.map(group=>renderLane(group,true))}
           </div>
           <div style={{padding:'14px 24px 24px',overflowX:'auto',display:'flex',gap:'12px',minHeight:0,WebkitOverflowScrolling:'touch'} as React.CSSProperties}>
-            {filteredStageGroups.map(group=>(
+            {visualStageGroups.map(group=>(
               <div key={group.stage.id} style={{flexShrink:0,width:'256px',display:'flex',flexDirection:'column',gap:'8px'}}>
                 {/* Lane header */}
                 <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'12px 14px',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>

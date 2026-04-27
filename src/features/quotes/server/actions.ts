@@ -180,21 +180,7 @@ async function updateQuoteDirect(db: any, params: {
   approvalState: string;
 }) {
   const nowIso = new Date().toISOString();
-  const { error: quoteError } = await db
-    .from('quotes')
-    .update({
-      status: params.status,
-      currency: params.currency,
-      display_currency: params.currency,
-      pricing_basis: params.pricingBasis,
-      approval_required: params.approvalRequired,
-      approved_at: params.approvalState === 'approved' ? nowIso : null,
-      approved_by: params.approvalState === 'approved' ? params.actorUserId : null,
-      notes: params.notes,
-      updated_at: nowIso,
-    })
-    .eq('organization_id', params.organizationId)
-    .eq('id', params.quoteId);
+  const { error: quoteError } = await db.from('quotes').update({ status: params.status, currency: params.currency, display_currency: params.currency, pricing_basis: params.pricingBasis, approval_required: params.approvalRequired, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, notes: params.notes, updated_at: nowIso }).eq('organization_id', params.organizationId).eq('id', params.quoteId);
   if (quoteError) return { data: null, error: quoteError };
 
   const { error: deleteLinesError } = await db.from('quote_line_items').delete().eq('quote_id', params.quoteId);
@@ -204,74 +190,25 @@ async function updateQuoteDirect(db: any, params: {
     if (insertLinesError) return { data: null, error: insertLinesError };
   }
 
-  let versionId = params.quoteVersionId;
-  if (!versionId) {
-    const { data: version, error: versionError } = await db
-      .from('quote_versions')
-      .insert({
-        quote_id: params.quoteId,
-        version_no: 1,
-        status: params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalRequired ? 'approval_pending' : 'draft',
-        pricing_basis: params.pricingBasis,
-        display_currency: params.currency,
-        internal_notes: params.notes,
-        total_line_count: params.lineItems.length,
-        created_by: params.actorUserId,
-      })
-      .select('id')
-      .single();
-    if (versionError) return { data: null, error: versionError };
-    versionId = version.id;
-    const { error: quoteVersionUpdateError } = await db.from('quotes').update({ current_version_id: versionId }).eq('id', params.quoteId);
-    if (quoteVersionUpdateError) return { data: null, error: quoteVersionUpdateError };
-  } else {
-    const { error: versionUpdateError } = await db
-      .from('quote_versions')
-      .update({
-        status: params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalRequired ? 'approval_pending' : 'draft',
-        pricing_basis: params.pricingBasis,
-        display_currency: params.currency,
-        internal_notes: params.notes,
-        total_line_count: params.lineItems.length,
-        updated_at: nowIso,
-        approved_at: params.approvalState === 'approved' ? nowIso : null,
-        approved_by: params.approvalState === 'approved' ? params.actorUserId : null,
-        sent_at: params.status === 'sent' ? nowIso : null,
-        sent_by: params.status === 'sent' ? params.actorUserId : null,
-      })
-      .eq('id', versionId);
-    if (versionUpdateError) return { data: null, error: versionUpdateError };
-  }
+  const { data: latestVersion, error: latestVersionError } = await db.from('quote_versions').select('version_no').eq('quote_id', params.quoteId).order('version_no', { ascending: false }).limit(1).maybeSingle();
+  if (latestVersionError) return { data: null, error: latestVersionError };
+  const nextVersionNo = Number.isFinite(Number(latestVersion?.version_no)) ? Number(latestVersion.version_no) + 1 : 1;
+  const resolvedVersionStatus = params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalState === 'rejected' ? 'rejected' : params.status === 'expired' ? 'expired' : params.approvalRequired ? 'approval_pending' : 'draft';
 
-  if (versionId) {
-    const { error: deleteVersionLinesError } = await db.from('quote_version_line_items').delete().eq('quote_version_id', versionId);
-    if (deleteVersionLinesError) return { data: null, error: deleteVersionLinesError };
-    const versionLines = params.lineItems.map((line, index) => ({
-      quote_version_id: versionId,
-      product_id: line.product_id,
-      product_variant_id: line.product_variant_id,
-      sku_code: `LINE-${index + 1}`,
-      product_name: line.notes || `Product ${index + 1}`,
-      category_type: 'powders',
-      basis_applied: params.pricingBasis,
-      pricing_mode: 'case',
-      moq: line.quantity,
-      final_unit_price: line.unit_price,
-      display_currency: line.currency ?? params.currency,
-      is_overridden: Boolean(line.is_price_overridden),
-      override_reason: line.override_reason,
-      overridden_by: line.overridden_by,
-      overridden_at: line.overridden_at,
-      line_notes: line.notes,
-      sort_order: index,
-    }));
-    if (versionLines.length) {
-      const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
-      if (versionLineError) return { data: null, error: versionLineError };
-    }
-  }
+  const { data: version, error: versionError } = await db.from('quote_versions').insert({ quote_id: params.quoteId, version_no: nextVersionNo, status: resolvedVersionStatus, pricing_basis: params.pricingBasis, display_currency: params.currency, internal_notes: params.notes, total_line_count: params.lineItems.length, created_by: params.actorUserId, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, sent_at: params.status === 'sent' ? nowIso : null, sent_by: params.status === 'sent' ? params.actorUserId : null }).select('id').single();
+  if (versionError) return { data: null, error: versionError };
 
-  return { data: { quote_id: params.quoteId, lead_id: params.leadId }, error: null };
+  const versionId = version.id;
+  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: 'powders', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, final_unit_price: line.unit_price, display_currency: line.currency ?? params.currency, is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
+  if (versionLines.length) {
+    const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
+    if (versionLineError) return { data: null, error: versionLineError };
+  }
+  const { error: quoteVersionUpdateError } = await db.from('quotes').update({ current_version_id: versionId, updated_at: nowIso }).eq('id', params.quoteId);
+  if (quoteVersionUpdateError) return { data: null, error: quoteVersionUpdateError };
+
+  await insertNegotiationEvent(db, { quote_id: params.quoteId, quote_version_id: versionId, event_type: nextVersionNo === 1 ? 'version_created' : 'version_revised', actor_user_id: params.actorUserId, message: 'Quote version v' + nextVersionNo + ' saved without overwriting earlier versions.', payload: { source: 'updateQuoteDirect', previous_version_id: params.quoteVersionId, version_no: nextVersionNo } });
+  return { data: { quote_id: params.quoteId, lead_id: params.leadId, quote_version_id: versionId, version_no: nextVersionNo }, error: null };
 }
 
 async function writeQuoteAuditLog(input: {

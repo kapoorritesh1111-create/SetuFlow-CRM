@@ -46,3 +46,14 @@ Scope:
 ## Next prompt
 
 PR-NS-08 — Catalog-to-Quote data wiring hardening
+
+### PR-NS-07.6 — Vercel build recovery + redesign reference lock
+
+Status: Completed in this repo pass.
+
+- Fixed the Pipeline board production type failure from the visual parity pass by adding an explicit visual stage group model that exposes the representative `stage` and filtered lane `leads` used by the NorthStar board renderer.
+- Preserved the grouped-stage pipeline behavior used to avoid duplicate buyer/supplier lanes.
+- Re-locked the four attached redesign HTML files into `/public/reference-html/` for Quotes, Orders, Pipeline, and Catalog so the repo references match the latest uploaded designs.
+- Visual/functionality review found remaining parity work is mostly exact interaction/data wiring, not the shell rhythm: Catalog drawer/wizard behavior, Orders document upload state, Pipeline drag/drop persistence, and Quotes version/revise/approval persistence need PR-NS-08+ hardening.
+
+Next active development remains PR-NS-08 — Catalog-to-Quote data wiring hardening.
