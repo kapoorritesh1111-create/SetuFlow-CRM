@@ -1,1 +1,1 @@
-export { moveLeadStage, moveLeadToStage } from './actions';
+export { batchMoveLeadsToStage, moveLeadStage, moveLeadToStage } from './actions';

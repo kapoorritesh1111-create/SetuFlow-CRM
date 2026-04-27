@@ -102,7 +102,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
 
   const [leadsResult, versionsResult, negotiationsResult, communicationsResult, contractsResult, lineItemsResult] = await Promise.all([
     db.from('leads').select('id, company_name, contact_name, lead_type').eq('organization_id', organizationId).in('id', leadIds),
-    db.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at').in('quote_id', quoteIds).order('created_at', {ascending: false}),
+    db.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at, quote_pricing_snapshots(fx_rate, fx_display_currency)').in('quote_id', quoteIds).order('created_at', {ascending: false}),
     db.from('quote_negotiation_events').select('id, quote_id, event_type, message, created_at, actor_name').in('quote_id', quoteIds).order('created_at', {ascending: false}),
     db.from('communications').select('id, quote_id, subject, summary, status, created_at').in('quote_id', quoteIds).order('created_at', {ascending: false}),
     db.from('contracts').select('id, quote_id, status, signed_at, starts_on, commercial_lock_state, commercial_snapshot').eq('organization_id', organizationId).in('quote_id', quoteIds),

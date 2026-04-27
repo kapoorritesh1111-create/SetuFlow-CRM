@@ -26,7 +26,7 @@ import { getCommercialLockStateLabel, parseContractCommercialSnapshot } from '@/
 import { evaluateOrderExecution, getOrderExecutionStateLabel } from '@/lib/order-execution';
 import { buildOrderOperationalControlState, type OrderOperationalControlState } from '@/lib/order-operations';
 import type { DocumentRequirementRule } from '@/lib/document-requirements';
-import { progressOrderExecution } from '@/features/orders/server/actions';
+import { progressOrderExecution, uploadOrderDocumentInline } from '@/features/orders/server/actions';
 
 // ─── Explicit row types (avoids Supabase generic inference issues) ────────────
 
@@ -790,7 +790,13 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                   <div key={item.code} style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',borderRadius:'8px',border:'1px solid #fecaca',background:'#fff1f2'}}>
                     <span style={{fontSize:'14px',flexShrink:0}}>✗</span>
                     <span style={{flex:1,fontSize:'12px',fontWeight:600,color:'#9f1239'}}>{item.title} — required for import clearance</span>
-                    <Link href="/documents" style={{fontSize:'10px',fontWeight:700,padding:'3px 9px',borderRadius:'5px',border:'1px solid #fecaca',background:'white',color:'#dc2626',textDecoration:'none',whiteSpace:'nowrap'}}>Upload now</Link>
+                    <form action={uploadOrderDocumentInline} style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap',justifyContent:'flex-end'}}>
+                      <input type="hidden" name="contract_id" value={order.contract?.id ?? ''} />
+                      <input type="hidden" name="requirement_code" value={item.code} />
+                      <input type="hidden" name="doc_type" value={item.doc_type ?? item.code ?? 'compliance_doc'} />
+                      <input type="file" name="file" required style={{maxWidth:'160px',fontSize:'10px',color:'#9f1239'}} />
+                      <button type="submit" style={{fontSize:'10px',fontWeight:700,padding:'3px 9px',borderRadius:'5px',border:'1px solid #fecaca',background:'white',color:'#dc2626',whiteSpace:'nowrap'}}>Upload {item.title}</button>
+                    </form>
                   </div>
                 ))}
                 {/* Execution blockers */}
@@ -811,9 +817,14 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                 </div>
                 <div style={{display:'flex',gap:'8px'}}>
                   {order.executionBlockers.length>0&&<button style={{padding:'6px 14px',borderRadius:'6px',fontSize:'12px',fontWeight:700,border:'1px solid #fecaca',background:'#fff1f2',color:'#dc2626',cursor:'pointer'}}>Mark on hold</button>}
-                  <Link href="/documents" style={{padding:'6px 14px',borderRadius:'6px',fontSize:'12px',fontWeight:700,background:'#0b2e4a',color:'white',textDecoration:'none'}}>
-                    {order.executionBlockers.length>0?'Upload required doc':'Mark delivered'}
-                  </Link>
+                  <form action={progressOrderExecution} title={order.operationalControls.documentRequirementSummary.blockerCount > 0 ? `${order.operationalControls.documentRequirementSummary.blockerCount} documents required before dispatch` : undefined}>
+                    <input type="hidden" name="contract_id" value={order.contract?.id ?? ''} />
+                    <input type="hidden" name="quote_id" value={order.quoteId} />
+                    <input type="hidden" name="next_state" value={order.nextExecutionState ?? "completed"} />
+                    <button type="submit" disabled={order.operationalControls.documentRequirementSummary.blockerCount > 0} style={{padding:'6px 14px',borderRadius:'6px',fontSize:'12px',fontWeight:700,background:order.operationalControls.documentRequirementSummary.blockerCount>0?'#cbd5e1':'#0b2e4a',color:'white',border:'none',cursor:order.operationalControls.documentRequirementSummary.blockerCount>0?'not-allowed':'pointer',opacity:order.operationalControls.documentRequirementSummary.blockerCount>0 ? .75 : 1}}>
+                      {order.executionBlockers.length>0?'Upload required doc':'Mark delivered'}
+                    </button>
+                  </form>
                 </div>
               </div>
             </div>

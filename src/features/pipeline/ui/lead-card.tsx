@@ -66,7 +66,7 @@ function getQuickMoveLabel(label: string) {
   return 'Advance';
 }
 
-export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, state, history, nextStepMap, handleMove, handleAddNote, handleScheduleFollowUp, isPending, commandCenterHref, setDraggedLeadId, setDragOverStageId, safeFormatDateTime, health, ownerLabel, blockerCount, pricingLabel, pricingClassName, blockerSummary, openRfqCount, activeQuoteCount, agingLabel, moveReadiness, moveOptions, countryCode, coverageSummary }: LeadCardProps) {
+export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, state, history, nextStepMap, handleMove, handleAddNote, handleScheduleFollowUp, isPending, commandCenterHref, setDraggedLeadId, setDragOverStageId, safeFormatDateTime, health, ownerLabel, blockerCount, pricingLabel, pricingClassName, blockerSummary, openRfqCount, activeQuoteCount, agingLabel, moveReadiness, moveOptions, countryCode, coverageSummary, isSelected = false, onSelectedChange }: LeadCardProps) {
   const router = useRouter();
   const stageAccent = getStageAccent(stageLabel);
   const FollowUpIcon = getStatusIcon(getFollowUpStatus(state));
@@ -126,8 +126,13 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
       onKeyDown={(event) => handleLeadCommandCenterKeyDown(event, router, commandCenterHref)}
       role="button"
       tabIndex={0}
-      className="group rounded-[1.35rem] border border-slate-200/80 bg-white/96 p-3.5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)] dark:border-slate-700/70 dark:bg-slate-900/88"
+      className="group relative rounded-[1.35rem] border border-slate-200/80 bg-white/96 p-3.5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)] dark:border-slate-700/70 dark:bg-slate-900/88"
     >
+      {canManageLeads && onSelectedChange ? (
+        <label className="absolute left-3 top-3 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm opacity-0 transition group-hover:opacity-100 has-[:checked]:opacity-100" onClick={(event) => event.stopPropagation()}>
+          <input type="checkbox" checked={isSelected} onChange={(event) => onSelectedChange(lead.id, event.target.checked)} className="h-4 w-4 rounded border-slate-300" aria-label={`Select ${lead.company_name}`} />
+        </label>
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1.5">
           <div className="flex items-center gap-2">

@@ -6,7 +6,7 @@ import { ContactScanTrigger } from '@/components/contact-exchange/contact-scan-t
 import Link from 'next/link';
 import type { ContactPostApplyAssistResult } from '@/lib/contact-exchange/contact-post-apply-assist';
 
-type TradeEvent = { id: string; name: string };
+type TradeEvent = { id: string; name: string; capture_defaults?: { default_product_label?: string | null; default_lead_type?: 'buyer' | 'supplier' | null; default_follow_up_days?: number | null } | null };
 type Country = { id: string; name: string; phone_code: string | null };
 type Market = { id: string; name: string };
 
@@ -35,6 +35,7 @@ interface LeadBasicInfoSectionProps {
   setSourceLabel: (value: string) => void;
   tradeEventId: string;
   setTradeEventId: (value: string) => void;
+  setDefaultProductLabel: (value: string) => void;
   companyInputRef: React.RefObject<HTMLInputElement>;
   inputClassName: () => string;
   countries: Country[];
@@ -185,6 +186,7 @@ export default function LeadBasicInfoSection({
   setSourceLabel,
   tradeEventId,
   setTradeEventId,
+  setDefaultProductLabel,
   companyInputRef,
   inputClassName,
   countries,
@@ -290,7 +292,17 @@ export default function LeadBasicInfoSection({
         </div>
         <label className="space-y-2">
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Trade event</span>
-          <select name="trade_event_id" value={tradeEventId} onChange={(event) => setTradeEventId(event.target.value)} className={inputClassName()}>
+          <select name="trade_event_id" value={tradeEventId} onChange={(changeEvent) => {
+            const nextEventId = changeEvent.target.value;
+            setTradeEventId(nextEventId);
+            const selectedEvent = tradeEvents.find((item) => item.id === nextEventId);
+            if (selectedEvent) {
+              setSourceType('trade_event');
+              setSourceLabel(selectedEvent.name);
+              if (selectedEvent.capture_defaults?.default_lead_type === 'buyer' || selectedEvent.capture_defaults?.default_lead_type === 'supplier') setLeadType(selectedEvent.capture_defaults.default_lead_type);
+              if (selectedEvent.capture_defaults?.default_product_label) setDefaultProductLabel(selectedEvent.capture_defaults.default_product_label);
+            }
+          }} className={inputClassName()}>
             <option value="">None</option>
             {tradeEvents.map((event) => (
               <option key={event.id} value={event.id}>

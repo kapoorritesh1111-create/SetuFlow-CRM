@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { moveLeadToStage } from '@/features/pipeline/server';
+import { batchMoveLeadsToStage, moveLeadToStage } from '@/features/pipeline/server';
 import { addLeadNote, scheduleLeadFollowUp } from '@/features/leads/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { parseLeadWorkflow, summarizeLeadCoverageSelections } from '@/lib/lead-workflow';
@@ -74,6 +74,8 @@ export function PipelineBoard({
   const [localLeadMarkets, setLocalLeadMarkets] = useState(leadMarkets);
   const [localLeadProductInterests, setLocalLeadProductInterests] = useState(leadProductInterests);
   const [localFollowUps, setLocalFollowUps] = useState(followUps);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [bulkStageId, setBulkStageId] = useState('');
 
   const activityMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -443,6 +445,39 @@ export function PipelineBoard({
     });
   };
 
+
+  const handleSelectedLeadChange = (leadId: string, selected: boolean) => {
+    setSelectedLeadIds((current) => {
+      const next = new Set(current);
+      if (selected) next.add(leadId); else next.delete(leadId);
+      return next;
+    });
+  };
+
+  const handleBulkMove = () => {
+    const leadIds = Array.from(selectedLeadIds);
+    if (!bulkStageId || leadIds.length === 0) return;
+    const previous = localLeads;
+    const optimisticUpdatedAt = new Date().toISOString();
+    setLocalLeads((current) => current.map((lead) => leadIds.includes(lead.id) ? { ...lead, stage_id: bulkStageId, updated_at: optimisticUpdatedAt } : lead));
+    setMessage('Moving selected leads...');
+    const formData = new FormData();
+    leadIds.forEach((leadId) => formData.append('lead_ids', leadId));
+    formData.append('stage_id', bulkStageId);
+    startTransition(() => {
+      void batchMoveLeadsToStage(undefined, formData).then((result) => {
+        setMessage(result?.error ?? result?.success ?? '');
+        if (result?.error) {
+          setLocalLeads(previous);
+          return;
+        }
+        setSelectedLeadIds(new Set());
+        setBulkStageId('');
+        router.refresh();
+      });
+    });
+  };
+
   const handleAddNote = (leadId: string, note: string) => {
     const formData = new FormData();
     formData.append('lead_id', leadId);
@@ -527,6 +562,18 @@ export function PipelineBoard({
     const blockedCount = stageLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0);
 
     return (
+      {selectedLeadIds.size >= 1 ? (
+        <div className="sticky top-3 z-30 mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+          <span className="text-sm font-semibold text-slate-900">{selectedLeadIds.size} leads selected</span>
+          <select value={bulkStageId} onChange={(event) => setBulkStageId(event.target.value)} className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm">
+            <option value="">Choose stage</option>
+            {stages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
+          </select>
+          <button type="button" onClick={handleBulkMove} disabled={!bulkStageId || isPending} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Move</button>
+          <button type="button" onClick={() => setSelectedLeadIds(new Set())} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Clear</button>
+        </div>
+      ) : null}
+
       <PipelineLaneSection
         key={`${group.name}-${stacked ? 'stacked' : 'board'}`}
         title={group.name}
@@ -601,6 +648,8 @@ export function PipelineBoard({
                   : { status: 'ready', summary: 'Stage movement is ready under the current workflow.', blockers: [], warnings: [], actionItems: ['Advance stage'], canMove: true };
               })()}
               countryCode={lead.country_id ? (countryById.get(lead.country_id)?.iso2_code ?? null) : (lead.country ? (countryCodeByName.get(lead.country.trim().toLowerCase()) ?? null) : null)}
+              isSelected={selectedLeadIds.has(lead.id)}
+              onSelectedChange={handleSelectedLeadChange}
               coverageSummary={`${getLeadCoverageSummary(lead)} · ${getLeadCoverageActionSummary(lead)}`}
               moveOptions={filteredStageGroups
                 .map((stageGroup) => {

@@ -228,7 +228,7 @@ export function LeadDrawer({
   const shouldAutoOpenQuoteAfterSave = Boolean(autoOpenQuoteAfterSave && !isEditingExistingLead);
   const [state, setState] = useState<LeadFormState>({});
   const [isPending, startTransition] = useTransition();
-  const [leadType, setLeadType] = useState<'buyer' | 'supplier'>(lead?.lead_type ?? 'buyer');
+  const [leadType, setLeadType] = useState<'buyer' | 'supplier'>(lead?.lead_type ?? prefill?.defaultLeadType ?? 'buyer');
   const [companyName, setCompanyName] = useState<string>(lead?.company_name ?? '');
   const [contactName, setContactName] = useState<string>(lead?.contact_name ?? '');
   const [jobTitle, setJobTitle] = useState<string>(lead?.job_title ?? '');
@@ -236,7 +236,7 @@ export function LeadDrawer({
   const [phone, setPhone] = useState<string>(lead?.phone ?? '');
   const [phoneSecondary, setPhoneSecondary] = useState<string>(lead?.phone_secondary ?? '');
   const [website, setWebsite] = useState<string>(lead?.website ?? '');
-  const [tradeEventId, setTradeEventId] = useState<string>(lead?.trade_event_id ?? '');
+  const [tradeEventId, setTradeEventId] = useState<string>(lead?.trade_event_id ?? prefill?.tradeEventId ?? '');
   const [pipelineId, setPipelineId] = useState<string>(lead?.pipeline_id ?? '');
   const [stageId, setStageId] = useState<string>(lead?.stage_id ?? '');
   const [countryId, setCountryId] = useState<string>(lead?.country_id ?? '');
@@ -248,6 +248,7 @@ export function LeadDrawer({
   const [notes, setNotes] = useState<string>(lead?.notes ?? '');
   const [sourceType, setSourceType] = useState<string>(lead?.source_type ?? prefill?.sourceType ?? '');
   const [sourceLabel, setSourceLabel] = useState<string>(lead?.source_label ?? prefill?.sourceLabel ?? '');
+  const [defaultProductLabel, setDefaultProductLabel] = useState<string>(prefill?.defaultProductLabel ?? '');
   const [postApplyAssist, setPostApplyAssist] = useState<ContactPostApplyAssistResult | null>(null);
   const [afterSaveGuidance, setAfterSaveGuidance] = useState<ContactAfterSaveGuidanceResult | null>(null);
   const [defaultFollowUpLocal, setDefaultFollowUpLocal] = useState('');
@@ -371,12 +372,12 @@ export function LeadDrawer({
     setState({});
     setValidationIssues([]);
     setActiveStepId(initialStepId ?? 'basics');
-    setLeadType(lead?.lead_type ?? 'buyer');
+    setLeadType(lead?.lead_type ?? prefill?.defaultLeadType ?? 'buyer');
     setCompanyName(lead?.company_name ?? '');
     setContactName(lead?.contact_name ?? '');
     setEmail(lead?.email ?? '');
     setPhone(lead?.phone ?? '');
-    setTradeEventId(lead?.trade_event_id ?? '');
+    setTradeEventId(lead?.trade_event_id ?? prefill?.tradeEventId ?? '');
     setPipelineId(lead?.pipeline_id ?? '');
     setStageId(lead?.stage_id ?? '');
     setCountryId(lead?.country_id ?? '');
@@ -388,6 +389,7 @@ export function LeadDrawer({
     setNotes(lead?.notes ?? '');
     setSourceType(lead?.source_type ?? prefill?.sourceType ?? '');
     setSourceLabel(lead?.source_label ?? prefill?.sourceLabel ?? '');
+    setDefaultProductLabel(prefill?.defaultProductLabel ?? '');
     setPostApplyAssist(null);
     setAfterSaveGuidance(null);
 
@@ -407,7 +409,7 @@ export function LeadDrawer({
     } else {
       setCoverageSelections([createCoverageSelection('', [], 0)]);
     }
-  }, [defaultFollowUpLocal, defaultNextStepId, defaultOwnerId, lead, open, prefill?.autoOpenQuoteAfterSave, prefill?.sourceLabel, prefill?.sourceType, prefilledProductIds, products, selectedMarketIds, selectedProductIds]);
+  }, [defaultFollowUpLocal, defaultNextStepId, defaultOwnerId, lead, open, prefill?.autoOpenQuoteAfterSave, prefill?.defaultLeadType, prefill?.defaultProductLabel, prefill?.sourceLabel, prefill?.sourceType, prefill?.tradeEventId, prefilledProductIds, products, selectedMarketIds, selectedProductIds]);
 
   useEffect(() => {
     if (!(isEditingExistingLead && !isQuickMode) && activeStepId === 'quotes') {
@@ -811,6 +813,7 @@ export function LeadDrawer({
     formData.set('notes', notes);
     formData.set('source_type', sourceType);
     formData.set('source_label', sourceLabel);
+    formData.set('default_product_label', defaultProductLabel);
     const issues = validateStep(activeStepId, formData);
 
     setValidationIssues(issues);
@@ -1082,6 +1085,7 @@ export function LeadDrawer({
       />
       <input type="hidden" name="source_type" value={sourceType} />
       <input type="hidden" name="source_label" value={sourceLabel} />
+      <input type="hidden" name="default_product_label" value={defaultProductLabel} />
       <input type="hidden" name="deal_value" value={lead?.deal_value ?? ''} />
       <input type="hidden" name="deal_currency" value={lead?.deal_currency ?? ''} />
       <input type="hidden" name="intro_sent" value={lead?.intro_sent ? 'true' : 'false'} />
@@ -1551,6 +1555,7 @@ export function LeadDrawer({
                 setSourceLabel={setSourceLabel}
                 tradeEventId={tradeEventId}
                 setTradeEventId={setTradeEventId}
+                setDefaultProductLabel={setDefaultProductLabel}
                 companyInputRef={companyInputRef}
                 inputClassName={inputClassName}
                 countries={availableCountries}

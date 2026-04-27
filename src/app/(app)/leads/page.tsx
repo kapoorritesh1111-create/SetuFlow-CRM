@@ -18,6 +18,7 @@ export default async function LeadsPage({
     productId?: string | string[];
     autoQuote?: string | string[];
     handoff?: string | string[];
+    tradeEventId?: string | string[];
   };
 }) {
   const workspace = await getWorkspaceAccess();
@@ -54,13 +55,19 @@ export default async function LeadsPage({
   const readParam = (value?: string | string[]) => Array.isArray(value) ? value[0] ?? '' : value ?? '';
   const quickLeadEnabled = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
   const quickLeadProductId = readParam(searchParams?.productId).trim();
+  const quickLeadTradeEventId = readParam(searchParams?.tradeEventId).trim();
+  const quickLeadTradeEvent = quickLeadTradeEventId ? data.tradeEvents.find((event) => event.id === quickLeadTradeEventId) : null;
+  const quickLeadDefaults = quickLeadTradeEvent?.capture_defaults && typeof quickLeadTradeEvent.capture_defaults === 'object' ? quickLeadTradeEvent.capture_defaults : null;
   const handoff = readParam(searchParams?.handoff).trim();
   const handoffMessage = handoff === 'dashboard-overdue' || handoff === 'dashboard-open-follow-up' ? { title: 'Overview sent you into Follow-up', description: 'Your active mode and next working lane were preserved. Open one priority lead and clear the real blocker.' } : handoff === 'capture-converted' ? { title: 'Capture converted into Follow-up', description: 'The lead is live now. Stay in Follow-up to qualify it, then move into Quote only when the commercial path is ready.' } : null;
 
   const initialQuickCapture = quickLeadEnabled
     ? {
-        sourceType: readParam(searchParams?.sourceType).trim() || 'trade_show',
-        sourceLabel: readParam(searchParams?.sourceLabel).trim() || 'Trade show fast lane',
+        sourceType: quickLeadTradeEvent ? 'trade_event' : readParam(searchParams?.sourceType).trim() || 'trade_show',
+        sourceLabel: readParam(searchParams?.sourceLabel).trim() || quickLeadTradeEvent?.name || 'Trade show fast lane',
+        tradeEventId: quickLeadTradeEventId || undefined,
+        defaultProductLabel: typeof quickLeadDefaults?.default_product_label === 'string' ? quickLeadDefaults.default_product_label : undefined,
+        defaultLeadType: quickLeadDefaults?.default_lead_type === 'buyer' || quickLeadDefaults?.default_lead_type === 'supplier' ? quickLeadDefaults.default_lead_type : undefined,
         selectedProductIds: quickLeadProductId ? [quickLeadProductId] : [],
         autoOpenQuoteAfterSave: ['1', 'true', 'yes'].includes(readParam(searchParams?.autoQuote).toLowerCase()),
         title: 'Trade-show quick lead',

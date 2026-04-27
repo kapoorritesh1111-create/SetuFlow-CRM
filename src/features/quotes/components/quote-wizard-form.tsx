@@ -111,6 +111,7 @@ type QuoteVersionRecord = {
   approved_at: string | null;
   sent_at: string | null;
   pdf_document_id: string | null;
+  quote_pricing_snapshots?: Array<{ fx_rate: number | null; fx_display_currency: string | null }> | { fx_rate: number | null; fx_display_currency: string | null } | null;
 };
 type DraftQuoteLine = {
   product_id: string;
@@ -1236,7 +1237,7 @@ function getCheckpointBlockedSubmitHandoffMessage(
 
 function getCheckpointCautionAcknowledgementIssues(
   decision: CheckpointDecision,
-  mode: "create" | "edit",
+  mode: "create" | "edit" | "revise",
 ) {
   const actionLabel = mode === "create" ? "create" : "save";
 
@@ -1253,7 +1254,7 @@ function getCheckpointCautionAcknowledgementIssues(
 
 function getCheckpointSubmitStepIssues(
   stepId: StepId,
-  mode: "create" | "edit",
+  mode: "create" | "edit" | "revise",
 ) {
   if (stepId === "send") return [];
 
@@ -1911,6 +1912,10 @@ function mapTemplateLinesToDraftLines(
     quantity: line.quantity,
     unit_price: line.unit_price,
     currency: normalizeCurrency(line.currency || currency) || "USD",
+    source_ex_factory_usd: null,
+    source_fob_usd: line.unit_price ?? null,
+    source_bulk_usd_per_kg: null,
+    freight_add_on_usd: null,
     override_reason: "",
     notes: line.notes,
   }));
@@ -3493,6 +3498,8 @@ export function QuoteEditWizardForm({
   quoteSendGuard,
   approvalThresholdPct = 15,
   initialStepId,
+  lockedFxRate = null,
+  lockedFxVersionNo = null,
   onClose,
   onSaved,
 }: {
@@ -3502,6 +3509,8 @@ export function QuoteEditWizardForm({
   quoteSendGuard?: ProgressionGuardSummary;
   approvalThresholdPct?: number | null;
   initialStepId?: StepId;
+  lockedFxRate?: number | null;
+  lockedFxVersionNo?: number | null;
   onClose: () => void;
   onSaved?: (quote: QuoteRecord) => void;
 }) {
@@ -3840,6 +3849,12 @@ export function QuoteEditWizardForm({
 
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-5">
+
+      {lockedFxRate != null ? (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          FX locked — {lockedFxRate} {normalizeCurrency(currency) || "USD"}/USD{lockedFxVersionNo ? ` (from v${lockedFxVersionNo})` : ""}
+        </div>
+      ) : null}
       <input type="hidden" name="quote_id" value={quote.id} />
       <input
         type="hidden"

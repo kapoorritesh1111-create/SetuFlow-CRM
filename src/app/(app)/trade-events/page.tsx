@@ -25,10 +25,15 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
 
   const data = await getTradeEventsData(workspace.organization.id);
   const noticeKey = Array.isArray(searchParams?.notice) ? searchParams.notice[0] ?? null : searchParams?.notice ?? null;
-  const entryCountByEvent = new Map<string, number>();
+  const entryStatsByEvent = new Map<string, { totalEntries: number; convertedEntries: number }>();
   for (const entry of data.entries) {
-    entryCountByEvent.set(entry.trade_event_id, (entryCountByEvent.get(entry.trade_event_id) ?? 0) + 1);
+    const current = entryStatsByEvent.get(entry.trade_event_id) ?? { totalEntries: 0, convertedEntries: 0 };
+    current.totalEntries += 1;
+    if (entry.converted_lead_id !== null) current.convertedEntries += 1;
+    entryStatsByEvent.set(entry.trade_event_id, current);
   }
+
+  const eventsWithStats = data.events.map((event) => ({ ...event, totalEntries: entryStatsByEvent.get(event.id)?.totalEntries ?? 0, convertedEntries: entryStatsByEvent.get(event.id)?.convertedEntries ?? 0 }));
 
   return (
     <div className="space-y-6">
@@ -44,9 +49,9 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
       {noticeKey === 'capture-converted' ? (
         <WorkspaceState eyebrow="Capture handoff" title="Lead is ready for Follow-up" description="This capture was converted into a live lead. Continue in Follow-up to qualify it, then open Quote only when commercial readiness is real." primaryActionHref="/leads?handoff=capture-converted" primaryActionLabel="Open Follow-up" secondaryActionHref="/quotes" secondaryActionLabel="Open Quote workspace" />
       ) : null}
-      <TradeEventEntryCapture events={data.events} />
-      <TradeShowCapture events={data.events} />
-      <TradeEventsManager events={data.events} />
+      <TradeEventEntryCapture events={eventsWithStats} />
+      <TradeShowCapture events={eventsWithStats} />
+      <TradeEventsManager events={eventsWithStats} />
 
       {data.entries.length ? (
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
@@ -111,9 +116,9 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
         </section>
       ) : null}
 
-      {data.events.length ? (
+      {eventsWithStats.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.events.map((event) => (
+          {eventsWithStats.map((event) => (
             <article key={event.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -123,7 +128,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
                   </p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                  {entryCountByEvent.get(event.id) ?? 0} entries
+                  {event.totalEntries ?? 0} entries · {event.convertedEntries ?? 0} converted
                 </span>
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">

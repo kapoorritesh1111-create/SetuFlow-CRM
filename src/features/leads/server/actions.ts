@@ -1276,6 +1276,7 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
   const requestedMarketIds = uniqueTrimmed(formData.getAll('market_ids').map(String));
   const requestedProductIds = uniqueTrimmed(formData.getAll('product_ids').map(String));
   const requestedCategoryIds = uniqueTrimmed(formData.getAll('category_ids').map(String));
+  const defaultProductLabel = normalizeLeadInputText(formData.get('default_product_label'));
 
   const normalizedDealValue =
     typeof parsed.data.deal_value === 'number'
@@ -1521,6 +1522,17 @@ const contactSourceContext = {
     if (!isMissingRpcFunction(relationRpcError)) return { error: relationRpcError.message };
     const relationFallback = await refreshLeadRelationsDirect(db, { leadId, marketIds, productIds });
     if (relationFallback.error) return { error: relationFallback.error.message };
+  }
+
+  if (defaultProductLabel && !productIds.length && !parsed.data.lead_id) {
+    await db.from('lead_product_interests').insert({
+      organization_id: organization.id,
+      lead_id: leadId,
+      product_id: null,
+      label: defaultProductLabel,
+      interest_type: 'confirmed_product',
+      source_context: { source: 'trade_event_capture_defaults' },
+    });
   }
 
   const workflowWrite = await appendLeadWorkflowState(db, {

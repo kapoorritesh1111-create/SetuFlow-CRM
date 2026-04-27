@@ -50,6 +50,7 @@ import { getQuoteTrustContract } from "@/lib/quoteTrust";
 import {
   getPricingReadinessClasses,
   getPricingReadinessLabel,
+  isCatalogPriceStale,
   type CatalogPricingSnapshot,
 } from "@/lib/catalog-pricing-model";
 
@@ -174,6 +175,7 @@ type QuoteVersionRecord = {
   approved_at: string | null;
   sent_at: string | null;
   pdf_document_id?: string | null;
+  quote_pricing_snapshots?: Array<{ fx_rate: number | null; fx_display_currency: string | null }> | { fx_rate: number | null; fx_display_currency: string | null } | null;
 };
 type QuoteSavedViewId =
   | "all"
@@ -192,6 +194,20 @@ type WorkflowNotice = {
   title: string;
   description: string;
 };
+
+function getLockedFxFromVersion(version?: QuoteVersionRecord | null): number | null {
+  const snapshots = version?.quote_pricing_snapshots;
+  const row = Array.isArray(snapshots) ? snapshots[0] : snapshots;
+  const value = row?.fx_rate;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function getCurrentQuoteVersion(quote: QuoteRecord | null, versions: QuoteVersionRecord[]): QuoteVersionRecord | null {
+  if (!quote) return null;
+  return versions.find((version) => version.id === quote.current_version_id)
+    ?? versions.filter((version) => version.quote_id === quote.id).sort((a, b) => (b.version_no ?? 0) - (a.version_no ?? 0))[0]
+    ?? null;
+}
 
 type QuoteStepState = "done" | "current" | "upcoming" | "skipped";
 type BuilderStepId = "product" | "pricing" | "terms" | "review" | "send";
@@ -1450,6 +1466,22 @@ export function QuoteWorkspace({
       ),
     [filteredQuotes],
   );
+  const activeQuoteVersionForEdit = getCurrentQuoteVersion(activeQuote, quoteVersions);
+  const lockedFxRateForEdit = getLockedFxFromVersion(activeQuoteVersionForEdit);
+  const activeQuoteCatalogStale = useMemo(() => {
+    if (!activeQuote?.lineItems?.length) return false;
+    const currentPrices = products
+      .filter((product) => product.defaultVariantId && typeof product.catalogPriceAmount === "number")
+      .map((product) => ({
+        product_variant_id: product.defaultVariantId,
+        price: product.catalogPriceAmount,
+        currency: product.catalogPriceCurrency,
+        effective_from: "0000-01-01",
+        effective_to: null,
+      }));
+    return activeQuote.lineItems.some((line) => isCatalogPriceStale(line as any, currentPrices));
+  }, [activeQuote, products]);
+
   const hasActiveFilters = Boolean(statusFilter && statusFilter !== "all");
   const negotiationEventsByQuote = useMemo(() => {
     const grouped = new Map<string, NegotiationEvent[]>();
@@ -2838,6 +2870,12 @@ export function QuoteWorkspace({
         title={canManageQuotes ? "Manage quote workflow" : "Quote details"}
       >
         {activeQuote && canManageQuotes ? (
+          <>
+            {activeQuoteCatalogStale ? (
+              <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                ⚠ Catalog price updated since v{activeQuoteVersionForEdit?.version_no ?? "current"} — check prices before sending
+              </div>
+            ) : null}
           <QuoteEditWizardForm
             key={`${activeQuote!.id}-${activeQuoteStep ?? "product"}`}
             quote={activeQuote as any}
@@ -2846,12 +2884,15 @@ export function QuoteWorkspace({
             quoteSendGuard={quoteSendGuard}
             approvalThresholdPct={pricingEngineThresholdPercent}
             initialStepId={activeQuoteStep ?? undefined}
+            lockedFxRate={lockedFxRateForEdit}
+            lockedFxVersionNo={activeQuoteVersionForEdit?.version_no ?? null}
             onClose={() => {
               setActiveQuote(null);
               setActiveQuoteStep(null);
             }}
             onSaved={upsertQuoteRecord as any}
           />
+          </>
         ) : activeQuote ? (
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             <p className="font-semibold text-slate-900">
