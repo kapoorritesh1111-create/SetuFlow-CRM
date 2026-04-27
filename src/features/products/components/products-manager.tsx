@@ -610,8 +610,8 @@ export function ProductsManager({
     [filteredProducts],
   );
 
-  const totalActive = products.filter(p => p.is_active).length;
-  const totalInactive = products.filter(p => !p.is_active).length;
+  const totalActive = products.filter(p => p.isActive).length;
+  const totalInactive = products.filter(p => !p.isActive).length;
   const totalGaps = filteredSummary.gaps;
   const totalCovered = filteredSummary.priced;
   const marketsCount = markets.filter(m => m.isActive).length || markets.length;
