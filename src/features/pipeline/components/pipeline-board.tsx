@@ -11,6 +11,7 @@ import { isPipelineInJourney, type LeadJourney } from '@/lib/journey';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildPipelineAiMessage, buildPipelineLaneSummary, getBoardMessageTone, normalizeLeadTypeParam } from '@/features/pipeline/logic/board';
 import { LeadCard } from '@/features/pipeline/ui/lead-card';
+import { PipelineDetailPanel } from '@/features/pipeline/ui/pipeline-detail-panel';
 import type { PipelineBoardProps, Lead, Stage, FollowUp, Activity } from '@/features/pipeline/types/board';
 import { buildStageMoveReadiness, type StageMoveReadiness } from '@/lib/queries/pipeline-stage-gating';
 import { cn, formatDateTime } from '@/lib/utils';
@@ -75,6 +76,7 @@ export function PipelineBoard({
   const [localLeadProductInterests, setLocalLeadProductInterests] = useState(leadProductInterests);
   const [localFollowUps, setLocalFollowUps] = useState(followUps);
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [detailPanelLeadId, setDetailPanelLeadId] = useState<string | null>(null);
   const [bulkStageId, setBulkStageId] = useState('');
 
   const activityMap = useMemo(() => {
@@ -564,14 +566,14 @@ export function PipelineBoard({
     return (
       <>
       {selectedLeadIds.size >= 1 ? (
-        <div className="sticky top-3 z-30 mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
-          <span className="text-sm font-semibold text-slate-900">{selectedLeadIds.size} leads selected</span>
-          <select value={bulkStageId} onChange={(event) => setBulkStageId(event.target.value)} className="min-h-10 rounded-xl border border-slate-200 px-3 text-sm">
-            <option value="">Choose stage</option>
+        <div style={{position:'sticky',top:'4px',zIndex:30,marginBottom:'12px',display:'flex',flexWrap:'wrap',alignItems:'center',gap:'8px',borderRadius:'14px',border:'1px solid #e2e8f0',background:'rgba(255,255,255,.96)',padding:'10px 14px',boxShadow:'0 4px 14px rgba(15,23,42,.12)',backdropFilter:'blur(8px)'}}>
+          <span style={{fontSize:'12px',fontWeight:700,color:'#0f172a'}}>{selectedLeadIds.size} lead{selectedLeadIds.size > 1 ? 's' : ''} selected — Move to:</span>
+          <select value={bulkStageId} onChange={(event) => setBulkStageId(event.target.value)} style={{height:'32px',borderRadius:'7px',border:'1px solid #e2e8f0',padding:'0 10px',fontSize:'12px',background:'#f8fafc',minWidth:'140px'}}>
+            <option value="">Choose stage…</option>
             {stages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
           </select>
-          <button type="button" onClick={handleBulkMove} disabled={!bulkStageId || isPending} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Move</button>
-          <button type="button" onClick={() => setSelectedLeadIds(new Set())} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Clear</button>
+          <button type="button" onClick={handleBulkMove} disabled={!bulkStageId || isPending} style={{padding:'5px 14px',borderRadius:'7px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,border:'none',cursor:'pointer',opacity:!bulkStageId ? 0.5 : 1}}>Move</button>
+          <button type="button" onClick={() => setSelectedLeadIds(new Set())} style={{padding:'5px 12px',borderRadius:'7px',border:'1px solid #e2e8f0',background:'white',color:'#475569',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>Clear</button>
         </div>
       ) : null}
 
@@ -650,6 +652,7 @@ export function PipelineBoard({
               })()}
               countryCode={lead.country_id ? (countryById.get(lead.country_id)?.iso2_code ?? null) : (lead.country ? (countryCodeByName.get(lead.country.trim().toLowerCase()) ?? null) : null)}
               isSelected={selectedLeadIds.has(lead.id)}
+                          onOpenDetail={(leadId) => setDetailPanelLeadId(leadId)}
               onSelectedChange={handleSelectedLeadChange}
               coverageSummary={`${getLeadCoverageSummary(lead)} · ${getLeadCoverageActionSummary(lead)}`}
               moveOptions={filteredStageGroups
@@ -967,6 +970,33 @@ export function PipelineBoard({
           {!filteredLeads.length&&<div style={{margin:'14px 24px',padding:'40px',textAlign:'center',background:'white',borderRadius:'22px',border:'2px dashed #e2e8f0',fontSize:'13px',color:'#64748b'}}>No pipeline cards match the current filters. Reset filters or switch journey modes.</div>}
         </>
       )}
+
+      {/* Detail panel */}
+      {detailPanelLeadId && (() => {
+        const panelLead = localLeads.find(l => l.id === detailPanelLeadId);
+        if (!panelLead) return null;
+        const panelHealth = computeLeadHealth(panelLead, localFollowUps.filter(f => f.lead_id === panelLead.id), activityMap.get(panelLead.id) ?? null);
+        const panelReadiness = buildStageMoveReadiness(panelLead, stages.find(s => s.id === panelLead.stage_id) ?? null, localFollowUps.filter(f => f.lead_id === panelLead.id));
+        const panelPricingLabel = getPricingReadinessLabel(buildLeadCommercialReadiness({ products: [], leadProductInterests: localLeadProductInterests.filter(i => i.lead_id === panelLead.id), markets: [], leadMarkets: localLeadMarkets.filter(m => m.lead_id === panelLead.id), prices: prices, variants: variants, pricingRules: pricingRules }).pricingReadiness);
+        const panelOwner = profiles.find(p => p.id === panelLead.owner_user_id)?.full_name ?? 'Unassigned';
+        const panelHref = buildLeadCommandCenterHref(panelLead.id);
+        return (
+          <PipelineDetailPanel
+            lead={panelLead as any}
+            stages={stages}
+            ownerLabel={panelOwner}
+            health={panelHealth}
+            moveReadiness={panelReadiness}
+            pricingLabel={panelPricingLabel}
+            commandCenterHref={panelHref}
+            onClose={() => setDetailPanelLeadId(null)}
+            onMove={(leadId, stageId) => { handleMove(leadId, stageId); setDetailPanelLeadId(null); }}
+            onSchedule={(leadId, at) => void handleScheduleFollowUp(leadId, at)}
+            onAddNote={(leadId, note) => void handleAddNote(leadId, note)}
+            isPending={isPending}
+          />
+        );
+      })()}
     </div>
   );
 }

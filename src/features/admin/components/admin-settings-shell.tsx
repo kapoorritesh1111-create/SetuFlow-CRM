@@ -21,13 +21,15 @@ const nav = [
   ] },
 ] as const;
 
-export function AdminSettingsShell({ active, organizationName, missingCount = 0, children }: { active: AdminNavKey; organizationName: string; missingCount?: number; children: ReactNode }) {
+export type GapItem = { icon: string; text: string; href: string };
+
+export function AdminSettingsShell({ active, organizationName, missingCount = 0, gapItems = [], sectionTitle, children }: { active: AdminNavKey; organizationName: string; missingCount?: number; gapItems?: GapItem[]; sectionTitle?: string; children: ReactNode }) {
   return (
     <div className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)]">
       <aside className="rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.06)] xl:sticky xl:top-20 xl:self-start">
         <div className="rounded-[1.5rem] bg-gradient-to-br from-slate-950 to-blue-700 p-4 text-white">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-100">Admin</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight">Settings command</h2>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight">{sectionTitle ?? 'Settings command'}</h2>
           <p className="mt-2 text-xs leading-5 text-blue-50/90">Governance, lists, and security controls for {organizationName}.</p>
         </div>
         <nav className="mt-4 space-y-4">
@@ -42,7 +44,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
           </div>)}
         </nav>
       </aside>
-      <main className="min-w-0 space-y-6"><GovernanceBanner missingCount={missingCount} />{children}</main>
+      <main className="min-w-0 space-y-6"><GovernanceBanner missingCount={missingCount} gapItems={gapItems} />{children}</main>
     </div>
   );
 }
@@ -51,9 +53,31 @@ export function AdminPageHero({ title, description, badge, cta, stats }: { title
   return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description={description} badge={badge} actions={cta} meta={stats?.map((stat) => <ToolbarStat key={stat.label} label={stat.label} value={String(stat.value)} tone={stat.tone ?? 'default'} />)} />;
 }
 
-function GovernanceBanner({ missingCount }: { missingCount: number }) {
+function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: number; gapItems?: GapItem[] }) {
   const clear = missingCount === 0;
   return <section className={cn('rounded-[2rem] border p-4', clear ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50')}>
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div className="flex gap-3"><span className="text-2xl" aria-hidden="true">{clear ? '✅' : '⚠️'}</span><div><p className={cn('text-sm font-bold', clear ? 'text-emerald-800' : 'text-amber-800')}>{clear ? 'Governance clear' : 'Governance attention needed'}</p><p className="mt-1 text-sm leading-6 text-slate-700">{clear ? 'Markets, stages, pipelines, trade events, and security controls are available from one admin lane.' : `${missingCount} setup areas still need attention before every workflow has complete admin context.`}</p></div></div><div className="flex flex-wrap gap-2"><Link href="/admin/markets" className="rounded-2xl border border-white/70 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">Markets</Link><Link href="/admin/security" className="rounded-2xl border border-white/70 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">Security</Link></div></div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex gap-3">
+        <span className="text-2xl" aria-hidden="true">{clear ? '✅' : '⚠️'}</span>
+        <div>
+          <p className={cn('text-sm font-bold', clear ? 'text-emerald-800' : 'text-amber-800')}>{clear ? 'Governance clear' : 'Governance attention needed'}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-700">{clear ? 'Markets, stages, pipelines, trade events, and security controls are configured.' : `${missingCount} setup area${missingCount === 1 ? '' : 's'} need attention before every workflow is fully governed.`}</p>
+          {gapItems.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {gapItems.map(item => (
+                <Link key={item.href} href={item.href}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-200 transition">
+                  <span>{item.icon}</span><span>{item.text}</span><span className="text-amber-600">→ Fix</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Link href="/admin/markets" className="rounded-2xl border border-white/70 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">Markets</Link>
+        <Link href="/admin/security" className="rounded-2xl border border-white/70 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">Security</Link>
+      </div>
+    </div>
   </section>;
 }
