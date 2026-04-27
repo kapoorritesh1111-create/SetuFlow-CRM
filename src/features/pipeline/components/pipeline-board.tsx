@@ -392,7 +392,12 @@ export function PipelineBoard({
     });
   }, [localLeads, search, followUpFilter, ownerFilter, productFilter, marketFilter, leadTypeFilter, leadCategoryMap, leadMarketsMap]);
 
-  const visualStageGroups = useMemo(() => filteredStageGroups.map((group) => ({
+  type VisualStageGroup = (typeof filteredStageGroups)[number] & {
+    stage: Stage;
+    leads: Lead[];
+  };
+
+  const visualStageGroups = useMemo<VisualStageGroup[]>(() => filteredStageGroups.map((group) => ({
     ...group,
     stage: group.ref,
     leads: filteredLeads.filter((lead) => group.stages.some((stage) => stage.id === lead.stage_id)),
