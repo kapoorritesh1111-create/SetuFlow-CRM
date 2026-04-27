@@ -571,574 +571,256 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   const handoffMessage = handoffKey === 'quote-to-orders' ? { title: 'Quote handoff continues here', description: 'The commercial decision is finished. Stay in Orders to confirm documents, compliance, and release readiness on the accepted record.', tone: 'success' as const } : handoffKey === 'dashboard-execution' ? { title: 'Dashboard routed you into execution', description: 'This jump preserved your active mode so you can work the next accepted record instead of reopening the watchtower.', tone: 'success' as const } : handoffKey === 'approval-send-open-orders' ? { title: 'Sending hands off to execution here', description: 'Use Orders when the next question is fulfilment readiness, release evidence, or dispatch posture.', tone: 'success' as const } : handoffKey === 'dashboard-open-orders' ? { title: 'Order queue opened from Overview', description: 'The next working route is now in focus. Open the accepted record instead of scanning every card first.', tone: 'success' as const } : null;
   const perspectiveOrders = orders.filter((order) => perspectiveMode === 'all' ? true : perspectiveMode === 'buyers' ? order.leadType === 'buyer' : order.leadType === 'supplier');
 
-  return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <section className={cn(workspaceHeroClass, "p-5")}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Execution</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Orders Execution Desk</h1>
-            <p className="mt-2 max-w-3xl text-sm text-slate-600">Accepted quotes become operational orders here. Clear document blockers, confirm commercial lock, release dispatch evidence, and progress the state machine from one focused desk.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <a href={focusedOrder ? `#order-${focusedOrder.quoteId}` : perspectiveAccepted.length > 0 ? `#order-${perspectiveAccepted[0].quoteId}` : '#accepted-orders'} className={`rounded-xl px-3 py-2 text-sm font-semibold transition `}>Open order</a>
-            <Link href={PRODUCT_ROUTES.app.quotes} className={`rounded-xl px-3 py-2 text-sm font-semibold transition `}>View quote</Link>
-            <Link href={'/documents'} className={`rounded-xl px-3 py-2 text-sm font-semibold transition `}>Upload document</Link>
-            <a href="#accepted-orders" className={`rounded-xl px-3 py-2 text-sm font-semibold transition `}>Export</a>
-          </div>
-        </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Active orders</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveOrders.length}</p><p className="mt-1 text-xs text-slate-500">{perspectiveMode === 'all' ? 'All states' : perspectiveMode === 'buyers' ? 'Buyer execution' : 'Supplier execution'}</p></div>
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-rose-600">Dispatch blocked</p><p className="mt-2 text-2xl font-semibold text-rose-700">{perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length}</p><p className="mt-1 text-xs text-rose-600">Docs, compliance, or evidence missing</p></div>
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-emerald-700">Dispatch ready</p><p className="mt-2 text-2xl font-semibold text-emerald-700">{perspectiveAccepted.filter((order) => dispatchGate(order.operationalControls).tone === 'success').length}</p><p className="mt-1 text-xs text-emerald-700">Ready to advance</p></div>
-          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-violet-700">Execution value</p><p className="mt-2 text-2xl font-semibold text-violet-700">{formatMoneyValue(perspectiveAccepted.reduce((sum, order) => sum + (order.dealValue ?? 0), 0), perspectiveAccepted[0]?.dealCurrency ?? perspectiveAccepted[0]?.currency ?? 'USD')}</p><p className="mt-1 text-xs text-violet-700">Accepted order value</p></div>
-        </div>
+  // ── NORTHSTAR RENDER ────────────────────────────────────────────────────────
+  const dispatchedCount = perspectiveAccepted.filter(o => o.executionState === 'dispatched' || o.executionState === 'completed').length;
+  const blockedCount = perspectiveAccepted.filter(o => o.executionBlockers.length > 0).length;
+  const docsPendingCount = perspectiveAccepted.filter(o => o.operationalControls.documentRequirementSummary.blockerCount > 0).length;
+  const inExecutionCount = perspectiveAccepted.filter(o => o.executionBlockers.length === 0 && !['completed'].includes(o.executionState)).length;
+  const execValue = perspectiveAccepted.reduce((s, o) => s + (o.dealValue ?? 0), 0);
+  const avgCycle = 34; // demo value
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'buyers', label: 'Buyers' },
-              { key: 'suppliers', label: 'Suppliers' },
-            ].map((option) => {
-              const active = perspectiveMode === option.key;
-              const href = option.key === 'all' ? PRODUCT_ROUTES.app.orders : `${PRODUCT_ROUTES.app.orders}?mode=${option.key}`;
-              return (
-                <Link key={option.key} href={href} className={active ? 'rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white' : 'rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white'}>{option.label}</Link>
-              );
-            })}
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Execution state: All states</span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Search: quote / company</span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Target: next 30 days</span>
-          </div>
-        </div>
-      </section>
+  const EXECUTION_STAGES_NS = [
+    { key: 'draft', label: 'Quote\nAccepted' },
+    { key: 'confirmed', label: 'Order\nConfirmed' },
+    { key: 'ready', label: 'Docs\nRequired' },
+    { key: 'released', label: 'Dispatch\nReady' },
+    { key: 'dispatched', label: 'Shipped' },
+    { key: 'completed', label: 'Delivered' },
+  ];
 
-      {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
-      {handoffMessage ? <StateMessage title={handoffMessage.title} description={handoffMessage.description} tone={handoffMessage.tone} /> : null}
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Execution desk perspective</p>
-            <h3 className="mt-1 text-xl font-semibold text-slate-900">Accepted quote truth is not execution truth</h3>
-            <p className="mt-2 max-w-3xl text-sm text-slate-600">Filter the desk by All, Buyers, or Suppliers without leaving the workflow. Orders now has to prove commercial lock, documentary readiness, release posture, and dispatch evidence before the operator can trust execution.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'buyers', label: 'Buyers' },
-              { key: 'suppliers', label: 'Suppliers' },
-            ].map((option) => {
-              const active = perspectiveMode === option.key;
-              const href = option.key === 'all' ? PRODUCT_ROUTES.app.orders : `${PRODUCT_ROUTES.app.orders}?mode=${option.key}`;
-              return (
-                <Link
-                  key={option.key}
-                  href={href}
-                  className={active ? 'rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white' : 'rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50'}
-                >
-                  {option.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Visible orders</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveOrders.length}</p></div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Execution ready</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveAccepted.filter((order) => dispatchGate(order.operationalControls).tone === 'success').length}</p></div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Blocked records</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length}</p></div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Next-action pressure</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveAccepted.reduce((sum, order) => sum + order.executionActionItems.length, 0)}</p></div>
-        </div>
-      </section>
-
-
-      {perspectiveAccepted.length > 0 ? (
-        <TradeSignalGrid
-          title="Trade execution readiness"
-          signals={[
-            { label: 'Buyer / supplier clarity', value: primaryOperationalContext === 'mixed' ? 'Mixed mode' : primaryOperationalContext === 'supplier' ? 'Supplier mode' : 'Buyer mode', tone: 'neutral', detail: 'Orders keeps execution lanes visible so trade work does not collapse into a generic CRM state.' },
-            { label: 'Freight readiness', value: `${perspectiveAccepted.filter((order) => order.operationalControls.documentRequirementSummary.blockerCount === 0 && order.operationalControls.releaseArtifactReasons.length === 0).length}/${perspectiveAccepted.length} ready`, tone: perspectiveAccepted.some((order) => order.operationalControls.documentRequirementSummary.blockerCount > 0 || order.operationalControls.releaseArtifactReasons.length > 0) ? 'warning' : 'success', detail: 'Release now depends on required compliance documents and release artifacts, not commercial acceptance alone.' },
-            { label: 'Compliance blockers', value: String(perspectiveAccepted.reduce((sum, order) => sum + order.operationalControls.complianceSummary.openCount, 0)), tone: perspectiveAccepted.some((order) => order.operationalControls.complianceSummary.openCount > 0) ? 'warning' : 'success', detail: 'Open compliance items stay visible and now feed explicit execution-stage blocker reasons.' },
-            { label: 'Dispatch readiness', value: `${perspectiveAccepted.filter((order) => dispatchGate(order.operationalControls).tone === 'success').length}/${perspectiveAccepted.length} ready`, tone: perspectiveAccepted.some((order) => dispatchGate(order.operationalControls).tone !== 'success') ? 'warning' : 'success', detail: 'Dispatch readiness now combines contract, document, compliance, and order-state progression in one execution view.' },
-          ]}
-        />
-      ) : null}
-
-      {perspectiveAccepted.length > 0 ? (
-        <section className="grid gap-4 md:grid-cols-3">
-          {perspectiveAccepted
-            .map((order) => predictOrderDelay({
-              quoteId: order.quoteId,
-              companyName: order.companyName,
-              updatedAt: order.updatedAt,
-              blockers: order.executionBlockers,
-            }))
-            .sort((left, right) => right.score - left.score)
-            .slice(0, 3)
-            .map((prediction) => (
-              <AIInsightCard key={prediction.quoteId} title={`${prediction.companyName} · ${prediction.label}`} score={prediction.score} level={prediction.level} reasons={prediction.reasons} />
-            ))}
-        </section>
-      ) : null}
-
-      {perspectiveAccepted.length > 0 && (
-        <div id="accepted-orders">
-        <SectionCard
-          eyebrow="Commercially accepted"
-          title="Execution desk"
-          description="Confirmed quote lines are shown in one orders workspace. Teams can confirm locked quote terms, clear blockers, and move draft, ready, release, dispatch, and completion steps with explicit evidence on each order."
-        >
-          <div className="space-y-6">
-            {perspectiveAccepted.map(order => (
-              <OrderCard key={order.quoteId} order={order} tone="accepted" />
-            ))}
-          </div>
-        </SectionCard>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Order Card ───────────────────────────────────────────────────────────────
-
-function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'sent' }) {
-  const gate = dispatchGate(order.operationalControls);
-  const executionLabel = getOrderExecutionStateLabel(order.executionState);
-  const tradeWorkflow = inferOrderTradeWorkflow({
-    leadType: order.leadType,
-    documentBlockers: order.operationalControls.documentRequirementSummary.blockerReasons.length + order.operationalControls.releaseArtifactReasons.length + order.operationalControls.dispatchArtifactReasons.length,
-    complianceBlockers: order.operationalControls.complianceSummary.openCount,
-    hasContract: Boolean(order.contract),
-    quoteStatus: order.quoteStatus,
-  });
-  const borderClass = tone === 'accepted' ? 'border-emerald-100' : 'border-amber-100';
-  const bgClass = tone === 'accepted' ? 'bg-emerald-50/40' : 'bg-amber-50/30';
-  const orderDelayPrediction = predictOrderDelay({
-    quoteId: order.quoteId,
-    companyName: order.companyName,
-    updatedAt: order.updatedAt,
-    blockers: order.executionBlockers,
-  });
+  function getStageState(stageKey: string, orderState: string, blocked: boolean) {
+    const stageOrder = ['draft','confirmed','ready','released','dispatched','completed'];
+    const stageIdx = stageOrder.indexOf(stageKey);
+    const orderIdx = stageOrder.indexOf(orderState);
+    if (orderIdx === -1) return 'upcoming';
+    if (stageIdx < orderIdx) return 'done';
+    if (stageIdx === orderIdx) return blocked ? 'blocked' : 'current';
+    return 'upcoming';
+  }
 
   return (
-    <div id={`order-${order.quoteId}`} className={`rounded-2xl border ${borderClass} ${bgClass} p-4`}>
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-semibold text-slate-900">{order.companyName}</p>
-            <StatusBadge
-              label={tone === 'accepted' ? 'Accepted' : 'Sent'}
-              tone={tone === 'accepted' ? 'success' : 'warning'}
-            />
-            <StatusBadge label={gate.label} tone={gate.tone} />
-            <StatusBadge label={executionLabel} tone={order.executionState === 'completed' ? 'success' : order.canAdvanceExecution ? 'neutral' : 'warning'} />
+    <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
+
+      {/* TOPBAR */}
+      <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
+        <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'5px 12px',borderRadius:'6px',background:'rgba(31,72,124,.06)',border:'1px solid rgba(31,72,124,.12)'}}>
+            <div><div style={{fontSize:'11px',fontWeight:800,color:'#1F487C',letterSpacing:'-.1px'}}>SETU <span style={{color:'#279491'}}>Flow</span> CRM</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Groups LLC</div></div>
           </div>
-          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
-            {order.contactName && <span>{order.contactName}</span>}
-            {order.country && <span>{order.country}</span>}
-            <span>Updated {formatDateTime(order.updatedAt)}</span>
-            <span>{tradeWorkflow.journeyLabel}</span>
-            <span className="font-mono text-slate-400">ref {order.quoteId.slice(0, 8)}</span>
-            {order.dealValue != null && (
-              <span className="font-semibold text-slate-700">
-                {order.dealCurrency ?? order.currency ?? 'USD'}{' '}
-                {order.dealValue.toLocaleString()}
-              </span>
-            )}
+          <div style={{width:'1px',height:'24px',background:'#e2e8f0'}}/>
+          <div><div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#0c7fff'}}>Execution</div><div style={{fontSize:'16px',fontWeight:700,color:'#1e293b',letterSpacing:'-.3px'}}>Orders Desk</div></div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+          <div style={{display:'flex',background:'#f1f5f9',borderRadius:'6px',padding:'3px',border:'1px solid #e2e8f0',gap:'2px'}}>
+            {['all','buyers','suppliers'].map(m=>(
+              <Link key={m} href={m==='all'?PRODUCT_ROUTES.app.orders:`${PRODUCT_ROUTES.app.orders}?mode=${m}`} style={{padding:'4px 11px',borderRadius:'5px',fontSize:'11px',fontWeight:600,textDecoration:'none',background:perspectiveMode===m?'#0b2e4a':'transparent',color:perspectiveMode===m?'white':'#64748b'}}>{m.charAt(0).toUpperCase()+m.slice(1)}</Link>
+            ))}
           </div>
+          <Link href="/quotes?export=csv" style={{padding:'7px 12px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:600,color:'#334155',textDecoration:'none'}}>Export</Link>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href={`${PRODUCT_ROUTES.app.leads}/${order.leadId}/quote`} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">View quote</Link>
-          <a href={`#detail-${order.quoteId}`} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Open order</a>
+      </header>
+
+      {/* FILTER BAR */}
+      <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'10px 24px',display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
+        <div style={{display:'flex',alignItems:'center',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',gap:'6px',cursor:'pointer',minWidth:'130px'}}>
+          <div><div style={{fontSize:'9px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#94a3b8',lineHeight:1}}>Execution state</div><div style={{fontSize:'11px',fontWeight:600,color:'#1e293b',lineHeight:'1.4'}}>All states</div></div>
         </div>
+        <div style={{display:'flex',alignItems:'center',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',gap:'6px',cursor:'pointer',minWidth:'110px'}}>
+          <div><div style={{fontSize:'9px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#94a3b8',lineHeight:1}}>Compliance</div><div style={{fontSize:'11px',fontWeight:600,color:'#1e293b',lineHeight:'1.4'}}>All</div></div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',gap:'6px',cursor:'pointer',minWidth:'110px'}}>
+          <div><div style={{fontSize:'9px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#94a3b8',lineHeight:1}}>Owner</div><div style={{fontSize:'11px',fontWeight:600,color:'#1e293b',lineHeight:'1.4'}}>All owners</div></div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',gap:'6px',cursor:'pointer',minWidth:'110px'}}>
+          <div><div style={{fontSize:'9px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#94a3b8',lineHeight:1}}>Market</div><div style={{fontSize:'11px',fontWeight:600,color:'#1e293b',lineHeight:'1.4'}}>All markets</div></div>
+        </div>
+        {blockedCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#9f1239',cursor:'pointer'}}>Dispatch blocked ({blockedCount})</span>}
+        {docsPendingCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>Docs pending ({docsPendingCount})</span>}
+        <span style={{marginLeft:'auto',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{perspectiveAccepted.length} active orders · {execValue>0?`$${Math.round(execValue/1000)}K`:''} execution value</span>
       </div>
 
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">State machine</p>
-          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(order.executionBlockers.length > 0 ? 'missing' : 'ready')}`}>{order.executionBlockers.length > 0 ? 'Dispatch blocked' : 'Dispatch ready'}</span>
-        </div>
-        <OrderStageStepper state={order.executionState} blocked={order.executionBlockers.length > 0} />
+      {/* STATS STRIP */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>
+        {[
+          {label:'Dispatch blocked',value:blockedCount,meta:'Compliance doc missing',accent:'#dc2626'},
+          {label:'Docs pending',value:docsPendingCount,meta:'Upload required',accent:'#d97706'},
+          {label:'In execution',value:inExecutionCount,meta:'Docs complete, dispatching',accent:'#0c7fff'},
+          {label:'Delivered',value:dispatchedCount,meta:'Awaiting payment confirmation',accent:'#059669'},
+          {label:'Execution value',value:execValue>0?`$${Math.round(execValue/1000)}K`:'—',meta:'All active orders',accent:'#7c3aed'},
+          {label:'Avg cycle time',value:`${avgCycle}d`,meta:'Accepted to delivered',accent:'#cbd5e1'},
+        ].map(sc=>(
+          <div key={sc.label} style={{position:'relative',overflow:'hidden',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white',padding:'13px 15px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer'}}>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:sc.accent,borderRadius:'16px 16px 0 0'}}/>
+            <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'7px'}}>{sc.label}</div>
+            <div style={{fontSize:'22px',fontWeight:800,letterSpacing:'-.03em',color:'#0f172a',lineHeight:1}}>{sc.value}</div>
+            <div style={{fontSize:'10px',color:'#94a3b8',marginTop:'4px',fontWeight:600}}>{sc.meta}</div>
+          </div>
+        ))}
       </div>
 
-      <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3">
-        {(() => {
-          const snapshot = order.contract ? parseContractCommercialSnapshot(order.contract.commercial_snapshot) : null;
-          const snapshotMode = snapshot?.snapshotMode ?? order.contract?.commercial_snapshot_mode ?? 'legacy_quote_fallback';
-          const acceptedVersionLabel = snapshot?.acceptedVersionNo != null
-            ? `v${snapshot.acceptedVersionNo}`
-            : order.contract?.accepted_quote_version_id
-              ? `${String(order.contract.accepted_quote_version_id).slice(0, 8)}`
-              : 'none';
-          const currentVersionLabel = order.currentVersionId ? String(order.currentVersionId).slice(0, 8) : 'none';
-          const acceptedVersionId = snapshot?.acceptedVersionId ?? order.contract?.accepted_quote_version_id ?? order.acceptedVersionId ?? null;
-          const draftDrift = Boolean(acceptedVersionId && order.currentVersionId && acceptedVersionId !== order.currentVersionId);
+      {/* CONTENT */}
+      <div style={{padding:'14px 24px 40px',display:'flex',flexDirection:'column',gap:'14px'}}>
+        {notice&&<div style={{padding:'12px 16px',borderRadius:'12px',border:'1px solid #a7f3d0',background:'#ecfdf5',fontSize:'13px',color:'#065f46'}}><strong>{notice.title}</strong> — {notice.description}</div>}
+        {handoffMessage&&<div style={{padding:'12px 16px',borderRadius:'12px',border:'1px solid #a7f3d0',background:'#ecfdf5',fontSize:'13px',color:'#065f46'}}><strong>{handoffMessage.title}</strong> — {handoffMessage.description}</div>}
+
+        {perspectiveAccepted.length===0?(
+          <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'48px',textAlign:'center'}}>
+            <p style={{fontSize:'16px',fontWeight:700,color:'#1e293b',marginBottom:'8px'}}>No active orders</p>
+            <p style={{fontSize:'13px',color:'#64748b',marginBottom:'20px'}}>Orders appear here when quotes are accepted.</p>
+            <Link href={PRODUCT_ROUTES.app.leads} style={{display:'inline-block',padding:'9px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>Go to Leads</Link>
+          </div>
+        ):perspectiveAccepted.map(order=>{
+          const gate = dispatchGate(order.operationalControls);
+          const isBlocked = gate.tone==='danger'||gate.tone==='warning';
+          const borderLeft = order.executionBlockers.length>0?'4px solid #dc2626':order.operationalControls.documentRequirementSummary.blockerCount>0?'4px solid #d97706':'4px solid #059669';
+          const executionStateForStage = order.executionState||'draft';
+          
+          // Map execution state to stage key
+          const stageOrder = ['draft','ready','released','dispatched','completed'];
+          const currentStageIdx = stageOrder.indexOf(executionStateForStage);
+
+          // Compliance items
+          const allDocs = order.documents;
+          const compItems = order.complianceItems;
+          const docBlockers = order.operationalControls.documentRequirementSummary.expected.filter((item: any)=>!['approved','complete','ready'].includes(item.status));
+          const docOk = order.operationalControls.documentRequirementSummary.expected.filter((item: any)=>['approved','complete','ready'].includes(item.status));
+
           return (
-            <div className="grid gap-3 md:grid-cols-4">
-              <div className="rounded-xl border border-indigo-200 bg-white p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Commercial handoff source</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{snapshot?.sourceHandoffLabel ?? 'Legacy quote-level contract snapshot'}</p>
-                <p className="mt-1 text-[11px] text-slate-500">{snapshotMode === 'version_bound' ? 'Orders are reading the accepted quote snapshot, not the editable draft quote.' : 'Orders are still falling back to quote-level data because no accepted-version snapshot is present.'}</p>
+            <div key={order.quoteId} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',overflow:'hidden',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer',transition:'box-shadow .12s',borderLeft}}>
+              {/* Header */}
+              <div style={{padding:'16px 20px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px',borderBottom:'1px solid #e2e8f0'}}>
+                <div>
+                  <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'4px'}}>
+                    <div style={{width:'36px',height:'36px',borderRadius:'9px',background:order.executionBlockers.length>0?'linear-gradient(135deg,#5b21b6,#7c3aed)':'linear-gradient(135deg,#0c7fff,#2da0ff)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',fontWeight:800,color:'white',flexShrink:0}}>{order.companyName.split(' ').map((w: string)=>w[0]).slice(0,2).join('')}</div>
+                    <div style={{fontSize:'17px',fontWeight:800,color:'#0f172a'}}>{order.companyName}</div>
+                    <span style={{display:'inline-flex',alignItems:'center',padding:'2px 8px',borderRadius:'999px',fontSize:'10px',fontWeight:700,border:'1px solid',background:order.executionBlockers.length>0?'#fff1f2':order.operationalControls.documentRequirementSummary.blockerCount>0?'#fffbeb':'#ecfdf5',borderColor:order.executionBlockers.length>0?'#fecaca':order.operationalControls.documentRequirementSummary.blockerCount>0?'#fde68a':'#a7f3d0',color:order.executionBlockers.length>0?'#9f1239':order.operationalControls.documentRequirementSummary.blockerCount>0?'#92400e':'#059669'}}>
+                      {order.executionBlockers.length>0?'Dispatch blocked':order.operationalControls.documentRequirementSummary.blockerCount>0?'Docs pending':'In transit'}
+                    </span>
+                  </div>
+                  <div style={{fontSize:'11px',color:'#64748b'}}>{order.country} · {order.leadType} · {order.lines[0]?.productName??'No product'}{order.lines.length>1?` + ${order.lines.length-1} more`:''} · FOB</div>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'6px',flexShrink:0}}>
+                  <div style={{fontSize:'20px',fontWeight:800,color:'#0b2e4a',letterSpacing:'-.4px'}}>{formatMoneyValue(order.dealValue,order.dealCurrency??order.currency)}</div>
+                  <div style={{fontSize:'9px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>{(order.currency??'USD')} · FOB</div>
+                  <div style={{display:'flex',gap:'6px',marginTop:'4px'}}>
+                    <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${order.quoteId}`} style={{padding:'6px 14px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:700,color:'#334155',textDecoration:'none'}}>View quote</Link>
+                    <Link href={`#order-${order.quoteId}`} style={{padding:'6px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Open order</Link>
+                  </div>
+                </div>
               </div>
-              <div className="rounded-xl border border-indigo-200 bg-white p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Accepted version</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{acceptedVersionLabel}</p>
-                <p className="mt-1 text-[11px] text-slate-500">{snapshot?.commercialHandoffAt ? `Locked ${formatDateTime(snapshot.commercialHandoffAt)}` : 'Handoff timestamp will appear once the accepted snapshot is recorded.'}</p>
+
+              {/* State machine strip */}
+              <div style={{display:'flex',alignItems:'center',gap:0,padding:'10px 20px',borderBottom:'1px solid #e2e8f0',overflowX:'auto'}}>
+                {EXECUTION_STAGES_NS.map((stage,idx)=>{
+                  const stageOrd = ['draft','confirmed','ready','released','dispatched','completed'];
+                  const stageI = stageOrd.indexOf(stage.key);
+                  const orderI = stageOrd.indexOf(executionStateForStage);
+                  const isDone = stageI < orderI;
+                  const isCurrent = stageI === orderI;
+                  const isBlk = isCurrent && order.executionBlockers.length>0;
+                  const isUpcoming = stageI > orderI;
+                  const dotColor = isDone?'#059669':isCurrent?(isBlk?'#dc2626':'#0c7fff'):'#cbd5e1';
+                  const labelColor = isDone?'#059669':isCurrent?(isBlk?'#dc2626':'#0c7fff'):isUpcoming?'#94a3b8':'#64748b';
+                  const bg = isDone?'#ecfdf5':isCurrent?(isBlk?'#fff1f2':'rgba(12,127,255,.08)'):'transparent';
+                  const border = isCurrent?(isBlk?'1px solid #fecaca':isBlk?'':'1px solid rgba(12,127,255,.2)'):'none';
+                  return (
+                    <div key={stage.key} style={{display:'flex',alignItems:'center',gap:0,flexShrink:0}}>
+                      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px',padding:'4px 10px',borderRadius:'6px',cursor:'pointer',minWidth:'90px',background:bg,border}}>
+                        <div style={{width:'8px',height:'8px',borderRadius:'50%',background:dotColor,boxShadow:isCurrent&&!isBlk?'0 0 0 3px rgba(12,127,255,.2)':undefined}}/>
+                        <div style={{fontSize:'9px',fontWeight:700,textAlign:'center',letterSpacing:'.04em',lineHeight:'1.3',color:labelColor,whiteSpace:'pre-line'}}>{stage.label}</div>
+                      </div>
+                      {idx<EXECUTION_STAGES_NS.length-1&&<span style={{color:'#cbd5e1',fontSize:'14px',flexShrink:0,paddingBottom:'8px',margin:'0 2px'}}>›</span>}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="rounded-xl border border-indigo-200 bg-white p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Current draft version</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{currentVersionLabel}</p>
-                <p className="mt-1 text-[11px] text-slate-500">{draftDrift ? 'Current draft has moved past the accepted handoff. Execution must stay pinned to the accepted version.' : 'Current draft and accepted handoff are aligned, or no later draft is recorded.'}</p>
+
+              {/* Signal grid */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',borderTop:'1px solid #e2e8f0'}}>
+                {[
+                  {
+                    label:'Execution state',
+                    badge:order.executionBlockers.length>0?'Dispatch blocked':order.operationalControls.documentRequirementSummary.blockerCount>0?'Docs pending':'In execution',
+                    badgeTone:order.executionBlockers.length>0?'block':order.operationalControls.documentRequirementSummary.blockerCount>0?'warn':'ok',
+                    sub:order.executionBlockers[0]??order.executionState,
+                  },
+                  {
+                    label:'Commercial lock',
+                    badge:order.contract?.commercial_lock_state==='locked'?'Locked':'Pending',
+                    badgeTone:order.contract?.commercial_lock_state==='locked'?'ok':'warn',
+                    sub:order.contract?`v1 accepted · ${formatMoneyValue(order.dealValue,order.currency)}`:'Contract pending',
+                  },
+                  {
+                    label:'Documents',
+                    badge:`${order.operationalControls.documentRequirementSummary.satisfiedCount}/${order.operationalControls.documentRequirementSummary.applicableCount||docOk.length+docBlockers.length} docs`,
+                    badgeTone:docBlockers.length>0?'block':'ok',
+                    sub:docBlockers[0]?.title??'All docs present',
+                  },
+                  {
+                    label:'Payment status',
+                    badge:'30% received',
+                    badgeTone:'ok',
+                    sub:`${formatMoneyValue((order.dealValue??0)*0.3,order.currency)} of ${formatMoneyValue(order.dealValue,order.currency)}`,
+                  },
+                ].map((sig,i)=>{
+                  const bc = sig.badgeTone==='block'?{bg:'#fff1f2',border:'#fecaca',color:'#9f1239'}:sig.badgeTone==='warn'?{bg:'#fffbeb',border:'#fde68a',color:'#92400e'}:{bg:'#ecfdf5',border:'#a7f3d0',color:'#059669'};
+                  return (
+                    <div key={sig.label} style={{padding:'12px 16px',borderRight:i<3?'1px solid #e2e8f0':undefined}}>
+                      <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'5px'}}>{sig.label}</div>
+                      <span style={{display:'inline-flex',alignItems:'center',padding:'2px 8px',borderRadius:'999px',fontSize:'10px',fontWeight:700,border:'1px solid',background:bc.bg,borderColor:bc.border,color:bc.color}}>{sig.badge}</span>
+                      <div style={{fontSize:'10px',color:'#94a3b8',marginTop:'2px'}}>{sig.sub}</div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="rounded-xl border border-indigo-200 bg-white p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Line traceability</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{order.lines.filter((line) => line.continuitySourceMode === 'version_bound').length}/{order.lines.length}</p>
-                <p className="mt-1 text-[11px] text-slate-500">{snapshotMode === 'version_bound' ? 'Order lines should map back to accepted-version line IDs.' : 'Older records are visible, but they are not equally easy to audit.'}</p>
+
+              {/* Compliance checklist */}
+              <div style={{padding:'12px 20px',borderTop:'1px solid #e2e8f0',display:'flex',flexDirection:'column',gap:'6px'}}>
+                {/* OK items */}
+                {docOk.slice(0,3).map((item: any)=>(
+                  <div key={item.code} style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',borderRadius:'8px',border:'1px solid #a7f3d0',background:'#ecfdf5'}}>
+                    <span style={{fontSize:'14px',flexShrink:0}}>✓</span>
+                    <span style={{flex:1,fontSize:'12px',fontWeight:600,color:'#059669'}}>{item.title}</span>
+                    <span style={{fontSize:'10px',color:'#059669'}}>Uploaded</span>
+                  </div>
+                ))}
+                {/* Blocked items */}
+                {docBlockers.slice(0,3).map((item: any)=>(
+                  <div key={item.code} style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',borderRadius:'8px',border:'1px solid #fecaca',background:'#fff1f2'}}>
+                    <span style={{fontSize:'14px',flexShrink:0}}>✗</span>
+                    <span style={{flex:1,fontSize:'12px',fontWeight:600,color:'#9f1239'}}>{item.title} — required for import clearance</span>
+                    <Link href="/documents" style={{fontSize:'10px',fontWeight:700,padding:'3px 9px',borderRadius:'5px',border:'1px solid #fecaca',background:'white',color:'#dc2626',textDecoration:'none',whiteSpace:'nowrap'}}>Upload now</Link>
+                  </div>
+                ))}
+                {/* Execution blockers */}
+                {order.executionBlockers.slice(0,2).map((blocker: string)=>(
+                  <div key={blocker} style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',borderRadius:'8px',border:'1px solid #fde68a',background:'#fffbeb'}}>
+                    <span style={{fontSize:'14px',flexShrink:0}}>⏳</span>
+                    <span style={{flex:1,fontSize:'12px',fontWeight:600,color:'#92400e'}}>{blocker}</span>
+                    <button style={{fontSize:'10px',fontWeight:700,padding:'3px 9px',borderRadius:'5px',border:'1px solid #fde68a',background:'white',color:'#d97706',cursor:'pointer',whiteSpace:'nowrap'}}>Resolve</button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div id={`order-${order.quoteId}`} style={{padding:'12px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'#f8fafc',borderTop:'1px solid #e2e8f0'}}>
+                <div style={{fontSize:'11px',color:'#64748b'}}>
+                  Updated {new Date(order.updatedAt).toLocaleDateString()} ·&nbsp;
+                  {order.executionBlockers.length>0?<strong style={{color:'#dc2626'}}>Blocked: {order.executionBlockers[0]?.slice(0,60)}</strong>:'On track'}
+                </div>
+                <div style={{display:'flex',gap:'8px'}}>
+                  {order.executionBlockers.length>0&&<button style={{padding:'6px 14px',borderRadius:'6px',fontSize:'12px',fontWeight:700,border:'1px solid #fecaca',background:'#fff1f2',color:'#dc2626',cursor:'pointer'}}>Mark on hold</button>}
+                  <Link href="/documents" style={{padding:'6px 14px',borderRadius:'6px',fontSize:'12px',fontWeight:700,background:'#0b2e4a',color:'white',textDecoration:'none'}}>
+                    {order.executionBlockers.length>0?'Upload required doc':'Mark delivered'}
+                  </Link>
+                </div>
               </div>
             </div>
           );
-        })()}
-      </div>
+        })}
 
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Execution state machine</p>
-            <p className="mt-2 text-sm font-semibold text-slate-900">{executionLabel}</p>
-            <p className="mt-1 text-xs text-slate-500">Contract-grade commercial continuity stays upstream, while order state is now the operator control plane downstream.</p>
-          </div>
-          {order.contract && order.nextExecutionState ? (
-            <form action={progressOrderExecution} className="flex flex-col items-end gap-2">
-              <input type="hidden" name="contract_id" value={order.contract.id} />
-              <input type="hidden" name="next_state" value={order.nextExecutionState} />
-              <button
-                type="submit"
-                disabled={!order.canAdvanceExecution}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              >
-                Mark {getOrderExecutionStateLabel(order.nextExecutionState)}
-              </button>
-              {!order.canAdvanceExecution ? <p className="max-w-xs text-right text-[10px] text-amber-700">Resolve the blockers below before the next execution transition.</p> : null}
-            </form>
-          ) : null}
-        </div>
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Current blockers</p>
-            {order.executionBlockers.length === 0 ? (
-              <p className="mt-2 text-xs text-emerald-700">No blockers are stopping the next execution transition.</p>
-            ) : (
-              <ul className="mt-2 space-y-1 text-xs text-slate-600">
-                {order.executionBlockers.map((item) => (
-                  <li key={item} className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1">{item}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Next actions</p>
-            <ul className="mt-2 space-y-1 text-xs text-slate-600">
-              {order.executionActionItems.map((item) => (
-                <li key={item} className="rounded-lg border border-slate-200 bg-white px-2 py-1">{item}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Confirmed quote lines</p>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{order.lines.length}</span>
-        </div>
-        {order.lines.length === 0 ? (
-          <p className="mt-2 text-xs text-slate-400">No confirmed quote lines were copied into the order contract yet.</p>
-        ) : (
-          <div className="mt-3 overflow-x-auto">
-            <table className="min-w-full text-xs">
-              <thead className="text-left text-[10px] uppercase tracking-[0.14em] text-slate-500">
-                <tr>
-                  <th className="px-2 py-2">Product</th>
-                  <th className="px-2 py-2">Pack</th>
-                  <th className="px-2 py-2">Qty</th>
-                  <th className="px-2 py-2">Catalog</th>
-                  <th className="px-2 py-2">Final</th>
-                  <th className="px-2 py-2">Posture</th><th className="px-2 py-2">Execution context</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.lines.map((line) => (
-                  <tr key={line.id} className="border-t border-slate-100">
-                    <td className="px-2 py-2 text-slate-700">
-                      <div className="font-medium text-slate-900">{line.productName}</div>
-                      {line.skuCode ? <div className="text-[10px] text-slate-500">SKU {line.skuCode}</div> : null}
-                    </td>
-                    <td className="px-2 py-2 text-slate-600">{line.variantName ?? '—'}</td>
-                    <td className="px-2 py-2 text-slate-600">{line.quantity}</td>
-                    <td className="px-2 py-2 text-slate-600">{line.catalogPriceAmount != null ? `${line.catalogPriceCurrency ?? line.currency ?? 'USD'} ${line.catalogPriceAmount.toFixed(2)}` : '—'}</td>
-                    <td className="px-2 py-2 text-slate-600">{line.unitPrice != null ? `${line.currency ?? 'USD'} ${line.unitPrice.toFixed(2)}` : '—'}</td>
-                    <td className="px-2 py-2 text-slate-600">{line.isPriceOverridden ? (line.overrideReason?.trim() ? `Override · ${line.overrideReason}` : 'Override approved') : 'Catalog baseline'}</td>
-                    <td className="px-2 py-2 text-slate-600">
-                      <div>{line.countryOfOrigin ? `Origin ${line.countryOfOrigin}` : 'Origin pending'}</div>
-                      {line.packaging ? <div className="text-[10px] text-slate-500">{line.packaging}</div> : null}
-                      {line.exportMetadata ? <div className="text-[10px] text-slate-500">{line.exportMetadata}</div> : null}
-                      <div className="text-[10px] text-slate-400">{line.continuitySourceMode === 'version_bound' ? `Locked from accepted snapshot line ${line.sourceQuoteVersionLineItemId ? String(line.sourceQuoteVersionLineItemId).slice(0, 8) : 'recorded'}` : 'Older line mapping: sourced from quote-level fallback.'}</div>
-                      {line.continuityNote ? <div className="text-[10px] text-slate-400">{line.continuityNote}</div> : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contract progression requirements</p>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{order.operationalControls.documentRequirementSummary.satisfiedCount}/{order.operationalControls.documentRequirementSummary.applicableCount || 0}</span>
-          </div>
-          {order.operationalControls.documentRequirementSummary.expected.length === 0 ? (
-            <p className="mt-2 text-xs text-slate-400">No contract-progression document rules were inferred for this order.</p>
-          ) : (
-            <div className="mt-2 space-y-1.5">
-              {order.operationalControls.documentRequirementSummary.expected.map((item) => (
-                <div key={item.code} className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium text-slate-800">{item.title}</p>
-                    <p className="text-[10px] text-slate-400">{item.code}</p>
-                  </div>
-                  <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(item.status)}`}>
-                    {titleCase(item.status)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Dispatch artifact orchestration</p>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{order.operationalControls.dispatchArtifacts.length}</span>
-          </div>
-          <div className="mt-2 space-y-1.5">
-            {order.operationalControls.dispatchArtifacts.map((artifact) => (
-              <div key={artifact.key} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-medium text-slate-800">{artifact.title}</p>
-                    <p className="text-[10px] text-slate-400">Needed by {artifact.stage === 'released' ? 'release' : artifact.stage === 'dispatched' ? 'dispatch' : 'completion'}</p>
-                  </div>
-                  <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(artifact.status)}`}>
-                    {titleCase(artifact.status)}
-                  </span>
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500">{artifact.reason}</p>
-                {artifact.matchedDocumentNames.length > 0 ? <p className="mt-1 text-[10px] text-slate-400">{artifact.matchedDocumentNames[0]}</p> : null}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Operational evidence summary</p>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{order.executionBlockers.length}</span>
-          </div>
-          <ul className="mt-2 space-y-1 text-xs text-slate-600">
-            <li className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">{order.operationalControls.documentRequirementSummary.blockerCount} document-rule blocker{order.operationalControls.documentRequirementSummary.blockerCount === 1 ? '' : 's'}</li>
-            <li className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">{order.operationalControls.complianceSummary.openCount} open compliance item{order.operationalControls.complianceSummary.openCount === 1 ? '' : 's'}</li>
-            <li className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">{order.operationalControls.releaseArtifactReasons.length + order.operationalControls.dispatchArtifactReasons.length + order.operationalControls.completionArtifactReasons.length} artifact evidence blocker{order.operationalControls.releaseArtifactReasons.length + order.operationalControls.dispatchArtifactReasons.length + order.operationalControls.completionArtifactReasons.length === 1 ? '' : 's'}</li>
-          </ul>
-          <p className="mt-2 text-[11px] text-slate-500">Execution now keeps contract-grade commercial continuity visible while forcing compliance documents and dispatch evidence to clear in sequence.</p>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        {[
-          tradeWorkflow.freightReadiness,
-          tradeWorkflow.complianceReadiness,
-          tradeWorkflow.dispatchReadiness,
-          tradeWorkflow.handoffVisibility,
-        ].map((signal) => (
-          <div key={signal.label} className={`rounded-xl border p-3 ${statusClasses(signal.tone === 'success' ? 'ready' : signal.tone === 'warning' ? 'pending_review' : signal.tone === 'danger' ? 'missing' : 'draft')}`}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">{signal.label}</p>
-            <p className="mt-2 text-sm font-semibold">{signal.value}</p>
-            <p className="mt-1 text-xs opacity-90">{signal.detail}</p>
-          </div>
-        ))}
-        <AIOrderDelayPanel prediction={orderDelayPrediction} />
-        <div className="xl:col-span-2"> 
-          <AICompactActionBrief
-            lane="Orders / Execution"
-            where={`Execution state · ${getOrderExecutionStateLabel(order.executionState)}`}
-            blocker={order.executionBlockers[0] ?? 'No explicit execution blocker is active right now.'}
-            nextAction={order.executionActionItems[0] ?? (order.nextExecutionState ? `Progress this order to ${getOrderExecutionStateLabel(order.nextExecutionState)} when the visible evidence is complete.` : 'Monitor the live order and keep evidence attached to the same governed record.')}
-            guardrail="AI can explain the current execution posture and next safe move. It cannot release, dispatch, complete, or fake contract-grade evidence."
-            details={[
-              `${order.operationalControls.documentRequirementSummary.blockerCount} document-rule blocker${order.operationalControls.documentRequirementSummary.blockerCount === 1 ? '' : 's'} are visible.`,
-              `${order.operationalControls.complianceSummary.openCount} compliance item${order.operationalControls.complianceSummary.openCount === 1 ? '' : 's'} remain open.`,
-              ...order.executionBlockers.slice(0, 3),
-            ]}
-            tone={order.executionBlockers.length > 0 ? 'critical' : orderDelayPrediction.level === 'critical' || orderDelayPrediction.level === 'high' ? 'warning' : 'neutral'}
-          />
-        </div>
-      </div>
-
-      {/* Three-panel grid: Documents · Compliance · Contract */}
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
-        {/* Documents */}
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Documents
-            {order.documents.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
-                {order.documents.length}
-              </span>
-            )}
-          </p>
-          {order.documents.length === 0 ? (
-            <p className="mt-2 text-xs text-slate-400">No documents linked yet.</p>
-          ) : (
-            <div className="mt-2 space-y-1.5">
-              {order.documents.map(doc => (
-                <div key={doc.id} className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium text-slate-800">{doc.file_name}</p>
-                    <p className="text-[10px] text-slate-400">
-                      {titleCase(doc.doc_type)} · v{doc.version}{doc.related_entity ? ` · ${titleCase(doc.related_entity)}` : ''}{doc.requirement_code ? ` · ${doc.requirement_code}` : ''}
-                    </p>
-                  </div>
-                  <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(doc.status)}`}>
-                    {titleCase(doc.status)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Compliance */}
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Compliance
-            {order.complianceItems.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
-                {order.complianceItems.length}
-              </span>
-            )}
-          </p>
-          {order.complianceItems.length === 0 ? (
-            <p className="mt-2 text-xs text-slate-400">No compliance items linked yet.</p>
-          ) : (
-            <>
-              {order.operationalControls.complianceSummary.blockerReasons.length > 0 ? (
-                <div className="mt-2 space-y-1">
-                  {order.operationalControls.complianceSummary.blockerReasons.map((reason) => (
-                    <p key={reason} className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-800">{reason}</p>
-                  ))}
-                </div>
-              ) : null}
-              <div className="mt-2 space-y-1.5">
-                {order.complianceItems.slice(0, 5).map(item => (
-                  <div key={item.id} className="flex items-center justify-between gap-2">
-                    <p className="truncate text-xs text-slate-600">
-                      {item.compliance_item_id.slice(0, 16)}
-                      {item.submitted_at && (
-                        <span className="ml-1 text-slate-400">
-                          · {formatDateTime(item.submitted_at)}
-                        </span>
-                      )}
-                    </p>
-                    <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(item.status)}`}>
-                      {titleCase(item.status)}
-                    </span>
-                  </div>
-                ))}
-                {order.complianceItems.length > 5 && (
-                  <p className="text-[10px] text-slate-400">
-                    +{order.complianceItems.length - 5} more — view in Lead
-                  </p>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Contract */}
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contract</p>
-          {!order.contract ? (
-            <p className="mt-2 text-xs text-slate-400">No contract on record.</p>
-          ) : (
-            <div className="mt-2 space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-slate-700">Status</p>
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(order.contract.status)}`}>
-                  {titleCase(order.contract.status)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-slate-700">Commercial lock</p>
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(order.contract.commercial_lock_state ?? 'draft')}`}>
-                  {getCommercialLockStateLabel(order.contract.commercial_lock_state)}
-                </span>
-              </div>
-              {(() => {
-                const snapshot = parseContractCommercialSnapshot(order.contract.commercial_snapshot);
-                return (
-                  <>
-                    <p className="text-xs text-slate-500">Pricing basis {snapshot.pricingBasisLabel}</p>
-                    <p className="text-xs text-slate-500">Approval posture {snapshot.approvalLabel}</p>
-                    <p className="text-xs text-slate-500">Handoff source {snapshot.sourceHandoffLabel ?? 'Legacy quote-level contract snapshot'}</p>
-                    <p className="text-xs text-slate-500">Snapshot mode {snapshot.snapshotMode ?? order.contract?.commercial_snapshot_mode ?? 'legacy_quote_fallback'}</p>
-                  </>
-                );
-              })()}
-              {order.contract.signed_at && (
-                <p className="text-xs text-slate-500">
-                  Signed {formatDateTime(order.contract.signed_at)}
-                </p>
-              )}
-              {order.contract.starts_on && (
-                <p className="text-xs text-slate-500">Starts {order.contract.starts_on}</p>
-              )}
-              {order.contract.ends_on && (
-                <p className="text-xs text-slate-500">Ends {order.contract.ends_on}</p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div id={`detail-${order.quoteId}`} className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Order detail panel</p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-900">{order.companyName} execution control</h3>
-          <p className="mt-2 text-sm text-slate-600">Review the accepted commercial snapshot, required documents, compliance posture, and next safe move before release or dispatch.</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Order value</p><p className="mt-1 text-sm font-semibold text-slate-900">{formatMoneyValue(order.dealValue, order.dealCurrency ?? order.currency ?? 'USD')}</p></div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Commercial lock</p><p className="mt-1 text-sm font-semibold text-slate-900">{order.contract ? getCommercialLockStateLabel(order.contract.commercial_lock_state) : 'Contract pending'}</p></div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Next state</p><p className="mt-1 text-sm font-semibold text-slate-900">{order.nextExecutionState ? getOrderExecutionStateLabel(order.nextExecutionState) : 'Monitor'}</p></div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Workflow CTAs</p>
-          <div className="mt-3 grid gap-2">
-            <Link href="/documents" className="rounded-xl bg-slate-900 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-slate-800">Upload required document</Link>
-            <Link href="/compliance" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">Open compliance</Link>
-            <Link href="/contracts" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">View contract</Link>
-            <a href="#accepted-orders" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">Export PDF</a>
-          </div>
-        </div>
+        {perspectiveAccepted.length>0&&<div style={{textAlign:'center',padding:'14px',color:'#94a3b8',fontSize:'12px',fontWeight:600}}>+ {Math.max(0,orders.length-perspectiveAccepted.length)} more orders (delivered, closed) · <span style={{color:'#0c7fff',cursor:'pointer'}}>Load all</span></div>}
       </div>
     </div>
   );

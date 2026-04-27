@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
-import { SectionCard } from '@/components/ui/section-card';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
@@ -8,72 +7,51 @@ import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildQuotesPageViewModel } from '@/features/quotes/logic/build-quotes-page-view-model';
 import { QuoteHistoryList } from '@/features/quotes/ui/quote-history-list';
 import { formatQuoteMoney } from '@/features/quotes/logic/formatting';
-import { cn, formatDateTime } from '@/lib/utils';
-import { workspaceHeroClass, workspaceSecondaryButtonClass, workspacePrimaryButtonClass } from '@/components/ui/workspace-surfaces';
-import { getQuoteStatusBadgeClasses } from '@/lib/quoteWorkflow';
 import { buildApprovalSendHref, buildLeadQuoteHref, buildOrdersHref } from '@/lib/workflow/handoffs';
 
-const FILTER_STATUSES = ['all', 'draft', 'internal_review', 'pending_approval', 'approved', 'sent', 'revised', 'accepted', 'rejected', 'expired'];
-const FILTER_MODES = ['all', 'buyers', 'suppliers'];
+const FILTER_STATUSES = ['all','draft','internal_review','pending_approval','approved','sent','revised','accepted','rejected','expired'];
+const FILTER_MODES = ['all','buyers','suppliers'];
 
 type QuoteWorkspaceItem = ReturnType<typeof buildQuotesPageViewModel>['items'][number];
 
 function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
-
-function labelizeStatus(value: string) {
-  return value.replaceAll('_', ' ');
-}
-
+function labelizeStatus(value: string) { return value.replaceAll('_', ' '); }
 function readIsoDate(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
+  const trimmed = value.trim(); if (!trimmed) return null;
   const parsed = Date.parse(`${trimmed}T00:00:00.000Z`);
   return Number.isFinite(parsed) ? parsed : null;
 }
-
-function nextStepToneClasses(tone: 'quote' | 'approval' | 'orders' | 'follow_up') {
-  if (tone === 'orders') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (tone === 'approval') return 'border-amber-200 bg-amber-50 text-amber-900';
-  if (tone === 'follow_up') return 'border-sky-200 bg-sky-50 text-sky-800';
-  return 'border-slate-200 bg-slate-50 text-slate-800';
-}
-
 function getQuoteActionLabel(item: QuoteWorkspaceItem) {
   if (item.status === 'pending_approval') return 'Review';
   if (item.status === 'approved') return 'Send';
   if (item.status === 'accepted' || item.hasAcceptedContract) return 'Create order';
-  if (item.status === 'draft' || item.status === 'revised' || item.status === 'internal_review') return 'Continue';
+  if (['draft','revised','internal_review'].includes(item.status)) return 'Continue';
   if (item.status === 'sent') return 'Follow up';
   return 'Open';
 }
-
 function getValidityLabel(item: QuoteWorkspaceItem) {
-  if (item.status === 'accepted' || item.hasAcceptedContract) return { label: 'Order ready', tone: 'text-emerald-700' };
-  if (item.status === 'draft') return { label: 'Not sent', tone: 'text-slate-500' };
-  if (item.status === 'expired') return { label: 'Expired', tone: 'text-rose-700' };
+  if (item.status === 'accepted' || item.hasAcceptedContract) return { label: 'Order ready', rose: false, amber: false, emerald: true };
+  if (item.status === 'draft') return { label: 'Not sent', rose: false, amber: false, emerald: false };
+  if (item.status === 'expired') return { label: 'Expired', rose: true, amber: false, emerald: false };
   const updatedAt = Date.parse(item.updatedAt);
-  if (!Number.isFinite(updatedAt)) return { label: 'Validity unknown', tone: 'text-slate-500' };
-  const daysSinceUpdate = Math.floor((Date.now() - updatedAt) / (24 * 60 * 60 * 1000));
+  if (!Number.isFinite(updatedAt)) return { label: 'Validity unknown', rose: false, amber: false, emerald: false };
+  const daysSinceUpdate = Math.floor((Date.now() - updatedAt) / (24*60*60*1000));
   const daysLeft = Math.max(0, 30 - daysSinceUpdate);
-  if (daysLeft <= 3) return { label: `${daysLeft} days left`, tone: 'text-rose-700' };
-  if (daysLeft <= 7) return { label: `${daysLeft} days left`, tone: 'text-amber-700' };
-  return { label: `${daysLeft} days left`, tone: 'text-slate-600' };
+  if (daysLeft <= 3) return { label: `${daysLeft} days left!`, rose: true, amber: false, emerald: false };
+  if (daysLeft <= 7) return { label: `${daysLeft} days left`, rose: false, amber: true, emerald: false };
+  return { label: `${daysLeft} days left`, rose: false, amber: false, emerald: false };
 }
-
-function filterItems(items: ReturnType<typeof buildQuotesPageViewModel>['items'], filters: { q: string; status: string; company: string; from: string; to: string; mode: string }) {
-  const q = filters.q.trim().toLowerCase();
-  const company = filters.company.trim().toLowerCase();
-  const from = readIsoDate(filters.from);
-  const to = readIsoDate(filters.to);
-  const toEnd = to == null ? null : to + 24 * 60 * 60 * 1000 - 1;
-  const status = filters.status === 'all' ? '' : filters.status;
-  const mode = filters.mode === 'buyers' ? 'buyer' : filters.mode === 'suppliers' ? 'supplier' : '';
-
-  return items.filter((item) => {
-    const productNames = item.lineItems.map((line) => line.productName).join(' ');
-    const haystack = `${item.quoteNumber ?? ''} ${item.id} ${item.companyName} ${productNames}`.toLowerCase();
+function filterItems(items: ReturnType<typeof buildQuotesPageViewModel>['items'], f: {q:string;status:string;company:string;from:string;to:string;mode:string}) {
+  const q = f.q.trim().toLowerCase(); const company = f.company.trim().toLowerCase();
+  const from = readIsoDate(f.from); const to = readIsoDate(f.to);
+  const toEnd = to == null ? null : to + 24*60*60*1000 - 1;
+  const status = f.status === 'all' ? '' : f.status;
+  const mode = f.mode === 'buyers' ? 'buyer' : f.mode === 'suppliers' ? 'supplier' : '';
+  return items.filter(item => {
+    const productNames = item.lineItems.map(l => l.productName).join(' ');
+    const haystack = `${item.quoteNumber??''} ${item.id} ${item.companyName} ${productNames}`.toLowerCase();
     if (q && !haystack.includes(q)) return false;
     if (company && !item.companyName.toLowerCase().includes(company)) return false;
     if (status && item.status !== status) return false;
@@ -85,30 +63,13 @@ function filterItems(items: ReturnType<typeof buildQuotesPageViewModel>['items']
   });
 }
 
-function withQuoteParam(baseHref: string, quoteId: string, leadId: string) {
-  const separator = baseHref.includes('?') ? '&' : '?';
-  return `${baseHref}${separator}quoteId=${encodeURIComponent(quoteId)}&leadId=${encodeURIComponent(leadId)}`;
-}
+export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[] } }) {
+  let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>>|null = null;
+  try { workspace = await getWorkspaceAccess(); } catch { return <EmptyState title="Workspace unavailable" description="Could not load workspace." />; }
+  if (!hasSupabaseEnv || workspace?.missingEnv) return <EmptyState title="Configuration required" description="SETU Flow needs Supabase environment values." />;
+  if (!workspace?.organization) return <EmptyState title="Workspace membership needed" description="No active organization membership." />;
 
-export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string | string[]; q?: string | string[]; status?: string | string[]; company?: string | string[]; from?: string | string[]; to?: string | string[]; mode?: string | string[] } }) {
-  let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>> | null = null;
-
-  try {
-    workspace = await getWorkspaceAccess();
-  } catch {
-    return <EmptyState title="Workspace unavailable" description="We were unable to load your workspace. Please refresh or try again later." />;
-  }
-
-  if (!hasSupabaseEnv || workspace?.missingEnv) {
-    return <EmptyState title="Configuration required" description="SETU Flow needs Supabase environment values before the quotes workspace can load." />;
-  }
-
-  if (!workspace?.organization) {
-    return <EmptyState title="Workspace membership needed" description="Your account is signed in, but no active organization membership could be loaded." />;
-  }
-
-  const supabase = await createClient();
-  const db = supabase as any;
+  const supabase = await createClient(); const db = supabase as any;
   const organizationId = workspace.organization.id;
   const selectedQuoteId = readSearchParam(searchParams?.quoteId).trim() || null;
   const requestedMode = readSearchParam(searchParams?.mode);
@@ -121,255 +82,280 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     mode: FILTER_MODES.includes(requestedMode) ? requestedMode : 'all',
   };
 
-  const quotesResult = await db
-    .from('quotes')
-    .select('id, lead_id, status, currency, notes, quote_number, created_at, updated_at, current_version_id')
-    .eq('organization_id', organizationId)
-    .order('updated_at', { ascending: false })
-    .limit(200);
-
-  if (quotesResult.error) {
-    return <EmptyState title="Could not load quotes" description={String(quotesResult.error.message ?? 'Unknown error')} />;
-  }
-
+  const quotesResult = await db.from('quotes').select('id, lead_id, status, currency, notes, quote_number, created_at, updated_at, current_version_id').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(200);
+  if (quotesResult.error) return <EmptyState title="Could not load quotes" description={String(quotesResult.error.message ?? 'Unknown error')} />;
   const quotes = Array.isArray(quotesResult.data) ? quotesResult.data : [];
+
   if (!quotes.length) {
     return (
-      <div className="space-y-6 p-4 sm:p-6">
-        <SectionCard eyebrow="Quotes workspace" title="No quotes yet" description="Create the first quote from a qualified lead, then return here to manage status, approvals, versions, and send readiness.">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href={PRODUCT_ROUTES.app.leads} className={`inline-flex rounded-2xl px-4 py-2 text-sm font-semibold transition `}>+ New quote</Link>
-            <Link href={PRODUCT_ROUTES.app.integrations} className="text-sm font-semibold text-brand-700 hover:text-brand-800">Approval Status</Link>
-          </div>
-        </SectionCard>
+      <div style={{padding:'24px',background:'#f0f4f8',minHeight:'100vh'}}>
+        <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'32px',textAlign:'center'}}>
+          <p style={{fontSize:'14px',color:'#64748b'}}>No quotes yet.</p>
+          <Link href={PRODUCT_ROUTES.app.leads} style={{display:'inline-block',marginTop:'16px',padding:'8px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>+ New quote</Link>
+        </div>
       </div>
     );
   }
 
-  const leadIds = [...new Set(quotes.map((quote: any) => quote.lead_id).filter(Boolean))];
-  const quoteIds = quotes.map((quote: any) => quote.id);
+  const leadIds = [...new Set(quotes.map((q: any) => q.lead_id).filter(Boolean))];
+  const quoteIds = quotes.map((q: any) => q.id);
 
   const [leadsResult, versionsResult, negotiationsResult, communicationsResult, contractsResult, lineItemsResult] = await Promise.all([
     db.from('leads').select('id, company_name, contact_name, lead_type').eq('organization_id', organizationId).in('id', leadIds),
-    db.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at').in('quote_id', quoteIds).order('created_at', { ascending: false }),
-    db.from('quote_negotiation_events').select('id, quote_id, event_type, message, created_at, actor_name').in('quote_id', quoteIds).order('created_at', { ascending: false }),
-    db.from('communications').select('id, quote_id, subject, summary, status, created_at').in('quote_id', quoteIds).order('created_at', { ascending: false }),
+    db.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at').in('quote_id', quoteIds).order('created_at', {ascending: false}),
+    db.from('quote_negotiation_events').select('id, quote_id, event_type, message, created_at, actor_name').in('quote_id', quoteIds).order('created_at', {ascending: false}),
+    db.from('communications').select('id, quote_id, subject, summary, status, created_at').in('quote_id', quoteIds).order('created_at', {ascending: false}),
     db.from('contracts').select('id, quote_id, status, signed_at, starts_on, commercial_lock_state, commercial_snapshot').eq('organization_id', organizationId).in('quote_id', quoteIds),
     db.from('quote_line_items').select('id, quote_id, product_id, quantity, unit_price, currency, catalog_price_amount, catalog_price_currency, is_price_overridden, override_reason, notes').in('quote_id', quoteIds),
   ]);
 
   const lineItems = Array.isArray(lineItemsResult.data) ? lineItemsResult.data : [];
-  const productIds = [...new Set(lineItems.map((line: any) => line.product_id).filter(Boolean))];
-  const productsResult = productIds.length
-    ? await db.from('products').select('id, name, sku').eq('organization_id', organizationId).in('id', productIds)
-    : { data: [], error: null };
+  const productIds = [...new Set(lineItems.map((l: any) => l.product_id).filter(Boolean))];
+  const productsResult = productIds.length ? await db.from('products').select('id, name, sku').eq('organization_id', organizationId).in('id', productIds) : { data: [], error: null };
 
   const baseViewModelInput = {
-    quotes,
-    leads: Array.isArray(leadsResult.data) ? leadsResult.data : [],
+    quotes, leads: Array.isArray(leadsResult.data) ? leadsResult.data : [],
     versions: Array.isArray(versionsResult.data) ? versionsResult.data : [],
     negotiations: Array.isArray(negotiationsResult.data) ? negotiationsResult.data : [],
     communications: Array.isArray(communicationsResult.data) ? communicationsResult.data : [],
     contracts: Array.isArray(contractsResult.data) ? contractsResult.data : [],
-    lineItems,
-    products: Array.isArray(productsResult.data) ? productsResult.data : [],
+    lineItems, products: Array.isArray(productsResult.data) ? productsResult.data : [],
   };
 
   const viewModel = buildQuotesPageViewModel({ ...baseViewModelInput, selectedQuoteId });
   const filteredItems = filterItems(viewModel.items, filters);
-  const selected = (selectedQuoteId ? viewModel.items.find((item) => item.id === selectedQuoteId) : null) ?? filteredItems[0] ?? viewModel.selectedItem;
-  const selectedLeadHref = selected ? `/leads?leadId=${selected.leadId}&view=quote&quoteId=${selected.id}` : PRODUCT_ROUTES.app.leads;
-  const selectedHistory = selected ? (selected.id === viewModel.selectedItem?.id ? viewModel.selectedHistory : buildQuotesPageViewModel({ ...baseViewModelInput, selectedQuoteId: selected.id }).selectedHistory) : [];
-  const agedQuoteCount = viewModel.items.filter((item) => {
-    if (['accepted', 'rejected', 'expired'].includes(item.status)) return false;
-    const updatedAt = Date.parse(item.updatedAt);
-    return Number.isFinite(updatedAt) && Date.now() - updatedAt >= 72 * 60 * 60 * 1000;
-  }).length;
-  const approvalQueue = viewModel.items.filter((item) => item.status === 'pending_approval');
-  const approvalQueueCount = approvalQueue.length;
-  const expiringSoonCount = viewModel.items.filter((item) => {
-    const validity = getValidityLabel(item);
-    return validity.tone.includes('rose') && item.status !== 'expired';
-  }).length;
-  const sentActiveCount = viewModel.items.filter((item) => ['sent', 'approved', 'negotiating'].includes(item.status)).length;
-  const draftCount = viewModel.items.filter((item) => ['draft', 'internal_review', 'revised'].includes(item.status)).length;
-  const acceptedCount = viewModel.items.filter((item) => item.status === 'accepted' || item.hasAcceptedContract).length;
-  const totalValue = viewModel.items.reduce((sum, item) => sum + item.subtotal, 0);
+  const selected = (selectedQuoteId ? viewModel.items.find(i => i.id === selectedQuoteId) : null) ?? filteredItems[0] ?? viewModel.selectedItem;
   const selectedMode = selected?.leadType === 'buyer' ? 'buyers' : selected?.leadType === 'supplier' ? 'suppliers' : null;
-  const selectedApprovalHref = selected ? buildApprovalSendHref({ queue: 'approvals', quoteId: selected.id, leadId: selected.leadId, handoff: 'quote-approval-status' }, selectedMode) : PRODUCT_ROUTES.app.integrations;
-  const selectedSendHref = selected ? buildApprovalSendHref({ queue: 'send', quoteId: selected.id, leadId: selected.leadId, handoff: 'quote-ready-to-send' }, selectedMode) : PRODUCT_ROUTES.app.integrations;
-  const selectedOrderHref = selected ? buildOrdersHref({ notice: 'quote-accepted', quoteId: selected.id, leadId: selected.leadId, handoff: 'quote-to-orders' }, selectedMode) : PRODUCT_ROUTES.app.orders;
-  const firstApproval = approvalQueue[0];
-  const secondApproval = approvalQueue[1];
+  const selectedApprovalHref = selected ? buildApprovalSendHref({queue:'approvals',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-approval-status'}, selectedMode) : PRODUCT_ROUTES.app.integrations;
+  const selectedOrderHref = selected ? buildOrdersHref({notice:'quote-accepted',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-to-orders'}, selectedMode) : PRODUCT_ROUTES.app.orders;
+  const selectedHistory = selected ? (selected.id === viewModel.selectedItem?.id ? viewModel.selectedHistory : buildQuotesPageViewModel({...baseViewModelInput, selectedQuoteId:selected.id}).selectedHistory) : [];
+
+  const approvalQueue = viewModel.items.filter(i => i.status === 'pending_approval');
+  const approvalQueueCount = approvalQueue.length;
+  const expiringSoonCount = viewModel.items.filter(i => { const v = getValidityLabel(i); return v.rose && i.status !== 'expired'; }).length;
+  const sentActiveCount = viewModel.items.filter(i => ['sent','approved','negotiating'].includes(i.status)).length;
+  const draftCount = viewModel.items.filter(i => ['draft','internal_review','revised'].includes(i.status)).length;
+  const acceptedCount = viewModel.items.filter(i => i.status === 'accepted' || i.hasAcceptedContract).length;
+  const totalValue = viewModel.items.reduce((s, i) => s + i.subtotal, 0);
+  const firstApproval = approvalQueue[0]; const secondApproval = approvalQueue[1];
+
+  const ss = (px: React.CSSProperties) => px;
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <section className={cn(workspaceHeroClass, "p-5 sm:p-6")}>
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700">Commercial</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Quotes Workspace</h1>
-            <p className="mt-3 text-sm leading-6 text-slate-600">Quote list, approval queue, version history, FX context, and builder handoff stay in one operating view.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-2xl border border-slate-200 bg-slate-50 p-1 text-xs font-semibold">
-              {FILTER_MODES.map((mode) => (
-                <Link key={mode} href={`/quotes?mode=${mode}&status=${encodeURIComponent(filters.status)}&q=${encodeURIComponent(filters.q)}&company=${encodeURIComponent(filters.company)}&from=${encodeURIComponent(filters.from)}&to=${encodeURIComponent(filters.to)}`} className={`rounded-xl px-3 py-1.5 capitalize ${filters.mode === mode ? 'bg-slate-950 text-white shadow-sm' : 'text-slate-600 hover:bg-white'}`}>{mode}</Link>
-              ))}
-            </div>
-            <Link href="/quotes?export=csv" className={`inline-flex rounded-2xl px-4 py-2 text-sm font-semibold transition `}>Export</Link>
-            <Link href={PRODUCT_ROUTES.app.leads} className={`inline-flex rounded-2xl px-4 py-2 text-sm font-semibold transition `}>+ New quote</Link>
-          </div>
-        </div>
-      </section>
+    <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
 
-      <form className="grid gap-3 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(220px,1fr)_150px_150px_150px_150px_auto]" action="/quotes">
-        <input type="hidden" name="mode" value={filters.mode} />
-        <label className="text-sm font-medium text-slate-700">Search<input name="q" defaultValue={filters.q} placeholder="Search company, quote ref, product..." className="mt-1 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500" /></label>
-        <label className="text-sm font-medium text-slate-700">Status<select name="status" defaultValue={filters.status} className="mt-1 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500">{FILTER_STATUSES.map((status) => <option key={status} value={status}>{status === 'all' ? 'All statuses' : labelizeStatus(status)}</option>)}</select></label>
-        <label className="text-sm font-medium text-slate-700">Company<input name="company" defaultValue={filters.company} placeholder="Company" className="mt-1 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500" /></label>
-        <label className="text-sm font-medium text-slate-700">From<input name="from" type="date" defaultValue={filters.from} className="mt-1 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500" /></label>
-        <label className="text-sm font-medium text-slate-700">To<input name="to" type="date" defaultValue={filters.to} className="mt-1 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500" /></label>
-        <button className="self-end rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" type="submit">Apply</button>
+      {/* ── TOPBAR ─────────────────────────────────────── */}
+      <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
+        <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'5px 12px',borderRadius:'6px',background:'rgba(11,46,74,.06)',border:'1px solid rgba(11,46,74,.12)'}}>
+            <div><div style={{fontSize:'11px',fontWeight:800,color:'#1F487C',letterSpacing:'-.1px'}}>SETU <span style={{color:'#279491'}}>Flow</span> CRM</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Groups LLC</div></div>
+          </div>
+          <div style={{width:'1px',height:'24px',background:'#e2e8f0'}}/>
+          <div><div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#0c7fff'}}>Commercial</div><div style={{fontSize:'16px',fontWeight:700,color:'#1e293b',letterSpacing:'-.3px'}}>Quotes Workspace</div></div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+          <div style={{display:'flex',background:'#f1f5f9',borderRadius:'6px',padding:'3px',border:'1px solid #e2e8f0',gap:'2px'}}>
+            {FILTER_MODES.map(m => (
+              <Link key={m} href={`/quotes?mode=${m}&status=${encodeURIComponent(filters.status)}&q=${encodeURIComponent(filters.q)}`} style={{padding:'4px 11px',borderRadius:'5px',fontSize:'11px',fontWeight:600,textDecoration:'none',background:filters.mode===m?'#0b2e4a':'transparent',color:filters.mode===m?'white':'#64748b'}}>{m.charAt(0).toUpperCase()+m.slice(1)}</Link>
+            ))}
+          </div>
+          <Link href="/quotes?export=csv" style={{padding:'7px 12px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:600,color:'#334155',textDecoration:'none'}}>Export</Link>
+          <Link href={PRODUCT_ROUTES.app.leads} style={{padding:'7px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>+ New quote</Link>
+        </div>
+      </header>
+
+      {/* ── FILTER BAR ─────────────────────────────────── */}
+      <form action="/quotes" style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'10px 24px',display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
+        <input type="hidden" name="mode" value={filters.mode}/>
+        <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 10px',border:'1px solid #e2e8f0',borderRadius:'6px',background:'white',height:'32px',minWidth:'200px'}}>
+          <input name="q" defaultValue={filters.q} placeholder="Search company, quote ref, product..." style={{border:'none',outline:'none',fontSize:'11px',color:'#1e293b',background:'transparent',width:'100%'}}/>
+        </div>
+        <select name="status" defaultValue={filters.status} style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 12px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',cursor:'pointer',minWidth:'130px'}}>
+          {FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All statuses':labelizeStatus(s)}</option>)}
+        </select>
+        {/* Quick-filter chips */}
+        {approvalQueueCount>0 && <span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>Pending approval ({approvalQueueCount})</span>}
+        {expiringSoonCount>0 && <span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#9f1239',cursor:'pointer'}}>Expiring ({expiringSoonCount})</span>}
+        <button type="submit" style={{padding:'0 12px',height:'32px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:700,border:'none',cursor:'pointer'}}>Apply</button>
+        <span style={{marginLeft:'auto',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{filteredItems.length} quotes · {formatQuoteMoney(totalValue,'USD')} total value</span>
       </form>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-[24px] border border-slate-200 bg-white p-4 text-xs font-semibold text-slate-600 shadow-sm">
-        <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">Pending approval ({approvalQueueCount})</span>
-        <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-800">Expiring soon ({expiringSoonCount})</span>
-        <span className="ml-auto text-slate-500">{filteredItems.length} quotes · {formatQuoteMoney(totalValue, 'USD')} total value</span>
+      {/* ── STATS STRIP ────────────────────────────────── */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>
+        {[
+          {label:'Pending approval',value:approvalQueueCount,meta:'Waiting for review',accent:'#d97706'},
+          {label:'Expiring soon',value:expiringSoonCount,meta:'Within 3 days',accent:'#dc2626'},
+          {label:'Sent & active',value:sentActiveCount,meta:'Awaiting buyer response',accent:'#0c7fff'},
+          {label:'Accepted',value:acceptedCount,meta:'Order creation available',accent:'#059669'},
+          {label:'Drafts',value:draftCount,meta:'Not yet sent',accent:'#cbd5e1'},
+          {label:'Total value',value:formatQuoteMoney(totalValue,'USD'),meta:'All active quotes',accent:'#7c3aed'},
+        ].map(sc => (
+          <div key={sc.label} style={{position:'relative',overflow:'hidden',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white',padding:'13px 15px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer'}}>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:sc.accent,borderRadius:'16px 16px 0 0'}}/>
+            <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'7px'}}>{sc.label}</div>
+            <div style={{fontSize:'22px',fontWeight:800,letterSpacing:'-.03em',color:'#0f172a',lineHeight:1}}>{sc.value}</div>
+            <div style={{fontSize:'10px',color:'#94a3b8',marginTop:'4px',fontWeight:600}}>{sc.meta}</div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Pending approval</p><p className="mt-2 text-2xl font-semibold text-amber-800">{approvalQueueCount}</p><p className="text-xs text-amber-700">Waiting for review</p></div>
-        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-700">Expiring soon</p><p className="mt-2 text-2xl font-semibold text-rose-800">{expiringSoonCount}</p><p className="text-xs text-rose-700">Within 3 days</p></div>
-        <div className="rounded-3xl border border-sky-200 bg-sky-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Sent & active</p><p className="mt-2 text-2xl font-semibold text-sky-800">{sentActiveCount}</p><p className="text-xs text-sky-700">Awaiting buyer response</p></div>
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Accepted</p><p className="mt-2 text-2xl font-semibold text-emerald-800">{acceptedCount}</p><p className="text-xs text-emerald-700">Order creation available</p></div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Drafts</p><p className="mt-2 text-2xl font-semibold text-slate-900">{draftCount}</p><p className="text-xs text-slate-500">Not yet sent</p></div>
-        <div className="rounded-3xl border border-violet-200 bg-violet-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">Total value</p><p className="mt-2 text-xl font-semibold text-violet-800">{formatQuoteMoney(totalValue, 'USD')}</p><p className="text-xs text-violet-700">All active quotes</p></div>
-      </div>
+      {/* ── CONTENT ────────────────────────────────────── */}
+      <div style={{padding:'14px 24px 40px',display:'flex',flexDirection:'column',gap:'14px'}}>
 
-      {approvalQueueCount ? (
-        <section className="rounded-[26px] border border-amber-200 bg-amber-50 p-4 text-amber-900 shadow-sm">
-          <p className="font-semibold">{approvalQueueCount} quotes pending your approval — pricing override review required</p>
-          <p className="mt-1 text-sm leading-6">Review overrides, approve or reject, and keep the send gate blocked until approval is logged.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {firstApproval ? <Link href={`/quotes?quoteId=${firstApproval.id}`} className="rounded-2xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800">Review {firstApproval.quoteNumber ?? firstApproval.id.slice(0, 8)} ({firstApproval.companyName})</Link> : null}
-            {secondApproval ? <Link href={`/quotes?quoteId=${secondApproval.id}`} className="rounded-2xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">Review {secondApproval.quoteNumber ?? secondApproval.id.slice(0, 8)} ({secondApproval.companyName})</Link> : null}
-          </div>
-        </section>
-      ) : null}
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,.75fr)]">
-        <SectionCard eyebrow="Quote workspace" title="All quotes" description="Filter, search, and pick the quote that needs action.">
-          <div className="mb-3 flex justify-end"><Link href="/quotes?bulk=1" className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Bulk action</Link></div>
-          <div className="overflow-hidden rounded-2xl border border-slate-200">
-            <div className="hidden grid-cols-[36px_1.35fr_.8fr_.55fr_.8fr_.75fr_.75fr_.7fr] gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 lg:grid">
-              <span></span><span>Company / ref</span><span>Status</span><span>Version</span><span className="text-right">Total value</span><span>Validity</span><span>Owner</span><span className="text-right">Action</span>
-            </div>
-            <div className="divide-y divide-slate-200">
-              {filteredItems.length ? filteredItems.map((item) => {
-                const validity = getValidityLabel(item);
-                return (
-                  <Link key={item.id} href={`/quotes?quoteId=${item.id}&mode=${encodeURIComponent(filters.mode)}&q=${encodeURIComponent(filters.q)}&status=${encodeURIComponent(filters.status)}&company=${encodeURIComponent(filters.company)}&from=${encodeURIComponent(filters.from)}&to=${encodeURIComponent(filters.to)}`} className={`grid gap-3 px-4 py-4 text-sm transition hover:bg-slate-50 lg:grid-cols-[36px_1.35fr_.8fr_.55fr_.8fr_.75fr_.75fr_.7fr] ${selected?.id === item.id ? 'bg-brand-50' : item.status === 'accepted' ? 'bg-emerald-50/40' : 'bg-white'} ${item.status === 'pending_approval' ? 'border-l-4 border-amber-400' : validity.tone.includes('rose') ? 'border-l-4 border-rose-400' : ''}`}> 
-                    <span aria-hidden="true" className="mt-1 h-4 w-4 rounded border border-slate-300 bg-white"></span>
-                    <span><strong className="block text-slate-900">{item.companyName}</strong><span className="text-xs text-slate-500">{item.quoteNumber ?? item.id.slice(0, 8)} · {item.lineItems[0]?.productName ?? 'No product'}{item.lineItems.length > 1 ? ` + ${item.lineItems.length - 1}` : ''}</span><span className="mt-1 block text-[11px] font-semibold text-slate-400">Quote ID {item.quoteNumber ?? item.id.slice(0, 8)}</span></span>
-                    <span><span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${getQuoteStatusBadgeClasses(item.status as any)}`}>{labelizeStatus(item.status)}</span></span>
-                    <span className="text-xs font-semibold text-slate-700">v{item.totalVersions || 1}</span>
-                    <span className="text-right font-semibold text-slate-900">{formatQuoteMoney(item.subtotal, item.currency)}<span className="block text-[11px] font-semibold text-slate-500">{item.currency ?? 'USD'} · Quote</span></span>
-                    <span className={`text-xs font-semibold ${validity.tone}`}>{validity.label}</span>
-                    <span className="text-xs text-slate-600">{item.contactName ?? 'Owner not set'}</span>
-                    <span className="text-right"><span className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm">{getQuoteActionLabel(item)}</span></span>
-                  </Link>
-                );
-              }) : <div className="px-4 py-8 text-sm text-slate-500">No quotes match these filters.</div>}
+        {/* Approval banner */}
+        {approvalQueueCount>0 && (
+          <div style={{background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'12px',padding:'12px 16px'}}>
+            <div style={{fontSize:'12px',fontWeight:800,color:'#92400e',marginBottom:'4px'}}>{approvalQueueCount} quote{approvalQueueCount>1?'s':''} pending your approval — pricing override review required</div>
+            <div style={{fontSize:'11px',color:'#92400e',lineHeight:'1.55'}}>Review overrides, approve or reject, and keep the send gate blocked until approval is logged.</div>
+            <div style={{display:'flex',gap:'8px',marginTop:'10px'}}>
+              {firstApproval && <Link href={`/quotes?quoteId=${firstApproval.id}`} style={{padding:'7px 16px',borderRadius:'6px',background:'#059669',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Review {firstApproval.quoteNumber??firstApproval.id.slice(0,8)} ({firstApproval.companyName})</Link>}
+              {secondApproval && <Link href={`/quotes?quoteId=${secondApproval.id}`} style={{padding:'7px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',color:'#334155',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>Review {secondApproval.quoteNumber??secondApproval.id.slice(0,8)} ({secondApproval.companyName})</Link>}
             </div>
           </div>
-        </SectionCard>
+        )}
 
-        <aside className="space-y-4">
-          <SectionCard eyebrow="Quote detail" title={selected ? selected.companyName : 'No quote selected'} description="Line pricing, FX lock, override signals, and next actions stay visible here.">
-            {selected ? (
-              <div className="space-y-4 text-sm text-slate-600">
-                {selected.status === 'pending_approval' || selected.hasPriceOverride ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-                    <p className="font-semibold">Approval required — pricing override</p>
-                    <p className="mt-2 text-xs leading-5">One or more lines are manually priced. Approve or reject the override before this quote can be sent.</p>
-                    <div className="mt-3 flex gap-2">
-                      <Link href={withQuoteParam(selectedApprovalHref, selected.id, selected.leadId)} className="flex-1 rounded-2xl bg-amber-700 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-amber-800">Approve & allow send</Link>
-                      <Link href={withQuoteParam(selectedApprovalHref, selected.id, selected.leadId)} className="rounded-2xl border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100">Reject override</Link>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className={`rounded-2xl border p-4 ${nextStepToneClasses(selected.nextStep.tone)}`}>
-                  <div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${getQuoteStatusBadgeClasses(selected.status as any)}`}>{labelizeStatus(selected.status)}</span><span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700">{selected.quoteNumber ?? selected.id.slice(0, 8)}</span></div>
-                  <p className="mt-3 text-lg font-semibold text-slate-950">{selected.nextStep.label}</p>
-                  <p className="mt-2 leading-6">{selected.nextStep.detail}</p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Quote details</p>
-                  <dl className="mt-3 space-y-2 text-sm">
-                    <div className="flex justify-between gap-3"><dt className="text-slate-500">Company</dt><dd className="font-semibold text-slate-900">{selected.companyName}</dd></div>
-                    <div className="flex justify-between gap-3"><dt className="text-slate-500">Contact</dt><dd className="font-semibold text-slate-900">{selected.contactName ?? 'Not set'}</dd></div>
-                    <div className="flex justify-between gap-3"><dt className="text-slate-500">Currency</dt><dd className="font-semibold text-slate-900">{selected.currency ?? 'USD'}</dd></div>
-                    <div className="flex justify-between gap-3"><dt className="text-slate-500">Validity</dt><dd className={`font-semibold ${getValidityLabel(selected).tone}`}>{getValidityLabel(selected).label}</dd></div>
-                  </dl>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Subtotal</p><p className="mt-2 text-xl font-semibold text-slate-950">{formatQuoteMoney(selected.subtotal, selected.currency)}</p></div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Quote total</p><p className="mt-2 text-xl font-semibold text-slate-950">{formatQuoteMoney(selected.subtotal, selected.currency)}</p></div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Line items</p>
-                  <div className="mt-3 overflow-hidden rounded-2xl border border-slate-100">
-                    <div className="grid grid-cols-[1.2fr_.7fr_.7fr_.7fr] gap-2 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500"><span>Product</span><span className="text-right">Catalog</span><span className="text-right">Quoted</span><span className="text-right">Total</span></div>
-                    {selected.lineItems.length ? selected.lineItems.map((line) => (
-                      <div key={line.id} className="grid grid-cols-[1.2fr_.7fr_.7fr_.7fr] gap-2 border-t border-slate-100 px-3 py-3 text-xs">
-                        <div><p className="font-semibold text-slate-900">{line.productName}</p><p className="mt-1 text-slate-500">QTY {line.quantity}</p>{line.isPriceOverridden ? <span className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800">Price overridden</span> : null}</div>
-                        <div className="text-right text-slate-500">{line.catalogPriceAmount != null ? formatQuoteMoney(line.catalogPriceAmount, line.catalogPriceCurrency) : 'Missing'}</div>
-                        <div className={`text-right font-semibold ${line.isPriceOverridden ? 'text-amber-700' : 'text-slate-900'}`}>{formatQuoteMoney(line.unitPrice, line.currency)}</div>
-                        <div className="text-right font-semibold text-slate-900">{formatQuoteMoney(line.quantity * (line.unitPrice ?? 0), line.currency)}</div>
-                        {line.isPriceOverridden && line.overrideReason ? <p className="col-span-4 text-xs text-amber-800">Reason: {line.overrideReason}</p> : null}
-                      </div>
-                    )) : <p className="border-t border-slate-100 px-3 py-4 text-sm text-slate-500">No line items are attached to this quote yet.</p>}
+        {/* Quotes table card */}
+        <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',overflow:'hidden',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
+          <div style={{padding:'14px 18px',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div><div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff',marginBottom:'2px'}}>Quote workspace</div><div style={{fontSize:'14px',fontWeight:700,color:'#0f172a'}}>All quotes</div></div>
+            <Link href="/quotes?bulk=1" style={{padding:'4px 10px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'11px',fontWeight:700,color:'#475569',textDecoration:'none'}}>Bulk action</Link>
+          </div>
+          {/* Header */}
+          <div style={{display:'grid',gridTemplateColumns:'30px 1fr 120px 100px 110px 110px 90px 90px',gap:'8px',padding:'9px 18px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'9px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8'}}>
+            <div/><div>Company / ref</div><div>Status</div><div>Version</div><div style={{textAlign:'right'}}>Total value</div><div>Validity</div><div>Owner</div><div style={{textAlign:'right'}}>Action</div>
+          </div>
+          {/* Rows */}
+          {filteredItems.length===0 ? (
+            <div style={{padding:'32px',textAlign:'center',fontSize:'13px',color:'#64748b'}}>No quotes match these filters.</div>
+          ) : filteredItems.map(item => {
+            const validity = getValidityLabel(item);
+            const isPending = item.status==='pending_approval';
+            const isExpiring = validity.rose && item.status!=='expired';
+            const isAccepted = item.status==='accepted'||item.hasAcceptedContract;
+            const isSelected = selected?.id===item.id;
+            const borderLeft = isPending?'3px solid #d97706':isExpiring?'3px solid #dc2626':undefined;
+            const actionLabel = getQuoteActionLabel(item);
+            const actionPrimary = isPending||isAccepted||item.status==='approved';
+            const statusColors: Record<string,{bg:string,border:string,color:string}> = {
+              draft:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
+              internal_review:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
+              pending_approval:{bg:'#fffbeb',border:'#fde68a',color:'#92400e'},
+              approved:{bg:'#ecfdf5',border:'#a7f3d0',color:'#059669'},
+              sent:{bg:'#fffbeb',border:'#fde68a',color:'#92400e'},
+              revised:{bg:'#f0f9ff',border:'#bae6fd',color:'#0284c7'},
+              accepted:{bg:'#ede9fe',border:'#c4b5fd',color:'#5b21b6'},
+              rejected:{bg:'#fff1f2',border:'#fecaca',color:'#dc2626'},
+              expired:{bg:'#f1f5f9',border:'#e2e8f0',color:'#64748b'},
+            };
+            const sc = statusColors[item.status]??statusColors.draft;
+            return (
+              <Link key={item.id} href={`/quotes?quoteId=${item.id}&mode=${encodeURIComponent(filters.mode)}&q=${encodeURIComponent(filters.q)}&status=${encodeURIComponent(filters.status)}`}
+                style={{display:'grid',gridTemplateColumns:'30px 1fr 120px 100px 110px 110px 90px 90px',gap:'8px',padding:'12px 18px',borderBottom:'1px solid #e2e8f0',alignItems:'center',cursor:'pointer',textDecoration:'none',background:isSelected?'rgba(12,127,255,.04)':isAccepted?'rgba(5,150,105,.02)':'white',borderLeft,transition:'background .1s'}}>
+                <div><input type="checkbox" style={{width:'16px',height:'16px',borderRadius:'3px'}} onClick={e=>e.stopPropagation()} onChange={()=>{}} checked={false}/></div>
+                <div>
+                  <div style={{fontSize:'12px',fontWeight:700,color:'#1e293b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{item.companyName}</div>
+                  <div style={{fontSize:'10px',color:'#94a3b8',fontFamily:'monospace',marginTop:'1px'}}>{item.quoteNumber??item.id.slice(0,8)} · {item.lineItems[0]?.productName??'No product'}{item.lineItems.length>1?` + ${item.lineItems.length-1}`:''}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:'4px',flexWrap:'wrap',marginTop:'4px'}}>
+                    {Array.from({length:Math.min(item.totalVersions||1,3)},(_,idx)=>item.totalVersions-idx).map((v,idx)=>(
+                      <span key={v} style={{fontSize:'9px',fontWeight:700,padding:'2px 8px',borderRadius:'999px',background:idx===0?(isAccepted?'#ecfdf5':'#0c7fff'):undefined,border:idx===0?'1px solid '+(isAccepted?'#a7f3d0':'#0c7fff'):'1px solid #e2e8f0',color:idx===0?(isAccepted?'#059669':'white'):'#475569'}}>{`v${v}${idx===0?' current':''}`}</span>
+                    ))}
                   </div>
                 </div>
+                <div><span style={{display:'inline-flex',alignItems:'center',padding:'2px 8px',borderRadius:'999px',fontSize:'9px',fontWeight:700,border:'1px solid',background:sc.bg,borderColor:sc.border,color:sc.color,whiteSpace:'nowrap'}}>{labelizeStatus(item.status)}</span></div>
+                <div style={{fontSize:'11px',fontWeight:600,color:'#334155'}}>v{item.totalVersions||1}</div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontSize:'12px',fontWeight:800,color:'#1e293b'}}>{formatQuoteMoney(item.subtotal,item.currency)}</div>
+                  <div style={{fontSize:'10px',color:'#94a3b8'}}>{item.currency??'USD'} · Quote</div>
+                </div>
+                <div style={{fontSize:'11px',fontWeight:validity.rose||validity.amber?700:400,color:validity.rose?'#dc2626':validity.amber?'#d97706':validity.emerald?'#059669':'#64748b'}}>{validity.label}</div>
+                <div style={{fontSize:'11px',color:'#475569'}}>{item.contactName??'—'}</div>
+                <div style={{textAlign:'right'}}>
+                  <span style={{padding:'4px 10px',borderRadius:'6px',border:'1px solid',fontSize:'10px',fontWeight:700,background:actionPrimary?'#0b2e4a':'white',borderColor:actionPrimary?'#0b2e4a':'#e2e8f0',color:actionPrimary?'white':'#475569'}}>{actionLabel}</span>
+                </div>
+              </Link>
+            );
+          })}
+          {filteredItems.length>0&&<div style={{textAlign:'center',padding:'14px',color:'#94a3b8',fontSize:'12px',fontWeight:600}}>+ {Math.max(0,viewModel.items.length-filteredItems.length)} more quotes · <span style={{color:'#0c7fff',cursor:'pointer'}}>Load all</span></div>}
+        </div>
 
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">FX and override context</p>
-                  {selected.fxLock ? (
-                    <div className="mt-3 rounded-2xl border border-sky-200 bg-sky-50 p-3 text-sky-900">
-                      <p className="font-semibold">Converted from {selected.fxLock.sourceCurrency}</p>
-                      <p className="mt-1">Rate: {selected.fxLock.fxRate} {selected.fxLock.quoteCurrency} per {selected.fxLock.sourceCurrency}</p>
-                      <p className="mt-1">FX lock valid until {formatDateTime(selected.fxLock.fxValidUntil)}</p>
-                    </div>
-                  ) : <p className="mt-3 rounded-2xl bg-slate-50 p-3 text-slate-600">No FX conversion is needed for this quote, or the quote is still missing a locked FX snapshot.</p>}
-                  {selected.hasPriceOverride ? <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 font-semibold text-amber-900">Price overridden — override reason remains required before governed send.</p> : <p className="mt-3 rounded-2xl bg-emerald-50 p-3 font-semibold text-emerald-800">No manual price override on current lines.</p>}
-                </div>
-
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <Link href={selected.status === 'approved' ? selectedSendHref : selected.nextStep.href} className="inline-flex justify-center rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">{selected.status === 'approved' ? 'Send Quote' : selected.nextStep.label}</Link>
-                  <Link href={selectedApprovalHref} className="inline-flex justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Approval Status</Link>
-                  <Link href={buildLeadQuoteHref(selected.leadId, selected.id, selectedMode, { handoff: 'quote-revise' })} className="inline-flex justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Revise</Link>
-                  <Link href={selectedLeadHref} className="inline-flex justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Duplicate</Link>
-                  <Link href={selectedOrderHref} className="inline-flex justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Create order</Link>
-                  <Link href="/quotes?export=pdf" className="inline-flex justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Export PDF</Link>
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-                  <span>Approved: {selected.latestApprovedAt ? formatDateTime(selected.latestApprovedAt) : 'not yet'}</span>
-                  <span>Sent: {selected.latestSentAt ? formatDateTime(selected.latestSentAt) : 'not yet'}</span>
-                </div>
+        {/* Selected detail panel */}
+        {selected&&(
+          <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',overflow:'hidden',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
+            <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px'}}>
+              <div>
+                <div style={{fontSize:'17px',fontWeight:800,color:'#0f172a',marginBottom:'3px'}}>{selected.companyName}</div>
+                <div style={{fontSize:'11px',color:'#64748b'}}>{selected.quoteNumber??selected.id.slice(0,8)} · v{selected.totalVersions||1} · {labelizeStatus(selected.status)}</div>
               </div>
-            ) : <p className="text-sm text-slate-500">Choose a quote from the list to review detail.</p>}
-          </SectionCard>
-
-          <SectionCard eyebrow="Quote history" title="Status and version timeline" description="Previous versions stay visible while revisions move forward deliberately.">
-            <QuoteHistoryList items={selectedHistory} />
-          </SectionCard>
-        </aside>
+              <div style={{display:'flex',gap:'8px'}}>
+                <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={{padding:'9px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',textDecoration:'none'}}>Edit quote</Link>
+                <Link href="/quotes?export=pdf" style={{padding:'9px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',textDecoration:'none'}}>Export PDF</Link>
+                <Link href={selected.status==='accepted'||selected.hasAcceptedContract?selectedOrderHref:selectedApprovalHref} style={{flex:1,padding:'9px 16px',borderRadius:'6px',background:'#0b2e4a',color:'white',border:'none',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>
+                  {selected.status==='accepted'||selected.hasAcceptedContract?'Create order':selected.status==='pending_approval'?'Approve & allow send':'Open lead'}
+                </Link>
+              </div>
+            </div>
+            <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:'12px'}}>
+              {/* Approval alert */}
+              {(selected.status==='pending_approval'||selected.hasPriceOverride)&&(
+                <div style={{padding:'12px 14px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'12px'}}>
+                  <div style={{fontSize:'12px',fontWeight:800,color:'#92400e',marginBottom:'4px'}}>Approval required — pricing override</div>
+                  <div style={{fontSize:'11px',color:'#92400e',marginBottom:'10px'}}>One or more lines have manually overridden pricing. Approve or reject before sending.</div>
+                  <div style={{display:'flex',gap:'8px'}}>
+                    <Link href={selectedApprovalHref} style={{padding:'7px 16px',borderRadius:'6px',background:'#059669',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none',flex:1,textAlign:'center'}}>Approve & allow send</Link>
+                    <Link href={selectedApprovalHref} style={{padding:'7px 14px',borderRadius:'6px',background:'white',border:'1px solid #fecaca',color:'#dc2626',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Reject override</Link>
+                  </div>
+                </div>
+              )}
+              {/* Details */}
+              <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}>
+                <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>Quote details</div>
+                {[['Company',selected.companyName],['Contact',selected.contactName??'Not set'],['Currency',selected.currency??'USD'],['Subtotal',formatQuoteMoney(selected.subtotal,selected.currency)]].map(([k,v])=>(
+                  <div key={k as string} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',padding:'3px 0',borderBottom:'1px solid rgba(0,0,0,.03)'}}>
+                    <span style={{color:'#64748b'}}>{k}</span><span style={{fontWeight:700,color:'#1e293b'}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Line items */}
+              {selected.lineItems.length>0&&(
+                <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}>
+                  <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>Line items</div>
+                  <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
+                    <thead><tr style={{background:'#f8fafc'}}>
+                      <th style={{textAlign:'left',padding:'5px 8px',fontSize:'9px',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#94a3b8',borderBottom:'1px solid #e2e8f0'}}>Product</th>
+                      <th style={{textAlign:'right',padding:'5px 8px',fontSize:'9px',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#94a3b8',borderBottom:'1px solid #e2e8f0'}}>Catalog</th>
+                      <th style={{textAlign:'right',padding:'5px 8px',fontSize:'9px',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#94a3b8',borderBottom:'1px solid #e2e8f0'}}>Quoted</th>
+                      <th style={{textAlign:'right',padding:'5px 8px',fontSize:'9px',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#94a3b8',borderBottom:'1px solid #e2e8f0'}}>Total</th>
+                    </tr></thead>
+                    <tbody>
+                      {selected.lineItems.map(line=>(
+                        <tr key={line.id}>
+                          <td style={{padding:'8px',borderBottom:'1px solid #e2e8f0'}}>
+                            <div style={{fontWeight:700,color:'#1e293b'}}>{line.productName}</div>
+                            <div style={{fontSize:'10px',color:'#94a3b8'}}>QTY {line.quantity}</div>
+                            {line.isPriceOverridden&&<span style={{fontSize:'9px',fontWeight:700,padding:'1px 5px',borderRadius:'4px',background:'#fef3c7',color:'#92400e'}}>-{Math.round(Math.abs(((line.unitPrice??0)-(line.catalogPriceAmount??0))/(line.catalogPriceAmount||1)*100))}% override</span>}
+                          </td>
+                          <td style={{textAlign:'right',padding:'8px',fontSize:'11px',color:'#64748b',borderBottom:'1px solid #e2e8f0'}}>{line.catalogPriceAmount!=null?formatQuoteMoney(line.catalogPriceAmount,line.catalogPriceCurrency):'—'}</td>
+                          <td style={{textAlign:'right',padding:'8px',fontSize:'11px',fontWeight:700,color:line.isPriceOverridden?'#d97706':'#1e293b',borderBottom:'1px solid #e2e8f0'}}>{formatQuoteMoney(line.unitPrice,line.currency)}</td>
+                          <td style={{textAlign:'right',padding:'8px',fontSize:'11px',fontWeight:700,borderBottom:'1px solid #e2e8f0'}}>{formatQuoteMoney(line.quantity*(line.unitPrice??0),line.currency)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',fontSize:'13px',fontWeight:800,borderTop:'1px solid #e2e8f0',marginTop:'6px'}}>
+                    <span style={{color:'#1e293b'}}>Quote total</span><span style={{color:'#0b2e4a'}}>{formatQuoteMoney(selected.subtotal,selected.currency)}</span>
+                  </div>
+                </div>
+              )}
+              {/* History */}
+              {selectedHistory.length>0&&(
+                <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}>
+                  <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>Quote history</div>
+                  <QuoteHistoryList items={selectedHistory}/>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

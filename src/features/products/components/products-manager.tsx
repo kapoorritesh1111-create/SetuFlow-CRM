@@ -610,118 +610,88 @@ export function ProductsManager({
     [filteredProducts],
   );
 
+  const totalActive = products.filter(p => p.is_active).length;
+  const totalInactive = products.filter(p => !p.is_active).length;
+  const totalGaps = filteredSummary.gaps;
+  const totalCovered = filteredSummary.priced;
+  const marketsCount = markets.filter(m => m.isActive).length || markets.length;
+
   return (
-    <div className="space-y-6">
-      {message ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-soft">
-          {message}
+    <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
+
+      {/* ── TOPBAR ── */}
+      <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
+        <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'5px 12px',borderRadius:'6px',background:'rgba(11,46,74,.06)',border:'1px solid rgba(11,46,74,.12)'}}>
+            <div style={{width:'22px',height:'22px',borderRadius:'4px',background:'linear-gradient(135deg,#0b2e4a,#0c7fff)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'9px',fontWeight:800,color:'white'}}>BO</div>
+            <div><div style={{fontSize:'10px',fontWeight:800,color:'#0b2e4a'}}>Blue Orbit Int&apos;l</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Flow CRM</div></div>
+          </div>
+          <div style={{width:'1px',height:'24px',background:'#e2e8f0'}}/>
+          <div><div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#0c7fff'}}>Catalog</div><div style={{fontSize:'16px',fontWeight:700,color:'#1e293b',letterSpacing:'-.3px'}}>Product Catalog</div></div>
         </div>
-      ) : null}
+        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+          {canManageCatalog&&(
+            <button type="button" onClick={openAddDrawer} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',border:'none',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>＋ Add product</button>
+          )}
+          {canManageCatalog&&(
+            <button type="button" onClick={()=>openDistributionDrawer(pricedFilteredProductIds)} disabled={!pricedFilteredProductIds.length} style={{padding:'7px 12px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:600,color:'#334155',cursor:'pointer'}}>Share pricing</button>
+          )}
+        </div>
+      </header>
 
-      <WorkspaceToolbar
-        searchSlot={
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <ToolbarField label="Search">
-              <ToolbarSearchInput
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
-                placeholder="Search by product, SKU, supplier, or category"
-                aria-label="Search products"
-              />
-            </ToolbarField>
-            <ToolbarField label="Category">
-              <ToolbarSelect
-                value={categoryFilter}
-                onChange={(event) => setCategoryFilter(event.target.value)}
-                aria-label="Filter products by category"
-              >
-                <option value="all">All categories</option>
-                {categoryOptions.map(({ category }) => (
-                  <option key={category.id} value={category.id}>
-                    {category.pathLabel}
-                  </option>
-                ))}
-              </ToolbarSelect>
-            </ToolbarField>
-            <ToolbarField label="Status">
-              <ToolbarSelect
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
-                aria-label="Filter products by status"
-              >
-                <option value="all">All statuses</option>
-                <option value="active">Active only</option>
-                <option value="inactive">Inactive only</option>
-              </ToolbarSelect>
-            </ToolbarField>
-            <ToolbarField label="Pricing coverage">
-              <ToolbarSelect
-                value={pricingFilter}
-                onChange={(event) => setPricingFilter(event.target.value as 'all' | 'priced' | 'unpriced')}
-                aria-label="Filter products by pricing coverage"
-              >
-                <option value="all">All products</option>
-                <option value="priced">With catalog price</option>
-                <option value="unpriced">With baseline gap</option>
-              </ToolbarSelect>
-            </ToolbarField>
-          </div>
-        }
-        actionSlot={
-          <>
-            <div className="inline-flex rounded-2xl border border-slate-200 bg-white p-1 shadow-soft">
-              {([
-                ['products', 'Product setup'],
-                ['catalog', 'Baseline catalog'],
-              ] as Array<[WorkspaceMode, string]>).map(([mode, label]) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setWorkspaceMode(mode)}
-                  className={`rounded-xl px-3 py-2 text-sm font-medium transition ${workspaceMode === mode ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <ToolbarActionButton
-              type="button"
-              onClick={() => openDistributionDrawer(pricedFilteredProductIds)}
-              disabled={!pricedFilteredProductIds.length}
-            >
-              Share pricing
-            </ToolbarActionButton>
-            {workspaceMode === 'catalog' ? (
-              <ToolbarActionButton
-                type="button"
-                onClick={() => selectedProduct && openCatalogPricingDrawer(selectedProduct)}
-                disabled={!selectedProduct}
-              >
-                Add baseline row
-              </ToolbarActionButton>
-            ) : (
-              <ToolbarActionButton type="button" onClick={openAddDrawer}>
-                Add product
-              </ToolbarActionButton>
-            )}
-          </>
-        }
-        metaSlot={
-          <div className="flex flex-wrap items-center gap-2">
-            <ToolbarStat label={`${Math.min(visibleCount, filteredSummary.total)} of ${filteredSummary.total} products shown`} />
-            <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
-              <span>Batch</span>
-              <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value) as (typeof PRODUCT_PAGE_SIZE_OPTIONS)[number])} className="bg-transparent text-xs text-slate-700 outline-none">
-                {PRODUCT_PAGE_SIZE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-              </select>
-            </label>
-            <ToolbarStat label={`${filteredSummary.priced} baseline-covered`} tone="info" />
-            <ToolbarStat label={`${filteredSummary.gaps} baseline gaps`} tone="warning" />
-            <ToolbarStat label={`${workspaceSummary.marketsCovered}/${markets.filter((market) => market.isActive).length || markets.length} active markets covered`} />
-          </div>
-        }
-      />
+      {/* ── VIEW TABS ── */}
+      <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',alignItems:'center',gap:0}}>
+        {([['products','Product setup'],['catalog','Baseline catalog']] as Array<[WorkspaceMode,string]>).map(([mode,label])=>(
+          <button key={mode} type="button" onClick={()=>setWorkspaceMode(mode)} style={{padding:'11px 16px',fontSize:'12px',fontWeight:700,color:workspaceMode===mode?'#0b2e4a':'#94a3b8',cursor:'pointer',borderTop:'none',borderLeft:'none',borderRight:'none',borderBottom:workspaceMode===mode?'2px solid #0c7fff':'2px solid transparent',marginBottom:'-1px',display:'flex',alignItems:'center',gap:'6px',background:'none',transition:'color .1s'}}>
+            {label}
+            <span style={{background:workspaceMode===mode?'#059669':'#f1f5f9',borderRadius:'999px',padding:'1px 6px',fontSize:'9px',fontWeight:800,color:workspaceMode===mode?'white':'#475569'}}>{mode==='products'?filteredSummary.total:filteredSummary.priced}</span>
+          </button>
+        ))}
+      </div>
 
+      {/* ── FILTER BAR ── */}
+      <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'10px 24px',display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
+        <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8'}}>Filter:</span>
+        <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 10px',border:'1px solid #e2e8f0',borderRadius:'6px',background:'white',height:'32px',minWidth:'220px'}}>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#94a3b8" strokeWidth="1.8"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>
+          <input value={searchValue} onChange={e=>setSearchValue(e.target.value)} placeholder="Search by product, SKU, supplier, or category" style={{border:'none',outline:'none',fontSize:'11px',color:'#1e293b',background:'transparent',width:'100%'}}/>
+        </div>
+        <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'130px'}}>
+          <option value="all">All categories</option>
+          {categoryOptions.map(({category})=><option key={category.id} value={category.id}>{category.pathLabel}</option>)}
+        </select>
+        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value as 'all'|'active'|'inactive')} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'110px'}}>
+          <option value="all">All statuses</option><option value="active">Active only</option><option value="inactive">Inactive only</option>
+        </select>
+        <select value={pricingFilter} onChange={e=>setPricingFilter(e.target.value as 'all'|'priced'|'unpriced')} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'140px'}}>
+          <option value="all">All products</option><option value="priced">With catalog price</option><option value="unpriced">With baseline gap</option>
+        </select>
+        {totalGaps>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>⚠ {totalGaps} baseline gaps</span>}
+        <span style={{marginLeft:'auto',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{Math.min(visibleCount,filteredSummary.total)} of {filteredSummary.total} products · {marketsCount} markets</span>
+      </div>
+
+      {/* ── STATS STRIP ── */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>
+        {[
+          {label:'Total products',value:filteredSummary.total,meta:'In catalog',accent:'#0c7fff'},
+          {label:'Active',value:totalActive,meta:'Visible to buyers',accent:'#059669'},
+          {label:'Baseline covered',value:totalCovered,meta:'With catalog price',accent:'#059669'},
+          {label:'Baseline gaps',value:totalGaps,meta:'Missing price coverage',accent:totalGaps>0?'#d97706':'#cbd5e1'},
+          {label:'Categories',value:categoryOptions.length,meta:'Product categories',accent:'#7c3aed'},
+          {label:'Markets covered',value:`${workspaceSummary.marketsCovered}/${marketsCount}`,meta:'Active market coverage',accent:'#0c7fff'},
+        ].map(sc=>(
+          <div key={sc.label} style={{position:'relative',overflow:'hidden',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white',padding:'13px 15px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer'}}>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:sc.accent,borderRadius:'16px 16px 0 0'}}/>
+            <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'7px'}}>{sc.label}</div>
+            <div style={{fontSize:'24px',fontWeight:800,letterSpacing:'-.03em',color:'#0f172a',lineHeight:1}}>{sc.value}</div>
+            <div style={{fontSize:'10px',color:'#94a3b8',marginTop:'4px',fontWeight:600}}>{sc.meta}</div>
+          </div>
+        ))}
+      </div>
+
+      {message&&<div style={{margin:'14px 24px 0',padding:'12px 16px',borderRadius:'12px',border:'1px solid #a7f3d0',background:'#ecfdf5',fontSize:'13px',color:'#065f46'}}>{message}</div>}
+
+      <div style={{padding:"14px 24px 40px",display:"flex",flexDirection:"column",gap:"14px"}}>
       <div className="space-y-4">
         {workspaceMode === 'catalog' && categoryPricingSummary.length ? (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -1583,6 +1553,7 @@ export function ProductsManager({
           </div>
         </form>
       </RightDrawer>
+      </div>
     </div>
   );
 }

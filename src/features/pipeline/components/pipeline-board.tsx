@@ -657,300 +657,247 @@ export function PipelineBoard({
   const showWorkspaceEmptyState = !showStageConfigurationState && isWorkspaceEmpty && !search && activeFilterCount === 0;
   const showPipelineBoard = !showStageConfigurationState && !showWorkspaceEmptyState;
 
+
+  // ── NORTHSTAR RENDER ─────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
-      <WorkspaceWorkflowShell
-        title="Pipeline / Risks"
-        description="Move buyers and suppliers through the NorthStar stage board with blockers, commercial readiness, quote handoff, and order execution context visible before every stage move."
-        mode={workspaceMode}
-        onModeChange={(nextMode) => {
-          setWorkspaceMode(nextMode);
-          setLeadTypeFilter(workspaceModeToLeadJourney(nextMode));
-        }}
-        todayState={todayState}
-        onTodayFilterChange={setTodayFilter}
-        showAllOpen={false}
-        todayCompact
-        showHeader={false}
-        utilities={(
-          <>
-            <div className="min-w-0 sm:min-w-[18rem] lg:min-w-[24rem]">
-              <ToolbarSearchInput
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search company, contact, country"
-              />
+    <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
+
+      {/* TOPBAR */}
+      <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
+        <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'5px 12px',borderRadius:'6px',background:'rgba(11,46,74,.06)',border:'1px solid rgba(11,46,74,.12)'}}>
+            <div style={{width:'22px',height:'22px',borderRadius:'4px',background:'linear-gradient(135deg,#0b2e4a,#0c7fff)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'9px',fontWeight:800,color:'white'}}>BO</div>
+            <div><div style={{fontSize:'10px',fontWeight:800,color:'#0b2e4a'}}>Blue Orbit Int&apos;l</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Flow CRM</div></div>
+          </div>
+          <div style={{width:'1px',height:'24px',background:'#e2e8f0'}}/>
+          <div><div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#0c7fff'}}>Pipeline / Risks</div><div style={{fontSize:'16px',fontWeight:700,color:'#1e293b',letterSpacing:'-.3px'}}>Kanban Board</div></div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+          <div style={{display:'flex',background:'#f1f5f9',borderRadius:'6px',padding:'3px',border:'1px solid #e2e8f0',gap:'2px'}}>
+            {([['all','All'],['buyers','Buyers'],['suppliers','Suppliers']] as Array<[string,string]>).map(([mode,label])=>(
+              <button key={mode} type="button" onClick={()=>{setWorkspaceMode(mode as any);setLeadTypeFilter(workspaceModeToLeadJourney(mode as any));}} style={{padding:'4px 12px',borderRadius:'6px',fontSize:'11px',fontWeight:600,cursor:'pointer',border:'none',background:workspaceMode===mode?'#0b2e4a':'transparent',color:workspaceMode===mode?'white':'#64748b',transition:'all .15s'}}>{label}</button>
+            ))}
+          </div>
+          <button type="button" style={{display:'flex',alignItems:'center',gap:'7px',padding:'7px 14px',borderRadius:'6px',background:'linear-gradient(135deg,#0b2e4a,#0c7fff 160%)',color:'white',border:'none',fontSize:'12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px rgba(12,127,255,.35)'}} onClick={()=>window.location.href=PRODUCT_ROUTES.app.leads+'?contact-exchange=1'}>Share my vCard</button>
+          <a href={PRODUCT_ROUTES.app.leads} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>＋ Quick Lead</a>
+        </div>
+      </header>
+
+      {/* PAGE NAV TABS */}
+      <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',alignItems:'center',gap:0}}>
+        <div style={{padding:'12px 16px',fontSize:'12px',fontWeight:700,color:'#0b2e4a',cursor:'pointer',borderBottom:'2px solid #0c7fff',marginBottom:'-1px',display:'flex',alignItems:'center',gap:'6px',whiteSpace:'nowrap'}}>
+          ⊕ Kanban Board <span style={{background:'#0c7fff',color:'white',borderRadius:'999px',padding:'1px 6px',fontSize:'9px',fontWeight:800}}>{filteredLeads.length}</span>
+        </div>
+        <a href={PRODUCT_ROUTES.app.leads} style={{padding:'12px 16px',fontSize:'12px',fontWeight:700,color:'#94a3b8',cursor:'pointer',borderBottom:'2px solid transparent',textDecoration:'none',display:'flex',alignItems:'center',gap:'6px',whiteSpace:'nowrap',marginBottom:'-1px'}}>
+          📋 Follow-up Queue {overdueCount>0&&<span style={{background:'#f43f5e',color:'white',borderRadius:'999px',padding:'1px 6px',fontSize:'9px',fontWeight:800}}>{overdueCount}</span>}
+        </a>
+        <a href={PRODUCT_ROUTES.app.dashboard} style={{padding:'12px 16px',fontSize:'12px',fontWeight:700,color:'#94a3b8',cursor:'pointer',borderBottom:'2px solid transparent',textDecoration:'none',display:'flex',alignItems:'center',gap:'6px',whiteSpace:'nowrap',marginBottom:'-1px'}}>⊞ Dashboard →</a>
+      </div>
+
+      {/* FILTER BAR */}
+      <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'10px 24px',display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
+        <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginRight:'4px'}}>Filter:</span>
+        <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 10px',border:'1px solid #e2e8f0',borderRadius:'6px',background:'white',height:'32px',minWidth:'180px'}}>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#94a3b8" strokeWidth="1.8"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search company, contact, country…" style={{border:'none',outline:'none',fontSize:'11px',color:'#1e293b',background:'transparent',width:'100%'}}/>
+        </div>
+        <select value={followUpFilter} onChange={e=>setFollowUpFilter(e.target.value)} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'130px'}}>
+          <option value="">All timing</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="unscheduled">Unscheduled</option>
+        </select>
+        <select value={ownerFilter} onChange={e=>setOwnerFilter(e.target.value)} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'120px'}}>
+          <option value="">All owners</option>{profiles.map(p=><option key={p.id} value={p.id}>{p.full_name??p.username??'Unassigned'}</option>)}
+        </select>
+        <select value={productFilter} onChange={e=>setProductFilter(e.target.value)} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'130px'}}>
+          <option value="">All products</option>{productCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select value={marketFilter} onChange={e=>setMarketFilter(e.target.value)} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'120px'}}>
+          <option value="">All markets</option>{markets.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+        {overdueCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#991b1b',cursor:'pointer'}}>⚠ {overdueCount} overdue <span>×</span></span>}
+        {todayCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>📅 {todayCount} due today <span>×</span></span>}
+        {activeFilterCount>0&&<button type="button" onClick={resetFilters} style={{fontSize:'10px',fontWeight:700,padding:'3px 10px',borderRadius:'999px',border:'1px solid #e2e8f0',background:'white',color:'#64748b',cursor:'pointer'}}>Reset</button>}
+        <span style={{marginLeft:'auto',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{filteredLeads.length} leads · {filteredStageGroups.length} stages · {valueCurrency} {Math.round(totalPipelineValue).toLocaleString()} pipeline</span>
+      </div>
+
+      {/* STATS STRIP */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>
+        {[
+          {label:'Overdue follow-ups',value:overdueCount,meta:'Action required',accent:'#e11d48'},
+          {label:'Due today',value:todayCount,meta:'Follow up today',accent:'#d97706'},
+          {label:'Blocked records',value:blockedRecordCount,meta:'Stage move blocked',accent:'#7c3aed'},
+          {label:'Healthy cards',value:Math.max(0,filteredLeads.length-overdueCount-blockedRecordCount),meta:'No active blockers',accent:'#059669'},
+          {label:'Pipeline value',value:`${valueCurrency} ${Math.round(totalPipelineValue/1000)}K`,meta:'Across all stages',accent:'#0c7fff'},
+          {label:'Active stages',value:filteredStageGroups.length,meta:'Kanban lanes',accent:'#cbd5e1'},
+        ].map(sc=>(
+          <div key={sc.label} style={{position:'relative',overflow:'hidden',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white',padding:'14px 16px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer',transition:'box-shadow .12s'}}>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:sc.accent,borderRadius:'16px 16px 0 0'}}/>
+            <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>{sc.label}</div>
+            <div style={{fontSize:'26px',fontWeight:800,letterSpacing:'-.04em',color:'#0f172a',lineHeight:1}}>{sc.value}</div>
+            <div style={{fontSize:'10px',fontWeight:600,color:'#94a3b8',marginTop:'5px'}}>{sc.meta}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* STATE / EMPTY MESSAGES */}
+      {message&&<div style={{margin:'14px 24px 0',padding:'12px 16px',borderRadius:'12px',border:'1px solid #a7f3d0',background:'#ecfdf5',fontSize:'13px',color:'#065f46'}}>{message}</div>}
+
+      {showStageConfigurationState&&(
+        <div style={{margin:'14px 24px',padding:'32px',textAlign:'center',background:'white',borderRadius:'22px',border:'1px solid #e2e8f0'}}>
+          <p style={{fontSize:'16px',fontWeight:700,color:'#1e293b',marginBottom:'8px'}}>{isStageConfigurationEmpty?'No pipeline stages configured yet':'No stage lanes match this mode'}</p>
+          <a href={canManageLeads?'/settings/lists':PRODUCT_ROUTES.app.leads} style={{display:'inline-block',padding:'9px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>{canManageLeads?'Review pipeline settings':'Open leads'}</a>
+        </div>
+      )}
+
+      {showWorkspaceEmptyState&&(
+        <div style={{margin:'14px 24px',padding:'32px',textAlign:'center',background:'white',borderRadius:'22px',border:'1px solid #e2e8f0'}}>
+          <p style={{fontSize:'16px',fontWeight:700,color:'#1e293b',marginBottom:'8px'}}>No leads in this pipeline yet</p>
+          <a href={PRODUCT_ROUTES.app.leads} style={{display:'inline-block',padding:'9px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>Open leads workspace</a>
+        </div>
+      )}
+
+      {/* FILTERS PANEL */}
+      {showPipelineBoard&&filtersOpen&&(
+        <div style={{margin:'0 24px',padding:'16px',background:'white',borderRadius:'16px',border:'1px solid #e2e8f0',marginTop:'14px'}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'12px'}}>
+            <div>
+              <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Follow-up</div>
+              <select value={followUpFilter} onChange={e=>setFollowUpFilter(e.target.value)} style={{width:'100%',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'0 10px',height:'36px',fontSize:'12px'}}>
+                <option value="">All</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="unscheduled">Unscheduled</option>
+              </select>
             </div>
-            <ToolbarActionButton type="button" onClick={() => setFiltersOpen((current) => !current)} className="min-h-11 rounded-[1rem] px-4 py-2">
-              {filtersOpen ? 'Hide filters' : activeFilterCount ? `Filters (${activeFilterCount})` : 'Filters'}
-            </ToolbarActionButton>
-          </>
-        )}
-      />
-
-      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-950" aria-label="NorthStar pipeline command header">
-        <div className="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-200">Pipeline / Risks</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">Kanban Board</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-200">NorthStar alignment: lane work stays stage-led, while quote readiness, order handoff, owner accountability, and follow-up pressure stay visible in one operator workspace.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <a href={PRODUCT_ROUTES.app.leads} className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-white px-4 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100">＋ Quick Lead</a>
-            <button type="button" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/20 px-4 text-sm font-semibold text-white transition hover:bg-white/10">Follow-up Queue</button>
-            <button type="button" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/20 px-4 text-sm font-semibold text-white transition hover:bg-white/10">Dashboard →</button>
-          </div>
-        </div>
-        <div className="grid gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 lg:grid-cols-[1fr_auto]">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{pipelineModeLabel}</span>
-            <span className={cn('rounded-full border px-3 py-1 text-xs font-semibold', overdueCount ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700')}>{overdueCount ? String(overdueCount) + ' overdue follow-ups' : 'No overdue follow-ups'}</span>
-            <span className={cn('rounded-full border px-3 py-1 text-xs font-semibold', blockedRecordCount ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>{blockedRecordCount} move blockers</span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">{filteredStageGroups.length} active lanes</span>
-          </div>
-          <div className="flex flex-wrap gap-2 lg:justify-end">
-            <a href={PRODUCT_ROUTES.app.quotes} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">Open quotes</a>
-            <a href={PRODUCT_ROUTES.app.orders} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 px-3 text-xs font-semibold text-white hover:bg-slate-800">Create order</a>
-          </div>
-        </div>
-        <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5">
-          <ToolbarStat label="Visible cards" value={String(filteredLeads.length)} tone="default" />
-          <ToolbarStat label="Pipeline value" value={valueCurrency + ' ' + Math.round(totalPipelineValue).toLocaleString()} tone="default" />
-          <ToolbarStat label="Blocked" value={String(blockedRecordCount)} tone={blockedRecordCount ? 'danger' : 'default'} />
-          <ToolbarStat label="Due today" value={String(todayCount)} tone={todayCount ? 'warning' : 'default'} />
-          <ToolbarStat label="At risk" value={String(atRiskCount)} tone={atRiskCount ? 'warning' : 'default'} />
-        </div>
-      </section>
-
-      <section className="sticky top-[73px] z-20 space-y-3">
-        <div className={cn('grid gap-3 rounded-[1.4rem] border p-4 shadow-soft lg:grid-cols-[0.9fr_1.1fr_auto]', workspacePanelClass)}>
-          <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Where am I</p>
-            <p className="mt-2 text-base font-semibold text-slate-900">Pipeline rescue board</p>
-            <p className="mt-1 text-sm text-slate-600">Work one stage move at a time with blockers visible before you drag anything.</p>
-          </div>
-          <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">What is blocking me</p>
-            <p className="mt-2 text-base font-semibold text-slate-900">{overdueCount || atRiskCount ? `${overdueCount} overdue, ${atRiskCount} at risk` : 'No rescue pressure right now'}</p>
-            <p className="mt-1 text-sm text-slate-600">{filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0)} visible records still have commercial or workflow blockers.</p>
-          </div>
-          <div className="flex flex-col items-start gap-2 lg:min-w-[220px]">
-            <a href={PRODUCT_ROUTES.app.leads} className={workspacePrimaryButtonClass}>Open follow-up queue</a>
-            <a href={PRODUCT_ROUTES.app.quotes} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Quotes</a>
-            <a href={PRODUCT_ROUTES.app.orders} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Orders</a>
-          </div>
-        </div>
-        <PipelineAIStrip message={aiMessage} />
-        {readOnlyMessage ? (
-          <StateMessage
-            title="Read-only pipeline"
-            tone="warning"
-            description={`${readOnlyMessage} Stage moves, quick notes, and follow-up scheduling stay disabled here. Open a lead to review details or ask an admin to adjust workspace roles.`}
-          />
-        ) : null}
-        {message ? (
-          <StateMessage
-            title={message}
-            tone={getBoardMessageTone(message) === 'success' ? 'success' : getBoardMessageTone(message) === 'error' ? 'danger' : 'neutral'}
-            description={getBoardMessageTone(message) === 'error'
-              ? 'The board stayed on the last confirmed state. Clear the blocker in the lead record, then try the move again.'
-              : 'The pipeline board reflects the latest confirmed change.'}
-          />
-        ) : null}
-      </section>
-
-      <section>
-        <CollapsiblePanel
-          title="Board status and route shortcuts"
-          summary="Open when you need rescue totals or a faster jump to another workspace."
-          className={cn('bg-white/80', workspacePanelClass)}
-          bodyClassName="bg-transparent"
-        >
-          <div className="grid gap-3 lg:grid-cols-3">
-            <StateMessage
-              title="What needs intervention now"
-              tone={overdueCount || atRiskCount ? 'warning' : 'success'}
-              description={`${overdueCount} overdue follow-ups, ${atRiskCount} at-risk leads, and ${filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0)} commercially blocked records need rescue attention before pipeline movement can be trusted.`}
-            />
-            <StateMessage
-              title="Pipeline stays explicit"
-              tone="neutral"
-              description="This page stays a true pipeline board. Rescue posture is layered on top of the board, not used as an excuse to hide stage movement."
-            />
-            <div className={cn('flex flex-col gap-3 p-4', workspacePanelClass)}>
-              <p className="text-sm font-semibold text-slate-950">Move fast without losing continuity</p>
-              <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                <a href={PRODUCT_ROUTES.app.dashboard} className={workspaceSecondaryButtonClass}>Open dashboard</a>
-                <a href={PRODUCT_ROUTES.app.leads} className={workspaceSecondaryButtonClass}>Open follow-up</a>
-                <a href={PRODUCT_ROUTES.app.orders} className={workspacePrimaryButtonClass}>Open execution</a>
-              </div>
+            <div>
+              <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Owner</div>
+              <select value={ownerFilter} onChange={e=>setOwnerFilter(e.target.value)} style={{width:'100%',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'0 10px',height:'36px',fontSize:'12px'}}>
+                <option value="">All</option>{profiles.map(p=><option key={p.id} value={p.id}>{p.full_name??p.username??'Unassigned'}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Category</div>
+              <select value={productFilter} onChange={e=>setProductFilter(e.target.value)} style={{width:'100%',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'0 10px',height:'36px',fontSize:'12px'}}>
+                <option value="">All</option>{productCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Market</div>
+              <select value={marketFilter} onChange={e=>setMarketFilter(e.target.value)} style={{width:'100%',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'0 10px',height:'36px',fontSize:'12px'}}>
+                <option value="">All</option>{markets.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
             </div>
           </div>
+          {activeFilterCount>0&&<button type="button" onClick={resetFilters} style={{marginTop:'12px',padding:'6px 14px',borderRadius:'6px',background:'#f1f5f9',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',cursor:'pointer'}}>Reset all filters</button>}
+        </div>
+      )}
 
-          <section className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Pipeline summary metrics">
-            <ToolbarStat label="Visible leads" value={String(filteredLeads.length)} tone="default" />
-            <ToolbarStat label="Move blocked" value={String(filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0))} tone={filteredLeads.some((lead) => getLeadBlockerCount(lead.id) > 0) ? 'danger' : 'default'} />
-            <ToolbarStat label="Overdue follow-ups" value={String(overdueCount)} tone={overdueCount ? 'danger' : 'default'} />
-            <ToolbarStat label="Due today" value={String(todayCount)} tone={todayCount ? 'warning' : 'default'} />
-            <ToolbarStat label="At risk" value={String(atRiskCount)} tone={atRiskCount ? 'warning' : 'default'} />
-          </section>
-        </CollapsiblePanel>
-      </section>
-
-      {showStageConfigurationState ? (
-        <WorkspaceState
-          eyebrow="Pipeline setup"
-          title={isStageConfigurationEmpty ? 'No pipeline stages configured yet' : 'No stage lanes match this mode yet'}
-          description={
-            isStageConfigurationEmpty
-              ? 'This workspace can load leads, but the /pipeline board cannot render lanes until at least one pipeline and one stage exist in settings.'
-              : 'The current mode does not have any configured lanes to render. Switch journey mode or review the pipeline stage setup.'
-          }
-          primaryActionHref={canManageLeads ? '/settings/lists' : PRODUCT_ROUTES.app.leads}
-          primaryActionLabel={canManageLeads ? 'Review pipeline settings' : 'Open leads'}
-          secondaryActionHref={!canManageLeads ? '/admin/organization' : undefined}
-          secondaryActionLabel={!canManageLeads ? 'Review workspace roles' : undefined}
-        />
-      ) : null}
-
-      {showWorkspaceEmptyState ? (
-        <WorkspaceState
-          eyebrow="Pipeline board"
-          title="No leads in this pipeline yet"
-          description={canManageLeads ? 'Your stages are configured, but there are no leads to place on the board yet. Add the first lead from the leads workspace and return here for stage execution.' : 'This workspace has no pipeline cards yet and your current role is read-only. Ask a workspace admin to add the first lead or grant edit access.'}
-          primaryActionHref={PRODUCT_ROUTES.app.leads}
-          primaryActionLabel={canManageLeads ? 'Open leads workspace' : 'Open leads'}
-          secondaryActionHref={!canManageLeads ? '/admin/organization' : PRODUCT_ROUTES.app.dashboard}
-          secondaryActionLabel={!canManageLeads ? 'Review workspace roles' : 'Back to dashboard'}
-        />
-      ) : null}
-
-      {showPipelineBoard && filtersOpen ? (
-        <section className={cn('p-4 sm:p-5', workspacePanelClass)}>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:items-end">
-            <ToolbarField label="Follow-up">
-              <ToolbarSelect value={followUpFilter} onChange={(event) => setFollowUpFilter(event.target.value)}>
-                <option value="">All follow-ups</option>
-                <option value="overdue">Overdue</option>
-                <option value="today">Today</option>
-                <option value="upcoming">Upcoming</option>
-                <option value="unscheduled">Unscheduled</option>
-              </ToolbarSelect>
-            </ToolbarField>
-            <ToolbarField label="Owner">
-              <ToolbarSelect value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)}>
-                <option value="">All owners</option>
-                {profiles.map((profile) => (
-                  <option key={profile.id} value={profile.id}>{profile.full_name ?? profile.username ?? 'Unassigned'}</option>
-                ))}
-              </ToolbarSelect>
-            </ToolbarField>
-            <ToolbarField label="Category">
-              <ToolbarSelect value={productFilter} onChange={(event) => setProductFilter(event.target.value)}>
-                <option value="">All categories</option>
-                {productCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </ToolbarSelect>
-            </ToolbarField>
-            <ToolbarField label="Market">
-              <ToolbarSelect value={marketFilter} onChange={(event) => setMarketFilter(event.target.value)}>
-                <option value="">All markets</option>
-                {markets.map((market) => (
-                  <option key={market.id} value={market.id}>{market.name}</option>
-                ))}
-              </ToolbarSelect>
-            </ToolbarField>
-            <div className="flex gap-2 xl:justify-end">
-              {activeFilterCount ? (
-                <ToolbarActionButton type="button" onClick={resetFilters}>
-                  Reset filters
-                </ToolbarActionButton>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {showPipelineBoard ? (
+      {/* KANBAN BOARD */}
+      {showPipelineBoard&&(
         <>
-          <section className="grid gap-3 lg:grid-cols-5">
-            {laneSummary.map((item) => (
-              <div key={item.key} className={cn('p-4', workspacePanelClass)}>
-                <div className="h-1.5 w-full rounded-full" style={{ backgroundColor: item.accent }} />
-                <div className="mt-3 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[1.05rem] font-semibold tracking-[-0.02em] text-slate-950 dark:text-slate-50">{item.label}</p>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold">
-                      <span className="text-blue-500">{item.overdue} overdue</span>
-                      <span className={item.blocked ? 'text-rose-500' : 'text-slate-400'}>{item.blocked} blocked</span>
+          <div style={{display:'none'}} className="md:hidden">
+            {filteredStageGroups.map(group=>renderLane(group,true))}
+          </div>
+          <div style={{padding:'14px 24px 24px',overflowX:'auto',display:'flex',gap:'12px',minHeight:0,WebkitOverflowScrolling:'touch'} as React.CSSProperties}>
+            {filteredStageGroups.map(group=>(
+              <div key={group.stage.id} style={{flexShrink:0,width:'256px',display:'flex',flexDirection:'column',gap:'8px'}}>
+                {/* Lane header */}
+                <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'12px 14px',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
+                  <div style={{height:'3px',borderRadius:'99px',marginBottom:'10px',background:getStageAccent(group.stage.position,group.stage.name)}}/>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'6px',marginBottom:'6px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                      <div style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',flexShrink:0,background:'rgba(12,127,255,.08)'}}>{getStageIcon(group.stage.name)}</div>
+                      <span style={{fontSize:'13px',fontWeight:800,color:'#1e293b',letterSpacing:'-.2px'}}>{group.stage.name}</span>
                     </div>
+                    <span style={{background:'#f1f5f9',borderRadius:'999px',padding:'2px 8px',fontSize:'11px',fontWeight:800,color:'#475569'}}>{group.leads.length}</span>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/90 px-3 py-1.5 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200">{item.count}</div>
+                  <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                    {group.leads.filter(l=>getFollowUpVisualState(l.next_follow_up_at)==='overdue').length>0&&<span style={{fontSize:'10px',fontWeight:700,color:'#e11d48'}}>{group.leads.filter(l=>getFollowUpVisualState(l.next_follow_up_at)==='overdue').length} overdue</span>}
+                    {group.leads.filter(l=>buildStageMoveReadiness(l,group.stage,stages,quotes,rfqs,complianceItems,complianceDefinitions,documents,documentRequirementRules,localLeadMarkets,localLeadProductInterests,variants,prices,pricingRules).blockers.length>0).length>0&&<span style={{fontSize:'10px',fontWeight:700,color:'#dc2626'}}>{group.leads.filter(l=>buildStageMoveReadiness(l,group.stage,stages,quotes,rfqs,complianceItems,complianceDefinitions,documents,documentRequirementRules,localLeadMarkets,localLeadProductInterests,variants,prices,pricingRules).blockers.length>0).length} blocked</span>}
+                  </div>
+                  <div style={{fontSize:'11px',fontWeight:700,color:'#475569',marginTop:'4px',paddingTop:'6px',borderTop:'1px solid #e2e8f0'}}>
+                    {valueCurrency} {Math.round(group.leads.reduce((s,l)=>s+(l.deal_value??0),0)).toLocaleString()}
+                  </div>
+                </div>
+                {/* Lane cards */}
+                <div style={{display:'flex',flexDirection:'column',gap:'7px',minHeight:'60px'}}>
+                  {group.leads.map(lead=>{
+                    const readiness = buildStageMoveReadiness(lead,group.stage,stages,quotes,rfqs,complianceItems,complianceDefinitions,documents,documentRequirementRules,localLeadMarkets,localLeadProductInterests,variants,prices,pricingRules);
+                    const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
+                    const isBlocked = readiness.blockers.length>0;
+                    const cardBorderLeft = isBlocked?'3px solid #f43f5e':followUpState==='overdue'?'3px solid #f59e0b':'3px solid #10b981';
+                    const commercialReadiness = buildLeadCommercialReadiness(lead.id,localLeadProductInterests,prices,pricingRules);
+                    const commercialLabel = getPricingReadinessLabel(commercialReadiness);
+                    const commercialClass = getPricingReadinessClasses(commercialReadiness);
+                    return (
+                      <div key={lead.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'16px',padding:'12px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer',transition:'box-shadow .15s,transform .15s',borderLeft:cardBorderLeft}} onClick={()=>navigateToLeadCommandCenter(lead.id,router,pathname)}>
+                        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'6px',marginBottom:'8px'}}>
+                          <div style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',flexShrink:0}}>
+                            {lead.country?'🌍':'🏢'}
+                          </div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:'12px',fontWeight:800,color:'#1e293b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.company_name}</div>
+                            <div style={{fontSize:'10px',color:'#64748b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.contact_name??'—'}</div>
+                          </div>
+                          <button style={{width:'26px',height:'26px',borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',color:'#64748b',cursor:'pointer',flexShrink:0}} onClick={e=>{e.stopPropagation();navigateToLeadCommandCenter(lead.id,router,pathname);}}>→</button>
+                        </div>
+                        <div style={{display:'flex',gap:'4px',marginBottom:'8px',flexWrap:'wrap'}}>
+                          {followUpState==='overdue'&&<span style={{display:'inline-flex',alignItems:'center',padding:'1px 7px',borderRadius:'999px',fontSize:'9px',fontWeight:700,letterSpacing:'.04em',border:'1px solid',background:'#fff1f2',borderColor:'#fecaca',color:'#e11d48'}}>Overdue</span>}
+                          {(followUpState==='today'||followUpState==='upcoming')&&<span style={{display:'inline-flex',alignItems:'center',padding:'1px 7px',borderRadius:'999px',fontSize:'9px',fontWeight:700,border:'1px solid',background:'#fffbeb',borderColor:'#fde68a',color:'#d97706'}}>Today</span>}
+                          {isBlocked&&<span style={{display:'inline-flex',alignItems:'center',padding:'1px 7px',borderRadius:'999px',fontSize:'9px',fontWeight:700,border:'1px solid',background:'#fff1f2',borderColor:'#fecaca',color:'#9f1239'}}>Blocked</span>}
+                          {lead.lead_type==='buyer'&&<span style={{display:'inline-flex',alignItems:'center',padding:'1px 7px',borderRadius:'999px',fontSize:'9px',fontWeight:700,border:'1px solid',background:'#f0f9ff',borderColor:'#bae6fd',color:'#0369a1'}}>Buyer</span>}
+                          {lead.lead_type==='supplier'&&<span style={{display:'inline-flex',alignItems:'center',padding:'1px 7px',borderRadius:'999px',fontSize:'9px',fontWeight:700,border:'1px solid',background:'#f5f3ff',borderColor:'#ede9fe',color:'#7c3aed'}}>Supplier</span>}
+                        </div>
+                        {/* Move readiness bar */}
+                        <div style={{borderRadius:'6px',padding:'6px 8px',marginBottom:'8px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'6px',fontSize:'10px',fontWeight:700,background:isBlocked?'#fff1f2':readiness.canMove?'#ecfdf5':'#fffbeb',border:`1px solid ${isBlocked?'#fecaca':readiness.canMove?'#a7f3d0':'#fde68a'}`,color:isBlocked?'#dc2626':readiness.canMove?'#059669':'#d97706'}}>
+                          <span>{isBlocked?'Move blocked':readiness.canMove?'Ready to advance':'Needs action'}</span>
+                          {isBlocked&&<span style={{fontSize:'9px',fontWeight:500,opacity:.85}}>{readiness.blockers[0]?.slice(0,30)}</span>}
+                        </div>
+                        {/* Actions */}
+                        <div style={{display:'flex',gap:'4px',flexWrap:'wrap'}}>
+                          <button style={{padding:'3px 8px',borderRadius:'6px',fontSize:'9px',fontWeight:700,border:'1px solid #e2e8f0',background:isBlocked?'#fff1f2':'#0b2e4a',color:isBlocked?'#dc2626':'white',cursor:isBlocked?'not-allowed':'pointer'}} onClick={e=>{e.stopPropagation();}} disabled={isBlocked}>Advance</button>
+                          <button style={{padding:'3px 8px',borderRadius:'6px',fontSize:'9px',fontWeight:700,border:'1px solid #e2e8f0',background:'white',color:'#475569',cursor:'pointer'}} onClick={e=>{e.stopPropagation();navigateToLeadCommandCenter(lead.id,router,pathname);}}>Open</button>
+                        </div>
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'6px',marginTop:'8px',paddingTop:'7px',borderTop:'1px solid #e2e8f0'}}>
+                          <span style={{fontSize:'9px',fontWeight:600,color:'#94a3b8'}}>{lead.owner_user_id?ownerLabelMap.get(lead.owner_user_id)??'Unassigned':'Unassigned'}</span>
+                          <span style={{fontSize:'9px',fontWeight:600,color:'#94a3b8'}}>{lead.deal_value?`${lead.deal_currency??'USD'} ${Number(lead.deal_value).toLocaleString()}`:'—'}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {group.leads.length===0&&<div style={{border:'2px dashed #e2e8f0',borderRadius:'16px',padding:'16px',textAlign:'center',fontSize:'11px',fontWeight:600,color:'#0c7fff',background:'rgba(12,127,255,.02)'}}>Drop cards here</div>}
                 </div>
               </div>
             ))}
-          </section>
-
-          <div className="space-y-3 md:hidden" aria-label="Pipeline stage lists">
-            {filteredStageGroups.map((group) => renderLane(group, true))}
           </div>
 
-          <div className="hidden gap-4 overflow-x-auto overscroll-x-contain pb-3 pr-1 [scrollbar-width:thin] md:flex" aria-label="Pipeline stages">
-            {filteredStageGroups.map((group) => renderLane(group))}
-          </div>
-
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]" aria-label="Pipeline workflow review and detail">
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-soft dark:border-slate-800 dark:bg-slate-950">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Detail panel / review */}
+          {selectedLead&&(
+            <div style={{margin:'0 24px 24px',background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',overflow:'hidden',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
+              <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px'}}>
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-500">Workflow review</p>
-                  <h2 className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">Stage movement, quote handoff, and order readiness</h2>
-                  <p className="mt-1 text-sm text-slate-500">Use this review layer before moving a card so the operator can see follow-up pressure, blockers, pricing readiness, quote activity, and the downstream order action.</p>
+                  <div style={{fontSize:'18px',fontWeight:800,color:'#0f172a',marginBottom:'2px'}}>{selectedLead.company_name}</div>
+                  <div style={{fontSize:'11px',color:'#64748b'}}>{selectedStageName} · {selectedOwner} · {selectedLead.lead_type}</div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <a href={PRODUCT_ROUTES.app.quotes} className={workspaceSecondaryButtonClass}>Prepare quote</a>
-                  <a href={PRODUCT_ROUTES.app.orders} className={workspacePrimaryButtonClass}>Create order</a>
+                <div style={{display:'flex',gap:'8px'}}>
+                  <a href={buildLeadCommandCenterHref(selectedLead.id)} style={{padding:'7px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Open command center</a>
+                  <a href={PRODUCT_ROUTES.app.quotes} style={{padding:'7px 14px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',color:'#334155',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>Open quotes</a>
+                  <a href={PRODUCT_ROUTES.app.orders} style={{padding:'7px 14px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',color:'#334155',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>Open order</a>
                 </div>
               </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
-                <StateMessage title="Move guardrails" tone={blockedRecordCount ? 'warning' : 'success'} description={blockedRecordCount ? String(blockedRecordCount) + ' cards still need blocker clearance before stage movement.' : 'Visible cards can progress without a major blocker.'} />
-                <StateMessage title="Quote handoff" tone={quotes.length ? 'neutral' : 'warning'} description={quotes.length ? String(quotes.length) + ' quote records are connected to this pipeline view.' : 'No quote records are connected to this filtered pipeline view yet.'} />
-                <StateMessage title="Order handoff" tone="neutral" description="Approved quote and closed-won movement should route operators toward the Orders execution desk." />
+              <div style={{padding:'16px 20px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}>
+                  <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>Move readiness</div>
+                  <div style={{fontSize:'13px',fontWeight:700,color:'#1e293b',marginBottom:'4px'}}>{selectedReadiness?.summary??'Select a card to review readiness.'}</div>
+                  {selectedReadiness?.blockers?.length?<ul style={{marginTop:'8px',paddingLeft:'16px',display:'flex',flexDirection:'column',gap:'4px'}}>{selectedReadiness.blockers.slice(0,3).map(b=><li key={b} style={{fontSize:'11px',color:'#dc2626'}}>{b}</li>)}</ul>:<p style={{fontSize:'12px',color:'#059669',marginTop:'4px'}}>No visible blockers</p>}
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                  <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}><div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Quotes</div><div style={{fontSize:'22px',fontWeight:800,color:'#0f172a'}}>{selectedQuoteCount}</div></div>
+                  <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}><div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>RFQs</div><div style={{fontSize:'22px',fontWeight:800,color:'#0f172a'}}>{selectedRfqCount}</div></div>
+                </div>
               </div>
             </div>
+          )}
 
-            <aside className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-soft dark:border-slate-800 dark:bg-slate-950" aria-label="Pipeline detail panel">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-500">Detail panel</p>
-                  <h2 className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">{selectedLead?.company_name ?? 'No card selected'}</h2>
-                  <p className="mt-1 text-sm text-slate-500">{selectedLead ? selectedStageName + ' · ' + selectedOwner : 'Filtered board snapshot appears here.'}</p>
-                </div>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{selectedLead?.lead_type ?? 'lead'}</span>
-              </div>
-              <div className="mt-4 space-y-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Move readiness</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">{selectedReadiness?.summary ?? 'Select a card or adjust filters to review readiness.'}</p>
-                  {selectedReadiness?.blockers?.length ? <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-rose-700">{selectedReadiness.blockers.slice(0, 3).map((blocker) => <li key={blocker}>{blocker}</li>)}</ul> : <p className="mt-2 text-xs text-emerald-700">No visible blocker on the current snapshot.</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3"><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Quotes</p><p className="mt-1 text-xl font-semibold text-slate-950">{selectedQuoteCount}</p></div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3"><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">RFQs</p><p className="mt-1 text-xl font-semibold text-slate-950">{selectedRfqCount}</p></div>
-                </div>
-                <div className="grid gap-2">
-                  <a href={selectedLead ? buildLeadCommandCenterHref(selectedLead.id) : PRODUCT_ROUTES.app.leads} className={workspacePrimaryButtonClass}>Open command center</a>
-                  <a href={PRODUCT_ROUTES.app.quotes} className={workspaceSecondaryButtonClass}>Open quote workspace</a>
-                  <a href={PRODUCT_ROUTES.app.orders} className={workspaceSecondaryButtonClass}>Open order workspace</a>
-                </div>
-              </div>
-            </aside>
-          </section>
-
-          {!filteredLeads.length ? <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-soft dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300">No pipeline cards match the current filters. Reset filters or switch journeys to restore your working board.</div> : null}
+          {!filteredLeads.length&&<div style={{margin:'14px 24px',padding:'40px',textAlign:'center',background:'white',borderRadius:'22px',border:'2px dashed #e2e8f0',fontSize:'13px',color:'#64748b'}}>No pipeline cards match the current filters. Reset filters or switch journey modes.</div>}
         </>
-      ) : null}
+      )}
     </div>
   );
 }
