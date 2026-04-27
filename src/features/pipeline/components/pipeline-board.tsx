@@ -868,7 +868,7 @@ export function PipelineBoard({
           <div style={{display:'none'}} className="md:hidden">
             {filteredStageGroups.map(group=>renderLane(group,true))}
           </div>
-          <div style={{padding:'14px 24px 24px',overflowX:'auto',display:'flex',gap:'12px',minHeight:0,WebkitOverflowScrolling:'touch'} as React.CSSProperties}>
+          <div style={{padding:'14px 24px 24px',overflowX:'auto',display:'flex',gap:'12px',minHeight:0,WebkitOverflowScrolling:'touch'}}>
             {visualStageGroups.map(group=>(
               <div key={group.stage.id} style={{flexShrink:0,width:'256px',display:'flex',flexDirection:'column',gap:'8px'}}>
                 {/* Lane header */}
@@ -987,7 +987,8 @@ export function PipelineBoard({
           stageCount: panelStageMeta?.stageCount ?? null,
           isClosedStage: panelStageMeta?.isClosed ?? null,
         });
-        const panelReadiness = buildStageMoveReadiness(panelLead, stages.find(s => s.id === panelLead.stage_id) ?? null, localFollowUps.filter(f => f.lead_id === panelLead.id));
+        const panelStage = panelLead.stage_id ? stageById.get(panelLead.stage_id) ?? stages.find((s) => s.id === panelLead.stage_id) ?? null : null;
+        const panelReadiness: StageMoveReadiness = panelStage ? getStageMoveReadinessForLead(panelLead, panelStage) : { status: 'ready', summary: 'No stage assigned yet.', blockers: [], warnings: [], actionItems: ['Assign stage'], canMove: true };
         const panelPricingLabel = getPricingReadinessLabel(buildLeadCommercialReadiness({ products: [], leadProductInterests: localLeadProductInterests.filter(i => i.lead_id === panelLead.id), markets: [], leadMarkets: localLeadMarkets.filter(m => m.lead_id === panelLead.id), prices: prices, variants: variants, pricingRules: pricingRules }).pricingReadiness);
         const panelOwner = profiles.find(p => p.id === panelLead.owner_user_id)?.full_name ?? 'Unassigned';
         const panelHref = buildLeadCommandCenterHref(panelLead.id);

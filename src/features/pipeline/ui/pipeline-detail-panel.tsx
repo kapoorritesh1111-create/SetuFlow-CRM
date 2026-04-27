@@ -18,7 +18,7 @@ type Lead = {
 
 type Stage = { id: string; name: string; sort_order: number | null };
 
-type MoveReadiness = { status: 'ok' | 'at_risk' | 'blocked'; blockers: string[]; summary: string };
+type MoveReadiness = { status: 'ready' | 'at_risk' | 'blocked'; blockers: string[]; summary: string };
 
 export interface PipelineDetailPanelProps {
   lead: Lead | null;
@@ -73,11 +73,6 @@ export function PipelineDetailPanel({
   isPending,
 }: PipelineDetailPanelProps) {
   const router = useRouter();
-  const [selectedStageId, setSelectedStageId] = ([] as [string, (v: string) => void]);
-  // Simple state management via closure-free approach for SSR safety
-  let stageVal = lead?.stage_id ?? '';
-  const setStageVal = (v: string) => { stageVal = v; };
-  // We'll use a form ref approach instead
   if (!lead) return null;
 
   const currentStage = stages.find(s => s.id === lead.stage_id);

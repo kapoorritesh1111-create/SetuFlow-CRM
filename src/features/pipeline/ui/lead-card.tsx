@@ -1,6 +1,6 @@
 'use client';
 
-import { type KeyboardEvent, useState } from 'react';
+import { type KeyboardEvent, type MouseEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFollowUpLabel } from '@/lib/lead-status';
 import { navigateToLeadCommandCenter } from '@/lib/lead-command-center-navigation';
@@ -81,7 +81,7 @@ export function LeadCard({
     void handleScheduleFollowUp(lead.id, scheduledAt.trim()).then(() => { setScheduledAt(''); setScheduleOpen(false); });
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
+  const handleCardClick = (e: MouseEvent<HTMLDivElement>) => {
     if (shouldIgnoreTarget(e.target)) return;
     if (onOpenDetail) onOpenDetail(lead.id);
     else navigateToLeadCommandCenter(router, commandCenterHref);
