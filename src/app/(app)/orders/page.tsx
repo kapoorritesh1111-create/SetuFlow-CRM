@@ -27,6 +27,7 @@ import { evaluateOrderExecution, getOrderExecutionStateLabel } from '@/lib/order
 import { buildOrderOperationalControlState, type OrderOperationalControlState } from '@/lib/order-operations';
 import type { DocumentRequirementRule } from '@/lib/document-requirements';
 import { progressOrderExecution, uploadOrderDocumentInline } from '@/features/orders/server/actions';
+import { SetuFilterBar, SetuStatsStrip, SetuTopbarActions, SetuWorkspaceShell } from '@/components/setu-shell';
 
 // ─── Explicit row types (avoids Supabase generic inference issues) ────────────
 
@@ -318,35 +319,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   const quotes: QuoteRow[] = Array.isArray(rawQuotes) ? (rawQuotes as QuoteRow[]) : [];
 
   if (quotes.length === 0) {
-    return (
-      <div className="space-y-6 p-4 sm:p-6">
-        <StateMessage
-          title={primaryOperationalContext === 'supplier' ? 'Supplier execution context is active' : primaryOperationalContext === 'buyer' ? 'Buyer execution context is active' : 'Mixed execution context is active'}
-          description={primaryOperationalContext === 'supplier' ? 'Orders is now the execution workspace for supplier-side fulfilment. The primary action is to open one accepted record and clear blockers.' : primaryOperationalContext === 'buyer' ? 'Orders is now the execution workspace for buyer-side fulfilment. The primary action is to open one accepted record and keep execution moving.' : 'Orders is showing accepted work across buyer and supplier activity. Focus on one accepted record at a time and clear blockers first.'}
-          tone="neutral"
-        />
-        <PageHeader
-          eyebrow="Orders / Execution"
-          title="Orders / Execution"
-          description="Accepted quotes become operational orders here with documents, compliance, and execution status in one place."
-          badge="Live"
-          status="No orders yet"
-          actions={[]}
-        />
-        <SectionCard
-          eyebrow="No orders yet"
-          title="Orders appear here when quotes are accepted"
-          description="Accept a quote from the lead quote workspace and it will appear here with its full execution context."
-        >
-          <Link
-            href={PRODUCT_ROUTES.app.leads}
-            className="inline-flex rounded-2xl bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
-          >
-            Go to Leads
-          </Link>
-        </SectionCard>
-      </div>
-    );
+    return (<SetuWorkspaceShell><SetuTopbarActions eyebrow="Execution" title="Orders Desk" section={primaryOperationalContext === 'supplier' ? 'Supplier execution context' : primaryOperationalContext === 'buyer' ? 'Buyer execution context' : 'Mixed execution context'} actions={[{ label: 'All', href: PRODUCT_ROUTES.app.orders, active: true }, { label: 'Open quotes', href: PRODUCT_ROUTES.app.quotes }, { label: 'Go to Leads', href: PRODUCT_ROUTES.app.leads, variant: 'primary' }]} /><SetuFilterBar meta="0 active orders - USD 0 execution value"><span style={{fontSize:'12px',fontWeight:800,color:'#0f172a'}}>Execution filters</span><span style={{fontSize:'11px',color:'#64748b'}}>State, compliance, owner, and market controls stay visible in the empty desk.</span></SetuFilterBar><SetuStatsStrip stats={[{ label: 'Dispatch blocked', value: 0, meta: 'Compliance docs missing', accent: '#dc2626' },{ label: 'Docs pending', value: 0, meta: 'Upload required', accent: '#d97706' },{ label: 'In execution', value: 0, meta: 'Docs complete, dispatching', accent: '#0c7fff' },{ label: 'Delivered', value: 0, meta: 'Awaiting payment confirmation', accent: '#059669' },{ label: 'Execution value', value: 'USD 0', meta: 'All active orders', accent: '#7c3aed' },{ label: 'Avg cycle time', value: '-', meta: 'Accepted to delivered', accent: '#cbd5e1' }]} /><div style={{padding:'14px 24px 40px',display:'flex',flexDirection:'column',gap:'14px'}}><div style={{padding:'12px 16px',borderRadius:'12px',border:'1px solid #e2e8f0',background:'white',fontSize:'13px',color:'#334155'}}><strong>{primaryOperationalContext === 'supplier' ? 'Supplier execution context is active' : primaryOperationalContext === 'buyer' ? 'Buyer execution context is active' : 'Mixed execution context is active'}</strong> - Accepted quotes become operational orders here with documents, compliance, execution status, upload controls, and dispatch gates.</div><div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'48px',textAlign:'center',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}><p style={{fontSize:'16px',fontWeight:800,color:'#1e293b',marginBottom:'8px'}}>No active orders</p><p style={{fontSize:'13px',color:'#64748b',marginBottom:'20px'}}>Accept a quote from the quote workspace and this execution desk will populate without changing structure.</p><Link href={PRODUCT_ROUTES.app.leads} style={{display:'inline-block',padding:'9px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>Go to Leads</Link></div></div></SetuWorkspaceShell>);
   }
 
   const quoteIds: string[] = quotes.map(q => q.id);
@@ -600,7 +573,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   }
 
   return (
-    <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
+    <SetuWorkspaceShell>
 
       {/* TOPBAR */}
       <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
@@ -833,6 +806,6 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
         {perspectiveAccepted.length>0&&<div style={{textAlign:'center',padding:'14px',color:'#94a3b8',fontSize:'12px',fontWeight:600}}>+ {Math.max(0,orders.length-perspectiveAccepted.length)} more orders (delivered, closed) · <span style={{color:'#0c7fff',cursor:'pointer'}}>Load all</span></div>}
       </div>
-    </div>
+    </SetuWorkspaceShell>
   );
 }

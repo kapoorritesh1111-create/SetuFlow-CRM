@@ -5,6 +5,7 @@ import { buildPipelinePageViewModel } from '@/features/pipeline/logic/build-pipe
 import { getPipelinePageData } from '@/lib/queries/pipeline';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
+import { SetuFilterBar, SetuStatsStrip, SetuTopbarActions, SetuWorkspaceShell } from '@/components/setu-shell';
 
 const PipelineBoard = dynamic(
   () => import('@/features/pipeline/components/pipeline-board').then((mod) => mod.PipelineBoard),
@@ -57,10 +58,19 @@ export default async function PipelinePage({
   });
   const isWorkspaceEmpty = data.leads.length === 0;
   const isStageConfigurationEmpty = data.stages.length === 0 || data.pipelines.length === 0;
+  const openLeads = data.leads.length;
+  const buyerLeads = data.leads.filter((lead) => lead.lead_type === 'buyer').length;
+  const supplierLeads = data.leads.filter((lead) => lead.lead_type === 'supplier').length;
+  const quoteReady = pipelineView.normalizedQuotes.filter((quote) => ['approved', 'sent', 'accepted'].includes(String(quote.status))).length;
+  const overdueFollowUps = data.followUps.filter((item) => item.scheduled_at && new Date(item.scheduled_at).getTime() < Date.now() && item.status !== 'completed').length;
 
   return (
-    <div className="space-y-4">
-      <QueryIssuesAlert issues={data.queryIssues} />
+    <SetuWorkspaceShell>
+      <SetuTopbarActions eyebrow="Revenue pipeline" title="Pipeline Command Board" section={workspace.organization.name} actions={[{ label: 'All', href: '/pipeline?mode=all', active: pipelineView.workspaceMode === 'all' },{ label: 'Buyers', href: '/pipeline?mode=buyers', active: pipelineView.workspaceMode === 'buyers' },{ label: 'Suppliers', href: '/pipeline?mode=suppliers', active: pipelineView.workspaceMode === 'suppliers' },{ label: '+ New lead', href: PRODUCT_ROUTES.app.leads, variant: 'primary' }]} />
+      <SetuFilterBar meta={`${data.leads.length} leads - ${data.stages.length} stages`}><span style={{fontSize:'12px',fontWeight:800,color:'#0f172a'}}>Compact board filters</span><span style={{fontSize:'11px',color:'#64748b'}}>Search, owner, product, and market filters remain available inside the board.</span></SetuFilterBar>
+      <SetuStatsStrip stats={[{ label: 'Open leads', value: openLeads, meta: 'Board visible below', accent: '#0c7fff' },{ label: 'Buyer lanes', value: buyerLeads, meta: 'Import demand', accent: '#059669' },{ label: 'Supplier lanes', value: supplierLeads, meta: 'Source supply', accent: '#7c3aed' },{ label: 'Follow-ups due', value: overdueFollowUps, meta: 'Needs action', accent: overdueFollowUps ? '#dc2626' : '#cbd5e1' },{ label: 'Quote ready', value: quoteReady, meta: 'Commercial handoff', accent: '#d97706' },{ label: 'Stages', value: data.stages.length, meta: isStageConfigurationEmpty ? 'Setup needed' : 'Configured', accent: isStageConfigurationEmpty ? '#dc2626' : '#059669' }]} />
+      <div style={{padding:'14px 24px 40px',display:'flex',flexDirection:'column',gap:'14px'}}>
+        <QueryIssuesAlert issues={data.queryIssues} />
       <PipelineBoard
         currentUserId={workspace.user?.id ?? ''}
         canManageLeads={pipelineView.canManageLeads}
@@ -95,6 +105,7 @@ export default async function PipelinePage({
         initialLeadType={pipelineView.initialLeadType}
         initialTodayState={pipelineView.todayState}
       />
-    </div>
+      </div>
+    </SetuWorkspaceShell>
   );
 }

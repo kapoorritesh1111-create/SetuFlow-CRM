@@ -8,6 +8,7 @@ import { buildQuotesPageViewModel } from '@/features/quotes/logic/build-quotes-p
 import { QuoteHistoryList } from '@/features/quotes/ui/quote-history-list';
 import { formatQuoteMoney } from '@/features/quotes/logic/formatting';
 import { buildApprovalSendHref, buildLeadQuoteHref, buildOrdersHref } from '@/lib/workflow/handoffs';
+import { SetuFilterBar, SetuStatsStrip, SetuTopbarActions, SetuWorkspaceShell } from '@/components/setu-shell';
 
 const FILTER_STATUSES = ['all','draft','internal_review','pending_approval','approved','sent','revised','accepted','rejected','expired'];
 const FILTER_MODES = ['all','buyers','suppliers'];
@@ -83,18 +84,12 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   };
 
   const quotesResult = await db.from('quotes').select('id, lead_id, status, currency, notes, quote_number, created_at, updated_at, current_version_id').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(200);
-  if (quotesResult.error) return <EmptyState title="Could not load quotes" description={String(quotesResult.error.message ?? 'Unknown error')} />;
+  if (quotesResult.error) {
+    return (<SetuWorkspaceShell><SetuTopbarActions eyebrow="Commercial" title="Quotes Workspace" actions={[{ label: '+ New quote', href: PRODUCT_ROUTES.app.leads, variant: 'primary' }]} /><SetuFilterBar meta="Recoverable data issue"><span style={{fontSize:'12px',fontWeight:700,color:'#92400e'}}>Quote query could not complete</span></SetuFilterBar><SetuStatsStrip stats={[{label:'Pending approval',value:'-',meta:'Data unavailable',accent:'#d97706'},{label:'Expiring soon',value:'-',meta:'Data unavailable',accent:'#dc2626'},{label:'Sent & active',value:'-',meta:'Data unavailable',accent:'#0c7fff'},{label:'Accepted',value:'-',meta:'Data unavailable',accent:'#059669'},{label:'Drafts',value:'-',meta:'Data unavailable',accent:'#cbd5e1'},{label:'Total value',value:'-',meta:'Data unavailable',accent:'#7c3aed'}]} /><div style={{padding:'16px 24px 40px'}}><div style={{background:'white',border:'1px solid #fde68a',borderRadius:'22px',padding:'28px',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}><div style={{fontSize:'10px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#d97706',marginBottom:'8px'}}>Recoverable data issue</div><h2 style={{fontSize:'20px',fontWeight:800,color:'#0f172a',margin:0}}>Quotes workspace is still available</h2><p style={{fontSize:'13px',color:'#64748b',maxWidth:'680px'}}>The quotes query returned: {String(quotesResult.error.message ?? 'Unknown error')}. The workspace shell stays mounted so users can navigate, create a quote, or retry after the data issue is fixed.</p><Link href={PRODUCT_ROUTES.app.leads} style={{display:'inline-flex',marginTop:'12px',padding:'9px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>+ New quote</Link></div></div></SetuWorkspaceShell>);
+  }
   const quotes = Array.isArray(quotesResult.data) ? quotesResult.data : [];
-
   if (!quotes.length) {
-    return (
-      <div style={{padding:'24px',background:'#f0f4f8',minHeight:'100vh'}}>
-        <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'32px',textAlign:'center'}}>
-          <p style={{fontSize:'14px',color:'#64748b'}}>No quotes yet.</p>
-          <Link href={PRODUCT_ROUTES.app.leads} style={{display:'inline-block',marginTop:'16px',padding:'8px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>+ New quote</Link>
-        </div>
-      </div>
-    );
+    return (<SetuWorkspaceShell><SetuTopbarActions eyebrow="Commercial" title="Quotes Workspace" actions={[{ label: '+ New quote', href: PRODUCT_ROUTES.app.leads, variant: 'primary' }]} /><SetuFilterBar meta="0 quotes - USD 0 total value"><span style={{fontSize:'12px',fontWeight:700,color:'#64748b'}}>Search and status filters will appear once quotes exist.</span></SetuFilterBar><SetuStatsStrip stats={[{label:'Pending approval',value:0,meta:'Waiting for review',accent:'#d97706'},{label:'Expiring soon',value:0,meta:'Within 3 days',accent:'#dc2626'},{label:'Sent & active',value:0,meta:'Awaiting buyer response',accent:'#0c7fff'},{label:'Accepted',value:0,meta:'Order creation available',accent:'#059669'},{label:'Drafts',value:0,meta:'Not yet sent',accent:'#cbd5e1'},{label:'Total value',value:'USD 0',meta:'All active quotes',accent:'#7c3aed'}]} /><div style={{padding:'16px 24px 40px'}}><div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'48px',textAlign:'center',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}><p style={{fontSize:'16px',fontWeight:800,color:'#1e293b',marginBottom:'8px'}}>No quotes yet</p><p style={{fontSize:'13px',color:'#64748b',marginBottom:'20px'}}>Create a quote from Leads and it will appear here with approval, validity, and order handoff controls.</p><Link href={PRODUCT_ROUTES.app.leads} style={{display:'inline-block',padding:'9px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>+ New quote</Link></div></div></SetuWorkspaceShell>);
   }
 
   const leadIds = [...new Set(quotes.map((q: any) => q.lead_id).filter(Boolean))];

@@ -277,11 +277,14 @@ export function ContactIntakeReview() {
                 className="max-h-[460px] w-full rounded-2xl border border-slate-200 object-contain bg-white"
               />
             ) : previewKind === 'pdf' ? (
-              <iframe
-                src={publicCardUrl}
-                title={selectedFile.name}
+              <object
+                data={publicCardUrl}
+                type="application/pdf"
+                aria-label={selectedFile.name}
                 className="h-[420px] w-full rounded-2xl border border-slate-200 bg-white"
-              />
+              >
+                <a href={publicCardUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-700 underline">Open PDF preview</a>
+              </object>
             ) : (
               <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 text-center text-sm text-slate-600">
                 <div>
