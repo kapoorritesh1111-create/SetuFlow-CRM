@@ -819,10 +819,10 @@ export function PipelineBoard({
               <div key={group.stage.id} style={{flexShrink:0,width:'256px',display:'flex',flexDirection:'column',gap:'8px'}}>
                 {/* Lane header */}
                 <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'12px 14px',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
-                  <div style={{height:'3px',borderRadius:'99px',marginBottom:'10px',background:getStageAccent(group.stage.position,group.stage.name)}}/>
+                  <div style={{height:'3px',borderRadius:'99px',marginBottom:'10px',background:getStageAccent(group.stage.name)}}/>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'6px',marginBottom:'6px'}}>
                     <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                      <div style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',flexShrink:0,background:'rgba(12,127,255,.08)'}}>{getStageIcon(group.stage.name)}</div>
+                      <div style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',flexShrink:0,background:'rgba(12,127,255,.08)'}}>{(() => { const StageIcon = getStageIcon(group.stage.name); return <StageIcon size={15} color="#475569" strokeWidth={2.4} />; })()}</div>
                       <span style={{fontSize:'13px',fontWeight:800,color:'#1e293b',letterSpacing:'-.2px'}}>{group.stage.name}</span>
                     </div>
                     <span style={{background:'#f1f5f9',borderRadius:'999px',padding:'2px 8px',fontSize:'11px',fontWeight:800,color:'#475569'}}>{group.leads.length}</span>

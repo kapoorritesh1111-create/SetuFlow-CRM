@@ -1,26 +1,17 @@
-You are working on the SETU Flow CRM production repository.
+# PR-NS-09 Continuation Prompt
 
-Use the current repo as the single source of truth.
+Continue from the PR-NS-08 hardened baseline. Treat the current repository as the single source of truth.
 
-Objective: Complete PR-NS-09 - Live Validation and Execution UX Closure.
+Priorities:
+1. Run a full Vercel-equivalent build check.
+2. Validate Catalog -> Quote line item persistence from drawer/wizard reopen/edit flows.
+3. Validate Quote -> Order creation with copied line items and preserved quote versions.
+4. Validate Order document uploads, metadata persistence, and dispatch readiness computation.
+5. Validate Pipeline drag/drop stage persistence after refresh, including sort order and rollback.
+6. Close remaining UX parity gaps against the HTML reference without breaking schema/RLS.
 
-Starting point:
-- PR-NS-08 hardened quote version snapshots, pipeline drag/drop persistence safety, and order document upload persistence.
-- Continue from the updated repository returned with PR-NS-08.
-
-Scope:
-1. Run full validation on a live Supabase-backed environment.
-2. Confirm the order-documents storage bucket exists with correct policies.
-3. Wire the order document upload action into Orders/Documents UX if it is not already exposed.
-4. Validate quote version history from v1 to v2 to v3 across edit, approve, send, reject, and expire actions.
-5. Validate Catalog to Quote line persistence including quantity, unit price, override reason, margin or override display, and drawer reopen state.
-6. Validate Quote to Order contract handoff copies accepted quote line items correctly.
-7. Validate Pipeline drag/drop persistence after refresh, including rollback behavior on simulated failure.
-8. Run npm ci, npm run typecheck, npm run test, and npm run build.
-
-Output required:
-- Full updated repo zip.
-- Internal DCC update.
-- Readiness status with percentages.
-- Evidence of build, typecheck, and test results.
-- Remaining blockers, if any.
+Required return:
+- Full updated repo zip
+- Internal DCC update
+- Readiness percentages
+- Next prompt for PR-NS-10
