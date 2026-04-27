@@ -13,7 +13,7 @@ const platformCards = [
   },
   {
     title: 'Give management real visibility',
-    body: 'Use a practical dashboard with next actions, pipeline health, and geographic trade intelligence so leaders can see where business is moving.'
+    body: 'Use a practical dashboard and execution board with next actions, pipeline health, quote/order handoff, and geographic trade intelligence so leaders can see where business is moving.'
   }
 ];
 
@@ -51,7 +51,7 @@ export default function HomePage() {
               <div className="mt-10 grid gap-4 sm:grid-cols-3">
                 <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-white/90 p-5 shadow-[0_18px_45px_rgba(31,72,124,0.08)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#359F91]">Core flow</p>
-                  <p className="mt-2 text-lg font-semibold text-slate-900">Capture → Lead → Quote → Order</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-900">Capture → Lead → Pipeline → Quote → Order</p>
                 </div>
                 <div className="rounded-[1.75rem] border border-[#1F487C]/10 bg-white/90 p-5 shadow-[0_18px_45px_rgba(31,72,124,0.08)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#359F91]">Buyer confidence</p>
@@ -88,7 +88,7 @@ export default function HomePage() {
                   <ul className="mt-3 space-y-2 text-sm text-slate-600">
                     <li>• Product and quantity capture</li>
                     <li>• Pricing and terms structure</li>
-                    <li>• Versioning and send controls</li>
+                    <li>• Quotes, Orders, Pipeline, and Catalog now match the NorthStar redesign language, command headers, filters, KPI rhythm, CTAs, table/card density, detail panels, blockers, FX visibility, USD catalog baselines, and workflow handoffs</li>
                   </ul>
                 </div>
                 <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 md:col-span-2">

@@ -5,6 +5,31 @@ export type QuoteWorkspaceNextStep = {
   tone: 'quote' | 'approval' | 'orders' | 'follow_up';
 };
 
+export type QuoteWorkspaceLineItem = {
+  id: string;
+  quoteId: string;
+  productId: string | null;
+  productName: string;
+  quantity: number;
+  unitPrice: number | null;
+  currency: string | null;
+  catalogPriceAmount: number | null;
+  catalogPriceCurrency: string | null;
+  isPriceOverridden: boolean;
+  overrideReason: string | null;
+  notes: string | null;
+};
+
+export type QuoteWorkspaceFxLock = {
+  sourceCurrency: string;
+  quoteCurrency: string;
+  fxRate: number;
+  fxWeekStart: string;
+  fxValidUntil: string;
+  provider?: string | null;
+  effectiveAt?: string | null;
+};
+
 export type QuoteWorkspaceListItem = {
   id: string;
   leadId: string;
@@ -30,6 +55,12 @@ export type QuoteWorkspaceListItem = {
     commercial_snapshot?: unknown;
   } | null;
   lastNegotiationMessage: string | null;
+  lineItems: QuoteWorkspaceLineItem[];
+  subtotal: number;
+  fxLock: QuoteWorkspaceFxLock | null;
+  hasPriceOverride: boolean;
+  latestApprovedAt: string | null;
+  latestSentAt: string | null;
 };
 
 export type QuoteHistoryItem = {

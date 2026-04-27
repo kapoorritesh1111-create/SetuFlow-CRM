@@ -1,6 +1,7 @@
 import type { QuoteHistoryItem, QuoteWorkspaceListItem, QuotesWorkspaceViewModel } from '@/features/quotes/types/workspace';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildApprovalSendHref, buildLeadQuoteHref, buildLeadWorkflowHref, buildOrdersHref } from '@/lib/workflow/handoffs';
+import { getQuoteFxLockFromNotes } from '@/lib/quote-fx';
 
 type LeadRow = { id: string; company_name: string | null; contact_name: string | null; lead_type?: 'buyer' | 'supplier' | null };
 type QuoteRow = {
@@ -14,6 +15,20 @@ type QuoteRow = {
   updated_at: string;
   current_version_id: string | null;
 };
+type QuoteLineItemRow = {
+  id: string;
+  quote_id: string | null;
+  product_id: string | null;
+  quantity: number | string | null;
+  unit_price: number | string | null;
+  currency: string | null;
+  catalog_price_amount: number | string | null;
+  catalog_price_currency: string | null;
+  is_price_overridden: boolean | null;
+  override_reason: string | null;
+  notes: string | null;
+};
+type ProductRow = { id: string; name: string | null; sku: string | null };
 type QuoteVersionRow = {
   id: string;
   quote_id: string | null;
@@ -53,13 +68,18 @@ function lower(value: string | null | undefined) {
   return String(value ?? '').trim().toLowerCase();
 }
 
+function numberOrNull(value: number | string | null | undefined) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function buildHistory(quoteId: string, versions: QuoteVersionRow[], negotiations: NegotiationRow[], communications: CommunicationRow[]): QuoteHistoryItem[] {
   const versionHistory = versions
     .filter((row) => row.quote_id === quoteId)
     .map((row) => ({
       id: `version-${row.id}`,
       label: `Version ${row.version_no ?? 'draft'}`,
-      detail: `Status: ${row.status ?? 'unknown'}${row.sent_at ? ' • sent' : row.approved_at ? ' • approved' : ''}`,
+      detail: `Status changed to ${row.status ?? 'unknown'}${row.sent_at ? ' · sent' : row.approved_at ? ' · approved' : ''}`,
       happenedAt: row.sent_at ?? row.approved_at ?? row.created_at,
     }));
 
@@ -67,7 +87,7 @@ function buildHistory(quoteId: string, versions: QuoteVersionRow[], negotiations
     .filter((row) => row.quote_id === quoteId)
     .map((row) => ({
       id: `negotiation-${row.id}`,
-      label: row.event_type ? row.event_type.replaceAll('_', ' ') : 'Negotiation update',
+      label: row.event_type ? row.event_type.replaceAll('_', ' ') : 'Quote response',
       detail: row.message ?? `Updated by ${row.actor_name ?? 'team'}`,
       happenedAt: row.created_at,
     }));
@@ -91,85 +111,59 @@ function buildHistory(quoteId: string, versions: QuoteVersionRow[], negotiations
 function getNextStep({ status, hasAcceptedContract, leadId, quoteId, leadType }: { status: string; hasAcceptedContract: boolean; leadId: string; quoteId: string; leadType?: 'buyer' | 'supplier' | 'mixed' | null }) {
   const mode = leadType === 'buyer' ? 'buyers' : leadType === 'supplier' ? 'suppliers' : null;
   if (hasAcceptedContract || status === 'accepted') {
-    return {
-      label: 'Move into Orders / Execution',
-      detail: 'The quote is accepted. The next move is order handoff, not more quote edits.',
-      href: buildOrdersHref({ notice: 'quote-accepted', quoteId, leadId, handoff: 'quote-to-orders' }, mode),
-      tone: 'orders' as const,
-    };
+    return { label: 'Open order handoff', detail: 'The quote is accepted. Keep the locked commercial record visible in Orders.', href: buildOrdersHref({ notice: 'quote-accepted', quoteId, leadId, handoff: 'quote-to-orders' }, mode), tone: 'orders' as const };
   }
-
   if (status === 'pending_approval') {
-    return {
-      label: 'Clear approval before sending',
-      detail: 'Approval is the blocker. The quote should not advance into outbound communication until that gate clears.',
-      href: buildApprovalSendHref({ queue: 'approvals', quoteId, leadId, handoff: 'quote-needs-approval' }, mode),
-      tone: 'approval' as const,
-    };
+    return { label: 'Review approval status', detail: 'Approval is the blocker before this quote can be sent.', href: buildApprovalSendHref({ queue: 'approvals', quoteId, leadId, handoff: 'quote-needs-approval' }, mode), tone: 'approval' as const };
   }
-
   if (status === 'approved') {
-    return {
-      label: 'Send quote',
-      detail: 'Review is complete. The next move is sending this quote and keeping the activity trail visible.',
-      href: buildApprovalSendHref({ queue: 'send', quoteId, leadId, handoff: 'quote-ready-to-send' }, mode),
-      tone: 'approval' as const,
-    };
+    return { label: 'Send quote', detail: 'Approval is complete. Send the selected version and keep the activity trail visible.', href: buildApprovalSendHref({ queue: 'send', quoteId, leadId, handoff: 'quote-ready-to-send' }, mode), tone: 'approval' as const };
   }
-
   if (status === 'sent' || status === 'negotiating') {
-    return {
-      label: 'Drive response from Follow-up',
-      detail: 'The quote is live. Go back to Follow-up to handle the buyer response and next action.',
-      href: buildLeadWorkflowHref(leadId, mode, { quoteId, handoff: 'quote-live-follow-up' }),
-      tone: 'follow_up' as const,
-    };
+    return { label: 'Track customer response', detail: 'The quote is live. Continue follow-up from the lead workspace.', href: buildLeadWorkflowHref(leadId, mode, { quoteId, handoff: 'quote-live-follow-up' }), tone: 'follow_up' as const };
   }
-
   if (status === 'rejected' || status === 'expired') {
-    return {
-      label: 'Requalify or close from Follow-up',
-      detail: 'This quote is no longer active. Put the lead back into a clear follow-up decision.',
-      href: buildLeadWorkflowHref(leadId, mode, { quoteId, handoff: 'quote-requalify' }),
-      tone: 'follow_up' as const,
-    };
+    return { label: 'Revise or close', detail: 'This quote needs a fresh decision before more commercial movement.', href: buildLeadWorkflowHref(leadId, mode, { quoteId, handoff: 'quote-requalify' }), tone: 'follow_up' as const };
   }
-
-  return {
-    label: 'Finish quote build',
-    detail: 'Keep the working set compressed around the quote builder until pricing, terms, and readiness are explicit.',
-    href: buildLeadQuoteHref(leadId, quoteId, mode, { handoff: 'quote-build' }),
-    tone: 'quote' as const,
-  };
+  return { label: 'Continue quote build', detail: 'Finish pricing, terms, and readiness before approval or sending.', href: buildLeadQuoteHref(leadId, quoteId, mode, { handoff: 'quote-build' }), tone: 'quote' as const };
 }
 
-export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations, communications, contracts, selectedQuoteId }: {
+export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations, communications, contracts, lineItems = [], products = [], selectedQuoteId }: {
   quotes: QuoteRow[];
   leads: LeadRow[];
   versions: QuoteVersionRow[];
   negotiations: NegotiationRow[];
   communications: CommunicationRow[];
   contracts: ContractRow[];
+  lineItems?: QuoteLineItemRow[];
+  products?: ProductRow[];
   selectedQuoteId: string | null;
 }): QuotesWorkspaceViewModel {
   const leadMap = new Map(leads.map((lead) => [lead.id, lead]));
+  const productMap = new Map(products.map((product) => [product.id, product]));
+  const lineItemsByQuote = new Map<string, QuoteLineItemRow[]>();
   const versionCounts = new Map<string, number>();
   const negotiationCounts = new Map<string, number>();
   const communicationCounts = new Map<string, number>();
+  const latestApprovedAt = new Map<string, string>();
+  const latestSentAt = new Map<string, string>();
   const contractByQuoteId = new Map(contracts.filter((row) => row.quote_id).map((row) => [String(row.quote_id), row]));
   const contractQuoteIds = new Set(contractByQuoteId.keys());
 
+  for (const row of lineItems) {
+    if (!row.quote_id) continue;
+    const next = lineItemsByQuote.get(row.quote_id) ?? [];
+    next.push(row);
+    lineItemsByQuote.set(row.quote_id, next);
+  }
   for (const row of versions) {
     if (!row.quote_id) continue;
     versionCounts.set(row.quote_id, (versionCounts.get(row.quote_id) ?? 0) + 1);
+    if (row.approved_at && (!latestApprovedAt.get(row.quote_id) || Date.parse(row.approved_at) > Date.parse(latestApprovedAt.get(row.quote_id) ?? ''))) latestApprovedAt.set(row.quote_id, row.approved_at);
+    if (row.sent_at && (!latestSentAt.get(row.quote_id) || Date.parse(row.sent_at) > Date.parse(latestSentAt.get(row.quote_id) ?? ''))) latestSentAt.set(row.quote_id, row.sent_at);
   }
-  for (const row of negotiations) {
-    negotiationCounts.set(row.quote_id, (negotiationCounts.get(row.quote_id) ?? 0) + 1);
-  }
-  for (const row of communications) {
-    if (!row.quote_id) continue;
-    communicationCounts.set(row.quote_id, (communicationCounts.get(row.quote_id) ?? 0) + 1);
-  }
+  for (const row of negotiations) negotiationCounts.set(row.quote_id, (negotiationCounts.get(row.quote_id) ?? 0) + 1);
+  for (const row of communications) if (row.quote_id) communicationCounts.set(row.quote_id, (communicationCounts.get(row.quote_id) ?? 0) + 1);
 
   const items: QuoteWorkspaceListItem[] = quotes.map((quote) => {
     const lead = leadMap.get(quote.lead_id);
@@ -177,6 +171,27 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
     const leadType: QuoteWorkspaceListItem['leadType'] = lead?.lead_type === 'buyer' || lead?.lead_type === 'supplier' ? lead.lead_type : 'mixed';
     const status = lower(quote.status) || 'draft';
     const hasAcceptedContract = contractQuoteIds.has(quote.id);
+    const fx = getQuoteFxLockFromNotes(quote.notes);
+    const quoteLines = (lineItemsByQuote.get(quote.id) ?? []).map((line, index) => {
+      const product = line.product_id ? productMap.get(line.product_id) : null;
+      const quantity = numberOrNull(line.quantity) ?? 0;
+      const unitPrice = numberOrNull(line.unit_price);
+      return {
+        id: line.id,
+        quoteId: quote.id,
+        productId: line.product_id,
+        productName: product?.name ?? product?.sku ?? line.notes ?? `Line ${index + 1}`,
+        quantity,
+        unitPrice,
+        currency: line.currency ?? quote.currency,
+        catalogPriceAmount: numberOrNull(line.catalog_price_amount),
+        catalogPriceCurrency: line.catalog_price_currency,
+        isPriceOverridden: Boolean(line.is_price_overridden),
+        overrideReason: line.override_reason,
+        notes: line.notes,
+      };
+    });
+    const subtotal = quoteLines.reduce((sum, line) => sum + line.quantity * (line.unitPrice ?? 0), 0);
 
     return {
       id: quote.id,
@@ -198,13 +213,18 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
       nextStep: getNextStep({ status, hasAcceptedContract, leadId: quote.lead_id, quoteId: quote.id, leadType }),
       contract: contractByQuoteId.get(quote.id) ?? null,
       lastNegotiationMessage: quoteNegotiations.sort((a, b) => Date.parse(b.created_at ?? '') - Date.parse(a.created_at ?? ''))[0]?.message ?? null,
+      lineItems: quoteLines,
+      subtotal,
+      fxLock: fx ? { sourceCurrency: fx.source_currency, quoteCurrency: fx.quote_currency, fxRate: fx.fx_rate, fxWeekStart: fx.fx_week_start, fxValidUntil: fx.fx_valid_until, provider: fx.provider, effectiveAt: fx.effective_at } : null,
+      hasPriceOverride: quoteLines.some((line) => line.isPriceOverridden),
+      latestApprovedAt: latestApprovedAt.get(quote.id) ?? null,
+      latestSentAt: latestSentAt.get(quote.id) ?? null,
     };
   }).sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
 
   const selectedItem = items.find((item) => item.id === selectedQuoteId) ?? items[0] ?? null;
   const selectedHistory = selectedItem ? buildHistory(selectedItem.id, versions, negotiations, communications) : [];
-  const activeStatuses = new Set(['draft', 'review', 'review_requested', 'pending_approval', 'approved', 'sent', 'negotiating']);
-  const acceptedQuotes = items.filter((item) => item.status === 'accepted').length;
+  const activeStatuses = new Set(['draft', 'review', 'internal_review', 'revised', 'pending_approval', 'approved', 'sent', 'negotiating']);
 
   return {
     items,
@@ -213,7 +233,7 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
     summary: {
       totalQuotes: items.length,
       activeQuotes: items.filter((item) => activeStatuses.has(item.status)).length,
-      acceptedQuotes,
+      acceptedQuotes: items.filter((item) => item.status === 'accepted').length,
       contractReadyQuotes: items.filter((item) => item.hasAcceptedContract || item.status === 'accepted').length,
     },
   };

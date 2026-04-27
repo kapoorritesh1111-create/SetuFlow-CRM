@@ -1,17 +1,25 @@
 # Release Proof
 
-## Governing command
+## Latest release pass
 
-```bash
-npm run release:proof
-```
+### PR-NS-07.5 — NorthStar visual parity hardening
 
-This is the repo-backed release-gate command for the governed baseline.
+Status: Complete
 
-## Quote FX Lock Fix — USD Catalog to EUR Draft Quotes
+Release proof:
+- Quotes, Orders, Pipeline, and Catalog were reviewed against their redesign HTML references and tightened for shared NorthStar visual rhythm.
+- Shared workspace surface tokens were updated for command-card, KPI-card, panel, and table-shell consistency.
+- Quotes now keeps redesign CTAs/workflows visible: Export, + New quote, Bulk action, Review, Approve & allow send, Reject override, Approval Status, Revise, Duplicate, and Create order.
+- Orders now uses Orders Execution Desk language and keeps Open order, View quote, Upload document, Export, execution state, blocker, and dispatch lifecycle visible.
+- Pipeline now uses Pipeline / Risks and Kanban Board language with Quick Lead, Follow-up Queue, Dashboard, blocker-first filters, stage gates, and quote/order handoff actions.
+- Catalog now uses Catalog — Products, Pricing & Variants language with Export, Add product, Pricing gaps, product/variant/pricing controls, USD baseline editing, quote-ready status, and quote handoff context.
+- Internal DCC, PR tracker, release proof, root page, and NorthStar reference documentation were updated.
 
-- Added server-side quote FX resolution for catalog prices whose source currency differs from the quote display currency.
-- USD catalog prices can now seed EUR quote lines through a weekly average USD/EUR rate from `exchange_rates` without requiring direct EUR catalog price rows.
-- Draft quotes persist the locked FX context in quote workflow metadata for seven days: `source_currency`, `quote_currency`, `fx_rate`, `fx_week_start`, and `fx_valid_until`.
-- Quote create, quote edit, and lead-to-quote draft seeding preserve original catalog price amount/currency while saving converted unit prices in the quote currency.
-- Manual price adjustments remain supported; overridden unit prices continue to require an override reason through the governed quote validation path.
+Checks:
+- npm test / individual smoke suite available in this repo pass.
+- typecheck may depend on local node_modules availability in the execution environment.
+
+Next:
+PR-NS-08 — Catalog-to-Quote data wiring hardening.
+
+Release command reminder: release:proof runs the repo verification chain through package scripts.

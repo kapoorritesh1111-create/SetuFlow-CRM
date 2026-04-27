@@ -14,7 +14,8 @@ import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
-import { formatDateTime } from '@/lib/utils';
+import { cn, formatDateTime } from '@/lib/utils';
+import { workspaceHeroClass, workspacePrimaryButtonClass, workspaceSecondaryButtonClass } from '@/components/ui/workspace-surfaces';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { inferOrderTradeWorkflow } from '@/features/trade-workflow/logic';
 import { predictOrderDelay } from '@/features/ai/logic/intelligence';
@@ -193,6 +194,38 @@ function statusClasses(s: string): string {
 
 function titleCase(v: string): string {
   return v.split(/[_\s-]+/).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+}
+
+function formatMoneyValue(amount: number | null, currency: string | null): string {
+  if (amount == null) return 'Value pending';
+  return `${currency ?? 'USD'} ${Number(amount).toLocaleString()}`;
+}
+
+const EXECUTION_STAGES = [
+  { key: 'draft', label: 'Order confirmed' },
+  { key: 'ready', label: 'Docs ready' },
+  { key: 'released', label: 'Dispatch ready' },
+  { key: 'dispatched', label: 'Shipped' },
+  { key: 'completed', label: 'Delivered' },
+];
+
+function OrderStageStepper({ state, blocked }: { state: string; blocked: boolean }) {
+  const currentIndex = Math.max(0, EXECUTION_STAGES.findIndex((stage) => stage.key === state));
+  return (
+    <div className="grid gap-2 sm:grid-cols-5">
+      {EXECUTION_STAGES.map((stage, index) => {
+        const done = index < currentIndex;
+        const current = index === currentIndex;
+        const tone = blocked && current ? 'border-rose-200 bg-rose-50 text-rose-700' : done ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : current ? 'border-sky-200 bg-sky-50 text-sky-700' : 'border-slate-200 bg-slate-50 text-slate-500';
+        return (
+          <div key={stage.key} className={`rounded-xl border px-3 py-2 text-center text-[11px] font-semibold ${tone}`}>
+            <div className="mx-auto mb-1 h-2 w-2 rounded-full bg-current" />
+            {stage.label}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function dispatchGate(controls: OrderOperationalControlState): { label: string; tone: 'success' | 'warning' | 'danger' } {
@@ -540,32 +573,49 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
-      <section className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft xl:grid-cols-[0.9fr_1.1fr_auto]">
-        <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Where am I</p>
-          <p className="mt-2 text-base font-semibold text-slate-900">Orders workspace</p>
-          <p className="mt-1 text-sm text-slate-600">Open one accepted record, clear blockers, then advance execution. Do not read the whole page first.</p>
+      <section className={cn(workspaceHeroClass, "p-5")}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Execution</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Orders Execution Desk</h1>
+            <p className="mt-2 max-w-3xl text-sm text-slate-600">Accepted quotes become operational orders here. Clear document blockers, confirm commercial lock, release dispatch evidence, and progress the state machine from one focused desk.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a href={focusedOrder ? `#order-${focusedOrder.quoteId}` : perspectiveAccepted.length > 0 ? `#order-${perspectiveAccepted[0].quoteId}` : '#accepted-orders'} className={`rounded-xl px-3 py-2 text-sm font-semibold transition `}>Open order</a>
+            <Link href={PRODUCT_ROUTES.app.quotes} className={`rounded-xl px-3 py-2 text-sm font-semibold transition `}>View quote</Link>
+            <Link href={'/documents'} className={`rounded-xl px-3 py-2 text-sm font-semibold transition `}>Upload document</Link>
+            <a href="#accepted-orders" className={`rounded-xl px-3 py-2 text-sm font-semibold transition `}>Export</a>
+          </div>
         </div>
-        <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">What is blocking me</p>
-          <p className="mt-2 text-base font-semibold text-slate-900">{perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length ? `${perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length} accepted records blocked` : 'Execution blockers are clear right now'}</p>
-          <p className="mt-1 text-sm text-slate-600">{primaryOperationalContext === 'supplier' ? 'Supplier fulfilment context is active.' : primaryOperationalContext === 'buyer' ? 'Buyer fulfilment context is active.' : 'Mixed buyer/supplier execution context is active.'}</p>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-slate-500">Active orders</p><p className="mt-2 text-2xl font-semibold text-slate-900">{perspectiveOrders.length}</p><p className="mt-1 text-xs text-slate-500">{perspectiveMode === 'all' ? 'All states' : perspectiveMode === 'buyers' ? 'Buyer execution' : 'Supplier execution'}</p></div>
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-rose-600">Dispatch blocked</p><p className="mt-2 text-2xl font-semibold text-rose-700">{perspectiveAccepted.filter((order) => order.executionBlockers.length > 0).length}</p><p className="mt-1 text-xs text-rose-600">Docs, compliance, or evidence missing</p></div>
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-emerald-700">Dispatch ready</p><p className="mt-2 text-2xl font-semibold text-emerald-700">{perspectiveAccepted.filter((order) => dispatchGate(order.operationalControls).tone === 'success').length}</p><p className="mt-1 text-xs text-emerald-700">Ready to advance</p></div>
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4"><p className="text-xs uppercase tracking-[0.14em] text-violet-700">Execution value</p><p className="mt-2 text-2xl font-semibold text-violet-700">{formatMoneyValue(perspectiveAccepted.reduce((sum, order) => sum + (order.dealValue ?? 0), 0), perspectiveAccepted[0]?.dealCurrency ?? perspectiveAccepted[0]?.currency ?? 'USD')}</p><p className="mt-1 text-xs text-violet-700">Accepted order value</p></div>
         </div>
-        <div className="flex flex-col items-start gap-2 xl:min-w-[220px]">
-          <a href={focusedOrder ? `#order-${focusedOrder.quoteId}` : perspectiveAccepted.length > 0 ? `#order-${perspectiveAccepted[0].quoteId}` : '#accepted-orders'} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Review next accepted order</a>
-          <Link href={PRODUCT_ROUTES.app.quotes} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Quote context</Link>
-          <Link href={PRODUCT_ROUTES.app.leads} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Follow-up</Link>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'buyers', label: 'Buyers' },
+              { key: 'suppliers', label: 'Suppliers' },
+            ].map((option) => {
+              const active = perspectiveMode === option.key;
+              const href = option.key === 'all' ? PRODUCT_ROUTES.app.orders : `${PRODUCT_ROUTES.app.orders}?mode=${option.key}`;
+              return (
+                <Link key={option.key} href={href} className={active ? 'rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white' : 'rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white'}>{option.label}</Link>
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Execution state: All states</span>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Search: quote / company</span>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Target: next 30 days</span>
+          </div>
         </div>
       </section>
-      <PageHeader
-        eyebrow="Orders / Execution"
-        title="Orders / Execution"
-        description="Accepted quotes become live execution records here with contract-grade continuity, compliance requirements, document controls, and dispatch evidence visible per order."
-        badge="Live"
-        status={`${perspectiveOrders.length} active`}
-        meta={[`${perspectiveAccepted.length} accepted`, perspectiveMode === 'all' ? 'All workspace' : perspectiveMode === 'buyers' ? 'Buyer perspective' : 'Supplier perspective', 'Execution ready only']}
-        actions={[]}
-      />
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
       {handoffMessage ? <StateMessage title={handoffMessage.title} description={handoffMessage.description} tone={handoffMessage.tone} /> : null}
@@ -703,16 +753,18 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
             )}
           </div>
         </div>
-        <Link
-          href={`${PRODUCT_ROUTES.app.leads}/${order.leadId}/quote`}
-          className={`rounded-xl border px-3 py-2 text-xs font-semibold ${
-            tone === 'accepted'
-              ? 'border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50'
-              : 'border-amber-200 bg-white text-amber-800 hover:bg-amber-50'
-          }`}
-        >
-          View quote
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`${PRODUCT_ROUTES.app.leads}/${order.leadId}/quote`} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">View quote</Link>
+          <a href={`#detail-${order.quoteId}`} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Open order</a>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">State machine</p>
+          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses(order.executionBlockers.length > 0 ? 'missing' : 'ready')}`}>{order.executionBlockers.length > 0 ? 'Dispatch blocked' : 'Dispatch ready'}</span>
+        </div>
+        <OrderStageStepper state={order.executionState} blocked={order.executionBlockers.length > 0} />
       </div>
 
       <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3">
@@ -1064,6 +1116,28 @@ function OrderCard({ order, tone }: { order: OrderRecord; tone: 'accepted' | 'se
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      <div id={`detail-${order.quoteId}`} className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Order detail panel</p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-900">{order.companyName} execution control</h3>
+          <p className="mt-2 text-sm text-slate-600">Review the accepted commercial snapshot, required documents, compliance posture, and next safe move before release or dispatch.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Order value</p><p className="mt-1 text-sm font-semibold text-slate-900">{formatMoneyValue(order.dealValue, order.dealCurrency ?? order.currency ?? 'USD')}</p></div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Commercial lock</p><p className="mt-1 text-sm font-semibold text-slate-900">{order.contract ? getCommercialLockStateLabel(order.contract.commercial_lock_state) : 'Contract pending'}</p></div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Next state</p><p className="mt-1 text-sm font-semibold text-slate-900">{order.nextExecutionState ? getOrderExecutionStateLabel(order.nextExecutionState) : 'Monitor'}</p></div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Workflow CTAs</p>
+          <div className="mt-3 grid gap-2">
+            <Link href="/documents" className="rounded-xl bg-slate-900 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-slate-800">Upload required document</Link>
+            <Link href="/compliance" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">Open compliance</Link>
+            <Link href="/contracts" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">View contract</Link>
+            <a href="#accepted-orders" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">Export PDF</a>
+          </div>
         </div>
       </div>
     </div>

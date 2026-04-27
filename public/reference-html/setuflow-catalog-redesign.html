@@ -731,7 +731,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
       <div class="ci new"><div class="ci-icon">＋</div><div><div class="ci-type">New</div><div class="ci-title">Category group headers in table</div><div class="ci-desc">Products are now grouped by category with a coloured header row between groups. Eliminates the need to filter by category to find products. Color-coded dot per row for quick scan. Builder: add a section divider row between category groups in products-table.tsx renderRows().</div></div></div>
       <div class="ci new"><div class="ci-icon">＋</div><div><div class="ci-type">New</div><div class="ci-title">Three price columns visible (Ex-Factory / FOB / CIF)</div><div class="ci-desc">Current: one "Latest price" column. New: three price columns per row, each inline-editable in unit mode. Missing = "— add" in faded text. Builder: add ex_factory, fob, cif columns to products-table-columns.ts with EditablePriceCell per column.</div></div></div>
       <div class="ci fix"><div class="ci-icon">⟳</div><div><div class="ci-type">Fix</div><div class="ci-title">Gap badge replaces "gap filter" concept</div><div class="ci-desc">Current: "Has gap / Complete" filter requires the user to know what a gap is. New: visible gap badge on every row (✓ 9/9 markets / ⚠ 6/9 / ✕ 0/9). The ⚠ tab filters to gap products. No filter needed. Replace products-gap-badge.tsx with this inline badge.</div></div></div>
-      <div class="ci fix"><div class="ci-icon">⟳</div><div><div class="ci-type">Fix</div><div class="ci-title">Mode switch — Products / Pricing / Spreadsheet</div><div class="ci-desc">Current: "products" vs "catalog" mode naming is confusing (both are catalog). New: "Products" (current list view) / "Pricing view" (market-matrix grid) / "Spreadsheet" (full editable spreadsheet). Plain English. Maps to existing WorkspaceMode type — just rename the labels.</div></div></div>
+      <div class="ci fix"><div class="ci-icon">⟳</div><div><div class="ci-type">Fix</div><div class="ci-title">Mode switch — Products / Pricing / Spreadsheet</div><div class="ci-desc">Implemented in PR-NS-07: Catalog now exposes Products / Pricing view / Spreadsheet labels, keeps inline USD baseline editing in Pricing view, and preserves the product drawer plus add-product wizard.</div></div></div>
     </div>
   </div>
 
@@ -836,5 +836,5 @@ function wizardBack(){wizStep=Math.max(0,wizStep-1);updateWizard()}
 <!-- save toast -->
 <div id="save-toast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--emerald-600);color:white;padding:10px 18px;border-radius:12px;font-size:12px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:300">✓ Price updated in catalog baseline</div>
 
-</body>
+<section style="margin:24px;padding:16px;border:1px solid #dbe3ef;border-radius:18px;background:#f8fafc"><strong>PR-NS-07.5 visual parity:</strong> This reference is now locked as the visual source for Quotes, Orders, Pipeline, and Catalog command headers, filters, KPI rhythm, CTAs, tables/cards, detail panels, blockers, and workflow actions before PR-NS-08.</section></body>
 </html>

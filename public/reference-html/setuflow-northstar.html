@@ -768,8 +768,21 @@ body{
             <span class="cp-arr">→</span>
             <span class="cp-node">Quote pre-fills</span>
           </div>
-          <div class="cp-desc">When a quote is opened, the catalog baseline price for the product + market combination is automatically loaded. Any override above the approval threshold requires sign-off.</div>
-          <span class="cp-blocker">⚠ Gap: Missing catalog price = blank quote line (no fallback)</span>
+          <div class="cp-desc">When a quote is opened, the USD catalog baseline price is automatically loaded and converted into the selected quote/company currency through a weekly FX lock. Any manual price override requires a reason and approval-threshold governance still applies.</div>
+          <span class="cp-blocker">⚠ Gate: Missing USD catalog price or missing FX rate blocks converted quote price</span>
+        </div>
+
+        <div class="cp-item">
+          <div class="cp-num">Path 4B - Quotes Workspace operating view</div>
+          <div class="cp-path">
+            <span class="cp-node active-node">Quote table</span>
+            <span class="cp-arr">→</span>
+            <span class="cp-node">Detail panel</span>
+            <span class="cp-arr">→</span>
+            <span class="cp-node">Approval / revise / send</span>
+          </div>
+          <div class="cp-desc">Quotes now follow the Quotes redesign HTML: mode switch, Export, + New quote, filter bar, KPI cards, approval queue banner, selectable table rows, row actions, detail approval gate, line items, locked FX context, override reasons, Create order, Export PDF, and version history in one workspace. Quote Builder creates and edits; Quotes Workspace operates the lifecycle.</div>
+          <span class="cp-blocker">⚠ Gate: No send without clear approval status and visible pricing context</span>
         </div>
 
         <div class="cp-item">
@@ -825,10 +838,11 @@ body{
           <div class="ic-sprint-label">Sprint 2 — Core Workflows (4–5 days)</div>
           <div class="ic-item"><div class="ic-check">✓</div>Lead Command Center — 4 workflow pillars + inline panels</div>
           <div class="ic-item"><div class="ic-check">✓</div>Quote Prep Checklist with readiness gate</div>
-          <div class="ic-item"><div class="ic-check">✓</div>Pipeline kanban with DnD + stage readiness check</div>
+          <div class="ic-item"><div class="ic-check">✓</div>Pipeline execution board with blocker-first command header, DnD, stage readiness check, quote handoff, order handoff, and detail panel</div>
           <div class="ic-item"><div class="ic-check">✓</div>Lead card slide-in detail panel (replacing alert-based navigation)</div>
           <div class="ic-item"><div class="ic-check">✓</div>Dashboard D3 map + KPI strip + action queue</div>
           <div class="ic-item"><div class="ic-check">✓</div>Cross-page navigation (all links use navigate() not alert())</div>
+          <div class="ic-item"><div class="ic-check">✓</div>Orders execution desk with command header, state machine, blockers, commercial lock, and detail workflow CTAs</div>
         </div>
 
         <div class="ic-sprint s3">
@@ -836,7 +850,7 @@ body{
           <div class="ic-item"><div class="ic-check">✓</div>Governance banner in Admin (gap chips → clickable fixes)</div>
           <div class="ic-item"><div class="ic-check">✓</div>Approval threshold enforcement in quote builder</div>
           <div class="ic-item"><div class="ic-check">✓</div>Filter bar consistency across all pages</div>
-          <div class="ic-item"><div class="ic-check">✓</div>Catalog gap badges + category tabs</div>
+          <div class="ic-item"><div class="ic-check">✓</div>Catalog gap badges, Products/Pricing/Spreadsheet modes, export, and quick quote handoff</div>
           <div class="ic-item"><div class="ic-check">✓</div>vCard modal from any page</div>
           <div class="ic-item"><div class="ic-check">✓</div>Audit log in Admin with category filters</div>
         </div>
@@ -864,5 +878,5 @@ body{
     </div>
   </div>
 </div>
-</body>
+<section style="margin:24px;padding:16px;border:1px solid #dbe3ef;border-radius:18px;background:#f8fafc"><strong>PR-NS-07.5 visual parity:</strong> This reference is now locked as the visual source for Quotes, Orders, Pipeline, and Catalog command headers, filters, KPI rhythm, CTAs, tables/cards, detail panels, blockers, and workflow actions before PR-NS-08.</section></body>
 </html>

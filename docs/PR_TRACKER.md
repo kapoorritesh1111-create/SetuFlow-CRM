@@ -1,34 +1,48 @@
-# PR Tracker
+# SETU Flow PR Tracker
 
-## Current status
+NorthStar rebuild is active. PR-NS-07.5 is closed in this repo pass; PR-NS-08 is now the active next implementation step.
 
-PR-36 is closed in this repo pass.
+## Current completed pass
 
-## Closed in this pass
+### PR-NS-07.5 — NorthStar visual parity hardening
 
-### PR-36 — Investor package polish
+Status: Completed
 
-Status: **Closed**
+Goal: make Quotes, Orders, Pipeline, and Catalog look and feel like the redesign HTML, not just behave correctly.
 
-Delivered:
+Completed alignment:
+- Quotes uses the shared NorthStar command hero, exact Quotes Workspace language, All/Buyers/Suppliers switch, Export, + New quote, status/date/company filters, KPI rhythm, approval queue, quote table, detail panel, FX/override visibility, and workflow CTAs from the quotes redesign.
+- Orders uses the shared NorthStar command hero, Orders Execution Desk language, Open order, View quote, Upload document, Export, All/Buyers/Suppliers switch, execution KPI cards, order lifecycle, blockers, and dispatch readiness context from the orders redesign.
+- Pipeline uses the redesign language for Pipeline / Risks and Kanban Board, with Quick Lead, Follow-up Queue, Dashboard link, blocker-first filters, KPI cards, lane board, stage movement guards, and quote/order handoff CTAs.
+- Catalog uses Catalog — Products, Pricing & Variants language, Products/Pricing/Spreadsheet modes, Export, Add product, Pricing gaps, KPI coverage, product table pricing columns, inline USD baseline editing, drawer editing, and quote-ready signals.
+- Shared workspace surface tokens were tightened so the four pages use the same rounded command-card, metric-card, CTA, and table-shell feel.
+- Internal DCC, Release Proof, root page, and NorthStar reference notes now mark PR-NS-07.5 complete and keep PR-NS-08 as the active next development step.
 
-- the DCC now explains the final investor story in plain language without weakening commercial truth
-- the README, architecture, release readiness, and product-status contract now align around one concise diligence-safe narrative
-- `docs/INVESTOR_READINESS.md` now separates:
-  - what is proven directly in repo behavior
-  - what is proven by aligned docs and readiness surfaces
-  - what remains deferred to production operations or future scale proof
-- the buyer journey, communication governance, AI boundaries, and hardening posture remain intact
-- the commercial contract remains unchanged
+Acceptance proof:
+- Quotes, Orders, Pipeline, and Catalog are now visually aligned to their redesign HTML patterns across command header, filters, KPI rhythm, CTAs, tables/cards, right/detail context, and workflow language.
+- Existing quote FX, quote override, order execution, pipeline gating, and catalog pricing logic were not changed.
 
-## Remaining PR stack
+## Completed NorthStar sequence
 
-None in the planned readiness stack.
+- PR-NS-01 — Leads foundation rebuild
+- PR-NS-02 — Lead Command Center workflow depth
+- PR-NS-02B — Leads Reference Fidelity Lock
+- PR-NS-03 — Quote Builder governed workflow
+- PR-NS-04 — Quotes Workspace rebuild
+- PR-NS-05 — Pipeline execution board rebuild
+- PR-NS-06 — Orders execution desk rebuild
+- PR-NS-07 — Catalog operational rebuild
+- PR-NS-07.5 — NorthStar visual parity hardening
 
-## Pending PR count
+## Active next step
 
-**0 remaining**
+### PR-NS-08 — Catalog-to-Quote data wiring hardening
 
-## Closure rule
+Scope:
+- Harden catalog baselines into Quote Builder.
+- Carry selected product, variant, USD catalog baseline, market/currency, pricing tier, missing-price warnings, FX lock reuse, and override approval thresholds across create, edit, revise, and duplicate quote flows.
+- Preserve the visual parity layer completed in PR-NS-07.5.
 
-Only reduce the pending PR count when a pass genuinely resolves the scoped truth gap. This pass does so for PR-36 because the repo now has a concise, defensible, and non-technical investor package grounded in existing repo truth instead of new overclaimed functionality.
+## Next prompt
+
+PR-NS-08 — Catalog-to-Quote data wiring hardening

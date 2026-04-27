@@ -630,6 +630,20 @@ export function PipelineBoard({
     filteredLeadCount: filteredLeads.length,
   });
 
+  const totalPipelineValue = filteredLeads.reduce((sum, lead) => sum + (Number(lead.deal_value ?? 0) || 0), 0);
+  const valueCurrency = filteredLeads.find((lead) => lead.deal_currency)?.deal_currency ?? 'USD';
+  const blockedRecordCount = filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0);
+  const selectedLead = filteredLeads[0] ?? null;
+  const selectedStageName = selectedLead?.stage_id
+    ? filteredStageGroups.find((group) => group.stages.some((stage) => stage.id === selectedLead.stage_id))?.name ?? 'Unassigned stage'
+    : 'Unassigned stage';
+  const selectedOwner = selectedLead?.owner_user_id ? ownerLabelMap.get(selectedLead.owner_user_id) ?? 'Unassigned' : 'Unassigned';
+  const selectedCurrentStage = selectedLead?.stage_id ? stageById.get(selectedLead.stage_id) ?? null : null;
+  const selectedReadiness = selectedLead && selectedCurrentStage ? getStageMoveReadinessForLead(selectedLead, selectedCurrentStage) : null;
+  const selectedQuoteCount = selectedLead ? getLeadActiveQuoteCount(selectedLead.id) : 0;
+  const selectedRfqCount = selectedLead ? getLeadOpenRfqCount(selectedLead.id) : 0;
+  const pipelineModeLabel = workspaceMode === 'buyers' ? 'Buyer pipeline' : workspaceMode === 'suppliers' ? 'Supplier pipeline' : 'All pipelines';
+
   const resetFilters = () => {
     setFollowUpFilter('');
     setOwnerFilter('');
@@ -646,8 +660,8 @@ export function PipelineBoard({
   return (
     <div className="space-y-4">
       <WorkspaceWorkflowShell
-        title="Pipeline"
-        description="Use the explicit pipeline rescue board to see stalled work, blockers, and the next intervention without letting the pipeline collapse into passive analytics."
+        title="Pipeline / Risks"
+        description="Move buyers and suppliers through the NorthStar stage board with blockers, commercial readiness, quote handoff, and order execution context visible before every stage move."
         mode={workspaceMode}
         onModeChange={(nextMode) => {
           setWorkspaceMode(nextMode);
@@ -673,6 +687,41 @@ export function PipelineBoard({
           </>
         )}
       />
+
+      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-950" aria-label="NorthStar pipeline command header">
+        <div className="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-200">Pipeline / Risks</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">Kanban Board</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-200">NorthStar alignment: lane work stays stage-led, while quote readiness, order handoff, owner accountability, and follow-up pressure stay visible in one operator workspace.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a href={PRODUCT_ROUTES.app.leads} className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-white px-4 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100">＋ Quick Lead</a>
+            <button type="button" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/20 px-4 text-sm font-semibold text-white transition hover:bg-white/10">Follow-up Queue</button>
+            <button type="button" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/20 px-4 text-sm font-semibold text-white transition hover:bg-white/10">Dashboard →</button>
+          </div>
+        </div>
+        <div className="grid gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 lg:grid-cols-[1fr_auto]">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{pipelineModeLabel}</span>
+            <span className={cn('rounded-full border px-3 py-1 text-xs font-semibold', overdueCount ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700')}>{overdueCount ? String(overdueCount) + ' overdue follow-ups' : 'No overdue follow-ups'}</span>
+            <span className={cn('rounded-full border px-3 py-1 text-xs font-semibold', blockedRecordCount ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>{blockedRecordCount} move blockers</span>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">{filteredStageGroups.length} active lanes</span>
+          </div>
+          <div className="flex flex-wrap gap-2 lg:justify-end">
+            <a href={PRODUCT_ROUTES.app.quotes} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">Open quotes</a>
+            <a href={PRODUCT_ROUTES.app.orders} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 px-3 text-xs font-semibold text-white hover:bg-slate-800">Create order</a>
+          </div>
+        </div>
+        <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5">
+          <ToolbarStat label="Visible cards" value={String(filteredLeads.length)} tone="default" />
+          <ToolbarStat label="Pipeline value" value={valueCurrency + ' ' + Math.round(totalPipelineValue).toLocaleString()} tone="default" />
+          <ToolbarStat label="Blocked" value={String(blockedRecordCount)} tone={blockedRecordCount ? 'danger' : 'default'} />
+          <ToolbarStat label="Due today" value={String(todayCount)} tone={todayCount ? 'warning' : 'default'} />
+          <ToolbarStat label="At risk" value={String(atRiskCount)} tone={atRiskCount ? 'warning' : 'default'} />
+        </div>
+      </section>
+
       <section className="sticky top-[73px] z-20 space-y-3">
         <div className={cn('grid gap-3 rounded-[1.4rem] border p-4 shadow-soft lg:grid-cols-[0.9fr_1.1fr_auto]', workspacePanelClass)}>
           <div className="rounded-[1rem] border border-slate-200 bg-white/80 px-4 py-3">
@@ -687,6 +736,7 @@ export function PipelineBoard({
           </div>
           <div className="flex flex-col items-start gap-2 lg:min-w-[220px]">
             <a href={PRODUCT_ROUTES.app.leads} className={workspacePrimaryButtonClass}>Open follow-up queue</a>
+            <a href={PRODUCT_ROUTES.app.quotes} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Quotes</a>
             <a href={PRODUCT_ROUTES.app.orders} className="text-sm font-semibold text-slate-700 hover:text-slate-900">Orders</a>
           </div>
         </div>
@@ -849,6 +899,54 @@ export function PipelineBoard({
           <div className="hidden gap-4 overflow-x-auto overscroll-x-contain pb-3 pr-1 [scrollbar-width:thin] md:flex" aria-label="Pipeline stages">
             {filteredStageGroups.map((group) => renderLane(group))}
           </div>
+
+          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]" aria-label="Pipeline workflow review and detail">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-soft dark:border-slate-800 dark:bg-slate-950">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-500">Workflow review</p>
+                  <h2 className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">Stage movement, quote handoff, and order readiness</h2>
+                  <p className="mt-1 text-sm text-slate-500">Use this review layer before moving a card so the operator can see follow-up pressure, blockers, pricing readiness, quote activity, and the downstream order action.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <a href={PRODUCT_ROUTES.app.quotes} className={workspaceSecondaryButtonClass}>Prepare quote</a>
+                  <a href={PRODUCT_ROUTES.app.orders} className={workspacePrimaryButtonClass}>Create order</a>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <StateMessage title="Move guardrails" tone={blockedRecordCount ? 'warning' : 'success'} description={blockedRecordCount ? String(blockedRecordCount) + ' cards still need blocker clearance before stage movement.' : 'Visible cards can progress without a major blocker.'} />
+                <StateMessage title="Quote handoff" tone={quotes.length ? 'neutral' : 'warning'} description={quotes.length ? String(quotes.length) + ' quote records are connected to this pipeline view.' : 'No quote records are connected to this filtered pipeline view yet.'} />
+                <StateMessage title="Order handoff" tone="neutral" description="Approved quote and closed-won movement should route operators toward the Orders execution desk." />
+              </div>
+            </div>
+
+            <aside className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-soft dark:border-slate-800 dark:bg-slate-950" aria-label="Pipeline detail panel">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-500">Detail panel</p>
+                  <h2 className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">{selectedLead?.company_name ?? 'No card selected'}</h2>
+                  <p className="mt-1 text-sm text-slate-500">{selectedLead ? selectedStageName + ' · ' + selectedOwner : 'Filtered board snapshot appears here.'}</p>
+                </div>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{selectedLead?.lead_type ?? 'lead'}</span>
+              </div>
+              <div className="mt-4 space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Move readiness</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">{selectedReadiness?.summary ?? 'Select a card or adjust filters to review readiness.'}</p>
+                  {selectedReadiness?.blockers?.length ? <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-rose-700">{selectedReadiness.blockers.slice(0, 3).map((blocker) => <li key={blocker}>{blocker}</li>)}</ul> : <p className="mt-2 text-xs text-emerald-700">No visible blocker on the current snapshot.</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3"><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Quotes</p><p className="mt-1 text-xl font-semibold text-slate-950">{selectedQuoteCount}</p></div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3"><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">RFQs</p><p className="mt-1 text-xl font-semibold text-slate-950">{selectedRfqCount}</p></div>
+                </div>
+                <div className="grid gap-2">
+                  <a href={selectedLead ? buildLeadCommandCenterHref(selectedLead.id) : PRODUCT_ROUTES.app.leads} className={workspacePrimaryButtonClass}>Open command center</a>
+                  <a href={PRODUCT_ROUTES.app.quotes} className={workspaceSecondaryButtonClass}>Open quote workspace</a>
+                  <a href={PRODUCT_ROUTES.app.orders} className={workspaceSecondaryButtonClass}>Open order workspace</a>
+                </div>
+              </div>
+            </aside>
+          </section>
 
           {!filteredLeads.length ? <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-soft dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300">No pipeline cards match the current filters. Reset filters or switch journeys to restore your working board.</div> : null}
         </>

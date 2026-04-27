@@ -36,7 +36,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
   const [response, setResponse] = useState<ProductsSpreadsheetResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'unit' | 'case'>('unit');
+  const [catalogMode, setCatalogMode] = useState<'products' | 'pricing' | 'spreadsheet'>('products');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [pricingMode, setPricingMode] = useState('');
@@ -119,6 +119,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
   const summary = response?.summary;
   const pricingCoverage = formatPercent(summary?.priced_variants ?? 0, summary?.visible_variants ?? 0);
   const quoteReadyCoverage = formatPercent(summary?.quote_ready_variants ?? 0, summary?.visible_variants ?? 0);
+  const viewMode = catalogMode === 'spreadsheet' ? 'case' : 'unit';
   const filtersApplied = Boolean(search || category || pricingMode || gapFilter !== 'all' || activeFilter !== 'all' || quoteableFilter !== 'all');
   const isEmptyWorkspace = !loading && rows.length === 0 && !filtersApplied;
   const isFilteredEmpty = !loading && !isEmptyWorkspace && filteredRows.length === 0;
@@ -152,7 +153,6 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
     await openProduct(productId);
   };
 
-
   const tradeShowQuickLeadHref = '/leads?quickLead=1&sourceType=trade_show&sourceLabel=Trade%20show%20fast%20lane&autoQuote=1';
   const quoteReadyRows = useMemo(() => filteredRows.filter((row) => row.is_quoteable && row.is_active), [filteredRows]);
   const readyToSellRows = useMemo(() => quoteReadyRows.filter((row) => row.pricing_rule_set_id && (row.ex_factory_value != null || row.fob_value != null)), [quoteReadyRows]);
@@ -163,44 +163,36 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
   const totalRows = response?.meta.total_rows ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
 
+  const openAddProduct = () => {
+    if (!canManageCatalog) {
+      setActionBlockedMessage(readOnlyMessage ?? 'Read-only mode is active. Ask a catalog manager to add or edit products.');
+      return;
+    }
+    setActionBlockedMessage(null);
+    setAddDrawerOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className={cn('p-6', workspaceHeroClass)}>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">Governed commercial source of truth</div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">Catalog command center</h1>
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">Catalog — Products, Pricing & Variants</div>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">Products & Pricing</h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-              Pick a priced product, confirm it is quote-ready, then jump into Quote. Keep the setup here without making the team read through the whole pricing story first.
+              Review quote-ready coverage, fix pricing gaps, edit USD catalog baselines, and open the right product drawer before a quote is sent.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link href={tradeShowReadyHref} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>
-              {tradeShowReadyProduct ? 'Quick quote from ready product' : 'Trade-show quick quote'}
+              {tradeShowReadyProduct ? 'Quick quote' : 'Trade-show quick quote'}
             </Link>
-            <div className="inline-flex rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900/85">
-              <button type="button" onClick={() => setViewMode('unit')} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${viewMode === 'unit' ? 'bg-slate-950 text-white dark:bg-sky-500 dark:text-slate-950' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
-                Per Unit
-              </button>
-              <button type="button" onClick={() => setViewMode('case')} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${viewMode === 'case' ? 'bg-slate-950 text-white dark:bg-sky-500 dark:text-slate-950' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
-                Per Case
-              </button>
-            </div>
+            <a href="/api/products/spreadsheet?page_size=1000" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>⬇ Export</a>
+            <button type="button" onClick={() => setGapFilter('has_gap')} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Pricing gaps</button>
             <button type="button" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`} onClick={() => void loadSpreadsheet()}>
               Refresh
             </button>
-            <button
-              type="button"
-              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}
-              onClick={() => {
-                if (!canManageCatalog) {
-                  setActionBlockedMessage(readOnlyMessage ?? 'Read-only mode is active. Ask a catalog manager to add or edit products.');
-                  return;
-                }
-                setActionBlockedMessage(null);
-                setAddDrawerOpen(true);
-              }}
-            >
+            <button type="button" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`} onClick={openAddProduct}>
               Add product
             </button>
           </div>
@@ -211,12 +203,15 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         <div className={workspacePanelClass}>
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">Above-the-fold fast lane</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">Where am I, what is blocking me, what do I do next?</h2>
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/70"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">Where am I</p><p className="mt-2 text-sm text-slate-700 dark:text-slate-200">Catalog is the pre-priced product lane. Pick a quote-ready product and move straight into Quote.</p></div>
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">What blocks me</p><p className="mt-2 text-sm text-amber-900 dark:text-amber-100">Missing pricing, not quoteable, or inactive products should stop the quick path immediately.</p></div>
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">What do I do next</p><p className="mt-2 text-sm text-emerald-900 dark:text-emerald-100">Use the product quick quote jump for pre-priced trade-show selling, or open a product to fix the blocker first.</p></div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">Operational fast lane</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">Products / Pricing / Spreadsheet</h2>
+              <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">Switch modes without leaving Catalog: review products, edit unit pricing baselines, or inspect case-level spreadsheet pricing.</p>
+              <div className="mt-4 inline-flex flex-wrap rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900/85">
+                {[{ key: 'products', label: 'Products' }, { key: 'pricing', label: 'Pricing view' }, { key: 'spreadsheet', label: 'Spreadsheet' }].map((mode) => (
+                  <button key={mode.key} type="button" onClick={() => setCatalogMode(mode.key as typeof catalogMode)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${catalogMode === mode.key ? 'bg-slate-950 text-white dark:bg-sky-500 dark:text-slate-950' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
+                    {mode.label}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="flex min-w-[280px] flex-col gap-2 xl:max-w-sm">
@@ -231,6 +226,11 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
               </div>
             </div>
           </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/70"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">Where am I</p><p className="mt-2 text-sm text-slate-700 dark:text-slate-200">Catalog is the USD source of truth for products, variants, and pricing baselines.</p></div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">What blocks me</p><p className="mt-2 text-sm text-amber-900 dark:text-amber-100">Missing pricing, not quoteable, inactive products, or bulk gaps stop the quick quote path.</p></div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">What do I do next</p><p className="mt-2 text-sm text-emerald-900 dark:text-emerald-100">Fix gaps inline or in the drawer, then use Quick quote when the product is ready.</p></div>
+          </div>
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-200">{readyToSellRows.length} ready to sell now</span>
             <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-200">{quoteReadyRows.length} quote-ready rows</span>
@@ -240,12 +240,12 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         </div>
 
         <aside className={workspacePanelClass}>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">AI help</p>
-          <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">AI should explain the blocker, not slow the team down</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Use AI after the fast lane shows a product is missing pricing or quote-ready proof. Do not force extra reading when the product is already clean and ready.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Workflow review</p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">Price gaps and quote readiness are visible before handoff</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Use this panel as the Catalog review lane: export the catalog, review blockers, open AI guidance, or jump into Quote only after the product is active, quote-ready, and priced.</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/ai-suggestions?family=quote" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>Open AI guidance</Link>
-            <Link href={tradeShowReadyHref} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Use ready product in quote</Link>
+            <a href="/api/products/spreadsheet?page_size=1000" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>Export catalog</a>
+            <Link href="/ai-suggestions?family=quote" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Open AI guidance</Link>
           </div>
         </aside>
       </section>
@@ -339,7 +339,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Commercial handoff</div>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Products now feed the commercial flow directly. Reuse this catalog context from leads, pipeline, and quotes without rebuilding pricing assumptions.</p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">USD catalog prices now feed quotes through the selected quote/company currency. Missing catalog pricing must be fixed here before quote send.</p>
           </div>
           <div className="flex flex-wrap gap-3 text-sm font-semibold">
             <Link href="/leads" className={`rounded-xl px-3 py-2 ${workspaceSecondaryButtonClass}`}>Leads</Link>
