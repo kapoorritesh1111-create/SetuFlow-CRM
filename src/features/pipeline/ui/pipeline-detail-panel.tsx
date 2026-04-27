@@ -18,7 +18,7 @@ type Lead = {
 
 type Stage = { id: string; name: string; sort_order: number | null };
 
-type MoveReadiness = { status: 'ready' | 'at_risk' | 'blocked'; blockers: string[]; summary: string };
+type MoveReadiness = { status: 'ready' | 'at_risk' | 'blocked'; blockers: string[]; warnings?: string[]; actionItems?: string[]; summary: string; canMove?: boolean };
 
 export interface PipelineDetailPanelProps {
   lead: Lead | null;

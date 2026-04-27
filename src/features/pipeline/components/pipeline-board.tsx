@@ -989,7 +989,7 @@ export function PipelineBoard({
         });
         const panelStage = panelLead.stage_id ? stageById.get(panelLead.stage_id) ?? stages.find((s) => s.id === panelLead.stage_id) ?? null : null;
         const panelReadiness: StageMoveReadiness = panelStage ? getStageMoveReadinessForLead(panelLead, panelStage) : { status: 'ready', summary: 'No stage assigned yet.', blockers: [], warnings: [], actionItems: ['Assign stage'], canMove: true };
-        const panelPricingLabel = getPricingReadinessLabel(buildLeadCommercialReadiness({ products: [], leadProductInterests: localLeadProductInterests.filter(i => i.lead_id === panelLead.id), markets: [], leadMarkets: localLeadMarkets.filter(m => m.lead_id === panelLead.id), prices: prices, variants: variants, pricingRules: pricingRules }).pricingReadiness);
+        const panelPricingLabel = getPricingReadinessLabel(readinessByLeadId.get(panelLead.id)?.pricingReadiness ?? 'missing');
         const panelOwner = profiles.find(p => p.id === panelLead.owner_user_id)?.full_name ?? 'Unassigned';
         const panelHref = buildLeadCommandCenterHref(panelLead.id);
         return (
