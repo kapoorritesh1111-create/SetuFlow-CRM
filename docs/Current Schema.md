@@ -1451,6 +1451,7 @@ CREATE TABLE public.trade_events (
   notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  capture_defaults jsonb NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT trade_events_pkey PRIMARY KEY (id),
   CONSTRAINT trade_events_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );

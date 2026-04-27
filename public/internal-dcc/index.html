@@ -6,76 +6,111 @@
   <title>SETU Flow Internal DCC — NorthStar Rebuild Plan</title>
   <style>
     :root{
-      --bg:#f4f6fb;--panel:#ffffff;--panel-soft:#f8fafc;--line:#e2e8f0;--line-strong:#cbd5e1;
-      --text:#0f172a;--muted:#64748b;--brand:#0c7fff;--brand-soft:#eff6ff;--navy:#1f487c;--teal:#279491;
-      --good:#059669;--good-soft:#ecfdf5;--warn:#d97706;--warn-soft:#fffbeb;--bad:#dc2626;--bad-soft:#fff1f2;
-      --violet:#7c3aed;--violet-soft:#f5f3ff;--shadow:0 10px 30px rgba(15,23,42,.08);--radius:20px;--radius-sm:12px;
+      --bg:#f4f6fb;--panel:#fff;--panel-soft:#f8fafc;--line:#e2e8f0;
+      --text:#0f172a;--muted:#64748b;--brand:#0c7fff;--brand-soft:#eff6ff;
+      --navy:#1f487c;--teal:#279491;
+      --good:#059669;--good-soft:#ecfdf5;--warn:#d97706;--warn-soft:#fffbeb;
+      --bad:#dc2626;--bad-soft:#fff1f2;--violet:#7c3aed;--violet-soft:#f5f3ff;
+      --shadow:0 10px 30px rgba(15,23,42,.08);--radius:20px;
     }
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;background:linear-gradient(180deg,#f8fbff 0%,var(--bg) 100%);color:var(--text);font-size:14px;line-height:1.55}
-    a{color:inherit;text-decoration:none}.wrap{max-width:1400px;margin:0 auto;padding:28px 22px 64px}
-    .hero{background:linear-gradient(135deg,var(--navy) 0%,#2a5f8a 50%,var(--teal) 100%);color:#fff;border-radius:28px;padding:28px;box-shadow:var(--shadow)}
-    .eyebrow{font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.72)}
-    h1,h2,h3,p{margin:0}.hero h1{margin-top:10px;font-size:34px;line-height:1.08;letter-spacing:-.04em}.hero p{margin-top:10px;max-width:1020px;color:rgba(255,255,255,.84);line-height:1.7}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:linear-gradient(180deg,#f8fbff 0%,var(--bg) 100%);color:var(--text);font-size:14px;line-height:1.55}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:1400px;margin:0 auto;padding:28px 22px 80px}
+    /* Hero */
+    .hero{background:linear-gradient(135deg,var(--navy) 0%,#2a5f8a 45%,var(--teal) 100%);color:#fff;border-radius:28px;padding:28px;box-shadow:var(--shadow)}
+    .eyebrow{font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+    h1,h2,h3,p{margin:0}
+    .hero h1{margin-top:10px;font-size:32px;font-weight:800;line-height:1.08;letter-spacing:-.04em}
+    .hero p{margin-top:10px;max-width:1020px;color:rgba(255,255,255,.84);line-height:1.7}
     .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:20px}
-    .hero-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:22px;padding:18px;backdrop-filter:blur(8px)}
-    .hero-card h2{font-size:18px;margin-bottom:8px}.hero-card ul{margin:8px 0 0 18px;padding:0;line-height:1.8;color:rgba(255,255,255,.88)}
+    .hero-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:22px;padding:18px}
+    .hero-card h2{font-size:16px;margin-bottom:8px}
+    .hero-card ul{margin:8px 0 0 18px;padding:0;line-height:1.85;color:rgba(255,255,255,.88);font-size:13px}
     .pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-    .pill{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.12);color:#fff}
-    .pill.light{background:#fff;color:var(--navy)}.pill.warn{background:#fef3c7;color:#92400e;border-color:#fde68a}.pill.good{background:#d1fae5;color:#065f46;border-color:#a7f3d0}
-    .section{margin-top:18px}.grid{display:grid;gap:16px}.grid-2{grid-template-columns:1fr 1fr}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}.card.soft{background:var(--panel-soft);box-shadow:none}
-    .card h2{font-size:20px;margin-bottom:8px;letter-spacing:-.02em}.card h3{font-size:15px;margin-bottom:6px}.muted{color:var(--muted)}
-    .kpi{display:flex;flex-direction:column;gap:4px}.kpi .num{font-size:26px;font-weight:900;letter-spacing:-.04em}.kpi .lbl{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
-    .status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}
-    .status.good{background:var(--good-soft);color:var(--good);border:1px solid #a7f3d0}.status.warn{background:var(--warn-soft);color:var(--warn);border:1px solid #fde68a}
-    .status.neutral{background:#f1f5f9;color:#475569;border:1px solid var(--line)}.status.bad{background:var(--bad-soft);color:var(--bad);border:1px solid #fecaca}
-    .status.violet{background:var(--violet-soft);color:var(--violet);border:1px solid #ddd6fe}.status.active{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+    .pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.12);color:#fff}
+    .pill.warn{background:#fef3c7;color:#92400e;border-color:#fde68a}
+    .pill.good{background:#d1fae5;color:#065f46;border-color:#a7f3d0}
+    .pill.light{background:#fff;color:var(--navy)}
+    .pill.orange{background:#fed7aa;color:#9a3412;border-color:#fdba74}
+    /* Layout */
+    .section{margin-top:18px}.grid{display:grid;gap:14px}
+    .grid-2{grid-template-columns:1fr 1fr}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+    .card h2{font-size:19px;font-weight:800;margin-bottom:8px;letter-spacing:-.02em}
+    .card h3{font-size:14px;font-weight:700;margin-bottom:6px}
+    .muted{color:var(--muted)}.small{font-size:12px}
+    .kpi{display:flex;flex-direction:column;gap:4px}
+    .kpi .num{font-size:26px;font-weight:900;letter-spacing:-.04em}
+    .kpi .lbl{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+    /* Status badges */
+    .status{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+    .status.good{background:var(--good-soft);color:var(--good);border:1px solid #a7f3d0}
+    .status.warn{background:var(--warn-soft);color:var(--warn);border:1px solid #fde68a}
+    .status.neutral{background:#f1f5f9;color:#475569;border:1px solid var(--line)}
+    .status.bad{background:var(--bad-soft);color:var(--bad);border:1px solid #fecaca}
+    .status.violet{background:var(--violet-soft);color:var(--violet);border:1px solid #ddd6fe}
+    .status.active{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+    .status.orange{background:#fed7aa;color:#9a3412;border:1px solid #fdba74}
+    /* Tables */
     .table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:#fff}
-    .table th{background:#f8fafc;color:#94a3b8;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.14em;padding:10px 12px;border-bottom:1px solid var(--line)}
-    .table td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}.table tr:last-child td{border-bottom:0}.table strong{color:#0f172a}
-    .small{font-size:12px}.route{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#475569;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:3px 7px;font-size:12px;display:inline-flex;width:max-content}
-    .link-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-    .link-card{display:block;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 1px 4px rgba(15,23,42,.04);transition:.14s}
-    .link-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,23,42,.08);border-color:#bfdbfe}.link-card strong{display:block;margin-bottom:6px}
-    .desc{color:var(--muted);font-size:12px;margin-top:6px}
-    .callout{border-radius:18px;padding:16px;border:1px solid}.callout.good{background:var(--good-soft);border-color:#a7f3d0;color:#065f46}
-    .callout.warn{background:var(--warn-soft);border-color:#fde68a;color:#92400e}.callout.bad{background:var(--bad-soft);border-color:#fecaca;color:#991b1b}
-    .callout.blue{background:var(--brand-soft);border-color:#bfdbfe;color:#1e3a8a}.callout.violet{background:var(--violet-soft);border-color:#ddd6fe;color:#5b21b6}
-    .phase-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
-    .footer{margin-top:24px;border-top:1px solid var(--line);padding-top:16px;display:flex;justify-content:space-between;gap:14px;color:var(--muted);font-size:12px}
-    /* tabs */
-    .tab-bar{display:flex;gap:2px;background:#f1f5f9;border-radius:14px;padding:4px;margin-top:20px;flex-wrap:wrap}
-    .tab-btn{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--muted);transition:.14s;white-space:nowrap}
-    .tab-btn.active{background:#fff;color:var(--text);box-shadow:0 1px 6px rgba(15,23,42,.08)}.tab-btn:hover:not(.active){color:var(--text)}
-    .tab-panel{display:none;margin-top:18px}.tab-panel.active{display:block}
-    /* PR cards */
-    .pr-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:16px}
-    .pr-card h3{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
-    .pr-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-    .pr-section{margin-top:14px}.pr-section h4{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:6px}
-    .pr-section ul,.pr-section ol{margin:0;padding-left:18px;line-height:1.9;font-size:13px}
-    .pr-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .table th{background:#f8fafc;color:#94a3b8;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.14em;padding:9px 12px;border-bottom:1px solid var(--line)}
+    .table td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+    .table tr:last-child td{border-bottom:0}
     code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1f5f9;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12px;color:#334155}
-    .progress-bar-wrap{background:#f1f5f9;border-radius:999px;height:8px;overflow:hidden;margin-top:4px}
-    .progress-bar{height:100%;border-radius:999px}.progress-bar.good{background:var(--good)}.progress-bar.warn{background:var(--warn)}.progress-bar.bad{background:var(--bad)}
-    .module-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
-    .module-name{font-weight:700;font-size:13px;min-width:160px}.module-pct{font-size:13px;font-weight:900;min-width:42px;text-align:right}.module-bar{flex:1;margin:0 8px}
-    .schema-badge{display:inline-flex;gap:4px;align-items:center;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700}
-    .schema-badge.ok{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}.schema-badge.bad{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
-    .migration-block{background:#0f172a;border-radius:12px;padding:16px;margin-top:10px;overflow-x:auto}
-    .migration-block pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#e2e8f0;line-height:1.7}
-    .blocked-badge{display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:900;text-transform:uppercase}
-    .done-badge{display:inline-flex;align-items:center;gap:4px;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:900;text-transform:uppercase}
-    .gap-row{padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px}.gap-row:last-child{border-bottom:none}
-    .gap-label{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:2px}
-    /* GPT prompt box */
-    .prompt-box{background:#0f172a;border-radius:16px;padding:20px;margin-top:14px;position:relative}
-    .prompt-box pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#e2e8f0;line-height:1.8;white-space:pre-wrap;word-break:break-word}
-    .copy-btn{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;transition:.14s}
+    /* Progress bars */
+    .bar-wrap{background:#f1f5f9;border-radius:999px;height:7px;overflow:hidden;margin-top:4px;flex:1}
+    .bar{height:100%;border-radius:999px}
+    .bar.g{background:var(--good)}.bar.w{background:var(--warn)}.bar.b{background:var(--bad)}.bar.v{background:var(--violet)}
+    .module-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+    .mn{font-weight:700;font-size:13px;min-width:170px}
+    .mp{font-size:13px;font-weight:900;min-width:42px;text-align:right}
+    /* Callouts */
+    .callout{border-radius:16px;padding:14px;border:1px solid}
+    .callout.good{background:var(--good-soft);border-color:#a7f3d0;color:#065f46}
+    .callout.warn{background:var(--warn-soft);border-color:#fde68a;color:#92400e}
+    .callout.bad{background:var(--bad-soft);border-color:#fecaca;color:#991b1b}
+    .callout.blue{background:var(--brand-soft);border-color:#bfdbfe;color:#1e3a8a}
+    .callout.orange{background:#fff7ed;border-color:#fdba74;color:#9a3412}
+    .callout.violet{background:var(--violet-soft);border-color:#ddd6fe;color:#5b21b6}
+    /* Tabs */
+    .tab-bar{display:flex;gap:2px;background:#f1f5f9;border-radius:14px;padding:4px;margin-top:20px;flex-wrap:wrap}
+    .tab-btn{padding:7px 16px;border-radius:10px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--muted);transition:.13s;white-space:nowrap}
+    .tab-btn.active{background:#fff;color:var(--text);box-shadow:0 1px 6px rgba(15,23,42,.08)}
+    .tab-btn:hover:not(.active){color:var(--text)}
+    .tab-panel{display:none;margin-top:16px}.tab-panel.active{display:block}
+    /* PR cards */
+    .pr-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:14px}
+    .pr-card h3{font-size:16px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+    .pr-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+    .pr-section{margin-top:12px}
+    .pr-section h4{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:5px}
+    .pr-section ul,.pr-section ol{margin:0;padding-left:18px;line-height:1.9;font-size:13px}
+    .pr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    /* Prompt boxes */
+    .prompt-box{background:#0f172a;border-radius:14px;padding:18px;margin-top:10px;position:relative}
+    .prompt-box pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:#e2e8f0;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+    .copy-btn{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:8px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;transition:.13s}
     .copy-btn:hover{background:rgba(255,255,255,.2)}
-    .prompt-label{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}
+    .prompt-label{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:6px}
+    /* Schema badges */
+    .sb{display:inline-flex;gap:3px;align-items:center;border-radius:7px;padding:2px 8px;font-size:11px;font-weight:700}
+    .sb.ok{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
+    .sb.bad{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+    .sb.warn{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+    /* Done/blocked badges */
+    .done-badge{display:inline-flex;gap:4px;align-items:center;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;border-radius:999px;padding:2px 9px;font-size:10px;font-weight:900;text-transform:uppercase}
+    .block-badge{display:inline-flex;gap:4px;align-items:center;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:999px;padding:2px 9px;font-size:10px;font-weight:900;text-transform:uppercase}
+    /* Link cards */
+    .link-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .link-card{display:block;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;transition:.13s}
+    .link-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(15,23,42,.08);border-color:#bfdbfe}
+    .link-card strong{display:block;margin-bottom:4px;font-size:13px}
+    .desc{color:var(--muted);font-size:12px;margin-top:4px}
+    /* footer */
+    .footer{margin-top:24px;border-top:1px solid var(--line);padding-top:14px;display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px}
     @media(max-width:1050px){.hero-grid,.grid-2,.pr-grid{grid-template-columns:1fr}.grid-3,.grid-4,.link-grid{grid-template-columns:1fr 1fr}}
-    @media(max-width:720px){.wrap{padding:16px 12px 40px}.hero h1{font-size:26px}.grid-3,.grid-4,.link-grid{grid-template-columns:1fr}.table{display:block;overflow-x:auto}.card{padding:16px}.tab-btn{font-size:12px;padding:6px 12px}}
+    @media(max-width:720px){.wrap{padding:14px 12px 40px}.hero h1{font-size:26px}.grid-3,.grid-4,.link-grid{grid-template-columns:1fr}.card{padding:14px}.tab-btn{font-size:11px;padding:5px 10px}}
   </style>
 </head>
 <body>
@@ -83,37 +118,43 @@
 
   <!-- HERO -->
   <section class="hero">
-    <div class="eyebrow">SETU Flow Internal DCC · Light Mode · NorthStar Locked · Updated Apr 27 2026</div>
+    <div class="eyebrow">SETU Flow Internal DCC · Light Mode · Updated Apr 27 2026</div>
     <h1>NorthStar rebuild control center</h1>
-    <p>Single engineering source of truth. Migrations 107 · 108 · 109 are confirmed applied. AI suggestions page schema gap resolved. Active work is PR-NS-08 (Catalog-to-Quote wiring). Next is PR-NS-09 (Admin & Settings rebuild — 5 missing sub-pages). Every PR has a copy-paste GPT prompt in the <strong>Next Prompt</strong> tab.</p>
+    <p>PR-NS-08 and PR-NS-09 are confirmed implemented. The audit of the NS-09 repo found <strong>8 specific gaps</strong> that remain across completed PRs. The recommended path is a <strong>focused hardening pass (PR-NS-09H)</strong> before continuing with NS-10 → NS-11 → NS-12 → NS-13. Migration 110 (<code>trade_events.capture_defaults</code>) should be applied before NS-10 starts.</p>
     <div class="pills">
-      <span class="pill warn">ACTIVE: PR-NS-08 — Catalog-to-Quote wiring</span>
-      <span class="pill">NEXT: PR-NS-09 — Admin & Settings rebuild</span>
-      <span class="pill good">Migrations 107 · 108 · 109 Applied ✓</span>
-      <span class="pill light">AI Suggestions page schema gap: FIXED</span>
+      <span class="pill orange">NEXT: PR-NS-09H — Hardening pass (8 confirmed gaps)</span>
+      <span class="pill good">NS-08 ✓ core done</span>
+      <span class="pill good">NS-09 ✓ all 5 admin pages built</span>
+      <span class="pill warn">Migration 110 — apply before NS-10</span>
+      <span class="pill light">Migrations 107 · 108 · 109 applied ✓</span>
     </div>
     <div class="hero-grid">
       <div class="hero-card">
-        <h2>Schema confirmed state — Apr 27 2026</h2>
+        <h2>NS-08 / NS-09 audit findings — Apr 27 2026</h2>
         <ul>
-          <li><strong>lead_markets.organization_id</strong> — ✓ present + RLS applied</li>
-          <li><strong>lead_product_interests.organization_id</strong> — ✓ present + RLS applied</li>
-          <li><strong>contract_line_items.organization_id</strong> — ✓ present + RLS applied</li>
-          <li><strong>organizations.approval_threshold_pct</strong> — ✓ present (default 15%)</li>
-          <li><strong>markets / pipelines / pipeline_stages</strong> — ✓ RLS enabled</li>
-          <li><strong>leads.trade_event_id</strong> — ✓ present (FK to trade_events)</li>
-          <li><strong>leads.pipeline_id + stage_id</strong> — ✓ both present</li>
-          <li><strong>quote_versions.pricing_basis</strong> — ✓ present (ex_factory/fob/cif/bulk_chips)</li>
+          <li><strong>bulk_chips added to PricingBasis</strong> — <code>QuotePricingBasis</code> in catalog-pricing-model.ts ✓</li>
+          <li><strong>detectMissingPrice() implemented</strong> — used in quote wizard ✓</li>
+          <li><strong>isCatalogPriceStale() built</strong> — but never called anywhere (gap 1)</li>
+          <li><strong>approvalThresholdPct wired in wizard</strong> — reads from org context ✓</li>
+          <li><strong>All 5 admin pages exist</strong> — markets, stages, pipelines, trade events, security ✓</li>
+          <li><strong>approval_threshold_pct not editable in admin security</strong> — gap 2</li>
+          <li><strong>Orders "Upload now" still links to /documents</strong> — gap 3</li>
+          <li><strong>Pipeline bulk move: no UI</strong> — gap 4</li>
+          <li><strong>FX lock badge missing in Edit mode</strong> — gap 5</li>
+          <li><strong>Trade event entry counts not shown</strong> — gap 6</li>
+          <li><strong>quote.status → 'converted' on order creation</strong> — gap 7</li>
+          <li><strong>AI suggestion applied → comm log not wired</strong> — gap 8</li>
         </ul>
       </div>
       <div class="hero-card">
-        <h2>Hard rules — unchanged</h2>
+        <h2>Why hardening first</h2>
         <ul>
-          <li>Every PR cites and follows its reference HTML.</li>
-          <li>Dashboard frozen until PR-NS-13 final pass.</li>
-          <li>No page rebuilt from memory or old styling.</li>
-          <li>Schema migrations run before UI work that depends on new columns.</li>
-          <li>After every PR: return updated repo zip + next DCC + copy-paste GPT prompt.</li>
+          <li>isCatalogPriceStale is built but dead — 1 line call needed in revise flow</li>
+          <li>approval_threshold_pct has no UI — operators can't change it at 15% default</li>
+          <li>Orders upload UX is broken — action exists, buttons don't call it</li>
+          <li>Gaps 7 and 8 are small server action wires that compound if left open</li>
+          <li>Hardening PR is narrow, scoped, and fully achievable in one GPT pass</li>
+          <li>Then NS-10 (Trade Events + Capture) and NS-11 (remaining cross-page) build on clean foundation</li>
         </ul>
       </div>
     </div>
@@ -121,749 +162,667 @@
 
   <!-- KPI STRIP -->
   <section class="section grid grid-4">
-    <div class="card kpi"><div class="num" style="color:var(--good)">9</div><div class="lbl">Completed PRs</div><p class="muted small">NS-01 through NS-07, 07.5, 07.6 merged.</p></div>
-    <div class="card kpi"><div class="num" style="color:var(--warn)">1</div><div class="lbl">Active PR</div><p class="muted small">PR-NS-08 Catalog-to-Quote wiring.</p></div>
-    <div class="card kpi"><div class="num" style="color:var(--good)">3</div><div class="lbl">Migrations Done</div><p class="muted small">107 + 108 + 109 all applied ✓</p></div>
-    <div class="card kpi"><div class="num" style="color:var(--bad)">5</div><div class="lbl">Admin Pages Missing</div><p class="muted small">Markets, Stages, Pipelines, Trade Events, Security.</p></div>
+    <div class="card kpi"><div class="num" style="color:var(--good)">9</div><div class="lbl">Completed PRs</div><p class="muted small">NS-01 through NS-07.6, plus NS-08 core, NS-09 all 5 admin pages.</p></div>
+    <div class="card kpi"><div class="num" style="color:var(--warn)">8</div><div class="lbl">Hardening Gaps</div><p class="muted small">Confirmed in NS-09 repo audit. All addressed in PR-NS-09H.</p></div>
+    <div class="card kpi"><div class="num" style="color:var(--good)">3</div><div class="lbl">Migrations Done</div><p class="muted small">107 · 108 · 109 all applied ✓</p></div>
+    <div class="card kpi"><div class="num" style="color:var(--warn)">1</div><div class="lbl">Migration Pending</div><p class="muted small">Migration 110 — apply before NS-10 starts.</p></div>
   </section>
 
   <!-- TABS -->
   <div class="tab-bar">
     <button class="tab-btn active" onclick="showTab('overview',this)">Overview & PR Stack</button>
     <button class="tab-btn" onclick="showTab('workflow',this)">Workflow Status</button>
-    <button class="tab-btn" onclick="showTab('pr-requirements',this)">PR Change Requirements</button>
+    <button class="tab-btn" onclick="showTab('gaps',this)">Gap Audit</button>
     <button class="tab-btn" onclick="showTab('schema',this)">Schema Status</button>
-    <button class="tab-btn" onclick="showTab('next-prompt',this)">⚡ Next Prompt</button>
-    <button class="tab-btn" onclick="showTab('references',this)">Reference HTML Registry</button>
+    <button class="tab-btn" onclick="showTab('prompts',this)">⚡ Next Prompts</button>
+    <button class="tab-btn" onclick="showTab('references',this)">Reference HTML</button>
   </div>
 
-  <!-- ══════════════════════ TAB 1: OVERVIEW ══════════════════════ -->
+  <!-- ══ TAB 1: OVERVIEW ══ -->
   <div class="tab-panel active" id="tab-overview">
-    <section class="section grid grid-2">
-      <div class="card">
-        <h2>Current status</h2>
-        <div class="phase-line">
-          <span class="status good">PR-NS-01 ✓</span><span class="status good">PR-NS-02 ✓</span><span class="status good">PR-NS-02B ✓</span>
-          <span class="status good">PR-NS-03 ✓</span><span class="status good">PR-NS-04 ✓</span><span class="status good">PR-NS-05 ✓</span>
-          <span class="status good">PR-NS-06 ✓</span><span class="status good">PR-NS-07 ✓</span><span class="status good">PR-NS-07.5 ✓</span>
-          <span class="status good">PR-NS-07.6 ✓</span><span class="status active">PR-NS-08 ACTIVE</span>
-        </div>
-        <p class="muted small" style="margin-top:12px">Key schema insight for PR-NS-08: <code>pricing_basis</code> lives on <code>quote_versions</code> (version-level tier: ex_factory/fob/cif/bulk_chips). Line item source prices are stored per-basis in <code>quote_version_line_items</code> (source_ex_factory_usd, source_fob_usd, etc.). <code>product_prices</code> has no pricing_basis column — tier selection is at the quote version level, not per product_price row. Quote Builder must surface <code>pricing_basis</code> as the version-level tier selector and detect null source_* fields as missing-price signals.</p>
-      </div>
-      <div class="card">
-        <h2>Critical outstanding gaps</h2>
-        <div class="callout bad" style="margin-bottom:10px"><strong>Admin: 5 sub-pages missing</strong> — <code>/admin/markets</code>, <code>/admin/stages</code>, <code>/admin/pipelines</code>, <code>/admin/trade-events</code>, <code>/admin/security</code> have no routes, no components, no data wiring. PR-NS-09.</div>
-        <div class="callout warn" style="margin-bottom:10px"><strong>Quote Builder: pricing_basis not surfaced</strong> — <code>quote_versions.pricing_basis</code> exists but is not selectable in the wizard. Missing-price detection (null source_ex_factory_usd etc.) not wired. FX lock badge missing in Edit/Revise. PR-NS-08.</div>
-        <div class="callout warn"><strong>Pipeline drag/drop</strong> — visual only, does not call <code>pipeline_stage_move_transaction_rpc</code>. Bulk move not implemented. PR-NS-11.</div>
-      </div>
-    </section>
-
     <section class="section card">
-      <h2>Full PR stack — 13 PRs</h2>
-      <table class="table" style="margin-top:12px">
-        <thead><tr><th>#</th><th>PR</th><th>Objective</th><th>Reference HTML</th><th>Status</th></tr></thead>
+      <h2>Full PR stack — 15 PRs (expanded from 13)</h2>
+      <p class="muted small" style="margin-bottom:12px">PR-NS-09H (hardening) added between NS-09 and NS-10. Total is now 15.</p>
+      <table class="table">
+        <thead><tr><th>#</th><th>PR</th><th>Core objective</th><th>Status</th></tr></thead>
         <tbody>
-          <tr><td>1</td><td><strong>PR-NS-01</strong> · Leads queue + capture</td><td>Lead Queue, filters, batch toolbar, Quick Lead drawer, Buyer/Supplier toggle, product pre-selection, follow-up capture.</td><td>Leads + NorthStar</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>2</td><td><strong>PR-NS-02</strong> · Lead Command Center</td><td>Lead workspace: header, chips, stage strip, four pillars, inline panels, quote prep checklist, right rail, action bar.</td><td>Leads + NorthStar</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>2B</td><td><strong>PR-NS-02B</strong> · Leads Fidelity Lock</td><td>Drift removal, demote AI surfaces, lock queue and Command Center to reference.</td><td>Leads + NorthStar</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>3</td><td><strong>PR-NS-03</strong> · Quote Builder from lead</td><td>Stepper, line items, catalog baselines, FX lock, override reasons, readiness gating, draft/save/send. Inline render.</td><td>Leads + Catalog + Quotes</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>4</td><td><strong>PR-NS-04</strong> · Quotes workspace rebuild</td><td>Mode switch, KPI cards, approval queue, selectable rows, detail panel, FX/override context, Create order, Export PDF, version timeline.</td><td>Quotes redesign</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>5</td><td><strong>PR-NS-05</strong> · Pipeline board rebuild</td><td>Blocker-first header, KPIs, lanes, lead cards, move readiness, drag/drop, detail panel, quote/order handoff.</td><td>Pipeline redesign</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>6</td><td><strong>PR-NS-06</strong> · Orders desk rebuild</td><td>Command header, order cards, state machine, compliance list, document blockers, dispatch readiness, commercial lock.</td><td>Orders redesign</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>7</td><td><strong>PR-NS-07</strong> · Catalog rebuild</td><td>Products/Pricing/Spreadsheet modes, product table, price gaps, variants, Ex-Factory/FOB/CIF, drawer editing, add product wizard.</td><td>Catalog redesign</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>7.5</td><td><strong>PR-NS-07.5</strong> · Visual parity hardening</td><td>Tighten Quotes, Orders, Pipeline, Catalog against redesign HTML: headers, filters, KPI rhythm, CTAs, tables, workflow actions.</td><td>NorthStar + 4 redesigns</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>7.6</td><td><strong>PR-NS-07.6</strong> · Vercel build recovery</td><td>Fixed Pipeline board type drift. Re-locked redesign HTML references for Quotes, Orders, Pipeline, Catalog.</td><td>NorthStar + 4 redesigns</td><td><span class="status good">Complete</span></td></tr>
-          <tr><td>8</td><td><strong>PR-NS-08</strong> · Catalog-to-Quote data wiring</td><td>Surface pricing_basis tier selector in Quote Builder. Missing-price detection. FX lock in Edit/Revise. Override threshold enforcement. Duplicate/revise catalog context carry-through.</td><td>Catalog + Leads + Quotes</td><td><span class="status active">Active</span></td></tr>
-          <tr><td>9</td><td><strong>PR-NS-09</strong> · Admin & Settings rebuild</td><td>Build 5 missing admin sub-pages: Markets, Stages/Next Steps, Pipelines, Trade Events, Security/Roles. Plus unified admin shell and governance overview.</td><td>Admin redesign</td><td><span class="status neutral">Planned</span></td></tr>
-          <tr><td>10</td><td><strong>PR-NS-10</strong> · Trade Events & Capture lane</td><td>Trade Events operator page, trade-show capture defaults, vCard scan → lead creation with event source pre-fill, event analytics.</td><td>Admin + Leads redesigns</td><td><span class="status neutral">Planned</span></td></tr>
-          <tr><td>11</td><td><strong>PR-NS-11</strong> · Cross-page workflow consistency</td><td>Pipeline drag/drop RPC wiring, bulk move, bidirectional lead/pipeline stage sync, quote→lead stage advance, order→quote status update, compliance dispatch gate, AI suggestion→comm log.</td><td>NorthStar + all pages</td><td><span class="status neutral">Planned</span></td></tr>
-          <tr><td>12</td><td><strong>PR-NS-12</strong> · Shared shell + design system</td><td>Extract CommandHero, MetricCard, StatusBadge into shared components. Standardize drawer width, spacing tokens.</td><td>All page HTMLs</td><td><span class="status neutral">Planned</span></td></tr>
-          <tr><td>13</td><td><strong>PR-NS-13</strong> · Final QA + optional dashboard</td><td>E2E buyer/supplier journeys, all test suites, smoke-test reference URLs, optional small dashboard consistency fixes.</td><td>NorthStar + Dashboard + all</td><td><span class="status violet">Final</span></td></tr>
+          <tr><td>1–7.6</td><td><strong>PR-NS-01 through NS-07.6</strong></td><td>Leads, Command Center, Quote Builder, Quotes, Pipeline, Orders, Catalog, visual parity, build recovery.</td><td><span class="status good">Complete ✓</span></td></tr>
+          <tr><td>8</td><td><strong>PR-NS-08</strong> · Catalog-to-Quote wiring</td><td>bulk_chips PricingBasis, detectMissingPrice(), isCatalogPriceStale(), override threshold wired. Core done. FX Edit mode + revise freshness call deferred to NS-09H.</td><td><span class="status good">Core done ✓</span></td></tr>
+          <tr><td>9</td><td><strong>PR-NS-09</strong> · Admin & Settings rebuild</td><td>All 5 sub-pages built (markets, stages, pipelines, trade-events, security), AdminSettingsShell nav, server actions for all CRUD. approval_threshold_pct UI deferred to NS-09H.</td><td><span class="status good">Core done ✓</span></td></tr>
+          <tr style="background:#fffbeb"><td>9H</td><td><strong>PR-NS-09H</strong> · Hardening pass</td><td>Fix 8 confirmed gaps: revise flow freshness warning, FX badge in Edit, approval_threshold_pct UI in admin, orders inline upload, trade event entry counts, quote status→converted on order creation, AI suggestion→comm log, pipeline bulk move UI.</td><td><span class="status orange">NEXT</span></td></tr>
+          <tr><td>10</td><td><strong>PR-NS-10</strong> · Trade Events & Capture lane</td><td>vCard scan→lead flow, trade show capture defaults (needs migration 110), event analytics, Lead Quick Capture event source dropdown, contact post-apply guidance.</td><td><span class="status neutral">After NS-09H + Mig 110</span></td></tr>
+          <tr><td>11</td><td><strong>PR-NS-11</strong> · Cross-page workflow consistency</td><td>Bidirectional lead/pipeline stage sync, quote sent→lead stage advance, compliance dispatch gate UI enforcement, remaining cross-page wiring.</td><td><span class="status neutral">After NS-10</span></td></tr>
+          <tr><td>12</td><td><strong>PR-NS-12</strong> · Shared shell & design system</td><td>Extract CommandHero, MetricCard, StatusBadge. Standardize drawer width, spacing tokens. Remove duplicated CSS.</td><td><span class="status neutral">After NS-11</span></td></tr>
+          <tr><td>13</td><td><strong>PR-NS-13</strong> · Final QA + optional dashboard</td><td>E2E buyer + supplier journeys, all test suites, smoke-test reference HTMLs, optional small dashboard fixes.</td><td><span class="status violet">Final</span></td></tr>
         </tbody>
       </table>
+    </section>
+
+    <section class="section grid grid-2">
+      <div class="card">
+        <h2>What NS-09 actually delivered (confirmed)</h2>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>/admin/markets</code><span class="sb ok">CRUD wired ✓</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>/admin/stages</code><span class="sb ok">CRUD wired ✓</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>/admin/pipelines</code><span class="sb ok">CRUD wired ✓</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>/admin/trade-events</code><span class="sb ok">CRUD wired ✓</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>/admin/security</code><span class="sb ok">Roles + members ✓</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>AdminSettingsShell</code><span class="sb ok">Nav shell ✓</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #fde68a;background:#fffbeb"><code>approval_threshold_pct UI</code><span class="sb warn">Missing → NS-09H</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>What NS-08 actually delivered (confirmed)</h2>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>QuotePricingBasis + bulk_chips</code><span class="sb ok">Type fixed ✓</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>detectMissingPrice()</code><span class="sb ok">Built + used ✓</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>approvalThresholdPct in wizard</code><span class="sb ok">Wired ✓</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #fde68a;background:#fffbeb"><code>isCatalogPriceStale()</code><span class="sb warn">Built, not called → NS-09H</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #fde68a;background:#fffbeb"><code>FX badge in Edit mode</code><span class="sb warn">Missing → NS-09H</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:10px;border:1px solid #a7f3d0;background:#f0fdf4"><code>override_reason + is_price_overridden</code><span class="sb ok">Wired ✓</span></div>
+        </div>
+      </div>
     </section>
   </div><!-- /tab-overview -->
 
-  <!-- ══════════════════════ TAB 2: WORKFLOW STATUS ══════════════════════ -->
+  <!-- ══ TAB 2: WORKFLOW STATUS ══ -->
   <div class="tab-panel" id="tab-workflow">
     <section class="section card">
-      <h2>Module readiness</h2>
-      <p class="muted small" style="margin-bottom:14px">UI parity vs reference HTML + workflow wiring completeness. Scores updated post-migrations 107/108/109.</p>
-      <div class="module-row"><div class="module-name">Dashboard</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar good" style="width:88%"></div></div></div><div class="module-pct" style="color:var(--good)">88%</div><span class="status good">Parked</span></div>
-      <div class="module-row"><div class="module-name">Leads</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar good" style="width:91%"></div></div></div><div class="module-pct" style="color:var(--good)">91%</div><span class="status good">Stable</span></div>
-      <div class="module-row"><div class="module-name">Pipeline</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar good" style="width:87%"></div></div></div><div class="module-pct" style="color:var(--good)">87%</div><span class="status warn">Drag/drop RPC gap</span></div>
-      <div class="module-row"><div class="module-name">Catalog</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar warn" style="width:82%"></div></div></div><div class="module-pct" style="color:var(--warn)">82%</div><span class="status active">PR-NS-08</span></div>
-      <div class="module-row"><div class="module-name">Quotes</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar warn" style="width:79%"></div></div></div><div class="module-pct" style="color:var(--warn)">79%</div><span class="status active">PR-NS-08</span></div>
-      <div class="module-row"><div class="module-name">Orders</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar warn" style="width:76%"></div></div></div><div class="module-pct" style="color:var(--warn)">76%</div><span class="status warn">Doc upload + dispatch gate</span></div>
-      <div class="module-row"><div class="module-name">Admin & Settings</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar bad" style="width:42%"></div></div></div><div class="module-pct" style="color:var(--bad)">42%</div><span class="status bad">5 sub-pages missing</span></div>
-      <div class="module-row"><div class="module-name">Trade Events</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar bad" style="width:40%"></div></div></div><div class="module-pct" style="color:var(--bad)">40%</div><span class="status bad">Admin lane missing</span></div>
-      <div class="module-row"><div class="module-name">AI Suggestions</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar good" style="width:92%"></div></div></div><div class="module-pct" style="color:var(--good)">92%</div><span class="status good">Schema gap fixed ✓</span></div>
-      <div class="module-row"><div class="module-name">Cross-page (NorthStar)</div><div class="module-bar"><div class="progress-bar-wrap"><div class="progress-bar warn" style="width:72%"></div></div></div><div class="module-pct" style="color:var(--warn)">72%</div><span class="status neutral">PR-NS-11 planned</span></div>
+      <h2>Module readiness — post NS-09</h2>
+      <p class="muted small" style="margin-bottom:14px">Scores reflect UI parity + workflow wiring vs reference HTML. Updated from live NS-09 repo audit.</p>
+      <div class="module-row"><div class="mn">Dashboard</div><div class="bar-wrap"><div class="bar g" style="width:92%"></div></div><div class="mp" style="color:var(--good)">92%</div><span class="status good">Parked — NS-13</span></div>
+      <div class="module-row"><div class="mn">Leads</div><div class="bar-wrap"><div class="bar g" style="width:91%"></div></div><div class="mp" style="color:var(--good)">91%</div><span class="status neutral">vCard→lead (NS-10)</span></div>
+      <div class="module-row"><div class="mn">Pipeline</div><div class="bar-wrap"><div class="bar w" style="width:84%"></div></div><div class="mp" style="color:var(--warn)">84%</div><span class="status warn">Bulk move UI (NS-09H)</span></div>
+      <div class="module-row"><div class="mn">Catalog</div><div class="bar-wrap"><div class="bar g" style="width:90%"></div></div><div class="mp" style="color:var(--good)">90%</div><span class="status good">Near complete</span></div>
+      <div class="module-row"><div class="mn">Quotes</div><div class="bar-wrap"><div class="bar w" style="width:87%"></div></div><div class="mp" style="color:var(--warn)">87%</div><span class="status warn">FX Edit + freshness (NS-09H)</span></div>
+      <div class="module-row"><div class="mn">Orders</div><div class="bar-wrap"><div class="bar w" style="width:80%"></div></div><div class="mp" style="color:var(--warn)">80%</div><span class="status bad">Upload UX broken (NS-09H)</span></div>
+      <div class="module-row"><div class="mn">Admin & Settings</div><div class="bar-wrap"><div class="bar w" style="width:88%"></div></div><div class="mp" style="color:var(--warn)">88%</div><span class="status warn">Threshold UI (NS-09H)</span></div>
+      <div class="module-row"><div class="mn">Trade Events</div><div class="bar-wrap"><div class="bar w" style="width:72%"></div></div><div class="mp" style="color:var(--warn)">72%</div><span class="status warn">Capture lane (NS-10 + mig 110)</span></div>
+      <div class="module-row"><div class="mn">AI Suggestions</div><div class="bar-wrap"><div class="bar g" style="width:94%"></div></div><div class="mp" style="color:var(--good)">94%</div><span class="status good">Schema gap fixed ✓</span></div>
+      <div class="module-row"><div class="mn">Cross-page (NorthStar)</div><div class="bar-wrap"><div class="bar w" style="width:76%"></div></div><div class="mp" style="color:var(--warn)">76%</div><span class="status neutral">NS-09H + NS-11</span></div>
     </section>
 
     <section class="section card">
-      <h2>Reference HTML coverage</h2>
+      <h2>Reference HTML coverage — post NS-09</h2>
       <table class="table" style="margin-top:10px">
-        <thead><tr><th>Reference HTML</th><th>Route(s)</th><th>UI</th><th>Workflow</th><th>Data Wiring</th><th>Gap Summary</th></tr></thead>
+        <thead><tr><th>Reference HTML</th><th>UI</th><th>Workflow</th><th>Data Wiring</th><th>Remaining gaps</th></tr></thead>
         <tbody>
-          <tr><td><strong>NorthStar</strong></td><td><code>All</code></td><td><span class="status good">~90%</span></td><td><span class="status warn">~72%</span></td><td><span class="status warn">~70%</span></td><td>Cross-page handoff wiring — PR-NS-11</td></tr>
-          <tr><td><strong>Dashboard</strong></td><td><code>/dashboard</code></td><td><span class="status good">~88%</span></td><td><span class="status good">~85%</span></td><td><span class="status good">~82%</span></td><td>Parked. Final pass PR-NS-13.</td></tr>
-          <tr><td><strong>Leads</strong></td><td><code>/leads, /leads/[id]</code></td><td><span class="status good">~91%</span></td><td><span class="status good">~88%</span></td><td><span class="status warn">~80%</span></td><td>vCard → lead handoff; trade event source not pre-filling.</td></tr>
-          <tr><td><strong>Pipeline</strong></td><td><code>/pipeline</code></td><td><span class="status good">~87%</span></td><td><span class="status warn">~78%</span></td><td><span class="status warn">~68%</span></td><td>Drag/drop doesn't call RPC. Bulk move missing.</td></tr>
-          <tr><td><strong>Catalog</strong></td><td><code>/products</code></td><td><span class="status good">~85%</span></td><td><span class="status warn">~76%</span></td><td><span class="status warn">~68%</span></td><td>pricing_basis selector + missing-price warning — PR-NS-08.</td></tr>
-          <tr><td><strong>Quotes</strong></td><td><code>/quotes, /leads/[id]/quote</code></td><td><span class="status warn">~79%</span></td><td><span class="status warn">~74%</span></td><td><span class="status warn">~67%</span></td><td>pricing_basis not in wizard. FX lock in Edit/Revise. Duplicate context. — PR-NS-08.</td></tr>
-          <tr><td><strong>Orders</strong></td><td><code>/orders</code></td><td><span class="status warn">~76%</span></td><td><span class="status warn">~70%</span></td><td><span class="status warn">~65%</span></td><td>Doc upload state + dispatch gate not enforced.</td></tr>
-          <tr><td><strong>Admin & Settings</strong></td><td><code>/admin/*</code></td><td><span class="status bad">~42%</span></td><td><span class="status bad">~35%</span></td><td><span class="status bad">~30%</span></td><td>5 sub-pages entirely missing — PR-NS-09.</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="section card">
-      <h2>Cross-page workflow alignment</h2>
-      <table class="table" style="margin-top:10px">
-        <thead><tr><th>Handoff</th><th>Status</th><th>Gap</th><th>PR</th></tr></thead>
-        <tbody>
-          <tr><td><strong>Capture → Lead</strong></td><td><span class="status warn">Partial</span></td><td>Trade event source label + product default not pre-filling from event config.</td><td>NS-10</td></tr>
-          <tr><td><strong>Lead → Quote Builder</strong></td><td><span class="status warn">Partial</span></td><td>pricing_basis tier selector not shown. Missing-price detection not wired.</td><td>NS-08</td></tr>
-          <tr><td><strong>Quote Builder → Quotes Workspace</strong></td><td><span class="status good">Working</span></td><td>Minor: approval queue banner doesn't re-filter on role change.</td><td>NS-11</td></tr>
-          <tr><td><strong>Quotes → Orders</strong></td><td><span class="status warn">Partial</span></td><td>Accepted price + version locked. Quote status doesn't update to <code>converted</code> on order creation.</td><td>NS-11</td></tr>
-          <tr><td><strong>Orders → Compliance gate</strong></td><td><span class="status warn">Partial</span></td><td>Compliance items wired. Dispatch state transition not blocked when required items unchecked.</td><td>NS-11</td></tr>
-          <tr><td><strong>Pipeline ↔ Lead stage</strong></td><td><span class="status warn">Partial</span></td><td>Drag/drop visual only — <code>pipeline_stage_move_transaction_rpc</code> not called. Bidirectional sync missing.</td><td>NS-11</td></tr>
-          <tr><td><strong>Catalog → Quote line items</strong></td><td><span class="status active">In progress</span></td><td>catalog_price_id carried. pricing_basis, override threshold, FX reuse — NS-08 remaining scope.</td><td>NS-08</td></tr>
-          <tr><td><strong>Admin config → All pages</strong></td><td><span class="status bad">Missing</span></td><td>Markets/Stages/Pipelines/Roles not configurable through UI — blocks operator setup.</td><td>NS-09</td></tr>
+          <tr><td><strong>NorthStar</strong></td><td><span class="status good">92%</span></td><td><span class="status warn">76%</span></td><td><span class="status warn">74%</span></td><td>Cross-page handoffs — NS-09H + NS-11</td></tr>
+          <tr><td><strong>Dashboard</strong></td><td><span class="status good">92%</span></td><td><span class="status good">88%</span></td><td><span class="status good">85%</span></td><td>Parked. NS-13 optional pass.</td></tr>
+          <tr><td><strong>Leads</strong></td><td><span class="status good">91%</span></td><td><span class="status good">88%</span></td><td><span class="status good">84%</span></td><td>vCard→lead handoff — NS-10</td></tr>
+          <tr><td><strong>Pipeline</strong></td><td><span class="status warn">84%</span></td><td><span class="status warn">82%</span></td><td><span class="status good">88%</span></td><td>Bulk move UI — NS-09H. RPC already wired ✓</td></tr>
+          <tr><td><strong>Catalog</strong></td><td><span class="status good">90%</span></td><td><span class="status good">88%</span></td><td><span class="status good">86%</span></td><td>Near complete. Minor polish NS-12.</td></tr>
+          <tr><td><strong>Quotes</strong></td><td><span class="status good">87%</span></td><td><span class="status warn">82%</span></td><td><span class="status warn">80%</span></td><td>FX in Edit + revise freshness — NS-09H</td></tr>
+          <tr><td><strong>Orders</strong></td><td><span class="status warn">80%</span></td><td><span class="status warn">74%</span></td><td><span class="status warn">72%</span></td><td>Inline upload UX + quote→converted — NS-09H</td></tr>
+          <tr><td><strong>Admin & Settings</strong></td><td><span class="status good">88%</span></td><td><span class="status warn">80%</span></td><td><span class="status warn">78%</span></td><td>approval_threshold_pct UI, event counts — NS-09H</td></tr>
         </tbody>
       </table>
     </section>
   </div><!-- /tab-workflow -->
 
-  <!-- ══════════════════════ TAB 3: PR CHANGE REQUIREMENTS ══════════════════════ -->
-  <div class="tab-panel" id="tab-pr-requirements">
+  <!-- ══ TAB 3: GAP AUDIT ══ -->
+  <div class="tab-panel" id="tab-gaps">
+    <div class="callout orange" style="margin-bottom:14px">
+      <strong>8 confirmed gaps from NS-09 repo audit.</strong> All addressed in PR-NS-09H. Each gap has exact file paths, exact function names, and exact fix required. No guessing.
+    </div>
 
-    <div class="callout blue" style="margin-bottom:16px"><strong>This tab is the single source of truth for all engineering work.</strong> Each section defines exactly what must be built, what schema exists, and what done looks like. The <strong>⚡ Next Prompt</strong> tab has copy-paste GPT prompts for each PR.</div>
-
-    <!-- PR-NS-08 -->
-    <div class="pr-card" style="border-left:3px solid #1d4ed8">
-      <div class="pr-meta"><span class="status active">Active</span><h3>PR-NS-08 — Catalog-to-Quote Data Wiring Hardening</h3></div>
-      <div class="pr-meta">
-        <span class="small muted">Pages:</span><span class="route">/products</span><span class="route">/leads/[id]/quote</span><span class="route">/quotes</span>
-      </div>
-      <p class="small muted">References: setuflow-catalog-redesign.html · setuflow-leads-redesign.html · setuflow-quotes-redesign.html</p>
-
-      <div class="callout blue" style="margin-top:12px;margin-bottom:4px">
-        <strong>Schema clarification (confirmed from live schema):</strong> <code>pricing_basis</code> lives on <code>quote_versions</code> (version-level: ex_factory / fob / cif / bulk_chips) and on <code>quote_version_line_items.basis_applied</code>. Source prices per basis are columns on <code>quote_version_line_items</code>: <code>source_ex_factory_usd</code>, <code>source_fob_usd</code>, <code>source_bulk_usd_per_kg</code>. <code>product_prices</code> has no pricing_basis column. <code>quote_line_items</code> (wizard draft table) has no pricing_basis either — it's set at version level. <code>organizations.approval_threshold_pct</code> now confirmed present (default 15%).
-      </div>
-
-      <div class="pr-grid" style="margin-top:14px">
+    <div class="pr-card" style="border-left:3px solid #d97706">
+      <div class="pr-meta"><span class="status orange">Gap 1</span><h3>isCatalogPriceStale() built but never called — revise flow freshness warning missing</h3></div>
+      <div class="pr-grid">
         <div>
-          <div class="pr-section"><h4>Required UI changes</h4><ul>
-            <li>Add <strong>Pricing Basis selector</strong> to Quote Builder wizard header/step: dropdown of ex_factory / fob / cif / bulk_chips — writes to <code>quote_versions.pricing_basis</code></li>
-            <li>Show <strong>missing-price warning</strong> badge on line item when the relevant source_* field for the selected basis is null on that line item</li>
-            <li>Show <strong>override delta %</strong> indicator on line item when unit_price deviates from catalog baseline by more than <code>organizations.approval_threshold_pct</code></li>
-            <li>Display <strong>FX rate badge</strong> (7-day lock) on quote header in Edit and Revise modes — currently only shown in Create</li>
-            <li><strong>Duplicate quote</strong> flow: pre-populate line items with source catalog context (product, variant, catalog_price_id, catalog_price_amount)</li>
-            <li><strong>Revise quote</strong> flow: detect if catalog price has changed since last version and surface a "Catalog price updated since v{n}" warning</li>
-          </ul></div>
-          <div class="pr-section"><h4>Required workflow changes</h4><ul>
-            <li>Pricing basis selection must gate readiness: quote cannot be sent if no source price exists for the selected basis on any line item</li>
-            <li>Override threshold enforcement (using <code>approval_threshold_pct</code>) must apply in Edit and Revise flows — not only Create</li>
-            <li>FX lock from existing quote version must be <strong>reused</strong> in Revise flow, not re-fetched (preserves continuity)</li>
-            <li>Duplicate quote must copy <code>catalog_price_id</code>, <code>catalog_price_amount</code>, <code>catalog_price_currency</code> per line item</li>
+          <div class="pr-section"><h4>Root cause</h4><p style="font-size:13px"><code>isCatalogPriceStale()</code> is fully implemented in <code>src/lib/catalog-pricing-model.ts</code> (line 573). It compares stored <code>catalog_price_amount</code> vs current <code>product_prices.price</code> for the same variant. But it is imported nowhere — not in <code>quote-workspace.tsx</code>, not in the revise flow, not anywhere.</p></div>
+          <div class="pr-section"><h4>Fix required</h4><ul>
+            <li>In <code>quote-workspace.tsx</code>: when opening the Revise flow, fetch current <code>product_prices</code> for all product_variant_ids in the existing line items</li>
+            <li>Call <code>isCatalogPriceStale(lineItem, currentPrices)</code> for each line item</li>
+            <li>If any return true, show a yellow banner: "Catalog price updated since v{version_no} — review before sending"</li>
+            <li>Do not block the revise flow — informational warning only</li>
           </ul></div>
         </div>
         <div>
-          <div class="pr-section"><h4>Required data wiring (schema confirmed)</h4><ul>
-            <li>Quote wizard must write selected pricing basis to <code>quote_versions.pricing_basis</code> (column confirmed present with CHECK constraint)</li>
-            <li>Missing-price detection: check if <code>source_ex_factory_usd</code> / <code>source_fob_usd</code> / <code>source_bulk_usd_per_kg</code> is null on <code>quote_version_line_items</code> for the selected basis</li>
-            <li>Override delta: compare <code>quote_line_items.unit_price</code> vs <code>quote_line_items.catalog_price_amount</code>, threshold from <code>organizations.approval_threshold_pct</code></li>
-            <li>FX lock: read <code>quote_versions.fx_rate</code> (or equivalent lock field) for reuse in revise</li>
-            <li>Add index: <code>CREATE INDEX IF NOT EXISTS idx_product_prices_variant_market ON product_prices(product_variant_id, market_id, currency);</code></li>
-          </ul></div>
           <div class="pr-section"><h4>Files to change</h4><ul>
-            <li><code>src/features/quotes/components/quote-wizard-form.tsx</code> — add pricing basis selector, missing-price badge, override delta</li>
-            <li><code>src/features/quotes/components/quote-workspace.tsx</code> — duplicate/revise catalog context carry-through</li>
-            <li><code>src/features/quotes/components/reference-quote-builder-flow.tsx</code> — FX badge in Edit/Revise</li>
-            <li><code>src/lib/catalog-pricing-model.ts</code> — add <code>detectMissingPrice(basis, lineItem)</code> helper</li>
-            <li><code>src/lib/quoteWorkflow.ts</code> — add override threshold check reading <code>approval_threshold_pct</code></li>
+            <li><code>src/features/quotes/components/quote-workspace.tsx</code> — add freshness fetch + warning banner in revise path</li>
+            <li>No new schema needed — uses existing <code>product_prices</code> table</li>
           </ul></div>
-          <div class="pr-section"><h4>Definition of Done</h4><ol>
-            <li>Pricing basis dropdown in Quote Builder wizard — writes to quote_versions.pricing_basis</li>
-            <li>Missing-price badge on line items where source_* field is null for selected basis</li>
-            <li>Override delta % displayed when threshold exceeded</li>
-            <li>FX badge visible in Edit and Revise modes</li>
-            <li>Duplicate quote carries all catalog_price_* fields</li>
-            <li>Revise quote shows catalog-price-changed warning if applicable</li>
-            <li>Override threshold enforced in edit/revise (not only create)</li>
-            <li>Vercel build passes — no TS errors</li>
-          </ol></div>
+          <div class="pr-section"><h4>Confirmation</h4><p class="muted small">After fix: opening Revise on a quote where a product price has changed should show the yellow banner. If no prices changed, no banner shown.</p></div>
         </div>
-      </div>
-      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-        <span class="status active">Active</span>
-        <span class="done-badge">Schema confirmed ✓</span>
-        <span class="small muted">No new migrations needed for this PR</span>
       </div>
     </div>
 
-    <!-- PR-NS-09 -->
-    <div class="pr-card" style="border-left:3px solid #64748b">
-      <div class="pr-meta"><span class="status neutral">Planned</span><h3>PR-NS-09 — Admin & Settings Workspace Rebuild</h3></div>
-      <div class="pr-meta">
-        <span class="small muted">Pages:</span>
-        <span class="route">/admin/markets</span><span class="route">/admin/stages</span><span class="route">/admin/pipelines</span><span class="route">/admin/trade-events</span><span class="route">/admin/security</span>
-        <span class="route">/admin/organization</span><span class="route">/admin/users</span>
-      </div>
-      <p class="small muted">Reference: setuflow-admin-settings-redesign.html</p>
-
-      <div class="pr-grid" style="margin-top:14px">
+    <div class="pr-card" style="border-left:3px solid #d97706">
+      <div class="pr-meta"><span class="status orange">Gap 2</span><h3>FX lock badge missing in Quote Builder Edit mode</h3></div>
+      <div class="pr-grid">
         <div>
-          <div class="pr-section"><h4>Required new pages (all missing)</h4><ul>
-            <li><code>/admin/markets</code> — list <code>markets</code> table, add/edit drawer, toggle <code>is_active</code>, reorder by <code>sort_order</code></li>
-            <li><code>/admin/stages</code> — list <code>pipeline_stages</code> (via pipeline), add/edit stage modal, reorder, set color; also manage <code>next_steps</code> table</li>
-            <li><code>/admin/pipelines</code> — list <code>pipelines</code>, create pipeline (name + lead_type buyer/supplier/both + is_default), assign stages</li>
-            <li><code>/admin/trade-events</code> — list <code>trade_events</code>, add event (name, city, country, starts_on, ends_on, notes), activate/deactivate</li>
-            <li><code>/admin/security</code> — list <code>organization_members</code> with their roles (via <code>user_roles → roles</code>), assign/change role, set <code>organizations.approval_threshold_pct</code></li>
-          </ul></div>
-          <div class="pr-section"><h4>Required UI updates (existing pages)</h4><ul>
-            <li>Build unified <strong>Admin left-nav shell</strong> matching reference HTML: Organization · Team members · Invitations · Markets · Stages · Pipelines · Trade events · Security · Audit · AI Analytics</li>
-            <li>Organization page: add governance overview panel (active leads count, markets count, threshold set)</li>
-            <li>Users page: show role badges (violet=Owner, sky=Admin, emerald=Sales, amber=Sourcing) from <code>roles.name</code></li>
+          <div class="pr-section"><h4>Root cause</h4><p style="font-size:13px"><code>quote-wizard-form.tsx</code> has <code>mode: "create" | "edit"</code> prop (line 1239) but the FX rate lock badge — shown during Create — is not rendered when <code>mode === "edit"</code>. The existing quote version's locked FX rate is not passed into the edit wizard or displayed.</p></div>
+          <div class="pr-section"><h4>Fix required</h4><ul>
+            <li>Pass the existing quote version's <code>fx_rate</code> (or equivalent field) as a prop to the wizard when in edit mode</li>
+            <li>In edit mode, show the FX lock badge with the locked rate (read-only, not re-fetched)</li>
+            <li>In revise mode: reuse the previous version's fx_rate — do not trigger a fresh rate fetch</li>
+            <li>Badge label: "FX locked — {rate} (from v{version_no})"</li>
           </ul></div>
         </div>
         <div>
-          <div class="pr-section"><h4>Schema confirmed available</h4><ul>
-            <li><code>markets</code> — org-scoped, has sort_order, is_active, market_code ✓</li>
-            <li><code>pipelines</code> — org-scoped, lead_type CHECK, is_default ✓</li>
-            <li><code>pipeline_stages</code> — belongs to pipeline via pipeline_id, has sort_order, color, is_closed/won/lost ✓</li>
-            <li><code>next_steps</code> — org-scoped, name, sort_order, is_active ✓</li>
-            <li><code>trade_events</code> — org-scoped, name/city/country/starts_on/ends_on ✓</li>
-            <li><code>roles</code> — org-scoped, name, description ✓</li>
-            <li><code>user_roles</code> — links org_members → roles ✓</li>
-            <li><code>organizations.approval_threshold_pct</code> — confirmed present (migration 108) ✓</li>
+          <div class="pr-section"><h4>Files to change</h4><ul>
+            <li><code>src/features/quotes/components/quote-wizard-form.tsx</code> — add <code>lockedFxRate?: number | null</code> prop, render badge when present</li>
+            <li><code>src/features/quotes/components/quote-workspace.tsx</code> — pass locked fx_rate when opening Edit/Revise</li>
           </ul></div>
-          <div class="pr-section"><h4>Required cross-page wiring</h4><ul>
-            <li>Markets → Quote Builder market/currency dropdown</li>
-            <li>Stages → Pipeline board lane list + Lead stage strip</li>
-            <li>Pipelines → determines which stages appear for buyer vs supplier leads</li>
-            <li>approval_threshold_pct → Quote Builder override validator (<code>quoteWorkflow.ts</code>)</li>
-            <li>Roles → permission guards across app (<code>permissionGuards.ts</code>)</li>
-            <li>Trade Events admin → Lead Quick Capture source dropdown</li>
-          </ul></div>
-          <div class="pr-section"><h4>Definition of Done</h4><ol>
-            <li>Admin left-nav renders all 10 sections per reference HTML</li>
-            <li>Markets CRUD working — markets selectable in Quote Builder</li>
-            <li>Stages CRUD — stages populate Pipeline lanes and Lead stage strip</li>
-            <li>Pipelines CRUD — buyer/supplier pipeline split active</li>
-            <li>Trade Events CRUD — events selectable as source in Lead capture</li>
-            <li>Security page — role assignment + approval threshold editable</li>
-            <li>Governance panel live with real data</li>
-            <li>Role badges use reference HTML color scheme</li>
-            <li>Vercel build passes</li>
-          </ol></div>
+          <div class="pr-section"><h4>Schema</h4><p class="muted small">Check <code>quote_versions</code> for fx_rate-equivalent column. The field may be stored in <code>pricing_snapshot</code> jsonb or a dedicated column. Audit the existing table before writing the prop.</p></div>
         </div>
       </div>
-      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-        <span class="status neutral">Planned</span>
-        <span class="blocked-badge">⛔ Start after PR-NS-08 merged</span>
-        <span class="done-badge">All required schema present ✓</span>
+    </div>
+
+    <div class="pr-card" style="border-left:3px solid #dc2626">
+      <div class="pr-meta"><span class="status bad">Gap 3</span><h3>Orders "Upload now" buttons link to /documents instead of calling uploadOrderDocument action</h3></div>
+      <div class="pr-grid">
+        <div>
+          <div class="pr-section"><h4>Root cause</h4><p style="font-size:13px">In <code>src/app/(app)/orders/page.tsx</code> (lines 793, 814), per-item compliance "Upload now" buttons are <code>&lt;Link href="/documents"&gt;</code>. The <code>uploadOrderDocument</code> server action is fully implemented in <code>src/features/orders/server/actions.ts</code> (line 150) with Supabase Storage upload, document row creation, and revalidation — but nothing calls it from the orders page.</p></div>
+          <div class="pr-section"><h4>Fix required</h4><ul>
+            <li>Replace each "Upload now" <code>&lt;Link&gt;</code> with a <code>&lt;form&gt;</code> containing a <code>&lt;input type="file"&gt;</code> and a hidden <code>requirement_code</code> field</li>
+            <li>The form action calls <code>uploadOrderDocument</code></li>
+            <li>Pass <code>contract_id</code> from the order record, <code>requirement_code</code> from the compliance item</li>
+            <li>After upload: revalidate the orders page to show updated compliance state</li>
+            <li>Show upload progress state (pending/uploaded/error) per item</li>
+          </ul></div>
+        </div>
+        <div>
+          <div class="pr-section"><h4>Files to change</h4><ul>
+            <li><code>src/app/(app)/orders/page.tsx</code> — replace Link with inline upload form per compliance item</li>
+            <li><code>src/features/orders/server/actions.ts</code> — confirm <code>uploadOrderDocument</code> accepts <code>requirement_code</code> param (it does at line 179)</li>
+          </ul></div>
+          <div class="pr-section"><h4>Dispatch gate</h4><p class="muted small">Separately: the "Mark delivered" / dispatch advance button must be disabled (with tooltip) when <code>order.operationalControls.documentRequirementSummary.blockerCount &gt; 0</code>. The logic exists in <code>dispatchGate()</code> but the button is not conditionally disabled.</p></div>
+        </div>
       </div>
     </div>
 
-    <!-- PR-NS-10 -->
-    <div class="pr-card" style="border-left:3px solid #64748b">
-      <div class="pr-meta"><span class="status neutral">Planned</span><h3>PR-NS-10 — Trade Events & Capture Lane</h3></div>
-      <div class="pr-meta"><span class="route">/trade-events</span><span class="route">/contact-exchange/scan</span><span class="route">/leads</span></div>
-      <p class="small muted">References: setuflow-admin-settings-redesign.html · setuflow-leads-redesign.html</p>
-      <div class="pr-section"><h4>Required changes</h4><ul>
-        <li>Trade Events operator page: event cards with metrics (leads captured = COUNT from <code>trade_event_entries.trade_event_id</code>, conversions = entries with <code>converted_lead_id</code> not null)</li>
-        <li>Trade Show Capture drawer: pre-populate <code>source_label</code>, default product interest from event config</li>
-        <li>vCard scan → lead creation: after scan, offer "Add as Lead" with capture drawer pre-filled with <code>trade_event_id</code> and <code>source_type = 'trade_event'</code></li>
-        <li>Lead Quick Capture: event source dropdown queries <code>trade_events</code> where org_id matches and status active (between starts_on/ends_on or no dates)</li>
-        <li>Lead created from event: writes <code>leads.trade_event_id</code> and <code>leads.source_type = 'trade_event'</code> (both columns confirmed present)</li>
-        <li>Contact post-apply guidance: after vCard data applied, surface "Next: confirm products & follow-up" prompt in <code>contact-post-apply-assist.ts</code></li>
+    <div class="pr-card" style="border-left:3px solid #d97706">
+      <div class="pr-meta"><span class="status warn">Gap 4</span><h3>Pipeline bulk move has no UI — checkboxes + bulk action bar not built</h3></div>
+      <div class="pr-section"><h4>Root cause</h4><p style="font-size:13px">The pipeline board has no multi-select mechanism on lead cards. The batch RPC (<code>batch_pipeline_stage_move_transaction_rpc</code> via migration 074) exists in the database but there is no checkbox on card hover, no selected-count badge, and no bulk action bar in <code>src/features/pipeline/components/pipeline-board.tsx</code>.</p></div>
+      <div class="pr-section"><h4>Fix required</h4><ul>
+        <li>Add <code>selectedLeadIds: Set&lt;string&gt;</code> state to pipeline board</li>
+        <li>On lead card hover: show a small checkbox in the top-left corner</li>
+        <li>When ≥1 cards selected: show a bulk action bar above the board: "X leads selected — Move to: [stage dropdown] [Move] [Clear]"</li>
+        <li>On "Move": call <code>batchMoveLeadsToStage</code> server action which invokes the batch RPC</li>
+        <li>On success: optimistic update all selected cards, clear selection</li>
       </ul></div>
-      <div style="margin-top:12px;display:flex;gap:8px"><span class="status neutral">Planned</span><span class="blocked-badge">⛔ Depends on PR-NS-09 Admin shell</span></div>
     </div>
 
-    <!-- PR-NS-11 -->
-    <div class="pr-card" style="border-left:3px solid #64748b">
-      <div class="pr-meta"><span class="status neutral">Planned</span><h3>PR-NS-11 — Cross-Page Workflow & Data Consistency</h3></div>
-      <div class="pr-section"><h4>Required changes</h4><ul>
-        <li><strong>Pipeline drag/drop</strong>: call <code>pipeline_stage_move_transaction_rpc</code> on drop with optimistic UI rollback on failure</li>
-        <li><strong>Bulk pipeline move</strong>: multi-select lead cards → call <code>batch_pipeline_stage_move_transaction_rpc</code></li>
-        <li><strong>Bidirectional stage sync</strong>: Lead Command Center stage chip change → updates Pipeline board lane without page reload</li>
-        <li><strong>Quote sent → lead stage advance</strong>: if org pipeline config defines a quote-sent stage, auto-advance lead</li>
-        <li><strong>Order created → quote status</strong>: set <code>quotes.status = 'converted'</code> when order is created from accepted quote</li>
-        <li><strong>Compliance dispatch gate</strong>: prevent order state transition to "Ready for dispatch" if required <code>compliance_checklist_items</code> are not marked complete — disable button + tooltip</li>
-        <li><strong>AI suggestion applied → comm log</strong>: create <code>communications</code> record when AI suggestion status set to <code>applied</code></li>
+    <div class="pr-card" style="border-left:3px solid #d97706">
+      <div class="pr-meta"><span class="status warn">Gap 5</span><h3>approval_threshold_pct has no edit UI in admin security</h3></div>
+      <div class="pr-section"><h4>Root cause</h4><p style="font-size:13px">The <code>SecurityAdminWorkspace</code> in <code>admin-reference-workspaces.tsx</code> shows roles and member coverage but has no input for <code>organizations.approval_threshold_pct</code>. The column exists (migration 108, default 15%). Operators have no way to change it.</p></div>
+      <div class="pr-section"><h4>Fix required</h4><ul>
+        <li>Add an "Approval threshold" section to the Security admin page</li>
+        <li>Input: number field (0–100), current value from org record, save button</li>
+        <li>Add <code>updateApprovalThreshold(formData)</code> server action in <code>admin/server/actions.ts</code>: updates <code>organizations.approval_threshold_pct</code> for the org</li>
+        <li>This value is already read by <code>quote-wizard-form.tsx</code> via <code>approvalThresholdPct</code> prop — no additional wiring needed</li>
       </ul></div>
-      <div style="margin-top:12px;display:flex;gap:8px"><span class="status neutral">Planned</span><span class="blocked-badge">⛔ Depends on NS-08, NS-09, NS-10</span></div>
     </div>
 
-    <!-- PR-NS-12 + 13 compact -->
-    <div class="pr-card" style="border-left:3px solid #7c3aed">
-      <div class="pr-meta"><span class="status neutral">Planned</span><h3>PR-NS-12 — Shared Shell & Design System Consolidation</h3></div>
-      <p class="small muted">Extract <code>CommandHero</code>, <code>MetricCard</code>, <code>StatusBadge</code> into shared components. Standardize drawer width (480px), animation, and spacing tokens. Remove duplicated CSS blocks. No behaviour changes — visual consistency pass only.</p>
-      <div style="margin-top:10px;display:flex;gap:8px"><span class="status neutral">Planned</span><span class="blocked-badge">⛔ Depends on NS-11</span></div>
-    </div>
-    <div class="pr-card" style="border-left:3px solid #7c3aed">
-      <div class="pr-meta"><span class="status violet">Final</span><h3>PR-NS-13 — Final QA, Build & Optional Dashboard Revisit</h3></div>
-      <p class="small muted">Run <code>tests/dcc-alignment.test.mjs</code>, <code>tests/repo-alignment.test.mjs</code>, <code>tests/release-proof.test.mjs</code>. E2E buyer + supplier journeys. Smoke-test all reference HTML URLs. Verify AI suggestions page loads with zero banners. Optional: small dashboard consistency fixes.</p>
-      <div style="margin-top:10px;display:flex;gap:8px"><span class="status violet">Final</span><span class="blocked-badge">⛔ Depends on NS-12</span></div>
+    <div class="pr-card" style="border-left:3px solid #64748b">
+      <div class="pr-meta"><span class="status neutral">Gap 6</span><h3>Trade event entry counts not shown on admin or operator trade events pages</h3></div>
+      <div class="pr-section"><h4>Fix required</h4><ul>
+        <li>In <code>/admin/trade-events/page.tsx</code>: add a query for <code>trade_event_entries</code> grouped by <code>trade_event_id</code> — get total count and converted count per event</li>
+        <li>Pass entry counts to <code>TradeEventsAdminWorkspace</code> and display: "X entries · Y converted" per event card</li>
+        <li>Same for the operator <code>/trade-events/page.tsx</code> — add entry count stats to event cards</li>
+      </ul></div>
     </div>
 
-  </div><!-- /tab-pr-requirements -->
+    <div class="pr-card" style="border-left:3px solid #64748b">
+      <div class="pr-meta"><span class="status neutral">Gap 7</span><h3>quote.status not updated to 'converted' when an order is created</h3></div>
+      <div class="pr-section"><h4>Fix required</h4><ul>
+        <li>In the order creation server action (wherever <code>contracts</code> is inserted from an accepted quote): after inserting the contract, also run <code>supabase.from('quotes').update({status: 'converted'}).eq('id', quoteId)</code></li>
+        <li>This ensures the Quotes workspace shows correct terminal status — the quote no longer appears as "accepted" once an order exists</li>
+        <li>Revalidate <code>/quotes</code> path after the update</li>
+      </ul></div>
+    </div>
 
-  <!-- ══════════════════════ TAB 4: SCHEMA STATUS ══════════════════════ -->
+    <div class="pr-card" style="border-left:3px solid #64748b">
+      <div class="pr-meta"><span class="status neutral">Gap 8</span><h3>AI suggestion applied does not create a communications log entry</h3></div>
+      <div class="pr-section"><h4>Fix required</h4><ul>
+        <li>In <code>src/features/ai/server/actions.ts</code>: find the action that sets <code>ai_suggestions.status = 'applied'</code></li>
+        <li>After the status update, insert a record into <code>communications</code>: <code>{organization_id, lead_id, communication_type: 'system_note', direction: 'internal', draft_source: 'ai', body: suggestion.content}</code></li>
+        <li>Revalidate the lead communications path so the log entry appears immediately</li>
+      </ul></div>
+    </div>
+
+  </div><!-- /tab-gaps -->
+
+  <!-- ══ TAB 4: SCHEMA STATUS ══ -->
   <div class="tab-panel" id="tab-schema">
-
     <section class="section card">
-      <h2>Migration status — all applied ✓</h2>
-      <table class="table" style="margin-top:12px">
-        <thead><tr><th>Migration</th><th>What it did</th><th>Status</th><th>Verified by</th></tr></thead>
-        <tbody>
-          <tr><td><strong>107</strong></td><td>Added <code>organization_id</code> to <code>lead_markets</code>, <code>lead_product_interests</code>, <code>contract_line_items</code>. Backfilled from parent tables. RLS + indexes applied.</td><td><span class="status good">Applied ✓</span></td><td>Schema file confirms all three columns present with FK constraints</td></tr>
-          <tr><td><strong>108</strong></td><td>Added <code>approval_threshold_pct numeric DEFAULT 15</code> to <code>organizations</code>.</td><td><span class="status good">Applied ✓</span></td><td>Schema confirms column with CHECK constraint</td></tr>
-          <tr><td><strong>109 v3</strong></td><td>RLS enabled on <code>markets</code>, <code>pipelines</code>, <code>pipeline_stages</code>. pipeline_stages policy joins through <code>pipelines</code> (no org_id on that table). Correct index <code>idx_pipeline_stages_pipeline_order</code>.</td><td><span class="status good">Applied ✓</span></td><td>v3 resolved both column errors from v1 and v2</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="section grid grid-2">
-      <div class="card">
-        <h2>Tables confirmed clean</h2>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
-          <div style="display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #a7f3d0;border-radius:10px;background:#f0fdf4"><code>lead_markets</code><span class="schema-badge ok">org_id ✓</span></div>
-          <div style="display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #a7f3d0;border-radius:10px;background:#f0fdf4"><code>lead_product_interests</code><span class="schema-badge ok">org_id ✓</span></div>
-          <div style="display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #a7f3d0;border-radius:10px;background:#f0fdf4"><code>contract_line_items</code><span class="schema-badge ok">org_id ✓</span></div>
-          <div style="display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #a7f3d0;border-radius:10px;background:#f0fdf4"><code>organizations</code><span class="schema-badge ok">approval_threshold_pct ✓</span></div>
-          <div style="display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #a7f3d0;border-radius:10px;background:#f0fdf4"><code>leads</code><span class="schema-badge ok">trade_event_id + stage_id ✓</span></div>
-          <div style="display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #a7f3d0;border-radius:10px;background:#f0fdf4"><code>quote_versions</code><span class="schema-badge ok">pricing_basis ✓</span></div>
-          <div style="display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #a7f3d0;border-radius:10px;background:#f0fdf4"><code>markets / pipelines / pipeline_stages</code><span class="schema-badge ok">RLS enabled ✓</span></div>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Schema notes for next PRs</h2>
-        <div class="callout good" style="margin-bottom:10px">
-          <strong>PR-NS-08 needs no new migrations.</strong> All required columns exist: <code>quote_versions.pricing_basis</code>, <code>quote_version_line_items.basis_applied</code>, <code>quote_version_line_items.source_ex_factory_usd</code> / <code>source_fob_usd</code> / <code>source_bulk_usd_per_kg</code>, <code>organizations.approval_threshold_pct</code>, <code>quote_line_items.catalog_price_id</code> / <code>catalog_price_amount</code>.
-        </div>
-        <div class="callout good" style="margin-bottom:10px">
-          <strong>PR-NS-09 needs no new migrations.</strong> All admin tables exist: <code>markets</code>, <code>pipelines</code>, <code>pipeline_stages</code>, <code>next_steps</code>, <code>trade_events</code>, <code>roles</code>, <code>user_roles</code>, <code>role_permissions</code>.
-        </div>
-        <div class="callout good">
-          <strong>PR-NS-10 needs no new migrations.</strong> <code>leads.trade_event_id</code> and <code>leads.source_type</code> both confirmed present. <code>trade_event_entries</code> table fully present with <code>converted_lead_id</code>, <code>source_label</code>, <code>status</code>.
-        </div>
-      </div>
-    </section>
-
-    <section class="section card">
-      <h2>Key schema relationships (quick reference)</h2>
+      <h2>All applied migrations</h2>
       <table class="table" style="margin-top:10px">
-        <thead><tr><th>Concept</th><th>Table</th><th>Key columns</th><th>Notes</th></tr></thead>
+        <thead><tr><th>Migration</th><th>What it does</th><th>Status</th></tr></thead>
         <tbody>
-          <tr><td><strong>Pricing tier</strong></td><td><code>quote_versions</code></td><td><code>pricing_basis</code> (ex_factory/fob/cif/bulk_chips)</td><td>Version-level, not per product_price row</td></tr>
-          <tr><td><strong>Source prices per basis</strong></td><td><code>quote_version_line_items</code></td><td><code>source_ex_factory_usd</code>, <code>source_fob_usd</code>, <code>source_bulk_usd_per_kg</code>, <code>basis_applied</code></td><td>Null = missing price for that basis</td></tr>
-          <tr><td><strong>Catalog baseline</strong></td><td><code>quote_line_items</code></td><td><code>catalog_price_id</code>, <code>catalog_price_amount</code>, <code>catalog_price_currency</code></td><td>Draft wizard table — carries catalog ref</td></tr>
-          <tr><td><strong>Override threshold</strong></td><td><code>organizations</code></td><td><code>approval_threshold_pct</code> (default 15)</td><td>Compare unit_price vs catalog_price_amount</td></tr>
-          <tr><td><strong>Role lookup</strong></td><td><code>user_roles → roles</code></td><td><code>user_roles.organization_member_id → roles.name</code></td><td>No role text col on organization_members</td></tr>
-          <tr><td><strong>Lead trade source</strong></td><td><code>leads</code></td><td><code>trade_event_id</code>, <code>source_type</code></td><td>Both confirmed present, FK to trade_events</td></tr>
-          <tr><td><strong>Pipeline ownership</strong></td><td><code>pipeline_stages</code></td><td><code>pipeline_id</code> (no org_id — join through pipelines)</td><td>Key discovery that fixed migration 109</td></tr>
+          <tr><td><strong>107</strong></td><td>Added <code>organization_id</code> to <code>lead_markets</code>, <code>lead_product_interests</code>, <code>contract_line_items</code>. Backfilled + RLS + indexes.</td><td><span class="status good">Applied ✓</span></td></tr>
+          <tr><td><strong>108</strong></td><td>Added <code>approval_threshold_pct numeric DEFAULT 15</code> to <code>organizations</code>.</td><td><span class="status good">Applied ✓</span></td></tr>
+          <tr><td><strong>109 v3</strong></td><td>RLS on <code>markets</code>, <code>pipelines</code>, <code>pipeline_stages</code> (stage policy joins through pipeline for org isolation).</td><td><span class="status good">Applied ✓</span></td></tr>
         </tbody>
       </table>
     </section>
 
+    <section class="section card" style="border-left:3px solid var(--warn)">
+      <h2>Migration 110 — apply before PR-NS-10</h2>
+      <p class="muted small" style="margin-bottom:12px">Adds <code>capture_defaults jsonb</code> to <code>trade_events</code> so NS-10 can pre-populate lead capture drawer with event-specific defaults (product interest, follow-up type). GPT prompt for NS-10 will ask GPT to validate this column exists before using it.</p>
+      <div style="background:#0f172a;border-radius:12px;padding:16px;overflow-x:auto">
+        <pre style="margin:0;font-family:ui-monospace,monospace;font-size:12px;color:#e2e8f0;line-height:1.7">-- Migration 110: Add capture_defaults to trade_events
+-- Apply before PR-NS-10 starts
+-- Safe: IF NOT EXISTS guard
+
+BEGIN;
+
+ALTER TABLE public.trade_events
+  ADD COLUMN IF NOT EXISTS capture_defaults jsonb
+  NOT NULL DEFAULT '{}'::jsonb;
+
+COMMENT ON COLUMN public.trade_events.capture_defaults IS
+  'JSON config for trade show lead capture defaults.
+   Example: {"default_product_label":"Mango Powder","default_follow_up_days":3,"default_lead_type":"buyer"}';
+
+COMMIT;
+
+-- Verify:
+-- SELECT id, name, capture_defaults FROM trade_events LIMIT 5;
+-- Should show capture_defaults = {} for existing rows.</pre>
+      </div>
+    </section>
+
+    <section class="section grid grid-2" style="margin-top:14px">
+      <div class="card">
+        <h2>Schema quick reference for NS-09H</h2>
+        <table class="table" style="margin-top:8px">
+          <thead><tr><th>Table</th><th>Key column</th><th>Used for</th></tr></thead>
+          <tbody>
+            <tr><td><code>organizations</code></td><td><code>approval_threshold_pct</code></td><td>Gap 5 — admin security edit UI</td></tr>
+            <tr><td><code>product_prices</code></td><td><code>price, effective_from/to</code></td><td>Gap 1 — freshness check in revise</td></tr>
+            <tr><td><code>quote_versions</code></td><td><code>pricing_basis, fx_rate (check)</code></td><td>Gap 2 — FX badge in Edit</td></tr>
+            <tr><td><code>documents</code></td><td><code>requirement_code, related_id</code></td><td>Gap 3 — inline upload per item</td></tr>
+            <tr><td><code>trade_event_entries</code></td><td><code>trade_event_id, converted_lead_id</code></td><td>Gap 6 — entry count stats</td></tr>
+            <tr><td><code>quotes</code></td><td><code>status</code></td><td>Gap 7 — update to 'converted'</td></tr>
+            <tr><td><code>communications</code></td><td><code>draft_source, direction, body</code></td><td>Gap 8 — AI suggestion comm log</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Key schema facts (confirmed from live DB)</h2>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;font-size:13px;line-height:1.8">
+          <div>• <code>pipeline_stages</code> has <strong>no organization_id</strong> — always join through <code>pipelines</code></div>
+          <div>• <code>user_roles → roles.name</code> — no role text col on <code>organization_members</code></div>
+          <div>• <code>quote_versions.pricing_basis</code> CHECK: ex_factory | fob | cif | bulk_chips</div>
+          <div>• <code>leads.trade_event_id</code> — FK to trade_events ✓</div>
+          <div>• <code>trade_event_entries.converted_lead_id</code> — null = not converted</div>
+          <div>• <code>organizations.approval_threshold_pct</code> — numeric, default 15 ✓</div>
+        </div>
+      </div>
+    </section>
   </div><!-- /tab-schema -->
 
-  <!-- ══════════════════════ TAB 5: NEXT PROMPT ══════════════════════ -->
-  <div class="tab-panel" id="tab-next-prompt">
-
-    <div class="callout violet" style="margin-bottom:16px">
-      <strong>How to use these prompts:</strong> Copy the prompt for the current active PR. Paste it into GPT (or Claude) along with the repo zip. After each implementation, return the updated repo zip here to get the next DCC + next prompt. Always paste the full prompt — it contains all the context GPT needs.
+  <!-- ══ TAB 5: NEXT PROMPTS ══ -->
+  <div class="tab-panel" id="tab-prompts">
+    <div class="callout violet" style="margin-bottom:14px">
+      <strong>How to use:</strong> Copy the active prompt → paste into GPT with the repo zip attached → implement → return updated repo zip here for next DCC + next prompt. Apply migration 110 in Supabase before starting NS-10.
     </div>
 
-    <!-- PROMPT FOR PR-NS-08 (ACTIVE) -->
-    <div class="card" style="margin-bottom:16px;border:2px solid #1d4ed8">
-      <h2 style="color:#1d4ed8">⚡ Active Prompt — PR-NS-08: Catalog-to-Quote Data Wiring</h2>
-      <p class="muted small" style="margin-bottom:10px">Copy and paste this entire prompt into GPT with the repo zip attached.</p>
+    <!-- PROMPT NS-09H (ACTIVE) -->
+    <div class="pr-card" style="border:2px solid #d97706">
+      <h2 style="color:#b45309">⚡ Active Prompt — PR-NS-09H: Hardening Pass (8 Gaps)</h2>
+      <p class="muted small" style="margin-bottom:8px">Fix all 8 confirmed gaps from the NS-09 repo audit. Attach repo zip. Migration 110 not needed for this PR.</p>
       <div class="prompt-label">COPY-PASTE PROMPT</div>
       <div class="prompt-box">
-        <button class="copy-btn" onclick="copyPrompt('p08')">Copy</button>
-        <pre id="p08">You are a senior full-stack engineer working on SETU Flow CRM, a Next.js 14 App Router + Supabase + TypeScript CRM. The repo is attached as a zip.
+        <button class="copy-btn" onclick="copyPrompt('p09h')">Copy</button>
+        <pre id="p09h">You are a senior full-stack engineer working on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. The repo is attached as a zip. This is a hardening pass to fix 8 confirmed gaps from a post-NS-09 audit.
 
-## YOUR TASK: Implement PR-NS-08 — Catalog-to-Quote Data Wiring Hardening
+## YOUR TASK: Implement PR-NS-09H — Hardening Pass
 
-## AUTHORITATIVE REFERENCES (read these first — they are in /public/reference-html/)
-- setuflow-catalog-redesign.html — catalog UI and quote-readiness signals
-- setuflow-leads-redesign.html — Quote Builder launched from Lead Command Center
-- setuflow-quotes-redesign.html — Quotes workspace, version history, FX lock display
+## FIRST: Validate these confirmed facts about the current repo before writing any code
+1. `isCatalogPriceStale()` exists in src/lib/catalog-pricing-model.ts but is imported NOWHERE — confirm grep returns zero results outside that file
+2. `uploadOrderDocument` server action exists in src/features/orders/server/actions.ts — confirm it accepts contract_id, requirement_code, and a file
+3. `quote-wizard-form.tsx` has `mode: "create" | "edit"` prop — confirm it exists and find line number
+4. `approval_threshold_pct` column exists on organizations table — assume it does (migration 108 applied)
+5. `trade_event_entries` table exists with `trade_event_id` and `converted_lead_id` columns
+6. `communications` table exists — check its columns before inserting (need: organization_id, lead_id, communication_type, direction, body, draft_source)
 
-## CONFIRMED SCHEMA (do not guess — use these exact column names)
-- quote_versions.pricing_basis: text NOT NULL CHECK IN ('ex_factory','fob','cif','bulk_chips')
-- quote_version_line_items.basis_applied: text — which basis was applied to this line
-- quote_version_line_items.source_ex_factory_usd: numeric (null = missing price for ex_factory)
-- quote_version_line_items.source_fob_usd: numeric (null = missing price for fob)
-- quote_version_line_items.source_bulk_usd_per_kg: numeric (null = missing price for bulk_chips)
-- quote_line_items.catalog_price_id: uuid FK → product_prices
-- quote_line_items.catalog_price_amount: numeric — the catalog baseline
-- quote_line_items.catalog_price_currency: text
-- quote_line_items.is_price_overridden: boolean
-- quote_line_items.override_reason: text
-- organizations.approval_threshold_pct: numeric DEFAULT 15 (override triggers approval when deviation exceeds this %)
-- product_prices: (id, product_variant_id, market_id, currency, price, effective_from, effective_to) — NO pricing_basis column
-
-## WHAT TO BUILD (implement all of these)
-
-### 1. Pricing Basis Selector in Quote Builder Wizard
-File: src/features/quotes/components/quote-wizard-form.tsx
-- Add a "Pricing Basis" dropdown to the Quote Builder wizard (first step or quote header)
-- Options: Ex-Factory | FOB | CIF | Bulk/Kg (maps to ex_factory, fob, cif, bulk_chips)
-- This value writes to quote_versions.pricing_basis when the quote version is created/updated
-- Default to 'fob' if not yet set
-
-### 2. Missing-Price Warning Badge on Line Items
-File: src/features/quotes/components/quote-wizard-form.tsx + src/lib/catalog-pricing-model.ts
-- After pricing_basis is selected, check the relevant source_* column on quote_version_line_items
-- ex_factory → source_ex_factory_usd; fob → source_fob_usd; cif → source_fob_usd + freight_add_on_usd; bulk_chips → source_bulk_usd_per_kg
-- If the relevant source field is null or zero on any line item, show a red "No [basis] price" badge on that line item
-- This badge must also block the "Send Quote" readiness check — add it to the existing readiness gate logic
-
-### 3. Override Delta % Indicator
-File: src/features/quotes/components/quote-wizard-form.tsx + src/lib/quoteWorkflow.ts
-- Compare quote_line_items.unit_price vs quote_line_items.catalog_price_amount
-- Calculate delta % = ((unit_price - catalog_price_amount) / catalog_price_amount) * 100
-- If |delta| >= organizations.approval_threshold_pct, show an amber "X% over baseline — approval required" indicator on the line item
-- Read approval_threshold_pct from the org context (already fetched in the quote workspace view model)
-- This check must run in Create, Edit, AND Revise flows
-
-### 4. FX Lock Badge in Edit and Revise Modes
-File: src/features/quotes/components/reference-quote-builder-flow.tsx + quote-workspace.tsx
-- The 7-day FX lock badge currently only shows during Create flow
-- Make it visible in Edit and Revise modes too, reading the locked rate from the existing quote version
-- In Revise flow: reuse the FX rate from the previous quote version (do not re-fetch) — pass it as a locked value to the revise wizard
-
-### 5. Duplicate Quote: Carry Catalog Context
+## GAP 1 — Wire isCatalogPriceStale() into the Revise flow
 File: src/features/quotes/components/quote-workspace.tsx
-- When duplicating a quote, the new quote's line items must be pre-populated with:
-  - product_id, product_variant_id from source line items
-  - catalog_price_id, catalog_price_amount, catalog_price_currency from source line items
-  - pricing_basis from source quote_versions.pricing_basis
-- Use the existing create_quote_with_line_items_and_fanout RPC, passing the catalog context fields
 
-### 6. Revise Quote: Catalog Price Freshness Warning
-File: src/features/quotes/components/quote-workspace.tsx + src/lib/catalog-pricing-model.ts
-- When opening a Revise flow, compare the current catalog price (product_prices.price where product_variant_id matches and effective_from <= today <= effective_to) against the stored catalog_price_amount on each line item
-- If they differ, show a yellow "Catalog price updated since v{version_no}" warning at the top of the revise wizard
-- Do not block the revise flow — this is informational only
+When the user opens a Revise flow on an existing quote:
+1. Collect all product_variant_id values from the existing quote version's line items
+2. Fetch current product_prices for those variant IDs: .from('product_prices').select('id, product_variant_id, price, currency, effective_from, effective_to').in('product_variant_id', variantIds)
+3. Call isCatalogPriceStale(lineItem, currentPrices) for each line item
+4. If ANY line item returns true, show a yellow warning banner at the top of the revise wizard:
+   "⚠ Catalog price updated since v{version_no} — check prices before sending"
+5. Do NOT block the revise flow — this is informational only
+6. Import isCatalogPriceStale from '@/lib/catalog-pricing-model'
 
-## FILES TO CHANGE (primary)
-- src/features/quotes/components/quote-wizard-form.tsx — pricing basis selector, missing-price badge, override delta
-- src/features/quotes/components/quote-workspace.tsx — duplicate catalog context, revise freshness warning
-- src/features/quotes/components/reference-quote-builder-flow.tsx — FX badge in edit/revise
-- src/lib/catalog-pricing-model.ts — add detectMissingPrice(basis, lineItem) and isCatalogPriceStale(lineItem) helpers
-- src/lib/quoteWorkflow.ts — add override threshold check
+## GAP 2 — FX lock badge in Quote Builder Edit mode
+Files: src/features/quotes/components/quote-wizard-form.tsx + quote-workspace.tsx
+
+1. First: find where fx_rate is stored on quote_versions. Check the quote_versions table columns (it may be in a pricing_snapshot jsonb field or a direct column). Search the codebase for how fxRate or fx_rate is currently read.
+2. Add a `lockedFxRate?: number | null` prop to the QuoteWizardForm component
+3. When mode === "edit" or mode === "revise", render a read-only FX lock badge near the quote currency header:
+   "FX locked — {lockedFxRate} {currency}/USD (from v{version_no})"
+4. In quote-workspace.tsx, pass the locked fx_rate from the existing quote version when opening Edit mode
+5. In Revise mode: do NOT re-fetch a fresh rate — reuse the previous version's locked rate
+
+## GAP 3 — Orders inline document upload (CRITICAL)
+File: src/app/(app)/orders/page.tsx
+
+The current code has:
+  <Link href="/documents">Upload now</Link>  (line ~793)
+  <Link href="/documents">Upload required doc</Link>  (line ~814)
+
+Replace with proper inline upload forms:
+
+For EACH compliance/document blocker item in the order card:
+1. Replace the Link with a <form> that:
+   - Has a file input: <input type="file" name="file" accept=".pdf,.jpg,.png" />
+   - Has hidden fields: contract_id (from order.contract.id), requirement_code (from item.code), doc_type (from item.doc_type)
+   - Calls the uploadOrderDocument server action (import from '@/features/orders/server/actions')
+   - Shows a submit button: "Upload {item.title}"
+2. After successful upload, the page should revalidate and show the item as complete
+
+ALSO: The dispatch advance button ("Mark delivered" or next state button):
+- If order.operationalControls.documentRequirementSummary.blockerCount > 0, the advance button must be DISABLED with a tooltip: "X documents required before dispatch"
+- The dispatchGate() function already computes this — use its result to disable the button
+
+## GAP 4 — Pipeline bulk move UI
+File: src/features/pipeline/components/pipeline-board.tsx
+
+Add multi-select capability to the pipeline board:
+
+1. Add `selectedLeadIds` state: useState<Set<string>>(new Set())
+2. On each LeadCard: add a checkbox in the top-left corner, visible on hover (CSS opacity transition)
+   - When checked: add lead ID to selectedLeadIds
+   - When unchecked: remove from selectedLeadIds
+3. When selectedLeadIds.size >= 1, show a floating bulk action bar above the board:
+   - "{count} leads selected"
+   - Stage dropdown: populated from available stages for the org
+   - "Move" button → calls a new server action batchMoveLeadsToStage
+   - "Clear" button → clears selectedLeadIds
+4. Create batchMoveLeadsToStage server action in src/features/pipeline/server/actions.ts:
+   - Accepts: lead_ids (string[]), stage_id (string)
+   - Calls the existing batch RPC: supabase.rpc('app_batch_move_lead_stage_tx', { p_organization_id: orgId, p_lead_ids: leadIds, p_stage_id: stageId, p_actor_user_id: userId })
+   - Check if 'app_batch_move_lead_stage_tx' exists — if not, call moveLeadToStage in a loop as fallback
+   - Optimistic update: update all selected cards' stage_id visually, rollback on error
+5. After successful batch move: clear selectedLeadIds, show success toast
+
+## GAP 5 — approval_threshold_pct editable in admin security
+Files: src/features/admin/components/admin-reference-workspaces.tsx + src/features/admin/server/actions.ts
+
+1. Add a new section to SecurityAdminWorkspace component:
+   <SectionCard title="Approval threshold" eyebrow="Override governance" description="Quotes where the price deviates from catalog baseline by more than this % require approval before sending.">
+     <form action={updateApprovalThreshold} className="flex gap-3 items-center">
+       <input className={inputClass} name="threshold_pct" type="number" min="0" max="100" step="0.5" defaultValue={currentThresholdPct ?? 15} />
+       <span className="text-sm text-slate-600">%</span>
+       <button className={buttonClass} type="submit">Save threshold</button>
+     </form>
+   </SectionCard>
+
+2. Add updateApprovalThreshold server action to src/features/admin/server/actions.ts:
+   - Read threshold_pct from formData
+   - Update: supabase.from('organizations').update({ approval_threshold_pct: Number(threshold) }).eq('id', organization.id)
+   - Revalidate /admin/security and /admin/organization
+
+3. Pass the current org.approval_threshold_pct to SecurityAdminWorkspace from the security page
+
+## GAP 6 — Trade event entry counts
+Files: src/app/(app)/admin/trade-events/page.tsx + src/app/(app)/trade-events/page.tsx
+
+In both pages, after fetching events, also fetch entry counts:
+  const { data: entryCounts } = await supabase
+    .from('trade_event_entries')
+    .select('trade_event_id, converted_lead_id')
+    .in('trade_event_id', events.map(e => e.id));
+
+Then compute per event:
+  - totalEntries: entries.filter(e => e.trade_event_id === event.id).length
+  - convertedEntries: entries.filter(e => e.trade_event_id === event.id && e.converted_lead_id !== null).length
+
+Pass these stats to the workspace components and display: "X entries · Y converted" on each event card.
+
+## GAP 7 — Update quote.status to 'converted' on order creation
+File: Find the server action that creates the contract/order from an accepted quote. Search for: .from('contracts').insert
+
+After the contract insert succeeds:
+  await supabase.from('quotes').update({ status: 'converted' }).eq('id', quoteId).eq('organization_id', orgId)
+
+Revalidate /quotes and /orders paths.
+
+## GAP 8 — AI suggestion applied → communications log
+File: src/features/ai/server/actions.ts
+
+Find the action that updates ai_suggestions.status to 'applied'. After that update:
+
+1. Fetch the suggestion's lead_id and content
+2. Check the actual columns of the communications table (it may have: organization_id, lead_id, type, direction, body, source, created_at — verify before inserting)
+3. Insert a communications record:
+   { organization_id: orgId, lead_id: suggestion.lead_id, body: suggestion.content, direction: 'internal', draft_source: 'ai' }
+   — only include columns that actually exist on the table
+4. Revalidate the lead path for this lead_id
 
 ## DO NOT CHANGE
-- Dashboard (frozen until PR-NS-13)
-- Any migration files — no schema changes needed for this PR
-- Visual parity of Leads, Pipeline, Orders, Admin pages (those are separate PRs)
-- The existing quote send/approve/accept workflow logic
+- Dashboard (frozen — NS-13)
+- Reference HTML files in /public/reference-html/
+- Any migration files — no new schema needed for this PR
+- The quote wizard's core create flow (only adding FX badge in edit mode)
+- Catalog page visual layout
 
-## REFERENCE HTML RULES
-- Read /public/reference-html/setuflow-quotes-redesign.html for exact UI patterns
-- Read /public/reference-html/setuflow-leads-redesign.html for Quote Builder launched from Lead
-- Read /public/reference-html/setuflow-catalog-redesign.html for pricing-tier and gap signals
-- Match the exact CTA language, badge colors, and warning placement from these files
+## AUTHORITATIVE REFERENCES
+- /public/reference-html/setuflow-orders-redesign.html — for inline upload UX pattern
+- /public/reference-html/setuflow-quotes-redesign.html — for FX lock badge placement
+- /public/reference-html/setuflow-admin-settings-redesign.html — for threshold UI pattern
+- /public/reference-html/setuflow-pipeline-redesign.html — for bulk action bar pattern
 
 ## OUTPUT REQUIRED
-1. All changed files with full file content (no truncation)
-2. Updated /public/internal-dcc/index.html marking PR-NS-08 complete and PR-NS-09 as Active
-3. Updated repo zip
-4. A copy-paste prompt for PR-NS-09 (Admin & Settings rebuild)
+1. All changed files with FULL content (no truncation, no "..." placeholders)
+2. Updated /public/internal-dcc/index.html marking PR-NS-09H complete, PR-NS-10 as next (note: migration 110 must be applied first)
+3. Full updated repo zip
+4. Copy-paste prompt for PR-NS-10 (Trade Events & Capture lane)
 
 ## DEFINITION OF DONE
-- [ ] Pricing basis dropdown in Quote Builder wizard — writes to quote_versions.pricing_basis
-- [ ] Missing-price badge on line items where source_* field is null for selected basis
-- [ ] Override delta % shown when threshold exceeded (using approval_threshold_pct)
-- [ ] FX badge visible in Edit and Revise modes (reuses locked rate in Revise)
-- [ ] Duplicate quote carries catalog_price_id, catalog_price_amount, catalog_price_currency, pricing_basis
-- [ ] Revise quote shows catalog-price-changed warning if catalog price differs from stored baseline
-- [ ] Override threshold enforcement active in edit/revise flows (not only create)
+- [ ] isCatalogPriceStale() called in revise flow — yellow banner when catalog price has changed
+- [ ] FX lock badge visible in Quote Builder Edit mode — shows locked rate from existing version
+- [ ] Orders: "Upload now" buttons call uploadOrderDocument action with file input + requirement_code
+- [ ] Orders: Dispatch advance button disabled when document blockers > 0, with tooltip
+- [ ] Pipeline: multi-select checkboxes on lead cards, bulk action bar with Move button
+- [ ] Admin Security: approval_threshold_pct input field — saves to organizations table
+- [ ] Trade events: entry count + conversion rate shown on admin and operator event cards
+- [ ] Quote status updated to 'converted' when order/contract is created from it
+- [ ] AI suggestion 'applied' → communications record inserted with lead_id and content
 - [ ] Vercel build passes — zero TypeScript errors
-- [ ] No regressions on existing quote create/send/approve flows</pre>
+- [ ] No regressions on existing flows</pre>
       </div>
     </div>
 
-    <!-- PROMPT FOR PR-NS-09 (next after 08) -->
-    <div class="card" style="margin-bottom:16px;border:1px solid var(--line)">
-      <h2>Next Prompt — PR-NS-09: Admin & Settings Workspace Rebuild</h2>
-      <p class="muted small" style="margin-bottom:10px">Use this prompt after PR-NS-08 is merged and confirmed working.</p>
-      <div class="prompt-label">COPY-PASTE PROMPT</div>
-      <div class="prompt-box">
-        <button class="copy-btn" onclick="copyPrompt('p09')">Copy</button>
-        <pre id="p09">You are a senior full-stack engineer working on SETU Flow CRM, a Next.js 14 App Router + Supabase + TypeScript CRM. The repo is attached as a zip.
-
-## YOUR TASK: Implement PR-NS-09 — Admin & Settings Workspace Rebuild
-
-## AUTHORITATIVE REFERENCE (read this first — it defines every section exactly)
-- /public/reference-html/setuflow-admin-settings-redesign.html
-  This file defines the EXACT left-nav structure, section layouts, tables, drawers, forms, role badges, and governance overview. Match it precisely.
-
-## CONFIRMED SCHEMA (all tables and columns confirmed present — no migrations needed)
-
-### Tables you will CRUD:
-- markets: (id, organization_id, name, sort_order, is_active, market_code, created_at, updated_at)
-- pipelines: (id, organization_id, name, lead_type CHECK('buyer','supplier','both'), is_default, created_at, updated_at)
-- pipeline_stages: (id, pipeline_id, name, sort_order, color, is_closed, is_won, is_lost, created_at, updated_at) — NO organization_id, belongs to pipeline via pipeline_id
-- next_steps: (id, organization_id, name, sort_order, is_active, created_at, updated_at)
-- trade_events: (id, organization_id, name, city, country, starts_on, ends_on, notes, created_at, updated_at)
-- roles: (id, organization_id, name, description)
-- user_roles: (id, organization_member_id, role_id, assigned_at) — links org_members to roles
-- organizations: (id, name, slug, approval_threshold_pct DEFAULT 15, default_currency, ...) — write approval_threshold_pct here
-
-### Role lookup pattern (no 'role' column on organization_members — always join):
-SELECT om.*, r.name as role_name
-FROM organization_members om
-LEFT JOIN user_roles ur ON ur.organization_member_id = om.id
-LEFT JOIN roles r ON r.id = ur.role_id
-WHERE om.organization_id = [org_id]
-
-## WHAT TO BUILD
-
-### 1. Unified Admin Left-Nav Shell
-Create a shared admin layout component that renders the left-nav matching the reference HTML exactly.
-Nav sections in order: Organization · Team members · Invitations · Markets & Countries · Stages & next steps · Pipelines · Trade events · Security & roles · Audit · AI Analytics
-
-### 2. /admin/markets — NEW PAGE
-- List all markets for org (name, market_code, sort_order, is_active)
-- Add market: name + market_code + sort_order fields
-- Edit market: same fields in a right drawer
-- Toggle is_active inline
-- Reorder via sort_order (drag or up/down buttons)
-- Use existing settings admin RPCs from mitigation/supabase/sql/098_settings_admin_transaction_rpcs.sql
-
-### 3. /admin/stages — NEW PAGE
-- Two sections: Pipeline Stages and Next Steps
-- Pipeline Stages: list stages grouped by pipeline (pipeline_stages table). Add/edit stage (name, color, sort_order, is_closed, is_won, is_lost). Reorder within pipeline.
-- Next Steps: list next_steps. Add/edit (name, sort_order, is_active).
-- Stage color picker matching reference HTML colored dots
-
-### 4. /admin/pipelines — NEW PAGE
-- List all pipelines (name, lead_type badge, is_default toggle)
-- Create pipeline: name + lead_type (Buyer / Supplier / Both) + mark as default
-- Edit pipeline: same fields
-- Assign stages to pipeline (link pipeline_stages by pipeline_id)
-
-### 5. /admin/trade-events — NEW PAGE
-- List all trade_events (name, city, country, date range, entry count)
-- Entry count: COUNT from trade_event_entries where trade_event_id matches
-- Add event: name, city, country, starts_on, ends_on, notes
-- Edit event: same fields in right drawer
-- Active indicator: today is between starts_on and ends_on (or no dates set)
-
-### 6. /admin/security — NEW PAGE
-- Show all org members with their role (join through user_roles → roles as shown above)
-- Role badge colors per reference HTML: Owner=violet, Admin=sky blue, Sales=emerald, Sourcing=amber
-- Change role: dropdown to select from available roles, writes to user_roles (upsert)
-- Approval Threshold: input field reads/writes organizations.approval_threshold_pct
-- Show current threshold value (default 15%) with save button
-
-### 7. Update existing admin pages to match reference HTML
-- /admin/organization: add governance overview panel (active leads count, markets configured count, approval threshold display)
-- /admin/users: add role badges using the same role lookup join pattern
-
-## CROSS-PAGE WIRING (implement all)
-- Markets created here must appear in Quote Builder market/currency dropdown
-- Pipeline stages created here must populate Pipeline board lanes and Lead stage strip
-- Pipelines created here must determine buyer vs supplier lead stage options
-- approval_threshold_pct must be read from org context in quoteWorkflow.ts override check
-- Trade events created here must appear in Lead Quick Capture event source dropdown
-
-## DO NOT CHANGE
-- Dashboard (frozen)
-- Quote Builder logic (PR-NS-08 territory — do not re-implement)
-- Migration files — ALL schema is already in place, no SQL needed
-- Orders, Catalog, Pipeline visual parity (separate PRs)
-
-## REFERENCE HTML RULES
-- Read /public/reference-html/setuflow-admin-settings-redesign.html COMPLETELY before writing any code
-- Match exact section names, CTA labels, table columns, badge colors, drawer layout
-- Governance overview panel matches the reference exactly
-- Left-nav active state matches the reference
-
-## OUTPUT REQUIRED
-1. All new and changed files with full file content (no truncation)
-2. New routes: app/(app)/admin/markets/page.tsx, app/(app)/admin/stages/page.tsx, app/(app)/admin/pipelines/page.tsx, app/(app)/admin/trade-events/page.tsx, app/(app)/admin/security/page.tsx
-3. Updated /public/internal-dcc/index.html marking PR-NS-09 complete and PR-NS-10 as Active
-4. Updated repo zip
-5. A copy-paste prompt for PR-NS-10 (Trade Events & Capture lane)
-
-## DEFINITION OF DONE
-- [ ] Admin left-nav renders all 10 sections per reference HTML
-- [ ] /admin/markets — CRUD working, markets visible in Quote Builder dropdown
-- [ ] /admin/stages — pipeline stages + next steps CRUD working
-- [ ] /admin/pipelines — CRUD, buyer/supplier split active, stages assignable
-- [ ] /admin/trade-events — event list + add/edit working
-- [ ] /admin/security — role badge display, role change, approval threshold save
-- [ ] Governance panel on /admin/organization shows real counts
-- [ ] Role badges use correct color scheme (violet/sky/emerald/amber)
-- [ ] No new migrations needed (all schema confirmed present)
-- [ ] Vercel build passes — zero TypeScript errors</pre>
-      </div>
-    </div>
-
-    <!-- PROMPT FOR PR-NS-10 -->
-    <div class="card" style="margin-bottom:16px;border:1px solid var(--line)">
-      <h2>Future Prompt — PR-NS-10: Trade Events & Capture Lane</h2>
-      <p class="muted small" style="margin-bottom:10px">Use after PR-NS-09 is merged.</p>
+    <!-- PROMPT NS-10 -->
+    <div class="pr-card" style="border:1px solid var(--line)">
+      <h2>Next Prompt — PR-NS-10: Trade Events & Capture Lane</h2>
+      <p class="muted small" style="margin-bottom:4px">Apply migration 110 in Supabase FIRST. Then attach updated repo zip and use this prompt.</p>
+      <div class="callout warn" style="margin-bottom:8px"><strong>⚠ Prerequisite:</strong> Migration 110 must be applied before GPT starts NS-10. The prompt instructs GPT to validate <code>trade_events.capture_defaults</code> exists before using it.</div>
       <div class="prompt-box">
         <button class="copy-btn" onclick="copyPrompt('p10')">Copy</button>
-        <pre id="p10">You are a senior full-stack engineer working on SETU Flow CRM, a Next.js 14 App Router + Supabase + TypeScript CRM. The repo is attached as a zip.
+        <pre id="p10">You are a senior full-stack engineer working on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. The repo is attached as a zip.
 
 ## YOUR TASK: Implement PR-NS-10 — Trade Events & Capture Lane
 
-## AUTHORITATIVE REFERENCES
-- /public/reference-html/setuflow-admin-settings-redesign.html — Trade Events section
-- /public/reference-html/setuflow-leads-redesign.html — Lead capture drawer with event source
+## FIRST: Validate migration 110 was applied
+Run this check before writing code:
+  SELECT column_name FROM information_schema.columns
+  WHERE table_name = 'trade_events' AND column_name = 'capture_defaults';
 
-## CONFIRMED SCHEMA (all columns confirmed present)
-- trade_events: (id, organization_id, name, city, country, starts_on, ends_on, notes)
-- trade_event_entries: (id, organization_id, trade_event_id, captured_company_name, captured_contact_name, captured_job_title, captured_email, captured_phone, captured_country, captured_notes, source_label, source_scan_ref, status CHECK('new','qualified','converted','duplicate','discarded'), converted_lead_id, assigned_user_id, normalized_payload, raw_payload, captured_at, qualified_at)
-- leads.trade_event_id: uuid FK → trade_events (confirmed present)
-- leads.source_type: text (use 'trade_event' when creating from event)
+If capture_defaults does NOT exist, stop and tell the user to run migration 110:
+  ALTER TABLE public.trade_events ADD COLUMN IF NOT EXISTS capture_defaults jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+## CONFIRMED SCHEMA (all columns verified from live DB)
+- trade_events: (id, organization_id, name, city, country, starts_on, ends_on, notes, capture_defaults jsonb)
+- trade_event_entries: (id, organization_id, trade_event_id, captured_company_name, captured_contact_name, captured_job_title, captured_email, captured_phone, captured_country, source_label, status CHECK('new','qualified','converted','duplicate','discarded'), converted_lead_id, normalized_payload, raw_payload, captured_at)
+- leads.trade_event_id: uuid FK → trade_events ✓
+- leads.source_type: text (use 'trade_event')
+
+## AUTHORITATIVE REFERENCES
+- /public/reference-html/setuflow-leads-redesign.html — Lead Quick Capture drawer with event source
+- /public/reference-html/setuflow-admin-settings-redesign.html — Trade Events section
 
 ## WHAT TO BUILD
 
-### 1. Trade Events Operator Page (/trade-events) — enhance existing page
-- Event cards showing: name, date range, city/country, leads captured (COUNT trade_event_entries), conversion rate (entries with converted_lead_id not null / total entries)
-- Active event badge: starts_on <= today <= ends_on
-- Link to capture mode for active events
+### 1. Trade Events admin — capture_defaults config
+File: src/features/admin/components/admin-reference-workspaces.tsx (TradeEventsAdminWorkspace)
 
-### 2. Lead Quick Capture — add event source dropdown
-File: src/features/leads/components/lead-drawer.tsx (or equivalent capture component)
-- Add "Event Source" dropdown that queries trade_events WHERE organization_id = org AND (today BETWEEN starts_on AND ends_on OR starts_on IS NULL)
-- When selected: writes leads.trade_event_id and leads.source_type = 'trade_event'
+Add capture defaults fields to the edit form for each event:
+- default_product_label: text input ("Default product interest label")
+- default_lead_type: select (buyer / supplier)
+- default_follow_up_days: number input
 
-### 3. Trade Show Capture Defaults
-File: src/features/trade-events/components/trade-show-capture.tsx + trade-event-entry-capture.tsx
-- When capturing from a specific event, pre-populate source_label from event name
-- Default product interest from event config (use trade_events.notes or add a separate config if needed)
-- After capture: create trade_event_entries record with status='new', then offer "Convert to Lead" button
+These are stored as JSON in capture_defaults: { default_product_label, default_lead_type, default_follow_up_days }
 
-### 4. vCard Scan → Lead Creation Handoff
+Update updateTradeEvent server action to persist capture_defaults jsonb alongside other fields.
+
+### 2. Lead Quick Capture drawer — event source dropdown
+File: src/features/leads (find the Quick Capture / new lead drawer component)
+
+Add an "Event source" dropdown:
+- Query trade_events WHERE organization_id = org AND (starts_on IS NULL OR ends_on IS NULL OR (starts_on <= today AND ends_on >= today))
+- When an event is selected:
+  - Set leads.trade_event_id = event.id
+  - Set leads.source_type = 'trade_event'
+  - Pre-fill product interest from event.capture_defaults.default_product_label (if set)
+  - Pre-fill lead_type from event.capture_defaults.default_lead_type (if set)
+
+### 3. vCard scan → Lead creation handoff
 File: src/lib/contact-exchange/contact-post-apply-assist.ts
-- After vCard data is applied to a new contact/lead form, surface "Next: confirm products & follow-up" prompt
-- If user is in an active trade event context (event selected), pre-fill trade_event_id on the lead
 
-### 5. Event Analytics
-- On trade event card and detail view: show leads captured count and conversion rate in real time
-- Query: SELECT COUNT(*) FROM trade_event_entries WHERE trade_event_id = X for total
-- Conversion: COUNT WHERE converted_lead_id IS NOT NULL
+When vCard data is applied to a new lead form:
+- Surface a guidance prompt: "Next: confirm products & follow-up date before saving"
+- If user is in an active trade event context (event selected in the capture drawer), pre-fill trade_event_id
+
+### 4. Trade Events operator page — enhanced metrics
+File: src/app/(app)/trade-events/page.tsx + src/features/trade-events/components/trade-events-manager.tsx
+
+On each event card show:
+- Status badge: "Active" (if today between starts_on and ends_on) or "Upcoming" or "Past"
+- Entry metrics (from gap 6 fix in NS-09H): "X entries · Y converted"
+- CTA: "Capture leads →" (opens capture flow for active events)
+
+### 5. Trade show capture flow
+File: src/features/trade-events/components/trade-show-capture.tsx
+
+When capturing at a specific event:
+- Pre-populate source_label from event.name
+- Pre-fill product interest from event.capture_defaults.default_product_label
+- After capture: create trade_event_entries record (status='new'), then show "Convert to lead →" button
+- On convert: create lead with trade_event_id, source_type='trade_event', pre-filled from entry data
 
 ## OUTPUT REQUIRED
-1. All changed files with full content
-2. Updated /public/internal-dcc/index.html marking PR-NS-10 complete and PR-NS-11 as Active
-3. Updated repo zip
-4. Copy-paste prompt for PR-NS-11 (Cross-page workflow consistency)</pre>
+1. All changed files with FULL content
+2. Updated /public/internal-dcc/index.html marking NS-10 complete, NS-11 as next
+3. Full updated repo zip
+4. Copy-paste prompt for PR-NS-11
+
+## DEFINITION OF DONE
+- [ ] Trade event edit form has capture_defaults fields (product label, lead type, follow-up days)
+- [ ] Lead Quick Capture event source dropdown shows active trade events
+- [ ] Selecting an event pre-fills product interest and lead type from capture_defaults
+- [ ] Lead created from event: has trade_event_id and source_type = 'trade_event'
+- [ ] vCard post-apply shows "Next: confirm products & follow-up" guidance
+- [ ] Trade event cards show entry count + conversion rate
+- [ ] Trade show capture creates trade_event_entries record then offers Convert to Lead
+- [ ] Vercel build passes</pre>
       </div>
     </div>
 
-    <!-- PROMPT FOR PR-NS-11 -->
-    <div class="card" style="border:1px solid var(--line)">
+    <!-- PROMPT NS-11 -->
+    <div class="pr-card" style="border:1px solid var(--line)">
       <h2>Future Prompt — PR-NS-11: Cross-Page Workflow Consistency</h2>
-      <p class="muted small" style="margin-bottom:10px">Use after PR-NS-10 is merged.</p>
       <div class="prompt-box">
         <button class="copy-btn" onclick="copyPrompt('p11')">Copy</button>
-        <pre id="p11">You are a senior full-stack engineer working on SETU Flow CRM, a Next.js 14 App Router + Supabase + TypeScript CRM. The repo is attached as a zip.
+        <pre id="p11">You are a senior full-stack engineer working on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. The repo is attached as a zip.
 
-## YOUR TASK: Implement PR-NS-11 — Cross-Page Workflow & Data Consistency
+## YOUR TASK: Implement PR-NS-11 — Cross-Page Workflow Consistency
 
 ## AUTHORITATIVE REFERENCE
 - /public/reference-html/setuflow-northstar.html — cross-page workflow source of truth
 
-## CONFIRMED RPCs (migration files already in repo)
-- pipeline_stage_move_transaction_rpc — mitigation/supabase/sql/073_pipeline_stage_move_transaction_rpc.sql
-- batch_pipeline_stage_move_transaction_rpc — mitigation/supabase/sql/074_batch_pipeline_stage_move_transaction_rpc.sql
+## IMPORTANT: Pipeline drag/drop RPC is ALREADY wired
+- The pipeline board's handleMove() calls moveLeadToStage() which invokes supabase.rpc('app_move_lead_stage_tx', ...)
+- This is correct. Do NOT change pipeline drag/drop — it already works.
+- Bulk move was added in NS-09H. Confirm it's present before proceeding.
 
-## WHAT TO BUILD (implement all)
+## WHAT TO BUILD
 
-### 1. Pipeline Drag/Drop → RPC
-File: src/features/pipeline (board component)
-- On drop: call pipeline_stage_move_transaction_rpc(lead_id, new_stage_id) via Supabase RPC
-- Optimistic UI: update visual state immediately, rollback on RPC error with toast notification
-- Do NOT change the drag/drop library or visual behavior — only wire the persistence
+### 1. Bidirectional lead stage sync
+When a lead's stage is changed from the Lead Command Center (LeadPipelineStageStrip.tsx):
+- After the server action updates leads.stage_id, the Pipeline board should reflect the change
+- Use router.refresh() or cache revalidation of /pipeline to sync
+- Test: change stage in Lead Command Center → Pipeline board should update after reload
 
-### 2. Bulk Pipeline Move
-- Multi-select lead cards (checkbox on card hover)
-- Bulk action bar: "Move X leads to stage →" dropdown
-- On confirm: call batch_pipeline_stage_move_transaction_rpc([lead_ids], new_stage_id)
+### 2. Quote sent → Lead stage auto-advance
+File: src/features/quotes/server (find the send-quote action)
 
-### 3. Bidirectional Lead Stage Sync
-- Lead Command Center stage chip: when user changes stage, also update Pipeline board lane without page reload
-- Use a shared state store or invalidate the pipeline query from within the lead workspace
+When a quote version status becomes 'sent':
+- Check if the org's default pipeline has a stage configured for "quote sent" (e.g., stage where name contains 'Quote Sent' or 'Proposal')
+- If found: update leads.stage_id to that stage
+- This is best-effort — do not fail the send if no matching stage exists
 
-### 4. Quote Sent → Lead Stage Advance
-File: src/lib/quoteWorkflow.ts + relevant server action
-- When a quote version status becomes 'sent', check org pipeline config for a designated "quote sent" stage
-- If configured, auto-advance leads.stage_id to that stage (call lead_relation_refresh_transaction_rpc or direct update)
+### 3. Compliance dispatch gate UI
+File: src/app/(app)/orders/page.tsx
 
-### 5. Order Created → Quote Status Update
-File: src/features/quotes/server/actions.ts or order creation server action
-- When an order is created from an accepted quote, set quotes.status = 'converted'
-- This ensures the Quotes workspace shows correct terminal status
+The dispatchGate() function already returns the correct tone. Apply it to the CTA button:
+- If gate.tone === 'danger' OR blockerCount > 0: disable the advance/dispatch button
+- Show tooltip on disabled button: "{blockerCount} document(s) required before dispatch"
+- This is a UI-only change — the logic is already computed
 
-### 6. Compliance Dispatch Gate
-File: src/features/orders (orders workspace component)
-- "Ready for dispatch" state transition button: check compliance_checklist_items completion for the order's country
-- If any required item (is_mandatory = true) is unchecked, disable the button and show tooltip: "X compliance items required before dispatch"
-- Read compliance state from lead_compliance_items or contracts.execution_blockers
-
-### 7. AI Suggestion Applied → Communications Log
-File: src/features/ai (ai suggestion approval action)
-- When ai_suggestions.status is set to 'applied', create a communications record:
-  - organization_id, lead_id from the suggestion
-  - communication_type = 'system_note'
-  - direction = 'internal'
-  - draft_source = 'ai'
-  - body = suggestion.content
+### 4. Lead stage change → Pipeline board notification
+When lead stage changes from anywhere, revalidate /pipeline page cache so the board reflects current state.
 
 ## OUTPUT REQUIRED
-1. All changed files with full content
-2. Updated /public/internal-dcc/index.html marking PR-NS-11 complete and PR-NS-12 as Active
-3. Updated repo zip
-4. Copy-paste prompt for PR-NS-12 (Shared shell + design system)</pre>
+1. All changed files with FULL content
+2. Updated /public/internal-dcc/index.html marking NS-11 complete, NS-12 as next
+3. Full updated repo zip
+4. Copy-paste prompt for PR-NS-12
+
+## DEFINITION OF DONE
+- [ ] Lead stage change in Command Center → Pipeline board reflects it after next load
+- [ ] Quote sent → lead stage advances if a matching stage name exists in org pipeline
+- [ ] Compliance dispatch gate button disabled when document blockers > 0
+- [ ] Vercel build passes</pre>
       </div>
     </div>
 
-  </div><!-- /tab-next-prompt -->
+  </div><!-- /tab-prompts -->
 
-  <!-- ══════════════════════ TAB 6: REFERENCES ══════════════════════ -->
+  <!-- ══ TAB 6: REFERENCE HTML ══ -->
   <div class="tab-panel" id="tab-references">
     <section class="section card">
       <h2>Reference HTML registry</h2>
-      <p class="muted">All files under <span class="route">public/reference-html/</span>. These define EXACT UI, EXACT workflow, EXACT interactions. No page rebuilt without reading its reference first.</p>
-      <div class="link-grid" style="margin-top:14px">
-        <a class="link-card" href="/reference-html/setuflow-northstar.html"><strong>NorthStar workflow map</strong><span class="route">/reference-html/setuflow-northstar.html</span><div class="desc">Cross-page workflow and page-map. Governs all handoff requirements.</div></a>
-        <a class="link-card" href="/reference-html/setuflow-dashboard-redesign.html"><strong>Dashboard redesign</strong><span class="route">/reference-html/setuflow-dashboard-redesign.html</span><div class="desc">Parked. Final consistency pass in PR-NS-13 only.</div></a>
-        <a class="link-card" href="/reference-html/setuflow-leads-redesign.html"><strong>Leads redesign</strong><span class="route">/reference-html/setuflow-leads-redesign.html</span><div class="desc">Lead queue, command center, capture drawer, quote prep, Quote Builder.</div></a>
-        <a class="link-card" href="/reference-html/setuflow-pipeline-redesign.html"><strong>Pipeline redesign</strong><span class="route">/reference-html/setuflow-pipeline-redesign.html</span><div class="desc">Kanban board, move readiness, drag/drop, bulk move, detail panel.</div></a>
-        <a class="link-card" href="/reference-html/setuflow-catalog-redesign.html"><strong>Catalog redesign</strong><span class="route">/reference-html/setuflow-catalog-redesign.html</span><div class="desc">Product table, pricing tiers (ex_factory/fob/cif), gap signals, drawer editing.</div></a>
-        <a class="link-card" href="/reference-html/setuflow-admin-settings-redesign.html" style="border-color:#fecaca"><strong>Admin & Settings redesign</strong><span class="route">/reference-html/setuflow-admin-settings-redesign.html</span><div class="desc" style="color:#dc2626">🔴 5 sub-pages not yet built. PR-NS-09 target. Read COMPLETELY before starting.</div></a>
-        <a class="link-card" href="/reference-html/setuflow-quotes-redesign.html"><strong>Quotes workspace redesign</strong><span class="route">/reference-html/setuflow-quotes-redesign.html</span><div class="desc">Quote list, approval queue, FX lock, override context, version history, actions.</div></a>
-        <a class="link-card" href="/reference-html/setuflow-orders-redesign.html"><strong>Orders execution redesign</strong><span class="route">/reference-html/setuflow-orders-redesign.html</span><div class="desc">State machine, compliance checklist, dispatch readiness gate, commercial lock.</div></a>
+      <p class="muted small" style="margin-bottom:12px">All files under <span class="route" style="font-family:ui-monospace,monospace;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:2px 6px;font-size:12px">public/reference-html/</span>. Every page built against its reference — no rebuilding from memory.</p>
+      <div class="link-grid">
+        <a class="link-card" href="/reference-html/setuflow-northstar.html"><strong>NorthStar workflow map</strong><div class="desc">Cross-page workflow and handoff source of truth.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-dashboard-redesign.html"><strong>Dashboard redesign</strong><div class="desc">Parked. NS-13 optional pass only.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-leads-redesign.html"><strong>Leads redesign</strong><div class="desc">Capture drawer, command center, vCard flow, Quote Builder.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-pipeline-redesign.html"><strong>Pipeline redesign</strong><div class="desc">Kanban board, bulk move, drag/drop, detail panel.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-catalog-redesign.html"><strong>Catalog redesign</strong><div class="desc">Product table, pricing tiers, gap signals, drawer editing.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-admin-settings-redesign.html" style="border-color:#fde68a"><strong>Admin & Settings redesign</strong><div class="desc">All 5 sub-pages now built. NS-09H adds threshold UI and entry counts.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-quotes-redesign.html"><strong>Quotes workspace redesign</strong><div class="desc">Approval queue, FX lock, override context, version history.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-orders-redesign.html"><strong>Orders execution redesign</strong><div class="desc">State machine, compliance checklist, inline upload, dispatch gate.</div></a>
       </div>
     </section>
 
     <section class="section card">
-      <h2>Direct URLs after deploy</h2>
-      <div class="grid grid-2" style="margin-top:12px">
-        <div class="card soft"><h3>DCC</h3><div class="route">/internal-dcc/</div><p class="desc">https://www.setuflowcrm.com/internal-dcc/</p></div>
-        <div class="card soft"><h3>Reference folder</h3><div class="route">/reference-html/</div><p class="desc">All 8 reference HTML files available as static assets.</p></div>
-      </div>
+      <h2>Remaining path to 100%</h2>
+      <table class="table" style="margin-top:10px">
+        <thead><tr><th>PR</th><th>Delivers</th><th>Expected page score after</th></tr></thead>
+        <tbody>
+          <tr><td><strong>NS-09H</strong></td><td>All 8 hardening gaps: FX Edit, freshness warning, inline upload, bulk move, threshold UI, entry counts, quote converted status, AI→comm log</td><td>Quotes 95% · Orders 93% · Admin 96% · Pipeline 93%</td></tr>
+          <tr><td><strong>NS-10</strong></td><td>Trade event capture defaults, vCard→lead handoff, event analytics, lead source pre-fill</td><td>Trade Events 92% · Leads 96%</td></tr>
+          <tr><td><strong>NS-11</strong></td><td>Bidirectional stage sync, quote→lead advance, compliance dispatch gate UI</td><td>Cross-page NorthStar 92% · Orders 97%</td></tr>
+          <tr><td><strong>NS-12</strong></td><td>CommandHero, MetricCard, StatusBadge extraction, spacing token normalization</td><td>All pages polish +3–5%</td></tr>
+          <tr><td><strong>NS-13</strong></td><td>E2E QA, test suites, build verification, optional dashboard minor fixes</td><td><strong>All pages 97–100%</strong></td></tr>
+        </tbody>
+      </table>
     </section>
   </div><!-- /tab-references -->
 
   <div class="footer">
     <div>SETU Flow Internal DCC · Light mode · Updated Apr 27 2026 · Migrations 107/108/109 Applied</div>
-    <div>ACTIVE: PR-NS-08 · NEXT: PR-NS-09 · All schema gaps resolved · See ⚡ Next Prompt tab for copy-paste GPT prompts</div>
+    <div>ACTIVE: PR-NS-09H (8 gaps) · Apply Migration 110 before NS-10 · See ⚡ Next Prompts for copy-paste</div>
   </div>
 
 </main>
@@ -878,8 +837,9 @@ File: src/features/ai (ai suggestion approval action)
     const text = document.getElementById(id).textContent;
     navigator.clipboard.writeText(text).then(() => {
       const btn = event.target;
+      const orig = btn.textContent;
       btn.textContent = 'Copied!';
-      setTimeout(() => btn.textContent = 'Copy', 2000);
+      setTimeout(() => btn.textContent = orig, 2000);
     });
   }
 </script>

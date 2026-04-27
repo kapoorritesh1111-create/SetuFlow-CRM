@@ -136,6 +136,10 @@ async function createQuoteDirect(db: any, params: {
       basis_applied: params.pricingBasis,
       pricing_mode: 'case',
       moq: line.quantity,
+      source_ex_factory_usd: line.source_ex_factory_usd ?? null,
+      source_fob_usd: line.source_fob_usd ?? null,
+      source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null,
+      freight_add_on_usd: line.freight_add_on_usd ?? null,
       final_unit_price: line.unit_price,
       display_currency: line.currency ?? params.currency,
       is_overridden: Boolean(line.is_price_overridden),
@@ -199,7 +203,7 @@ async function updateQuoteDirect(db: any, params: {
   if (versionError) return { data: null, error: versionError };
 
   const versionId = version.id;
-  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: 'powders', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, final_unit_price: line.unit_price, display_currency: line.currency ?? params.currency, is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
+  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: 'powders', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price, display_currency: line.currency ?? params.currency, is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
   if (versionLines.length) {
     const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
     if (versionLineError) return { data: null, error: versionLineError };
@@ -435,6 +439,7 @@ async function resolvePreferredQuoteVariant(
 type ParsedLineItem = {
   product_id: string;
   product_variant_id?: string;
+  catalog_price_id?: string;
   catalog_price_amount?: number;
   catalog_price_currency?: string;
   quantity: number;
@@ -443,6 +448,10 @@ type ParsedLineItem = {
   is_price_overridden?: boolean;
   override_reason?: string;
   notes?: string;
+  source_ex_factory_usd?: number | null;
+  source_fob_usd?: number | null;
+  source_bulk_usd_per_kg?: number | null;
+  freight_add_on_usd?: number | null;
 };
 
 function parseLineItems(formData: FormData) {
@@ -454,6 +463,7 @@ function parseLineItems(formData: FormData) {
     .map((item) => ({
       product_id: String(item.product_id ?? ''),
       ...(item.product_variant_id ? { product_variant_id: String(item.product_variant_id) } : {}),
+      ...(item.catalog_price_id ? { catalog_price_id: String(item.catalog_price_id) } : {}),
       ...(item.catalog_price_amount !== undefined &&
       item.catalog_price_amount !== null &&
       item.catalog_price_amount !== ''
@@ -472,6 +482,10 @@ function parseLineItems(formData: FormData) {
         : {}),
       ...(item.override_reason ? { override_reason: String(item.override_reason) } : {}),
       ...(item.notes ? { notes: String(item.notes) } : {}),
+      ...(item.source_ex_factory_usd !== undefined && item.source_ex_factory_usd !== null && item.source_ex_factory_usd !== "" ? { source_ex_factory_usd: Number(item.source_ex_factory_usd) } : {}),
+      ...(item.source_fob_usd !== undefined && item.source_fob_usd !== null && item.source_fob_usd !== "" ? { source_fob_usd: Number(item.source_fob_usd) } : {}),
+      ...(item.source_bulk_usd_per_kg !== undefined && item.source_bulk_usd_per_kg !== null && item.source_bulk_usd_per_kg !== "" ? { source_bulk_usd_per_kg: Number(item.source_bulk_usd_per_kg) } : {}),
+      ...(item.freight_add_on_usd !== undefined && item.freight_add_on_usd !== null && item.freight_add_on_usd !== "" ? { freight_add_on_usd: Number(item.freight_add_on_usd) } : {}),
     }))
     .filter((item) => Number.isFinite(item.quantity) && item.quantity > 0 && (item.product_id || item.notes));
 }
@@ -680,7 +694,7 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
     (approvalRequired ? 'pending' : 'not_required')) as ApprovalState;
   const plainNotes = String(formData.get('notes') ?? '').trim();
   const pricingBasisRaw = String(formData.get('pricing_basis') ?? 'fob').trim().toLowerCase();
-  const pricingBasis = pricingBasisRaw === 'ex_factory' || pricingBasisRaw === 'cif' ? pricingBasisRaw : 'fob';
+  const pricingBasis = ['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(pricingBasisRaw) ? pricingBasisRaw : 'fob';
 
   let lineItems: ParsedLineItem[] = [];
   try {
@@ -779,8 +793,13 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
     return {
       product_id: item.product_id || null,
       product_variant_id: item.product_variant_id || null,
+      catalog_price_id: item.catalog_price_id ?? null,
       catalog_price_amount: item.catalog_price_amount ?? null,
       catalog_price_currency: item.catalog_price_currency ?? finalCurrency,
+      source_ex_factory_usd: item.source_ex_factory_usd ?? null,
+      source_fob_usd: item.source_fob_usd ?? null,
+      source_bulk_usd_per_kg: item.source_bulk_usd_per_kg ?? null,
+      freight_add_on_usd: item.freight_add_on_usd ?? null,
       quantity: item.quantity,
       unit_price: item.unit_price ?? item.catalog_price_amount ?? null,
       currency: finalCurrency,
@@ -987,7 +1006,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     (approvalRequired ? 'pending' : 'not_required')) as ApprovalState;
   const plainNotes = String(formData.get('notes') ?? '').trim();
   const pricingBasisRaw = String(formData.get('pricing_basis') ?? 'fob').trim().toLowerCase();
-  const pricingBasis = pricingBasisRaw === 'ex_factory' || pricingBasisRaw === 'cif' ? pricingBasisRaw : 'fob';
+  const pricingBasis = ['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(pricingBasisRaw) ? pricingBasisRaw : 'fob';
 
   let lineItems: ParsedLineItem[] = [];
   try {
@@ -1263,9 +1282,13 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     return {
       product_id: item.product_id || null,
       product_variant_id: item.product_variant_id || null,
-      catalog_price_id: null,
+      catalog_price_id: item.catalog_price_id ?? null,
       catalog_price_amount: item.catalog_price_amount ?? null,
       catalog_price_currency: item.catalog_price_currency ?? finalCurrency,
+      source_ex_factory_usd: item.source_ex_factory_usd ?? null,
+      source_fob_usd: item.source_fob_usd ?? null,
+      source_bulk_usd_per_kg: item.source_bulk_usd_per_kg ?? null,
+      freight_add_on_usd: item.freight_add_on_usd ?? null,
       quantity: item.quantity,
       unit_price: item.unit_price ?? item.catalog_price_amount ?? null,
       currency: finalCurrency,

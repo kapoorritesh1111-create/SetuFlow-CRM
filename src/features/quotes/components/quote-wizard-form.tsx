@@ -33,8 +33,10 @@ import {
   getQuoteStatusBadgeClasses,
   getQuoteWorkflowStatus,
   parseQuoteWorkflow,
+  getOverrideThresholdCheck,
 } from "@/lib/quoteWorkflow";
 import { getQuoteTrustContract } from "@/lib/quoteTrust";
+import { detectMissingPrice, type QuotePricingBasis } from "@/lib/catalog-pricing-model";
 import type { ApprovalState } from "@/lib/approvalRouting";
 import type { QuoteStatus } from "@/lib/quoteWorkflow";
 import { formatDateTime } from "@/lib/utils";
@@ -53,6 +55,7 @@ type ProductOption = {
   fobPriceAmount?: number | null;
   cifBasePriceAmount?: number | null;
   bulkPriceAmount?: number | null;
+  freightAddOnUsd?: number | null;
   pricingModeDefault?: string | null;
   pricingType?: string | null;
   unitsPerCase?: number | null;
@@ -62,7 +65,7 @@ type ProductOption = {
   moqUnit?: string | null;
   moqDisplay?: string | null;
 };
-type PricingBasis = "ex_factory" | "fob" | "cif";
+type PricingBasis = QuotePricingBasis;
 type RfqOption = {
   id: string;
   status: string;
@@ -91,6 +94,10 @@ type QuoteRecord = {
     currency: string | null;
     is_price_overridden?: boolean | null;
     override_reason?: string | null;
+    source_ex_factory_usd?: number | null;
+    source_fob_usd?: number | null;
+    source_bulk_usd_per_kg?: number | null;
+    freight_add_on_usd?: number | null;
     notes: string | null;
   }>;
 };
@@ -114,6 +121,10 @@ type DraftQuoteLine = {
   quantity: number;
   unit_price: number;
   currency: string;
+  source_ex_factory_usd: number | null;
+  source_fob_usd: number | null;
+  source_bulk_usd_per_kg: number | null;
+  freight_add_on_usd: number | null;
   override_reason: string;
   notes: string;
 };
@@ -134,6 +145,7 @@ type PricingLineIssue = {
     | "missing-product"
     | "missing-quantity"
     | "missing-catalog-baseline"
+    | "missing-source-price"
     | "below-moq"
     | "missing-override-reason";
   label: string;
@@ -262,13 +274,15 @@ function normalizePricingBasis(value: string | null | undefined): PricingBasis {
     .toLowerCase();
   if (normalized === "ex_factory" || normalized === "ex-factory")
     return "ex_factory";
-  if (normalized === "cif" || normalized === "cif") return "cif";
+  if (normalized === "cif") return "cif";
+  if (normalized === "bulk_chips" || normalized === "bulk" || normalized === "bulk/kg") return "bulk_chips";
   return "fob";
 }
 
 function pricingBasisLabel(value: PricingBasis) {
   if (value === "ex_factory") return "Ex-Factory";
   if (value === "cif") return "CIF";
+  if (value === "bulk_chips") return "Bulk/Kg";
   return "FOB";
 }
 
@@ -280,6 +294,10 @@ function getProductBasisAmount(
   if (basis === "ex_factory")
     return typeof product.exFactoryPriceAmount === "number"
       ? product.exFactoryPriceAmount
+      : product.catalogPriceAmount;
+  if (basis === "bulk_chips")
+    return typeof product.bulkPriceAmount === "number"
+      ? product.bulkPriceAmount
       : product.catalogPriceAmount;
   if (basis === "cif")
     return typeof product.cifBasePriceAmount === "number"
@@ -312,6 +330,10 @@ function buildLineFromProduct(
         : 1,
     unit_price: typeof basisAmount === "number" ? basisAmount : 0,
     currency: normalizedCurrency,
+    source_ex_factory_usd: product?.exFactoryPriceAmount ?? null,
+    source_fob_usd: product?.fobPriceAmount ?? product?.catalogPriceAmount ?? null,
+    source_bulk_usd_per_kg: product?.bulkPriceAmount ?? null,
+    freight_add_on_usd: product?.freightAddOnUsd ?? (pricingBasis === "cif" && typeof product?.cifBasePriceAmount === "number" && typeof product?.fobPriceAmount === "number" ? product.cifBasePriceAmount - product.fobPriceAmount : null),
     override_reason: "",
     notes: "",
   };
@@ -380,6 +402,10 @@ function hydrateExistingLineWithCatalog(
         ? line.unit_price
         : (catalogPriceAmount ?? fallback.unit_price),
     currency: normalizedCurrency,
+    source_ex_factory_usd: line.source_ex_factory_usd ?? matchedProduct?.exFactoryPriceAmount ?? null,
+    source_fob_usd: line.source_fob_usd ?? matchedProduct?.fobPriceAmount ?? matchedProduct?.catalogPriceAmount ?? null,
+    source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? matchedProduct?.bulkPriceAmount ?? null,
+    freight_add_on_usd: line.freight_add_on_usd ?? matchedProduct?.freightAddOnUsd ?? null,
     override_reason: line.override_reason ?? "",
     notes: line.notes ?? "",
   };
@@ -440,6 +466,7 @@ function QuoteLineTable({
   onRemoveLine,
   focusLineIndex,
   focusIssueId,
+  approvalThresholdPct = 15,
 }: {
   lineItems: DraftQuoteLine[];
   products: ProductOption[];
@@ -449,6 +476,7 @@ function QuoteLineTable({
   onRemoveLine: (index: number) => void;
   focusLineIndex?: number | null;
   focusIssueId?: PricingLineIssue["id"] | null;
+  approvalThresholdPct?: number | null;
 }) {
   return (
     <div className="overflow-x-auto rounded-[1.5rem] border border-slate-200 bg-white">
@@ -477,7 +505,8 @@ function QuoteLineTable({
             const mode = getLineMode(product, currency);
             const lineTotal =
               Number(item.quantity || 0) * Number(item.unit_price || 0);
-            const lineIssues = getPricingLineIssues(item, product);
+            const lineIssues = getPricingLineIssues(item, product, pricingBasis);
+            const thresholdCheck = getOverrideThresholdCheck(item, approvalThresholdPct);
             const focusedIssue =
               focusLineIndex === index
                 ? (lineIssues.find((issue) => issue.id === focusIssueId) ??
@@ -597,7 +626,9 @@ function QuoteLineTable({
                   <p className="mt-1 text-xs text-slate-500">
                     {pricingBasis === "cif"
                       ? "FOB base used for CIF uplift"
-                      : "Catalog basis linked"}
+                      : pricingBasis === "bulk_chips"
+                        ? "Bulk per kg catalog basis"
+                        : "Catalog basis linked"}
                   </p>
                 </td>
                 <td className="px-3 py-3 text-slate-700">
@@ -641,6 +672,11 @@ function QuoteLineTable({
                     )}{" "}
                     vs base
                   </p>
+                  {thresholdCheck.approvalRequired && thresholdCheck.deltaPercent != null ? (
+                    <p className="mt-2 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">
+                      {Math.abs(thresholdCheck.deltaPercent).toFixed(1)}% {thresholdCheck.deltaPercent > 0 ? "over" : "under"} baseline — approval required
+                    </p>
+                  ) : null}
                   {isLinePriceOverridden(item) &&
                   typeof item.catalog_price_amount === "number" ? (
                     <button
@@ -746,6 +782,7 @@ function QuoteLineTable({
 function getPricingLineIssues(
   line: DraftQuoteLine,
   product: ProductOption | undefined,
+  pricingBasis: PricingBasis = "fob",
 ): PricingLineIssue[] {
   const issues: PricingLineIssue[] = [];
 
@@ -764,6 +801,15 @@ function getPricingLineIssues(
       id: "missing-quantity",
       label: "Enter quantity",
       detail: "Quantity must be greater than zero before review or send.",
+      tone: "danger",
+    });
+  }
+
+  if (line.product_id && detectMissingPrice(pricingBasis, line)) {
+    issues.push({
+      id: "missing-source-price",
+      label: `No ${pricingBasisLabel(pricingBasis)} price`,
+      detail: `This line has no ${pricingBasisLabel(pricingBasis)} source price for the selected pricing basis.`,
       tone: "danger",
     });
   }
@@ -814,6 +860,7 @@ function getPricingIssueBadgeClasses(tone: QuoteRiskTone) {
 function getPricingStepSummary(
   lineItems: DraftQuoteLine[],
   products: ProductOption[],
+  pricingBasis: PricingBasis = "fob",
 ) {
   const lineIssueCounts = { danger: 0, warning: 0 } as Record<
     "danger" | "warning",
@@ -831,7 +878,7 @@ function getPricingStepSummary(
       products.find(
         (entry) => entry.defaultVariantId === line.product_variant_id,
       );
-    const issues = getPricingLineIssues(line, product);
+    const issues = getPricingLineIssues(line, product, pricingBasis);
     if (!issues.length) return;
     issues.forEach((issue) => {
       if (issue.tone === "danger" || issue.tone === "warning")
@@ -859,6 +906,7 @@ function getStepRecommendations(data: {
   status: string;
   lineItems: DraftQuoteLine[];
   products: ProductOption[];
+  pricingBasis: PricingBasis;
   quoteSendGuard?: ProgressionGuardSummary;
 }) {
   const recommendations = new Map<StepId, StepRecommendation>();
@@ -876,7 +924,7 @@ function getStepRecommendations(data: {
     });
   }
 
-  const pricingSummary = getPricingStepSummary(data.lineItems, data.products);
+  const pricingSummary = getPricingStepSummary(data.lineItems, data.products, data.pricingBasis);
   if (!pricingSummary.totalLines) {
     recommendations.set("pricing", {
       stepId: "pricing",
@@ -1874,6 +1922,7 @@ function getQuoteRiskFlags({
   approvalState,
   status,
   products,
+  pricingBasis,
   quoteSendGuard,
 }: {
   lineItems: DraftQuoteLine[];
@@ -1881,6 +1930,7 @@ function getQuoteRiskFlags({
   approvalState: string;
   status: string;
   products: ProductOption[];
+  pricingBasis: PricingBasis;
   quoteSendGuard?: ProgressionGuardSummary;
 }): QuoteRiskFlag[] {
   const usableLines = lineItems.filter(
@@ -1904,6 +1954,7 @@ function getQuoteRiskFlags({
       item.quantity < product.moqValue
     );
   });
+  const missingSourcePriceLines = usableLines.filter((item) => detectMissingPrice(pricingBasis, item));
   const draftValue = usableLines.reduce(
     (sum, item) =>
       sum + Number(item.quantity || 0) * Number(item.unit_price || 0),
@@ -1938,6 +1989,15 @@ function getQuoteRiskFlags({
             : "Draft prices below catalog baseline",
       detail: `${formatMoney(Math.abs(priceDrift), usableLines[0]?.currency)} ${priceDrift === 0 ? "difference is currently zero." : priceDrift > 0 ? "higher than catalog across current lines." : "below catalog across current lines."}`,
       tone: priceDrift === 0 ? "good" : priceDrift > 0 ? "warning" : "danger",
+    });
+  }
+
+  if (missingSourcePriceLines.length) {
+    flags.push({
+      id: "missing-source-price",
+      label: `${missingSourcePriceLines.length} line ${missingSourcePriceLines.length === 1 ? "is" : "are"} missing ${pricingBasisLabel(pricingBasis)} price`,
+      detail: "Add source catalog pricing before the quote can pass send readiness.",
+      tone: "danger",
     });
   }
 
@@ -2181,6 +2241,7 @@ function getQuoteValidation(
     approvalState: string;
     status: string;
     lineItems: DraftQuoteLine[];
+    pricingBasis?: PricingBasis;
     quoteSendGuard?: ProgressionGuardSummary;
   },
 ) {
@@ -2199,6 +2260,8 @@ function getQuoteValidation(
       issues.push("Quote quantities must stay above zero.");
     if (data.lineItems.some((item) => item.unit_price < 0))
       issues.push("Unit pricing cannot be negative.");
+    if (data.lineItems.some((item) => item.product_id && detectMissingPrice(data.pricingBasis ?? "fob", item)))
+      issues.push(`Every line needs a ${pricingBasisLabel(data.pricingBasis ?? "fob")} source price before send.`);
     if (
       data.lineItems.some(
         (item) => isLinePriceOverridden(item) && !item.override_reason.trim(),
@@ -2252,6 +2315,7 @@ function QuoteReviewPanel({
   lineItems: DraftQuoteLine[];
   templateId: string;
   products: ProductOption[];
+  pricingBasis: PricingBasis;
   quoteSendGuard?: ProgressionGuardSummary;
 }) {
   const totals = computeQuoteTotals(lineItems, normalizeCurrency(currency));
@@ -2262,6 +2326,7 @@ function QuoteReviewPanel({
     approvalState,
     status,
     products,
+    pricingBasis,
     quoteSendGuard,
   });
 
@@ -2363,6 +2428,7 @@ export function QuoteCreateWizardForm({
   rfqs,
   products,
   quoteSendGuard,
+  approvalThresholdPct = 15,
   onClose,
   onSaved,
 }: {
@@ -2370,6 +2436,7 @@ export function QuoteCreateWizardForm({
   rfqs: RfqOption[];
   products: ProductOption[];
   quoteSendGuard?: ProgressionGuardSummary;
+  approvalThresholdPct?: number | null;
   onClose: () => void;
   onSaved?: (quote: QuoteRecord) => void;
 }) {
@@ -2413,6 +2480,7 @@ export function QuoteCreateWizardForm({
     approvalState,
     status,
     lineItems,
+    pricingBasis,
     quoteSendGuard,
   });
   const reviewIssues = getQuoteValidation("review", {
@@ -2421,6 +2489,7 @@ export function QuoteCreateWizardForm({
     approvalState,
     status,
     lineItems,
+    pricingBasis,
     quoteSendGuard,
   });
   const hasReviewBlockingIssues = reviewIssues.length > 0;
@@ -2431,6 +2500,7 @@ export function QuoteCreateWizardForm({
     status,
     lineItems,
     products,
+    pricingBasis,
     quoteSendGuard,
   });
   const reviewRecommendations = stepRecommendations.filter(
@@ -2534,6 +2604,7 @@ export function QuoteCreateWizardForm({
       approvalState,
       status,
       lineItems,
+      pricingBasis,
       quoteSendGuard,
     });
     setValidationIssues(issues);
@@ -2616,6 +2687,7 @@ export function QuoteCreateWizardForm({
             approvalState,
             status,
             lineItems,
+            pricingBasis,
             quoteSendGuard,
           });
           if (
@@ -2656,6 +2728,7 @@ export function QuoteCreateWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
@@ -2825,6 +2898,7 @@ export function QuoteCreateWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
@@ -2873,6 +2947,7 @@ export function QuoteCreateWizardForm({
                   products={products}
                   currency={currency}
                   pricingBasis={pricingBasis}
+                  approvalThresholdPct={approvalThresholdPct}
                   onChangeLine={(index, next) =>
                     setLineItems((current) =>
                       current.map((entry, entryIndex) =>
@@ -2914,6 +2989,7 @@ export function QuoteCreateWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
@@ -3032,6 +3108,7 @@ export function QuoteCreateWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
@@ -3113,6 +3190,7 @@ export function QuoteCreateWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
@@ -3329,6 +3407,7 @@ function QuoteSummaryCards({
     approvalState,
     status,
     products,
+    pricingBasis,
     quoteSendGuard,
   });
   const riskCount = riskFlags.filter((flag) => flag.tone !== "good").length;
@@ -3412,6 +3491,7 @@ export function QuoteEditWizardForm({
   products,
   quoteVersions = [],
   quoteSendGuard,
+  approvalThresholdPct = 15,
   initialStepId,
   onClose,
   onSaved,
@@ -3420,6 +3500,7 @@ export function QuoteEditWizardForm({
   products: ProductOption[];
   quoteVersions?: QuoteVersionRecord[];
   quoteSendGuard?: ProgressionGuardSummary;
+  approvalThresholdPct?: number | null;
   initialStepId?: StepId;
   onClose: () => void;
   onSaved?: (quote: QuoteRecord) => void;
@@ -3487,6 +3568,7 @@ export function QuoteEditWizardForm({
     approvalState,
     status,
     lineItems,
+    pricingBasis,
     quoteSendGuard,
   });
   const reviewIssues = getQuoteValidation("review", {
@@ -3495,6 +3577,7 @@ export function QuoteEditWizardForm({
     approvalState,
     status,
     lineItems,
+    pricingBasis,
     quoteSendGuard,
   });
   const stepRecommendations = getStepRecommendations({
@@ -3504,6 +3587,7 @@ export function QuoteEditWizardForm({
     status,
     lineItems,
     products,
+    pricingBasis,
     quoteSendGuard,
   });
   const reviewRecommendations = stepRecommendations.filter(
@@ -3677,6 +3761,7 @@ export function QuoteEditWizardForm({
       approvalState,
       status,
       lineItems,
+      pricingBasis,
       quoteSendGuard,
     });
     setValidationIssues(issues);
@@ -3801,6 +3886,7 @@ export function QuoteEditWizardForm({
             approvalState,
             status,
             lineItems,
+            pricingBasis,
             quoteSendGuard,
           });
           if (
@@ -3841,6 +3927,7 @@ export function QuoteEditWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
@@ -3887,6 +3974,7 @@ export function QuoteEditWizardForm({
                         <option value="ex_factory">Ex-Factory</option>
                         <option value="fob">FOB</option>
                         <option value="cif">CIF</option>
+                        <option value="bulk_chips">Bulk/Kg</option>
                       </select>
                     </FilterField>
                   </div>
@@ -3964,6 +4052,7 @@ export function QuoteEditWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
@@ -4012,6 +4101,7 @@ export function QuoteEditWizardForm({
                   products={products}
                   currency={currency}
                   pricingBasis={pricingBasis}
+                  approvalThresholdPct={approvalThresholdPct}
                   onChangeLine={(index, next) =>
                     setLineItems((current) =>
                       current.map((entry, entryIndex) =>
@@ -4053,6 +4143,7 @@ export function QuoteEditWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
@@ -4174,6 +4265,7 @@ export function QuoteEditWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
@@ -4193,6 +4285,7 @@ export function QuoteEditWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
               <QuoteVersionCheckpointPanel
@@ -4269,6 +4362,7 @@ export function QuoteEditWizardForm({
                 lineItems={lineItems}
                 templateId={templateId}
                 products={products}
+                pricingBasis={pricingBasis}
                 quoteSendGuard={quoteSendGuard}
               />
             }
