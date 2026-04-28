@@ -19,8 +19,8 @@ export default function RouteError({
       title="Settings lists unavailable"
       description="The settings workspace failed to load. Try again to recover the screen, or return to the dashboard while the reference data connection is checked."
       reset={reset}
-      homeHref="/settings/lists"
-      homeLabel="Reload settings lists"
+      homeHref="/admin/organization#settings-lists"
+      homeLabel="Open Admin settings lists"
     />
   );
 }

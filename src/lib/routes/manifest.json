@@ -31,7 +31,7 @@
       "orders": "/orders",
       "integrations": "/approval-send",
       "products": "/products",
-      "settings": "/settings/lists",
+      "settings": "/admin/organization#settings-lists",
       "admin": "/admin/organization",
       "capture": "/contact-exchange/scan",
       "myCard": "/contact-exchange/vcard"
@@ -141,14 +141,14 @@
       "href": "/settings/lists",
       "label": "Settings / Lists",
       "exact": true,
-      "description": "Keep reference data and defaults clear for the team and leadership.",
+      "description": "Compatibility route that redirects into the unified Admin & Settings workspace.",
       "aliases": [
         "settings",
         "lists",
-        "defaults",
         "reference data"
       ],
-      "navKey": "t"
+      "navKey": "g",
+      "requiresAdmin": true
     },
     {
       "href": "/dashboard",
@@ -332,19 +332,6 @@
             "pricing baseline"
           ],
           "navKey": "k"
-        },
-        {
-          "href": "/settings/lists",
-          "label": "Settings / Lists",
-          "exact": true,
-          "description": "Maintain shared lists, defaults, pipelines, and stage vocabulary that support workflow without pretending this is the workflow itself.",
-          "aliases": [
-            "settings",
-            "lists",
-            "defaults",
-            "reference data"
-          ],
-          "navKey": "t"
         },
         {
           "href": "/admin/organization",

@@ -8,6 +8,7 @@ import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/works
 import { getProductsData } from '@/lib/queries/products';
 import { buildProductsViewModel } from '@/features/products/view-model';
 import { ProductsManager } from '@/features/products/components/products-manager';
+import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 
 function ratioLabel(done: number, total: number) {
   return total > 0 ? `${done}/${total}` : '0/0';
@@ -42,7 +43,8 @@ export default async function ProductManagementPage() {
   const approvalProtectedCount = activeProducts.filter((product) => product.pricingEntries.length > 0).length;
 
   return (
-    <div className="space-y-6">
+    <AdminSettingsShell active="product-management" organizationName={workspace.organization.name} missingCount={pricedActiveCount === activeProducts.length ? 0 : 1}>
+      <div className="space-y-6">
       <PageHeader
         eyebrow="Admin"
         title="Product management"
@@ -95,6 +97,7 @@ export default async function ProductManagementPage() {
         markets={(data.markets ?? []).map((market) => ({ id: market.id, name: market.name, isActive: Boolean(market.is_active) }))}
         auditEvents={data.auditEvents}
       />
-    </div>
+      </div>
+    </AdminSettingsShell>
   );
 }

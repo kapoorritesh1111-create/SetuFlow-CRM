@@ -2171,9 +2171,13 @@ function InlineQuoteBuilder({
     if (sourceItems.length) {
       return sourceItems.map((item) => {
         const qty = Number(item.quantity ?? 1) || 1;
-        const rawPrice = (Number(item.unit_price ?? 0) > 0 ? item.unit_price : null) ?? item.catalog_price_amount ?? null;
+        const variantIds = new Set(variants.filter((variant) => variant.product_id === item.product_id).map((variant) => variant.id));
+        const fallbackPrice = prices.find((price) => variantIds.has(price.product_variant_id));
+        const fallbackRule = pricingRules.find((rule) => rule.product_id === item.product_id || (rule.product_variant_id && variantIds.has(rule.product_variant_id)));
+        const rulePrice = fallbackRule ? fallbackRule.fob_usd_per_case ?? fallbackRule.fob_usd_per_unit ?? fallbackRule.ex_factory_usd_per_case ?? fallbackRule.ex_factory_usd_per_unit ?? fallbackRule.bulk_usd_per_kg ?? fallbackRule.fob_usd ?? fallbackRule.ex_factory_usd ?? fallbackRule.fob_inr ?? fallbackRule.ex_factory_inr ?? null : null;
+        const rawPrice = (Number(item.unit_price ?? 0) > 0 ? item.unit_price : null) ?? (Number(item.catalog_price_amount ?? 0) > 0 ? item.catalog_price_amount : null) ?? fallbackPrice?.price ?? rulePrice ?? null;
         const unitPrice = rawPrice == null ? null : Number(rawPrice);
-        const lineCurrency = String(item.currency ?? item.catalog_price_currency ?? latestQuote?.currency ?? lead.deal_currency ?? 'USD');
+        const lineCurrency = String(item.currency ?? item.catalog_price_currency ?? fallbackPrice?.currency ?? (fallbackRule?.fob_inr || fallbackRule?.ex_factory_inr ? 'INR' : latestQuote?.currency ?? lead.deal_currency ?? 'USD'));
         return {
           id: item.id,
           productId: item.product_id ?? null,

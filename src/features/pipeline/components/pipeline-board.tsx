@@ -779,7 +779,7 @@ export function PipelineBoard({
       {showStageConfigurationState&&(
         <div style={{margin:'14px 24px',padding:'32px',textAlign:'center',background:'white',borderRadius:'22px',border:'1px solid #e2e8f0'}}>
           <p style={{fontSize:'16px',fontWeight:700,color:'#1e293b',marginBottom:'8px'}}>{isStageConfigurationEmpty?'No pipeline stages configured yet':'No stage lanes match this mode'}</p>
-          <a href={canManageLeads?'/settings/lists':PRODUCT_ROUTES.app.leads} style={{display:'inline-block',padding:'9px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>{canManageLeads?'Review pipeline settings':'Open leads'}</a>
+          <a href={canManageLeads?'/admin/organization#settings-lists':PRODUCT_ROUTES.app.leads} style={{display:'inline-block',padding:'9px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>{canManageLeads?'Review pipeline settings':'Open leads'}</a>
         </div>
       )}
 

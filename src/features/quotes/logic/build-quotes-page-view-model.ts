@@ -72,6 +72,10 @@ function numberOrNull(value: number | string | null | undefined) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
+function positiveNumberOrNull(value: number | string | null | undefined) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
 
 function buildHistory(quoteId: string, versions: QuoteVersionRow[], negotiations: NegotiationRow[], communications: CommunicationRow[]): QuoteHistoryItem[] {
   const versionHistory = versions
@@ -175,8 +179,8 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
     const quoteLines = (lineItemsByQuote.get(quote.id) ?? []).map((line, index) => {
       const product = line.product_id ? productMap.get(line.product_id) : null;
       const quantity = numberOrNull(line.quantity) ?? 0;
-      const catalogPriceAmount = numberOrNull(line.catalog_price_amount) ?? numberOrNull((product as ProductRow | null | undefined)?.catalogPriceAmount);
-      const unitPrice = numberOrNull(line.unit_price) ?? catalogPriceAmount;
+      const catalogPriceAmount = positiveNumberOrNull(line.catalog_price_amount) ?? positiveNumberOrNull((product as ProductRow | null | undefined)?.catalogPriceAmount);
+      const unitPrice = positiveNumberOrNull(line.unit_price) ?? catalogPriceAmount ?? numberOrNull(line.unit_price);
       return {
         id: line.id,
         quoteId: quote.id,

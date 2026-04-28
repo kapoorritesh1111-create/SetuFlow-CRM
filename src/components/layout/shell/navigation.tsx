@@ -23,7 +23,6 @@ const PRIMARY_LABELS: Record<string, string> = {
 };
 
 const UTILITY_LABELS: Record<string, string> = {
-  '/settings/lists': 'Settings',
   '/admin/organization': 'Admin',
 };
 

@@ -900,7 +900,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
       rules[0] ??
       null;
 
-    if (!defaultVariant) {
+    if (!defaultVariant && !resolvedRule) {
       return {
         productVariantId: null,
         catalogPriceId: null,
@@ -912,21 +912,14 @@ async function ensureQuoteLineItemsFromLeadCoverage(
       };
     }
 
-    const exUnit = typeof resolvedRule?.ex_factory_usd_per_unit === 'number' ? Number(resolvedRule.ex_factory_usd_per_unit) : null;
-    const exCase = typeof resolvedRule?.ex_factory_usd_per_case === 'number'
-      ? Number(resolvedRule.ex_factory_usd_per_case)
-      : exUnit != null && defaultVariant?.units_per_case != null
-        ? Number((exUnit * Number(defaultVariant.units_per_case)).toFixed(2))
-        : null;
-    const fobUnit = typeof resolvedRule?.fob_usd_per_unit === 'number' ? Number(resolvedRule.fob_usd_per_unit) : null;
-    const fobCase = typeof resolvedRule?.fob_usd_per_case === 'number'
-      ? Number(resolvedRule.fob_usd_per_case)
-      : fobUnit != null && defaultVariant?.units_per_case != null
-        ? Number((fobUnit * Number(defaultVariant.units_per_case)).toFixed(2))
-        : null;
-    const bulkValue = typeof resolvedRule?.bulk_usd_per_kg === 'number' ? Number(resolvedRule.bulk_usd_per_kg) : null;
-    const exInr = typeof resolvedRule?.ex_factory_inr === 'number' ? Number(resolvedRule.ex_factory_inr) : null;
-    const fobInr = typeof resolvedRule?.fob_inr === 'number' ? Number(resolvedRule.fob_inr) : null;
+    const asPositiveNumber = (value: unknown) => { const parsed = Number(value); return Number.isFinite(parsed) && parsed > 0 ? parsed : null; };
+    const exUnit = asPositiveNumber(resolvedRule?.ex_factory_usd_per_unit);
+    const exCase = asPositiveNumber(resolvedRule?.ex_factory_usd_per_case) ?? (exUnit != null && defaultVariant?.units_per_case != null ? Number((exUnit * Number(defaultVariant.units_per_case)).toFixed(2)) : null);
+    const fobUnit = asPositiveNumber(resolvedRule?.fob_usd_per_unit);
+    const fobCase = asPositiveNumber(resolvedRule?.fob_usd_per_case) ?? (fobUnit != null && defaultVariant?.units_per_case != null ? Number((fobUnit * Number(defaultVariant.units_per_case)).toFixed(2)) : null);
+    const bulkValue = asPositiveNumber(resolvedRule?.bulk_usd_per_kg);
+    const exInr = asPositiveNumber(resolvedRule?.ex_factory_inr);
+    const fobInr = asPositiveNumber(resolvedRule?.fob_inr);
 
     const pricingModeDefault = String(defaultVariant?.pricing_mode_default ?? '').trim().toLowerCase();
     const exPreferredUsd = pricingModeDefault === 'kg' ? bulkValue ?? exUnit ?? exCase : exCase ?? exUnit ?? bulkValue;
@@ -936,14 +929,10 @@ async function ensureQuoteLineItemsFromLeadCoverage(
     const preferredInrValue = preferredBasis === 'ex_factory' ? exInr : fobInr ?? exInr;
     const preferredValue = preferredUsdValue ?? preferredInrValue;
     const preferredCurrency = preferredUsdValue != null ? 'USD' : preferredInrValue != null ? 'INR' : quoteCurrency;
-    const baselineQuantity = typeof defaultVariant?.moq_cases === 'number'
-      ? Number(defaultVariant.moq_cases)
-      : typeof defaultVariant?.moq_kg === 'number'
-        ? Number(defaultVariant.moq_kg)
-        : 1;
+    const baselineQuantity = asPositiveNumber(defaultVariant?.moq_cases) ?? asPositiveNumber(defaultVariant?.moq_kg) ?? 1;
 
     return {
-      productVariantId: defaultVariant.id ?? null,
+      productVariantId: defaultVariant?.id ?? null,
       catalogPriceId: null,
       catalogPriceAmount: typeof preferredValue === 'number' ? preferredValue : null,
       catalogPriceCurrency: preferredCurrency,
@@ -984,7 +973,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
   const existingProductIds = new Set(existingRowsList.map((row: { product_id?: string | null }) => row.product_id).filter(Boolean));
   const missingProductIds = productIds.filter((productId) => !existingProductIds.has(productId));
 
-  const rowsNeedingHydration = existingRowsList.filter((row: any) => row?.product_id && (row.catalog_price_amount == null || row.unit_price == null || !row.catalog_price_currency));
+  const rowsNeedingHydration = existingRowsList.filter((row: any) => row?.product_id && (Number(row.catalog_price_amount ?? 0) <= 0 || Number(row.unit_price ?? 0) <= 0 || !row.catalog_price_currency));
   for (const row of rowsNeedingHydration) {
     const baseline = baselineByProductId.get(String(row.product_id));
     if (!baseline) continue;
@@ -993,10 +982,10 @@ async function ensureQuoteLineItemsFromLeadCoverage(
       .update({
         product_variant_id: row.product_variant_id ?? baseline.productVariantId,
         catalog_price_id: null,
-        catalog_price_amount: row.catalog_price_amount ?? baseline.catalogPriceAmount,
+        catalog_price_amount: Number(row.catalog_price_amount ?? 0) > 0 ? row.catalog_price_amount : baseline.catalogPriceAmount,
         catalog_price_currency: row.catalog_price_currency ?? baseline.catalogPriceCurrency,
         quantity: row.quantity == null || Number(row.quantity) <= 1 ? baseline.quantity : row.quantity,
-        unit_price: row.unit_price ?? convertedUnitPrice(baseline),
+        unit_price: Number(row.unit_price ?? 0) > 0 ? row.unit_price : convertedUnitPrice(baseline),
         currency: row.currency ?? quoteCurrency,
       })
       .eq('id', row.id)
@@ -1032,7 +1021,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
 
     if (!existingVersionError) {
       const existingVersionRowsList = existingVersionRows ?? [];
-      const versionRowsNeedingHydration = existingVersionRowsList.filter((row: any) => row?.product_id && (row.final_unit_price == null || !row.display_currency || !row.product_variant_id));
+      const versionRowsNeedingHydration = existingVersionRowsList.filter((row: any) => row?.product_id && (Number(row.final_unit_price ?? 0) <= 0 || !row.display_currency || !row.product_variant_id));
       for (const row of versionRowsNeedingHydration) {
         const baseline = baselineByProductId.get(String(row.product_id));
         if (!baseline) continue;
@@ -1040,7 +1029,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
           .from('quote_version_line_items')
           .update({
             product_variant_id: row.product_variant_id ?? baseline.productVariantId,
-            final_unit_price: row.final_unit_price ?? convertedUnitPrice(baseline),
+            final_unit_price: Number(row.final_unit_price ?? 0) > 0 ? row.final_unit_price : convertedUnitPrice(baseline),
             moq: row.moq == null || Number(row.moq) <= 1 ? baseline.quantity : row.moq,
             display_currency: row.display_currency ?? quoteCurrency,
             line_notes: 'Seeded from lead coverage',

@@ -113,12 +113,28 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const lineItems = Array.isArray(lineItemsResult.data) ? lineItemsResult.data : [];
   const productIds = [...new Set(lineItems.map((l: any) => l.product_id).filter(Boolean))];
   const productsResult = productIds.length ? await db.from('products').select('id, name, sku').eq('organization_id', organizationId).in('id', productIds) : { data: [], error: null };
-  const pricingRulesResult = productIds.length
-    ? await db.from('product_pricing_rules').select('product_id, product_variant_id, is_active, is_quoteable, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr').eq('organization_id', organizationId).in('product_id', productIds)
+  const variantsResult = productIds.length
+    ? await db.from('product_variants').select('id, product_id, is_active, is_quoteable, units_per_case, pricing_mode_default, moq_cases, moq_kg, sort_order, pack_size_value').eq('organization_id', organizationId).in('product_id', productIds).order('product_id', { ascending: true }).order('sort_order', { ascending: true })
     : { data: [], error: null };
+  const variantIds = Array.from(new Set((Array.isArray(variantsResult.data) ? variantsResult.data : []).map((variant: any) => variant.id).filter(Boolean)));
+  const productPricesResult = variantIds.length
+    ? await db.from('product_prices').select('id, product_variant_id, price, currency, effective_from, effective_to').in('product_variant_id', variantIds).order('effective_from', { ascending: false })
+    : { data: [], error: null };
+  const pricingRulesResult = productIds.length
+    ? await db.from('product_pricing_rules').select('product_id, product_variant_id, is_active, is_quoteable, effective_from, effective_to, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr').eq('organization_id', organizationId).in('product_id', productIds)
+    : { data: [], error: null };
+  const nowIso = new Date().toISOString();
+  const activeByDate = (row: any) => !(row?.effective_from && String(row.effective_from) > nowIso) && !(row?.effective_to && String(row.effective_to) < nowIso);
   const priceByProductId = new Map<string, { amount: number; currency: string }>();
+  for (const price of Array.isArray(productPricesResult.data) ? productPricesResult.data : []) {
+    const variant = (Array.isArray(variantsResult.data) ? variantsResult.data : []).find((item: any) => item.id === price?.product_variant_id);
+    const productId = variant?.product_id;
+    const amount = Number(price?.price);
+    if (!productId || priceByProductId.has(productId) || !activeByDate(price) || !Number.isFinite(amount) || amount <= 0) continue;
+    priceByProductId.set(productId, { amount, currency: String(price.currency ?? 'USD').toUpperCase() });
+  }
   for (const rule of Array.isArray(pricingRulesResult.data) ? pricingRulesResult.data : []) {
-    if (!rule?.product_id || rule.is_active === false || rule.is_quoteable === false || priceByProductId.has(rule.product_id)) continue;
+    if (!rule?.product_id || rule.is_active === false || rule.is_quoteable === false || priceByProductId.has(rule.product_id) || !activeByDate(rule)) continue;
     const amount = [rule.fob_usd_per_case, rule.fob_usd_per_unit, rule.ex_factory_usd_per_case, rule.ex_factory_usd_per_unit, rule.bulk_usd_per_kg, rule.fob_usd, rule.ex_factory_usd, rule.fob_inr, rule.ex_factory_inr]
       .map((value) => Number(value)).find((value) => Number.isFinite(value) && value > 0);
     if (amount) priceByProductId.set(rule.product_id, { amount, currency: rule.fob_inr || rule.ex_factory_inr ? 'INR' : 'USD' });

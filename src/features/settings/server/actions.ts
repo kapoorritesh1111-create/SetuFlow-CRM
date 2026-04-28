@@ -546,7 +546,7 @@ export async function saveSettingsListItem(_: ActionState | undefined, formData:
   const { error: saveError } = await db.rpc('app_save_settings_list_item_tx', { p_payload: rpcPayload });
   if (saveError) return { error: saveError.message };
 
-  revalidatePath('/settings/lists');
+  revalidatePath('/admin/organization#settings-lists');
   revalidatePath('/leads');
   revalidatePath('/products');
 
@@ -619,7 +619,7 @@ export async function importSettingsListsSnapshot(
   const nextStepsImported = Number(counts?.next_steps_imported ?? 0);
   const productCategoriesImported = Number(counts?.product_categories_imported ?? 0);
 
-  revalidatePath('/settings/lists');
+  revalidatePath('/admin/organization#settings-lists');
   revalidatePath('/leads');
   revalidatePath('/products');
 
@@ -657,7 +657,7 @@ export async function deleteSettingsListItem(_: ActionState | undefined, formDat
   });
   if (error) return { error: error.message };
 
-  revalidatePath('/settings/lists');
+  revalidatePath('/admin/organization#settings-lists');
   revalidatePath('/leads');
   revalidatePath('/products');
 
@@ -712,6 +712,6 @@ export async function moveAdminSettingsListItem(formData: FormData): Promise<voi
   await db.from(table).update({ sort_order: adjacent.sort_order }).eq('id', id);
   await db.from(table).update({ sort_order: currentOrder }).eq('id', adjacent.id);
 
-  revalidatePath('/settings/lists');
+  revalidatePath('/admin/organization#settings-lists');
   revalidatePath('/admin');
 }
