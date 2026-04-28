@@ -73,8 +73,8 @@ export default async function AdminUnifiedPage({ searchParams }: { searchParams?
   const category = categoryFrom(searchParams);
   const actor = String(first(searchParams?.actor) ?? 'all');
   const since = String(first(searchParams?.since) ?? '');
-  const categoryTypes = category === 'access' ? ACCESS_EVENTS : category === 'catalog' ? CATALOG_EVENTS : undefined;
-  const auditEvents = (auditResult ?? []).filter((event) => (!categoryTypes || categoryTypes.includes(event.event_type)) && (actor === 'all' || event.actor_user_id === actor) && (!since || String(event.created_at).slice(0, 10) >= since));
+  const categoryTypes = category === 'access' ? new Set<string>(ACCESS_EVENTS) : category === 'catalog' ? new Set<string>(CATALOG_EVENTS) : undefined;
+  const auditEvents = (auditResult ?? []).filter((event) => (!categoryTypes || categoryTypes.has(String(event.event_type))) && (actor === 'all' || event.actor_user_id === actor) && (!since || String(event.created_at).slice(0, 10) >= since));
   const actors = Array.from(new Map((auditResult ?? []).map((event) => [event.actor_user_id ?? 'system', { id: event.actor_user_id ?? 'system', label: event.actor_name ?? event.actor_email ?? event.actor_user_id ?? 'System' }])).values());
   let body: React.ReactNode;
   if (section === 'team') body = <Team members={members} roles={roles} />;
