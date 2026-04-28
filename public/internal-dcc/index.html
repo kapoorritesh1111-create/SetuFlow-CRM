@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SETU Flow DCC — Apr 28 2026 Regression Reset</title>
+  <title>SETU Flow DCC — Apr 28 2026 · v14 Full Repo Audit</title>
   <style>
     :root{--bg:#f2f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--mu:#64748b;--brand:#0c7fff;--navy:#0b2e4a;--good:#059669;--warn:#d97706;--bad:#dc2626;--violet:#7c3aed;--sh:0 4px 18px rgba(15,23,42,.07);--r:18px}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.55}
@@ -17,37 +17,43 @@
     .co{border-radius:12px;padding:11px 14px;border:1px solid;margin-bottom:8px;font-size:12px}.co.g{background:#f0fdf4;border-color:#a7f3d0;color:#065f46}.co.b{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}.co.w{background:#fffbeb;border-color:#fde68a;color:#92400e}.co.r{background:#fef2f2;border-color:#fecaca;color:#991b1b}
     .tb{display:flex;gap:2px;background:#f1f5f9;border-radius:11px;padding:3px;margin-top:14px;flex-wrap:wrap}.tbtn{padding:7px 13px;border-radius:8px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--mu);transition:.12s;white-space:nowrap}.tbtn.a{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(15,23,42,.07)}.tbtn:hover:not(.a){color:var(--text)}.tp{display:none;margin-top:14px}.tp.a{display:block}
     .mr{display:flex;align-items:center;gap:9px;margin-bottom:7px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}.mn{font-weight:700;font-size:12px;min-width:175px}.bw{background:#f1f5f9;border-radius:999px;height:6px;overflow:hidden;flex:1}.bf{height:100%;border-radius:999px}.bf.g{background:var(--good)}.bf.w{background:var(--warn)}.bf.b{background:var(--brand)}.bf.r{background:var(--bad)}.mp{font-size:12px;font-weight:900;min-width:38px;text-align:right}
-    .pb{background:#0f172a;border-radius:12px;padding:14px;margin-top:8px;position:relative}.pb pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#e2e8f0;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:520px;overflow-y:auto}.cbtn{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:6px;padding:3px 11px;font-size:10px;font-weight:700;cursor:pointer}
+    .pb{background:#0f172a;border-radius:12px;padding:14px;margin-top:8px;position:relative}.pb pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#e2e8f0;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:640px;overflow-y:auto}.cbtn{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:6px;padding:3px 11px;font-size:10px;font-weight:700;cursor:pointer}
     .gi{display:flex;gap:8px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:#f8fafc;margin-bottom:5px;font-size:11px;line-height:1.6}.sev{font-size:9px;font-weight:900;text-transform:uppercase;padding:2px 6px;border-radius:999px;white-space:nowrap;margin-top:3px;flex-shrink:0}.sev.crit{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}.sev.high{background:#fff7ed;color:#9a3412;border:1px solid #fdba74}.sev.med{background:#fffbeb;color:#92400e;border:1px solid #fde68a}.sev.low{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
+    .bug{background:#fff0f0;border:2px solid #fecaca;border-radius:10px;padding:10px 14px;font-size:11px;color:#991b1b;margin-bottom:8px}.bug strong{display:block;font-size:12px;margin-bottom:3px}
+    .speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .speed-bad{background:#fff;border:1px solid #fecaca;border-radius:8px;padding:10px;font-size:11px}.speed-bad strong{color:#dc2626;display:block;margin-bottom:3px}
+    .speed-good{background:#fff;border:1px solid #a7f3d0;border-radius:8px;padding:10px;font-size:11px}.speed-good strong{color:#059669;display:block;margin-bottom:3px}
     @media(max-width:1050px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}@media(max-width:700px){.wrap{padding:10px 10px 40px}.g2,.g3,.g4{grid-template-columns:1fr}.tbtn{padding:5px 9px;font-size:10px}}
   </style>
 </head>
 <body>
-<main>
-
-<header>
-  <div class="ey">SETU Flow Internal DCC · Regression Audit · Apr 28 2026</div>
-  <h1>Reference HTML + NorthStar reset — old workspace regressions now tracked</h1>
-  <p class="lead">This update corrects the previous DCC under-reporting. The screenshots and repo review show Admin/Settings, Catalog, Orders, Leads filters, and several route shells have moved backward or are still calling old/partial workspaces. Do not treat the product as 80%+ ready until these spaces are restored and proved by build + route smoke.</p>
-  <div class="badges">
-    <span class="pill r">build proof still missing</span>
-    <span class="pill r">old workspace regressions confirmed</span>
-    <span class="pill w">filters inconsistent outside Leads</span>
-    <span class="pill b">12 PRs needed to reach 100%</span>
-    <span class="pill g">internal-dcc updated only</span>
+<div class="wrap">
+<div class="hero">
+  <div class="hero-ey">SETU Flow Internal DCC &middot; v14 Full Repo Line-by-Line Audit &middot; Apr 28 2026</div>
+  <h1>Honest Re-score After Actual Code Inspection + Speed Recovery Plan</h1>
+  <p>Full line-by-line inspection of every primary route component in the v14 zip against all 8 reference HTML files. Previous DCC under-scored Orders (v14 code is 76%, not 52%). Three critical bugs confirmed by source inspection: 30-day validity in quotes (must be 7), PipelineBoardFilters is a scaffold not wired to pipeline-board.tsx, and capture_defaults has zero matches in src/. PR plan reduced from 12 wide-scope to 8 surgical file-specific PRs. The root cause of slow progress is wide PR scope causing cross-module contamination and soft build proof gates.</p>
+  <div class="pills">
+    <span class="pill r">30-day validity bug confirmed (quotes line 42)</span>
+    <span class="pill r">PipelineBoardFilters scaffold — not wired</span>
+    <span class="pill r">capture_defaults — 0 matches in src/</span>
+    <span class="pill w">Orders corrected to 76% — v14 has full desk</span>
+    <span class="pill g">8 surgical PRs replace 12 wide PRs</span>
+    <span class="pill g">internal-dcc updated only &middot; same format</span>
   </div>
-</header>
+</div>
 
 <section class="sec grid g4">
-  <div class="card kp"><div class="n" style="color:var(--warn)">67%</div><div class="l">Overall readiness</div><p class="mu sm">Catalog middle dev notes removed; drawer now uses clean tabbed reference panels, but Vercel build and final visual smoke remain pending.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--warn)">2</div><div class="l">Proof builds</div><p class="mu sm">PR01 and PR02 passed in Vercel; PR03 correction now has npm ci/typecheck/tests/contracts proof, with build proof still pending.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--violet)">12</div><div class="l">PRs to 100%</div><p class="mu sm">Repair, Admin, Catalog, Orders, Leads, Pipeline, Quotes, Trade, Dashboard, Cross-page, Design, QA.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--warn)">5</div><div class="l">Confirmed regressions</div><p class="mu sm">Admin/Settings, Catalog, Orders, filters, hidden workflow wiring.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--warn)">73%</div><div class="l">Overall readiness</div><p class="mu sm">Re-scored after line-by-line v14 code inspection vs all 8 reference HTMLs. Up from 67% &mdash; Orders was underscored because v14 has the full execution desk. Bugs and scaffold gaps reduce Quotes/Pipeline.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--bad)">3</div><div class="l">Critical bugs confirmed</div><p class="mu sm">30-day validity (quotes/page.tsx line 42), PipelineBoardFilters not connected to pipeline-board.tsx, capture_defaults zero matches in src/.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--violet)">8</div><div class="l">PRs to 100%</div><p class="mu sm">Reduced from 12. Surgical file-specific PRs &mdash; each names exact files to touch. Wide-scope PRs caused regression contamination and slow build loops.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--good)">2</div><div class="l">Proof builds green</div><p class="mu sm">PR-REPAIR-01 and PR-ADMIN-SETTINGS-100 passed Vercel. All subsequent PRs must show npm ci + typecheck + build proof before DCC score changes.</p></div>
 </section>
 
 <div class="tb">
   <button class="tbtn a" onclick="showTab('status',this)">&#128202; Status</button>
+  <button class="tbtn" onclick="showTab('speed',this)">&#9889; Speed Fix</button>
   <button class="tbtn" onclick="showTab('modules',this)">Module Scores</button>
+  <button class="tbtn" onclick="showTab('bugs',this)">&#128027; Confirmed Bugs</button>
   <button class="tbtn" onclick="showTab('gaps',this)">Regression Gaps</button>
   <button class="tbtn" onclick="showTab('prs',this)">PR Plan</button>
   <button class="tbtn" onclick="showTab('prompts',this)">&#9889; PR Prompts</button>
@@ -55,77 +61,136 @@
 </div>
 
 <div class="tp a" id="tab-status">
-  <div class="co b"><strong>Release truth + UX 99 system tracker:</strong> UX 99 tracker, UX audit, and Archive checkpoints remain preserved for release-gate compatibility. UX 99 program active; Reset history archived. All tracked modules are at or above 96% only when the active proof gate is green. PR-UX-01 through PR-UX-05 remain historical tracker anchors.</div>
-  <div class="co r"><strong>Correction to prior DCC:</strong> the previous audit was too optimistic. It did not call out that Admin/Settings, Catalog, and Orders are visibly back on old/partial workspace shells, and it under-counted Leads filter/workflow gaps.</div>
-    <div class="co w"><strong>Why this happened:</strong> build fixes and quote cleanup were applied while reference-parity checks were not run route-by-route. The repo can compile parts of a route while the visible page still points to old workspace components or incomplete client shells.</div>
-    <div class="co w"><strong>PR-REPAIR-01 update — Apr 28:</strong> canonical pricing-basis contract was consolidated across quote, catalog, lead command center, trade workflow, orders, and quote metadata paths. Proof is not green because <code>npm ci --no-audit --no-fund</code>, <code>npm run typecheck</code>, and <code>npm test</code> timed out in this container, and <code>npm run build</code> failed with <code>next: not found</code> after dependencies were not installed. PR-REPAIR-01 remains active.</div>
-    <div class="co w"><strong>PR-REPAIR-01 hotfix — Apr 28:</strong> corrected QuotePricingBasis imports so quote wizard and quote server actions import the canonical type from pricing-basis-contract instead of catalog-pricing-model. Proof still must be run in CI/Vercel before marking complete.</div>
-    <div class="co g"><strong>PR-REPAIR-01 complete — Apr 28:</strong> Vercel build passed from commit 93ce143 with Next.js 14.2.35; contract repair is now considered complete for the deployed branch.</div>
-  
-  <div class="co g"><strong>PR-ADMIN-QUOTES-REGRESSION-FIX-2 complete — Apr 28:</strong> Visual validation showed Quotes still felt nested because /quotes rendered a second workspace header inside AppShell, Leads Quote Preview failed on unsupported AUD display currency, and Settings still needed to remain a redirect-only compatibility route. This pass removed the nested Quotes topbar, kept Quotes on the shared shell header, constrained quote display currencies to the DB-supported set (USD/INR/EUR/GBP/AED) so unsupported lead currencies fall back instead of violating <code>quotes_display_currency_check</code>, preserved catalog price fallback on zero quote lines, kept /settings/lists redirect-only, and updated the route manifest so Admin &amp; Settings stays unified while legacy tests still recognize the compatibility route. PR02 is marked complete based on the user-provided passing Vercel proof and deployed visual follow-up.</div>
-    <div class="co w"><strong>PR-CATALOG-100 duplicate-filter + drawer correction active — Apr 28:</strong> Latest screenshot showed duplicate filter bars and a drawer that did not expose reference-style edit coverage. This pass removes the second filter bar, keeps one reference-style filter row, preserves the compact table, and adds drawer tabs plus editable quote-ready/ex-factory/FOB/bulk pricing controls before save. npm ci, typecheck, tests, and contract checks passed locally; build still needs green proof before completion.</div>
-  <div class="co w"><strong>PR-ADMIN-QUOTES-REGRESSION-FIX — Apr 28:</strong> Visual validation follow-up after the prior Admin/Quotes build passed. Fixed quote pricing fallback so zero saved line prices hydrate/display from product_prices or active product_pricing_rules, changed lead quote preview to fall back to catalog prices even when existing quote lines are zero, broadened draft hydration to repair zero catalog/unit prices, and removed the separate Settings utility entry so Settings routes back into the unified Admin &amp; Settings workspace. Checked public/internal-dcc/index.html, admin/settings reference HTML, northstar HTML, /quotes, /leads inline Quote Preview, /admin/organization, /settings/lists redirect, and shell navigation. Status remains active until full Vercel proof is green.</div>
-  <div class="co w"><strong>PR-ADMIN-SETTINGS/QUOTES-VISUAL-PASS — Apr 28:</strong> Follow-up visual validation pass after Vercel build green. Collapsed Settings list primary path back into Admin overview anchors, aligned Admin side nav categories to the unified Admin page, added Admin reference list cards, added quote list pricing fallback from active product pricing rules when saved quote lines are zero/empty, and made Leads Quote Preview quantity/price fields visibly editable instead of read-only. Checked /admin, /admin/organization, /settings/lists redirect, /quotes, and Leads inline Quote Preview. Status remains active until full npm ci/typecheck/test/build are green on this zip.</div>
-    <div class="co w"><strong>PR-ADMIN-SETTINGS-100 side-panel/typefix — Apr 28:</strong> matched the Admin & Settings left panel to the reference Workspace / Reference lists / Governance grouping and fixed the StatusBadge tone type drift blocking Vercel. Previous pass replaced the primary /admin/organization old OrganizationWorkspace route with the rebuilt Admin & Settings shell; added /admin redirect, expanded admin side nav coverage, wrapped /settings/lists in the same shell, surfaced governance banners/threshold controls, and checked /admin, /admin/organization, /admin/users, /admin/invitations, /admin/markets, /admin/product-management, /admin/stages, /admin/pipelines, /admin/trade-events, /admin/security, /admin/audit, /admin/ai-analytics, and /settings/lists. Status remains active until full proof commands are green on this zip.</div>
+  <div class="co b"><strong>v14 Line-by-Line Audit &mdash; Apr 28 2026:</strong> Every primary route component was opened and compared against all 8 reference HTML files. This replaces screenshot-based scoring. Orders was incorrectly scored at 52% &mdash; the v14 zip has a full execution desk with topbar, filter bar, 6-stat strip, state machine stepper (6 stages), signal grid (4 signals), compliance checklist, document upload inline, and dispatch gate button. Corrected to 76%. Three new critical bugs confirmed by reading source directly.</div>
+  <div class="co r"><strong>Critical Bug 1 &mdash; Quotes validity:</strong> <code>src/app/(app)/quotes/page.tsx</code> line 42: <code>Math.max(0, 30 - daysSinceUpdate)</code>. NorthStar spec requires 7 days post-send. Every sent quote currently shows 30 days. Fix: 1 line. Amber threshold ≤4 days, red ≤1 day for a 7-day window.</div>
+  <div class="co r"><strong>Critical Bug 2 &mdash; PipelineBoardFilters scaffold:</strong> <code>src/features/pipeline/components/PipelineBoardFilters.tsx</code> is a scaffold with correct prop shape but is NOT imported or rendered in pipeline-board.tsx. Reference pipeline HTML (lines 366&ndash;392) requires 5 filter dropdowns (Follow-up timing, Owner, Product, Market, Country) plus active chips. Current board has only inline search + lead type.</div>
+  <div class="co r"><strong>Critical Bug 3 &mdash; capture_defaults missing:</strong> <code>grep -rn "capture_defaults" src/</code> returns 0 results. Admin trade events form does not save capture_defaults. Quick Lead pre-fill from event source is broken. This blocks the NorthStar Trade Event &rarr; Quick Lead flow.</div>
+  <div class="co w"><strong>Orders corrected &mdash; 76% not 52%:</strong> Previous DCC used screenshots from an earlier build. v14 code has a full Orders Execution Desk. Remaining gap: payment status signal is hardcoded demo ("30% received"), FX display currency not shown in order value header. Fix in PR-04.</div>
+  <div class="co g"><strong>PR-REPAIR-01 complete &mdash; Apr 28:</strong> Vercel build passed (commit 93ce143, Next.js 14.2.35). Canonical pricing-basis contract consolidated.</div>
+  <div class="co g"><strong>PR-ADMIN-SETTINGS-100 complete &mdash; Apr 28:</strong> AdminSettingsShell with 9 route cards, governance threshold control, /admin redirect to /admin/organization. Vercel proof passed.</div>
+  <div class="co w"><strong>PR-CATALOG-100 active &mdash; Apr 28:</strong> ProductsSpreadsheetPage IS the rebuilt workspace (3 modes, filter bar, 6-stat strip, drawers). Still active pending Vercel visual smoke of filter chip behavior and quote handoff link.</div>
   <div class="sec grid g2">
-    <div class="card">
-      <h2>Evidence from screenshots + repo review</h2>
-      <div class="gi"><span class="sev crit">Admin</span><div><strong>/admin/organization</strong> is showing a generic Organization workspace and Product management tab, not the full rebuilt Admin/Settings command center.</div></div>
-      <div class="gi"><span class="sev high">Catalog</span><div><strong>/products</strong> now uses the rebuilt Catalog workspace rhythm, single filter bar, compact reference table, and editable drawer, while preserving product/pricing/spreadsheet modes, drawers, and quote handoff. Remaining risk is proof + final visual smoke.</div></div>
-      <div class="gi"><span class="sev crit">Orders</span><div><strong>/orders</strong> shows an empty/old execution state even when the workflow expectation is accepted quote &rarr; operational order cards with blockers and documents.</div></div>
-      <div class="gi"><span class="sev high">Leads</span><div><strong>Filters</strong> are the standard to copy, but the DCC did not account for missing saved-view/filter parity and active filter behavior across pages.</div></div>
-      <div class="gi"><span class="sev high">Pipeline</span><div><strong>Pipeline filters</strong> are visually close but not fully aligned to Leads filter behavior and saved view/chip standards.</div></div>
+    <div class="card"><h2>What code inspection found vs DCC claims</h2>
+      <div class="gi"><span class="sev crit">Bug</span><div><strong>Quotes 30-day validity:</strong> quotes/page.tsx line 42: <code>Math.max(0, 30 - daysSinceUpdate)</code>. One-line fix but corrupts buyer-facing validity labels on every sent quote.</div></div>
+      <div class="gi"><span class="sev crit">Bug</span><div><strong>PipelineBoardFilters not connected:</strong> Scaffold exists with correct prop shape. Not imported in pipeline-board.tsx. Reference requires 5 dropdowns + active chips.</div></div>
+      <div class="gi"><span class="sev crit">Bug</span><div><strong>Trade Events capture_defaults missing:</strong> Zero src/ matches. Admin form cannot save event source pre-fill. NorthStar flow broken at step 1.</div></div>
+      <div class="gi"><span class="sev high">Upgrade</span><div><strong>Orders v14 full execution desk:</strong> DCC had 52% from old screenshots. v14 code has complete implementation. Corrected to 76%.</div></div>
+      <div class="gi"><span class="sev high">Upgrade</span><div><strong>Trade Events more complete than DCC said:</strong> entryCountByEvent wired, converted lead links present, 3 components render. DCC had 48% &mdash; corrected to 62% (capture_defaults gap keeps it below 65%).</div></div>
+      <div class="gi"><span class="sev med">Gap</span><div><strong>Quotes FX not surfaced:</strong> quote-fx.ts and exchange-rate.repository.ts exist. Quotes page detail panel shows currency as a static label but no FX rate row. Reference HTML requires catalog USD vs buyer currency display.</div></div>
     </div>
-    <div class="card">
-      <h2>New release rule</h2>
-      <p class="mu sm">A module cannot score above 80% unless its live route is calling the rebuilt workspace, its filters work, and its reference HTML checkpoints are visibly represented. A module cannot score 100% without proof commands and one workflow smoke path.</p>
+    <div class="card"><h2>Release gate rules (unchanged)</h2>
+      <p class="mu sm">A module cannot score above 80% unless its live route calls the rebuilt workspace, its filters work, and reference HTML checkpoints are visibly matched. A module cannot score 100% without proof commands and one workflow smoke path.</p>
       <table class="t" style="margin-top:10px"><thead><tr><th>Claim</th><th>Allowed only when</th></tr></thead><tbody>
-        <tr><td>Build clean</td><td><code>npm run typecheck</code>, <code>npm test</code>, and <code>npm run build</code> pass on the same zip.</td></tr>
-        <tr><td>Reference aligned</td><td>Route screenshot/source matches the module reference HTML.</td></tr>
+        <tr><td>Build clean</td><td><code>npm run typecheck</code>, <code>npm test</code>, <code>npm run build</code> pass on the same zip.</td></tr>
+        <tr><td>Reference aligned</td><td>Route source matches module reference HTML. Verified by grep, not by intent.</td></tr>
         <tr><td>NorthStar complete</td><td>Trade Event &rarr; Lead &rarr; Quote &rarr; Approval &rarr; Send &rarr; Order &rarr; Dashboard smoke works.</td></tr>
-        <tr><td>Forward progress</td><td>No old workspace remains as the primary user route.</td></tr>
+        <tr><td>Forward progress</td><td>No old workspace as primary route. No hardcoded demo data in production paths.</td></tr>
       </tbody></table>
     </div>
   </div>
 </div>
 
+<div class="tp" id="tab-speed">
+  <div class="card" style="margin-bottom:12px;background:#faf5ff;border:2px solid #ddd6fe">
+    <h2 style="color:#5b21b6">&#9889; Why PRs are slow &mdash; Root cause + fix</h2>
+    <p class="sm" style="color:#5b21b6;margin-top:6px;margin-bottom:12px">Reviewed PR history, PR_TRACKER.md, and v14 code state. The loop: wide PR &rarr; GPT changes too many files &rarr; type errors &rarr; fix attempt &rarr; new regressions &rarr; repeat. No PR has reached 100% in one pass. The new 8-PR plan uses surgical file-specific prompts to break this loop.</p>
+    <div class="speed-row">
+      <div class="speed-bad"><strong>&#10060; Current (SLOW)</strong>"Fix Catalog." GPT rewrites products-manager, products-spreadsheet-page, products-toolbar, products-table, products-table-columns, page.tsx. Half introduce type errors. Quote handoff now imports pricing-basis from old path. Build fails. Fix loop starts.</div>
+      <div class="speed-good"><strong>&#9989; New (SURGICAL)</strong>"In ONLY products-spreadsheet-page.tsx and products-toolbar.tsx &mdash; add URL search param backing for filter chips. Touch NO other file. Confirm grep for gap-chip returns result. Run typecheck. Show diff only."</div>
+      <div class="speed-bad"><strong>&#10060; Current (SLOW)</strong>"Check reference HTML for guidance." GPT skims and infers. Adds component that visually exists but doesn't match exact CSS class pattern or tab routing from the reference.</div>
+      <div class="speed-good"><strong>&#9989; New (SURGICAL)</strong>"Read reference HTML lines 66&ndash;75 (filter-bar) and 141&ndash;143 (drawer-tabs). Match these exact class patterns. Do not use different class names."</div>
+      <div class="speed-bad"><strong>&#10060; Current (SLOW)</strong>Build proof is soft: "Run if you can." GPT skips it because Next.js can't resolve in the container. Marks PR complete anyway.</div>
+      <div class="speed-good"><strong>&#9989; New (SURGICAL)</strong>"npm ci MUST run. If it fails: STOP. Do NOT write code. Paste the exact error. Mark the PR failed."</div>
+      <div class="speed-bad"><strong>&#10060; Current (SLOW)</strong>One PR covers a whole module: "Fix Quotes to 100%" = 7 files + 3 behaviors + 2 DB queries + approval routing + FX + send lifecycle. One failure blocks the whole PR.</div>
+      <div class="speed-good"><strong>&#9989; New (SURGICAL)</strong>One PR = one behavior. PR-A: just fix 30-day&rarr;7-day (1 line). PR-B: just wire PipelineBoardFilters (2 files). PR-C: just add FX display (1 section). Each verifiable in isolation.</div>
+    </div>
+  </div>
+  <div class="card"><h2>Surgical PR rules for every prompt</h2>
+    <table class="t"><thead><tr><th>Rule</th><th>Implementation</th></tr></thead><tbody>
+      <tr><td><strong>File lock</strong></td><td>Every prompt names exact files. Any change outside that list = stop and ask.</td></tr>
+      <tr><td><strong>Reference line numbers</strong></td><td>Prompts cite specific HTML line numbers from reference files, not "check the reference."</td></tr>
+      <tr><td><strong>Diff format</strong></td><td>Change described as: "change <code>X</code> to <code>Y</code>." Not "make it work."</td></tr>
+      <tr><td><strong>Hard proof gate</strong></td><td>If npm ci fails, STOP. Return the error. Do not write code. Do not mark anything complete.</td></tr>
+      <tr><td><strong>Verification grep</strong></td><td>After each change: grep for the expected element. Paste the result line.</td></tr>
+      <tr><td><strong>No regressions clause</strong></td><td>Run npm test. If a previously-passing test now fails: revert and report.</td></tr>
+    </tbody></table>
+  </div>
+</div>
+
 <div class="tp" id="tab-modules">
-  <div class="co b">Scores are reduced to reflect actual route parity, not intended architecture. These are honest development scores after the latest screenshots.</div>
+  <div class="co b">Scores updated after actual v14 code inspection &mdash; not screenshots. Each score reflects what the code renders vs what the reference HTML requires.</div>
   <section class="sec card">
-    <h2>Module readiness — regression-adjusted audit</h2>
-    <div class="mr"><div class="mn">Dashboard</div><div class="bw"><div class="bf w" style="width:80%"></div></div><div class="mp" style="color:var(--warn)">80%</div><span class="s warn">Mostly intact; drilldown and cross-page data proof pending</span></div>
-    <div class="mr"><div class="mn">Leads + Command Center</div><div class="bw"><div class="bf w" style="width:80%"></div></div><div class="mp" style="color:var(--warn)">74%</div><span class="s warn">Best filter reference, but more hidden saved-view/workflow gaps than DCC called out</span></div>
-    <div class="mr"><div class="mn">Pipeline</div><div class="bw"><div class="bf w" style="width:72%"></div></div><div class="mp" style="color:var(--warn)">72%</div><span class="s warn">Board visible; filters/chips/DnD proof/detail parity incomplete</span></div>
-    <div class="mr"><div class="mn">Catalog</div><div class="bw"><div class="bf w" style="width:80%"></div></div><div class="mp" style="color:var(--warn)">80%</div><span class="s warn">PR03 drawer cleanup applied; active until Vercel build proof and final reference visual smoke</span></div>
-    <div class="mr"><div class="mn">Quotes</div><div class="bw"><div class="bf w" style="width:68%"></div></div><div class="mp" style="color:var(--warn)">68%</div><span class="s warn">Nested header and unsupported currency fixed; full quote lifecycle proof still pending</span></div>
-    <div class="mr"><div class="mn">Orders</div><div class="bw"><div class="bf r" style="width:52%"></div></div><div class="mp" style="color:var(--bad)">52%</div><span class="s bad">Visible old/empty execution space; accepted quote to order lane not represented</span></div>
-    <div class="mr"><div class="mn">Admin + Settings</div><div class="bw"><div class="bf w" style="width:82%"></div></div><div class="mp" style="color:var(--warn)">82%</div><span class="s warn">Unified Admin primary route retained; /settings/lists is redirect-only compatibility</span></div>
-    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf r" style="width:48%"></div></div><div class="mp" style="color:var(--bad)">48%</div><span class="s bad">Dedicated lane not complete; capture_defaults and entry counts not proved</span></div>
-    <div class="mr"><div class="mn">AI Suggestions</div><div class="bw"><div class="bf w" style="width:76%"></div></div><div class="mp" style="color:var(--warn)">76%</div><span class="s warn">Stable surface; applied-to-communications workflow pending</span></div>
-    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf r" style="width:46%"></div></div><div class="mp" style="color:var(--bad)">46%</div><span class="s bad">End-to-end handoff not proved; DCC must stop marking planned work complete</span></div>
+    <h2>Module readiness &mdash; v14 honest code audit</h2>
+    <div class="mr"><div class="mn">Dashboard</div><div class="bw"><div class="bf w" style="width:80%"></div></div><div class="mp" style="color:var(--warn)">80%</div><span class="s warn">KPI cards have hrefs + drillthrough. KPI href destinations not verified to exact filtered pages.</span></div>
+    <div class="mr"><div class="mn">Leads + Command Center</div><div class="bw"><div class="bf w" style="width:80%"></div></div><div class="mp" style="color:var(--warn)">80%</div><span class="s warn">URL-backed filters confirmed. Saved views present. Quick Lead trade event pre-fill blocked by capture_defaults bug.</span></div>
+    <div class="mr"><div class="mn">Pipeline</div><div class="bw"><div class="bf w" style="width:70%"></div></div><div class="mp" style="color:var(--warn)">70%</div><span class="s warn">DnD works. Detail panel 175 lines. PipelineBoardFilters is scaffold &mdash; NOT connected. 5 filter dropdowns + chips missing.</span></div>
+    <div class="mr"><div class="mn">Catalog</div><div class="bw"><div class="bf w" style="width:78%"></div></div><div class="mp" style="color:var(--warn)">78%</div><span class="s warn">ProductsSpreadsheetPage IS the rebuilt workspace (3 modes, filter bar, stats). Needs Vercel visual smoke + quote handoff grep.</span></div>
+    <div class="mr"><div class="mn">Quotes</div><div class="bw"><div class="bf r" style="width:65%"></div></div><div class="mp" style="color:var(--bad)">65%</div><span class="s bad">30-day validity BUG (line 42 &mdash; must be 7-day). Approval banner present. FX rate not shown in detail panel.</span></div>
+    <div class="mr"><div class="mn">Orders</div><div class="bw"><div class="bf b" style="width:76%"></div></div><div class="mp" style="color:var(--brand)">76%</div><span class="s active">UPGRADED from 52%: full execution desk in v14. Remaining: "30% received" hardcoded demo, FX display currency.</span></div>
+    <div class="mr"><div class="mn">Admin + Settings</div><div class="bw"><div class="bf g" style="width:82%"></div></div><div class="mp" style="color:var(--good)">82%</div><span class="s good">AdminSettingsShell complete. 9 route cards. Governance threshold. Proof green.</span></div>
+    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf r" style="width:62%"></div></div><div class="mp" style="color:var(--bad)">62%</div><span class="s bad">UPGRADED from 48%: entry count wired, converted lead links, 3 components. capture_defaults = 0 src/ matches.</span></div>
+    <div class="mr"><div class="mn">AI Suggestions</div><div class="bw"><div class="bf w" style="width:76%"></div></div><div class="mp" style="color:var(--warn)">76%</div><span class="s warn">Stable surface. Applied-to-communications workflow pending.</span></div>
+    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf r" style="width:52%"></div></div><div class="mp" style="color:var(--bad)">52%</div><span class="s bad">Handoff links exist. Quote&rarr;Order handoff confirmed. Trade Event&rarr;Quick Lead broken (capture_defaults missing).</span></div>
+  </section>
+</div>
+
+<div class="tp" id="tab-bugs">
+  <section class="sec grid g2">
+    <div class="card"><h2>Confirmed bugs &mdash; found by code inspection</h2>
+      <div class="bug"><strong>BUG-01 &middot; CRITICAL &middot; quotes/page.tsx line 42</strong>
+        Current: <code>const daysLeft = Math.max(0, 30 - daysSinceUpdate);</code><br/>
+        Fix: <code>const daysLeft = Math.max(0, 7 - daysSinceUpdate);</code><br/>
+        Also: amber threshold from ≤7 to ≤4, red from ≤3 to ≤1. Impact: every sent quote shows 30 days validity instead of 7.
+      </div>
+      <div class="bug"><strong>BUG-02 &middot; CRITICAL &middot; PipelineBoardFilters not wired</strong>
+        PipelineBoardFilters.tsx exists with correct prop shape. NOT imported in pipeline-board.tsx.<br/>
+        Reference lines 366&ndash;392: 5 filter dropdowns + active chips. Board has only search + lead type.
+      </div>
+      <div class="bug"><strong>BUG-03 &middot; CRITICAL &middot; capture_defaults &mdash; 0 src/ matches</strong>
+        grep -rn "capture_defaults" src/ &rarr; 0 results.<br/>
+        Admin trade event form cannot save event source pre-fill. Quick Lead from event source is broken.
+      </div>
+      <div class="bug"><strong>BUG-04 &middot; HIGH &middot; Quotes FX not surfaced</strong>
+        quote-fx.ts + exchange-rate.repository.ts exist. Detail panel shows currency as static label.<br/>
+        Reference requires catalog USD baseline vs buyer currency with FX rate row.
+      </div>
+      <div class="bug"><strong>BUG-05 &middot; MEDIUM &middot; Orders payment hardcoded</strong>
+        Signal grid: "30% received" is a static string demo. Not from DB. Leaks demo data into production paths.
+      </div>
+    </div>
+    <div class="card"><h2>What is confirmed working (do not break)</h2>
+      <div class="co g"><strong>Orders execution desk:</strong> State machine stepper 6 stages, signal grid, compliance checklist, document upload inline forms, dispatch gate with blocker detection, buyer/supplier/all toggle. Do NOT touch orders/page.tsx except for BUG-05.</div>
+      <div class="co g"><strong>Admin route cards:</strong> 9 AdminRouteCard components render. Approval threshold form wired to server action. Gap item detection works. Do NOT touch admin/organization/page.tsx.</div>
+      <div class="co g"><strong>Leads URL-backed filters:</strong> searchParams reads q, mode from URL. savedView persists. Quick Lead URL params work (sourceType, productId, autoQuote). Do NOT change filter architecture.</div>
+      <div class="co g"><strong>Quotes approval banner:</strong> Renders on pending_approval items. Override % in line items. Approve/Reject CTA links to approval-send route. Do NOT change this logic.</div>
+      <div class="co g"><strong>Pipeline DnD:</strong> draggedLeadId state, setDragOverStageId, onDrop all wired in pipeline-board.tsx. HTML5 DnD without third-party lib. Do NOT touch DnD when fixing filters.</div>
+      <div class="co g"><strong>Trade Events entry count:</strong> entryCountByEvent Map from entries array. Converted lead links. TradeShowCapture, TradeEventEntryCapture, TradeEventsManager render.</div>
+    </div>
   </section>
 </div>
 
 <div class="tp" id="tab-gaps">
   <section class="sec grid g2">
-    <div class="card"><h2>Regression gaps now explicitly tracked</h2>
-      <div class="gi"><span class="sev high">Admin/Settings</span><div><strong>Primary route repaired in PR-ADMIN-SETTINGS-100:</strong> <code>src/app/(app)/admin/organization/page.tsx</code> now renders the rebuilt AdminSettingsShell with governance, settings lists, product management, trade events, users, invitations, markets/countries/pipelines/stages/roles coverage. Full score still waits for proof + smoke.</div></div>
-      <div class="gi"><span class="sev high">Catalog</span><div><strong>PR03 active:</strong> <code>/products</code> corrected after visual validation: reference-style hero, view tabs, single filter bar, 6-stat strip, USD catalog and MOQ retained in metrics, dev note cards removed, clean editable drawer, and quote handoff are primary. Full score waits for visual smoke plus build proof.</div></div>
-      <div class="gi"><span class="sev crit">Orders</span><div><strong>Old empty execution state:</strong> screenshot shows no operational order cards. The reference requires accepted quote records to become order execution records with documents, compliance, blocker gates, and commercial locks.</div></div>
-      <div class="gi"><span class="sev high">Filters</span><div><strong>Leads is the filter standard:</strong> other modules need the same behavior: tab state, advanced filters, active chips, clear/apply behavior, and URL-backed repeatability. Visual dropdowns alone do not count.</div></div>
-      <div class="gi"><span class="sev high">Hidden fixes</span><div><strong>Type/build changes masked workflow regressions:</strong> quote pricing and approval changes were made without confirming reference UI still points to the rebuilt spaces.</div></div>
-      <div class="gi"><span class="sev med">DCC</span><div><strong>Internal DCC must stay proof-based:</strong> no module should be marked complete until its route, reference parity, workflow behavior, and build proof all pass.</div></div>
+    <div class="card"><h2>Reference parity gaps &mdash; line-by-line</h2>
+      <div class="gi"><span class="sev crit">Quotes</span><div><strong>7-day validity:</strong> quotes/page.tsx line 42 uses 30 days. All validity labels are 4&times; too long. Amber/red thresholds miscalibrated for a 30-day window.</div></div>
+      <div class="gi"><span class="sev crit">Pipeline</span><div><strong>Filter chips missing:</strong> Reference lines 69&ndash;73: .filter-chip, .chip-rose, .chip-amber classes. Lines 374&ndash;392: 5 filter-wrap dropdowns (Follow-up, Owner, Product, Market, Country). Board has search + lead type only.</div></div>
+      <div class="gi"><span class="sev crit">Trade Events</span><div><strong>capture_defaults admin form:</strong> Reference admin HTML requires trade event edit form to save product_ids, source_label, quick_lead_title. Zero src/ matches. Blocks NorthStar step 1.</div></div>
+      <div class="gi"><span class="sev high">Quotes</span><div><strong>FX rate display:</strong> Reference detail panel shows USD catalog vs buyer currency with FX rate. Detail panel currently shows currency as static label only.</div></div>
+      <div class="gi"><span class="sev high">Catalog</span><div><strong>Visual smoke pending:</strong> ProductsSpreadsheetPage has right structure. Vercel smoke has not confirmed filter chip URL-backing and quote handoff href match reference.</div></div>
+      <div class="gi"><span class="sev high">Orders</span><div><strong>Payment hardcoded demo:</strong> "30% received" is a static string. Remove or replace with payment_state from DB or explicit "pending" placeholder.</div></div>
+      <div class="gi"><span class="sev med">Dashboard</span><div><strong>KPI drilldown hrefs not verified:</strong> KpiCard has href prop. Each KPI must link to correctly filtered sub-page (e.g. overdue &rarr; /leads?mode=follow-up&amp;overdue=1).</div></div>
+      <div class="gi"><span class="sev med">Leads</span><div><strong>Quick Lead trade event pre-fill:</strong> URL params work. Admin form capture_defaults missing blocks event source pre-fill on Quick Lead open.</div></div>
     </div>
-    <div class="card"><h2>Reference parity checkpoints</h2>
-      <table class="t" style="margin-top:10px"><thead><tr><th>Reference</th><th>Now required</th><th>Score</th></tr></thead><tbody>
-        <tr><td>Dashboard HTML</td><td>Command dashboard + real drilldowns.</td><td><span class="s warn">80%</span></td></tr>
-        <tr><td>Leads HTML</td><td>Filters, Quick Lead, CC, quote prep, saved views.</td><td><span class="s warn">80%</span></td></tr>
-        <tr><td>Pipeline HTML</td><td>Filter parity, blocker board, DnD, detail panel.</td><td><span class="s warn">72%</span></td></tr>
-        <tr><td>Catalog HTML</td><td>Rebuilt catalog command center with products/pricing/spreadsheet modes, blockers, MOQ, stale warnings, compact reference table, drawers, and quote handoff.</td><td><span class="s warn">80%</span></td></tr>
-        <tr><td>Quotes HTML</td><td>Approval, FX, validity, versions, send lifecycle.</td><td><span class="s warn">68%</span></td></tr>
-        <tr><td>Orders HTML</td><td>Accepted quotes visible as execution orders.</td><td><span class="s bad">52%</span></td></tr>
-        <tr><td>Admin HTML</td><td>Full rebuilt admin/settings workspace sections.</td><td><span class="s warn">72%</span></td></tr>
-        <tr><td>NorthStar</td><td>End-to-end handoff smoke proof.</td><td><span class="s bad">46%</span></td></tr>
+    <div class="card"><h2>Reference HTML alignment scores</h2>
+      <table class="t"><thead><tr><th>Reference</th><th>Key gaps remaining</th><th>Score</th></tr></thead><tbody>
+        <tr><td>setuflow-dashboard-redesign.html</td><td>KPI drilldown hrefs to filtered pages</td><td><span class="s warn">80%</span></td></tr>
+        <tr><td>setuflow-leads-redesign.html</td><td>Quick Lead trade event pre-fill (blocked by capture_defaults)</td><td><span class="s warn">80%</span></td></tr>
+        <tr><td>setuflow-pipeline-redesign.html</td><td>5 filter dropdowns + active chips not wired</td><td><span class="s warn">70%</span></td></tr>
+        <tr><td>setuflow-catalog-redesign.html</td><td>Visual smoke + quote handoff href verification</td><td><span class="s warn">78%</span></td></tr>
+        <tr><td>setuflow-quotes-redesign.html</td><td>30&rarr;7 day validity bug, FX display missing</td><td><span class="s bad">65%</span></td></tr>
+        <tr><td>setuflow-orders-redesign.html</td><td>Payment hardcoded demo, FX display currency</td><td><span class="s active">76%</span></td></tr>
+        <tr><td>setuflow-admin-settings-redesign.html</td><td>9 route cards complete. Proof green.</td><td><span class="s good">82%</span></td></tr>
+        <tr><td>setuflow-northstar.html</td><td>capture_defaults blocks full flow at step 1</td><td><span class="s bad">52%</span></td></tr>
       </tbody></table>
     </div>
   </section>
@@ -133,431 +198,454 @@
 
 <div class="tp" id="tab-prs">
   <section class="sec card">
-    <h2>PRs required to take all modules to 100%</h2>
-    <div class="co r"><strong>Updated count: 12 PRs.</strong> The previous 9-PR plan missed old workspace regressions and filter parity. Admin/Settings, Catalog, and Orders now each get dedicated repair PRs before final cross-page QA.</div>
-    <table class="t"><thead><tr><th>#</th><th>PR</th><th>Scope</th><th>Primary score lift</th><th>Status</th></tr></thead><tbody>
-      <tr><td>01</td><td><strong>PR-REPAIR-01</strong></td><td>Build proof + canonical quote/catalog/trade contracts. Vercel build passed after border pass.</td><td>Build confidence restored</td><td><span class="s good">Complete</span></td></tr>
-      <tr><td>02</td><td><strong>PR-ADMIN-SETTINGS-100</strong></td><td>Restore rebuilt Admin/Settings route spaces and follow-up quote/filter visual fixes. /settings/lists remains a redirect-only compatibility route into Admin overview. Vercel proof passed.</td><td>Admin 50&rarr;82 complete</td><td><span class="s good">Complete</span></td></tr>
-      <tr><td>03</td><td><strong>PR-CATALOG-100</strong></td><td>Restore rebuilt Catalog command workspace, filters, compact reference table, MOQ/stale warnings, drawers, and quote handoff.</td><td>Catalog 58&rarr;78 active after duplicate-filter/drawer correction; 100 waits for Vercel build and visual smoke</td><td><span class="s active">Active</span></td></tr>
-      <tr><td>04</td><td><strong>PR-ORDERS-100</strong></td><td>Restore rebuilt Orders execution desk and accepted quote lifecycle.</td><td>Orders 52&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
-      <tr><td>05</td><td><strong>PR-LEADS-100</strong></td><td>Lead filters, saved views, Quick Lead, CC workflow parity.</td><td>Leads 74&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
-      <tr><td>06</td><td><strong>PR-PIPELINE-100</strong></td><td>Pipeline filters, DnD proof, detail panel, readiness gates.</td><td>Pipeline 72&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
-      <tr><td>07</td><td><strong>PR-QUOTES-100</strong></td><td>Quote builder/workspace approval, MOQ, DB-supported display currency, 7-day validity, and lifecycle smoke.</td><td>Quotes 68&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
-      <tr><td>08</td><td><strong>PR-TRADEEVENTS-100</strong></td><td>Trade event capture_defaults, entries, Quick Lead source, AI comm log.</td><td>Trade 48&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
-      <tr><td>09</td><td><strong>PR-DASHBOARD-100</strong></td><td>Dashboard drilldowns and action queue reflect repaired modules.</td><td>Dashboard 78&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
-      <tr><td>10</td><td><strong>PR-CROSSPAGE-100</strong></td><td>NorthStar end-to-end handoffs and revalidation.</td><td>Cross-page 46&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
-      <tr><td>11</td><td><strong>PR-DESIGN-FILTERS-100</strong></td><td>Topbar/sidebar/filter/chip consistency across all modules.</td><td>All modules polish</td><td><span class="s neutral">Planned</span></td></tr>
-      <tr><td>12</td><td><strong>PR-QA-RELEASE-100</strong></td><td>Final route smoke, line-by-line reference proof, build proof, DCC truth.</td><td>All modules 100%</td><td><span class="s violet">Final</span></td></tr>
+    <h2>8 Surgical PRs to reach 100% &mdash; reduced from 12</h2>
+    <div class="co v"><strong>Why 8 not 12:</strong> Orders (76%) and Admin (82%) are further along than the old DCC said. The 12-PR plan was based on screenshots of old state. Remaining work is precise: 3 critical bug fixes, filter wiring, visual smoke, NorthStar handoff proof, and final QA. Each PR names exact files.</div>
+    <table class="t"><thead><tr><th>#</th><th>PR</th><th>Exact files</th><th>Score lift</th><th>Status</th></tr></thead><tbody>
+      <tr><td>01</td><td><strong>PR-QUICKFIXES</strong><br/>3 critical bugs: validity + pipeline filters + capture_defaults</td><td>
+        <code>quotes/page.tsx</code> line 42 only<br/>
+        <code>pipeline/components/PipelineBoardFilters.tsx</code><br/>
+        <code>pipeline/components/pipeline-board.tsx</code><br/>
+        <code>admin/trade-events/page.tsx</code><br/>
+        <code>trade-events/server/actions.ts</code>
+      </td><td>Quotes 65&rarr;72, Pipeline 70&rarr;78, Trade 62&rarr;72</td><td><span class="s neutral">Next</span></td></tr>
+      <tr><td>02</td><td><strong>PR-CATALOG-SMOKE</strong><br/>Visual smoke + quote handoff href</td><td>
+        <code>products/components/products-spreadsheet-page.tsx</code><br/>
+        <code>products/components/products-toolbar.tsx</code>
+      </td><td>Catalog 78&rarr;88</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>03</td><td><strong>PR-QUOTES-FX</strong><br/>FX rate in detail panel + validity lifecycle</td><td>
+        <code>quotes/page.tsx</code> (detail panel section only)
+      </td><td>Quotes 72&rarr;85</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>04</td><td><strong>PR-ORDERS-CLEANUP</strong><br/>Remove hardcoded payment demo + FX display</td><td>
+        <code>orders/page.tsx</code> (signal grid section only)
+      </td><td>Orders 76&rarr;85</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>05</td><td><strong>PR-DASHBOARD-DRILLDOWNS</strong><br/>KPI hrefs to filtered module pages</td><td>
+        <code>dashboard/_lib/render-dashboard-page.tsx</code>
+      </td><td>Dashboard 80&rarr;90</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>06</td><td><strong>PR-TRADEEVENTS-FULL</strong><br/>capture_defaults + Quick Lead pre-fill</td><td>
+        <code>admin/trade-events/page.tsx</code><br/>
+        <code>trade-events/server/actions.ts</code><br/>
+        <code>trade-events/components/trade-events-manager.tsx</code><br/>
+        <code>leads/page.tsx</code> (eventId param)
+      </td><td>Trade 72&rarr;90, Leads 80&rarr;85</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>07</td><td><strong>PR-NORTHSTAR-HANDOFF</strong><br/>End-to-end smoke + handoff link verification</td><td>
+        <code>lib/workflow/handoffs.ts</code> (if fixes needed)<br/>
+        Verification pass only &mdash; no page changes
+      </td><td>NorthStar 52&rarr;80</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>08</td><td><strong>PR-QA-RELEASE</strong><br/>Final line-by-line checklist + build proof + DCC truth</td><td>
+        <code>internal-dcc/index.html</code> only
+      </td><td>All modules 100%</td><td><span class="s violet">Final</span></td></tr>
     </tbody></table>
   </section>
 </div>
 
 <div class="tp" id="tab-prompts">
-  <div class="co b">Copy one prompt at a time into GPT with the latest repo zip attached. Each prompt includes the new regression rule: do not mark a module complete if it is still calling an old workspace.</div>
-  <div class="card" style="margin-bottom:12px;border:2px solid #dc2626"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s bad">Use first</span><strong style="font-size:14px">PR-REPAIR-01 — build proof + canonical contracts</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p01')">Copy</button><pre id="p01">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
+  <div class="co v"><strong>New prompt format &mdash; SURGICAL:</strong> Every prompt names exact files. Changes described in diff format. Build proof is mandatory &mdash; fail = stop. One behavior per PR. Copy one at a time into GPT with the v14 repo zip attached.</div>
 
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
+  <div class="card" style="margin-bottom:12px;border:2px solid #dc2626"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s bad">Do first &mdash; 3 bugs</span><strong style="font-size:14px">PR-QUICKFIXES &mdash; Validity bug + Pipeline filters + capture_defaults</strong></div>
+  <div class="pb"><button class="cbtn" onclick="copyPrompt('p01')">Copy</button><pre id="p01">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. SURGICAL PR — touch ONLY the files listed below. Touch nothing else.
 
-TASK:
-Stabilize the build and shared contracts before any UI feature work.
+MANDATORY RULES:
+1. Read public/internal-dcc/index.html first. Preserve its format exactly.
+2. Do NOT modify public/reference-html/*.html.
+3. Run: npm ci --no-audit --no-fund → if it fails STOP and report. Do not continue.
+4. Then: npm run typecheck → if it fails STOP and report.
+5. Then: npm test → paste output.
+6. Then: npm run build → paste last 30 lines.
+7. Mark PR complete ONLY if all 4 commands pass.
+8. Return: updated repo zip + diff of changed files + proof output + next PR prompt.
 
-READ:
-- public/reference-html/setuflow-northstar.html
-- public/reference-html/setuflow-quotes-redesign.html
-- public/reference-html/setuflow-catalog-redesign.html
+BUG FIX 1 — Quotes validity (1 line change)
+FILE: src/app/(app)/quotes/page.tsx
 
-IMPLEMENT:
-1. Create one canonical pricing basis contract used by Quotes, Catalog, Trade Workflow, Lead CC, Orders, and quote metadata.
-2. Supported storage values: ex_factory, fob, cif, bulk_chips.
-3. Source catalog currency defaults USD. Buyer-facing quote currency remains separate and editable.
-4. MOQ default belongs to catalog pricing and quote line defaults.
-5. Approval authority contract: owner/admin/manager allowed; non-owner/admin/manager or price changes require approval.
-6. Repo-wide grep for stale unions excluding bulk_chips, old uppercase basis contracts, pricingBasis string handoffs.
-7. Do not add features. Only make contracts/build green.
+Line 42 CURRENT:
+  const daysLeft = Math.max(0, 30 - daysSinceUpdate);
+CHANGE TO:
+  const daysLeft = Math.max(0, 7 - daysSinceUpdate);
 
-DCC:
-Mark PR-REPAIR-01 complete only with proof output. If not green, leave status active and list exact blockers.
+Lines 43-44 CURRENT:
+  if (daysLeft <= 3) return { label: `${daysLeft} days left!`, rose: true, amber: false, emerald: false };
+  if (daysLeft <= 7) return { label: `${daysLeft} days left`, rose: false, amber: true, emerald: false };
+CHANGE TO:
+  if (daysLeft <= 1) return { label: `${daysLeft} days left!`, rose: true, amber: false, emerald: false };
+  if (daysLeft <= 4) return { label: `${daysLeft} days left`, rose: false, amber: true, emerald: false };
+
+VERIFY: grep "7 - daysSinceUpdate" src/app/\(app\)/quotes/page.tsx → must return 1 match. Paste the line.
+
+BUG FIX 2 — Pipeline filter chips wired
+FILES:
+  src/features/pipeline/components/PipelineBoardFilters.tsx
+  src/features/pipeline/components/pipeline-board.tsx
+
+Read public/reference-html/setuflow-pipeline-redesign.html lines 62-73 and 366-392.
+Reference requires: Follow-up timing, Owner, Product, Market, Country dropdowns + active chips.
+
+Step 1 — Update PipelineBoardFilters.tsx to add props:
+  followUpTiming: string, onFollowUpTimingChange: (v:string) => void
+  productId: string, onProductIdChange: (v:string) => void, products: {id:string,name:string}[]
+  marketId: string, onMarketIdChange: (v:string) => void, markets: {id:string,name:string}[]
+  countryId: string, onCountryIdChange: (v:string) => void, countries: {id:string,name:string}[]
+  Add dropdowns for each. Add active chips row showing one chip per active filter with clear button.
+  Keep existing: search, leadType, ownerId props.
+
+Step 2 — In pipeline-board.tsx:
+  Import PipelineBoardFilters (add import at top of file)
+  Add state: followUpTiming, productId, marketId, countryId
+  Render PipelineBoardFilters in the filter bar area with all new props wired
+  Filter localLeads by the new filters before rendering lanes (check follow-up date, product interests, market, country)
+  Do NOT change the DnD logic (draggedLeadId, dragOverStageId, handleMove).
+
+VERIFY:
+  grep -n "PipelineBoardFilters" src/features/pipeline/components/pipeline-board.tsx
+  Result must show: 1 import line + at least 1 render usage. Paste both lines.
+
+BUG FIX 3 — Trade Events capture_defaults
+FILES:
+  src/app/(app)/admin/trade-events/page.tsx
+  src/features/trade-events/server/actions.ts
+
+Step 1: Check if trade_events table has capture_defaults column:
+  grep -n "capture_defaults" src/types/database.generated.ts
+  grep -n "capture_defaults" src/types/database.ts
+  Paste the result. If found: proceed to Step 2. If not found: proceed to Step 3.
+
+Step 2 (column exists): 
+  In src/features/trade-events/server/actions.ts add:
+    export async function saveTradeEventCaptureDefaults(formData: FormData) {
+      'use server';
+      // read event_id, source_label, quick_lead_title, product_ids from formData
+      // update trade_events set capture_defaults = {...} where id = event_id
+    }
+  In src/app/(app)/admin/trade-events/page.tsx:
+    Add form fields for capture_defaults inside the trade event edit form (source_label, quick_lead_title)
+
+Step 3 (column does NOT exist):
+  Create: src/mitigation/supabase/sql/110_trade_event_capture_defaults.sql
+    ALTER TABLE trade_events ADD COLUMN IF NOT EXISTS capture_defaults JSONB;
+  Note in DCC that migration must run in Supabase before server action can be wired.
+  Do NOT wire the server action yet.
+
+VERIFY:
+  grep -rn "capture_defaults" src/ → must return at least 1 result (or note migration needed)
+
+DCC UPDATE:
+  Update Quotes score to 72%, Pipeline to 78%
+  Trade Events: 72% if column exists and wired, 65% if migration-only
+  Update PR-QUICKFIXES to Complete only after all proof commands paste as green.
 </pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 02</span><strong style="font-size:14px">PR-ADMIN-SETTINGS-100 — restore rebuilt admin/settings workspaces</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p02')">Copy</button><pre id="p02">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
+  <div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 02</span><strong style="font-size:14px">PR-CATALOG-SMOKE &mdash; Visual smoke + quote handoff wire</strong></div>
+  <div class="pb"><button class="cbtn" onclick="copyPrompt('p02')">Copy</button><pre id="p02">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. SURGICAL PR — touch ONLY the 2 files listed.
 
-TASK:
-Fix the regression where Admin / Settings pages are calling old or partial workspaces instead of the rebuilt reference spaces.
+MANDATORY RULES: Same as PR-QUICKFIXES. npm ci must pass before any code. Build must pass before marking complete.
 
-READ:
-- public/reference-html/setuflow-admin-settings-redesign.html
-- public/reference-html/setuflow-northstar.html
+FILES TO TOUCH:
+  src/features/products/components/products-spreadsheet-page.tsx
+  src/features/products/components/products-toolbar.tsx
 
-VALIDATE FIRST:
-1. Inspect routes under src/app/(app)/admin/** and src/app/(app)/settings/**.
-2. Identify which routes use old OrganizationWorkspace/partial workspace instead of rebuilt admin reference workspace sections.
-3. Compare visible tabs/sections against reference HTML: Users, Invitations, Settings lists, Product management, Trade events, Markets/Countries/Pipelines/Stages/Roles, Governance.
+TASK — Read public/reference-html/setuflow-catalog-redesign.html.
+Verify these 5 elements exist in products-spreadsheet-page.tsx output:
 
-IMPLEMENT:
-1. Restore/route to the rebuilt admin/settings spaces in the same design system shell.
-2. Preserve product management lane and settings list management.
-3. Add missing governance banners, role badges, threshold controls, capture defaults lane, and settings coverage.
-4. Align filters/buttons with Leads page toolbar pattern.
-5. No dead duplicate old admin workspace left as the primary route.
+1. FILTER BAR (reference lines 66-75)
+   Filter bar must have: search box, category dropdown, pricing mode dropdown, gap-chip (amber, shows count of products with pricing gaps), and filter summary count.
+   If filter chips are NOT URL-backed: add useSearchParams() and router.push so filter state survives page refresh.
+   VERIFY: grep -n "gap-chip\|gapFilter\|useSearchParams" products-spreadsheet-page.tsx → paste result.
 
-DCC:
-Update scores and list each admin/settings route checked.
+2. STAT STRIP (reference lines 78-98)
+   Confirm 6 stats render: Total products, Priced variants %, Quote-ready %, Stale prices (>90 days), Missing MOQ, USD catalog rows.
+   Variables stalePriceRows, missingMoqRows, usdCatalogRows, pricingCoverage, quoteReadyCoverage exist — confirm they render in stat cards.
+
+3. TABLE COLUMNS (reference lines 100-101)
+   Table header: checkbox, Name/SKU, Category, Ex-Factory USD, FOB USD, MOQ, Gap, Status, Actions.
+   Check products-table.tsx renders these. Report what columns exist vs what reference requires.
+
+4. DRAWER TABS (reference lines 141-143)
+   Drawer must have tabs: Overview, Pricing, Markets.
+   Check product-detail-drawer.tsx for 3 tabs. Report what tabs exist.
+
+5. QUOTE HANDOFF
+   When a product is quote-ready, the action button must link to:
+   /leads?quickLead=1&productId={product.product_id}&autoQuote=1
+   VERIFY: grep -n "autoQuote\|quickLead" products-spreadsheet-page.tsx → paste result.
+   If missing: add the href to the quote-ready action button.
+
+DCC UPDATE: Update Catalog to 88% with proof output. If any of the 5 items fails, note it and keep score at 78%.
 </pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 03</span><strong style="font-size:14px">PR-CATALOG-100 — restore rebuilt catalog workspace</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p03')">Copy</button><pre id="p03">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
+  <div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 03</span><strong style="font-size:14px">PR-QUOTES-FX &mdash; FX rate display + lifecycle confirmation</strong></div>
+  <div class="pb"><button class="cbtn" onclick="copyPrompt('p03')">Copy</button><pre id="p03">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. SURGICAL PR — touch ONLY src/app/(app)/quotes/page.tsx.
 
-TASK:
-Fix Catalog regression to the rebuilt Products &amp; Pricing workspace, not old spreadsheet-only space.
+MANDATORY RULES: npm ci must pass before any code. Build must pass before marking complete.
 
-READ:
-- public/reference-html/setuflow-catalog-redesign.html
-- public/reference-html/setuflow-northstar.html
+TASK — Read public/reference-html/setuflow-quotes-redesign.html (detail panel section).
 
-VALIDATE FIRST:
-1. Inspect src/app/(app)/products/page.tsx and src/features/products/components/*.
-2. Confirm whether /products uses the rebuilt reference workspace or only ProductsSpreadsheetPage.
-3. Compare header, fast-lane panel, workflow review, products/pricing/spreadsheet tabs, blockers, inline pricing, and quote handoff.
+1. FX RATE IN DETAIL PANEL
+   Reference shows: catalog USD baseline | buyer currency | FX rate applied.
+   In the detail panel section of quotes/page.tsx (the "selected quote" block):
+   Find the Quote details grid. Add an FX row after the Currency row:
+   - If quote currency is USD: show "No FX conversion — catalog currency"
+   - If quote currency is not USD: show "{quote.currency} quote · FX applied at send time"
+   Do NOT add a new DB query for this — use existing data only.
 
-IMPLEMENT:
-1. Restore the rebuilt catalog workspace as primary.
-2. Keep products, pricing view, and spreadsheet modes.
-3. Align filter bar with Leads page standards.
-4. Ensure USD catalog pricing, MOQ, quote-ready status, stale price warnings, and pricing gaps are visible.
-5. Preserve add/edit product drawer and product detail drawer.
-6. Ensure quote handoff opens quote workspace/builder with product context.
+2. VALIDITY CONFIRMATION
+   Confirm PR-QUICKFIXES was applied: grep for "7 - daysSinceUpdate" — paste the result.
+   If not yet applied, apply the same fix: change 30 to 7 on line 42, adjust thresholds.
 
-DCC:
-Update catalog score only with proof.
+3. STATUS LIFECYCLE CONFIRMATION
+   Reference shows statuses: draft, internal_review, pending_approval, approved, sent, revised, accepted, rejected, expired.
+   Check FILTER_STATUSES array at top of file. Paste the current array.
+   If any status from the reference list is missing, add it.
+
+VERIFY:
+  grep -n "FX\|fx\|No FX" src/app/(app)/quotes/page.tsx → paste result (must return at least 1 line after fix)
+  grep -n "FILTER_STATUSES" src/app/(app)/quotes/page.tsx → paste the full array
+
+DCC UPDATE: Update Quotes to 85% with proof output.
 </pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 04</span><strong style="font-size:14px">PR-ORDERS-100 — restore rebuilt orders execution space</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p04')">Copy</button><pre id="p04">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
+  <div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 04</span><strong style="font-size:14px">PR-ORDERS-CLEANUP &mdash; Remove hardcoded demo + fix FX display</strong></div>
+  <div class="pb"><button class="cbtn" onclick="copyPrompt('p04')">Copy</button><pre id="p04">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. SURGICAL PR — touch ONLY src/app/(app)/orders/page.tsx.
 
-TASK:
-Fix Orders regression where orders show old/empty space instead of rebuilt execution desk.
+MANDATORY RULES: npm ci must pass before any code. Build must pass before marking complete.
 
-READ:
-- public/reference-html/setuflow-orders-redesign.html
-- public/reference-html/setuflow-northstar.html
+TASK — Read public/reference-html/setuflow-orders-redesign.html (signal grid section).
 
-VALIDATE FIRST:
-1. Inspect /orders page and order components.
-2. Compare visible UI to reference: execution command desk, accepted quote queue, docs, compliance, dispatch blockers, supplier/buyer context, commercial lock.
+1. REMOVE HARDCODED PAYMENT DEMO
+   Search for "30% received" in orders/page.tsx. Replace the signal grid Payment status entry.
+   Check if contracts table has payment_state field: grep database.generated.ts for payment_state.
+   - If payment_state exists: show its value in the badge
+   - If not: show label "Payment tracking" with badge "Pending integration" (neutral tone)
+   Do NOT show "30% received" as if it is real data.
 
-IMPLEMENT:
-1. Restore rebuilt Orders / Execution workspace as primary.
-2. Accepted quotes must appear as operational orders.
-3. Empty state must not hide accepted-quote records because of old query shape.
-4. Upload document, blocker gate, dispatch readiness, commercial lock, and supplier/buyer toggle must match reference.
-5. Add clear issue banners for missing accepted orders vs query/load errors.
+2. FX DISPLAY CURRENCY
+   Order value header shows: dealValue formatted with dealCurrency.
+   Verify the formatMoneyValue call uses: dealCurrency ?? currency ?? 'USD'
+   If the fallback chain is wrong, fix it. Paste the current line and the fixed line.
 
-DCC:
-List exact order lifecycle gaps remaining.
+3. STATS STRIP LABELS
+   Reference HTML stats: "Dispatch blocked", "Docs pending", "In execution", "Delivered", "Execution value", "Avg cycle time"
+   Verify current stat labels match exactly. If any differ, fix them.
+
+VERIFY:
+  grep -n "30% received\|hardcoded" src/app/(app)/orders/page.tsx → must return 0 results after fix
+  grep -n "Payment tracking\|payment_state" src/app/(app)/orders/page.tsx → paste result
+
+DCC UPDATE: Update Orders to 85% with proof output.
 </pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 05</span><strong style="font-size:14px">PR-LEADS-100 — full Leads workflow/filter parity</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p05')">Copy</button><pre id="p05">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
+  <div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 05</span><strong style="font-size:14px">PR-DASHBOARD-DRILLDOWNS &mdash; Wire KPI hrefs to filtered pages</strong></div>
+  <div class="pb"><button class="cbtn" onclick="copyPrompt('p05')">Copy</button><pre id="p05">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. SURGICAL PR — touch ONLY src/app/(app)/dashboard/_lib/render-dashboard-page.tsx.
 
-TASK:
-Fix remaining Leads gaps beyond what previous DCC understated.
+MANDATORY RULES: npm ci must pass before any code. Build must pass before marking complete.
 
-READ:
-- public/reference-html/setuflow-leads-redesign.html
-- public/reference-html/setuflow-northstar.html
+TASK — Read public/reference-html/setuflow-dashboard-redesign.html (KPI cards + action queue).
 
-VALIDATE FIRST:
-1. Compare Leads visible toolbar/filter behavior to reference and live screenshots.
-2. Confirm buyer/supplier/all tabs, saved views, advanced filters, product/market/source/owner/stage/timing filters.
-3. Inspect Quick Lead, command center, quote prep, RFQ/quote handoff, trade event capture.
+1. KPI DRILLDOWN HREFS
+   KpiCard component accepts href prop. Confirm or add these hrefs in render-dashboard-page.tsx:
+   - Active leads → /leads?mode=active
+   - Overdue follow-ups → /leads?mode=follow-up (add overdue chip if possible)
+   - Pending approval quotes → /quotes?status=pending_approval
+   - Orders in execution → /orders
+   - Open pipeline value → /pipeline
+   - Trade events this month → /trade-events
+   For each KPI, paste the current href value and note if it needs updating.
 
-IMPLEMENT:
-1. Align all filters to rebuilt Leads standard and ensure they actually affect data.
-2. Restore missing saved views and filter chips.
-3. Quick Lead supports trade event source and catalog defaults.
-4. Lead CC shows quote readiness, product coverage, document requirements, stage readiness, and next action.
-5. No hidden dead old workspace logic should remain primary.
+2. ACTION QUEUE LINKS
+   Needs-attention cards must link to exact workflow blockers.
+   Verify each action card has a link that goes to the right module page with the correct filter or quoteId param.
 
-DCC:
-Call out each filter checked and each remaining gap.
+3. BUYER/SUPPLIER TOGGLE (read-only check)
+   Confirm the mode switch in render-dashboard-page.tsx or world-coverage-map.tsx changes the data passed to KPI cards.
+   If it is visual-only (no data effect), note as a remaining gap but do NOT fix in this PR.
+
+VERIFY:
+  grep -n "href.*leads\|href.*quotes.*pending\|href.*orders" src/app/(app)/dashboard/_lib/render-dashboard-page.tsx → paste all results
+
+DCC UPDATE: Update Dashboard to 90% with proof output.
 </pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 06</span><strong style="font-size:14px">PR-PIPELINE-100 — pipeline parity and DnD proof</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p06')">Copy</button><pre id="p06">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
+  <div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 06</span><strong style="font-size:14px">PR-TRADEEVENTS-FULL &mdash; capture_defaults + Quick Lead pre-fill end-to-end</strong></div>
+  <div class="pb"><button class="cbtn" onclick="copyPrompt('p06')">Copy</button><pre id="p06">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. SURGICAL PR — touch ONLY the files listed.
 
-TASK:
-Bring Pipeline / Risks to 100% against reference.
+MANDATORY RULES: npm ci must pass before any code. Build must pass before marking complete.
 
-READ:
-- public/reference-html/setuflow-pipeline-redesign.html
-- public/reference-html/setuflow-northstar.html
+FILES TO TOUCH:
+  src/app/(app)/admin/trade-events/page.tsx
+  src/features/trade-events/server/actions.ts
+  src/features/trade-events/components/trade-events-manager.tsx
+  src/app/(app)/leads/page.tsx (add eventId searchParam read only)
 
-IMPLEMENT:
-1. Align filters with Leads filter system: timing, owners, products, markets, active chips.
-2. Ensure readiness cards, blocked records, overdue counts, healthy cards, pipeline value are accurate.
-3. Detail panel, bulk action bar, drag/drop stage move, blocked drop state, and drop-zone visual must work.
-4. Revalidate Leads/Pipeline after stage changes.
-5. Add proof tests or smoke script for move readiness.
+TASK — Read:
+  public/reference-html/setuflow-admin-settings-redesign.html (trade events admin section)
+  public/reference-html/setuflow-leads-redesign.html (Quick Lead source)
+  public/reference-html/setuflow-northstar.html (Trade Event → Quick Lead flow)
+
+1. ADMIN TRADE EVENT EDIT FORM (depends on PR-QUICKFIXES Step 3 result)
+   If migration 110_trade_event_capture_defaults.sql was created and run:
+     Add form fields to trade-events-manager.tsx or admin/trade-events/page.tsx:
+       source_label (text input), quick_lead_title (text input)
+     Wire saveTradeEventCaptureDefaults server action
+
+2. QUICK LEAD LINK ON EVENT CARDS
+   In trade-events/page.tsx, add a "Quick Lead" button to each event card:
+   href="/leads?quickLead=1&sourceType=trade_event&sourceLabel={encodeURIComponent(event.name)}&eventId={event.id}"
+   If event.capture_defaults?.source_label exists, use it instead of event.name
+   If event.capture_defaults?.product_ids[0] exists, append &productId={product_ids[0]}
+
+3. LEADS PAGE — RECEIVE EVENT SOURCE
+   In leads/page.tsx, searchParams already reads sourceType and sourceLabel.
+   Add: const eventId = readParam(searchParams?.eventId).trim();
+   Pass eventId to LeadsWorkspace as initialEventId prop
+   In LeadsWorkspace client, pass eventId as a hidden context in QuickCapture form so created lead gets trade_event_id populated.
+
+VERIFY:
+  grep -rn "capture_defaults" src/ → must return results (not 0)
+  grep -n "eventId\|trade_event_id" src/app/(app)/leads/page.tsx → paste result
+
+DCC UPDATE: Trade Events 90%, Leads 85%, NorthStar 65%.
 </pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 07</span><strong style="font-size:14px">PR-QUOTES-100 — quote builder/workspace lifecycle</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p07')">Copy</button><pre id="p07">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
+  <div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 07</span><strong style="font-size:14px">PR-NORTHSTAR-HANDOFF &mdash; End-to-end smoke + handoff verification</strong></div>
+  <div class="pb"><button class="cbtn" onclick="copyPrompt('p07')">Copy</button><pre id="p07">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. SURGICAL PR — verification pass. Touch ONLY lib/workflow/handoffs.ts if fixes needed.
 
-TASK:
-Finish Quotes to 100%.
+MANDATORY RULES: npm ci + typecheck + test + build must all pass. Mark complete only with proof.
 
-READ:
-- public/reference-html/setuflow-quotes-redesign.html
-- public/reference-html/setuflow-catalog-redesign.html
-- public/reference-html/setuflow-northstar.html
+TASK — Read public/reference-html/setuflow-northstar.html (workflow flow diagram and handoff states).
 
-IMPLEMENT:
-1. Default source catalog pricing USD.
-2. Default quantity from catalog MOQ.
-3. Buyer-facing quote currency editable in commercials.
-4. QTY and final price editable in quote form.
-5. Price changes require override reason and approval.
-6. Non-owner/admin/manager quote creation or price change requires approval.
-7. Quote valid for 7 days after send; alert to resend/revise if no customer action.
-8. Status lifecycle and version history: draft, internal_review, pending_approval, approved, sent, revised, accepted, rejected, expired, converted.
-9. Export/PDF/share actions align with reference.
+NorthStar flow: Trade Event → Quick Lead → Lead CC → Quote Builder → Approval → Send → Accepted → Order Execution → Dashboard
+
+Verify each handoff link:
+
+1. TRADE EVENT → LEAD
+   In trade-events/page.tsx: confirm "Quick Lead" button links to /leads?quickLead=1&sourceType=trade_event&eventId={id}
+   Paste the exact href from the file.
+
+2. LEAD CC → QUOTE
+   In LeadCommandCenterPage or WorkflowTab: confirm "Create quote" or quote prep CTA links to /leads/{leadId}/quote
+   Paste the exact href.
+
+3. QUOTE → APPROVAL SEND
+   In quotes/page.tsx: confirm selectedApprovalHref uses buildApprovalSendHref correctly with quoteId + leadId + handoff param.
+   Paste the buildApprovalSendHref call from the file.
+
+4. APPROVAL → SEND → ORDER
+   In approval-send/page.tsx: confirm it redirects to /orders?notice=quote-accepted after send.
+   Paste the redirect line.
+
+5. QUOTE ACCEPTED → ORDER
+   In orders/page.tsx: confirm notice=quote-accepted renders the handoff message banner.
+   Paste the notice detection code.
+
+6. ORDER → DASHBOARD
+   In render-dashboard-page.tsx: confirm the orders KPI links to /orders.
+   Paste the href.
+
+For each step: paste the exact code line. If a step is broken, fix only lib/workflow/handoffs.ts.
+Do NOT touch module pages in this PR.
+
+After verification, run: npm run build
+If green: mark NorthStar 80%.
+
+DCC UPDATE: NorthStar 80%. List each step as confirmed or broken.
 </pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 08</span><strong style="font-size:14px">PR-TRADEEVENTS-100 — trade show capture lane</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p08')">Copy</button><pre id="p08">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
+  <div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s violet">PR 08 &mdash; Final</span><strong style="font-size:14px">PR-QA-RELEASE &mdash; Line-by-line checklist + build proof + DCC truth</strong></div>
+  <div class="pb"><button class="cbtn" onclick="copyPrompt('p08')">Copy</button><pre id="p08">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. FINAL QA PR — read-only verification. Only public/internal-dcc/index.html is updated.
 
-TASK:
-Complete Trade Events / Capture.
+MANDATORY RULES:
+npm ci → npm run typecheck → npm test → npm run build — ALL must pass. Paste full output.
+Do NOT change any application code files.
 
-READ:
-- public/reference-html/setuflow-leads-redesign.html
-- public/reference-html/setuflow-admin-settings-redesign.html
-- public/reference-html/setuflow-northstar.html
+TASK — Line-by-line checklist for each module:
 
-IMPLEMENT:
-1. Admin trade event edit form saves capture_defaults.
-2. Event cards show entries and converted counts.
-3. Quick Lead includes event source dropdown.
-4. Captured event lead writes trade_event_id, source_type=&#x27;trade_event&#x27;, and trade_event_entries row.
-5. AI suggestion applied creates communications log.
-6. Leads saved view for trade-event is preserved without duplication.
+DASHBOARD:
+  [ ] KPI cards have hrefs to filtered module pages (grep for href in render-dashboard-page.tsx)
+  [ ] Action queue cards link to exact workflow blockers
+  [ ] World map renders
+  [ ] Buyer/supplier toggle wired (note if visual-only)
+
+LEADS:
+  [ ] URL-backed filters (searchParams) — grep for useSearchParams
+  [ ] Quick Lead opens with trade event eventId param
+  [ ] Lead CC shows workflow tab, quote prep tab
+  [ ] Saved views state persists
+
+PIPELINE:
+  [ ] PipelineBoardFilters rendered (grep for PipelineBoardFilters in pipeline-board.tsx)
+  [ ] 5 filter dropdowns present
+  [ ] Active chips render
+  [ ] DnD works (grep for draggedLeadId)
+  [ ] Detail panel opens on card click
+
+CATALOG:
+  [ ] 3 modes (products/pricing/spreadsheet)
+  [ ] Gap chip shows count
+  [ ] Drawer has 3 tabs (grep for drawer-tabs in product-detail-drawer.tsx)
+  [ ] Quote handoff href correct (grep for autoQuote)
+
+QUOTES:
+  [ ] 7-day validity (grep for "7 - daysSinceUpdate")
+  [ ] Approval banner on pending_approval
+  [ ] FX row in detail panel (grep for "No FX\|FX applied")
+  [ ] FILTER_STATUSES includes all 9 states
+
+ORDERS:
+  [ ] No "30% received" hardcoded (grep — must return 0 results)
+  [ ] Execution state stepper renders
+  [ ] Signal grid 4 signals
+  [ ] Document upload inline form
+
+ADMIN:
+  [ ] 9 AdminRouteCard components (grep for AdminRouteCard in admin/organization/page.tsx)
+  [ ] Threshold form saves
+  [ ] /settings/lists redirects
+
+TRADE EVENTS:
+  [ ] capture_defaults wired (grep — must return results)
+  [ ] Quick Lead link on event cards
+  [ ] Entry count on cards
+  [ ] Converted lead links
+
+For each item PASSING: mark it confirmed.
+For each item FAILING: keep module score below 100 and create a follow-up prompt.
+Do NOT claim 100% for any module with a failing checklist item.
+
+DCC UPDATE:
+  Set final scores based only on proof + checklist.
+  Update overall readiness.
+  Mark PR-QA-RELEASE complete with full build output pasted.
 </pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 09</span><strong style="font-size:14px">PR-DASHBOARD-100 — dashboard NorthStar command center</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p09')">Copy</button><pre id="p09">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
-
-TASK:
-Bring Dashboard to 100%.
-
-READ:
-- public/reference-html/setuflow-dashboard-redesign.html
-- public/reference-html/setuflow-northstar.html
-
-IMPLEMENT:
-1. KPI drilldowns link to correct filtered pages.
-2. Action queue links to exact workflow blockers.
-3. World map/market coverage, buyer/supplier toggles, revenue/pipeline/order metrics match reference.
-4. Dashboard accurately reflects repaired Catalog, Quotes, Orders, Pipeline, Leads states.
-</pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 10</span><strong style="font-size:14px">PR-CROSSPAGE-100 — NorthStar handoffs/revalidation</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p10')">Copy</button><pre id="p10">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
-
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
-
-TASK:
-Complete cross-page NorthStar workflow.
-
-READ:
-- public/reference-html/setuflow-northstar.html
-- all module reference HTMLs.
-
-IMPLEMENT:
-1. Trade Event -&gt; Lead -&gt; Quote -&gt; Approval -&gt; Send -&gt; Order -&gt; Pipeline/Dashboard flow works end to end.
-2. Quote sent advances/revalidates lead/pipeline as designed.
-3. Accepted quote creates order and marks quote converted.
-4. Catalog price stale affects quote revise path.
-5. All cross-page counts revalidate after writes.
-6. Add E2E smoke checklist/test where feasible.
-</pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 11</span><strong style="font-size:14px">PR-DESIGN-FILTERS-100 — topbar, filters, design consistency</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p11')">Copy</button><pre id="p11">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
-
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
-
-TASK:
-One design/filter consistency pass after modules are restored.
-
-READ:
-- all public/reference-html/*.html
-- public/internal-dcc/index.html
-
-IMPLEMENT:
-1. Align topbar, sidebar, tabs, search, filters, chips, quick lead/share card buttons across all modules.
-2. Remove old spacing/workspace shells.
-3. Ensure filters use same user mental model as Leads.
-4. Mobile/tablet responsive smoke check.
-5. No business logic changes except wiring filters that are visually present but inactive.
-</pre></div></div>
-<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 12</span><strong style="font-size:14px">PR-QA-RELEASE-100 — final line-by-line reference proof</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p12')">Copy</button><pre id="p12">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
-
-MANDATORY RULES FOR EVERY PR:
-1. Read public/internal-dcc/index.html first and preserve its same format.
-2. Read every listed reference HTML before writing code.
-3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
-4. Do not modify public/reference-html/*.html.
-5. Update public/internal-dcc/index.html only for audit/progress notes.
-6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
-7. If any command cannot run, paste the exact output and do not claim green.
-8. No event handlers in server page.tsx files.
-9. No 2-arg server actions as direct form action props.
-10. Return updated repo zip, changed files, proof output, and next PR prompt.
-
-TASK:
-Final release QA to 100%.
-
-READ:
-- all reference HTML files
-- public/internal-dcc/index.html
-- live route checklist from DCC.
-
-IMPLEMENT:
-1. Line-by-line visual and workflow checklist for Dashboard, Leads, Pipeline, Catalog, Quotes, Orders, Admin/Settings, Trade Events, AI.
-2. Run full typecheck/test/build.
-3. Smoke all routes.
-4. Update internal DCC with final proof only if green.
-5. If anything fails, keep readiness below 100 and create follow-up prompt.
-</pre></div></div>
 </div>
 
 <div class="tp" id="tab-rules">
   <section class="sec grid g2">
-    <div class="card"><h2>Type proof</h2><pre>npm ci --no-audit --no-fund
+    <div class="card"><h2>Proof commands (mandatory)</h2><pre>npm ci --no-audit --no-fund
 npm run typecheck
 npm test
-npm run build</pre></div>
-    <div class="card"><h2>Regression proof</h2><pre>For each route:
-1. Open the route.
-2. Compare against public/reference-html/*.html.
-3. Confirm primary route uses rebuilt workspace.
-4. Confirm filters visibly work.
-5. Confirm DCC score matches proof, not intention.</pre></div>
-    <div class="card"><h2>Server action proof</h2><pre>No 2-arg server action may be used directly as form action={...}.
-Use a 1-arg wrapper for direct form actions.</pre></div>
-    <div class="card"><h2>Server page proof</h2><pre>No onClick/onChange/onSubmit in server page.tsx files.
-Move interactivity into client components.</pre></div>
+npm run build</pre>
+    <p class="mu sm" style="margin-top:8px">If npm ci fails: STOP. Do not write code. Do not mark anything complete. Return the exact error output.</p></div>
+    <div class="card"><h2>Surgical PR rules</h2>
+      <p class="sm">1. List exact files in every prompt. Change outside that list = stop and ask.<br/>2. Cite reference HTML line numbers &mdash; not "check the reference."<br/>3. Describe changes as: "change X to Y" not "make it work."<br/>4. After every change: grep for expected element, paste result.<br/>5. No regressions: run npm test before and after. Failing test = revert and report.<br/>6. Hard proof gate: if build fails, return error. Do not mark complete. Do not move to next PR.</p>
+    </div>
+    <div class="card"><h2>Server action rules</h2><pre>No 2-arg server action as direct form action={...}.
+Use 1-arg wrapper for direct form actions.
+No onClick/onChange in server page.tsx files.
+Move all interactivity into client components.</pre></div>
+    <div class="card"><h2>Score gate rules</h2>
+      <p class="sm">Above 80% requires:<br/>&mdash; Route calls rebuilt workspace (verified by grep)<br/>&mdash; Filters work (not just render)<br/>&mdash; Reference HTML checkpoints matched<br/><br/>100% requires:<br/>&mdash; All 4 proof commands green<br/>&mdash; One workflow smoke confirmed<br/>&mdash; No hardcoded demo data in production paths<br/>&mdash; Checklist paste proves each element exists</p>
+    </div>
   </section>
 </div>
 
-</main>
+</div>
 <script>
 function showTab(id,btn){document.querySelectorAll('.tp').forEach(t=>t.classList.remove('a'));document.getElementById('tab-'+id).classList.add('a');document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('a'));btn.classList.add('a')}
 function copyPrompt(id){const el=document.getElementById(id);navigator.clipboard.writeText(el.innerText).then(()=>{const b=event.target;b.textContent='Copied';setTimeout(()=>b.textContent='Copy',900)})}
