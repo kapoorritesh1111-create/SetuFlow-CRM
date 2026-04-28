@@ -2,9 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { navigateToLeadCommandCenter } from '@/lib/lead-command-center-navigation';
+import type { StageMoveReadiness } from '@/lib/queries/pipeline-stage-gating';
 
 type Stage = { id: string; name: string; sort_order: number | null };
-type MoveReadiness = { status: 'ready' | 'at_risk' | 'blocked'; blockers: string[]; warnings?: string[]; actionItems?: string[]; summary: string };
 
 export interface PipelineDetailPanelProps {
   lead: {
@@ -22,7 +22,7 @@ export interface PipelineDetailPanelProps {
   stages: Stage[];
   ownerLabel: string;
   health: string;
-  moveReadiness: MoveReadiness;
+  moveReadiness: StageMoveReadiness;
   pricingLabel?: string;
   commandCenterHref: string;
   onClose: () => void;

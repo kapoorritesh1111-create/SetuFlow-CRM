@@ -600,7 +600,7 @@ export function PipelineBoard({
               openRfqCount={getLeadOpenRfqCount(lead.id)}
               activeQuoteCount={getLeadActiveQuoteCount(lead.id)}
               agingLabel={getLeadAgingLabel(lead)}
-              moveReadiness={(() => {
+              moveReadiness={((): StageMoveReadiness => {
                 const currentStage = lead.stage_id ? stageById.get(lead.stage_id) : null;
                 return currentStage
                   ? getStageMoveReadinessForLead(lead, currentStage)
@@ -968,7 +968,7 @@ export function PipelineBoard({
         const panelLead = localLeads.find(l => l.id === detailPanelLeadId);
         if (!panelLead) return null;
         const panelCurrentStage = panelLead.stage_id ? stageById.get(panelLead.stage_id) ?? null : null;
-        const panelReadiness = panelCurrentStage
+        const panelReadiness: StageMoveReadiness = panelCurrentStage
           ? getStageMoveReadinessForLead(panelLead, panelCurrentStage)
           : { status: 'ready', summary: 'Stage movement is ready under the current workflow.', blockers: [], warnings: [], actionItems: ['Advance stage'], canMove: true };
         const panelStageMeta = panelLead.stage_id ? stageMetaMap.get(panelLead.stage_id) : null;
