@@ -21,14 +21,14 @@ function countTone(value: number) {
   return value > 0 ? 'success' as const : 'warning' as const;
 }
 
-function AdminRouteCard({ title, eyebrow, description, href, stats }: { title: string; eyebrow: string; description: string; href: string; stats: Array<{ label: string; value: string | number; tone?: 'success' | 'warning' | 'info' | 'default' }> }) {
+function AdminRouteCard({ title, eyebrow, description, href, stats }: { title: string; eyebrow: string; description: string; href: string; stats: Array<{ label: string; value: string | number; tone?: 'success' | 'warning' | 'info' | 'neutral' }> }) {
   return (
     <Link href={href} className="block rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(37,99,235,0.10)]">
       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{eyebrow}</p>
       <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">{title}</h2>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
       <div className="mt-4 flex flex-wrap gap-2">
-        {stats.map((stat) => <StatusBadge key={`${title}-${stat.label}`} label={`${stat.label}: ${stat.value}`} tone={stat.tone ?? 'default'} dot={false} />)}
+        {stats.map((stat) => <StatusBadge key={`${title}-${stat.label}`} label={`${stat.label}: ${stat.value}`} tone={stat.tone ?? 'neutral'} dot={false} />)}
       </div>
     </Link>
   );
