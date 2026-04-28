@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { getProductGapActionLabel, getProductGapState } from '@/features/products/lib/products-gap-utils';
+import { getProductGapActionLabel, getProductGapLabel, getProductGapState } from '@/features/products/lib/products-gap-utils';
 import { updateProductDetail } from '@/features/products/api/update-product-detail';
 import type { PricingViewMode, ProductsSpreadsheetRow } from '@/types/products';
 import type { ProductsSortKey } from '@/features/products/lib/products-table-columns';
@@ -45,10 +45,11 @@ function GapBadge({ row }: { row: ProductsSpreadsheetRow }) {
   const state = getProductGapState(row);
   const classes = state === 'complete'
     ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-    : state === 'partial'
+    : state === 'pricing_gap' || state === 'bulk_gap' || state === 'review'
       ? 'border-amber-200 bg-amber-50 text-amber-700'
       : 'border-rose-200 bg-rose-50 text-rose-700';
-  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] ${classes}`}>{state === 'complete' ? 'Ready' : state === 'partial' ? 'Partial' : 'Missing'}</span>;
+  const label = state === 'complete' ? 'Ready' : getProductGapLabel(state);
+  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] ${classes}`}>{label}</span>;
 }
 
 function SortButton({ label, active, direction, onClick }: { label: string; active: boolean; direction: 'asc' | 'desc'; onClick: () => void }) {
