@@ -3,7 +3,7 @@ import type { LeadQuoteLaunchInput, QuoteThreadLaunchResult, RfqQuoteLaunchInput
 import type { PricingBasis } from '../types/enums';
 import type { AuditRepository, NegotiationRepository, QuotePricingRepository } from '../repositories/types';
 
-const DEFAULT_PRICING_BASIS: PricingBasis = 'fob';
+const DEFAULT_PRICING_BASIS: PricingBasis = 'ex_factory';
 
 export class DefaultCrmQuoteEntryService implements CrmQuoteEntryService {
   constructor(

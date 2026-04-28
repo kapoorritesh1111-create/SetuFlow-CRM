@@ -345,7 +345,7 @@ function buildQuickWorkflowFormData(
     "notes",
     String(overrides.plainNotes ?? parsed.plainNotes ?? ""),
   );
-  formData.set("pricing_basis", String(parsed.meta.pricingBasis ?? "fob"));
+  formData.set("pricing_basis", String(parsed.meta.pricingBasis ?? "ex_factory"));
   formData.set(
     "line_items",
     JSON.stringify(
@@ -416,7 +416,7 @@ function getFocusQuoteBuilderGuidance(
     getQuoteApprovalStateValue(quote);
   const lineItems = quote.lineItems ?? [];
   const plainNotes = String(parsed.plainNotes ?? "").trim();
-  const pricingBasis = String(parsed.meta.pricingBasis ?? "fob")
+  const pricingBasis = String(parsed.meta.pricingBasis ?? "ex_factory")
     .trim()
     .toLowerCase();
   const pricingTemplate = getPricingTemplate(

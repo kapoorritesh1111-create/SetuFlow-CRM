@@ -279,7 +279,7 @@ function normalizePricingBasis(value: string | null | undefined): PricingBasis {
     return "ex_factory";
   if (normalized === "cif") return "cif";
   if (normalized === "bulk_chips" || normalized === "bulk" || normalized === "bulk/kg") return "bulk_chips";
-  return "fob";
+  return "ex_factory";
 }
 
 function pricingBasisLabel(value: PricingBasis) {
@@ -316,7 +316,7 @@ function getProductBasisAmount(
 function buildLineFromProduct(
   product: ProductOption | undefined,
   currency: string,
-  pricingBasis: PricingBasis = "fob",
+  pricingBasis: PricingBasis = "ex_factory",
 ): DraftQuoteLine {
   const quoteCurrency = normalizeCurrency(currency) || DEFAULT_CATALOG_PRICE_CURRENCY;
   const catalogCurrency = DEFAULT_CATALOG_PRICE_CURRENCY;
@@ -356,7 +356,7 @@ function hydrateExistingLineWithCatalog(
   line: NonNullable<QuoteRecord["lineItems"]>[number],
   products: ProductOption[],
   currency: string,
-  pricingBasis: PricingBasis = "fob",
+  pricingBasis: PricingBasis = "ex_factory",
 ): DraftQuoteLine {
   const matchedProduct =
     products.find((product) => product.id === line.product_id) ??
@@ -785,7 +785,7 @@ function QuoteLineTable({
 function getPricingLineIssues(
   line: DraftQuoteLine,
   product: ProductOption | undefined,
-  pricingBasis: PricingBasis = "fob",
+  pricingBasis: PricingBasis = "ex_factory",
 ): PricingLineIssue[] {
   const issues: PricingLineIssue[] = [];
 
@@ -863,7 +863,7 @@ function getPricingIssueBadgeClasses(tone: QuoteRiskTone) {
 function getPricingStepSummary(
   lineItems: DraftQuoteLine[],
   products: ProductOption[],
-  pricingBasis: PricingBasis = "fob",
+  pricingBasis: PricingBasis = "ex_factory",
 ) {
   const lineIssueCounts = { danger: 0, warning: 0 } as Record<
     "danger" | "warning",
@@ -1899,7 +1899,7 @@ function applyPricingBasisToLine(
 function mapTemplateLinesToDraftLines(
   templateId: string,
   currency: string,
-  pricingBasis: PricingBasis = "fob",
+  pricingBasis: PricingBasis = "ex_factory",
   products: ProductOption[] = [],
 ): DraftQuoteLine[] {
   const template = getPricingTemplate(templateId);
@@ -2289,8 +2289,8 @@ function getQuoteValidation(
       issues.push("Quote quantities must stay above zero.");
     if (data.lineItems.some((item) => item.unit_price < 0))
       issues.push("Unit pricing cannot be negative.");
-    if (data.lineItems.some((item) => item.product_id && detectMissingPrice(data.pricingBasis ?? "fob", item)))
-      issues.push(`Every line needs a ${pricingBasisLabel(data.pricingBasis ?? "fob")} source price before send.`);
+    if (data.lineItems.some((item) => item.product_id && detectMissingPrice(data.pricingBasis ?? "ex_factory", item)))
+      issues.push(`Every line needs a ${pricingBasisLabel(data.pricingBasis ?? "ex_factory")} source price before send.`);
     if (
       data.lineItems.some(
         (item) => isLinePriceOverridden(item) && !item.override_reason.trim(),
@@ -2483,12 +2483,12 @@ export function QuoteCreateWizardForm({
   const [approvalState, setApprovalState] = useState<string>("pending");
   const [status, setStatus] = useState<string>("draft");
   const [notes, setNotes] = useState("");
-  const [pricingBasis, setPricingBasis] = useState<PricingBasis>("fob");
+  const [pricingBasis, setPricingBasis] = useState<PricingBasis>("ex_factory");
   const [lineItems, setLineItems] = useState<DraftQuoteLine[]>([
     buildLineFromProduct(
       products[0],
       defaultTemplate?.currency ?? "USD",
-      "fob",
+      "ex_factory",
     ),
   ]);
 
@@ -3560,11 +3560,11 @@ export function QuoteEditWizardForm({
   );
   const [notes, setNotes] = useState(parsed.plainNotes ?? "");
   const [pricingBasis, setPricingBasis] = useState<PricingBasis>(
-    normalizePricingBasis(parsed.meta.pricingBasis ?? "fob"),
+    normalizePricingBasis(parsed.meta.pricingBasis ?? "ex_factory"),
   );
   const [lineItems, setLineItems] = useState<DraftQuoteLine[]>(() => {
     const initialBasis = normalizePricingBasis(
-      parsed.meta.pricingBasis ?? "fob",
+      parsed.meta.pricingBasis ?? "ex_factory",
     );
     const existingItems = (quote.lineItems ?? []).map((item) =>
       hydrateExistingLineWithCatalog(
@@ -3711,13 +3711,13 @@ export function QuoteEditWizardForm({
         approvalState: parsed.meta.approval?.state ?? "not_required",
         status: getQuoteWorkflowStatus(quote, parsed.meta.approval),
         notes: parsed.plainNotes ?? "",
-        pricingBasis: normalizePricingBasis(parsed.meta.pricingBasis ?? "fob"),
+        pricingBasis: normalizePricingBasis(parsed.meta.pricingBasis ?? "ex_factory"),
         lineItems: (quote.lineItems ?? []).map((item) =>
           hydrateExistingLineWithCatalog(
             item,
             products,
             quote.currency ?? "USD",
-            normalizePricingBasis(parsed.meta.pricingBasis ?? "fob"),
+            normalizePricingBasis(parsed.meta.pricingBasis ?? "ex_factory"),
           ),
         ),
       }),

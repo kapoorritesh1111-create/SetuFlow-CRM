@@ -8,7 +8,7 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { APPROVAL_STATES, type ApprovalState } from '@/lib/approvalRouting';
 import { QUOTE_STATUSES, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
-import { normalizeCurrencyCode, validateOrganizationProductIds } from '@/lib/catalog-pricing-model';
+import { normalizeCurrencyCode, validateOrganizationProductIds, type QuotePricingBasis } from '@/lib/catalog-pricing-model';
 import { parseLeadWorkflow } from '@/lib/lead-workflow';
 import { buildLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
 import { getLeadProgressionGuard } from '@/lib/document-requirements';
@@ -63,6 +63,16 @@ function isMissingRpcFunction(error: any) {
   return message.includes('could not find the function') || message.includes('schema cache') || message.includes('function public.');
 }
 
+const QUOTE_PRICING_BASIS_VALUES = ['ex_factory', 'fob', 'cif', 'bulk_chips'] as const satisfies readonly QuotePricingBasis[];
+const DEFAULT_QUOTE_PRICING_BASIS: QuotePricingBasis = 'ex_factory';
+
+function normalizeQuotePricingBasis(value: unknown, fallback: QuotePricingBasis = DEFAULT_QUOTE_PRICING_BASIS): QuotePricingBasis {
+  const normalized = String(value ?? fallback).trim().toLowerCase();
+  return QUOTE_PRICING_BASIS_VALUES.includes(normalized as QuotePricingBasis)
+    ? (normalized as QuotePricingBasis)
+    : fallback;
+}
+
 async function createQuoteDirect(db: any, params: {
   organizationId: string;
   leadId: string;
@@ -71,7 +81,7 @@ async function createQuoteDirect(db: any, params: {
   currency: string;
   status: string;
   notes: string | null;
-  pricingBasis: string;
+  pricingBasis: QuotePricingBasis;
   lineItems: any[];
   approvalRequired: boolean;
   approvalState: string;
@@ -177,7 +187,7 @@ async function updateQuoteDirect(db: any, params: {
   status: string;
   currency: string;
   notes: string | null;
-  pricingBasis: string;
+  pricingBasis: QuotePricingBasis;
   quoteVersionId: string | null;
   lineItems: any[];
   approvalRequired: boolean;
@@ -702,8 +712,7 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
   let approvalState = (String(formData.get('approval_state') ?? '').trim() ||
     (approvalRequired ? 'pending' : 'not_required')) as ApprovalState;
   const plainNotes = String(formData.get('notes') ?? '').trim();
-  const pricingBasisRaw = String(formData.get('pricing_basis') ?? 'fob').trim().toLowerCase();
-  const pricingBasis = ['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(pricingBasisRaw) ? pricingBasisRaw : 'fob';
+  const pricingBasis = normalizeQuotePricingBasis(formData.get('pricing_basis'));
 
   let lineItems: ParsedLineItem[] = [];
   try {
@@ -1020,8 +1029,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
   let approvalState = (String(formData.get('approval_state') ?? '').trim() ||
     (approvalRequired ? 'pending' : 'not_required')) as ApprovalState;
   const plainNotes = String(formData.get('notes') ?? '').trim();
-  const pricingBasisRaw = String(formData.get('pricing_basis') ?? 'fob').trim().toLowerCase();
-  const pricingBasis = ['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(pricingBasisRaw) ? pricingBasisRaw : 'fob';
+  const pricingBasis = normalizeQuotePricingBasis(formData.get('pricing_basis'));
 
   let lineItems: ParsedLineItem[] = [];
   try {

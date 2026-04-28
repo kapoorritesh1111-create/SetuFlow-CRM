@@ -933,7 +933,7 @@ export class SupabaseQuotePricingRepository implements QuotePricingRepository {
         version_no: nextVersionNo,
         parent_version_id: aggregate.version.id,
         status: 'draft',
-        pricing_basis: aggregate.parentQuote.pricingBasis ?? aggregate.lines[0]?.basisApplied ?? 'fob',
+        pricing_basis: aggregate.parentQuote.pricingBasis ?? aggregate.lines[0]?.basisApplied ?? 'ex_factory',
         display_currency: aggregate.parentQuote.displayCurrency ?? aggregate.lines[0]?.displayCurrency ?? 'USD',
         valid_until: aggregate.parentQuote.validUntil ?? null,
         total_line_count: aggregate.lines.length,
