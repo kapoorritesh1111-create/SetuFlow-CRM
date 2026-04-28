@@ -188,3 +188,8 @@ export async function uploadOrderDocument(_: { error?: string; success?: string 
   if (contract.lead_id) revalidatePath(`/leads/${contract.lead_id}`);
   return { success: 'Order document uploaded and linked.' };
 }
+
+// 1-arg wrapper for direct form action= use in orders/page.tsx
+export async function uploadOrderDocumentAction(formData: FormData): Promise<void> {
+  await uploadOrderDocument(undefined, formData);
+}

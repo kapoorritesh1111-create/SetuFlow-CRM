@@ -20,7 +20,7 @@ import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { inferOrderTradeWorkflow } from '@/features/trade-workflow/logic';
 import { predictOrderDelay } from '@/features/ai/logic/intelligence';
 import { AICompactActionBrief, AIInsightCard, AIOrderDelayPanel } from '@/features/ai/ui/intelligence-panels';
-import { uploadOrderDocument } from '@/features/orders/server/actions';
+import { uploadOrderDocument, uploadOrderDocumentAction } from '@/features/orders/server/actions';
 import { TradeSignalGrid } from '@/features/trade-workflow/ui';
 import { extractLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
 import { getCommercialLockStateLabel, parseContractCommercialSnapshot } from '@/lib/contract-lock';
@@ -791,7 +791,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                   <div key={item.code} style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',borderRadius:'8px',border:'1px solid #fecaca',background:'#fff1f2'}}>
                     <span style={{fontSize:'14px',flexShrink:0}}>✗</span>
                     <span style={{flex:1,fontSize:'12px',fontWeight:600,color:'#9f1239'}}>{item.title} — required for import clearance</span>
-                    <form action={uploadOrderDocument} style={{display:'inline'}}>
+                    <form action={uploadOrderDocumentAction} style={{display:'inline'}}>
                       <input type="hidden" name="contract_id" value={order.contract?.id ?? ''} />
                       <input type="hidden" name="requirement_code" value={item.code ?? ''} />
                       <input type="hidden" name="doc_type" value={item.doc_type ?? 'document'} />

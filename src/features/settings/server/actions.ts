@@ -666,6 +666,52 @@ export async function deleteSettingsListItem(_: ActionState | undefined, formDat
 
 export const saveSettingsItem = saveSettingsListItem;
 
-// Legacy aliases for admin/page.tsx imports
-export const saveAdminSettingsListItem = saveSettingsListItem;
-export const moveAdminSettingsListItem = saveSettingsListItem; // No separate move function — reuse save
+// ── Admin page wrappers ─────────────────────────────────────────────────────
+// admin/page.tsx uses these as direct form action= props (1-arg signature).
+// They delegate to the underlying implementation with an undefined state arg.
+
+export async function saveAdminSettingsListItem(formData: FormData): Promise<void> {
+  await saveSettingsListItem(undefined, formData);
+}
+
+export async function moveAdminSettingsListItem(formData: FormData): Promise<void> {
+  if (!hasSupabaseEnv) return;
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) return;
+
+  const supabase = await createClient();
+  const db = supabase as any;
+  const table = String(formData.get('table') ?? '').trim();
+  const id = String(formData.get('id') ?? '').trim();
+  const direction = String(formData.get('direction') ?? '').trim() as 'up' | 'down';
+
+  const allowedTables = ['markets', 'countries', 'next_steps', 'product_categories'];
+  if (!table || !id || !direction || !allowedTables.includes(table)) return;
+
+  const org = workspace.organization.id;
+
+  // Fetch current item's sort_order
+  const { data: current } = await db.from(table).select('id, sort_order').eq('id', id).maybeSingle();
+  if (!current) return;
+
+  const currentOrder = current.sort_order ?? 0;
+
+  // Find adjacent item to swap with
+  const { data: adjacent } = await db
+    .from(table)
+    .select('id, sort_order')
+    .eq('organization_id', org)
+    .order('sort_order', { ascending: direction === 'up' })
+    .filter('sort_order', direction === 'up' ? 'lt' : 'gt', currentOrder)
+    .limit(1)
+    .maybeSingle();
+
+  if (!adjacent) return;
+
+  // Swap sort_orders
+  await db.from(table).update({ sort_order: adjacent.sort_order }).eq('id', id);
+  await db.from(table).update({ sort_order: currentOrder }).eq('id', adjacent.id);
+
+  revalidatePath('/settings/lists');
+  revalidatePath('/admin');
+}

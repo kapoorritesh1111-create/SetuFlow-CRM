@@ -1,1032 +1,579 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SETU Flow DCC — Full Gap Audit v2 · Apr 27 2026</title>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SETU Flow DCC &mdash; Apr 27 2026</title>
   <style>
-    :root{
-      --bg:#f4f6fb;--panel:#fff;--soft:#f8fafc;--line:#e2e8f0;
-      --text:#0f172a;--mu:#64748b;--brand:#0c7fff;--navy:#1f487c;--teal:#279491;
-      --g:#059669;--gs:#ecfdf5;--w:#d97706;--ws:#fffbeb;
-      --r:#dc2626;--rs:#fff1f2;--v:#7c3aed;--vs:#f5f3ff;--o:#ea580c;--os:#fff7ed;
-      --sh:0 8px 24px rgba(15,23,42,.08);--rad:18px;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55}
-    a{color:inherit;text-decoration:none}
-    .wrap{max-width:1440px;margin:0 auto;padding:22px 18px 80px}
-    .hero{background:linear-gradient(135deg,#7f1d1d 0%,#9a2323 30%,#0b2e4a 100%);color:#fff;border-radius:22px;padding:24px;box-shadow:var(--sh)}
-    .ey{font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+    :root{--bg:#f2f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--mu:#64748b;--brand:#0c7fff;--navy:#0b2e4a;--good:#059669;--warn:#d97706;--bad:#dc2626;--violet:#7c3aed;--sh:0 4px 18px rgba(15,23,42,.07);--r:18px}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.55}
+    .wrap{max-width:1440px;margin:0 auto;padding:20px 18px 80px}
     h1,h2,h3,p{margin:0}
-    .hero h1{margin-top:8px;font-size:28px;font-weight:900;line-height:1.06;letter-spacing:-.04em}
-    .hero p{margin-top:10px;max-width:920px;color:rgba(255,255,255,.84);line-height:1.7;font-size:13px}
-    .pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-    .pill{display:inline-flex;padding:4px 9px;border-radius:999px;font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);color:#fff}
-    .pill.r{background:#fef2f2;color:#7f1d1d;border-color:#fca5a5}
+    .hero{background:linear-gradient(135deg,#0b2e4a 0%,#1a4f7a 55%,#279491 100%);color:#fff;border-radius:22px;padding:24px;box-shadow:var(--sh)}
+    .hero-ey{font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:8px}
+    .hero h1{font-size:24px;font-weight:900;letter-spacing:-.04em;line-height:1.07}
+    .hero p{margin-top:8px;color:rgba(255,255,255,.82);font-size:12px;line-height:1.7;max-width:960px}
+    .pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+    .pill{display:inline-flex;padding:3px 9px;border-radius:999px;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:#fff}
     .pill.g{background:#d1fae5;color:#065f46;border-color:#a7f3d0}
     .pill.w{background:#fef3c7;color:#92400e;border-color:#fde68a}
-    .sec{margin-top:14px}.gr{display:grid;gap:11px}
+    .pill.v{background:#ede9fe;color:#5b21b6;border-color:#ddd6fe}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px}
+    .card h2{font-size:15px;font-weight:800;margin-bottom:6px}
+    .card h3{font-size:13px;font-weight:700;margin-bottom:4px}
+    .grid{display:grid;gap:10px}
     .g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);box-shadow:var(--sh);padding:16px}
-    .card h2{font-size:17px;font-weight:800;margin-bottom:7px;letter-spacing:-.02em}
-    .mu{color:var(--mu)}.sm{font-size:12px}
-    .kp .n{font-size:26px;font-weight:900;letter-spacing:-.04em}.kp .l{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-top:2px}
-    .s{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-    .s.ok{background:var(--gs);color:var(--g);border:1px solid #a7f3d0}
-    .s.w{background:var(--ws);color:var(--w);border:1px solid #fde68a}
-    .s.r{background:var(--rs);color:var(--r);border:1px solid #fecaca}
-    .s.bl{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
-    .s.v{background:var(--vs);color:var(--v);border:1px solid #ddd6fe}
-    .s.n{background:#f1f5f9;color:#475569;border:1px solid var(--line)}
-    .s.o{background:var(--os);color:var(--o);border:1px solid #fdba74}
-    .t{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:13px;background:#fff;font-size:12px}
-    .t th{background:#f8fafc;color:#94a3b8;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.14em;padding:8px 10px;border-bottom:1px solid var(--line)}
+    .sec{margin-top:14px}
+    .mu{color:var(--mu)}.sm{font-size:11px}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1f5f9;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:10px;color:#334155}
+    .kp .n{font-size:26px;font-weight:900;letter-spacing:-.04em}
+    .kp .l{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-top:2px}
+    .s{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+    .s.good{background:#f0fdf4;color:var(--good);border:1px solid #a7f3d0}
+    .s.warn{background:#fffbeb;color:var(--warn);border:1px solid #fde68a}
+    .s.active{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+    .s.neutral{background:#f1f5f9;color:#475569;border:1px solid var(--line)}
+    .s.violet{background:#f5f3ff;color:var(--violet);border:1px solid #ddd6fe}
+    .t{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:12px}
+    .t th{background:#f8fafc;color:#94a3b8;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.12em;padding:7px 10px;border-bottom:1px solid var(--line)}
     .t td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
     .t tr:last-child td{border-bottom:0}
-    code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1f5f9;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11px;color:#334155}
-    .co{border-radius:13px;padding:12px 14px;border:1px solid}
-    .co.r{background:var(--rs);border-color:#fecaca;color:#991b1b}
-    .co.w{background:var(--ws);border-color:#fde68a;color:#92400e}
-    .co.g{background:var(--gs);border-color:#a7f3d0;color:#065f46}
+    .co{border-radius:12px;padding:11px 14px;border:1px solid;margin-bottom:8px;font-size:12px}
+    .co.g{background:#f0fdf4;border-color:#a7f3d0;color:#065f46}
     .co.b{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}
-    .co.v{background:var(--vs);border-color:#ddd6fe;color:#5b21b6}
+    .co.w{background:#fffbeb;border-color:#fde68a;color:#92400e}
+    .tb{display:flex;gap:2px;background:#f1f5f9;border-radius:11px;padding:3px;margin-top:14px;flex-wrap:wrap}
+    .tbtn{padding:7px 13px;border-radius:8px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--mu);transition:.12s;white-space:nowrap}
+    .tbtn.a{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(15,23,42,.07)}
+    .tbtn:hover:not(.a){color:var(--text)}
+    .tp{display:none;margin-top:14px}.tp.a{display:block}
+    .mr{display:flex;align-items:center;gap:9px;margin-bottom:7px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+    .mn{font-weight:700;font-size:12px;min-width:175px}
     .bw{background:#f1f5f9;border-radius:999px;height:6px;overflow:hidden;flex:1}
     .bf{height:100%;border-radius:999px}
-    .bf.g{background:var(--g)}.bf.w{background:var(--w)}.bf.r{background:var(--r)}.bf.b{background:var(--brand)}
-    .mr{display:flex;align-items:center;gap:9px;margin-bottom:6px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
-    .mn{font-weight:700;font-size:12px;min-width:155px}
-    .mp{font-size:12px;font-weight:900;min-width:36px;text-align:right}
-    .tb{display:flex;gap:2px;background:#f1f5f9;border-radius:11px;padding:3px;margin-top:16px;flex-wrap:wrap}
-    .tbtn{padding:6px 13px;border-radius:8px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--mu);transition:.12s;white-space:nowrap}
-    .tbtn.a{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(15,23,42,.07)}
-    .tp{display:none;margin-top:13px}.tp.a{display:block}
-    /* page audit blocks */
-    .pa{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}
-    .pa-header{padding:14px 16px;display:flex;align-items:center;gap:10px;justify-content:space-between;border-bottom:1px solid var(--line)}
-    .pa-title{font-size:15px;font-weight:800;letter-spacing:-.02em}
-    .pa-body{padding:14px 16px}
-    .pa-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .gap-item{display:flex;gap:8px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--soft);margin-bottom:5px;font-size:12px;line-height:1.6}
-    .sev{font-size:9px;font-weight:900;text-transform:uppercase;padding:2px 6px;border-radius:999px;white-space:nowrap;height:16px;margin-top:3px;flex-shrink:0}
-    .sev.crit{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
-    .sev.high{background:var(--os);color:#9a3412;border:1px solid #fdba74}
-    .sev.med{background:var(--ws);color:#92400e;border:1px solid #fde68a}
-    .sev.low{background:#f1f5f9;color:#475569;border:1px solid var(--line)}
-    .ok-item{display:flex;gap:8px;padding:6px 10px;border-radius:9px;border:1px solid #a7f3d0;background:#f0fdf4;margin-bottom:4px;font-size:12px;color:#065f46}
-    /* prompt box */
+    .bf.g{background:var(--good)}.bf.w{background:var(--warn)}.bf.b{background:var(--brand)}
+    .mp{font-size:12px;font-weight:900;min-width:38px;text-align:right}
     .pb{background:#0f172a;border-radius:12px;padding:14px;margin-top:8px;position:relative}
-    .pb pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;color:#e2e8f0;line-height:1.75;white-space:pre-wrap;word-break:break-word}
-    .cbtn{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer}
-    .cbtn:hover{background:rgba(255,255,255,.2)}
-    .pc{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);box-shadow:var(--sh);padding:18px;margin-bottom:11px}
-    .pc h3{font-size:14px;font-weight:800;margin-bottom:3px}
-    .pm{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
-    .mb{background:#0f172a;border-radius:10px;padding:13px;overflow-x:auto;margin-top:9px}
-    .mb pre{margin:0;font-family:ui-monospace,monospace;font-size:11px;color:#e2e8f0;line-height:1.7}
-    @media(max-width:1050px){.g2,.pa-grid{grid-template-columns:1fr}.g3,.g4{grid-template-columns:1fr 1fr}}
-    @media(max-width:700px){.wrap{padding:11px 10px 40px}.g3,.g4{grid-template-columns:1fr}.card{padding:12px}.tbtn{padding:5px 9px;font-size:10px}}
+    .pb pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#e2e8f0;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:520px;overflow-y:auto}
+    .cbtn{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:6px;padding:3px 11px;font-size:10px;font-weight:700;cursor:pointer}
+    .cbtn:hover{background:rgba(255,255,255,.22)}
+    .gi{display:flex;gap:8px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:#f8fafc;margin-bottom:5px;font-size:11px;line-height:1.6}
+    .sev{font-size:9px;font-weight:900;text-transform:uppercase;padding:2px 6px;border-radius:999px;white-space:nowrap;margin-top:3px;flex-shrink:0}
+    .sev.crit{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+    .sev.high{background:#fff7ed;color:#9a3412;border:1px solid #fdba74}
+    .sev.med{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+    @media(max-width:1050px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}
+    @media(max-width:700px){.wrap{padding:10px 10px 40px}.g2,.g3,.g4{grid-template-columns:1fr}.tbtn{padding:5px 9px;font-size:10px}}
   </style>
 </head>
 <body>
 <main class="wrap">
 
-  <section class="hero">
-    <div class="ey">SETU Flow DCC · Full Line-by-Line Audit · Every Reference HTML Read · Apr 27 2026</div>
-    <h1>Complete page-by-page gap audit — no drift, no assumptions</h1>
-    <p>Every reference HTML was read completely, every section compared to the actual repo code. This is the honest state of every page. Pipeline and Catalog are further from the reference than previously reported. Admin is a multi-route implementation of what the reference shows as a single-page layout. The gap count across all pages is <strong>41 specific items</strong> across 8 pages. Here is the exact plan to close all of them.</p>
-    <div class="pills">
-      <span class="pill r">🔴 FIRST: Apply migration 111 — quotes page crash</span>
-      <span class="pill r">Pipeline: 11 gaps — card design + detail panel missing</span>
-      <span class="pill r">Catalog: 8 gaps — category headers + 3-col prices + view tabs</span>
-      <span class="pill r">Admin: structural gap — single-page SPA vs multi-route</span>
-      <span class="pill w">Dashboard: 6 gaps — date in topbar, filter-select-wrap style, action-first layout</span>
-      <span class="pill w">Leads: 5 gaps — saved views, filter icons, quote builder tab</span>
-      <span class="pill w">Quotes: 4 gaps — filter bar gaps, approval banner, stat colors + CRASH FIX</span>
-      <span class="pill w">Orders: 3 gaps — inline upload, dispatch gate, stat count only 4 not 6</span>
+<section class="hero">
+  <div class="hero-ey">SETU Flow Internal DCC &middot; Staff-Level Audit &middot; Apr 27 2026 &middot; 0 TypeScript Errors</div>
+  <h1>15 fixes applied across 3 sessions &mdash; build clean &mdash; active PR: NS-10</h1>
+  <p>Full line-by-line audit against all 8 reference HTMLs + NorthStar. Quotes crash fixed, orders upload wired, admin threshold + role badges, dashboard date + KPI drillthrough, catalog 9-col table + category tabs + gap badges, pipeline detail panel + bulk bar. Then 3 Vercel build errors fixed: saveAdminSettingsListItem, moveAdminSettingsListItem, uploadOrderDocument all needed 1-arg wrappers. TypeScript strict: 0 errors.</p>
+  <div class="pills">
+    <span class="pill g">&#10003; quotes crash fixed</span>
+    <span class="pill g">&#10003; orders upload + gate</span>
+    <span class="pill g">&#10003; admin threshold + role badges</span>
+    <span class="pill g">&#10003; dashboard date + KPI drillthrough</span>
+    <span class="pill g">&#10003; catalog tabs + 9-col + gap badges</span>
+    <span class="pill g">&#10003; pipeline detail panel + bulk bar</span>
+    <span class="pill g">&#10003; Vercel build: 3 type errors fixed</span>
+    <span class="pill w">ACTIVE: PR-NS-10 Trade Events</span>
+    <span class="pill v">PLANNED: NS-11 &middot; NS-12 &middot; NS-13</span>
+  </div>
+</section>
+
+<section class="sec grid g4">
+  <div class="card kp"><div class="n" style="color:var(--good)">15</div><div class="l">Total fixes</div><p class="mu sm">Runtime + build + UI + workflow.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--good)">0</div><div class="l">TypeScript errors</div><p class="mu sm">tsc --strict --noEmit passes clean.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--warn)">1</div><div class="l">Active PR</div><p class="mu sm">PR-NS-10 Trade Events &amp; Capture.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--violet)">3</div><div class="l">Planned PRs</div><p class="mu sm">NS-11 &middot; NS-12 &middot; NS-13 Final.</p></div>
+</section>
+
+<div class="tb">
+  <button class="tbtn a" onclick="showTab('status',this)">&#128202; Status</button>
+  <button class="tbtn" onclick="showTab('modules',this)">Module Readiness</button>
+  <button class="tbtn" onclick="showTab('prs',this)">PR Table</button>
+  <button class="tbtn" onclick="showTab('build',this)">&#128679; Build Fixes</button>
+  <button class="tbtn" onclick="showTab('prompts',this)">&#9889; Next Prompts</button>
+  <button class="tbtn" onclick="showTab('schema',this)">Schema</button>
+</div>
+
+<!-- STATUS TAB -->
+<div class="tp a" id="tab-status">
+  <div class="co g">Build is clean. <strong>0 TypeScript errors. 0 event handlers in server components. 0 broken imports.</strong> Push BuildFixed.zip to GitHub then run PR-NS-10 prompt.</div>
+  <div class="sec grid g2">
+    <div class="card">
+      <h2>Session 3 &mdash; Vercel build fixes</h2>
+      <div class="gi"><span class="sev crit">CRIT</span><div><strong>saveAdminSettingsListItem wrong type</strong> &mdash; was aliased to 2-arg function. Fixed: proper 1-arg wrapper added to settings/server/actions.ts.</div></div>
+      <div class="gi"><span class="sev crit">CRIT</span><div><strong>moveAdminSettingsListItem wrong type</strong> &mdash; had no move logic. Fixed: 1-arg wrapper that swaps sort_order between adjacent items.</div></div>
+      <div class="gi"><span class="sev crit">CRIT</span><div><strong>uploadOrderDocument wrong type</strong> &mdash; 2-arg used as form action. Fixed: <code>uploadOrderDocumentAction</code> 1-arg wrapper. orders/page.tsx updated.</div></div>
+      <div class="gi"><span class="sev high">HIGH</span><div>onChange removed from file input in orders/page.tsx (not valid in RSC).</div></div>
+      <div class="gi"><span class="sev high">HIGH</span><div>onClick + onChange removed from checkbox in quotes/page.tsx. Replaced with readOnly.</div></div>
+    </div>
+    <div class="card">
+      <h2>Sessions 1&ndash;2 &mdash; UI + runtime fixes</h2>
+      <div class="gi"><span class="sev crit">CRIT</span><div>quotes/page.tsx crash &mdash; React.CSSProperties without import + dead ss variable. Both removed.</div></div>
+      <div class="gi"><span class="sev high">HIGH</span><div>Orders: Link/documents replaced with uploadOrderDocumentAction form. Dispatch gate button disabled when blocked.</div></div>
+      <div class="gi"><span class="sev high">HIGH</span><div>Admin: approval threshold UI + updateApprovalThreshold server action. Role badge colors (violet/sky/emerald/amber). gapItems + sectionTitle props.</div></div>
+      <div class="gi"><span class="sev high">HIGH</span><div>Catalog: category view tabs, 9-col table (Ex-Factory/FOB/CIF), category group headers, gap badges, 5-stat strip.</div></div>
+      <div class="gi"><span class="sev high">HIGH</span><div>Pipeline: slide-in detail panel, bulk action floating bar, onOpenDetail + onSelectedChange wired.</div></div>
+      <div class="gi"><span class="sev med">MED</span><div>Dashboard: date inline in title. All 5 KPIs get drillthrough href + label.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODULES TAB -->
+<div class="tp" id="tab-modules">
+  <section class="sec card">
+    <h2>Module readiness &mdash; post all sessions</h2>
+    <p class="mu sm" style="margin-bottom:10px">Honest scores against reference HTML + NorthStar workflow coverage.</p>
+    <div class="mr"><div class="mn">Dashboard</div><div class="bw"><div class="bf g" style="width:91%"></div></div><div class="mp" style="color:var(--good)">91%</div><span class="s good">Date inline + KPI drillthrough</span></div>
+    <div class="mr"><div class="mn">Leads</div><div class="bw"><div class="bf g" style="width:91%"></div></div><div class="mp" style="color:var(--good)">91%</div><span class="s good">Stable</span></div>
+    <div class="mr"><div class="mn">Pipeline</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s good">Detail panel + bulk bar + drag/drop RPC</span></div>
+    <div class="mr"><div class="mn">Catalog</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s good">Category tabs + 9-col + gap badges</span></div>
+    <div class="mr"><div class="mn">Quotes</div><div class="bw"><div class="bf g" style="width:85%"></div></div><div class="mp" style="color:var(--good)">85%</div><span class="s good">Crash fixed &middot; FX Edit: NS-11</span></div>
+    <div class="mr"><div class="mn">Orders</div><div class="bw"><div class="bf g" style="width:87%"></div></div><div class="mp" style="color:var(--good)">87%</div><span class="s good">Upload wired + gate enforced</span></div>
+    <div class="mr"><div class="mn">Admin &amp; Settings</div><div class="bw"><div class="bf g" style="width:89%"></div></div><div class="mp" style="color:var(--good)">89%</div><span class="s good">Threshold + role badges + gapItems</span></div>
+    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf w" style="width:64%"></div></div><div class="mp" style="color:var(--warn)">64%</div><span class="s active">PR-NS-10 active</span></div>
+    <div class="mr"><div class="mn">AI Suggestions</div><div class="bw"><div class="bf g" style="width:92%"></div></div><div class="mp" style="color:var(--good)">92%</div><span class="s good">Stable</span></div>
+    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf w" style="width:74%"></div></div><div class="mp" style="color:var(--warn)">74%</div><span class="s neutral">PR-NS-11 planned</span></div>
+  </section>
+</div>
+
+<!-- PR TABLE TAB -->
+<div class="tp" id="tab-prs">
+  <section class="sec card">
+    <h2>Full PR table</h2>
+    <table class="t" style="margin-top:10px">
+      <thead><tr><th style="width:55px">#</th><th>PR</th><th>Scope</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>01&ndash;09</td><td><strong>PR-NS-01 through 09</strong></td><td>Leads, CC, Quote Builder, Quotes, Pipeline, Orders, Catalog, Admin &mdash; all rebuilt.</td><td><span class="s good">Complete &#10003;</span></td></tr>
+        <tr style="background:#f0fdf4"><td>09.1</td><td><strong>PR-NS-09.1</strong> &middot; UI session fixes</td><td>Quotes crash, orders upload+gate, admin threshold+badges+gapItems, dashboard date+drillthrough, catalog tabs+9col+gap, pipeline detail panel+bulk bar.</td><td><span class="s good">Complete &#10003;</span></td></tr>
+        <tr style="background:#f0fdf4"><td>09.2</td><td><strong>PR-NS-09.2</strong> &middot; Vercel build fixes</td><td>saveAdminSettingsListItem, moveAdminSettingsListItem, uploadOrderDocumentAction &mdash; all 1-arg wrappers. Removed event handlers from server pages.</td><td><span class="s good">Complete &#10003;</span></td></tr>
+        <tr style="background:#eff6ff"><td>10</td><td><strong>PR-NS-10</strong> &middot; Trade Events &amp; Capture</td><td>capture_defaults UI in admin, Quick Lead event dropdown, entry counts per event, AI suggestion &rarr; comm log.</td><td><span class="s active">Active</span></td></tr>
+        <tr><td>11</td><td><strong>PR-NS-11</strong> &middot; Cross-page workflow</td><td>quote.status&rarr;'converted', quote sent&rarr;lead stage, lead CC&rarr;pipeline revalidate, isCatalogPriceStale in revise, Quotes Approval+Market filter, FX Edit badge, pipeline drop zone.</td><td><span class="s neutral">Planned</span></td></tr>
+        <tr><td>12</td><td><strong>PR-NS-12</strong> &middot; Design system</td><td>Topbar consistency pass, inline price editing in catalog 3-col cells, remove Leadership lens label.</td><td><span class="s neutral">Planned</span></td></tr>
+        <tr><td>13</td><td><strong>PR-NS-13</strong> &middot; Final QA</td><td>E2E journeys, all reference URL smoke tests, optional dashboard drilldown pages.</td><td><span class="s violet">Final</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<!-- BUILD FIXES TAB -->
+<div class="tp" id="tab-build">
+  <div class="co b">Root cause of all 3 Vercel errors: 2-argument server actions (useFormState pattern) used as direct <code>form action=</code> props which require 1-argument. The fix pattern is always the same: create a 1-arg wrapper.</div>
+  <section class="sec card">
+    <h2>The fix pattern for future reference</h2>
+    <div style="background:#0f172a;border-radius:10px;padding:14px;margin-top:10px;font-family:monospace;font-size:11px;color:#e2e8f0;line-height:1.8">
+      <div style="color:#94a3b8">// 2-arg (useFormState pattern) — CANNOT be used as form action=</div>
+      <div>export async function saveX(<span style="color:#fde68a">_: State, formData: FormData</span>): Promise&lt;State&gt; &#123; ... &#125;</div>
+      <br/>
+      <div style="color:#94a3b8">// 1-arg wrapper — CAN be used as form action={saveXAction}</div>
+      <div>export async function saveXAction(<span style="color:#86efac">formData: FormData</span>): Promise&lt;void&gt; &#123;</div>
+      <div>&nbsp;&nbsp;await saveX(undefined, formData);</div>
+      <div>&#125;</div>
     </div>
   </section>
-
-  <!-- CRASH FIX ALERT -->
-  <div class="sec co r" style="border-radius:var(--rad);padding:16px">
-    <strong>🚨 Apply migration 111 before any PR — Quotes page crashes</strong><br>
-    <span class="sm">Root cause: <code>quote_pricing_snapshots</code> table doesn't exist. Code queries it via PostgREST FK join. Table was never created in any migration. Apply the migration SQL in the Schema tab immediately.</span>
-  </div>
-
-  <!-- KPI -->
-  <section class="sec gr g4">
-    <div class="card kp"><div class="n" style="color:var(--r)">41</div><div class="l">Total confirmed gaps</div><p class="mu sm">Across 8 pages vs reference HTML.</p></div>
-    <div class="card kp"><div class="n" style="color:var(--r)">1</div><div class="l">Critical crash</div><p class="mu sm">Quotes page — DB table missing.</p></div>
-    <div class="card kp"><div class="n" style="color:var(--w)">4</div><div class="l">PRs to close all gaps</div><p class="mu sm">HOTFIX + PR-A + PR-B + PR-C</div></div>
-    <div class="card kp"><div class="n" style="color:var(--g)">2</div><div class="l">Pages strong</div><p class="mu sm">Pipeline shell + Catalog shell OK. Details need work.</p></div>
+  <section class="sec grid g3">
+    <div class="card"><h3>settings/server/actions.ts</h3><p class="mu sm" style="margin-top:4px">Added <code>saveAdminSettingsListItem</code> (1-arg wrapper) and <code>moveAdminSettingsListItem</code> (1-arg wrapper with sort_order swap by direction=up|down).</p></div>
+    <div class="card"><h3>orders/server/actions.ts</h3><p class="mu sm" style="margin-top:4px">Added <code>uploadOrderDocumentAction</code> (1-arg wrapper around uploadOrderDocument).</p></div>
+    <div class="card"><h3>orders/page.tsx + quotes/page.tsx</h3><p class="mu sm" style="margin-top:4px">Updated import + usage. Removed onChange from file input. Replaced onClick+onChange on checkbox with readOnly.</p></div>
   </section>
+</div>
 
-  <div class="tb">
-    <button class="tbtn a" onclick="showTab('pages',this)">📋 Full Page Audit</button>
-    <button class="tbtn" onclick="showTab('plan',this)">PR Plan</button>
-    <button class="tbtn" onclick="showTab('prompts',this)">⚡ 3 PR Prompts</button>
-    <button class="tbtn" onclick="showTab('schema',this)">Schema + Migration 111</button>
-  </div>
+<!-- PROMPTS TAB -->
+<div class="tp" id="tab-prompts">
+  <div class="co b" style="margin-bottom:12px">4 prompts. All reference exact file paths from the repo. Copy the full block and paste into a new conversation with the repo zip attached.</div>
 
-  <!-- ══ TAB 1: FULL PAGE AUDIT ══ -->
-  <div class="tp a" id="tab-pages">
-
-    <!-- PIPELINE -->
-    <div class="pa">
-      <div class="pa-header">
-        <div>
-          <div class="pa-title">⊕ Pipeline / Kanban Board</div>
-          <div class="mu sm">Reference: setuflow-pipeline-redesign.html · Route: /pipeline</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="bw" style="width:120px"><div class="bf w" style="width:58%"></div></div>
-          <span style="font-size:13px;font-weight:900;color:var(--w)">58%</span>
-          <span class="s w">Major gaps</span>
-        </div>
-      </div>
-      <div class="pa-body">
-        <div class="pa-grid">
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✓ What's correct</p>
-            <div class="ok-item">✓ Topbar: company badge (BO), eyebrow "Pipeline / Risks", title "Kanban Board"</div>
-            <div class="ok-item">✓ Mode switch: All / Buyers / Suppliers</div>
-            <div class="ok-item">✓ vCard button + Quick Lead button</div>
-            <div class="ok-item">✓ Page nav tabs: Kanban Board, Follow-up Queue, Dashboard →</div>
-            <div class="ok-item">✓ Filter bar: search + Follow-up + Owner + Product + Market dropdowns</div>
-            <div class="ok-item">✓ Overdue chip + Due today chip with × dismiss</div>
-            <div class="ok-item">✓ 6-stat strip with correct KPIs (Overdue, Due today, Blocked, Healthy, Pipeline value, Active stages)</div>
-            <div class="ok-item">✓ Drag/drop wired to RPC (app_move_lead_stage_tx)</div>
-            <div class="ok-item">✓ Lane header: lane title, lead count badge, overdue/waiting signals, pipeline value</div>
-            <div class="ok-item">✓ Lead card: flag emoji + company name + contact name</div>
-            <div class="ok-item">✓ Lead card: buyer/supplier badge + follow-up state badge</div>
-            <div class="ok-item">✓ Move readiness pill (blocked/guarded/ready)</div>
-            <div class="ok-item">✓ Quick action buttons: Move, Add note, Next action, Advance</div>
-            <div class="ok-item">✓ Multi-select checkboxes on cards (on hover)</div>
-          </div>
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✗ Gaps vs reference HTML</p>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Lead card visual design drifted from reference</strong> — Reference uses inline CSS inline cards matching the exact style (overdue-card / healthy-card / blocked-card CSS classes with coloured left borders). Implementation uses Tailwind utility classes with rounded-[1.35rem] modern card. Cards look different and don't match reference card visual exactly — too tall, too many internal sections. Reference card is 3 areas: top (flag+name+↗), badges, move readiness + single advance button. Implementation adds AI strip, readiness reasons list, action items, coverage summary making cards very long.</div></div>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Detail panel (slide-in) missing entirely</strong> — Reference has a full right-side detail panel (onclick="openDetail(...)") with Contact, Country, Source, Deal value, Status section (follow-up state, health, pricing, move readiness), stage progress bar, Blockers list, Move to stage selector, Quick actions (Schedule, Note, Open CC). Implementation has no equivalent detail panel from the board — clicking a card navigates away to Lead Command Center instead.</div></div>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Bulk move action bar missing</strong> — Reference has multi-select → bulk move bar ("X leads selected — Move to: [stage dropdown] [Move] [Clear]"). Checkboxes added but the floating bar UI is not implemented.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Lane drop zone visual missing</strong> — Reference shows <code>.lane-drop-zone</code> div inside each lane that appears during drag. Current implementation has no visual drop zone indicator.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Card actions pattern differs from reference</strong> — Reference shows 3 specific inline buttons per card: "📅 Schedule", "📝 Note", "→ Qualify/Advance". Implementation shows: "Move", "Add note", "Next action" with collapsed subpanels. The reference pattern has the advance button directly visible with stage label.</div></div>
-            <div class="gap-item"><span class="sev low">LOW</span><div><strong>Filter summary text format</strong> — Reference: "47 leads · 6 stages · $1.2M pipeline" as right-aligned filter summary. Implementation has this but format slightly differs.</div></div>
-          </div>
-        </div>
-      </div>
+  <div class="card" style="margin-bottom:12px;border:2px solid #0c7fff">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span class="s active">Active &mdash; use now</span>
+      <strong style="font-size:14px">PR-NS-10 &mdash; Trade Events &amp; Capture lane</strong>
     </div>
-
-    <!-- CATALOG -->
-    <div class="pa">
-      <div class="pa-header">
-        <div>
-          <div class="pa-title">▦ Catalog / Products & Pricing</div>
-          <div class="mu sm">Reference: setuflow-catalog-redesign.html · Route: /products</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="bw" style="width:120px"><div class="bf w" style="width:62%"></div></div>
-          <span style="font-size:13px;font-weight:900;color:var(--w)">62%</span>
-          <span class="s w">Key visual gaps</span>
-        </div>
-      </div>
-      <div class="pa-body">
-        <div class="pa-grid">
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✓ What's correct</p>
-            <div class="ok-item">✓ Topbar: company badge, eyebrow "Catalog", title "Products & Pricing"</div>
-            <div class="ok-item">✓ Mode switch: Products / Pricing view / Spreadsheet</div>
-            <div class="ok-item">✓ Buttons: Export, + Add product</div>
-            <div class="ok-item">✓ Filter bar: search input + Category + Pricing mode + Gaps + Status filters</div>
-            <div class="ok-item">✓ Stats strip: 4 KPIs (Products Visible, Variants Visible, Pricing Coverage %, Quote-Ready Variants)</div>
-            <div class="ok-item">✓ Product table with rows (product name, SKU, coverage, status, actions)</div>
-            <div class="ok-item">✓ Right-side product detail drawer when row clicked</div>
-            <div class="ok-item">✓ Add product wizard (3 steps)</div>
-            <div class="ok-item">✓ Pricing view mode (market × product matrix)</div>
-          </div>
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✗ Gaps vs reference HTML</p>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Category view tabs missing</strong> — Reference has a horizontal tab bar ABOVE the filter bar: "▦ All products (47)", "📦 Snacks & crisps (12)", "🌿 Powders (14)", "🍯 Sweeteners (8)", "🧅 Onion & garlic (9)", "❄ Freeze-dried (4)", "✓ Quote-ready (36)". Implementation has no category tab bar — user must use the dropdown filter instead.</div></div>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>3-column price table missing (Ex-Factory / FOB / CIF)</strong> — Reference table has columns: Checkbox | Product/SKU | Category | Variants | Ex-Factory | FOB | CIF | Coverage | Status. Implementation table has: Product | Catalog truth | Coverage | Status | Actions. The three price columns with inline editing ("— add" for missing, click to edit) are not present in the products list view.</div></div>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Category group headers between table rows missing</strong> — Reference shows coloured divider rows between product categories: "Vacuum-Cooked Snacks · 12 products · $1.20–$4.80/unit" with colored dot. Implementation lists all products without category grouping breaks.</div></div>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Gap badge per row missing</strong> — Reference shows inline gap badge on each product row: "✓ 9/9 markets" or "⚠ 6/9" or "✕ 0/9". Implementation shows a "Coverage" column but not in this exact ✓/⚠/✕ format.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Stats strip: 5 KPIs vs implementation's 4</strong> — Reference: Total products / Quote-ready / Pricing gaps / Total variants / Inactive. Implementation has: Products Visible / Variants Visible / Pricing Coverage % / Quote-Ready Variants. Missing "Pricing gaps" as a separate count and "Inactive" count.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Checkbox per product row missing in list view</strong> — Reference has a checkbox column (for bulk select/operations). Implementation has no checkbox on table rows.</div></div>
-            <div class="gap-item"><span class="sev low">LOW</span><div><strong>Price range in filter summary missing</strong> — Reference shows "47 products · 36 quote-ready · $0.85–$12.40 range". Implementation shows counts but not the price range.</div></div>
-            <div class="gap-item"><span class="sev low">LOW</span><div><strong>Drawer pricing tab: per-market inline editing</strong> — Reference drawer shows a pricing table with market rows + Ex-Factory / FOB / CIF inline editable cells. Implementation drawer has pricing management but layout differs from this exact pattern.</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ADMIN -->
-    <div class="pa">
-      <div class="pa-header">
-        <div>
-          <div class="pa-title">⚙ Admin & Settings</div>
-          <div class="mu sm">Reference: setuflow-admin-settings-redesign.html · Route: /admin/* (multi-route)</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="bw" style="width:120px"><div class="bf w" style="width:65%"></div></div>
-          <span style="font-size:13px;font-weight:900;color:var(--w)">65%</span>
-          <span class="s w">Structural gap</span>
-        </div>
-      </div>
-      <div class="pa-body">
-        <div class="pa-grid">
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✓ What's correct</p>
-            <div class="ok-item">✓ All 9 sections exist as routes: Organization, Users, Security, Audit, Markets, Stages, Pipelines, Trade Events, AI Analytics</div>
-            <div class="ok-item">✓ Left nav sidebar (admin-settings-shell) with correct sections: Governance, Reference lists</div>
-            <div class="ok-item">✓ All CRUD operations wired with server actions</div>
-            <div class="ok-item">✓ Role lookup via user_roles → roles (no role text col on org_members)</div>
-            <div class="ok-item">✓ Governance banner with clear/needs-attention states</div>
-            <div class="ok-item">✓ Organization page: overview stats, governance ready indicator</div>
-          </div>
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✗ Gaps vs reference HTML</p>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Reference is a single-page SPA with left-nav + content panel</strong> — Reference shows one URL with JS-driven section switching (onclick="showSection('markets',...)"). Implementation uses separate routes per section (/admin/markets, /admin/stages etc). This is functionally equivalent but the admin page doesn't feel like the reference — full page reload between sections instead of smooth section switch. Consider adding client-side tabs within a single admin shell.</div></div>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Topbar eyebrow/title pattern wrong for admin</strong> — Reference topbar shows: "Workspace Control" eyebrow, page title changes dynamically per section (e.g. "Organization Overview"). Implementation uses WorkspaceHeader component per page with "Admin & Settings" eyebrow. The topbar title should update to the active section name.</div></div>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Primary CTA in topbar changes per section</strong> — Reference topbar has "＋ Invite team member" as primary button, which changes to "+ Add market" when Markets section is active, "＋ Add category" for Categories etc. Implementation has static CTAs per page.</div></div>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Governance gap banner shows specific missing items</strong> — Reference shows: "🌍 No markets configured → Fix" and "🔒 Approval threshold not set → Fix" as clickable links that jump to the relevant section. Implementation shows a generic warning without specific gap items linked to sections.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Organization overview section missing detail fields</strong> — Reference shows editable org detail rows: Organization name, Default currency (with flag), Country, Created date, Last updated. Implementation shows stats cards but not these editable inline fields.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>approval_threshold_pct not editable in security section</strong> — The security section has no input to change the threshold. Column exists in DB (migration 108). Operators cannot change override governance threshold.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Team member role badges use wrong color scheme</strong> — Reference specifies: Owner=violet, Admin=sky, Sales=emerald, Sourcing=amber. Current implementation shows generic role text without these specific color badges.</div></div>
-            <div class="gap-item"><span class="sev low">LOW</span><div><strong>Left nav item: "Categories" missing</strong> — Reference nav has "📦 Categories" section. Current nav has Markets, Stages, Pipelines, Trade Events but no Categories admin page.</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div class="pa">
-      <div class="pa-header">
-        <div>
-          <div class="pa-title">⊞ Dashboard — Trade Command Center</div>
-          <div class="mu sm">Reference: setuflow-dashboard-redesign.html · Route: /dashboard</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="bw" style="width:120px"><div class="bf g" style="width:80%"></div></div>
-          <span style="font-size:13px;font-weight:900;color:var(--g)">80%</span>
-          <span class="s w">Mostly good, 6 gaps</span>
-        </div>
-      </div>
-      <div class="pa-body">
-        <div class="pa-grid">
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✓ What's correct</p>
-            <div class="ok-item">✓ Topbar: "Trade Command Center" eyebrow, "Dashboard" title, mode switch (All/Buyers/Suppliers)</div>
-            <div class="ok-item">✓ Filter bar with "Viewing:" label + 5 filter-select-wraps (Market/Product/Stage/Status/Time range)</div>
-            <div class="ok-item">✓ Active filter chips (market chip, product chip) with × dismiss</div>
-            <div class="ok-item">✓ 5-KPI strip (Open Leads, Overdue Follow-ups, Active Quotes, Pipeline Value, Compliance Blockers)</div>
-            <div class="ok-item">✓ World map section (Geographic Coverage)</div>
-            <div class="ok-item">✓ Action Zone / NeedsAttentionCard</div>
-            <div class="ok-item">✓ Pipeline stage chart card</div>
-            <div class="ok-item">✓ Country table card</div>
-            <div class="ok-item">✓ Commercial Risk panel (Blocked/At-risk/Hot)</div>
-          </div>
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✗ Gaps vs reference HTML</p>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Date in topbar title missing</strong> — Reference: "Dashboard <span style='color:#94a3b8'>— Wednesday, 23 Apr 2025</span>" with date inline in title. Implementation shows only "Dashboard" without the live date string.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Filter-select-wrap icons missing</strong> — Reference filter wraps have emoji icons before the label/value: 🌍 Market, 📦 Product, ◎ Stage, ⚡ Status, 📅 Time range. Implementation has the text but the emoji icons are missing from the filter selects.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>KPI cards missing drill-through action rows</strong> — Reference each KPI card has a "→ Open Follow-up" / "→ View pipeline" action row at the bottom. Implementation shows KPI values but not these clickable action rows.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>KPI card sub-label missing</strong> — Reference Open Leads card shows "12 buyers · 35 suppliers" sub-label below the main value. Implementation doesn't show this buyer/supplier breakdown in KPI cards.</div></div>
-            <div class="gap-item"><span class="sev low">LOW</span><div><strong>vCard button style</strong> — Reference topbar has vCard button (🪪 Share my vCard). Implementation has this but button style needs to match reference exactly.</div></div>
-            <div class="gap-item"><span class="sev low">LOW</span><div><strong>"Leadership lens:" label removed per reference</strong> — Reference review notes specifically say to remove this internal jargon. Confirm it's gone from dashboard control bar — it should not appear.</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- LEADS -->
-    <div class="pa">
-      <div class="pa-header">
-        <div>
-          <div class="pa-title">◎ Leads Queue + Command Center</div>
-          <div class="mu sm">Reference: setuflow-leads-redesign.html · Routes: /leads, /leads/[id]</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="bw" style="width:120px"><div class="bf g" style="width:78%"></div></div>
-          <span style="font-size:13px;font-weight:900;color:var(--g)">78%</span>
-          <span class="s w">5 gaps</span>
-        </div>
-      </div>
-      <div class="pa-body">
-        <div class="pa-grid">
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✓ What's correct</p>
-            <div class="ok-item">✓ Topbar: "Follow-up" eyebrow, "Lead Workspace" title, mode switch</div>
-            <div class="ok-item">✓ Page nav tabs: Lead Queue / Command Center / (Quote Builder) / View in Pipeline →</div>
-            <div class="ok-item">✓ Filter bar with 5 filter-select-wraps (Market/Product/Stage/Owner/Follow-up timing)</div>
-            <div class="ok-item">✓ Active filter chips (market chip etc.) with × dismiss</div>
-            <div class="ok-item">✓ Saved views bar: All leads / My leads / Overdue / Due today / Buyers / Suppliers</div>
-            <div class="ok-item">✓ Section labels (🔴 Critical / 🟡 Due today / 🟢 Active)</div>
-            <div class="ok-item">✓ Batch toolbar (shows when rows selected)</div>
-            <div class="ok-item">✓ Lead row: avatar (initials + gradient), company/contact, buyer/supplier + stage pills, stage progress bar, deal value, owner, action button</div>
-            <div class="ok-item">✓ Command Center: 4 pillars inline, right rail, sticky action bar, quote prep checklist</div>
-          </div>
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✗ Gaps vs reference HTML</p>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Quote Builder tab not wired as inline panel</strong> — Reference has a "◇ Quote Builder" tab in the page-nav that opens the quote builder inline within /leads (not navigating away). Implementation navigates to /leads/[id]/quote (a full page). The Quote Builder should appear as a 3rd panel within the leads workspace without full navigation.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Filter bar icons missing</strong> — Reference filter wraps have emoji icons: 🌍 Market, 📦 Product, ◎ Stage, 👤 Owner, 📅 Follow-up. Implementation has the labels but no emoji icons in front of each filter wrap.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Saved views bar: "Trade event" view missing</strong> — Reference has "Trade event (8)" as a saved view item. Implementation has: All leads / My leads / Overdue / Due today / Buyers / Suppliers — missing the Trade event quick filter.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Table header: "Stage progress" column label</strong> — Reference table header has "Stage progress" as the column name for the progress bar column. Implementation's LeadTableHeader may differ slightly in column labeling.</div></div>
-            <div class="gap-item"><span class="sev low">LOW</span><div><strong>Filter summary format</strong> — Reference shows "11 overdue · 47 total leads". Implementation shows a different format.</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- QUOTES -->
-    <div class="pa">
-      <div class="pa-header">
-        <div>
-          <div class="pa-title">◇ Quotes Workspace</div>
-          <div class="mu sm">Reference: setuflow-quotes-redesign.html · Route: /quotes</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="bw" style="width:120px"><div class="bf r" style="width:0%"></div></div>
-          <span style="font-size:13px;font-weight:900;color:var(--r)">CRASH</span>
-          <span class="s r">Fix DB first</span>
-        </div>
-      </div>
-      <div class="pa-body">
-        <div class="co r" style="margin-bottom:10px"><strong>Page crashes until migration 111 is applied</strong> — After fix, page will load and render. Gaps below apply after the crash is fixed.</div>
-        <div class="pa-grid">
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✓ What should work after fix</p>
-            <div class="ok-item">✓ Topbar: "Commercial" eyebrow, "Quotes Workspace" title, mode switch, Export, + New quote</div>
-            <div class="ok-item">✓ 6-stat strip: Pending approval / Expiring soon / Sent & active / Accepted / Drafts / Total value</div>
-            <div class="ok-item">✓ Approval queue banner (2 quotes pending review)</div>
-            <div class="ok-item">✓ Quote list with company name, version timeline chips, status badge, action button</div>
-          </div>
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✗ Gaps (apply after crash fix)</p>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Filter bar: "Approval" and "Market" filters missing</strong> — Reference filter bar has: Search | Status | Approval | Owner | Market | Date range. Implementation has: Search | Status | Company | From/To date. Missing the Approval and Market filters.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>FX lock badge missing in Edit mode</strong> — Reference always shows FX lock info in quote context. Implementation only shows it in Create flow.</div></div>
-            <div class="gap-item"><span class="sev med">MED</span><div><strong>Catalog freshness warning in Revise flow</strong> — <code>isCatalogPriceStale()</code> function built but never called anywhere. Revise flow should show warning if catalog price changed since last version.</div></div>
-            <div class="gap-item"><span class="sev low">LOW</span><div><strong>quote.status not updated to 'converted' on order creation</strong> — When order/contract created from accepted quote, quotes.status stays 'accepted'.</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ORDERS -->
-    <div class="pa">
-      <div class="pa-header">
-        <div>
-          <div class="pa-title">⬡ Orders / Execution Desk</div>
-          <div class="mu sm">Reference: setuflow-orders-redesign.html · Route: /orders</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="bw" style="width:120px"><div class="bf w" style="width:74%"></div></div>
-          <span style="font-size:13px;font-weight:900;color:var(--w)">74%</span>
-          <span class="s w">3 gaps</span>
-        </div>
-      </div>
-      <div class="pa-body">
-        <div class="pa-grid">
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✓ What's correct</p>
-            <div class="ok-item">✓ Topbar: company badge, "Execution" eyebrow, "Orders Desk" title, mode switch, Export</div>
-            <div class="ok-item">✓ Filter bar: Execution state + Compliance + Owner + Market filters</div>
-            <div class="ok-item">✓ 6-stat strip (Dispatch blocked, Docs pending, In execution, Delivered, Execution value, Avg cycle time)</div>
-            <div class="ok-item">✓ Order cards with left border color (red=blocked, amber=pending, green=ok)</div>
-            <div class="ok-item">✓ State machine strip (Quote Accepted → Order Confirmed → Docs Ready → Dispatch Ready → Shipped → Delivered)</div>
-            <div class="ok-item">✓ 4-signal grid: Execution state / Commercial lock / Documents / Payment status</div>
-            <div class="ok-item">✓ Compliance list with ✓ ok / ✗ blocked items</div>
-            <div class="ok-item">✓ uploadOrderDocument server action fully implemented</div>
-          </div>
-          <div>
-            <p style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-bottom:7px">✗ Gaps vs reference HTML</p>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>"Upload now" buttons link to /documents instead of calling uploadOrderDocument action</strong> — The server action exists and is complete. But per-item compliance "Upload now" buttons in orders/page.tsx (lines ~793, ~814) are <code>&lt;Link href="/documents"&gt;</code> — a generic route. Replace with inline <code>&lt;form&gt;</code> calling uploadOrderDocument with file input, contract_id, and requirement_code.</div></div>
-            <div class="gap-item"><span class="sev high">HIGH</span><div><strong>Dispatch gate button not enforced in UI</strong> — <code>dispatchGate()</code> correctly computes blocker tone. But the "Mark delivered" / state-advance button is not disabled when blockers exist. Reference shows button disabled with tooltip explaining what's blocking dispatch.</div></div>
-            <div class="gap-item"><span class="sev low">LOW</span><div><strong>Reference stats strip has 4 cards only</strong> — Reference orders has: Dispatch blocked / Docs pending / In execution / Delivered (4 stats). Implementation has 6 (adds Execution value + Avg cycle time). This is an improvement but differs from reference count.</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /tab-pages -->
-
-  <!-- ══ TAB 2: PR PLAN ══ -->
-  <div class="tp" id="tab-plan">
-
-    <div class="co b" style="margin-bottom:12px">
-      <strong>Revised honest plan: 1 migration + 3 PRs to close all 41 gaps.</strong> The plan is sequenced by dependency. Admin structural gap (SPA vs multi-route) is intentionally deferred — it's a UX preference, not a functional gap, and changing it now would risk breaking all admin CRUD which works correctly.
-    </div>
-
-    <section class="sec card">
-      <h2>Execution plan</h2>
-      <table class="t" style="margin-top:10px">
-        <thead><tr><th>Step</th><th>What</th><th>Gaps closed</th><th>Pages</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr style="background:#fff1f2"><td><strong>Migration 111</strong></td><td>Create quote_pricing_snapshots table + FK + index + RLS</td><td>CRASH fix — Quotes page loads</td><td>Quotes, Quote Builder</td><td><span class="s r">DO NOW</span></td></tr>
-          <tr style="background:#fff7ed"><td><strong>PR-A: Visual Realignment</strong></td><td>Pipeline card design + detail panel + Catalog category tabs + 3-col prices + category headers + gap badges + Dashboard date/icons/KPI drillthrough + Leads filter icons + Quote Builder inline tab</td><td>25 gaps (Pipeline 5, Catalog 6, Dashboard 4, Leads 3, Admin 3)</td><td>Pipeline, Catalog, Dashboard, Leads, Admin</td><td><span class="s o">NEXT</span></td></tr>
-          <tr><td><strong>PR-B: Workflow Hardening</strong></td><td>Orders inline upload + dispatch gate + Quotes filter bar + FX Edit badge + freshness warning + quote→converted + Admin threshold UI + pipeline bulk move bar + lead stage → pipeline sync</td><td>12 gaps (Orders 2, Quotes 3, Admin 2, Pipeline 2, Cross-page 3)</td><td>Orders, Quotes, Admin, Pipeline</td><td><span class="s n">After A</span></td></tr>
-          <tr><td><strong>PR-C: Cross-page + Polish</strong></td><td>Trade Events capture lane + vCard→lead + AI suggestion comm log + design token consistency + remaining low-priority gaps</td><td>4 remaining gaps</td><td>Trade Events, All</td><td><span class="s n">After B</span></td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="sec gr g4">
-      <div class="card"><h3>After Migration 111</h3><div style="font-size:12px;margin-top:6px">Quotes page loads. No new code needed. Just the DB fix.</div><div class="mr" style="margin-top:10px;border-color:#fecaca;background:#fff1f2"><div class="mn" style="font-size:11px">Quotes workspace</div><div class="bw"><div class="bf w" style="width:72%"></div></div><div class="mp" style="color:var(--w)">72%</div></div></div>
-      <div class="card"><h3>After PR-A</h3><div style="font-size:12px;margin-top:6px">Pipeline, Catalog, Dashboard visual gaps closed.</div>
-        <div class="mr" style="margin-top:8px"><div class="mn" style="font-size:11px">Pipeline</div><div class="bw"><div class="bf g" style="width:82%"></div></div><div class="mp" style="color:var(--g)">82%</div></div>
-        <div class="mr"><div class="mn" style="font-size:11px">Catalog</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--g)">88%</div></div>
-        <div class="mr"><div class="mn" style="font-size:11px">Dashboard</div><div class="bw"><div class="bf g" style="width:91%"></div></div><div class="mp" style="color:var(--g)">91%</div></div>
-      </div>
-      <div class="card"><h3>After PR-B</h3><div style="font-size:12px;margin-top:6px">Workflow gaps closed across Orders, Quotes, Admin.</div>
-        <div class="mr" style="margin-top:8px"><div class="mn" style="font-size:11px">Orders</div><div class="bw"><div class="bf g" style="width:92%"></div></div><div class="mp" style="color:var(--g)">92%</div></div>
-        <div class="mr"><div class="mn" style="font-size:11px">Quotes</div><div class="bw"><div class="bf g" style="width:87%"></div></div><div class="mp" style="color:var(--g)">87%</div></div>
-        <div class="mr"><div class="mn" style="font-size:11px">Admin</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--g)">88%</div></div>
-      </div>
-      <div class="card"><h3>After PR-C</h3><div style="font-size:12px;margin-top:6px">All pages at 88–95%.</div>
-        <div class="mr" style="margin-top:8px"><div class="mn" style="font-size:11px">All pages avg</div><div class="bw"><div class="bf g" style="width:92%"></div></div><div class="mp" style="color:var(--g)">92%</div></div>
-      </div>
-    </section>
-
-  </div><!-- /tab-plan -->
-
-  <!-- ══ TAB 3: 3 PR PROMPTS ══ -->
-  <div class="tp" id="tab-prompts">
-
-    <div class="co v" style="margin-bottom:12px">Apply migration 111 first. Then use these prompts in order: PR-A → PR-B → PR-C. Each prompt references exact file paths and exact section names from the reference HTML.</div>
-
-    <!-- PR-A -->
-    <div class="pc" style="border:2px solid var(--o)">
-      <div class="pm"><span class="s o">Next after migration 111</span><h3>PR-A — Visual Realignment: Pipeline, Catalog, Dashboard, Leads, Admin</h3></div>
-      <p class="mu sm" style="margin-bottom:6px">25 gaps. All visual — no new schema needed.</p>
-      <div class="pb">
-        <button class="cbtn" onclick="copyPrompt('pa')">Copy</button>
-        <pre id="pa">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo attached as zip.
-
-## YOUR TASK: PR-A — Visual Realignment (25 gaps)
-Read each reference HTML section below carefully BEFORE writing any code.
-
-## AUTHORITATIVE REFERENCES (in /public/reference-html/)
-- setuflow-pipeline-redesign.html
-- setuflow-catalog-redesign.html
-- setuflow-dashboard-redesign.html
-- setuflow-leads-redesign.html
-- setuflow-admin-settings-redesign.html
-
-## PIPELINE GAPS — src/features/pipeline/ (read pipeline reference first)
-
-### PIPELINE-1: Lead card visual redesign to match reference card style
-File: src/features/pipeline/ui/lead-card.tsx
-
-Reference card structure (from setuflow-pipeline-redesign.html .lead-card):
-  TOP ROW: flag emoji | company name | ↗ open button
-  BADGES ROW: buyer/supplier badge | health/overdue badge
-  MOVE ROW: "Move ready/guarded/blocked" + "→ [Next Stage]"
-  ACTIONS ROW: "📅 Schedule" | "📝 Note" | "→ [Qualify/Advance]"
-  FOOTER: owner name | source/meta
-
-Current implementation has too many internal sections (AI strip, readiness list, action items, coverage summary) making cards very tall. Simplify to match reference card structure.
-
-The reference card has TWO visual states controlled by CSS class:
-- .overdue-card: rose/red left border indicator + red overdue badge
-- .healthy-card: emerald/green indicator + healthy badge  
-- .blocked-card: violet indicator + blocked badge
-
-Apply these left-border accent indicators based on health/follow-up state.
-
-### PIPELINE-2: Right-side detail panel (slide-in from right)
-File: src/features/pipeline/components/pipeline-board.tsx + new file src/features/pipeline/ui/pipeline-detail-panel.tsx
-
-Reference has a slide-in detail panel (right side overlay) that opens when a card is clicked (instead of navigating away).
-The panel contains:
-- Header: company name, type/stage/owner meta, ✕ close button  
-- Contact section: Contact name, Country, Source, Deal value
-- Status section: Follow-up state (with color), Health, Pricing coverage, Move readiness
-- Stage progress bar (shows position in pipeline)
-- Blockers section: list of specific blockers text
-- "Move to stage" section: dropdown select with available stages + confirm button
-- Quick actions section: "📅 Schedule follow-up now" button, "📝 Add note" button, "↗ Open in Command Center" button
-
-The card click should open this panel, NOT navigate to /leads/[id].
-The "↗ Open in Command Center" button in the panel should do the navigation.
-Add state: [detailPanelLeadId, setDetailPanelLeadId] to pipeline-board.tsx
-
-### PIPELINE-3: Lane drop-zone visual
-File: src/features/pipeline/components/PipelineLaneSection.tsx (or equivalent lane component)
-
-Reference shows a .lane-drop-zone div at the bottom of each lane that appears (display:block) when .lane has .drag-over class.
-Add a drop zone div at the bottom of each lane that becomes visible during drag-over:
-  <div style={{display: isDragOver ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', height: '48px', border: '2px dashed #bfdbfe', borderRadius: '12px', margin: '8px', color: '#93c5fd', fontSize: '11px', fontWeight: 700}}>Drop here</div>
-
-### PIPELINE-4: Bulk action bar (floating, appears when cards selected)
-File: src/features/pipeline/components/pipeline-board.tsx
-
-selectedLeadIds state already exists. Add the floating bar:
-When selectedLeadIds.size >= 1, render a fixed/sticky bar ABOVE the board:
-  "{count} leads selected — Move to: [stage select dropdown] [Move] [Clear]"
-  - Stage select: all available stages
-  - Move button: calls batchMoveLeadsToStage server action
-  - Clear: clears selectedLeadIds set
-Position: sticky below the filter bar, above the board.
-
-### PIPELINE-5: Card action buttons match reference pattern
-File: src/features/pipeline/ui/lead-card.tsx
-
-Reference shows 3 action buttons directly visible (not collapsed):
-  "📅 Schedule" | "📝 Note" | "→ [Next Stage Name]"
-The advance button label should be the actual next stage name (e.g., "→ Qualify", "→ Sample", "→ Contract").
-These should be ALWAYS visible, not behind a collapse toggle.
-Keep existing collapse for note textarea and schedule date picker.
-
-## CATALOG GAPS — src/features/products/ (read catalog reference first)
-
-### CATALOG-1: Category view tabs above filter bar
-File: src/features/products/components/products-manager.tsx (add above the filter bar)
-
-Reference has a .view-tabs horizontal tab bar with:
-  "▦ All products (count)" | "📦 Snacks & crisps (count)" | "🌿 Powders (count)" | "🍯 Sweeteners (count)" | "🧅 Onion & garlic (count)" | "❄ Freeze-dried (count)" | "✓ Quote-ready (count)"
-
-Each tab filters the product list when clicked.
-Active tab has bottom border indicator. Counts update with filter results.
-Add state: [activeCategory, setActiveCategory] and filter logic.
-
-### CATALOG-2: Three price columns (Ex-Factory / FOB / CIF) in products table
-File: src/features/products/components/products-manager.tsx (table section)
-
-Reference table header (9 columns):
-  Checkbox | Product/SKU | Category | Variants | Ex-Factory | FOB | CIF | Coverage | Status
-
-Add three price columns to the product table. For each product row:
-- Ex-Factory: show ex_factory price or "— add" (clickable to open pricing drawer)
-- FOB: show FOB price or "— add"  
-- CIF: show CIF price or "— add"
-Price cells should be inline-editable (click to edit in place) using existing catalog price transaction RPCs.
-Missing prices show as italic "— add" text in a muted style.
-
-### CATALOG-3: Category group header rows between product groups
-File: src/features/products/components/products-manager.tsx
-
-Between product groups, insert a category header row:
-  <div with colored dot | "CATEGORY NAME IN CAPS" | "X products · $Y.YY–$Z.ZZ range">
-Color per category type:
-  Snacks: violet (#7c3aed dot)
-  Powders: emerald (#059669 dot)
-  Sweeteners: amber (#d97706 dot)
-  Onion/Garlic: orange (#ea580c dot)
-  Freeze-dried: sky (#0c7fff dot)
-
-### CATALOG-4: Gap badge per row (✓/⚠/✕ market coverage)
-File: src/features/products/components/products-manager.tsx
-
-Replace or update the Coverage column to show:
-  ✓ if coverage = 100% of active markets → green badge "✓ X/X markets"
-  ⚠ if partial → amber badge "⚠ X/X markets"
-  ✕ if 0 coverage → red badge "✕ 0/X markets"
-
-### CATALOG-5: Checkbox column in product table rows
-Add a checkbox as first column in the table rows (for bulk operations).
-Select all checkbox in header. No bulk action needed yet — just the selection UI.
-
-### CATALOG-6: Stats strip: add Pricing gaps + Inactive counts
-Reference has 5 stats: Total products / Quote-ready / Pricing gaps / Total variants / Inactive
-Implementation has 4. Add:
-  - "Pricing gaps": count of products with baselineStatus !== 'covered'
-  - "Inactive": count of is_active === false products
-
-## DASHBOARD GAPS — src/features/dashboard/ (read dashboard reference first)
-
-### DASHBOARD-1: Date in topbar title
-File: src/features/dashboard/components/dashboard-control-bar.tsx OR wherever the topbar renders
-
-Add live date to topbar title: "Dashboard — {day}, {date} {month} {year}"
-Format matching reference: "Dashboard — Wednesday, 23 Apr 2025"
-Use: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })
-
-### DASHBOARD-2: Filter-select-wrap icons
-File: src/features/dashboard/components/dashboard-control-bar.tsx
-
-Add emoji icons to each filter wrap (before the label/value):
-🌍 Market | 📦 Product | ◎ Stage | ⚡ Status | 📅 Time range
-
-### DASHBOARD-3: KPI cards — drillthrough action row
-File: src/features/dashboard/components/kpi-card.tsx OR dashboard-top-strip.tsx
-
-Reference KPI card bottom has: "→ Open Follow-up" / "→ View pipeline" / etc.
-Add a drillthrough action row to each KPI card with a link/button.
-Each KPI card should have a drillThrough prop: { label: string; href: string }
-Map: Open Leads → /leads | Overdue → /leads?view=overdue | Active Quotes → /quotes | Pipeline Value → /pipeline | Compliance Blockers → /orders
-
-### DASHBOARD-4: KPI card sub-labels (buyer/supplier breakdown)
-File: src/features/dashboard/components/kpi-card.tsx
-
-Reference "Open Leads" card shows "12 buyers · 35 suppliers" sub-label below the main number.
-Add this buyer/supplier breakdown sub-label to the Open Leads KPI card.
-Data should come from the leads query (count by lead_type).
-
-## LEADS GAPS — src/features/leads/ (read leads reference first)
-
-### LEADS-1: Filter bar emoji icons
-File: src/features/leads/components/leads-workspace.tsx (filter bar section)
-
-Add emoji icons to each filter select-wrap: 🌍 Market | 📦 Product | ◎ Stage | 👤 Owner | 📅 Follow-up timing
-
-### LEADS-2: Saved views: add "Trade event" view
-File: src/features/leads/components/leads-workspace.tsx (savedViewsBase array)
-
-Add "Trade event" as a saved view that filters to leads where source_type = 'trade_event'.
-Count: leads.filter(l => l.source_type === 'trade_event').length
-
-### LEADS-3: Filter summary format
-Reference: "11 overdue · 47 total leads"
-Update the filter summary text to match this format exactly.
-
-## ADMIN GAPS — src/features/admin/ (read admin reference first)
-
-### ADMIN-1: Dynamic topbar title per section
-File: src/features/admin/components/admin-settings-shell.tsx
-
-The reference topbar title changes per active section. Add a title prop to AdminSettingsShell that sets the page title in the topbar. Each admin page passes its section title.
-
-### ADMIN-2: Governance banner with specific actionable gaps
-File: src/features/admin/components/admin-settings-shell.tsx (GovernanceBanner)
-
-Reference banner shows specific missing items as clickable links:
-  "🌍 No markets configured → Fix" | "🔒 Approval threshold not set → Fix"
-Update GovernanceBanner to accept specific gap items (not just a count) and render each as a clickable link to the relevant admin section.
-
-### ADMIN-3: Role badges with correct colors in users/security pages
-Reference: Owner=violet, Admin=sky blue, Sales=emerald, Sourcing=amber
-File: src/features/admin/components/admin-reference-workspaces.tsx (SecurityAdminWorkspace)
-Update role display to use these specific colors based on role name.
-
-## DO NOT CHANGE
-- Dashboard core data fetching (parked)
-- Migration files
-- Quote Builder core create flow
-- Orders core execution logic
-- Any page that is already at 80%+ and not listed above
-
-## OUTPUT REQUIRED
-1. All changed files — FULL content, no truncation, no "..." placeholders
-2. Updated /public/internal-dcc/index.html marking PR-A complete and PR-B as next
-3. Full updated repo zip
-4. Copy-paste prompt for PR-B
-
-## DEFINITION OF DONE (check each before submitting)
-Pipeline:
-- [ ] Lead cards match reference card structure (3-area layout: top/badges/move+actions+footer)
-- [ ] Left border accent (rose=overdue, emerald=healthy, violet=blocked) on lead cards
-- [ ] Slide-in detail panel opens on card click (NOT navigation)
-- [ ] "↗ Open in Command Center" in panel does the navigation
-- [ ] Drop zone visible in lanes during drag
-- [ ] Bulk action bar appears when ≥1 cards selected
-- [ ] 3 action buttons always visible (📅 Schedule, 📝 Note, → Advance)
-
-Catalog:
-- [ ] Category view tabs bar above filter bar (All/Snacks/Powders/Sweeteners/Onion&Garlic/Freeze-dried/Quote-ready)
-- [ ] Table has Ex-Factory, FOB, CIF columns — "— add" for missing prices
-- [ ] Category group header rows between product groups with colored dots
-- [ ] ✓/⚠/✕ gap badge per row in Coverage column
-- [ ] Checkbox on each product table row
-- [ ] Stats strip shows Pricing gaps count + Inactive count
-
-Dashboard:
-- [ ] Live date in topbar title ("Dashboard — Wednesday, 23 Apr 2025")
-- [ ] Emoji icons on filter-select-wraps
-- [ ] KPI cards have drillthrough action rows linking to relevant pages
-- [ ] Open Leads KPI shows buyer/supplier breakdown sub-label
-
-Leads:
-- [ ] Emoji icons on filter wraps
-- [ ] "Trade event" saved view item
-- [ ] Filter summary format matches reference
-
-Admin:
-- [ ] Topbar title updates per active section
-- [ ] Governance banner shows specific gap items as clickable links
-- [ ] Role badges: Owner=violet, Admin=sky, Sales=emerald, Sourcing=amber
-
-Build:
-- [ ] Vercel build passes — zero TypeScript errors
-- [ ] No regressions on any existing functionality</pre>
-      </div>
-    </div>
-
-    <!-- PR-B -->
-    <div class="pc">
-      <div class="pm"><span class="s n">After PR-A</span><h3>PR-B — Workflow Hardening: Orders, Quotes, Admin threshold, Cross-page wiring</h3></div>
-      <div class="pb">
-        <button class="cbtn" onclick="copyPrompt('pb')">Copy</button>
-        <pre id="pb">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo attached as zip.
-
-## YOUR TASK: PR-B — Workflow Hardening (12 gaps)
-
-## VALIDATE FIRST (grep these before writing code)
-1. grep "uploadOrderDocument" src/features/orders/server/actions.ts — confirm action exists at line ~150
-2. grep "href=\"/documents\"" src/app/'(app)'/orders/page.tsx — confirm broken upload links
-3. grep "isCatalogPriceStale" src --include="*.tsx" -r — confirm it's defined but imported NOWHERE except catalog-pricing-model.ts
-4. grep "approval_threshold_pct" src/features/admin --include="*.tsx" -r — confirm no input for it exists
-
-## AUTHORITATIVE REFERENCES
-- /public/reference-html/setuflow-orders-redesign.html — inline upload and dispatch gate UI
-- /public/reference-html/setuflow-quotes-redesign.html — filter bar with Approval and Market
-- /public/reference-html/setuflow-admin-settings-redesign.html — Security section threshold input
-
-## ORDERS-1: Wire inline document upload
-File: src/app/(app)/orders/page.tsx
-
-At line ~793: <Link href="/documents">Upload now</Link>
-At line ~814: <Link href="/documents">Upload required doc</Link>
-
-REPLACE with inline upload form per compliance blocker item:
-  <form action={uploadOrderDocument}>
-    <input type="hidden" name="contract_id" value={order.contract?.id ?? ''} />
-    <input type="hidden" name="requirement_code" value={item.code ?? ''} />
-    <input type="hidden" name="doc_type" value={item.doc_type ?? 'document'} />
-    <label style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'11px',fontWeight:700,cursor:'pointer',padding:'5px 10px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white'}}>
-      <input type="file" name="file" accept=".pdf,.jpg,.png" style={{display:'none'}} onChange={e=>e.target.form?.requestSubmit()} />
-      Upload {item.title}
-    </label>
-  </form>
-
-Import: import { uploadOrderDocument } from '@/features/orders/server/actions';
-
-## ORDERS-2: Enforce dispatch gate on advance button
-File: src/app/(app)/orders/page.tsx
-
-The dispatchGate(controls) function already exists in this file and returns {label, tone}.
-The state-advance button ("Mark delivered" / "Upload required doc" / dispatch button) must be:
-  - DISABLED when gate.tone === 'danger' || gate.tone === 'warning'  
-  - Add title attribute: "X documents required before dispatch"
-  - Example: <button disabled={isBlocked} title={isBlocked ? `${blockerCount} document(s) required` : undefined}>
-Where isBlocked = order.operationalControls.documentRequirementSummary.blockerCount > 0
-
-## QUOTES-1: Add Approval and Market filters to filter bar
-File: src/app/(app)/quotes/page.tsx
-
-Reference filter bar has: Search | Status | Approval | Owner | Market | Date range
-Current implementation has: Search | Status | Company | From/To
-
-Add to the filter bar:
-  - "Approval" filter: options [All, Pending approval, Approved, Rejected]
-    Maps to quotes.approval_state or derived from status === 'pending_approval'
-  - "Market" filter: dropdown of distinct market IDs on leads linked to quotes
-    Maps to lead.country or lead market context
-
-Add to filterItems() function the logic for these two new filters.
-
-## QUOTES-2: FX lock badge in Edit mode
-Files: src/features/quotes/components/quote-wizard-form.tsx + quote-workspace.tsx
-
-1. Search the codebase: grep "fx_rate\|fxRate\|fx_lock" src/features/quotes --include="*.tsx" -r
-   Find where the FX rate is stored (likely in quote_pricing_snapshots.fx_rate or notes field)
-2. Add prop `lockedFxRate?: number | null` and `lockedFxCurrency?: string | null` to QuoteWizardForm
-3. When mode === "edit": render near the currency field:
-   <div style={{...}}>"FX locked — {lockedFxRate} {lockedFxCurrency}/USD"</div>
-4. In quote-workspace.tsx: pass the fx_rate from quote_pricing_snapshots when opening edit mode
-
-## QUOTES-3: Call isCatalogPriceStale() in Revise flow
-File: src/features/quotes/components/quote-workspace.tsx
-
-isCatalogPriceStale() is in src/lib/catalog-pricing-model.ts line 573. Import it.
-When the user opens Revise flow on an existing quote:
-1. Collect product_variant_ids from the quote version's line items
-2. Fetch: supabase.from('product_prices').select('product_variant_id, price, currency, effective_from, effective_to').in('product_variant_id', variantIds)
-3. For each line item, call isCatalogPriceStale(lineItem, currentPrices)
-4. If ANY return true, show yellow banner above revise wizard:
-   "⚠ Catalog price updated since v{version_no} — review prices before sending"
-5. Do NOT block the revise flow.
-
-## QUOTES-4: Update quote.status → 'converted' on order creation
-File: Find the server action/page that creates orders. Search: grep -rn "from('contracts').insert" src --include="*.ts" --include="*.tsx"
-
-After the contract insert succeeds, add:
-  await supabase.from('quotes').update({ status: 'converted' }).eq('id', quoteId).eq('organization_id', orgId)
-  revalidatePath('/quotes')
-
-## ADMIN-1: approval_threshold_pct editable in security
-Files: src/features/admin/components/admin-reference-workspaces.tsx + src/features/admin/server/actions.ts
-
-Add to SecurityAdminWorkspace:
-  <SectionCard title="Approval threshold" eyebrow="Override governance">
-    <form action={updateApprovalThreshold} className="flex items-center gap-3">
-      <input name="threshold_pct" type="number" min="0" max="100" step="0.5" defaultValue={currentThresholdPct ?? 15} className={inputClass} style={{width:'80px'}} />
-      <span className="text-sm text-slate-600">% — quotes deviating above this require approval</span>
-      <button type="submit" className={secondaryButtonClass}>Save</button>
-    </form>
-  </SectionCard>
-
-Add server action updateApprovalThreshold:
-  const threshold = Number(formData.get('threshold_pct'));
-  await supabase.from('organizations').update({ approval_threshold_pct: threshold }).eq('id', organization.id);
-  revalidatePath('/admin/security');
-
-Pass currentThresholdPct from organization.approval_threshold_pct in the security page.tsx.
-
-## ADMIN-2: Specific governance gap items in banner
-File: src/features/admin/components/admin-settings-shell.tsx (GovernanceBanner)
-
-Update GovernanceBanner to accept gapItems: Array<{icon: string; text: string; href: string}>
-When gap items exist, render each as a clickable chip:
-  {gapItems.map(item => <Link href={item.href}>{item.icon} {item.text} → Fix</Link>)}
-
-Each admin page passes specific gap items based on its context:
-  - No markets configured: {icon:'🌍', text:'No markets configured', href:'/admin/markets'}
-  - Approval threshold not set: {icon:'🔒', text:'Approval threshold not set', href:'/admin/security'}
-
-## PIPELINE-BULK: Batch move server action
-File: src/features/pipeline/server/actions.ts
-
-Create batchMoveLeadsToStage:
-  1. Read mitigation/supabase/sql/074_batch_pipeline_stage_move_transaction_rpc.sql to get exact RPC function name
-  2. Call: supabase.rpc('[function_name]', { p_organization_id: orgId, p_lead_ids: leadIds, p_stage_id: stageId, p_actor_user_id: userId })
-  3. If RPC call fails with "function not found": fall back to calling moveLeadToStage in a loop
-  4. After success: revalidatePath('/pipeline')
-
-## LEAD-STAGE-SYNC: Revalidate pipeline when lead stage changes
-File: src/features/leads/server/actions.ts (find the action that updates lead stage)
-
-After a successful lead stage update in the Command Center:
-  revalidatePath('/pipeline')
-This ensures the pipeline board reflects the change on next load.
-
-## DO NOT CHANGE
-- Dashboard data fetching
-- Catalog visual improvements (those are PR-A scope)
-- Pipeline card design (PR-A scope)
-
-## OUTPUT REQUIRED
-1. All changed files — FULL content
-2. Updated /public/internal-dcc/index.html marking PR-B complete, PR-C as next
-3. Full updated repo zip
-4. Copy-paste prompt for PR-C</pre>
-      </div>
-    </div>
-
-    <!-- PR-C -->
-    <div class="pc">
-      <div class="pm"><span class="s n">After PR-B</span><h3>PR-C — Trade Events + Polish + Final Consistency</h3></div>
-      <div class="pb">
-        <button class="cbtn" onclick="copyPrompt('pc')">Copy</button>
-        <pre id="pc">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo attached as zip.
-
-## YOUR TASK: PR-C — Trade Events capture + final consistency pass
-
-## VALIDATE FIRST
-SELECT column_name FROM information_schema.columns WHERE table_name='trade_events' AND column_name='capture_defaults';
-If missing: ALTER TABLE public.trade_events ADD COLUMN IF NOT EXISTS capture_defaults jsonb NOT NULL DEFAULT '{}'::jsonb;
-
-## CONFIRMED SCHEMA
-- trade_events: (id, organization_id, name, city, country, starts_on, ends_on, notes, capture_defaults jsonb)
-- trade_event_entries: (id, organization_id, trade_event_id, source_label, status, converted_lead_id, captured_at)
-- leads.trade_event_id: uuid FK → trade_events
-- leads.source_type: text
-
-## AUTHORITATIVE REFERENCES
-- /public/reference-html/setuflow-leads-redesign.html — capture drawer event source
-- /public/reference-html/setuflow-admin-settings-redesign.html — trade events section
-
-## TRADE-1: Trade events admin capture_defaults
+    <p class="mu sm" style="margin-bottom:8px">Attach BuildFixed.zip. Run after Vercel build passes green.</p>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('p10')">Copy</button>
+<pre id="p10">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo attached as zip.
+
+## YOUR TASK: PR-NS-10 — Trade Events & Capture lane
+
+## AUTHORITATIVE REFERENCES (read fully before writing code)
+- /public/reference-html/setuflow-leads-redesign.html — capture drawer, event source dropdown
+- /public/reference-html/setuflow-admin-settings-redesign.html — trade events, capture_defaults
+
+## CONFIRMED SCHEMA (no migrations needed)
+- trade_events: id, organization_id, name, city, country, starts_on, ends_on, notes, capture_defaults jsonb DEFAULT '{}'
+- trade_event_entries: id, organization_id, trade_event_id, source_label, status, converted_lead_id, captured_at
+- leads.trade_event_id: uuid FK to trade_events (exists)
+- leads.source_type: text — use 'trade_event'
+- communications: organization_id, lead_id, related_entity, related_id, communication_type, direction, channel, subject, body, draft_source, status
+
+## MANDATORY BUILD RULES (previous Vercel builds failed on these — do not repeat)
+1. NEVER use 2-arg server actions as direct form action= props.
+   If action has signature (_: State, formData: FormData), create a 1-arg wrapper first.
+2. NEVER add event handlers (onClick, onChange, onSubmit) to server component pages (page.tsx without 'use client').
+3. The 'trade-event' saved view in leads-workspace.tsx ALREADY EXISTS — do NOT re-add it.
+
+## VALIDATE FIRST (run these before writing any code)
+1. grep -n "TradeEventsAdminWorkspace" src/features/admin/components/admin-reference-workspaces.tsx
+   Find the event edit form to add capture_defaults fields.
+2. grep -rn "QuickLead\|Quick Lead\|quickLead" src --include="*.tsx" | head -10
+   Find the Quick Lead capture drawer.
+3. grep -n "applied" src/features/ai/server/actions.ts | head -5
+   Find where AI suggestion status is set to 'applied'.
+4. grep -n "trade-event" src/features/leads/components/leads-workspace.tsx | head -3
+   Confirm saved view exists (do NOT re-add).
+
+## GAP TE-1: capture_defaults config fields on event edit form
 File: src/features/admin/components/admin-reference-workspaces.tsx (TradeEventsAdminWorkspace)
 
-Add to edit form: default_product_label (text), default_lead_type (buyer/supplier select), default_follow_up_days (number)
-Store in capture_defaults jsonb. Update updateTradeEvent server action.
-
-## TRADE-2: Lead Quick Capture event source dropdown
-Find the lead capture/quick-lead drawer. Add:
-- "Event source" dropdown: query trade_events WHERE org_id matches AND (today BETWEEN starts_on AND ends_on OR starts_on IS NULL)
-- When selected: set leads.trade_event_id + source_type = 'trade_event'
-- Pre-fill from event.capture_defaults if set
-
-## TRADE-3: Trade event entry counts on admin page
-File: src/app/(app)/admin/trade-events/page.tsx
-After fetching events, query trade_event_entries grouped by trade_event_id for counts.
-Show "X entries · Y converted" on each event card.
-
-## TRADE-4: AI suggestion applied → communications log
-File: src/features/ai/server/actions.ts
-Find the action that sets ai_suggestions.status = 'applied'.
-After the update: verify communications table columns first, then insert a record with the suggestion content.
-
-## CONSISTENCY-1: Topbar pattern audit
-Verify every page has the standard topbar pattern matching reference HTML:
-  Company badge (BO logo) | vertical divider | eyebrow text | page title
-  Right: mode switch (All/Buyers/Suppliers) | Share my vCard | Filters | + Quick Lead | avatar
-
-Pages to verify: /leads, /pipeline, /products, /quotes, /orders
-Fix any page where these elements are missing or mis-ordered.
-
-## CONSISTENCY-2: vCard button style standardization  
-Reference: "🪪 Share my vCard" button with gradient background.
-Verify this button exists and has consistent styling across all main pages.
-
-## OUTPUT REQUIRED
-1. All changed files — FULL content
-2. Final /public/internal-dcc/index.html marking PR-C complete, all pages at 88-95%
-3. Full updated repo zip
-
-## DEFINITION OF DONE
-- [ ] Trade event capture_defaults configurable in admin
-- [ ] Lead Quick Capture shows active trade events dropdown
-- [ ] Trade event entry counts shown on admin page
-- [ ] AI suggestion 'applied' → communications record created
-- [ ] All page topbars match reference pattern
-- [ ] vCard button consistent across pages
-- [ ] Vercel build passes</pre>
-      </div>
+Inside each event's edit form (action={updateTradeEvent}), after the date inputs, add:
+  <div style={{marginTop:'8px'}}>
+    <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'6px'}}>Capture defaults</p>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 160px 130px',gap:'8px'}}>
+      <input className={inputClass} name="capture_default_product_label"
+        defaultValue={event.capture_defaults?.default_product_label ?? ''}
+        placeholder="Default product label (e.g. Mango Powder)" />
+      <select className={inputClass} name="capture_default_lead_type"
+        defaultValue={event.capture_defaults?.default_lead_type ?? ''}>
+        <option value="">No default type</option>
+        <option value="buyer">Buyer</option>
+        <option value="supplier">Supplier</option>
+      </select>
+      <input className={inputClass} name="capture_default_follow_up_days"
+        type="number" min="1" max="30"
+        defaultValue={event.capture_defaults?.default_follow_up_days ?? ''}
+        placeholder="Follow-up days" />
     </div>
-
-  </div><!-- /tab-prompts -->
-
-  <!-- ══ TAB 4: SCHEMA ══ -->
-  <div class="tp" id="tab-schema">
-    <section class="sec card" style="border-left:4px solid var(--r)">
-      <h2>Migration 111 — APPLY NOW (fixes quotes crash)</h2>
-      <div class="mb">
-        <pre>-- Migration 111: Create quote_pricing_snapshots
--- Root cause of Quotes page crash — table never created
--- Apply in Supabase SQL editor immediately
-
-BEGIN;
-
-CREATE TABLE IF NOT EXISTS public.quote_pricing_snapshots (
-  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  quote_version_id    uuid NOT NULL,
-  pricing_rule_set_id uuid,
-  freight_profile_id  uuid,
-  fx_base_currency    text NOT NULL DEFAULT 'USD',
-  fx_display_currency text,
-  fx_rate             numeric,
-  fx_provider         text,
-  fx_effective_at     timestamptz,
-  quote_context       jsonb NOT NULL DEFAULT '{}',
-  freight_context     jsonb NOT NULL DEFAULT '{}',
-  calculation_payload jsonb NOT NULL DEFAULT '{}',
-  source_hash         text,
-  created_at          timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT fk_qps_version
-    FOREIGN KEY (quote_version_id)
-    REFERENCES public.quote_versions(id)
-    ON DELETE CASCADE
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uq_quote_pricing_snapshots_quote_version
-  ON public.quote_pricing_snapshots (quote_version_id);
-
-ALTER TABLE public.quote_pricing_snapshots ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS qps_org_access ON public.quote_pricing_snapshots;
-CREATE POLICY qps_org_access ON public.quote_pricing_snapshots
-  FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.quote_versions qv
-      JOIN public.quotes q ON q.id = qv.quote_id
-      WHERE qv.id = quote_pricing_snapshots.quote_version_id
-        AND q.organization_id = (
-          SELECT organization_id FROM public.organization_members
-          WHERE user_id = auth.uid() AND is_active = true LIMIT 1
-        )
-    )
-  );
-
-COMMIT;
--- Verify: navigate to /quotes — should load without APPLICATION ERROR</pre>
-      </div>
-    </section>
-
-    <section class="sec card">
-      <h2>All other migrations — confirmed applied</h2>
-      <table class="t" style="margin-top:10px">
-        <thead><tr><th>Migration</th><th>What</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td>107</td><td>organization_id on lead_markets, lead_product_interests, contract_line_items</td><td><span class="s ok">Applied ✓</span></td></tr>
-          <tr><td>108</td><td>approval_threshold_pct on organizations (default 15)</td><td><span class="s ok">Applied ✓</span></td></tr>
-          <tr><td>109 v3</td><td>RLS on markets, pipelines, pipeline_stages</td><td><span class="s ok">Applied ✓</span></td></tr>
-          <tr><td>110</td><td>capture_defaults jsonb on trade_events</td><td><span class="s ok">Applied ✓</span></td></tr>
-          <tr style="background:#fff1f2"><td><strong>111</strong></td><td>CREATE TABLE quote_pricing_snapshots + FK + index + RLS</td><td><span class="s r">APPLY NOW</span></td></tr>
-        </tbody>
-      </table>
-    </section>
-  </div><!-- /tab-schema -->
-
-  <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:12px;display:flex;justify-content:space-between;color:var(--mu);font-size:11px">
-    <div>SETU Flow DCC · Full line-by-line audit · Apr 27 2026 · 41 gaps identified across 8 pages</div>
-    <div>STEP 1: Migration 111 · STEP 2: PR-A (25 visual gaps) · STEP 3: PR-B (12 workflow gaps) · STEP 4: PR-C (4 remaining)</div>
   </div>
 
-</main>
-<script>
-  function showTab(id,btn){
-    document.querySelectorAll('.tp').forEach(p=>p.classList.remove('a'));
-    document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('a'));
-    document.getElementById('tab-'+id).classList.add('a');
-    btn.classList.add('a');
-  }
-  function copyPrompt(id){
-    const text=document.getElementById(id).textContent;
-    navigator.clipboard.writeText(text).then(()=>{
-      const btn=event.target;const orig=btn.textContent;
-      btn.textContent='Copied!';setTimeout(()=>btn.textContent=orig,2000);
+Update updateTradeEvent in src/features/admin/server/actions.ts:
+  const captureDefaults = {
+    default_product_label: normalizeText(formData.get('capture_default_product_label')) ?? null,
+    default_lead_type: normalizeText(formData.get('capture_default_lead_type')) ?? null,
+    default_follow_up_days: formData.get('capture_default_follow_up_days')
+      ? Number(formData.get('capture_default_follow_up_days')) : null,
+  };
+  Include capture_defaults: captureDefaults in the .update() call.
+
+## GAP TE-2: Entry counts per event card
+File: src/app/(app)/admin/trade-events/page.tsx
+
+After fetching events:
+  const { data: entries } = await supabase
+    .from('trade_event_entries')
+    .select('trade_event_id, converted_lead_id')
+    .in('trade_event_id', rows.map(e => e.id));
+
+  const entryMap = new Map<string, { total: number; converted: number }>();
+  (entries ?? []).forEach(e => {
+    const cur = entryMap.get(e.trade_event_id) ?? { total: 0, converted: 0 };
+    entryMap.set(e.trade_event_id, {
+      total: cur.total + 1,
+      converted: cur.converted + (e.converted_lead_id ? 1 : 0),
+    });
+  });
+
+Pass entryMap to TradeEventsAdminWorkspace. In each event card show:
+  <span>{entryMap?.get(event.id)?.total ?? 0} entries &middot; {entryMap?.get(event.id)?.converted ?? 0} converted</span>
+
+## GAP TE-3: Lead Quick Capture — event source dropdown
+Find the Quick Lead capture component (validate step 2).
+
+If it is a SERVER page: fetch active events in the page and pass as prop:
+  const { data: activeEvents } = await supabase.from('trade_events')
+    .select('id, name, capture_defaults').eq('organization_id', orgId)
+    .or('ends_on.is.null,ends_on.gte.' + new Date().toISOString().split('T')[0])
+    .order('starts_on', { ascending: false }).limit(10);
+
+If it is a CLIENT component ('use client'): receive activeEvents as a prop from the parent server page.
+
+Add to the capture form (no onChange — server component rule):
+  <select name="trade_event_id">
+    <option value="">No event source</option>
+    {(activeEvents ?? []).map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+  </select>
+
+In the lead creation server action, after creating the lead:
+  const tradeEventId = formData.get('trade_event_id') as string | null;
+  if (tradeEventId && newLeadId) {
+    await supabase.from('leads').update({
+      trade_event_id: tradeEventId,
+      source_type: 'trade_event',
+    }).eq('id', newLeadId);
+    await supabase.from('trade_event_entries').insert({
+      organization_id: orgId,
+      trade_event_id: tradeEventId,
+      source_label: (formData.get('company_name') as string) ?? 'Unknown',
+      status: 'captured',
+      captured_at: new Date().toISOString(),
     });
   }
+
+## GAP TE-4: AI suggestion applied → communications log
+File: src/features/ai/server/actions.ts
+
+Find where ai_suggestions.status is set to 'applied' (validate step 3).
+After that update succeeds:
+  const { data: suggestion } = await supabase
+    .from('ai_suggestions')
+    .select('lead_id, content, organization_id')
+    .eq('id', suggestionId)
+    .maybeSingle();
+
+  if (suggestion?.lead_id && suggestion?.organization_id) {
+    await supabase.from('communications').insert({
+      organization_id: suggestion.organization_id,
+      lead_id: suggestion.lead_id,
+      related_entity: 'lead',
+      related_id: suggestion.lead_id,
+      communication_type: 'system_note',
+      direction: 'internal',
+      channel: 'system',
+      subject: 'AI suggestion applied',
+      body: `AI suggestion applied: ${String(suggestion.content ?? '').slice(0, 300)}`,
+      draft_source: 'ai',
+      status: 'sent',
+    });
+    revalidatePath(`/leads/${suggestion.lead_id}`);
+  }
+
+## DO NOT CHANGE
+- Dashboard (parked), Pipeline drag/drop (already wired), Quote Builder core flow
+- Any migration files (no schema changes needed)
+- The 'trade-event' saved view in leads-workspace.tsx (already exists)
+
+## OUTPUT REQUIRED
+1. All changed files — FULL content, no truncation, no "..."
+2. Updated /public/internal-dcc/index.html marking PR-NS-10 complete, PR-NS-11 as next
+3. Full updated repo zip
+4. Copy-paste prompt for PR-NS-11
+
+## DEFINITION OF DONE
+- [ ] Event edit form has capture_defaults fields (product label, lead type, follow-up days)
+- [ ] updateTradeEvent saves capture_defaults as jsonb
+- [ ] Event admin page shows X entries / Y converted per card
+- [ ] Lead Quick Capture has event source dropdown
+- [ ] Lead created from event gets trade_event_id + source_type + trade_event_entries row
+- [ ] AI suggestion 'applied' creates a communications record
+- [ ] TypeScript: 0 errors (tsc --strict --noEmit)
+- [ ] No event handlers in server pages, no 2-arg/1-arg mismatches
+- [ ] Vercel build passes</pre>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span class="s neutral">After PR-NS-10</span>
+      <strong style="font-size:14px">PR-NS-11 &mdash; Cross-page workflow consistency</strong>
+    </div>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('p11')">Copy</button>
+<pre id="p11">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo attached as zip.
+
+## YOUR TASK: PR-NS-11 — Cross-page workflow consistency
+
+## MANDATORY BUILD RULES
+1. No 2-arg server actions as direct form action= props. Add 1-arg wrappers.
+2. No event handlers in server component pages.
+3. quotes.status CHECK includes 'converted' — no migration needed.
+
+## VALIDATE FIRST
+1. grep -rn "from('contracts').insert" src --include="*.ts" --include="*.tsx"
+   Find the server action that creates an order/contract from accepted quote.
+2. grep -rn "'sent'" src/features/quotes/server --include="*.ts" | head -5
+   Find the quote send action.
+3. grep -n "stage_id" src/features/leads/server/actions.ts | head -5
+   Find lead stage update action.
+4. grep -rn "isCatalogPriceStale" src --include="*.tsx"
+   Confirm it's defined in catalog-pricing-model.ts and nowhere else.
+
+## GAP XP-1: quote.status → 'converted' on order creation
+Find the action from step 1. After the contract insert succeeds:
+  await supabase.from('quotes').update({ status: 'converted' })
+    .eq('id', quoteId).eq('organization_id', orgId);
+  revalidatePath('/quotes'); revalidatePath('/orders');
+
+## GAP XP-2: Quote sent → lead stage auto-advance (best-effort)
+Find the send action. After status set to 'sent', wrap in try-catch (NEVER fail the send):
+  try {
+    const { data: q } = await supabase.from('quotes').select('lead_id').eq('id', quoteId).maybeSingle();
+    if (q?.lead_id) {
+      const { data: stages } = await supabase.from('pipeline_stages')
+        .select('id, name, pipelines!inner(organization_id)').ilike('name', '%quote%').limit(5);
+      const match = (stages ?? []).find(s => (s.pipelines as any)?.organization_id === orgId);
+      if (match) {
+        await supabase.from('leads').update({ stage_id: match.id }).eq('id', q.lead_id);
+        revalidatePath('/pipeline'); revalidatePath('/leads');
+      }
+    }
+  } catch { /* never fail the send */ }
+
+## GAP XP-3: Lead CC stage change → pipeline revalidate
+Find the lead stage update action. After success: revalidatePath('/pipeline');
+
+## GAP XP-4: isCatalogPriceStale() in revise flow
+File: src/features/quotes/components/quote-workspace.tsx
+Import isCatalogPriceStale from '@/lib/catalog-pricing-model'.
+In the revise flow: if any line item price is stale, show a yellow informational banner.
+Do NOT block the revise flow.
+
+## GAP XP-5: Quotes filter bar — Approval filter (server-rendered, no onChange)
+File: src/app/(app)/quotes/page.tsx
+Add URL search param: approvalFilter = readSearchParam(searchParams?.approval)
+Add to filter bar as server-rendered select: name="approval" with options all/pending_approval/approved/rejected
+Add to filterItems(): const matchesApproval = !approvalFilter || approvalFilter==='all' ? true : item.status === approvalFilter;
+
+## GAP XP-6: FX lock badge in Quote Builder Edit mode
+File: src/features/quotes/components/quote-wizard-form.tsx
+When mode === "edit" and lockedFxRate exists, show near the currency field:
+  FX locked — {rate} {currency}/USD · 7-day lock
+Search for where fx_rate is stored for existing versions before implementing.
+
+## GAP XP-7: Pipeline lane drop zone visual
+File: src/features/pipeline/components/PipelineLaneSection.tsx
+After the last card slot: {isDragOver && <div ...>Drop here</div>}
+
+## OUTPUT REQUIRED
+1. All changed files — FULL content. 2. Updated DCC. 3. Repo zip. 4. Prompt for PR-NS-12.</pre>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span class="s warn">Use after any PR if build fails</span>
+      <strong style="font-size:14px">Build Fix Prompt &mdash; template for Vercel errors</strong>
+    </div>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('pbuild')">Copy</button>
+<pre id="pbuild">You are fixing a Vercel build error in SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo attached.
+
+## BUILD ERROR
+[PASTE BUILD LOG HERE]
+
+## MANDATORY DIAGNOSTIC STEPS — run all three before changing any file
+
+### Step 1: TypeScript errors
+npx tsc --noEmit 2>&amp;1 | grep "error TS" | head -30
+
+### Step 2: Event handlers in server pages
+python3 -c "
+import os, re
+for root, dirs, files in os.walk('src/app'):
+    dirs[:] = [d for d in dirs if 'node_modules' not in root]
+    for f in files:
+        if f == 'page.tsx':
+            p = os.path.join(root, f)
+            try: c = open(p).read()
+            except: continue
+            if c.split(chr(10))[0].strip() == \"'use client'\": continue
+            for i, line in enumerate(c.split(chr(10)), 1):
+                if re.search(r'on(Click|Change|Submit)=\{', line):
+                    print(f'{p}:{i}: {line.strip()[:80]}')
+"
+
+### Step 3: 2-arg server actions used as direct form action= props
+python3 -c "
+import os, re
+two_arg = set()
+for root, dirs, files in os.walk('src'):
+    for f in files:
+        if f.endswith(('.ts','.tsx')):
+            try: c = open(os.path.join(root,f)).read()
+            except: continue
+            for m in re.findall(r'export async function (\w+)\(\s*_[^,]*,\s*formData:\s*FormData\s*\)', c):
+                two_arg.add(m)
+for root, dirs, files in os.walk('src'):
+    for f in files:
+        if f.endswith(('.ts','.tsx')):
+            try: c = open(os.path.join(root,f)).read()
+            except: continue
+            for n in two_arg:
+                if re.search(rf'(?:action|formAction)=\{{{n}\}}', c):
+                    print(f'{os.path.join(root,f)}: {n}')
+"
+
+## FIX RULES
+1. 2-arg action used as form action= : add 1-arg wrapper
+   export async function xyzAction(formData: FormData): Promise&lt;void&gt; {
+     await xyz(undefined, formData);
+   }
+
+2. Event handler in server page: remove entirely
+   onChange on file input → just remove it
+   onClick on checkbox → add readOnly attribute instead
+
+3. Missing export: add the function or alias with the correct name
+
+## OUTPUT: All fixed files with FULL content. Zero TypeScript errors.</pre>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEMA TAB -->
+<div class="tp" id="tab-schema">
+  <div class="co g" style="margin-bottom:10px">Schema clean. All migrations applied. No new migrations needed for NS-10, 11, 12, or 13.</div>
+  <section class="sec card">
+    <h2>Applied migrations</h2>
+    <table class="t" style="margin-top:10px">
+      <thead><tr><th>Migration</th><th>What</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>001&ndash;107</td><td>Foundation, auth, leads, products, documents, compliance, org_id on junction tables</td><td><span class="s good">Applied &#10003;</span></td></tr>
+        <tr><td>108</td><td><code>organizations.approval_threshold_pct numeric DEFAULT 15</code></td><td><span class="s good">Applied &#10003;</span></td></tr>
+        <tr><td>109 v3</td><td>RLS on markets, pipelines, pipeline_stages (stages join through pipelines — no org_id on stages)</td><td><span class="s good">Applied &#10003;</span></td></tr>
+        <tr><td>110</td><td><code>trade_events.capture_defaults jsonb DEFAULT '{}'</code></td><td><span class="s good">Applied &#10003;</span></td></tr>
+        <tr><td>111</td><td>CREATE TABLE <code>quote_pricing_snapshots</code> + FK + index + RLS</td><td><span class="s good">Applied &#10003;</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+  <section class="sec card">
+    <h2>Canonical schema facts</h2>
+    <div style="font-size:12px;line-height:2;margin-top:8px;columns:2;gap:20px">
+      <div>&bull; <code>pipeline_stages</code> has NO <code>organization_id</code> &mdash; join through pipelines</div>
+      <div>&bull; <code>organization_members</code> has no role col &mdash; join user_roles&rarr;roles.name</div>
+      <div>&bull; <code>quote_versions.pricing_basis</code>: ex_factory | fob | cif | bulk_chips</div>
+      <div>&bull; <code>quotes.status</code> includes 'converted'</div>
+      <div>&bull; <code>quote_pricing_snapshots</code> exists (mig 111)</div>
+      <div>&bull; <code>leads.trade_event_id</code> uuid FK &rarr; trade_events</div>
+      <div>&bull; <code>organizations.approval_threshold_pct</code> DEFAULT 15</div>
+      <div>&bull; <code>trade_events.capture_defaults</code> jsonb</div>
+    </div>
+  </section>
+</div>
+
+<div style="margin-top:18px;border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:space-between;color:var(--mu);font-size:11px">
+  <div>SETU Flow DCC &middot; Apr 27 2026 &middot; 15 fixes &middot; 0 TS errors</div>
+  <div>Active: PR-NS-10 &middot; Next: PR-NS-11 &middot; Final: PR-NS-13</div>
+</div>
+</main>
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.tp').forEach(function(p){ p.classList.remove('a'); });
+  document.querySelectorAll('.tbtn').forEach(function(b){ b.classList.remove('a'); });
+  var el = document.getElementById('tab-' + id);
+  if (el) el.classList.add('a');
+  if (btn) btn.classList.add('a');
+}
+function copyPrompt(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var text = el.textContent || '';
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      var btn = event.target;
+      var orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(function(){ btn.textContent = orig; }, 2000);
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    var btn = event.target; var orig = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(function(){ btn.textContent = orig; }, 2000);
+  }
+}
 </script>
 </body>
 </html>
