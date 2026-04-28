@@ -23,8 +23,7 @@ const PRIMARY_LABELS: Record<string, string> = {
 };
 
 const UTILITY_LABELS: Record<string, string> = {
-  '/settings/lists': 'Settings',
-  '/admin/organization': 'Admin',
+  '/admin': 'Admin',
 };
 
 export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compact = false, onNavigate }: { pathname: string; canAccessAdmin: boolean; workspaceMode: 'all' | 'buyers' | 'suppliers'; compact?: boolean; onNavigate?: () => void }) {

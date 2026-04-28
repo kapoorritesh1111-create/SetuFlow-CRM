@@ -53,11 +53,14 @@ function getPasswordResetRedirectUrl() {
   return url.toString();
 }
 
-function sanitizeReturnPath(value: FormDataEntryValue | null | undefined, fallback: '/admin/users' | '/admin/invitations') {
-  return value === '/admin/invitations' || value === '/admin/users' ? value : fallback;
+function sanitizeReturnPath(value: FormDataEntryValue | null | undefined, fallback: string) {
+  if (typeof value !== 'string') return fallback;
+  if (value === '/admin/invitations' || value === '/admin/users') return value;
+  if (value.startsWith('/admin?section=')) return value;
+  return fallback;
 }
 
-function redirectWithNotice(path: '/admin/users' | '/admin/invitations', notice?: string): never {
+function redirectWithNotice(path: string, notice?: string): never {
   if (!notice) {
     redirect(path);
   }

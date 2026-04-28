@@ -665,3 +665,19 @@ export async function deleteSettingsListItem(_: ActionState | undefined, formDat
 }
 
 export const saveSettingsItem = saveSettingsListItem;
+
+export async function saveAdminSettingsListItem(formData: FormData): Promise<void> {
+  await saveSettingsListItem(undefined, formData);
+  revalidatePath('/admin');
+}
+
+export async function moveAdminSettingsListItem(formData: FormData): Promise<void> {
+  const table = String(formData.get('table') ?? '').trim();
+  const current = Number.parseInt(String(formData.get('sort_order') ?? '0'), 10);
+  const direction = String(formData.get('direction') ?? 'down');
+  const next = direction === 'up' ? Math.max(0, current - 1) : current + 1;
+  formData.set('sort_order', String(next));
+  await saveSettingsListItem(undefined, formData);
+  revalidatePath('/admin');
+  if (table) revalidatePath(`/admin?section=${table === 'product_categories' ? 'categories' : table === 'next_steps' ? 'stages' : 'markets'}`);
+}

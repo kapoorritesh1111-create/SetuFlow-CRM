@@ -18,8 +18,8 @@
     "ordersExecution": "Orders / Execution",
     "exceptionsRisks": "Pipeline / Risks",
     "catalog": "Catalog",
-    "settings": "Settings / Lists",
-    "admin": "Admin / Organization",
+    "settings": "Admin / Workspace",
+    "admin": "Admin / Workspace",
     "myCard": "My Card"
   },
   "routes": {
@@ -31,8 +31,8 @@
       "orders": "/orders",
       "integrations": "/approval-send",
       "products": "/products",
-      "settings": "/settings/lists",
-      "admin": "/admin/organization",
+      "settings": "/admin?section=markets",
+      "admin": "/admin",
       "capture": "/contact-exchange/scan",
       "myCard": "/contact-exchange/vcard"
     },
@@ -138,19 +138,6 @@
       "navKey": "k"
     },
     {
-      "href": "/settings/lists",
-      "label": "Settings / Lists",
-      "exact": true,
-      "description": "Keep reference data and defaults clear for the team and leadership.",
-      "aliases": [
-        "settings",
-        "lists",
-        "defaults",
-        "reference data"
-      ],
-      "navKey": "t"
-    },
-    {
       "href": "/dashboard",
       "label": "Dashboard / Overview",
       "exact": true,
@@ -168,38 +155,58 @@
   ],
   "adminTabs": [
     {
-      "href": "/admin/organization",
-      "label": "Organization setup",
+      "href": "/admin?section=organization",
+      "label": "Organization",
       "exact": true
     },
     {
-      "href": "/admin/users",
-      "label": "People & access",
+      "href": "/admin?section=team",
+      "label": "Team members",
       "exact": true
     },
     {
-      "href": "/admin/invitations",
+      "href": "/admin?section=invitations",
       "label": "Invitations",
       "exact": true
     },
     {
-      "href": "/admin/audit",
-      "label": "Audit trail",
+      "href": "/admin?section=markets",
+      "label": "Markets",
       "exact": true
     },
     {
-      "href": "/admin/ai-analytics",
-      "label": "AI review",
+      "href": "/admin?section=categories",
+      "label": "Categories",
       "exact": true
     },
     {
-      "href": "/admin/product-management",
-      "label": "Catalog admin",
+      "href": "/admin?section=stages",
+      "label": "Stages & next steps",
       "exact": true
     },
     {
-      "href": "/products",
-      "label": "Catalog",
+      "href": "/admin?section=pipelines",
+      "label": "Pipelines",
+      "exact": true
+    },
+    {
+      "href": "/admin?section=trade-events",
+      "label": "Trade events",
+      "exact": true
+    },
+    {
+      "href": "/admin?section=audit",
+      "label": "Audit log",
+      "exact": true
+    },
+    {
+      "href": "/admin?section=ai",
+      "label": "AI analytics",
+      "exact": true
+    },
+    {
+      "href": "/admin?section=security",
+      "label": "Security & roles",
       "exact": true
     }
   ],
@@ -332,32 +339,6 @@
             "pricing baseline"
           ],
           "navKey": "k"
-        },
-        {
-          "href": "/settings/lists",
-          "label": "Settings / Lists",
-          "exact": true,
-          "description": "Maintain shared lists, defaults, pipelines, and stage vocabulary that support workflow without pretending this is the workflow itself.",
-          "aliases": [
-            "settings",
-            "lists",
-            "defaults",
-            "reference data"
-          ],
-          "navKey": "t"
-        },
-        {
-          "href": "/admin/organization",
-          "label": "Admin / Organization",
-          "description": "Own organization setup, people, invitations, and audit visibility without turning admin into archaeology.",
-          "aliases": [
-            "admin",
-            "users",
-            "audit",
-            "organization"
-          ],
-          "navKey": "a",
-          "requiresAdmin": true
         }
       ]
     },
@@ -409,6 +390,28 @@
             "my card",
             "share card"
           ]
+        }
+      ]
+    },
+    {
+      "id": "workspace-admin",
+      "label": "Workspace setup",
+      "icon": "gear",
+      "description": "Unified Admin and Settings workspace.",
+      "tone": "utility",
+      "items": [
+        {
+          "href": "/admin",
+          "label": "Admin / Workspace",
+          "exact": false,
+          "description": "Unified Admin + Settings workspace.",
+          "aliases": [
+            "admin",
+            "settings",
+            "workspace"
+          ],
+          "navKey": "a",
+          "requiresAdmin": true
         }
       ]
     }
