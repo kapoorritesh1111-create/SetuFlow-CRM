@@ -36,8 +36,8 @@ import {
   getOverrideThresholdCheck,
 } from "@/lib/quoteWorkflow";
 import { getQuoteTrustContract } from "@/lib/quoteTrust";
-import { detectMissingPrice, type QuotePricingBasis } from "@/lib/catalog-pricing-model";
-import { DEFAULT_CATALOG_PRICE_CURRENCY, normalizePricingBasis, getPricingBasisLabel } from "@/lib/pricing-basis-contract";
+import { detectMissingPrice } from "@/lib/catalog-pricing-model";
+import { DEFAULT_CATALOG_PRICE_CURRENCY, normalizePricingBasis, getPricingBasisLabel, type QuotePricingBasis } from "@/lib/pricing-basis-contract";
 import type { ApprovalState } from "@/lib/approvalRouting";
 import type { QuoteStatus } from "@/lib/quoteWorkflow";
 import { formatDateTime } from "@/lib/utils";

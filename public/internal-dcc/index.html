@@ -58,6 +58,7 @@
   <div class="co r"><strong>Correction to prior DCC:</strong> the previous audit was too optimistic. It did not call out that Admin/Settings, Catalog, and Orders are visibly back on old/partial workspace shells, and it under-counted Leads filter/workflow gaps.</div>
     <div class="co w"><strong>Why this happened:</strong> build fixes and quote cleanup were applied while reference-parity checks were not run route-by-route. The repo can compile parts of a route while the visible page still points to old workspace components or incomplete client shells.</div>
     <div class="co w"><strong>PR-REPAIR-01 update — Apr 28:</strong> canonical pricing-basis contract was consolidated across quote, catalog, lead command center, trade workflow, orders, and quote metadata paths. Proof is not green because <code>npm ci --no-audit --no-fund</code>, <code>npm run typecheck</code>, and <code>npm test</code> timed out in this container, and <code>npm run build</code> failed with <code>next: not found</code> after dependencies were not installed. PR-REPAIR-01 remains active.</div>
+    <div class="co w"><strong>PR-REPAIR-01 hotfix — Apr 28:</strong> corrected QuotePricingBasis imports so quote wizard and quote server actions import the canonical type from pricing-basis-contract instead of catalog-pricing-model. Proof still must be run in CI/Vercel before marking complete.</div>
   <div class="sec grid g2">
     <div class="card">
       <h2>Evidence from screenshots + repo review</h2>
