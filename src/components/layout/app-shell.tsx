@@ -229,8 +229,15 @@ export function AppShell({
                     </button>
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0c7fff]">Trade Command Center</p>
-                      <h1 className="truncate text-xl font-semibold text-slate-950 sm:text-2xl">{routeMeta.title}</h1>
-                      <p className="mt-1 text-xs text-slate-500">{topbarDate}</p>
+                      <h1 className="truncate text-xl font-semibold text-slate-950 sm:text-2xl">
+                        {routeMeta.title}
+                        {routeMeta.title === 'Dashboard' && (
+                          <span className="ml-2 text-sm font-normal text-slate-400">— {topbarDate}</span>
+                        )}
+                      </h1>
+                      {routeMeta.title !== 'Dashboard' && (
+                        <p className="mt-1 text-xs text-slate-500">{topbarDate}</p>
+                      )}
                     </div>
                   </div>
 

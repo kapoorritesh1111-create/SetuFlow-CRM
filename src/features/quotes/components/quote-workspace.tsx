@@ -2823,6 +2823,7 @@ export function QuoteWorkspace({
             rfqs={rfqs}
             products={products}
             quoteSendGuard={quoteSendGuard}
+            approvalThresholdPct={pricingEngineThresholdPercent}
             onClose={() => setCreateOpen(false)}
             onSaved={upsertQuoteRecord}
           />
@@ -2843,6 +2844,7 @@ export function QuoteWorkspace({
             products={products}
             quoteVersions={quoteVersions as any}
             quoteSendGuard={quoteSendGuard}
+            approvalThresholdPct={pricingEngineThresholdPercent}
             initialStepId={activeQuoteStep ?? undefined}
             onClose={() => {
               setActiveQuote(null);

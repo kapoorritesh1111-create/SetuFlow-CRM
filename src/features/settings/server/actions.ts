@@ -665,3 +665,7 @@ export async function deleteSettingsListItem(_: ActionState | undefined, formDat
 }
 
 export const saveSettingsItem = saveSettingsListItem;
+
+// Legacy aliases for admin/page.tsx imports
+export const saveAdminSettingsListItem = saveSettingsListItem;
+export const moveAdminSettingsListItem = saveSettingsListItem; // No separate move function — reuse save

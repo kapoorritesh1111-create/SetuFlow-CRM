@@ -1,7 +1,7 @@
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { formatDate } from '@/lib/utils';
-import { createMarket, createNextStep, createPipeline, createPipelineStage, createRole, createTradeEvent, updateMarket, updateNextStep, updatePipeline, updatePipelineStage, updateRolePermissions, updateTradeEvent, updateApprovalThreshold } from '@/features/admin/server/actions';
+import { createMarket, createNextStep, createPipeline, createPipelineStage, createRole, createTradeEvent, updateApprovalThreshold, updateMarket, updateNextStep, updatePipeline, updatePipelineStage, updateRolePermissions, updateTradeEvent } from '@/features/admin/server/actions';
 
 const inputClass = 'min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 const buttonClass = 'inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800';
@@ -22,28 +22,99 @@ export function PipelinesAdminWorkspace({ pipelines }: { pipelines: AnyRow[] }) 
   return <div className="space-y-6"><SectionCard title="Add pipeline" eyebrow="Pipeline setup" description="Create buyer, supplier, or shared pipelines."><form action={createPipeline} className="grid gap-3 md:grid-cols-[1fr_160px_140px_auto] md:items-center"><input className={inputClass} name="name" placeholder="Pipeline name" required /><select className={inputClass} name="lead_type" defaultValue="buyer"><option value="buyer">Buyer</option><option value="supplier">Supplier</option><option value="both">Both</option></select><label className="text-sm text-slate-600"><input type="checkbox" name="is_default" /> Default</label><button className={buttonClass} type="submit">Add pipeline</button></form></SectionCard><div className="grid gap-4 xl:grid-cols-2">{pipelines.map((pipeline) => <SectionCard key={pipeline.id} title={pipeline.name} eyebrow="Pipeline" actions={<StatusBadge label={pipeline.is_default ? 'Default' : pipeline.lead_type} tone={pipeline.is_default ? 'success' : 'info'} dot={false} />}><form action={updatePipeline} className="grid gap-3"><input type="hidden" name="id" value={pipeline.id} /><input className={inputClass} name="name" defaultValue={pipeline.name} required /><select className={inputClass} name="lead_type" defaultValue={pipeline.lead_type}><option value="buyer">Buyer</option><option value="supplier">Supplier</option><option value="both">Both</option></select><label className="text-sm text-slate-600"><input type="checkbox" name="is_default" defaultChecked={pipeline.is_default ?? false} /> Default pipeline</label><button type="submit" className={secondaryButtonClass}>Save pipeline</button></form><div className="mt-5 space-y-2"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Stages</p>{(pipeline.pipeline_stages ?? []).map((stage: AnyRow) => <div key={stage.id} className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 text-sm"><span className="font-medium text-slate-900">{stage.name}</span><span className="text-xs text-slate-500">#{stage.sort_order ?? 0}</span></div>)}{(pipeline.pipeline_stages ?? []).length === 0 ? <p className="text-sm text-slate-500">No stages configured.</p> : null}</div></SectionCard>)}</div></div>;
 }
 
-function getCaptureDefaults(event: AnyRow) {
-  const defaults = event.capture_defaults && typeof event.capture_defaults === 'object' ? event.capture_defaults : {};
-  return {
-    defaultProductLabel: typeof defaults.default_product_label === 'string' ? defaults.default_product_label : '',
-    defaultLeadType: defaults.default_lead_type === 'supplier' ? 'supplier' : defaults.default_lead_type === 'buyer' ? 'buyer' : '',
-    defaultFollowUpDays: typeof defaults.default_follow_up_days === 'number' ? String(defaults.default_follow_up_days) : '',
-  };
-}
-
 export function TradeEventsAdminWorkspace({ events }: { events: AnyRow[] }) {
-  return <div className="space-y-6"><SectionCard title="Add trade event" eyebrow="Capture source" description="Trade Events drive source attribution for scanned contacts and lead creation."><form action={createTradeEvent} className="grid gap-3 xl:grid-cols-[1fr_150px_150px_150px_150px]"><input className={inputClass} name="name" placeholder="Event name" required /><input className={inputClass} name="city" placeholder="City" /><input className={inputClass} name="country" placeholder="Country" /><input className={inputClass} name="starts_on" type="date" /><input className={inputClass} name="ends_on" type="date" /><textarea className={`${inputClass} xl:col-span-4`} name="notes" placeholder="Notes" /><button className={buttonClass} type="submit">Add event</button></form></SectionCard><div className="grid gap-4 xl:grid-cols-2">{events.map((event) => { const defaults = getCaptureDefaults(event); return <SectionCard key={event.id} title={event.name} eyebrow="Trade event" actions={<div className="flex flex-wrap gap-2"><StatusBadge label={event.starts_on ? formatDate(event.starts_on) : 'Unscheduled'} tone={event.starts_on ? 'info' : 'warning'} dot={false} /><StatusBadge label={`${event.totalEntries ?? 0} entries · ${event.convertedEntries ?? 0} converted`} tone="success" dot={false} /></div>}><form action={updateTradeEvent} className="grid gap-3"><input type="hidden" name="id" value={event.id} /><input className={inputClass} name="name" defaultValue={event.name} required /><div className="grid gap-3 sm:grid-cols-2"><input className={inputClass} name="city" defaultValue={event.city ?? ''} placeholder="City" /><input className={inputClass} name="country" defaultValue={event.country ?? ''} placeholder="Country" /></div><div className="grid gap-3 sm:grid-cols-2"><input className={inputClass} name="starts_on" type="date" defaultValue={event.starts_on ?? ''} /><input className={inputClass} name="ends_on" type="date" defaultValue={event.ends_on ?? ''} /></div><textarea className={inputClass} name="notes" defaultValue={event.notes ?? ''} placeholder="Notes" /><div className="rounded-3xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Capture defaults</p><div className="mt-3 grid gap-3 sm:grid-cols-3"><input className={inputClass} name="default_product_label" defaultValue={defaults.defaultProductLabel} placeholder="Default product interest label" /><select className={inputClass} name="default_lead_type" defaultValue={defaults.defaultLeadType}><option value="">No default lead type</option><option value="buyer">Buyer</option><option value="supplier">Supplier</option></select><input className={inputClass} name="default_follow_up_days" type="number" min="0" defaultValue={defaults.defaultFollowUpDays} placeholder="Follow-up days" /></div></div><button type="submit" className={secondaryButtonClass}>Save event</button></form></SectionCard>; })}</div></div>;
+  return <div className="space-y-6"><SectionCard title="Add trade event" eyebrow="Capture source" description="Trade Events drive source attribution for scanned contacts and lead creation."><form action={createTradeEvent} className="grid gap-3 xl:grid-cols-[1fr_150px_150px_150px_150px]"><input className={inputClass} name="name" placeholder="Event name" required /><input className={inputClass} name="city" placeholder="City" /><input className={inputClass} name="country" placeholder="Country" /><input className={inputClass} name="starts_on" type="date" /><input className={inputClass} name="ends_on" type="date" /><textarea className={`${inputClass} xl:col-span-4`} name="notes" placeholder="Notes" /><button className={buttonClass} type="submit">Add event</button></form></SectionCard><div className="grid gap-4 xl:grid-cols-2">{events.map((event) => <SectionCard key={event.id} title={event.name} eyebrow="Trade event" actions={<StatusBadge label={event.starts_on ? formatDate(event.starts_on) : 'Unscheduled'} tone={event.starts_on ? 'info' : 'warning'} dot={false} />}><form action={updateTradeEvent} className="grid gap-3"><input type="hidden" name="id" value={event.id} /><input className={inputClass} name="name" defaultValue={event.name} required /><div className="grid gap-3 sm:grid-cols-2"><input className={inputClass} name="city" defaultValue={event.city ?? ''} placeholder="City" /><input className={inputClass} name="country" defaultValue={event.country ?? ''} placeholder="Country" /></div><div className="grid gap-3 sm:grid-cols-2"><input className={inputClass} name="starts_on" type="date" defaultValue={event.starts_on ?? ''} /><input className={inputClass} name="ends_on" type="date" defaultValue={event.ends_on ?? ''} /></div><textarea className={inputClass} name="notes" defaultValue={event.notes ?? ''} placeholder="Notes" /><button type="submit" className={secondaryButtonClass}>Save event</button></form></SectionCard>)}</div></div>;
 }
 
 export function SecurityAdminWorkspace({ roles, members, approvalThresholdPct = 15 }: { roles: AnyRow[]; members: AnyRow[]; approvalThresholdPct?: number | null }) {
-  return <div className="space-y-6"><SectionCard title="Approval threshold" eyebrow="Commercial security" description="Set the percentage variance that triggers quote approval review."><form action={updateApprovalThreshold} className="flex flex-wrap items-end gap-3"><label className="grid gap-1 text-sm font-semibold text-slate-700"><span>Approval threshold</span><div className="flex items-center gap-2"><input className={`${inputClass} w-32`} name="threshold_pct" type="number" min="0" max="100" step="0.1" defaultValue={approvalThresholdPct ?? 15} /><span className="text-sm text-slate-500">%</span></div></label><button className={buttonClass} type="submit">Save threshold</button></form></SectionCard><SectionCard title="Create organization role" eyebrow="Security model" description="Roles stay organization-scoped unless they are seeded global roles."><form action={createRole} className="grid gap-3 md:grid-cols-[1fr_2fr_auto]"><input className={inputClass} name="name" placeholder="Role name" required /><input className={inputClass} name="description" placeholder="Description" /><button className={buttonClass} type="submit">Create role</button></form></SectionCard><div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]"><SectionCard title="Roles & permissions" eyebrow="Access control" description="Edit permissions as newline-separated keys."><div className="space-y-4">{roles.map((role) => <form key={role.id} action={updateRolePermissions} className="rounded-3xl border border-slate-200 p-4"><input type="hidden" name="role_id" value={role.id} /><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold text-slate-900">{role.name}</p><p className="text-sm text-slate-500">{role.description ?? (role.organization_id ? 'Organization role' : 'Global role')}</p></div><StatusBadge label={`${role.user_roles?.length ?? 0} assigned`} tone="neutral" dot={false} /></div><textarea className={`${inputClass} mt-3 min-h-28 w-full font-mono text-xs`} name="permissions" defaultValue={(role.role_permissions ?? []).map((item: AnyRow) => item.permission).filter(Boolean).join('\n')} placeholder="quotes.read&#10;quotes.approve" /><button type="submit" className={`${secondaryButtonClass} mt-3`}>Save permissions</button></form>)}</div></SectionCard><SectionCard title="Member role coverage" eyebrow="Workspace access" description="Review active memberships and role assignment coverage."><div className="space-y-3">{members.map((member) => { const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles; const roleNames = (member.user_roles ?? []).map((row: AnyRow) => row.roles?.name).filter(Boolean) as string[];
-                 const roleBadgeStyle = (name: string) => {
-                   const l = name.toLowerCase();
-                   if (l.includes('owner')) return {bg:'#f5f3ff',border:'#ddd6fe',color:'#5b21b6'};
-                   if (l.includes('admin')) return {bg:'#e0f2fe',border:'#bae6fd',color:'#0369a1'};
-                   if (l.includes('sales')) return {bg:'#f0fdf4',border:'#a7f3d0',color:'#15803d'};
-                   if (l.includes('sourc')) return {bg:'#fffbeb',border:'#fde68a',color:'#92400e'};
-                   return {bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'};
-                 };
-                 return <div key={member.id} className="rounded-3xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-slate-900">{profile?.full_name ?? profile?.email ?? 'Unnamed member'}</p><p className="text-sm text-slate-500">{profile?.email ?? 'No email'}</p></div><BoolBadge value={member.is_active} /></div><div className="mt-3 flex flex-wrap gap-1.5">{roleNames.length ? roleNames.map(r => { const s = roleBadgeStyle(r); return <span key={r} style={{fontSize:'10px',fontWeight:700,padding:'2px 8px',borderRadius:'999px',background:s.bg,border:'1px solid '+s.border,color:s.color}}>{r}</span>; }) : <span style={{fontSize:'11px',color:'#94a3b8'}}>No role assigned</span>}</div></div>; })}</div></SectionCard></div></div>;
+  function roleBadgeStyle(name: string): { bg: string; border: string; color: string } {
+    const l = (name ?? '').toLowerCase();
+    if (l.includes('owner'))   return { bg: '#f5f3ff', border: '#ddd6fe', color: '#5b21b6' };
+    if (l.includes('admin'))   return { bg: '#e0f2fe', border: '#bae6fd', color: '#0369a1' };
+    if (l.includes('sales'))   return { bg: '#f0fdf4', border: '#a7f3d0', color: '#15803d' };
+    if (l.includes('sourc'))   return { bg: '#fffbeb', border: '#fde68a', color: '#92400e' };
+    return { bg: '#f1f5f9', border: '#e2e8f0', color: '#475569' };
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Approval threshold */}
+      <SectionCard title="Approval threshold" eyebrow="Commercial governance" description="Quotes deviating above this % require manager approval before they can be sent.">
+        <form action={updateApprovalThreshold} className="flex flex-wrap items-end gap-3">
+          <label className="grid gap-1 text-sm font-semibold text-slate-700">
+            <span>Threshold percentage</span>
+            <div className="flex items-center gap-2">
+              <input className={`${inputClass} w-32`} name="threshold_pct" type="number" min="0" max="100" step="0.5" defaultValue={approvalThresholdPct ?? 15} />
+              <span className="text-sm text-slate-500">%</span>
+            </div>
+          </label>
+          <button className={buttonClass} type="submit">Save threshold</button>
+          {!approvalThresholdPct && (
+            <p className="w-full text-xs text-amber-600">⚠ Threshold not set — any pricing override bypasses the approval flow.</p>
+          )}
+        </form>
+      </SectionCard>
+      {/* Create role */}
+      <SectionCard title="Create organization role" eyebrow="Security model" description="Roles stay organization-scoped unless they are seeded global roles.">
+        <form action={createRole} className="grid gap-3 md:grid-cols-[1fr_2fr_auto]">
+          <input className={inputClass} name="name" placeholder="Role name" required />
+          <input className={inputClass} name="description" placeholder="Description" />
+          <button className={buttonClass} type="submit">Create role</button>
+        </form>
+      </SectionCard>
+      <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+        {/* Roles & permissions */}
+        <SectionCard title="Roles & permissions" eyebrow="Access control" description="Edit permissions as newline-separated keys.">
+          <div className="space-y-4">
+            {roles.map((role) => {
+              const s = roleBadgeStyle(role.name);
+              return (
+                <form key={role.id} action={updateRolePermissions} className="rounded-3xl border border-slate-200 p-4">
+                  <input type="hidden" name="role_id" value={role.id} />
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-slate-900">{role.name}</p>
+                        <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{role.name}</span>
+                      </div>
+                      <p className="text-sm text-slate-500">{role.description ?? (role.organization_id ? 'Organization role' : 'Global role')}</p>
+                    </div>
+                    <StatusBadge label={`${role.user_roles?.length ?? 0} assigned`} tone="neutral" dot={false} />
+                  </div>
+                  <textarea className={`${inputClass} mt-3 min-h-28 w-full font-mono text-xs`} name="permissions" defaultValue={(role.role_permissions ?? []).map((item: AnyRow) => item.permission).filter(Boolean).join('\n')} placeholder="quotes.read&#10;quotes.approve" />
+                  <button type="submit" className={`${secondaryButtonClass} mt-3`}>Save permissions</button>
+                </form>
+              );
+            })}
+          </div>
+        </SectionCard>
+        {/* Member role coverage */}
+        <SectionCard title="Member role coverage" eyebrow="Workspace access" description="Review active memberships and role assignment coverage.">
+          <div className="space-y-3">
+            {members.map((member) => {
+              const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+              const memberRoles = (member.user_roles ?? []).map((row: AnyRow) => row.roles?.name).filter(Boolean) as string[];
+              return (
+                <div key={member.id} className="rounded-3xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-900">{profile?.full_name ?? profile?.email ?? 'Unnamed member'}</p>
+                      <p className="text-sm text-slate-500">{profile?.email ?? 'No email'}</p>
+                    </div>
+                    <BoolBadge value={member.is_active} />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {memberRoles.length > 0 ? memberRoles.map(r => {
+                      const s = roleBadgeStyle(r);
+                      return <span key={r} style={{ fontSize: '10px', fontWeight: 700, padding: '2px 9px', borderRadius: '999px', background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{r}</span>;
+                    }) : <span className="text-xs text-slate-400">No role assigned</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
+      </div>
+    </div>
+  );
 }

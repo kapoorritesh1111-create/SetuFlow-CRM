@@ -11,6 +11,7 @@ import { isPipelineInJourney, type LeadJourney } from '@/lib/journey';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildPipelineAiMessage, buildPipelineLaneSummary, getBoardMessageTone, normalizeLeadTypeParam } from '@/features/pipeline/logic/board';
 import { LeadCard } from '@/features/pipeline/ui/lead-card';
+import { PipelineDetailPanel } from '@/features/pipeline/ui/pipeline-detail-panel';
 import type { PipelineBoardProps, Lead, Stage, FollowUp, Activity } from '@/features/pipeline/types/board';
 import { buildStageMoveReadiness, type StageMoveReadiness } from '@/lib/queries/pipeline-stage-gating';
 import { cn, formatDateTime } from '@/lib/utils';
@@ -145,6 +146,11 @@ export function PipelineBoard({
   // allows us to add a subtle highlight to the stage to indicate a valid drop target.  It is
   // cleared when the drag leaves or completes.
   const [dragOverStageId, setDragOverStageId] = useState<string | null>(null);
+  // Detail panel — slide-in from right on card click
+  const [detailPanelLeadId, setDetailPanelLeadId] = useState<string | null>(null);
+  // Bulk select state for multi-card stage move
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [bulkStageId, setBulkStageId] = useState<string>('');
 
 
   const ownerOptions = useMemo(() => {
@@ -615,6 +621,15 @@ export function PipelineBoard({
                   };
                 })
 .filter((value): value is { stageId: string; label: string; disabled: boolean; sortOrder: number } => Boolean(value))}
+              isSelected={selectedLeadIds.has(lead.id)}
+              onSelectedChange={(leadId, checked) => {
+                setSelectedLeadIds(prev => {
+                  const next = new Set(prev);
+                  if (checked) next.add(leadId); else next.delete(leadId);
+                  return next;
+                });
+              }}
+              onOpenDetail={(leadId) => setDetailPanelLeadId(leadId)}
             />
             </div>
           );
@@ -916,6 +931,62 @@ export function PipelineBoard({
           {!filteredLeads.length&&<div style={{margin:'14px 24px',padding:'40px',textAlign:'center',background:'white',borderRadius:'22px',border:'2px dashed #e2e8f0',fontSize:'13px',color:'#64748b'}}>No pipeline cards match the current filters. Reset filters or switch journey modes.</div>}
         </>
       )}
+
+      {/* Bulk action floating bar */}
+      {selectedLeadIds.size >= 1 && (
+        <div style={{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',zIndex:60,display:'flex',alignItems:'center',gap:'10px',padding:'12px 18px',background:'white',borderRadius:'14px',border:'1px solid #e2e8f0',boxShadow:'0 8px 24px rgba(15,23,42,.14)',backdropFilter:'blur(8px)'}}>
+          <span style={{fontSize:'12px',fontWeight:700,color:'#0f172a',whiteSpace:'nowrap'}}>{selectedLeadIds.size} lead{selectedLeadIds.size>1?'s':''} selected — Move to:</span>
+          <select value={bulkStageId} onChange={e=>setBulkStageId(e.target.value)}
+            style={{height:'32px',borderRadius:'7px',border:'1px solid #e2e8f0',padding:'0 10px',fontSize:'12px',background:'#f8fafc',minWidth:'140px'}}>
+            <option value="">Choose stage…</option>
+            {stages.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <button type="button" disabled={!bulkStageId || isPending}
+            onClick={() => {
+              if (!bulkStageId) return;
+              Array.from(selectedLeadIds).forEach(lid => {
+                const formData = new FormData();
+                formData.append('lead_id', lid);
+                formData.append('stage_id', bulkStageId);
+                void moveLeadToStage(undefined, formData);
+              });
+              setSelectedLeadIds(new Set());
+              setBulkStageId('');
+            }}
+            style={{padding:'6px 14px',borderRadius:'7px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,border:'none',cursor:'pointer',opacity:!bulkStageId?0.5:1}}>
+            Move
+          </button>
+          <button type="button" onClick={()=>setSelectedLeadIds(new Set())}
+            style={{padding:'6px 12px',borderRadius:'7px',border:'1px solid #e2e8f0',background:'white',color:'#475569',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* Slide-in detail panel */}
+      {detailPanelLeadId && (() => {
+        const panelLead = localLeads.find(l => l.id === detailPanelLeadId);
+        if (!panelLead) return null;
+        const panelReadiness = buildStageMoveReadiness(panelLead, stages.find(s => s.id === panelLead.stage_id) ?? null, localFollowUps.filter(f => f.lead_id === panelLead.id));
+        const panelHealth = computeLeadHealth(panelLead, localFollowUps.filter(f => f.lead_id === panelLead.id), activityMap.get(panelLead.id) ?? null);
+        const panelOwner = profiles.find(p => p.id === panelLead.owner_user_id)?.full_name ?? 'Unassigned';
+        const panelHref = buildLeadCommandCenterHref(panelLead.id);
+        return (
+          <PipelineDetailPanel
+            lead={panelLead as any}
+            stages={stages}
+            ownerLabel={panelOwner}
+            health={panelHealth}
+            moveReadiness={panelReadiness}
+            commandCenterHref={panelHref}
+            onClose={() => setDetailPanelLeadId(null)}
+            onMove={(leadId, stageId) => { handleMove(leadId, stageId); setDetailPanelLeadId(null); }}
+            onSchedule={(leadId, at) => void handleScheduleFollowUp(leadId, at)}
+            onAddNote={(leadId, note) => void handleAddNote(leadId, note)}
+            isPending={isPending}
+          />
+        );
+      })()}
     </div>
   );
 }

@@ -21,9 +21,9 @@ const nav = [
   ] },
 ] as const;
 
-export type GapItem = { icon: string; text: string; href: string };
+export type AdminGapItem = { icon: string; text: string; href: string };
 
-export function AdminSettingsShell({ active, organizationName, missingCount = 0, gapItems = [], sectionTitle, children }: { active: AdminNavKey; organizationName: string; missingCount?: number; gapItems?: GapItem[]; sectionTitle?: string; children: ReactNode }) {
+export function AdminSettingsShell({ active, organizationName, missingCount = 0, sectionTitle, gapItems = [], children }: { active: AdminNavKey; organizationName: string; missingCount?: number; sectionTitle?: string; gapItems?: AdminGapItem[]; children: ReactNode }) {
   return (
     <div className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)]">
       <aside className="rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.06)] xl:sticky xl:top-20 xl:self-start">
@@ -53,7 +53,7 @@ export function AdminPageHero({ title, description, badge, cta, stats }: { title
   return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description={description} badge={badge} actions={cta} meta={stats?.map((stat) => <ToolbarStat key={stat.label} label={stat.label} value={String(stat.value)} tone={stat.tone ?? 'default'} />)} />;
 }
 
-function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: number; gapItems?: GapItem[] }) {
+function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: number; gapItems?: AdminGapItem[] }) {
   const clear = missingCount === 0;
   return <section className={cn('rounded-[2rem] border p-4', clear ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50')}>
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -61,12 +61,11 @@ function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: numbe
         <span className="text-2xl" aria-hidden="true">{clear ? '✅' : '⚠️'}</span>
         <div>
           <p className={cn('text-sm font-bold', clear ? 'text-emerald-800' : 'text-amber-800')}>{clear ? 'Governance clear' : 'Governance attention needed'}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-700">{clear ? 'Markets, stages, pipelines, trade events, and security controls are configured.' : `${missingCount} setup area${missingCount === 1 ? '' : 's'} need attention before every workflow is fully governed.`}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-700">{clear ? 'Markets, stages, pipelines, trade events, and security controls are configured.' : `${missingCount} setup area${missingCount === 1 ? '' : 's'} still need attention before every workflow is fully governed.`}</p>
           {gapItems.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {gapItems.map(item => (
-                <Link key={item.href} href={item.href}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-200 transition">
+                <Link key={item.href} href={item.href} className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-200">
                   <span>{item.icon}</span><span>{item.text}</span><span className="text-amber-600">→ Fix</span>
                 </Link>
               ))}

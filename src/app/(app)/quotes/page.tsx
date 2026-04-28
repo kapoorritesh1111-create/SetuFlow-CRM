@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -139,8 +140,6 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const totalValue = viewModel.items.reduce((s, i) => s + i.subtotal, 0);
   const firstApproval = approvalQueue[0]; const secondApproval = approvalQueue[1];
 
-  const ss = (px: React.CSSProperties) => px;
-
   return (
     <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
 
@@ -251,7 +250,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
             return (
               <Link key={item.id} href={`/quotes?quoteId=${item.id}&mode=${encodeURIComponent(filters.mode)}&q=${encodeURIComponent(filters.q)}&status=${encodeURIComponent(filters.status)}`}
                 style={{display:'grid',gridTemplateColumns:'30px 1fr 120px 100px 110px 110px 90px 90px',gap:'8px',padding:'12px 18px',borderBottom:'1px solid #e2e8f0',alignItems:'center',cursor:'pointer',textDecoration:'none',background:isSelected?'rgba(12,127,255,.04)':isAccepted?'rgba(5,150,105,.02)':'white',borderLeft,transition:'background .1s'}}>
-                <div><input type="checkbox" style={{width:'16px',height:'16px',borderRadius:'3px'}} onClick={e=>e.stopPropagation()} onChange={()=>{}} checked={false}/></div>
+                <div><input type="checkbox" style={{width:'16px',height:'16px',borderRadius:'3px'}} readOnly checked={false}/></div>
                 <div>
                   <div style={{fontSize:'12px',fontWeight:700,color:'#1e293b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{item.companyName}</div>
                   <div style={{fontSize:'10px',color:'#94a3b8',fontFamily:'monospace',marginTop:'1px'}}>{item.quoteNumber??item.id.slice(0,8)} · {item.lineItems[0]?.productName??'No product'}{item.lineItems.length>1?` + ${item.lineItems.length-1}`:''}</div>

@@ -109,12 +109,16 @@ CREATE TABLE public.contract_line_items (
   overridden_at timestamp with time zone,
   source_quote_line_item_id uuid,
   continuity_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
+  source_quote_version_line_item_id uuid,
+  continuity_source_mode text NOT NULL DEFAULT 'legacy_quote_fallback'::text,
+  organization_id uuid NOT NULL,
   CONSTRAINT contract_line_items_pkey PRIMARY KEY (id),
   CONSTRAINT contract_line_items_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES public.contracts(id),
   CONSTRAINT contract_line_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
   CONSTRAINT contract_line_items_product_variant_id_fkey FOREIGN KEY (product_variant_id) REFERENCES public.product_variants(id),
   CONSTRAINT contract_line_items_catalog_price_id_fkey FOREIGN KEY (catalog_price_id) REFERENCES public.product_prices(id),
-  CONSTRAINT contract_line_items_overridden_by_fkey FOREIGN KEY (overridden_by) REFERENCES public.profiles(id)
+  CONSTRAINT contract_line_items_overridden_by_fkey FOREIGN KEY (overridden_by) REFERENCES public.profiles(id),
+  CONSTRAINT contract_line_items_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.contracts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -145,6 +149,9 @@ CREATE TABLE public.contracts (
   released_at timestamp with time zone,
   dispatched_at timestamp with time zone,
   completed_at timestamp with time zone,
+  accepted_quote_version_id uuid,
+  commercial_snapshot_mode text NOT NULL DEFAULT 'legacy_quote_fallback'::text,
+  commercial_handoff_at timestamp with time zone,
   CONSTRAINT contracts_pkey PRIMARY KEY (id),
   CONSTRAINT contracts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
   CONSTRAINT contracts_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id),
@@ -475,9 +482,11 @@ CREATE TABLE public.lead_markets (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   lead_id uuid NOT NULL,
   market_id uuid NOT NULL,
+  organization_id uuid NOT NULL,
   CONSTRAINT lead_markets_pkey PRIMARY KEY (id),
   CONSTRAINT lead_markets_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
-  CONSTRAINT lead_markets_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id)
+  CONSTRAINT lead_markets_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id),
+  CONSTRAINT lead_markets_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.lead_playbook_runs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -498,9 +507,13 @@ CREATE TABLE public.lead_product_interests (
   product_id uuid,
   label text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  interest_type text NOT NULL DEFAULT 'confirmed_product'::text,
+  source_context jsonb NOT NULL DEFAULT '{}'::jsonb,
+  organization_id uuid NOT NULL,
   CONSTRAINT lead_product_interests_pkey PRIMARY KEY (id),
   CONSTRAINT lead_product_interests_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
-  CONSTRAINT lead_product_interests_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+  CONSTRAINT lead_product_interests_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
+  CONSTRAINT lead_product_interests_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.lead_scores (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -674,6 +687,7 @@ CREATE TABLE public.organizations (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   default_currency text DEFAULT 'USD'::text,
+  approval_threshold_pct numeric DEFAULT 15 CHECK (approval_threshold_pct >= 0::numeric AND approval_threshold_pct <= 100::numeric),
   CONSTRAINT organizations_pkey PRIMARY KEY (id),
   CONSTRAINT organizations_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.profiles(id)
 );
@@ -891,6 +905,12 @@ CREATE TABLE public.product_variants (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   created_by uuid,
   updated_by uuid,
+  country_of_origin text,
+  export_metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  packaging_type text,
+  packaging_unit text,
+  shipment_notes text,
+  shipment_attributes jsonb NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT product_variants_pkey PRIMARY KEY (id),
   CONSTRAINT product_variants_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
   CONSTRAINT product_variants_hs_code_id_fkey FOREIGN KEY (hs_code_id) REFERENCES public.hs_codes(id),
