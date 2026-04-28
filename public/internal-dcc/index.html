@@ -2,578 +2,556 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SETU Flow DCC &mdash; Apr 27 2026</title>
+  <title>SETU Flow DCC — Apr 28 2026 Regression Reset</title>
   <style>
     :root{--bg:#f2f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--mu:#64748b;--brand:#0c7fff;--navy:#0b2e4a;--good:#059669;--warn:#d97706;--bad:#dc2626;--violet:#7c3aed;--sh:0 4px 18px rgba(15,23,42,.07);--r:18px}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.55}
-    .wrap{max-width:1440px;margin:0 auto;padding:20px 18px 80px}
-    h1,h2,h3,p{margin:0}
+    .wrap{max-width:1440px;margin:0 auto;padding:20px 18px 80px}h1,h2,h3,p{margin:0}
     .hero{background:linear-gradient(135deg,#0b2e4a 0%,#1a4f7a 55%,#279491 100%);color:#fff;border-radius:22px;padding:24px;box-shadow:var(--sh)}
-    .hero-ey{font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:8px}
-    .hero h1{font-size:24px;font-weight:900;letter-spacing:-.04em;line-height:1.07}
-    .hero p{margin-top:8px;color:rgba(255,255,255,.82);font-size:12px;line-height:1.7;max-width:960px}
-    .pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
-    .pill{display:inline-flex;padding:3px 9px;border-radius:999px;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:#fff}
-    .pill.g{background:#d1fae5;color:#065f46;border-color:#a7f3d0}
-    .pill.w{background:#fef3c7;color:#92400e;border-color:#fde68a}
-    .pill.v{background:#ede9fe;color:#5b21b6;border-color:#ddd6fe}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px}
-    .card h2{font-size:15px;font-weight:800;margin-bottom:6px}
-    .card h3{font-size:13px;font-weight:700;margin-bottom:4px}
-    .grid{display:grid;gap:10px}
-    .g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
-    .sec{margin-top:14px}
-    .mu{color:var(--mu)}.sm{font-size:11px}
-    code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1f5f9;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:10px;color:#334155}
-    .kp .n{font-size:26px;font-weight:900;letter-spacing:-.04em}
-    .kp .l{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-top:2px}
-    .s{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
-    .s.good{background:#f0fdf4;color:var(--good);border:1px solid #a7f3d0}
-    .s.warn{background:#fffbeb;color:var(--warn);border:1px solid #fde68a}
-    .s.active{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
-    .s.neutral{background:#f1f5f9;color:#475569;border:1px solid var(--line)}
-    .s.violet{background:#f5f3ff;color:var(--violet);border:1px solid #ddd6fe}
-    .t{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:12px}
-    .t th{background:#f8fafc;color:#94a3b8;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.12em;padding:7px 10px;border-bottom:1px solid var(--line)}
-    .t td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-    .t tr:last-child td{border-bottom:0}
-    .co{border-radius:12px;padding:11px 14px;border:1px solid;margin-bottom:8px;font-size:12px}
-    .co.g{background:#f0fdf4;border-color:#a7f3d0;color:#065f46}
-    .co.b{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}
-    .co.w{background:#fffbeb;border-color:#fde68a;color:#92400e}
-    .tb{display:flex;gap:2px;background:#f1f5f9;border-radius:11px;padding:3px;margin-top:14px;flex-wrap:wrap}
-    .tbtn{padding:7px 13px;border-radius:8px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--mu);transition:.12s;white-space:nowrap}
-    .tbtn.a{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(15,23,42,.07)}
-    .tbtn:hover:not(.a){color:var(--text)}
-    .tp{display:none;margin-top:14px}.tp.a{display:block}
-    .mr{display:flex;align-items:center;gap:9px;margin-bottom:7px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
-    .mn{font-weight:700;font-size:12px;min-width:175px}
-    .bw{background:#f1f5f9;border-radius:999px;height:6px;overflow:hidden;flex:1}
-    .bf{height:100%;border-radius:999px}
-    .bf.g{background:var(--good)}.bf.w{background:var(--warn)}.bf.b{background:var(--brand)}
-    .mp{font-size:12px;font-weight:900;min-width:38px;text-align:right}
-    .pb{background:#0f172a;border-radius:12px;padding:14px;margin-top:8px;position:relative}
-    .pb pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#e2e8f0;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:520px;overflow-y:auto}
-    .cbtn{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:6px;padding:3px 11px;font-size:10px;font-weight:700;cursor:pointer}
-    .cbtn:hover{background:rgba(255,255,255,.22)}
-    .gi{display:flex;gap:8px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:#f8fafc;margin-bottom:5px;font-size:11px;line-height:1.6}
-    .sev{font-size:9px;font-weight:900;text-transform:uppercase;padding:2px 6px;border-radius:999px;white-space:nowrap;margin-top:3px;flex-shrink:0}
-    .sev.crit{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
-    .sev.high{background:#fff7ed;color:#9a3412;border:1px solid #fdba74}
-    .sev.med{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
-    @media(max-width:1050px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}
-    @media(max-width:700px){.wrap{padding:10px 10px 40px}.g2,.g3,.g4{grid-template-columns:1fr}.tbtn{padding:5px 9px;font-size:10px}}
+    .hero-ey{font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:8px}.hero h1{font-size:24px;font-weight:900;letter-spacing:-.04em;line-height:1.07}.hero p{margin-top:8px;color:rgba(255,255,255,.82);font-size:12px;line-height:1.7;max-width:1050px}
+    .pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}.pill{display:inline-flex;padding:3px 9px;border-radius:999px;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:#fff}.pill.g{background:#d1fae5;color:#065f46;border-color:#a7f3d0}.pill.w{background:#fef3c7;color:#92400e;border-color:#fde68a}.pill.r{background:#fee2e2;color:#991b1b;border-color:#fecaca}.pill.v{background:#ede9fe;color:#5b21b6;border-color:#ddd6fe}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px}.card h2{font-size:15px;font-weight:800;margin-bottom:6px}.card h3{font-size:13px;font-weight:700;margin-bottom:4px}.grid{display:grid;gap:10px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.sec{margin-top:14px}.mu{color:var(--mu)}.sm{font-size:11px}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1f5f9;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:10px;color:#334155}
+    .kp .n{font-size:26px;font-weight:900;letter-spacing:-.04em}.kp .l{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-top:2px}
+    .s{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}.s.good{background:#f0fdf4;color:var(--good);border:1px solid #a7f3d0}.s.warn{background:#fffbeb;color:var(--warn);border:1px solid #fde68a}.s.bad{background:#fee2e2;color:var(--bad);border:1px solid #fecaca}.s.active{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}.s.neutral{background:#f1f5f9;color:#475569;border:1px solid var(--line)}.s.violet{background:#f5f3ff;color:var(--violet);border:1px solid #ddd6fe}
+    .t{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:12px}.t th{background:#f8fafc;color:#94a3b8;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.12em;padding:7px 10px;border-bottom:1px solid var(--line)}.t td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}.t tr:last-child td{border-bottom:0}
+    .co{border-radius:12px;padding:11px 14px;border:1px solid;margin-bottom:8px;font-size:12px}.co.g{background:#f0fdf4;border-color:#a7f3d0;color:#065f46}.co.b{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}.co.w{background:#fffbeb;border-color:#fde68a;color:#92400e}.co.r{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+    .tb{display:flex;gap:2px;background:#f1f5f9;border-radius:11px;padding:3px;margin-top:14px;flex-wrap:wrap}.tbtn{padding:7px 13px;border-radius:8px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--mu);transition:.12s;white-space:nowrap}.tbtn.a{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(15,23,42,.07)}.tbtn:hover:not(.a){color:var(--text)}.tp{display:none;margin-top:14px}.tp.a{display:block}
+    .mr{display:flex;align-items:center;gap:9px;margin-bottom:7px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}.mn{font-weight:700;font-size:12px;min-width:175px}.bw{background:#f1f5f9;border-radius:999px;height:6px;overflow:hidden;flex:1}.bf{height:100%;border-radius:999px}.bf.g{background:var(--good)}.bf.w{background:var(--warn)}.bf.b{background:var(--brand)}.bf.r{background:var(--bad)}.mp{font-size:12px;font-weight:900;min-width:38px;text-align:right}
+    .pb{background:#0f172a;border-radius:12px;padding:14px;margin-top:8px;position:relative}.pb pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#e2e8f0;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:520px;overflow-y:auto}.cbtn{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:6px;padding:3px 11px;font-size:10px;font-weight:700;cursor:pointer}
+    .gi{display:flex;gap:8px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:#f8fafc;margin-bottom:5px;font-size:11px;line-height:1.6}.sev{font-size:9px;font-weight:900;text-transform:uppercase;padding:2px 6px;border-radius:999px;white-space:nowrap;margin-top:3px;flex-shrink:0}.sev.crit{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}.sev.high{background:#fff7ed;color:#9a3412;border:1px solid #fdba74}.sev.med{background:#fffbeb;color:#92400e;border:1px solid #fde68a}.sev.low{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
+    @media(max-width:1050px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}@media(max-width:700px){.wrap{padding:10px 10px 40px}.g2,.g3,.g4{grid-template-columns:1fr}.tbtn{padding:5px 9px;font-size:10px}}
   </style>
 </head>
 <body>
-<main class="wrap">
+<main>
 
-<section class="hero">
-  <div class="hero-ey">SETU Flow Internal DCC &middot; Staff-Level Audit &middot; Apr 27 2026 &middot; 0 TypeScript Errors</div>
-  <h1>15 fixes applied across 3 sessions &mdash; build clean &mdash; active PR: NS-10</h1>
-  <p>Full line-by-line audit against all 8 reference HTMLs + NorthStar. Quotes crash fixed, orders upload wired, admin threshold + role badges, dashboard date + KPI drillthrough, catalog 9-col table + category tabs + gap badges, pipeline detail panel + bulk bar. Then 3 Vercel build errors fixed: saveAdminSettingsListItem, moveAdminSettingsListItem, uploadOrderDocument all needed 1-arg wrappers. TypeScript strict: 0 errors.</p>
-  <div class="pills">
-    <span class="pill g">&#10003; quotes crash fixed</span>
-    <span class="pill g">&#10003; orders upload + gate</span>
-    <span class="pill g">&#10003; admin threshold + role badges</span>
-    <span class="pill g">&#10003; dashboard date + KPI drillthrough</span>
-    <span class="pill g">&#10003; catalog tabs + 9-col + gap badges</span>
-    <span class="pill g">&#10003; pipeline detail panel + bulk bar</span>
-    <span class="pill g">&#10003; Vercel build: 3 type errors fixed</span>
-    <span class="pill w">ACTIVE: PR-NS-10 Trade Events</span>
-    <span class="pill v">PLANNED: NS-11 &middot; NS-12 &middot; NS-13</span>
+<header>
+  <div class="ey">SETU Flow Internal DCC · Regression Audit · Apr 28 2026</div>
+  <h1>Reference HTML + NorthStar reset — old workspace regressions now tracked</h1>
+  <p class="lead">This update corrects the previous DCC under-reporting. The screenshots and repo review show Admin/Settings, Catalog, Orders, Leads filters, and several route shells have moved backward or are still calling old/partial workspaces. Do not treat the product as 80%+ ready until these spaces are restored and proved by build + route smoke.</p>
+  <div class="badges">
+    <span class="pill r">build proof still missing</span>
+    <span class="pill r">old workspace regressions confirmed</span>
+    <span class="pill w">filters inconsistent outside Leads</span>
+    <span class="pill b">12 PRs needed to reach 100%</span>
+    <span class="pill g">internal-dcc updated only</span>
   </div>
-</section>
+</header>
 
 <section class="sec grid g4">
-  <div class="card kp"><div class="n" style="color:var(--good)">15</div><div class="l">Total fixes</div><p class="mu sm">Runtime + build + UI + workflow.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--good)">0</div><div class="l">TypeScript errors</div><p class="mu sm">tsc --strict --noEmit passes clean.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--warn)">1</div><div class="l">Active PR</div><p class="mu sm">PR-NS-10 Trade Events &amp; Capture.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--violet)">3</div><div class="l">Planned PRs</div><p class="mu sm">NS-11 &middot; NS-12 &middot; NS-13 Final.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--bad)">64%</div><div class="l">Overall readiness</div><p class="mu sm">Lowered after screenshot + repo route review.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--bad)">0</div><div class="l">Proof builds</div><p class="mu sm">No same-zip green typecheck/test/build proof yet.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--violet)">12</div><div class="l">PRs to 100%</div><p class="mu sm">Repair, Admin, Catalog, Orders, Leads, Pipeline, Quotes, Trade, Dashboard, Cross-page, Design, QA.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--warn)">5</div><div class="l">Confirmed regressions</div><p class="mu sm">Admin/Settings, Catalog, Orders, filters, hidden workflow wiring.</p></div>
 </section>
 
 <div class="tb">
   <button class="tbtn a" onclick="showTab('status',this)">&#128202; Status</button>
-  <button class="tbtn" onclick="showTab('modules',this)">Module Readiness</button>
-  <button class="tbtn" onclick="showTab('prs',this)">PR Table</button>
-  <button class="tbtn" onclick="showTab('build',this)">&#128679; Build Fixes</button>
-  <button class="tbtn" onclick="showTab('prompts',this)">&#9889; Next Prompts</button>
-  <button class="tbtn" onclick="showTab('schema',this)">Schema</button>
+  <button class="tbtn" onclick="showTab('modules',this)">Module Scores</button>
+  <button class="tbtn" onclick="showTab('gaps',this)">Regression Gaps</button>
+  <button class="tbtn" onclick="showTab('prs',this)">PR Plan</button>
+  <button class="tbtn" onclick="showTab('prompts',this)">&#9889; PR Prompts</button>
+  <button class="tbtn" onclick="showTab('rules',this)">Build Rules</button>
 </div>
 
-<!-- STATUS TAB -->
 <div class="tp a" id="tab-status">
-  <div class="co g">Build is clean. <strong>0 TypeScript errors. 0 event handlers in server components. 0 broken imports.</strong> Push BuildFixed.zip to GitHub then run PR-NS-10 prompt.</div>
+  <div class="co r"><strong>Correction to prior DCC:</strong> the previous audit was too optimistic. It did not call out that Admin/Settings, Catalog, and Orders are visibly back on old/partial workspace shells, and it under-counted Leads filter/workflow gaps.</div>
+    <div class="co w"><strong>Why this happened:</strong> build fixes and quote cleanup were applied while reference-parity checks were not run route-by-route. The repo can compile parts of a route while the visible page still points to old workspace components or incomplete client shells.</div>
+    <div class="co w"><strong>PR-REPAIR-01 update — Apr 28:</strong> canonical pricing-basis contract was consolidated across quote, catalog, lead command center, trade workflow, orders, and quote metadata paths. Proof is not green because <code>npm ci --no-audit --no-fund</code>, <code>npm run typecheck</code>, and <code>npm test</code> timed out in this container, and <code>npm run build</code> failed with <code>next: not found</code> after dependencies were not installed. PR-REPAIR-01 remains active.</div>
   <div class="sec grid g2">
     <div class="card">
-      <h2>Session 3 &mdash; Vercel build fixes</h2>
-      <div class="gi"><span class="sev crit">CRIT</span><div><strong>saveAdminSettingsListItem wrong type</strong> &mdash; was aliased to 2-arg function. Fixed: proper 1-arg wrapper added to settings/server/actions.ts.</div></div>
-      <div class="gi"><span class="sev crit">CRIT</span><div><strong>moveAdminSettingsListItem wrong type</strong> &mdash; had no move logic. Fixed: 1-arg wrapper that swaps sort_order between adjacent items.</div></div>
-      <div class="gi"><span class="sev crit">CRIT</span><div><strong>uploadOrderDocument wrong type</strong> &mdash; 2-arg used as form action. Fixed: <code>uploadOrderDocumentAction</code> 1-arg wrapper. orders/page.tsx updated.</div></div>
-      <div class="gi"><span class="sev high">HIGH</span><div>onChange removed from file input in orders/page.tsx (not valid in RSC).</div></div>
-      <div class="gi"><span class="sev high">HIGH</span><div>onClick + onChange removed from checkbox in quotes/page.tsx. Replaced with readOnly.</div></div>
+      <h2>Evidence from screenshots + repo review</h2>
+      <div class="gi"><span class="sev crit">Admin</span><div><strong>/admin/organization</strong> is showing a generic Organization workspace and Product management tab, not the full rebuilt Admin/Settings command center.</div></div>
+      <div class="gi"><span class="sev crit">Catalog</span><div><strong>/products</strong> is driven by <code>ProductsSpreadsheetPage</code>; it has pieces of the new UI but still behaves as spreadsheet-first and not the full rebuilt catalog command workspace.</div></div>
+      <div class="gi"><span class="sev crit">Orders</span><div><strong>/orders</strong> shows an empty/old execution state even when the workflow expectation is accepted quote &rarr; operational order cards with blockers and documents.</div></div>
+      <div class="gi"><span class="sev high">Leads</span><div><strong>Filters</strong> are the standard to copy, but the DCC did not account for missing saved-view/filter parity and active filter behavior across pages.</div></div>
+      <div class="gi"><span class="sev high">Pipeline</span><div><strong>Pipeline filters</strong> are visually close but not fully aligned to Leads filter behavior and saved view/chip standards.</div></div>
     </div>
     <div class="card">
-      <h2>Sessions 1&ndash;2 &mdash; UI + runtime fixes</h2>
-      <div class="gi"><span class="sev crit">CRIT</span><div>quotes/page.tsx crash &mdash; React.CSSProperties without import + dead ss variable. Both removed.</div></div>
-      <div class="gi"><span class="sev high">HIGH</span><div>Orders: Link/documents replaced with uploadOrderDocumentAction form. Dispatch gate button disabled when blocked.</div></div>
-      <div class="gi"><span class="sev high">HIGH</span><div>Admin: approval threshold UI + updateApprovalThreshold server action. Role badge colors (violet/sky/emerald/amber). gapItems + sectionTitle props.</div></div>
-      <div class="gi"><span class="sev high">HIGH</span><div>Catalog: category view tabs, 9-col table (Ex-Factory/FOB/CIF), category group headers, gap badges, 5-stat strip.</div></div>
-      <div class="gi"><span class="sev high">HIGH</span><div>Pipeline: slide-in detail panel, bulk action floating bar, onOpenDetail + onSelectedChange wired.</div></div>
-      <div class="gi"><span class="sev med">MED</span><div>Dashboard: date inline in title. All 5 KPIs get drillthrough href + label.</div></div>
+      <h2>New release rule</h2>
+      <p class="mu sm">A module cannot score above 80% unless its live route is calling the rebuilt workspace, its filters work, and its reference HTML checkpoints are visibly represented. A module cannot score 100% without proof commands and one workflow smoke path.</p>
+      <table class="t" style="margin-top:10px"><thead><tr><th>Claim</th><th>Allowed only when</th></tr></thead><tbody>
+        <tr><td>Build clean</td><td><code>npm run typecheck</code>, <code>npm test</code>, and <code>npm run build</code> pass on the same zip.</td></tr>
+        <tr><td>Reference aligned</td><td>Route screenshot/source matches the module reference HTML.</td></tr>
+        <tr><td>NorthStar complete</td><td>Trade Event &rarr; Lead &rarr; Quote &rarr; Approval &rarr; Send &rarr; Order &rarr; Dashboard smoke works.</td></tr>
+        <tr><td>Forward progress</td><td>No old workspace remains as the primary user route.</td></tr>
+      </tbody></table>
     </div>
   </div>
 </div>
 
-<!-- MODULES TAB -->
 <div class="tp" id="tab-modules">
+  <div class="co b">Scores are reduced to reflect actual route parity, not intended architecture. These are honest development scores after the latest screenshots.</div>
   <section class="sec card">
-    <h2>Module readiness &mdash; post all sessions</h2>
-    <p class="mu sm" style="margin-bottom:10px">Honest scores against reference HTML + NorthStar workflow coverage.</p>
-    <div class="mr"><div class="mn">Dashboard</div><div class="bw"><div class="bf g" style="width:91%"></div></div><div class="mp" style="color:var(--good)">91%</div><span class="s good">Date inline + KPI drillthrough</span></div>
-    <div class="mr"><div class="mn">Leads</div><div class="bw"><div class="bf g" style="width:91%"></div></div><div class="mp" style="color:var(--good)">91%</div><span class="s good">Stable</span></div>
-    <div class="mr"><div class="mn">Pipeline</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s good">Detail panel + bulk bar + drag/drop RPC</span></div>
-    <div class="mr"><div class="mn">Catalog</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s good">Category tabs + 9-col + gap badges</span></div>
-    <div class="mr"><div class="mn">Quotes</div><div class="bw"><div class="bf g" style="width:85%"></div></div><div class="mp" style="color:var(--good)">85%</div><span class="s good">Crash fixed &middot; FX Edit: NS-11</span></div>
-    <div class="mr"><div class="mn">Orders</div><div class="bw"><div class="bf g" style="width:87%"></div></div><div class="mp" style="color:var(--good)">87%</div><span class="s good">Upload wired + gate enforced</span></div>
-    <div class="mr"><div class="mn">Admin &amp; Settings</div><div class="bw"><div class="bf g" style="width:89%"></div></div><div class="mp" style="color:var(--good)">89%</div><span class="s good">Threshold + role badges + gapItems</span></div>
-    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf w" style="width:64%"></div></div><div class="mp" style="color:var(--warn)">64%</div><span class="s active">PR-NS-10 active</span></div>
-    <div class="mr"><div class="mn">AI Suggestions</div><div class="bw"><div class="bf g" style="width:92%"></div></div><div class="mp" style="color:var(--good)">92%</div><span class="s good">Stable</span></div>
-    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf w" style="width:74%"></div></div><div class="mp" style="color:var(--warn)">74%</div><span class="s neutral">PR-NS-11 planned</span></div>
+    <h2>Module readiness — regression-adjusted audit</h2>
+    <div class="mr"><div class="mn">Dashboard</div><div class="bw"><div class="bf w" style="width:78%"></div></div><div class="mp" style="color:var(--warn)">78%</div><span class="s warn">Mostly intact; drilldown and cross-page data proof pending</span></div>
+    <div class="mr"><div class="mn">Leads + Command Center</div><div class="bw"><div class="bf w" style="width:74%"></div></div><div class="mp" style="color:var(--warn)">74%</div><span class="s warn">Best filter reference, but more hidden saved-view/workflow gaps than DCC called out</span></div>
+    <div class="mr"><div class="mn">Pipeline</div><div class="bw"><div class="bf w" style="width:72%"></div></div><div class="mp" style="color:var(--warn)">72%</div><span class="s warn">Board visible; filters/chips/DnD proof/detail parity incomplete</span></div>
+    <div class="mr"><div class="mn">Catalog</div><div class="bw"><div class="bf r" style="width:58%"></div></div><div class="mp" style="color:var(--bad)">58%</div><span class="s bad">Regressed to spreadsheet/partial workspace; rebuilt catalog command space must be restored</span></div>
+    <div class="mr"><div class="mn">Quotes</div><div class="bw"><div class="bf r" style="width:62%"></div></div><div class="mp" style="color:var(--bad)">62%</div><span class="s bad">Type cleanup incomplete; lifecycle/approval/validity still not proved</span></div>
+    <div class="mr"><div class="mn">Orders</div><div class="bw"><div class="bf r" style="width:52%"></div></div><div class="mp" style="color:var(--bad)">52%</div><span class="s bad">Visible old/empty execution space; accepted quote to order lane not represented</span></div>
+    <div class="mr"><div class="mn">Admin + Settings</div><div class="bw"><div class="bf r" style="width:50%"></div></div><div class="mp" style="color:var(--bad)">50%</div><span class="s bad">Old/partial organization workspace; rebuilt admin/settings sections missing as primary</span></div>
+    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf r" style="width:48%"></div></div><div class="mp" style="color:var(--bad)">48%</div><span class="s bad">Dedicated lane not complete; capture_defaults and entry counts not proved</span></div>
+    <div class="mr"><div class="mn">AI Suggestions</div><div class="bw"><div class="bf w" style="width:76%"></div></div><div class="mp" style="color:var(--warn)">76%</div><span class="s warn">Stable surface; applied-to-communications workflow pending</span></div>
+    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf r" style="width:46%"></div></div><div class="mp" style="color:var(--bad)">46%</div><span class="s bad">End-to-end handoff not proved; DCC must stop marking planned work complete</span></div>
   </section>
 </div>
 
-<!-- PR TABLE TAB -->
+<div class="tp" id="tab-gaps">
+  <section class="sec grid g2">
+    <div class="card"><h2>Regression gaps now explicitly tracked</h2>
+      <div class="gi"><span class="sev crit">Admin/Settings</span><div><strong>Primary route mismatch:</strong> <code>src/app/(app)/admin/organization/page.tsx</code> renders <code>OrganizationWorkspace</code>, while the reference expects a broader Admin/Settings rebuilt workspace with governance, settings lists, product management, trade events, users, invitations, markets/countries/pipelines/stages.</div></div>
+      <div class="gi"><span class="sev crit">Catalog</span><div><strong>Primary route mismatch:</strong> <code>src/app/(app)/products/page.tsx</code> directly renders <code>ProductsSpreadsheetPage</code>. The route must be restored to the reference catalog command center with product/pricing/spreadsheet modes as one rebuilt space.</div></div>
+      <div class="gi"><span class="sev crit">Orders</span><div><strong>Old empty execution state:</strong> screenshot shows no operational order cards. The reference requires accepted quote records to become order execution records with documents, compliance, blocker gates, and commercial locks.</div></div>
+      <div class="gi"><span class="sev high">Filters</span><div><strong>Leads is the filter standard:</strong> other modules need the same behavior: tab state, advanced filters, active chips, clear/apply behavior, and URL-backed repeatability. Visual dropdowns alone do not count.</div></div>
+      <div class="gi"><span class="sev high">Hidden fixes</span><div><strong>Type/build changes masked workflow regressions:</strong> quote pricing and approval changes were made without confirming reference UI still points to the rebuilt spaces.</div></div>
+      <div class="gi"><span class="sev med">DCC</span><div><strong>Internal DCC must stay proof-based:</strong> no module should be marked complete until its route, reference parity, workflow behavior, and build proof all pass.</div></div>
+    </div>
+    <div class="card"><h2>Reference parity checkpoints</h2>
+      <table class="t" style="margin-top:10px"><thead><tr><th>Reference</th><th>Now required</th><th>Score</th></tr></thead><tbody>
+        <tr><td>Dashboard HTML</td><td>Command dashboard + real drilldowns.</td><td><span class="s warn">78%</span></td></tr>
+        <tr><td>Leads HTML</td><td>Filters, Quick Lead, CC, quote prep, saved views.</td><td><span class="s warn">74%</span></td></tr>
+        <tr><td>Pipeline HTML</td><td>Filter parity, blocker board, DnD, detail panel.</td><td><span class="s warn">72%</span></td></tr>
+        <tr><td>Catalog HTML</td><td>Rebuilt catalog command center, not spreadsheet-only.</td><td><span class="s bad">58%</span></td></tr>
+        <tr><td>Quotes HTML</td><td>Approval, FX, validity, versions, send lifecycle.</td><td><span class="s bad">62%</span></td></tr>
+        <tr><td>Orders HTML</td><td>Accepted quotes visible as execution orders.</td><td><span class="s bad">52%</span></td></tr>
+        <tr><td>Admin HTML</td><td>Full rebuilt admin/settings workspace sections.</td><td><span class="s bad">50%</span></td></tr>
+        <tr><td>NorthStar</td><td>End-to-end handoff smoke proof.</td><td><span class="s bad">46%</span></td></tr>
+      </tbody></table>
+    </div>
+  </section>
+</div>
+
 <div class="tp" id="tab-prs">
   <section class="sec card">
-    <h2>Full PR table</h2>
-    <table class="t" style="margin-top:10px">
-      <thead><tr><th style="width:55px">#</th><th>PR</th><th>Scope</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td>01&ndash;09</td><td><strong>PR-NS-01 through 09</strong></td><td>Leads, CC, Quote Builder, Quotes, Pipeline, Orders, Catalog, Admin &mdash; all rebuilt.</td><td><span class="s good">Complete &#10003;</span></td></tr>
-        <tr style="background:#f0fdf4"><td>09.1</td><td><strong>PR-NS-09.1</strong> &middot; UI session fixes</td><td>Quotes crash, orders upload+gate, admin threshold+badges+gapItems, dashboard date+drillthrough, catalog tabs+9col+gap, pipeline detail panel+bulk bar.</td><td><span class="s good">Complete &#10003;</span></td></tr>
-        <tr style="background:#f0fdf4"><td>09.2</td><td><strong>PR-NS-09.2</strong> &middot; Vercel build fixes</td><td>saveAdminSettingsListItem, moveAdminSettingsListItem, uploadOrderDocumentAction &mdash; all 1-arg wrappers. Removed event handlers from server pages.</td><td><span class="s good">Complete &#10003;</span></td></tr>
-        <tr style="background:#eff6ff"><td>10</td><td><strong>PR-NS-10</strong> &middot; Trade Events &amp; Capture</td><td>capture_defaults UI in admin, Quick Lead event dropdown, entry counts per event, AI suggestion &rarr; comm log.</td><td><span class="s active">Active</span></td></tr>
-        <tr><td>11</td><td><strong>PR-NS-11</strong> &middot; Cross-page workflow</td><td>quote.status&rarr;'converted', quote sent&rarr;lead stage, lead CC&rarr;pipeline revalidate, isCatalogPriceStale in revise, Quotes Approval+Market filter, FX Edit badge, pipeline drop zone.</td><td><span class="s neutral">Planned</span></td></tr>
-        <tr><td>12</td><td><strong>PR-NS-12</strong> &middot; Design system</td><td>Topbar consistency pass, inline price editing in catalog 3-col cells, remove Leadership lens label.</td><td><span class="s neutral">Planned</span></td></tr>
-        <tr><td>13</td><td><strong>PR-NS-13</strong> &middot; Final QA</td><td>E2E journeys, all reference URL smoke tests, optional dashboard drilldown pages.</td><td><span class="s violet">Final</span></td></tr>
-      </tbody>
-    </table>
+    <h2>PRs required to take all modules to 100%</h2>
+    <div class="co r"><strong>Updated count: 12 PRs.</strong> The previous 9-PR plan missed old workspace regressions and filter parity. Admin/Settings, Catalog, and Orders now each get dedicated repair PRs before final cross-page QA.</div>
+    <table class="t"><thead><tr><th>#</th><th>PR</th><th>Scope</th><th>Primary score lift</th><th>Status</th></tr></thead><tbody>
+      <tr><td>01</td><td><strong>PR-REPAIR-01</strong></td><td>Build proof + canonical quote/catalog/trade contracts. Contract repair applied; proof blocked by dependency install timeout.</td><td>Build confidence 0&rarr;blocked</td><td><span class="s active">Active</span></td></tr>
+      <tr><td>02</td><td><strong>PR-ADMIN-SETTINGS-100</strong></td><td>Restore rebuilt Admin/Settings route spaces and governance sections.</td><td>Admin 50&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>03</td><td><strong>PR-CATALOG-100</strong></td><td>Restore rebuilt Catalog command workspace and quote-ready pricing flows.</td><td>Catalog 58&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>04</td><td><strong>PR-ORDERS-100</strong></td><td>Restore rebuilt Orders execution desk and accepted quote lifecycle.</td><td>Orders 52&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>05</td><td><strong>PR-LEADS-100</strong></td><td>Lead filters, saved views, Quick Lead, CC workflow parity.</td><td>Leads 74&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>06</td><td><strong>PR-PIPELINE-100</strong></td><td>Pipeline filters, DnD proof, detail panel, readiness gates.</td><td>Pipeline 72&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>07</td><td><strong>PR-QUOTES-100</strong></td><td>Quote builder/workspace approval, MOQ, USD source, currency, 7-day validity.</td><td>Quotes 62&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>08</td><td><strong>PR-TRADEEVENTS-100</strong></td><td>Trade event capture_defaults, entries, Quick Lead source, AI comm log.</td><td>Trade 48&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>09</td><td><strong>PR-DASHBOARD-100</strong></td><td>Dashboard drilldowns and action queue reflect repaired modules.</td><td>Dashboard 78&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>10</td><td><strong>PR-CROSSPAGE-100</strong></td><td>NorthStar end-to-end handoffs and revalidation.</td><td>Cross-page 46&rarr;100</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>11</td><td><strong>PR-DESIGN-FILTERS-100</strong></td><td>Topbar/sidebar/filter/chip consistency across all modules.</td><td>All modules polish</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>12</td><td><strong>PR-QA-RELEASE-100</strong></td><td>Final route smoke, line-by-line reference proof, build proof, DCC truth.</td><td>All modules 100%</td><td><span class="s violet">Final</span></td></tr>
+    </tbody></table>
   </section>
 </div>
 
-<!-- BUILD FIXES TAB -->
-<div class="tp" id="tab-build">
-  <div class="co b">Root cause of all 3 Vercel errors: 2-argument server actions (useFormState pattern) used as direct <code>form action=</code> props which require 1-argument. The fix pattern is always the same: create a 1-arg wrapper.</div>
-  <section class="sec card">
-    <h2>The fix pattern for future reference</h2>
-    <div style="background:#0f172a;border-radius:10px;padding:14px;margin-top:10px;font-family:monospace;font-size:11px;color:#e2e8f0;line-height:1.8">
-      <div style="color:#94a3b8">// 2-arg (useFormState pattern) — CANNOT be used as form action=</div>
-      <div>export async function saveX(<span style="color:#fde68a">_: State, formData: FormData</span>): Promise&lt;State&gt; &#123; ... &#125;</div>
-      <br/>
-      <div style="color:#94a3b8">// 1-arg wrapper — CAN be used as form action={saveXAction}</div>
-      <div>export async function saveXAction(<span style="color:#86efac">formData: FormData</span>): Promise&lt;void&gt; &#123;</div>
-      <div>&nbsp;&nbsp;await saveX(undefined, formData);</div>
-      <div>&#125;</div>
-    </div>
-  </section>
-  <section class="sec grid g3">
-    <div class="card"><h3>settings/server/actions.ts</h3><p class="mu sm" style="margin-top:4px">Added <code>saveAdminSettingsListItem</code> (1-arg wrapper) and <code>moveAdminSettingsListItem</code> (1-arg wrapper with sort_order swap by direction=up|down).</p></div>
-    <div class="card"><h3>orders/server/actions.ts</h3><p class="mu sm" style="margin-top:4px">Added <code>uploadOrderDocumentAction</code> (1-arg wrapper around uploadOrderDocument).</p></div>
-    <div class="card"><h3>orders/page.tsx + quotes/page.tsx</h3><p class="mu sm" style="margin-top:4px">Updated import + usage. Removed onChange from file input. Replaced onClick+onChange on checkbox with readOnly.</p></div>
-  </section>
-</div>
-
-<!-- PROMPTS TAB -->
 <div class="tp" id="tab-prompts">
-  <div class="co b" style="margin-bottom:12px">4 prompts. All reference exact file paths from the repo. Copy the full block and paste into a new conversation with the repo zip attached.</div>
+  <div class="co b">Copy one prompt at a time into GPT with the latest repo zip attached. Each prompt includes the new regression rule: do not mark a module complete if it is still calling an old workspace.</div>
+  <div class="card" style="margin-bottom:12px;border:2px solid #dc2626"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s bad">Use first</span><strong style="font-size:14px">PR-REPAIR-01 — build proof + canonical contracts</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p01')">Copy</button><pre id="p01">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-  <div class="card" style="margin-bottom:12px;border:2px solid #0c7fff">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <span class="s active">Active &mdash; use now</span>
-      <strong style="font-size:14px">PR-NS-10 &mdash; Trade Events &amp; Capture lane</strong>
-    </div>
-    <p class="mu sm" style="margin-bottom:8px">Attach BuildFixed.zip. Run after Vercel build passes green.</p>
-    <div class="pb"><button class="cbtn" onclick="copyPrompt('p10')">Copy</button>
-<pre id="p10">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo attached as zip.
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
 
-## YOUR TASK: PR-NS-10 — Trade Events & Capture lane
+TASK:
+Stabilize the build and shared contracts before any UI feature work.
 
-## AUTHORITATIVE REFERENCES (read fully before writing code)
-- /public/reference-html/setuflow-leads-redesign.html — capture drawer, event source dropdown
-- /public/reference-html/setuflow-admin-settings-redesign.html — trade events, capture_defaults
+READ:
+- public/reference-html/setuflow-northstar.html
+- public/reference-html/setuflow-quotes-redesign.html
+- public/reference-html/setuflow-catalog-redesign.html
 
-## CONFIRMED SCHEMA (no migrations needed)
-- trade_events: id, organization_id, name, city, country, starts_on, ends_on, notes, capture_defaults jsonb DEFAULT '{}'
-- trade_event_entries: id, organization_id, trade_event_id, source_label, status, converted_lead_id, captured_at
-- leads.trade_event_id: uuid FK to trade_events (exists)
-- leads.source_type: text — use 'trade_event'
-- communications: organization_id, lead_id, related_entity, related_id, communication_type, direction, channel, subject, body, draft_source, status
+IMPLEMENT:
+1. Create one canonical pricing basis contract used by Quotes, Catalog, Trade Workflow, Lead CC, Orders, and quote metadata.
+2. Supported storage values: ex_factory, fob, cif, bulk_chips.
+3. Source catalog currency defaults USD. Buyer-facing quote currency remains separate and editable.
+4. MOQ default belongs to catalog pricing and quote line defaults.
+5. Approval authority contract: owner/admin/manager allowed; non-owner/admin/manager or price changes require approval.
+6. Repo-wide grep for stale unions excluding bulk_chips, old uppercase basis contracts, pricingBasis string handoffs.
+7. Do not add features. Only make contracts/build green.
 
-## MANDATORY BUILD RULES (previous Vercel builds failed on these — do not repeat)
-1. NEVER use 2-arg server actions as direct form action= props.
-   If action has signature (_: State, formData: FormData), create a 1-arg wrapper first.
-2. NEVER add event handlers (onClick, onChange, onSubmit) to server component pages (page.tsx without 'use client').
-3. The 'trade-event' saved view in leads-workspace.tsx ALREADY EXISTS — do NOT re-add it.
+DCC:
+Mark PR-REPAIR-01 complete only with proof output. If not green, leave status active and list exact blockers.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 02</span><strong style="font-size:14px">PR-ADMIN-SETTINGS-100 — restore rebuilt admin/settings workspaces</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p02')">Copy</button><pre id="p02">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-## VALIDATE FIRST (run these before writing any code)
-1. grep -n "TradeEventsAdminWorkspace" src/features/admin/components/admin-reference-workspaces.tsx
-   Find the event edit form to add capture_defaults fields.
-2. grep -rn "QuickLead\|Quick Lead\|quickLead" src --include="*.tsx" | head -10
-   Find the Quick Lead capture drawer.
-3. grep -n "applied" src/features/ai/server/actions.ts | head -5
-   Find where AI suggestion status is set to 'applied'.
-4. grep -n "trade-event" src/features/leads/components/leads-workspace.tsx | head -3
-   Confirm saved view exists (do NOT re-add).
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
 
-## GAP TE-1: capture_defaults config fields on event edit form
-File: src/features/admin/components/admin-reference-workspaces.tsx (TradeEventsAdminWorkspace)
+TASK:
+Fix the regression where Admin / Settings pages are calling old or partial workspaces instead of the rebuilt reference spaces.
 
-Inside each event's edit form (action={updateTradeEvent}), after the date inputs, add:
-  <div style={{marginTop:'8px'}}>
-    <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'6px'}}>Capture defaults</p>
-    <div style={{display:'grid',gridTemplateColumns:'1fr 160px 130px',gap:'8px'}}>
-      <input className={inputClass} name="capture_default_product_label"
-        defaultValue={event.capture_defaults?.default_product_label ?? ''}
-        placeholder="Default product label (e.g. Mango Powder)" />
-      <select className={inputClass} name="capture_default_lead_type"
-        defaultValue={event.capture_defaults?.default_lead_type ?? ''}>
-        <option value="">No default type</option>
-        <option value="buyer">Buyer</option>
-        <option value="supplier">Supplier</option>
-      </select>
-      <input className={inputClass} name="capture_default_follow_up_days"
-        type="number" min="1" max="30"
-        defaultValue={event.capture_defaults?.default_follow_up_days ?? ''}
-        placeholder="Follow-up days" />
-    </div>
-  </div>
+READ:
+- public/reference-html/setuflow-admin-settings-redesign.html
+- public/reference-html/setuflow-northstar.html
 
-Update updateTradeEvent in src/features/admin/server/actions.ts:
-  const captureDefaults = {
-    default_product_label: normalizeText(formData.get('capture_default_product_label')) ?? null,
-    default_lead_type: normalizeText(formData.get('capture_default_lead_type')) ?? null,
-    default_follow_up_days: formData.get('capture_default_follow_up_days')
-      ? Number(formData.get('capture_default_follow_up_days')) : null,
-  };
-  Include capture_defaults: captureDefaults in the .update() call.
+VALIDATE FIRST:
+1. Inspect routes under src/app/(app)/admin/** and src/app/(app)/settings/**.
+2. Identify which routes use old OrganizationWorkspace/partial workspace instead of rebuilt admin reference workspace sections.
+3. Compare visible tabs/sections against reference HTML: Users, Invitations, Settings lists, Product management, Trade events, Markets/Countries/Pipelines/Stages/Roles, Governance.
 
-## GAP TE-2: Entry counts per event card
-File: src/app/(app)/admin/trade-events/page.tsx
+IMPLEMENT:
+1. Restore/route to the rebuilt admin/settings spaces in the same design system shell.
+2. Preserve product management lane and settings list management.
+3. Add missing governance banners, role badges, threshold controls, capture defaults lane, and settings coverage.
+4. Align filters/buttons with Leads page toolbar pattern.
+5. No dead duplicate old admin workspace left as the primary route.
 
-After fetching events:
-  const { data: entries } = await supabase
-    .from('trade_event_entries')
-    .select('trade_event_id, converted_lead_id')
-    .in('trade_event_id', rows.map(e => e.id));
+DCC:
+Update scores and list each admin/settings route checked.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 03</span><strong style="font-size:14px">PR-CATALOG-100 — restore rebuilt catalog workspace</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p03')">Copy</button><pre id="p03">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-  const entryMap = new Map<string, { total: number; converted: number }>();
-  (entries ?? []).forEach(e => {
-    const cur = entryMap.get(e.trade_event_id) ?? { total: 0, converted: 0 };
-    entryMap.set(e.trade_event_id, {
-      total: cur.total + 1,
-      converted: cur.converted + (e.converted_lead_id ? 1 : 0),
-    });
-  });
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
 
-Pass entryMap to TradeEventsAdminWorkspace. In each event card show:
-  <span>{entryMap?.get(event.id)?.total ?? 0} entries &middot; {entryMap?.get(event.id)?.converted ?? 0} converted</span>
+TASK:
+Fix Catalog regression to the rebuilt Products &amp; Pricing workspace, not old spreadsheet-only space.
 
-## GAP TE-3: Lead Quick Capture — event source dropdown
-Find the Quick Lead capture component (validate step 2).
+READ:
+- public/reference-html/setuflow-catalog-redesign.html
+- public/reference-html/setuflow-northstar.html
 
-If it is a SERVER page: fetch active events in the page and pass as prop:
-  const { data: activeEvents } = await supabase.from('trade_events')
-    .select('id, name, capture_defaults').eq('organization_id', orgId)
-    .or('ends_on.is.null,ends_on.gte.' + new Date().toISOString().split('T')[0])
-    .order('starts_on', { ascending: false }).limit(10);
+VALIDATE FIRST:
+1. Inspect src/app/(app)/products/page.tsx and src/features/products/components/*.
+2. Confirm whether /products uses the rebuilt reference workspace or only ProductsSpreadsheetPage.
+3. Compare header, fast-lane panel, workflow review, products/pricing/spreadsheet tabs, blockers, inline pricing, and quote handoff.
 
-If it is a CLIENT component ('use client'): receive activeEvents as a prop from the parent server page.
+IMPLEMENT:
+1. Restore the rebuilt catalog workspace as primary.
+2. Keep products, pricing view, and spreadsheet modes.
+3. Align filter bar with Leads page standards.
+4. Ensure USD catalog pricing, MOQ, quote-ready status, stale price warnings, and pricing gaps are visible.
+5. Preserve add/edit product drawer and product detail drawer.
+6. Ensure quote handoff opens quote workspace/builder with product context.
 
-Add to the capture form (no onChange — server component rule):
-  <select name="trade_event_id">
-    <option value="">No event source</option>
-    {(activeEvents ?? []).map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
-  </select>
+DCC:
+Update catalog score only with proof.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 04</span><strong style="font-size:14px">PR-ORDERS-100 — restore rebuilt orders execution space</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p04')">Copy</button><pre id="p04">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-In the lead creation server action, after creating the lead:
-  const tradeEventId = formData.get('trade_event_id') as string | null;
-  if (tradeEventId && newLeadId) {
-    await supabase.from('leads').update({
-      trade_event_id: tradeEventId,
-      source_type: 'trade_event',
-    }).eq('id', newLeadId);
-    await supabase.from('trade_event_entries').insert({
-      organization_id: orgId,
-      trade_event_id: tradeEventId,
-      source_label: (formData.get('company_name') as string) ?? 'Unknown',
-      status: 'captured',
-      captured_at: new Date().toISOString(),
-    });
-  }
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
 
-## GAP TE-4: AI suggestion applied → communications log
-File: src/features/ai/server/actions.ts
+TASK:
+Fix Orders regression where orders show old/empty space instead of rebuilt execution desk.
 
-Find where ai_suggestions.status is set to 'applied' (validate step 3).
-After that update succeeds:
-  const { data: suggestion } = await supabase
-    .from('ai_suggestions')
-    .select('lead_id, content, organization_id')
-    .eq('id', suggestionId)
-    .maybeSingle();
+READ:
+- public/reference-html/setuflow-orders-redesign.html
+- public/reference-html/setuflow-northstar.html
 
-  if (suggestion?.lead_id && suggestion?.organization_id) {
-    await supabase.from('communications').insert({
-      organization_id: suggestion.organization_id,
-      lead_id: suggestion.lead_id,
-      related_entity: 'lead',
-      related_id: suggestion.lead_id,
-      communication_type: 'system_note',
-      direction: 'internal',
-      channel: 'system',
-      subject: 'AI suggestion applied',
-      body: `AI suggestion applied: ${String(suggestion.content ?? '').slice(0, 300)}`,
-      draft_source: 'ai',
-      status: 'sent',
-    });
-    revalidatePath(`/leads/${suggestion.lead_id}`);
-  }
+VALIDATE FIRST:
+1. Inspect /orders page and order components.
+2. Compare visible UI to reference: execution command desk, accepted quote queue, docs, compliance, dispatch blockers, supplier/buyer context, commercial lock.
 
-## DO NOT CHANGE
-- Dashboard (parked), Pipeline drag/drop (already wired), Quote Builder core flow
-- Any migration files (no schema changes needed)
-- The 'trade-event' saved view in leads-workspace.tsx (already exists)
+IMPLEMENT:
+1. Restore rebuilt Orders / Execution workspace as primary.
+2. Accepted quotes must appear as operational orders.
+3. Empty state must not hide accepted-quote records because of old query shape.
+4. Upload document, blocker gate, dispatch readiness, commercial lock, and supplier/buyer toggle must match reference.
+5. Add clear issue banners for missing accepted orders vs query/load errors.
 
-## OUTPUT REQUIRED
-1. All changed files — FULL content, no truncation, no "..."
-2. Updated /public/internal-dcc/index.html marking PR-NS-10 complete, PR-NS-11 as next
-3. Full updated repo zip
-4. Copy-paste prompt for PR-NS-11
+DCC:
+List exact order lifecycle gaps remaining.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 05</span><strong style="font-size:14px">PR-LEADS-100 — full Leads workflow/filter parity</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p05')">Copy</button><pre id="p05">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-## DEFINITION OF DONE
-- [ ] Event edit form has capture_defaults fields (product label, lead type, follow-up days)
-- [ ] updateTradeEvent saves capture_defaults as jsonb
-- [ ] Event admin page shows X entries / Y converted per card
-- [ ] Lead Quick Capture has event source dropdown
-- [ ] Lead created from event gets trade_event_id + source_type + trade_event_entries row
-- [ ] AI suggestion 'applied' creates a communications record
-- [ ] TypeScript: 0 errors (tsc --strict --noEmit)
-- [ ] No event handlers in server pages, no 2-arg/1-arg mismatches
-- [ ] Vercel build passes</pre>
-    </div>
-  </div>
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
 
-  <div class="card" style="margin-bottom:12px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <span class="s neutral">After PR-NS-10</span>
-      <strong style="font-size:14px">PR-NS-11 &mdash; Cross-page workflow consistency</strong>
-    </div>
-    <div class="pb"><button class="cbtn" onclick="copyPrompt('p11')">Copy</button>
-<pre id="p11">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo attached as zip.
+TASK:
+Fix remaining Leads gaps beyond what previous DCC understated.
 
-## YOUR TASK: PR-NS-11 — Cross-page workflow consistency
+READ:
+- public/reference-html/setuflow-leads-redesign.html
+- public/reference-html/setuflow-northstar.html
 
-## MANDATORY BUILD RULES
-1. No 2-arg server actions as direct form action= props. Add 1-arg wrappers.
-2. No event handlers in server component pages.
-3. quotes.status CHECK includes 'converted' — no migration needed.
+VALIDATE FIRST:
+1. Compare Leads visible toolbar/filter behavior to reference and live screenshots.
+2. Confirm buyer/supplier/all tabs, saved views, advanced filters, product/market/source/owner/stage/timing filters.
+3. Inspect Quick Lead, command center, quote prep, RFQ/quote handoff, trade event capture.
 
-## VALIDATE FIRST
-1. grep -rn "from('contracts').insert" src --include="*.ts" --include="*.tsx"
-   Find the server action that creates an order/contract from accepted quote.
-2. grep -rn "'sent'" src/features/quotes/server --include="*.ts" | head -5
-   Find the quote send action.
-3. grep -n "stage_id" src/features/leads/server/actions.ts | head -5
-   Find lead stage update action.
-4. grep -rn "isCatalogPriceStale" src --include="*.tsx"
-   Confirm it's defined in catalog-pricing-model.ts and nowhere else.
+IMPLEMENT:
+1. Align all filters to rebuilt Leads standard and ensure they actually affect data.
+2. Restore missing saved views and filter chips.
+3. Quick Lead supports trade event source and catalog defaults.
+4. Lead CC shows quote readiness, product coverage, document requirements, stage readiness, and next action.
+5. No hidden dead old workspace logic should remain primary.
 
-## GAP XP-1: quote.status → 'converted' on order creation
-Find the action from step 1. After the contract insert succeeds:
-  await supabase.from('quotes').update({ status: 'converted' })
-    .eq('id', quoteId).eq('organization_id', orgId);
-  revalidatePath('/quotes'); revalidatePath('/orders');
+DCC:
+Call out each filter checked and each remaining gap.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 06</span><strong style="font-size:14px">PR-PIPELINE-100 — pipeline parity and DnD proof</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p06')">Copy</button><pre id="p06">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-## GAP XP-2: Quote sent → lead stage auto-advance (best-effort)
-Find the send action. After status set to 'sent', wrap in try-catch (NEVER fail the send):
-  try {
-    const { data: q } = await supabase.from('quotes').select('lead_id').eq('id', quoteId).maybeSingle();
-    if (q?.lead_id) {
-      const { data: stages } = await supabase.from('pipeline_stages')
-        .select('id, name, pipelines!inner(organization_id)').ilike('name', '%quote%').limit(5);
-      const match = (stages ?? []).find(s => (s.pipelines as any)?.organization_id === orgId);
-      if (match) {
-        await supabase.from('leads').update({ stage_id: match.id }).eq('id', q.lead_id);
-        revalidatePath('/pipeline'); revalidatePath('/leads');
-      }
-    }
-  } catch { /* never fail the send */ }
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
 
-## GAP XP-3: Lead CC stage change → pipeline revalidate
-Find the lead stage update action. After success: revalidatePath('/pipeline');
+TASK:
+Bring Pipeline / Risks to 100% against reference.
 
-## GAP XP-4: isCatalogPriceStale() in revise flow
-File: src/features/quotes/components/quote-workspace.tsx
-Import isCatalogPriceStale from '@/lib/catalog-pricing-model'.
-In the revise flow: if any line item price is stale, show a yellow informational banner.
-Do NOT block the revise flow.
+READ:
+- public/reference-html/setuflow-pipeline-redesign.html
+- public/reference-html/setuflow-northstar.html
 
-## GAP XP-5: Quotes filter bar — Approval filter (server-rendered, no onChange)
-File: src/app/(app)/quotes/page.tsx
-Add URL search param: approvalFilter = readSearchParam(searchParams?.approval)
-Add to filter bar as server-rendered select: name="approval" with options all/pending_approval/approved/rejected
-Add to filterItems(): const matchesApproval = !approvalFilter || approvalFilter==='all' ? true : item.status === approvalFilter;
+IMPLEMENT:
+1. Align filters with Leads filter system: timing, owners, products, markets, active chips.
+2. Ensure readiness cards, blocked records, overdue counts, healthy cards, pipeline value are accurate.
+3. Detail panel, bulk action bar, drag/drop stage move, blocked drop state, and drop-zone visual must work.
+4. Revalidate Leads/Pipeline after stage changes.
+5. Add proof tests or smoke script for move readiness.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 07</span><strong style="font-size:14px">PR-QUOTES-100 — quote builder/workspace lifecycle</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p07')">Copy</button><pre id="p07">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-## GAP XP-6: FX lock badge in Quote Builder Edit mode
-File: src/features/quotes/components/quote-wizard-form.tsx
-When mode === "edit" and lockedFxRate exists, show near the currency field:
-  FX locked — {rate} {currency}/USD · 7-day lock
-Search for where fx_rate is stored for existing versions before implementing.
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
 
-## GAP XP-7: Pipeline lane drop zone visual
-File: src/features/pipeline/components/PipelineLaneSection.tsx
-After the last card slot: {isDragOver && <div ...>Drop here</div>}
+TASK:
+Finish Quotes to 100%.
 
-## OUTPUT REQUIRED
-1. All changed files — FULL content. 2. Updated DCC. 3. Repo zip. 4. Prompt for PR-NS-12.</pre>
-    </div>
-  </div>
+READ:
+- public/reference-html/setuflow-quotes-redesign.html
+- public/reference-html/setuflow-catalog-redesign.html
+- public/reference-html/setuflow-northstar.html
 
-  <div class="card" style="margin-bottom:12px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <span class="s warn">Use after any PR if build fails</span>
-      <strong style="font-size:14px">Build Fix Prompt &mdash; template for Vercel errors</strong>
-    </div>
-    <div class="pb"><button class="cbtn" onclick="copyPrompt('pbuild')">Copy</button>
-<pre id="pbuild">You are fixing a Vercel build error in SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo attached.
+IMPLEMENT:
+1. Default source catalog pricing USD.
+2. Default quantity from catalog MOQ.
+3. Buyer-facing quote currency editable in commercials.
+4. QTY and final price editable in quote form.
+5. Price changes require override reason and approval.
+6. Non-owner/admin/manager quote creation or price change requires approval.
+7. Quote valid for 7 days after send; alert to resend/revise if no customer action.
+8. Status lifecycle and version history: draft, internal_review, pending_approval, approved, sent, revised, accepted, rejected, expired, converted.
+9. Export/PDF/share actions align with reference.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 08</span><strong style="font-size:14px">PR-TRADEEVENTS-100 — trade show capture lane</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p08')">Copy</button><pre id="p08">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-## BUILD ERROR
-[PASTE BUILD LOG HERE]
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
 
-## MANDATORY DIAGNOSTIC STEPS — run all three before changing any file
+TASK:
+Complete Trade Events / Capture.
 
-### Step 1: TypeScript errors
-npx tsc --noEmit 2>&amp;1 | grep "error TS" | head -30
+READ:
+- public/reference-html/setuflow-leads-redesign.html
+- public/reference-html/setuflow-admin-settings-redesign.html
+- public/reference-html/setuflow-northstar.html
 
-### Step 2: Event handlers in server pages
-python3 -c "
-import os, re
-for root, dirs, files in os.walk('src/app'):
-    dirs[:] = [d for d in dirs if 'node_modules' not in root]
-    for f in files:
-        if f == 'page.tsx':
-            p = os.path.join(root, f)
-            try: c = open(p).read()
-            except: continue
-            if c.split(chr(10))[0].strip() == \"'use client'\": continue
-            for i, line in enumerate(c.split(chr(10)), 1):
-                if re.search(r'on(Click|Change|Submit)=\{', line):
-                    print(f'{p}:{i}: {line.strip()[:80]}')
-"
+IMPLEMENT:
+1. Admin trade event edit form saves capture_defaults.
+2. Event cards show entries and converted counts.
+3. Quick Lead includes event source dropdown.
+4. Captured event lead writes trade_event_id, source_type=&#x27;trade_event&#x27;, and trade_event_entries row.
+5. AI suggestion applied creates communications log.
+6. Leads saved view for trade-event is preserved without duplication.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 09</span><strong style="font-size:14px">PR-DASHBOARD-100 — dashboard NorthStar command center</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p09')">Copy</button><pre id="p09">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-### Step 3: 2-arg server actions used as direct form action= props
-python3 -c "
-import os, re
-two_arg = set()
-for root, dirs, files in os.walk('src'):
-    for f in files:
-        if f.endswith(('.ts','.tsx')):
-            try: c = open(os.path.join(root,f)).read()
-            except: continue
-            for m in re.findall(r'export async function (\w+)\(\s*_[^,]*,\s*formData:\s*FormData\s*\)', c):
-                two_arg.add(m)
-for root, dirs, files in os.walk('src'):
-    for f in files:
-        if f.endswith(('.ts','.tsx')):
-            try: c = open(os.path.join(root,f)).read()
-            except: continue
-            for n in two_arg:
-                if re.search(rf'(?:action|formAction)=\{{{n}\}}', c):
-                    print(f'{os.path.join(root,f)}: {n}')
-"
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
 
-## FIX RULES
-1. 2-arg action used as form action= : add 1-arg wrapper
-   export async function xyzAction(formData: FormData): Promise&lt;void&gt; {
-     await xyz(undefined, formData);
-   }
+TASK:
+Bring Dashboard to 100%.
 
-2. Event handler in server page: remove entirely
-   onChange on file input → just remove it
-   onClick on checkbox → add readOnly attribute instead
+READ:
+- public/reference-html/setuflow-dashboard-redesign.html
+- public/reference-html/setuflow-northstar.html
 
-3. Missing export: add the function or alias with the correct name
+IMPLEMENT:
+1. KPI drilldowns link to correct filtered pages.
+2. Action queue links to exact workflow blockers.
+3. World map/market coverage, buyer/supplier toggles, revenue/pipeline/order metrics match reference.
+4. Dashboard accurately reflects repaired Catalog, Quotes, Orders, Pipeline, Leads states.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 10</span><strong style="font-size:14px">PR-CROSSPAGE-100 — NorthStar handoffs/revalidation</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p10')">Copy</button><pre id="p10">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
 
-## OUTPUT: All fixed files with FULL content. Zero TypeScript errors.</pre>
-    </div>
-  </div>
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
+
+TASK:
+Complete cross-page NorthStar workflow.
+
+READ:
+- public/reference-html/setuflow-northstar.html
+- all module reference HTMLs.
+
+IMPLEMENT:
+1. Trade Event -&gt; Lead -&gt; Quote -&gt; Approval -&gt; Send -&gt; Order -&gt; Pipeline/Dashboard flow works end to end.
+2. Quote sent advances/revalidates lead/pipeline as designed.
+3. Accepted quote creates order and marks quote converted.
+4. Catalog price stale affects quote revise path.
+5. All cross-page counts revalidate after writes.
+6. Add E2E smoke checklist/test where feasible.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 11</span><strong style="font-size:14px">PR-DESIGN-FILTERS-100 — topbar, filters, design consistency</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p11')">Copy</button><pre id="p11">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
+
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
+
+TASK:
+One design/filter consistency pass after modules are restored.
+
+READ:
+- all public/reference-html/*.html
+- public/internal-dcc/index.html
+
+IMPLEMENT:
+1. Align topbar, sidebar, tabs, search, filters, chips, quick lead/share card buttons across all modules.
+2. Remove old spacing/workspace shells.
+3. Ensure filters use same user mental model as Leads.
+4. Mobile/tablet responsive smoke check.
+5. No business logic changes except wiring filters that are visually present but inactive.
+</pre></div></div>
+<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 12</span><strong style="font-size:14px">PR-QA-RELEASE-100 — final line-by-line reference proof</strong></div><div class="pb"><button class="cbtn" onclick="copyPrompt('p12')">Copy</button><pre id="p12">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached.
+
+MANDATORY RULES FOR EVERY PR:
+1. Read public/internal-dcc/index.html first and preserve its same format.
+2. Read every listed reference HTML before writing code.
+3. Do not hide regressions. If a page is still calling an old workspace, call it out and fix it in the correct PR.
+4. Do not modify public/reference-html/*.html.
+5. Update public/internal-dcc/index.html only for audit/progress notes.
+6. Run: npm ci --no-audit --no-fund, npm run typecheck, npm test, npm run build.
+7. If any command cannot run, paste the exact output and do not claim green.
+8. No event handlers in server page.tsx files.
+9. No 2-arg server actions as direct form action props.
+10. Return updated repo zip, changed files, proof output, and next PR prompt.
+
+TASK:
+Final release QA to 100%.
+
+READ:
+- all reference HTML files
+- public/internal-dcc/index.html
+- live route checklist from DCC.
+
+IMPLEMENT:
+1. Line-by-line visual and workflow checklist for Dashboard, Leads, Pipeline, Catalog, Quotes, Orders, Admin/Settings, Trade Events, AI.
+2. Run full typecheck/test/build.
+3. Smoke all routes.
+4. Update internal DCC with final proof only if green.
+5. If anything fails, keep readiness below 100 and create follow-up prompt.
+</pre></div></div>
 </div>
 
-<!-- SCHEMA TAB -->
-<div class="tp" id="tab-schema">
-  <div class="co g" style="margin-bottom:10px">Schema clean. All migrations applied. No new migrations needed for NS-10, 11, 12, or 13.</div>
-  <section class="sec card">
-    <h2>Applied migrations</h2>
-    <table class="t" style="margin-top:10px">
-      <thead><tr><th>Migration</th><th>What</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td>001&ndash;107</td><td>Foundation, auth, leads, products, documents, compliance, org_id on junction tables</td><td><span class="s good">Applied &#10003;</span></td></tr>
-        <tr><td>108</td><td><code>organizations.approval_threshold_pct numeric DEFAULT 15</code></td><td><span class="s good">Applied &#10003;</span></td></tr>
-        <tr><td>109 v3</td><td>RLS on markets, pipelines, pipeline_stages (stages join through pipelines — no org_id on stages)</td><td><span class="s good">Applied &#10003;</span></td></tr>
-        <tr><td>110</td><td><code>trade_events.capture_defaults jsonb DEFAULT '{}'</code></td><td><span class="s good">Applied &#10003;</span></td></tr>
-        <tr><td>111</td><td>CREATE TABLE <code>quote_pricing_snapshots</code> + FK + index + RLS</td><td><span class="s good">Applied &#10003;</span></td></tr>
-      </tbody>
-    </table>
+<div class="tp" id="tab-rules">
+  <section class="sec grid g2">
+    <div class="card"><h2>Type proof</h2><pre>npm ci --no-audit --no-fund
+npm run typecheck
+npm test
+npm run build</pre></div>
+    <div class="card"><h2>Regression proof</h2><pre>For each route:
+1. Open the route.
+2. Compare against public/reference-html/*.html.
+3. Confirm primary route uses rebuilt workspace.
+4. Confirm filters visibly work.
+5. Confirm DCC score matches proof, not intention.</pre></div>
+    <div class="card"><h2>Server action proof</h2><pre>No 2-arg server action may be used directly as form action={...}.
+Use a 1-arg wrapper for direct form actions.</pre></div>
+    <div class="card"><h2>Server page proof</h2><pre>No onClick/onChange/onSubmit in server page.tsx files.
+Move interactivity into client components.</pre></div>
   </section>
-  <section class="sec card">
-    <h2>Canonical schema facts</h2>
-    <div style="font-size:12px;line-height:2;margin-top:8px;columns:2;gap:20px">
-      <div>&bull; <code>pipeline_stages</code> has NO <code>organization_id</code> &mdash; join through pipelines</div>
-      <div>&bull; <code>organization_members</code> has no role col &mdash; join user_roles&rarr;roles.name</div>
-      <div>&bull; <code>quote_versions.pricing_basis</code>: ex_factory | fob | cif | bulk_chips</div>
-      <div>&bull; <code>quotes.status</code> includes 'converted'</div>
-      <div>&bull; <code>quote_pricing_snapshots</code> exists (mig 111)</div>
-      <div>&bull; <code>leads.trade_event_id</code> uuid FK &rarr; trade_events</div>
-      <div>&bull; <code>organizations.approval_threshold_pct</code> DEFAULT 15</div>
-      <div>&bull; <code>trade_events.capture_defaults</code> jsonb</div>
-    </div>
-  </section>
 </div>
 
-<div style="margin-top:18px;border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:space-between;color:var(--mu);font-size:11px">
-  <div>SETU Flow DCC &middot; Apr 27 2026 &middot; 15 fixes &middot; 0 TS errors</div>
-  <div>Active: PR-NS-10 &middot; Next: PR-NS-11 &middot; Final: PR-NS-13</div>
-</div>
 </main>
 <script>
-function showTab(id, btn) {
-  document.querySelectorAll('.tp').forEach(function(p){ p.classList.remove('a'); });
-  document.querySelectorAll('.tbtn').forEach(function(b){ b.classList.remove('a'); });
-  var el = document.getElementById('tab-' + id);
-  if (el) el.classList.add('a');
-  if (btn) btn.classList.add('a');
-}
-function copyPrompt(id) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  var text = el.textContent || '';
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function() {
-      var btn = event.target;
-      var orig = btn.textContent;
-      btn.textContent = 'Copied!';
-      setTimeout(function(){ btn.textContent = orig; }, 2000);
-    });
-  } else {
-    var ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    var btn = event.target; var orig = btn.textContent;
-    btn.textContent = 'Copied!'; setTimeout(function(){ btn.textContent = orig; }, 2000);
-  }
-}
+function showTab(id,btn){document.querySelectorAll('.tp').forEach(t=>t.classList.remove('a'));document.getElementById('tab-'+id).classList.add('a');document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('a'));btn.classList.add('a')}
+function copyPrompt(id){const el=document.getElementById(id);navigator.clipboard.writeText(el.innerText).then(()=>{const b=event.target;b.textContent='Copied';setTimeout(()=>b.textContent='Copy',900)})}
 </script>
 </body>
 </html>

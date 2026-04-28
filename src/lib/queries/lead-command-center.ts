@@ -1,4 +1,5 @@
 import type { LeadProfileData } from '@/lib/queries/data'
+import { normalizePricingBasis, type QuotePricingBasis } from '@/lib/pricing-basis-contract'
 
 export type GateStatus = 'CLEAR' | 'WARNING' | 'BLOCKED'
 export type PricingReadiness = 'missing' | 'partial' | 'ready'
@@ -37,20 +38,18 @@ export function getPricingReadiness(data: LeadProfileData): PricingReadiness {
   return 'missing'
 }
 
-export function getActivePricingBasis(data: LeadProfileData): 'EX_FACTORY' | 'FOB' | 'CIF' | null {
+export function getActivePricingBasis(data: LeadProfileData): QuotePricingBasis | null {
   const latestQuoteBasis = [...data.quotes]
     .sort((a, b) => new Date(b.updated_at ?? b.created_at ?? 0).getTime() - new Date(a.updated_at ?? a.created_at ?? 0).getTime())[0]
-  const normalizedQuoteBasis = String((latestQuoteBasis as any)?.pricing_basis ?? '').trim().toUpperCase()
-  if (normalizedQuoteBasis === 'CIF') return 'CIF'
-  if (normalizedQuoteBasis === 'FOB') return 'FOB'
-  if (normalizedQuoteBasis === 'EX_FACTORY') return 'EX_FACTORY'
+  if ((latestQuoteBasis as any)?.pricing_basis) return normalizePricingBasis((latestQuoteBasis as any).pricing_basis)
 
   const normalized = data.pricingRules
-    .map((rule) => String(rule.pricing_type ?? '').trim().toUpperCase())
+    .map((rule) => String(rule.pricing_type ?? '').trim().toLowerCase())
     .filter(Boolean)
-  if (normalized.includes('CIF')) return 'CIF'
-  if (normalized.includes('FOB')) return 'FOB'
-  if (normalized.includes('EX_FACTORY')) return 'EX_FACTORY'
+  if (normalized.includes('cif')) return 'cif'
+  if (normalized.includes('fob')) return 'fob'
+  if (normalized.includes('ex_factory')) return 'ex_factory'
+  if (normalized.includes('bulk_chips') || normalized.includes('bulk')) return 'bulk_chips'
   return null
 }
 

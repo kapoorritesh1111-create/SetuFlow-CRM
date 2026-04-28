@@ -1,3 +1,5 @@
+import { DEFAULT_CATALOG_PRICE_CURRENCY, normalizePricingBasis, type QuotePricingBasis } from "@/lib/pricing-basis-contract";
+
 export const VERIFIED_CATALOG_PRICING_CAPABILITIES = [
   'Products and nested product categories are schema-backed and organization-scoped.',
   'RFQ and quote line items support product_id, quantity, unit_price, currency, and notes.',
@@ -16,7 +18,7 @@ export function normalizeCurrencyCode(value: string | null | undefined) {
   return normalized || null;
 }
 
-export type PricingBasisOption = 'ex_factory' | 'fob' | 'cif' | 'bulk_chips';
+export type PricingBasisOption = QuotePricingBasis;
 
 export type CatalogProductOption = {
   id: string;
@@ -93,22 +95,7 @@ function isPriceActive(nowIso: string, effectiveFrom: string | null | undefined,
 }
 
 function normalizeBasis(value: string | null | undefined): PricingBasisOption {
-  switch (String(value ?? '').trim().toLowerCase()) {
-    case 'ex_factory':
-    case 'ex-factory':
-    case 'exfactory':
-      return 'ex_factory';
-    case 'cif':
-      return 'cif';
-    case 'bulk_chips':
-    case 'bulk':
-    case 'bulk_kg':
-    case 'bulk/kg':
-    case 'kg':
-      return 'bulk_chips';
-    default:
-      return 'fob';
-  }
+  return normalizePricingBasis(value, 'fob');
 }
 
 function normalizePricingMode(value: string | null | undefined) {
@@ -162,7 +149,7 @@ function resolveRuleAmounts(rule: CatalogPricingRuleLike | null | undefined, var
       fob: fobUsd,
       cifBase: fobUsd ?? exFactoryUsd ?? bulk,
       bulk,
-      currency: 'USD',
+      currency: DEFAULT_CATALOG_PRICE_CURRENCY,
       pricingType,
     };
   }
@@ -536,8 +523,6 @@ export function getCommercialBlockerTone(blockerCount: number) {
     : 'border-emerald-200 bg-emerald-50 text-emerald-700';
 }
 
-export type QuotePricingBasis = 'ex_factory' | 'fob' | 'cif' | 'bulk_chips';
-
 export type QuoteVersionLinePriceLike = {
   source_ex_factory_usd?: number | null;
   source_fob_usd?: number | null;
@@ -545,14 +530,8 @@ export type QuoteVersionLinePriceLike = {
   freight_add_on_usd?: number | null;
 };
 
-export function getPricingBasisLabel(value: QuotePricingBasis) {
-  switch (value) {
-    case 'ex_factory': return 'Ex-Factory';
-    case 'cif': return 'CIF';
-    case 'bulk_chips': return 'Bulk/Kg';
-    default: return 'FOB';
-  }
-}
+export { getPricingBasisLabel } from '@/lib/pricing-basis-contract';
+
 
 export function detectMissingPrice(basis: QuotePricingBasis, lineItem: QuoteVersionLinePriceLike) {
   const hasPositive = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value > 0;

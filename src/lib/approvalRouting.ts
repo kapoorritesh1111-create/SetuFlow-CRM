@@ -1,3 +1,7 @@
+import { APPROVAL_AUTHORITY_ROLES, hasApprovalAuthority, requiresApprovalForCommercialChange } from "@/lib/pricing-basis-contract";
+
+export { APPROVAL_AUTHORITY_ROLES, hasApprovalAuthority, requiresApprovalForCommercialChange };
+
 export const APPROVAL_STATES = ['not_required', 'pending', 'approved', 'rejected'] as const;
 export type ApprovalState = (typeof APPROVAL_STATES)[number];
 

@@ -9,6 +9,7 @@ import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/works
 import { APPROVAL_STATES, type ApprovalState } from '@/lib/approvalRouting';
 import { QUOTE_STATUSES, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
 import { normalizeCurrencyCode, validateOrganizationProductIds, type QuotePricingBasis } from '@/lib/catalog-pricing-model';
+import { DEFAULT_QUOTE_PRICING_BASIS, PRICING_BASIS_VALUES, normalizePricingBasis } from '@/lib/pricing-basis-contract';
 import { parseLeadWorkflow } from '@/lib/lead-workflow';
 import { buildLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
 import { getLeadProgressionGuard } from '@/lib/document-requirements';
@@ -63,14 +64,10 @@ function isMissingRpcFunction(error: any) {
   return message.includes('could not find the function') || message.includes('schema cache') || message.includes('function public.');
 }
 
-const QUOTE_PRICING_BASIS_VALUES = ['ex_factory', 'fob', 'cif', 'bulk_chips'] as const satisfies readonly QuotePricingBasis[];
-const DEFAULT_QUOTE_PRICING_BASIS: QuotePricingBasis = 'ex_factory';
+const QUOTE_PRICING_BASIS_VALUES = PRICING_BASIS_VALUES satisfies readonly QuotePricingBasis[];
 
 function normalizeQuotePricingBasis(value: unknown, fallback: QuotePricingBasis = DEFAULT_QUOTE_PRICING_BASIS): QuotePricingBasis {
-  const normalized = String(value ?? fallback).trim().toLowerCase();
-  return QUOTE_PRICING_BASIS_VALUES.includes(normalized as QuotePricingBasis)
-    ? (normalized as QuotePricingBasis)
-    : fallback;
+  return normalizePricingBasis(value, fallback);
 }
 
 async function createQuoteDirect(db: any, params: {

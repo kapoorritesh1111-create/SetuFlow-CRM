@@ -1,3 +1,5 @@
+import type { QuotePricingBasis } from '@/lib/pricing-basis-contract'
+
 export type GateStatus = 'CLEAR' | 'WARNING' | 'BLOCKED'
 export type PricingReadiness = 'missing' | 'partial' | 'ready'
 export type TaskUrgency = 'ON_TRACK' | 'DUE' | 'OVERDUE'
@@ -48,7 +50,7 @@ export type QuoteFocusSummary = {
   quoteId?: string | null
   quoteNumber?: string | null
   status?: string | null
-  pricingBasis?: 'EX_FACTORY' | 'FOB' | 'CIF' | null
+  pricingBasis?: QuotePricingBasis | null
   updatedAt?: string | null
 }
 
@@ -127,7 +129,7 @@ export type LeadProfileSnapshot = {
     notes?: string | null
   }
   commercial: {
-    activePricingBasis?: 'EX_FACTORY' | 'FOB' | 'CIF' | null
+    activePricingBasis?: QuotePricingBasis | null
     rfqCount: number
     quoteCount: number
     contractCount: number

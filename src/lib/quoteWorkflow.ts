@@ -1,5 +1,6 @@
 import { parseNotesMetadata, composeNotesMetadata } from '@/lib/notes-metadata';
 import type { ApprovalMeta } from '@/lib/approvalRouting';
+import type { QuotePricingBasis } from '@/lib/pricing-basis-contract';
 import { getQuoteApprovalState } from '@/lib/approvalRouting';
 
 export const QUOTE_STATUSES = [
@@ -18,7 +19,7 @@ export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
 
 export type QuoteWorkflowMeta = {
   templateId?: string | null;
-  pricingBasis?: 'ex_factory' | 'fob' | 'cif' | 'bulk_chips' | null;
+  pricingBasis?: QuotePricingBasis | null;
   approval?: ApprovalMeta;
   sentAt?: string | null;
   revisedAt?: string | null;

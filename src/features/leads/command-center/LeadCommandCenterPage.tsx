@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
+import { normalizePricingBasis } from '@/lib/pricing-basis-contract'
 import { openOrCreateLeadQuoteDraft } from '@/features/leads/server/actions'
 import { moveLeadToStage } from '@/features/pipeline/server/actions'
 import type { LeadQualificationStatus } from '@/lib/lead-workflow'
@@ -338,13 +339,13 @@ export default function LeadCommandCenterPage({
 
       const nextQuoteId = result.quoteId ?? result.quote?.id ?? null
       const nextQuoteNumber = result.quote?.quote_number ?? commercialState.latestQuoteNumber
-      const nextBasis = String(result.quote?.pricing_basis ?? '').trim().toUpperCase() || null
+      const nextBasis = result.quote?.pricing_basis ? normalizePricingBasis(result.quote.pricing_basis) : null
       if (nextQuoteId) {
         setCommercialState((current) => ({
           quoteCount: current.quoteCount > 0 ? current.quoteCount : 1,
           latestQuoteId: nextQuoteId,
           latestQuoteNumber: nextQuoteNumber,
-          activePricingBasis: nextBasis === 'FOB' || nextBasis === 'CIF' || nextBasis === 'EX_FACTORY' ? nextBasis : current.activePricingBasis,
+          activePricingBasis: nextBasis ?? current.activePricingBasis,
         }))
         window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${nextQuoteId}`)
         return

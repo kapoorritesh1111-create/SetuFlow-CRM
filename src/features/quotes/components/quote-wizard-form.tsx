@@ -37,6 +37,7 @@ import {
 } from "@/lib/quoteWorkflow";
 import { getQuoteTrustContract } from "@/lib/quoteTrust";
 import { detectMissingPrice, type QuotePricingBasis } from "@/lib/catalog-pricing-model";
+import { DEFAULT_CATALOG_PRICE_CURRENCY, normalizePricingBasis, getPricingBasisLabel } from "@/lib/pricing-basis-contract";
 import type { ApprovalState } from "@/lib/approvalRouting";
 import type { QuoteStatus } from "@/lib/quoteWorkflow";
 import { formatDateTime } from "@/lib/utils";
@@ -261,7 +262,6 @@ function inputClassName() {
   return "min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400";
 }
 
-const DEFAULT_CATALOG_PRICE_CURRENCY = "USD";
 const DEFAULT_QUOTE_VALIDITY_DAYS = 7;
 
 function normalizeCurrency(value: string) {
@@ -271,22 +271,8 @@ function normalizeCurrency(value: string) {
     .slice(0, 3);
 }
 
-function normalizePricingBasis(value: string | null | undefined): PricingBasis {
-  const normalized = String(value ?? "")
-    .trim()
-    .toLowerCase();
-  if (normalized === "ex_factory" || normalized === "ex-factory")
-    return "ex_factory";
-  if (normalized === "cif") return "cif";
-  if (normalized === "bulk_chips" || normalized === "bulk" || normalized === "bulk/kg") return "bulk_chips";
-  return "ex_factory";
-}
-
 function pricingBasisLabel(value: PricingBasis) {
-  if (value === "ex_factory") return "Ex-Factory";
-  if (value === "cif") return "CIF";
-  if (value === "bulk_chips") return "Bulk/Kg";
-  return "FOB";
+  return getPricingBasisLabel(value);
 }
 
 function getProductBasisAmount(

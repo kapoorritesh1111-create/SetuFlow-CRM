@@ -28,6 +28,7 @@ import { evaluateOrderExecution, getOrderExecutionStateLabel } from '@/lib/order
 import { buildOrderOperationalControlState, type OrderOperationalControlState } from '@/lib/order-operations';
 import type { DocumentRequirementRule } from '@/lib/document-requirements';
 import { progressOrderExecution } from '@/features/orders/server/actions';
+import { getPricingBasisLabel } from '@/lib/pricing-basis-contract';
 
 // ─── Explicit row types (avoids Supabase generic inference issues) ────────────
 
@@ -39,6 +40,7 @@ type QuoteRow = {
   lead_id: string;
   current_version_id: string | null;
   accepted_version_id: string | null;
+  pricing_basis: string | null;
 };
 
 type LeadRow = {
@@ -140,6 +142,7 @@ type OrderRecord = {
   currentVersionId: string | null;
   acceptedVersionId: string | null;
   currency: string | null;
+  pricingBasisLabel: string;
   updatedAt: string;
   leadId: string;
   companyName: string;
@@ -301,7 +304,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   // 1. Fetch accepted quotes only — orders should represent won commercial work
   const { data: rawQuotes, error: quotesError } = await db
     .from('quotes')
-    .select('id, status, currency, updated_at, lead_id, current_version_id, accepted_version_id')
+    .select('id, status, currency, updated_at, lead_id, current_version_id, accepted_version_id, pricing_basis')
     .eq('organization_id', orgId)
     .in('status', ['accepted'])
     .order('updated_at', { ascending: false })
@@ -537,6 +540,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       currentVersionId: q.current_version_id ?? null,
       acceptedVersionId: q.accepted_version_id ?? null,
       currency: q.currency,
+      pricingBasisLabel: getPricingBasisLabel(contract?.pricing_basis ?? (q as any).pricing_basis),
       updatedAt: q.updated_at,
       leadId: q.lead_id,
       companyName: lead?.company_name ?? 'Unknown buyer',
@@ -699,11 +703,11 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                       {order.executionBlockers.length>0?'Dispatch blocked':order.operationalControls.documentRequirementSummary.blockerCount>0?'Docs pending':'In transit'}
                     </span>
                   </div>
-                  <div style={{fontSize:'11px',color:'#64748b'}}>{order.country} · {order.leadType} · {order.lines[0]?.productName??'No product'}{order.lines.length>1?` + ${order.lines.length-1} more`:''} · FOB</div>
+                  <div style={{fontSize:'11px',color:'#64748b'}}>{order.country} · {order.leadType} · {order.lines[0]?.productName??'No product'}{order.lines.length>1?` + ${order.lines.length-1} more`:''} · {order.pricingBasisLabel}</div>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'6px',flexShrink:0}}>
                   <div style={{fontSize:'20px',fontWeight:800,color:'#0b2e4a',letterSpacing:'-.4px'}}>{formatMoneyValue(order.dealValue,order.dealCurrency??order.currency)}</div>
-                  <div style={{fontSize:'9px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>{(order.currency??'USD')} · FOB</div>
+                  <div style={{fontSize:'9px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>{(order.currency??'USD')} · {order.pricingBasisLabel}</div>
                   <div style={{display:'flex',gap:'6px',marginTop:'4px'}}>
                     <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${order.quoteId}`} style={{padding:'6px 14px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:700,color:'#334155',textDecoration:'none'}}>View quote</Link>
                     <Link href={`#order-${order.quoteId}`} style={{padding:'6px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Open order</Link>

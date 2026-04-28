@@ -1,4 +1,6 @@
-export type PricingBasis = 'ex_factory' | 'fob' | 'cif' | 'bulk_chips';
+import type { QuotePricingBasis } from '@/lib/pricing-basis-contract';
+
+export type PricingBasis = QuotePricingBasis;
 
 export type CurrencyCode = 'USD' | 'INR' | 'EUR' | 'GBP' | 'AED';
 
