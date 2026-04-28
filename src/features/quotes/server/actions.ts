@@ -8,7 +8,7 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { APPROVAL_STATES, type ApprovalState } from '@/lib/approvalRouting';
 import { QUOTE_STATUSES, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
-import { normalizeCurrencyCode, validateOrganizationProductIds } from '@/lib/catalog-pricing-model';
+import { normalizeCurrencyCode, normalizeQuoteDisplayCurrency, validateOrganizationProductIds } from '@/lib/catalog-pricing-model';
 import { DEFAULT_QUOTE_PRICING_BASIS, PRICING_BASIS_VALUES, normalizePricingBasis, type QuotePricingBasis } from '@/lib/pricing-basis-contract';
 import { parseLeadWorkflow } from '@/lib/lead-workflow';
 import { buildLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
@@ -641,7 +641,7 @@ async function applyQuoteFxForSave(
     existingNotes?: string | null;
   },
 ): Promise<{ lineItems: ParsedLineItem[]; fxLock: QuoteFxLock | null; error?: string }> {
-  const quoteCurrency = normalizeCurrencyCode(args.currency) ?? 'USD';
+  const quoteCurrency = normalizeQuoteDisplayCurrency(args.currency);
   const sourceCurrencies = Array.from(new Set(args.lineItems
     .map((item) => normalizeCurrencyCode(item.catalog_price_currency ?? item.currency ?? quoteCurrency) ?? quoteCurrency)
     .filter((code) => code !== quoteCurrency)));
@@ -702,7 +702,7 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
 
   const leadId = String(formData.get('lead_id') ?? '').trim();
   const rfqId = String(formData.get('rfq_id') ?? '').trim() || null;
-  const currency = normalizeCurrencyCode(String(formData.get('currency') ?? '').trim());
+  const currency = normalizeQuoteDisplayCurrency(String(formData.get('currency') ?? '').trim());
   const status = String(formData.get('status') ?? 'draft').trim() || 'draft';
   const templateId = String(formData.get('template_id') ?? '').trim() || null;
   let approvalRequired = String(formData.get('approval_required') ?? '').trim() === 'true';
@@ -1020,7 +1020,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     };
   }
   const status = String(formData.get('status') ?? 'draft').trim() || 'draft';
-  const currency = normalizeCurrencyCode(String(formData.get('currency') ?? '').trim());
+  const currency = normalizeQuoteDisplayCurrency(String(formData.get('currency') ?? '').trim());
   const templateId = String(formData.get('template_id') ?? '').trim() || null;
   let approvalRequired = String(formData.get('approval_required') ?? '').trim() === 'true';
   let approvalState = (String(formData.get('approval_state') ?? '').trim() ||

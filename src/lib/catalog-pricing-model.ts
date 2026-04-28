@@ -13,9 +13,19 @@ export const DEFERRED_CATALOG_PRICING_GAPS = [
   'Lead, RFQ, and quote pricing context now stays linked through the current line-item and catalog coverage model.',
 ] as const;
 
+export const SUPPORTED_QUOTE_DISPLAY_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'AED'] as const;
+export type SupportedQuoteDisplayCurrency = (typeof SUPPORTED_QUOTE_DISPLAY_CURRENCIES)[number];
+
 export function normalizeCurrencyCode(value: string | null | undefined) {
   const normalized = (value ?? '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-  return normalized || null;
+  if (!normalized) return null;
+  return SUPPORTED_QUOTE_DISPLAY_CURRENCIES.includes(normalized as SupportedQuoteDisplayCurrency)
+    ? normalized
+    : null;
+}
+
+export function normalizeQuoteDisplayCurrency(value: string | null | undefined, fallback: string | null | undefined = 'USD') {
+  return normalizeCurrencyCode(value) ?? normalizeCurrencyCode(fallback) ?? 'USD';
 }
 
 export type PricingBasisOption = QuotePricingBasis;

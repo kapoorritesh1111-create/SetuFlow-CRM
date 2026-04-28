@@ -18,7 +18,7 @@
     "ordersExecution": "Orders / Execution",
     "exceptionsRisks": "Pipeline / Risks",
     "catalog": "Catalog",
-    "settings": "Settings / Lists",
+    "settings": "Admin & Settings",
     "admin": "Admin / Organization",
     "myCard": "My Card"
   },
@@ -139,13 +139,14 @@
     },
     {
       "href": "/settings/lists",
-      "label": "Settings / Lists",
+      "label": "Admin & Settings",
       "exact": true,
       "description": "Compatibility route that redirects into the unified Admin & Settings workspace.",
       "aliases": [
         "settings",
         "lists",
-        "reference data"
+        "reference data",
+        "admin settings"
       ],
       "navKey": "g",
       "requiresAdmin": true
@@ -414,7 +415,7 @@
     "Keep All / Buyers / Suppliers visible as a workspace-wide perspective, not a page-specific trick.",
     "Do not bury the pipeline view behind language that hides the actual pipeline.",
     "Treat dashboard as a leadership support surface with geo, market, and country visibility, not as a leftover report page.",
-    "Settings and admin must stay clear and usable instead of feeling like internal tool junk drawers.",
+    "Admin and Settings must stay unified as one workspace; /settings/lists is a compatibility redirect only.",
     "Keep the DCC as the single source of truth for readiness, PR-UX status, and workflow direction.",
     "Catalog base price remains the system default; manual overrides require an auditable reason.",
     "Approval remains mandatory when the configured threshold is met, and send surfaces must not outrun that truth.",

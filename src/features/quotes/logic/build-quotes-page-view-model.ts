@@ -181,6 +181,9 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
       const quantity = numberOrNull(line.quantity) ?? 0;
       const catalogPriceAmount = positiveNumberOrNull(line.catalog_price_amount) ?? positiveNumberOrNull((product as ProductRow | null | undefined)?.catalogPriceAmount);
       const unitPrice = positiveNumberOrNull(line.unit_price) ?? catalogPriceAmount ?? numberOrNull(line.unit_price);
+      const lineCurrency = unitPrice === catalogPriceAmount && catalogPriceAmount != null
+        ? (line.catalog_price_currency ?? (product as ProductRow | null | undefined)?.catalogPriceCurrency ?? line.currency ?? quote.currency)
+        : (line.currency ?? quote.currency);
       return {
         id: line.id,
         quoteId: quote.id,
@@ -188,7 +191,7 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
         productName: product?.name ?? product?.sku ?? line.notes ?? `Line ${index + 1}`,
         quantity,
         unitPrice,
-        currency: line.currency ?? quote.currency,
+        currency: lineCurrency,
         catalogPriceAmount,
         catalogPriceCurrency: line.catalog_price_currency ?? (product as ProductRow | null | undefined)?.catalogPriceCurrency ?? null,
         isPriceOverridden: Boolean(line.is_price_overridden),

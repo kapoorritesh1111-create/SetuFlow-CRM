@@ -13,6 +13,7 @@ import { createImportIssuePayload } from '@/lib/import-issues';
 import { type ActionState, type LeadRecord, type QuoteDraftActionState, normalizeLeadEmail, normalizeLeadInputText, normalizeLeadOptionalText } from '@/features/leads/server/shared';
 import { convertQuoteLinePrice, getQuoteFxLockFromNotes, resolveWeeklyQuoteFxLock, type QuoteFxLock } from '@/lib/quote-fx';
 import { parseQuoteWorkflow, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
+import { normalizeQuoteDisplayCurrency } from '@/lib/catalog-pricing-model';
 
 type ExistingLeadSnapshot = {
   id: string;
@@ -794,7 +795,7 @@ async function ensureDraftQuoteVersion(db: any, quote: { id: string; current_ver
       quote_id: quote.id,
       version_no: 1,
       status: 'draft',
-      display_currency: String(quote.currency ?? 'USD').trim() || 'USD',
+      display_currency: normalizeQuoteDisplayCurrency(quote.currency),
       pricing_basis: 'fob',
       total_line_count: 0,
       created_by: actorUserId,
@@ -822,8 +823,8 @@ async function ensureQuoteLineItemsFromLeadCoverage(
   currentVersionId: string | null | undefined,
   leadId: string,
 ) {
-  const normalizeCurrency = (value?: string | null) => String(value ?? '').trim().toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'USD';
-  const quoteCurrency = normalizeCurrency(quote.currency ?? 'USD');
+  const normalizeCurrency = (value?: string | null) => normalizeQuoteDisplayCurrency(value);
+  const quoteCurrency = normalizeQuoteDisplayCurrency(quote.currency);
 
   const [{ data: interestRows, error: interestError }, { data: leadMarketRows, error: leadMarketError }] = await Promise.all([
     db.from('lead_product_interests').select('product_id').eq('lead_id', leadId),
@@ -1031,7 +1032,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
             product_variant_id: row.product_variant_id ?? baseline.productVariantId,
             final_unit_price: Number(row.final_unit_price ?? 0) > 0 ? row.final_unit_price : convertedUnitPrice(baseline),
             moq: row.moq == null || Number(row.moq) <= 1 ? baseline.quantity : row.moq,
-            display_currency: row.display_currency ?? quoteCurrency,
+            display_currency: normalizeQuoteDisplayCurrency(row.display_currency, quoteCurrency),
             line_notes: 'Seeded from lead coverage',
           })
           .eq('id', row.id)
@@ -1049,7 +1050,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
             product_variant_id: baseline?.productVariantId ?? null,
             moq: baseline?.quantity ?? 1,
             final_unit_price: convertedUnitPrice(baseline),
-            display_currency: quoteCurrency,
+            display_currency: normalizeQuoteDisplayCurrency(quoteCurrency),
             line_notes: 'Seeded from lead coverage',
           };
         });

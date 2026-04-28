@@ -171,30 +171,11 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const firstApproval = approvalQueue[0]; const secondApproval = approvalQueue[1];
 
   return (
-    <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
+    <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b'}}>
 
-      {/* ── TOPBAR ─────────────────────────────────────── */}
-      <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
-        <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
-          <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'5px 12px',borderRadius:'6px',background:'rgba(11,46,74,.06)',border:'1px solid rgba(11,46,74,.12)'}}>
-            <div><div style={{fontSize:'11px',fontWeight:800,color:'#1F487C',letterSpacing:'-.1px'}}>SETU <span style={{color:'#279491'}}>Flow</span> CRM</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Groups LLC</div></div>
-          </div>
-          <div style={{width:'1px',height:'24px',background:'#e2e8f0'}}/>
-          <div><div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#0c7fff'}}>Commercial</div><div style={{fontSize:'16px',fontWeight:700,color:'#1e293b',letterSpacing:'-.3px'}}>Quotes Workspace</div></div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-          <div style={{display:'flex',background:'#f1f5f9',borderRadius:'6px',padding:'3px',border:'1px solid #e2e8f0',gap:'2px'}}>
-            {FILTER_MODES.map(m => (
-              <Link key={m} href={`/quotes?mode=${m}&status=${encodeURIComponent(filters.status)}&q=${encodeURIComponent(filters.q)}`} style={{padding:'4px 11px',borderRadius:'5px',fontSize:'11px',fontWeight:600,textDecoration:'none',background:filters.mode===m?'#0b2e4a':'transparent',color:filters.mode===m?'white':'#64748b'}}>{m.charAt(0).toUpperCase()+m.slice(1)}</Link>
-            ))}
-          </div>
-          <Link href="/quotes?export=csv" style={{padding:'7px 12px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:600,color:'#334155',textDecoration:'none'}}>Export</Link>
-          <Link href={PRODUCT_ROUTES.app.leads} style={{padding:'7px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>+ New quote</Link>
-        </div>
-      </header>
-
+      {/* Quotes route uses the shared AppShell header; no nested workspace topbar. */}
       {/* ── FILTER BAR ─────────────────────────────────── */}
-      <form action="/quotes" style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'14px 24px 12px',display:'grid',gridTemplateColumns:'minmax(220px,1.4fr) minmax(160px,.8fr) minmax(150px,.7fr) auto auto',alignItems:'end',gap:'10px'}}>
+      <form action="/quotes" style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'18px 18px 0 0',padding:'14px 24px 12px',display:'grid',gridTemplateColumns:'minmax(220px,1.4fr) minmax(160px,.8fr) minmax(150px,.7fr) auto auto',alignItems:'end',gap:'10px'}}>
         <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
           <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Search</span>
           <span style={{display:'flex',alignItems:'center',gap:'8px',padding:'0 12px',border:'1px solid #e2e8f0',borderRadius:'8px',background:'white',height:'36px',boxShadow:'0 1px 2px rgba(15,23,42,.03)'}}>
