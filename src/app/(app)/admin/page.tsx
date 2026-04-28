@@ -53,7 +53,7 @@ export default async function AdminUnifiedPage({ searchParams }: { searchParams?
     supabase.from('roles').select('id,name,description,organization_id').or(`organization_id.eq.${organization.id},organization_id.is.null`).order('name'),
     supabase.from('organization_invitations').select('id,email,status,created_at,updated_at,expires_at,last_sent_at,accepted_at,role_id,roles(id,name)').eq('organization_id', organization.id).order('created_at', { ascending: false }),
     getSettingsListsData(organization.id),
-    getAuditEvents({ organizationId: organization.id, limit: 60 }),
+    getAuditEvents(organization.id, { limit: 60 }),
     supabase.from('trade_events').select('id,name,event_name,starts_at,start_date,city,country,is_active').eq('organization_id', organization.id).order('created_at', { ascending: false }).limit(12),
   ]);
   if (membersResult.error || rolesResult.error || invitationsResult.error) return <StateMessage title="Failed to load Admin workspace" description={membersResult.error?.message ?? rolesResult.error?.message ?? invitationsResult.error?.message ?? 'Unknown admin query error.'} tone="danger" />;
@@ -74,8 +74,8 @@ export default async function AdminUnifiedPage({ searchParams }: { searchParams?
   const actor = String(first(searchParams?.actor) ?? 'all');
   const since = String(first(searchParams?.since) ?? '');
   const categoryTypes = category === 'access' ? ACCESS_EVENTS : category === 'catalog' ? CATALOG_EVENTS : undefined;
-  const auditEvents = (auditResult.events ?? []).filter((event) => (!categoryTypes || categoryTypes.includes(event.event_type)) && (actor === 'all' || event.actor_user_id === actor) && (!since || String(event.created_at).slice(0, 10) >= since));
-  const actors = Array.from(new Map((auditResult.events ?? []).map((event) => [event.actor_user_id ?? 'system', { id: event.actor_user_id ?? 'system', label: event.actor_name ?? event.actor_email ?? event.actor_user_id ?? 'System' }])).values());
+  const auditEvents = (auditResult ?? []).filter((event) => (!categoryTypes || categoryTypes.includes(event.event_type)) && (actor === 'all' || event.actor_user_id === actor) && (!since || String(event.created_at).slice(0, 10) >= since));
+  const actors = Array.from(new Map((auditResult ?? []).map((event) => [event.actor_user_id ?? 'system', { id: event.actor_user_id ?? 'system', label: event.actor_name ?? event.actor_email ?? event.actor_user_id ?? 'System' }])).values());
   let body: React.ReactNode;
   if (section === 'team') body = <Team members={members} roles={roles} />;
   else if (section === 'invitations') body = <Invites invitations={invitations} roles={roles} />;
