@@ -13,7 +13,7 @@ type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = {
   Relationships: [];
 };
 
-type OrganizationRow = { id: string; name: string; slug: string; logo_url: string | null; created_by: string | null; created_at: string; updated_at: string; default_currency: string | null };
+type OrganizationRow = { id: string; name: string; slug: string; logo_url: string | null; created_by: string | null; created_at: string; updated_at: string; default_currency: string | null; approval_threshold_pct: number | null };
 type ProfileRow = { id: string; username: string | null; full_name: string | null; email: string | null; avatar_url: string | null; created_at: string; updated_at: string };
 type OrganizationMemberRow = { id: string; organization_id: string; user_id: string; is_active: boolean; created_at: string; updated_at: string };
 type RoleRow = { id: string; organization_id: string | null; name: string; description: string | null; created_at: string; updated_at: string };
