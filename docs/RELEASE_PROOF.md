@@ -34,3 +34,9 @@ Status: Completed in this repo pass.
 - Visual/functionality review found remaining parity work is mostly exact interaction/data wiring, not the shell rhythm: Catalog drawer/wizard behavior, Orders document upload state, Pipeline drag/drop persistence, and Quotes version/revise/approval persistence need PR-NS-08+ hardening.
 
 Next active development remains PR-NS-08 — Catalog-to-Quote data wiring hardening.
+
+## TypeScript build fix — pipeline board lead selection
+
+- Fixed the pipeline lead card contract so bulk-selection and detail-panel props from `PipelineBoard` are accepted and consumed by `LeadCard`.
+- Preserved the existing board workflow while making selected cards visually distinct and exposing checkbox selection in the card header.
+- Kept command-center navigation as the fallback when the detail-panel handler is not provided.

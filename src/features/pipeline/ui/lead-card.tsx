@@ -66,7 +66,7 @@ function getQuickMoveLabel(label: string) {
   return 'Advance';
 }
 
-export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, state, history, nextStepMap, handleMove, handleAddNote, handleScheduleFollowUp, isPending, commandCenterHref, setDraggedLeadId, setDragOverStageId, safeFormatDateTime, health, ownerLabel, blockerCount, pricingLabel, pricingClassName, blockerSummary, openRfqCount, activeQuoteCount, agingLabel, moveReadiness, moveOptions, countryCode, coverageSummary }: LeadCardProps) {
+export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, state, history, nextStepMap, handleMove, handleAddNote, handleScheduleFollowUp, isPending, commandCenterHref, setDraggedLeadId, setDragOverStageId, safeFormatDateTime, health, ownerLabel, blockerCount, pricingLabel, pricingClassName, blockerSummary, openRfqCount, activeQuoteCount, agingLabel, moveReadiness, moveOptions, countryCode, coverageSummary, isSelected = false, onSelectedChange, onOpenDetail }: LeadCardProps) {
   const router = useRouter();
   const stageAccent = getStageAccent(stageLabel);
   const FollowUpIcon = getStatusIcon(getFollowUpStatus(state));
@@ -126,7 +126,10 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
       onKeyDown={(event) => handleLeadCommandCenterKeyDown(event, router, commandCenterHref)}
       role="button"
       tabIndex={0}
-      className="group rounded-[1.35rem] border border-slate-200/80 bg-white/96 p-3.5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)] dark:border-slate-700/70 dark:bg-slate-900/88"
+      className={cn(
+        'group rounded-[1.35rem] border bg-white/96 p-3.5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)] dark:bg-slate-900/88',
+        isSelected ? 'border-slate-900 ring-2 ring-slate-900/10 dark:border-white dark:ring-white/10' : 'border-slate-200/80 dark:border-slate-700/70',
+      )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1.5">
@@ -145,9 +148,22 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
             <span className={cn('rounded-full border px-2 py-1 font-semibold', pricingClassName)}>{pricingLabel}</span>
           </div>
         </div>
-        <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300">
-          <OpenIcon className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {onSelectedChange ? (
+            <label className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300" title={isSelected ? 'Remove from bulk selection' : 'Add to bulk selection'}>
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(event) => onSelectedChange(lead.id, event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+                aria-label={isSelected ? `Deselect ${lead.company_name}` : `Select ${lead.company_name}`}
+              />
+            </label>
+          ) : null}
+          <button type="button" onClick={(event) => { event.stopPropagation(); (onOpenDetail ?? (() => openLeadCommandCenter(router, commandCenterHref)))(lead.id); }} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300">
+            <OpenIcon className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <div className="mt-3 space-y-2">
