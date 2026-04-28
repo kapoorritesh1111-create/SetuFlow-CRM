@@ -3,11 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const dcc = readFileSync('public/internal-dcc/index.html', 'utf8');
 
-test('internal dcc exposes the active readiness, reference coverage, and PR requirements truth', () => {
-  assert.match(dcc, /Module readiness \+ workflow readiness/i);
-  assert.match(dcc, /Reference HTML coverage/i);
-  assert.match(dcc, /PR Change Requirements/i);
-  assert.match(dcc, /No Supabase changes required/i);
-  assert.match(dcc, /Runtime stabilization/i);
-  assert.match(dcc, /PR-NS-04/i);
+test('dcc exposes current, ux 99 tracker, ux audit, and archive tabs while preserving release truth', () => {
+  assert.match(dcc, /Release truth \+ UX 99 system tracker/i);
+  assert.match(dcc, /UX 99 tracker/i);
+  assert.match(dcc, /UX audit/i);
+  assert.match(dcc, /Archive/i);
+  assert.match(dcc, /UX 99 program active/i);
+  assert.match(dcc, /Reset history archived/i);
+  assert.match(dcc, /All tracked modules are at or above 96%/i);
+  assert.match(dcc, /PR-UX-01/i);
+  assert.match(dcc, /PR-UX-05/i);
 });

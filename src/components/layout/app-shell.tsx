@@ -34,8 +34,6 @@ export function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [vcardModalOpen, setVcardModalOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
-  const [topbarDate, setTopbarDate] = useState('');
-  const [origin, setOrigin] = useState('');
 
   const normalizedRoles = useMemo(() => normalizeWorkspaceRoles(currentRoles), [currentRoles]);
   const currentRole = useMemo(() => getPrimaryWorkspaceRole(normalizedRoles) ?? 'member', [normalizedRoles]);
@@ -44,10 +42,10 @@ export function AppShell({
   const workspaceMode = getWorkspaceModeFromLocation(pathname, searchParams.get('mode'));
   const workspaceBasePath = getWorkspaceBasePath(pathname);
   const showWorkspaceModeSwitch = routeMeta.showWorkspaceModeSwitch ?? true;
-  useEffect(() => {
-    setOrigin(window.location.origin);
-    setTopbarDate(new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()));
-  }, []);
+  const topbarDate = useMemo(
+    () => new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
+    [],
+  );
 
   const currentWorkspaceModeHref = (mode: 'all' | 'buyers' | 'suppliers') => {
     if (!workspaceBasePath) return pathname;
@@ -78,7 +76,7 @@ export function AppShell({
 
     async function generateQr() {
       if (!vcardModalOpen) return;
-      const absoluteShareLink = origin ? `${origin}${shareLink}` : shareLink;
+      const absoluteShareLink = typeof window === 'undefined' ? shareLink : `${window.location.origin}${shareLink}`;
       try {
         const dataUrl = await QRCode.toDataURL(absoluteShareLink, {
           errorCorrectionLevel: 'M',
@@ -99,11 +97,11 @@ export function AppShell({
     return () => {
       active = false;
     };
-  }, [origin, shareLink, vcardModalOpen]);
+  }, [shareLink, vcardModalOpen]);
 
   const handleCopyShareLink = async () => {
     if (typeof window === 'undefined' || !navigator.clipboard) return;
-    const absolute = `${origin || window.location.origin}${shareLink}`;
+    const absolute = `${window.location.origin}${shareLink}`;
     await navigator.clipboard.writeText(absolute);
   };
 
@@ -132,7 +130,7 @@ export function AppShell({
   );
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-[var(--page-bg)]">
+    <div className="min-h-screen overflow-x-clip bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]">
       <a
         href="#app-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900"
@@ -195,7 +193,7 @@ export function AppShell({
                   <span>🔗</span>
                   <span>Copy link</span>
                 </button>
-                <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(origin ? `${origin}${shareLink}` : shareLink)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
+                <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(typeof window === 'undefined' ? shareLink : `${window.location.origin}${shareLink}`)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
                   <span>✉</span>
                   <span>Send email</span>
                 </a>
@@ -209,15 +207,15 @@ export function AppShell({
         </div>
       ) : null}
 
-      <div className="grid min-h-screen grid-cols-1 gap-0 px-0 lg:grid-cols-[68px_minmax(0,1fr)]">
-        <aside className="hidden w-[68px] flex-col bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-0 py-5 text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-y-auto">
+      <div className="grid min-h-screen grid-cols-1 gap-0 px-0 lg:grid-cols-[72px_minmax(0,1fr)] lg:px-4 lg:py-4 xl:px-5">
+        <aside className="hidden flex-col rounded-[2rem] border border-[#d9e2ec] bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.10)] lg:sticky lg:top-4 lg:flex lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
           {sidebar}
         </aside>
 
-        <main id="app-content" className="relative min-w-0 overflow-x-clip">
-          <div className="min-h-screen">
-            <header className="sticky top-0 z-40 flex h-14 items-center border-b border-[var(--border)] bg-white">
-              <div className="w-full px-4 sm:px-6 lg:px-6">
+        <main id="app-content" className="relative min-w-0 overflow-x-clip lg:pl-5 xl:pl-6">
+          <div className="min-h-screen lg:rounded-[2rem] lg:border lg:border-white/80 lg:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.98))] lg:shadow-[0_24px_70px_rgba(15,23,42,0.10)] lg:ring-1 lg:ring-slate-950/[0.03]">
+            <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur lg:rounded-t-[2rem]">
+              <div className="px-4 py-3.5 sm:px-6 lg:px-7 xl:px-9">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <button
@@ -231,15 +229,8 @@ export function AppShell({
                     </button>
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0c7fff]">Trade Command Center</p>
-                      <h1 className="truncate text-base font-bold tracking-[-0.3px] text-slate-950">
-                        {routeMeta.title}
-                        {routeMeta.title === 'Dashboard' && topbarDate ? (
-                          <span className="ml-2 text-sm font-normal text-slate-400">— {topbarDate}</span>
-                        ) : null}
-                      </h1>
-                      {routeMeta.title !== 'Dashboard' && topbarDate ? (
-                        <p className="mt-0.5 text-[11px] text-slate-500">{topbarDate}</p>
-                      ) : null}
+                      <h1 className="truncate text-xl font-semibold text-slate-950 sm:text-2xl">{routeMeta.title}</h1>
+                      <p className="mt-1 text-xs text-slate-500">{topbarDate}</p>
                     </div>
                   </div>
 
@@ -291,7 +282,7 @@ export function AppShell({
                 </div>
               </div>
             </header>
-            <div className="relative px-4 py-4 sm:px-6 lg:px-6">{children}</div>
+            <div className="relative px-4 py-4 sm:px-6 lg:px-7 xl:px-8">{children}</div>
           </div>
         </main>
       </div>

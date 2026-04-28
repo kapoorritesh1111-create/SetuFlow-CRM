@@ -188,7 +188,3 @@ export async function uploadOrderDocument(_: { error?: string; success?: string 
   if (contract.lead_id) revalidatePath(`/leads/${contract.lead_id}`);
   return { success: 'Order document uploaded and linked.' };
 }
-
-export async function uploadOrderDocumentInline(formData: FormData) {
-  await uploadOrderDocument(undefined, formData);
-}

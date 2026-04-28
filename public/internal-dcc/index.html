@@ -1,7 +1,205 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>SETU Flow Internal DCC · Runtime Stabilization Truth</title><style>:root{--bg:#f0f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--brand:#0c7fff;--navy:#0b2e4a;--ok:#059669;--warn:#d97706;--bad:#dc2626;--r-sm:6px;--r-lg:16px;--r-xl:22px}*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);font-size:14px}.wrap{max-width:1420px;margin:0 auto;padding:24px}.hero{border-radius:var(--r-xl);background:linear-gradient(135deg,#061c2e,#0b2e4a 62%,#0c7fff);color:white;padding:24px;box-shadow:0 18px 44px rgba(15,23,42,.18)}.ey{font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.72)}h1{margin:7px 0 0;font-size:30px;letter-spacing:-.04em}h2{font-size:18px;margin:0 0 10px}h3{font-size:14px;margin:0 0 8px}p{line-height:1.65}.tabs{display:flex;gap:4px;margin:16px 0;background:#e2e8f0;padding:4px;border-radius:12px;flex-wrap:wrap}.tab{border:0;border-radius:9px;padding:8px 12px;background:transparent;color:var(--muted);font-weight:800;cursor:pointer}.tab.a{background:white;color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.08)}.pane{display:none}.pane.a{display:block}.card{background:white;border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;margin:12px 0;box-shadow:0 8px 24px rgba(15,23,42,.06)}.grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.metric{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px}.metric .label{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8}.metric .value{margin-top:6px;font-size:28px;font-weight:900;letter-spacing:-.04em}.pill{display:inline-flex;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900;text-transform:uppercase}.ok{background:#ecfdf5;color:var(--ok);border:1px solid #a7f3d0}.warn{background:#fffbeb;color:var(--warn);border:1px solid #fde68a}.bad{background:#fff1f2;color:var(--bad);border:1px solid #fecaca}.info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:white;font-size:12px}th{background:#f8fafc;color:#94a3b8;text-align:left;text-transform:uppercase;letter-spacing:.12em;font-size:10px}td,th{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}code{background:#f1f5f9;border:1px solid var(--line);border-radius:5px;padding:1px 5px}.prompt{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.6}.small{font-size:12px;color:var(--muted)}@media(max-width:900px){.g4,.g3{grid-template-columns:1fr}.wrap{padding:12px}}</style></head><body><main class="wrap"><section class="hero"><div class="ey">SETU Flow Internal DCC · Apr 27 2026</div><h1>Runtime stabilization is the active build truth</h1><p>PR-0 through PR-4 are treated as merged design direction. This DCC realigns the repo around the shared shell, reference HTML parity, workflow readiness, and the no-schema-change posture verified against the current schema context.</p></section><div class="tabs"><button class="tab a" onclick="show('workflow',this)">Module readiness + workflow readiness</button><button class="tab" onclick="show('coverage',this)">Reference HTML coverage</button><button class="tab" onclick="show('requirements',this)">PR Change Requirements</button><button class="tab" onclick="show('schema',this)">Schema Status</button><button class="tab" onclick="show('prompts',this)">Next Prompt</button></div>
-<section id="workflow" class="pane a"><div class="grid g4"><div class="metric"><div class="label">Module readiness</div><div class="value">88%</div><span class="pill warn">Stabilized</span></div><div class="metric"><div class="label">Workflow readiness</div><div class="value">84%</div><span class="pill warn">Needs final QA</span></div><div class="metric"><div class="label">Reference coverage</div><div class="value">82%</div><span class="pill warn">PR-5 next</span></div><div class="metric"><div class="label">AI readiness</div><div class="value">78%</div><span class="pill info">Advisory only</span></div></div><div class="card"><h2>Runtime stabilization</h2><table><thead><tr><th>Area</th><th>Status</th><th>Current truth</th></tr></thead><tbody><tr><td>Shared shell</td><td><span class="pill ok">Aligned</span></td><td>68px sidebar, 56px topbar, single route gutter, no second desktop route panel.</td></tr><tr><td>Hydration safety</td><td><span class="pill ok">Patched</span></td><td>Client-only current-date and origin values are now populated after mount to avoid React #418/#423/#425 text mismatches.</td></tr><tr><td>Catalog</td><td><span class="pill ok">Operational</span></td><td>Grouped table, quote readiness, inline price edit, drawer workflow retained.</td></tr><tr><td>Pipeline</td><td><span class="pill ok">Operational</span></td><td>Drag/drop retained; lane totals and lead detail panel remain the active board pattern.</td></tr><tr><td>Quotes</td><td><span class="pill warn">Recovered</span></td><td>Quote table, approval queue, detail slide-in, version history, governed send/approval CTAs restored. Needs live Supabase smoke after deploy.</td></tr><tr><td>Orders</td><td><span class="pill warn">Queued</span></td><td>Reference parity is the next major PR after runtime stabilization.</td></tr></tbody></table></div><div class="card"><h2>Cross-page workflow alignment</h2><p>Capture → Leads → Catalog pricing → Quotes → Approval/Send → Orders → Pipeline rescue remains the NorthStar. Admin owns configuration, audit, reference lists, security, and AI governance. Settings remains a redirect into Admin.</p><p><strong>Blocked PRs:</strong> PR-5 Orders HTML parity is blocked until this runtime stabilization zip is merged and smoke-tested.</p></div></section>
-<section id="coverage" class="pane"><div class="card"><h2>Reference HTML Coverage Map</h2><table><thead><tr><th>Module</th><th>Reference HTML</th><th>Repo file</th><th>Coverage</th><th>Gaps</th><th>PR</th></tr></thead><tbody><tr><td>Admin + Settings</td><td><code>public/reference-html/setuflow-admin-settings-redesign.html</code></td><td><code>src/app/(app)/admin/page.tsx</code></td><td>86%</td><td>Live QA for invite email delivery and audit edge cases.</td><td>PR-1</td></tr><tr><td>Catalog</td><td><code>public/reference-html/setuflow-catalog-redesign.html</code></td><td><code>src/app/(app)/products/page.tsx</code></td><td>88%</td><td>CIF visible but read-only unless API/schema expands.</td><td>PR-2</td></tr><tr><td>Pipeline</td><td><code>public/reference-html/setuflow-pipeline-redesign.html</code></td><td><code>src/app/(app)/pipeline/page.tsx</code></td><td>90%</td><td>Panel stage-update QA required after live drag/drop smoke.</td><td>PR-3</td></tr><tr><td>Quotes</td><td><code>public/reference-html/setuflow-quotes-redesign.html</code></td><td><code>src/app/(app)/quotes/page.tsx</code></td><td>84%</td><td>Safe send is linked through governed flow; full send provider integration remains outside parity scope.</td><td>PR-4</td></tr><tr><td>Orders</td><td><code>public/reference-html/setuflow-orders-redesign.html</code></td><td><code>src/app/(app)/orders/page.tsx</code></td><td>70%</td><td>Needs PR-5 parity pass for execution desk details.</td><td>PR-5 queued</td></tr><tr><td>Dashboard</td><td><code>public/reference-html/setuflow-dashboard-redesign.html</code></td><td><code>src/app/(app)/dashboard/page.tsx</code></td><td>82%</td><td>Hydration safety relies on serverNowIso and shell patch.</td><td>PR-NS-06</td></tr></tbody></table></div></section>
-<section id="requirements" class="pane"><div class="card"><h2>PR Change Requirements</h2><table><thead><tr><th>PR</th><th>Pages affected</th><th>Reference HTML</th><th>Required changes</th><th>Definition of Done</th><th>Status</th><th>Linked commits</th></tr></thead><tbody><tr><td><strong>PR-NS-00 – Shell Alignment Lock</strong></td><td>/dashboard, /leads, /pipeline, /products, /quotes, /orders, /admin</td><td>All redesign references</td><td>One shell contract; remove duplicate route chrome; retain vCard, filters, quick lead, mode switch, avatar.</td><td>All app routes start on same x-grid with no second rounded desktop panel.</td><td><span class="pill ok">Merged baseline</span></td><td>Repo zip handoff</td></tr><tr><td><strong>PR-NS-01 – Admin + Settings Unified Workspace</strong></td><td>/admin, /settings/lists, old admin subroutes</td><td>setuflow-admin-settings-redesign.html</td><td>Unified left-nav admin workspace, governance banner, section CTAs, inline references, audit filters, security threshold.</td><td>/settings/lists redirects; every admin section changes via query section and stays usable.</td><td><span class="pill ok">Merged baseline</span></td><td>Repo zip handoff</td></tr><tr><td><strong>PR-NS-02 – Catalog Quote Readiness</strong></td><td>/products</td><td>setuflow-catalog-redesign.html</td><td>Tabs, filters, six stats, grouped pricing table, inline price edit, drawer tabs, quote readiness.</td><td>Catalog supports quote readiness without schema changes.</td><td><span class="pill ok">Merged baseline</span></td><td>Repo zip handoff</td></tr><tr><td><strong>PR-NS-03 – Pipeline HTML Parity</strong></td><td>/pipeline</td><td>setuflow-pipeline-redesign.html</td><td>Remove duplicate panels, preserve drag/drop, lane totals, detail panel, stage updates inside panel.</td><td>Board rhythm matches reference and drag/drop remains intact.</td><td><span class="pill ok">Merged baseline</span></td><td>Repo zip handoff</td></tr><tr><td><strong>PR-NS-04 – Quotes Recovery + HTML Parity</strong></td><td>/quotes, approval/send handoffs, lead quote links</td><td>setuflow-quotes-redesign.html</td><td>Governed table, approval queue, detail slide-in, version history, safe CTAs, runtime recovery.</td><td>No server-component event handlers; no hydration mismatch; quote surface never hard-crashes on recoverable query issue.</td><td><span class="pill warn">Runtime stabilized</span></td><td>Current stabilization zip</td></tr><tr><td><strong>PR-NS-05 – Orders Execution HTML Parity</strong></td><td>/orders</td><td>setuflow-orders-redesign.html</td><td>Execution status desk, document gates, accepted quote continuity, dispatch/release CTAs.</td><td>Orders page proves execution readiness from accepted quote state.</td><td><span class="pill warn">Next</span></td><td>Pending</td></tr><tr><td><strong>PR-NS-06 – Full Runtime QA + Dashboard/Leads Polish</strong></td><td>All app routes</td><td>NorthStar + dashboard/leads references</td><td>Browser smoke, hydration checks, route null safety, final DCC refresh.</td><td>No console runtime errors across required route matrix.</td><td><span class="pill info">Planned</span></td><td>Pending</td></tr></tbody></table></div></section>
-<section id="schema" class="pane"><div class="card"><h2>Schema Status Section</h2><p><strong>No Supabase changes required.</strong></p><table><thead><tr><th>Check</th><th>Status</th><th>Notes</th></tr></thead><tbody><tr><td>Missing fields</td><td><span class="pill ok">None proven</span></td><td>The current code paths use existing fields for organizations, roles, invitations, reference lists, product pricing, quotes, versions, communications, contracts, and audit logs.</td></tr><tr><td>Missing relations</td><td><span class="pill ok">None proven</span></td><td>Current joins align with existing foreign keys in the supplied schema context.</td></tr><tr><td>Missing RLS</td><td><span class="pill ok">None proven</span></td><td>No runtime evidence proves an RLS gap. Keep policy changes out of this stabilization build.</td></tr><tr><td>Missing indexes</td><td><span class="pill ok">None required</span></td><td>No performance trace was supplied that proves a required index.</td></tr><tr><td>Missing migrations</td><td><span class="pill ok">None required</span></td><td>This build is code/DCC stabilization only.</td></tr></tbody></table></div></section>
-<section id="prompts" class="pane"><div class="grid g3"><div class="card"><h2>Next Prompt 1 · Module readiness + workflow readiness</h2><div class="prompt">You are a Staff-level Setu Flow CRM repo auditor. Start from the latest stabilization repo. Re-run module readiness and workflow readiness across Dashboard, Leads, Catalog, Pipeline, Quotes, Orders, Admin, AI, and DCC. Update public/internal-dcc/index.html with readiness percentages, blocked PRs, workflow risks, and cross-page alignment. Do not propose schema changes unless repo evidence proves they are required. Return the updated repo zip.</div></div><div class="card"><h2>Next Prompt 2 · Reference HTML coverage</h2><div class="prompt">Start from the latest stabilization repo. Read every file under public/reference-html first. Produce and apply a Reference HTML Coverage Map in the Internal DCC for Admin, Catalog, Pipeline, Quotes, Orders, Dashboard, and Leads. Patch only safe shell/rhythm regressions and list remaining gaps by PR. Return repo zip and coverage percentages.</div></div><div class="card"><h2>Next Prompt 3 · PR Change Requirements</h2><div class="prompt">Start from the latest stabilization repo. Update the DCC PR Change Requirements tab so every PR has pages affected, reference HTML, required UI/workflow/data/component/cross-page changes, Supabase/schema changes only if required, migrations only if required, definition of done, status, and linked commits. Then implement PR-NS-05 Orders Execution HTML Parity from public/reference-html/setuflow-orders-redesign.html and return repo zip plus order workflow readiness.</div></div></div></section>
-<script>function show(id,btn){document.querySelectorAll('.pane').forEach(p=>p.classList.remove('a'));document.getElementById(id).classList.add('a');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('a'));btn.classList.add('a')}</script></main></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SETU Flow Internal DCC — NorthStar Rebuild Plan</title>
+  <style>
+    :root{
+      --bg:#f4f6fb;--panel:#ffffff;--panel-soft:#f8fafc;--line:#e2e8f0;--line-strong:#cbd5e1;
+      --text:#0f172a;--muted:#64748b;--brand:#0c7fff;--brand-soft:#eff6ff;--navy:#1f487c;--teal:#279491;
+      --good:#059669;--good-soft:#ecfdf5;--warn:#d97706;--warn-soft:#fffbeb;--bad:#dc2626;--bad-soft:#fff1f2;
+      --violet:#7c3aed;--violet-soft:#f5f3ff;--shadow:0 10px 30px rgba(15,23,42,.08);--radius:20px;--radius-sm:12px;
+    }
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#f8fbff 0%,var(--bg) 100%);color:var(--text);font-size:14px;line-height:1.55}
+    a{color:inherit;text-decoration:none}.wrap{max-width:1400px;margin:0 auto;padding:28px 22px 64px}.hero{background:linear-gradient(135deg,var(--navy) 0%,#2a5f8a 50%,var(--teal) 100%);color:#fff;border-radius:28px;padding:28px;box-shadow:var(--shadow)}
+    .eyebrow{font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.72)} h1,h2,h3,p{margin:0}.hero h1{margin-top:10px;font-size:34px;line-height:1.08;letter-spacing:-.04em}.hero p{margin-top:10px;max-width:1020px;color:rgba(255,255,255,.84);line-height:1.7}
+    .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:20px}.hero-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:22px;padding:18px;backdrop-filter:blur(8px)}.hero-card h2{font-size:18px;margin-bottom:8px}.hero-card ul{margin:8px 0 0 18px;padding:0;line-height:1.8;color:rgba(255,255,255,.88)}
+    .pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.pill{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.12);color:#fff}.pill.light{background:#fff;color:var(--navy)}
+    .section{margin-top:18px}.grid{display:grid;gap:16px}.grid-2{grid-template-columns:1fr 1fr}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}.card.soft{background:var(--panel-soft);box-shadow:none}.card h2{font-size:20px;margin-bottom:8px;letter-spacing:-.02em}.card h3{font-size:15px;margin-bottom:6px}.muted{color:var(--muted)}
+    .kpi{display:flex;flex-direction:column;gap:4px}.kpi .num{font-size:26px;font-weight:900;letter-spacing:-.04em}.kpi .lbl{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+    .status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}.status.good{background:var(--good-soft);color:var(--good);border:1px solid #a7f3d0}.status.warn{background:var(--warn-soft);color:var(--warn);border:1px solid #fde68a}.status.neutral{background:#f1f5f9;color:#475569;border:1px solid var(--line)}.status.bad{background:var(--bad-soft);color:var(--bad);border:1px solid #fecaca}.status.violet{background:var(--violet-soft);color:var(--violet);border:1px solid #ddd6fe}
+    .table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:#fff}.table th{background:#f8fafc;color:#94a3b8;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.14em;padding:10px 12px;border-bottom:1px solid var(--line)}.table td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}.table tr:last-child td{border-bottom:0}.table strong{color:#0f172a}.small{font-size:12px}.route{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#475569;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:3px 7px;font-size:12px;display:inline-flex;width:max-content}.link-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.link-card{display:block;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 1px 4px rgba(15,23,42,.04);transition:.14s}.link-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,23,42,.08);border-color:#bfdbfe}.link-card strong{display:block;margin-bottom:6px}.desc{color:var(--muted);font-size:12px;margin-top:6px}.callout{border-radius:18px;padding:16px;border:1px solid}.callout.good{background:var(--good-soft);border-color:#a7f3d0;color:#065f46}.callout.warn{background:var(--warn-soft);border-color:#fde68a;color:#92400e}.callout.bad{background:var(--bad-soft);border-color:#fecaca;color:#991b1b}.callout.blue{background:var(--brand-soft);border-color:#bfdbfe;color:#1e3a8a}
+    .phase-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}.footer{margin-top:24px;border-top:1px solid var(--line);padding-top:16px;display:flex;justify-content:space-between;gap:14px;color:var(--muted);font-size:12px}
+    @media(max-width:1050px){.hero-grid,.grid-2{grid-template-columns:1fr}.grid-3,.grid-4,.link-grid{grid-template-columns:1fr 1fr}.table{font-size:12px}}@media(max-width:720px){.wrap{padding:16px 12px 40px}.hero h1{font-size:26px}.grid-3,.grid-4,.link-grid{grid-template-columns:1fr}.table{display:block;overflow-x:auto}.card{padding:16px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">SETU Flow Internal DCC · Light Mode · NorthStar Locked</div>
+      <h1>NorthStar rebuild control center</h1>
+      <p>This DCC has been reset around the attached NorthStar and page-specific HTML references. Dashboard rebuild is complete for now and parked. All remaining work must follow the attached HTMLs in <strong>/public/reference-html/</strong>; no page should be rebuilt from memory or old styling.</p>
+      <div class="pills">
+        <span class="pill light">CURRENTLY WORKING ON: PR-NS-08 — Catalog-to-Quote data wiring hardening · PR-NS-07.6 Vercel build recovery completed</span>
+        <span class="pill">COMPLETED: Phase 1 Dashboard rebuild</span>
+        <span class="pill">NorthStar first</span>
+        <span class="pill">Reference HTML required</span>
+      </div>
+      <div class="hero-grid">
+        <div class="hero-card">
+          <h2>Verdict on previous 6-PR plan</h2>
+          <p>Six PRs are not enough anymore. The updated Leads reference now includes a Quote Builder workflow, and new dedicated Quotes and Orders HTMLs add full execution surfaces. Admin also now includes Trade Events & Capture. The plan is expanded to 13 focused PRs so every major workflow gets its own safe implementation lane.</p>
+        </div>
+        <div class="hero-card">
+          <h2>Hard rules moving forward</h2>
+          <ul>
+            <li>Do not touch dashboard unless a final end-stage consistency pass is explicitly approved.</li>
+            <li>Every PR must cite and follow its attached HTML reference.</li>
+            <li>Internal DCC remains light mode and must link to all active reference HTMLs.</li>
+            <li>Quote Builder, Quotes page, Orders page, Catalog, Trade Events, Capture, Leads, Pipeline, and Admin are now all first-class lanes.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Release truth + UX 99 system tracker</h2>
+      <p class="muted">UX 99 tracker and UX audit remain visible for release gates. Archive records are retained while PR-NS-02 executes. UX 99 program active. Reset history archived. All tracked modules are at or above 96%. Legacy UX lanes PR-UX-01 through PR-UX-05 are preserved as historical proof points.</p>
+    </section>
+
+    <section class="section grid grid-4">
+      <div class="card kpi"><div class="num">13</div><div class="lbl">Planned PRs</div><p class="muted small">Expanded from 6 to cover all missing workflow surfaces.</p></div>
+      <div class="card kpi"><div class="num">8</div><div class="lbl">Reference HTMLs</div><p class="muted small">NorthStar plus Dashboard, Leads, Pipeline, Catalog, Admin, Quotes, Orders.</p></div>
+      <div class="card kpi"><div class="num">0</div><div class="lbl">Dashboard PRs now</div><p class="muted small">Dashboard is parked until final review.</p></div>
+      <div class="card kpi"><div class="num">1</div><div class="lbl">Active source of truth</div><p class="muted small">NorthStar governs workflow order; page HTMLs govern page UI.</p></div>
+    </section>
+
+    <section class="section grid grid-2">
+      <div class="card">
+        <h2>Current status</h2>
+        <div class="phase-line"><span class="status good">Phase 1 dashboard complete</span><span class="status good">PR-NS-03 complete</span><span class="status good">PR-NS-04 complete</span></div>
+        <p class="muted" style="margin-top:12px">CURRENTLY WORKING ON: PR-NS-08 — Catalog-to-Quote data wiring hardening. LATEST FIX: PR-NS-07.6 fixed the Vercel Pipeline board type failure from visual parity, re-locked the latest attached Quotes, Orders, Pipeline, and Catalog redesign HTML files into /public/reference-html/, and documented remaining exact-parity gaps before PR-NS-08. COMPLETED: Phase 1 Dashboard rebuild, PR-NS-01 Leads foundation rebuild, PR-NS-02 Lead Command Center workflow depth, PR-NS-02B Leads Reference Fidelity Lock, PR-NS-03 Quote Builder governed workflow, PR-NS-04 Quotes Workspace rebuild, PR-NS-05 Pipeline execution board rebuild, PR-NS-06 Orders execution desk rebuild, PR-NS-07 Catalog operational rebuild, and PR-NS-07.5 NorthStar visual parity hardening. ACTIVE REFERENCES: NorthStar HTML, Quotes Redesign HTML, Orders Redesign HTML, Pipeline Redesign HTML, Catalog Redesign HTML, and Leads Redesign HTML as build specs. NEXT WORK: PR-NS-08 — Catalog-to-Quote data wiring hardening.</p>
+      </div>
+      <div class="card">
+        <h2>Do not miss list</h2>
+        <div class="callout warn"><strong>Newly added to plan:</strong> Quote Builder, Quotes Workspace, Orders Execution Desk, Trade Events & Capture, vCard/capture handoff, cross-page data wiring, and final QA/build verification.</div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Reference HTML registry</h2>
+      <p class="muted">These files are shipped in the repo under <span class="route">public/reference-html/</span> and are directly viewable online after deploy.</p>
+      <div class="link-grid" style="margin-top:14px">
+        <a class="link-card" href="/reference-html/setuflow-northstar.html"><strong>NorthStar workflow map</strong><span class="route">/reference-html/setuflow-northstar.html</span><div class="desc">Top-level workflow and page-map source of truth.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-dashboard-redesign.html"><strong>Dashboard redesign</strong><span class="route">/reference-html/setuflow-dashboard-redesign.html</span><div class="desc">Completed for now. Use only for final end-stage consistency.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-leads-redesign.html"><strong>Leads redesign · updated</strong><span class="route">/reference-html/setuflow-leads-redesign.html</span><div class="desc">Lead queue, command center, capture drawer, quote prep, embedded Quote Builder workflow.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-pipeline-redesign.html"><strong>Pipeline redesign</strong><span class="route">/reference-html/setuflow-pipeline-redesign.html</span><div class="desc">Kanban execution board, move readiness, drag/drop, detail panel.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-catalog-redesign.html"><strong>Catalog redesign</strong><span class="route">/reference-html/setuflow-catalog-redesign.html</span><div class="desc">Product table, pricing baselines, variants, quote-ready gaps, drawer editing.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-admin-settings-redesign.html"><strong>Admin & Settings redesign · updated</strong><span class="route">/reference-html/setuflow-admin-settings-redesign.html</span><div class="desc">Unified admin/settings, governance, roles, markets, stages, Trade Events & Capture.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-quotes-redesign.html"><strong>Quotes workspace redesign</strong><span class="route">/reference-html/setuflow-quotes-redesign.html</span><div class="desc">Quote list, approval queue, status/version history, quote actions.</div></a>
+        <a class="link-card" href="/reference-html/setuflow-orders-redesign.html"><strong>Orders execution redesign</strong><span class="route">/reference-html/setuflow-orders-redesign.html</span><div class="desc">Order state machine, compliance checklist, dispatch readiness, commercial lock.</div></a>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Updated PR stack</h2>
+      <p class="muted">The rebuild is split by workflow dependency, not by menu item. This avoids one giant PR and keeps dashboard frozen while the operational surfaces catch up.</p>
+      <table class="table" style="margin-top:14px">
+        <thead><tr><th>#</th><th>PR</th><th>Objective</th><th>Reference HTML</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>PR-NS-01 · Leads queue + capture rebuild</strong></td><td>Rebuild Lead Queue, saved views, filters, sectioned critical/today/active rows, batch toolbar, Quick Lead drawer, Buyer/Supplier toggle, product pre-selection, follow-up capture, and auto-open quote option.</td><td>Leads updated + NorthStar</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>2</td><td><strong>PR-NS-02 · Lead Command Center workflow rebuild</strong></td><td>Build individual lead workspace: header, clickable chips, stage strip, four workflow pillars, inline panels, quote prep checklist, right rail, and sticky action bar.</td><td>Leads updated + NorthStar</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>2B</td><td><strong>PR-NS-02B · Leads Reference Fidelity Lock</strong></td><td>Correction pass that treats Leads Redesign HTML as build spec: remove drift, demote AI/helper surfaces, lock queue and Command Center hierarchy to the reference.</td><td>Leads updated + NorthStar</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>3</td><td><strong>PR-NS-03 · Quote Builder from lead workflow</strong></td><td>Implemented the Quote Builder launched from Leads: stepper, line items, USD catalog baseline prices, selected-currency quote conversion with seven-day FX lock, override reasons, totals, readiness gating, draft/save/send path. Latest pass removes the iframe implementation and renders inline Command Center / Quote Builder workspaces directly inside Leads, preserving one shell and avoiding nested sidebar/header scroll traps.</td><td>Leads updated + Catalog + Quotes</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>4</td><td><strong>PR-NS-04 · Quotes workspace rebuild</strong></td><td>Rebuilt Quotes page and completed reference-fidelity pass: mode switch, Export, + New quote, search/filter bar, KPI cards, approval queue banner, selectable rows, row actions, approval gate, line item detail panel, subtotal/total display, locked-FX/override context, Create order, Export PDF, and version/status timeline while preserving quote logic.</td><td>Quotes redesign</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>5</td><td><strong>PR-NS-05 · Pipeline execution board rebuild</strong></td><td>Rebuilt Pipeline: blocker-first command header, + New lead, Export board, Bulk action, KPIs, board filters, lanes, lead cards, move readiness, blockers, stage drag/drop, workflow review, detail panel, quote/order handoff clarity, and stage value signals.</td><td>Pipeline redesign</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>6</td><td><strong>PR-NS-06 · Orders execution desk rebuild</strong></td><td>Rebuilt Orders page: command header, order cards, execution state machine, compliance list, document blockers, dispatch readiness, commercial lock, accepted-version continuity, and order detail workflow CTAs.</td><td>Orders redesign</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>7</td><td><strong>PR-NS-07 · Catalog operational rebuild</strong></td><td>Rebuilt Catalog: command CTAs, Products/Pricing/Spreadsheet modes, product table, category filters, price gaps, variants, Ex-Factory/FOB/CIF visibility, inline USD baseline editing, drawer editing, add product wizard, export, and quote-readiness signals.</td><td>Catalog redesign</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>7.5</td><td><strong>PR-NS-07.5 · NorthStar visual parity hardening</strong></td><td>Hardened visual parity for Quotes, Orders, Pipeline, and Catalog against redesign HTML: command headers, filters, KPI rhythm, CTA language, tables/cards, detail panels, blockers, and workflow actions.</td><td>NorthStar + Quotes + Orders + Pipeline + Catalog redesigns</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>7.6</td><td><strong>PR-NS-07.6 · Vercel build recovery + redesign reference lock</strong></td><td>Fixed Pipeline board type drift caused by grouped stage visual renderer, restored production build compatibility, and re-locked latest attached redesign HTML references for Quotes, Orders, Pipeline, and Catalog.</td><td>NorthStar + four page redesign HTMLs</td><td><span class="status good">Completed</span></td></tr>
+          <tr><td>8</td><td><strong>PR-NS-08 · Catalog-to-Quote data wiring</strong></td><td>Harden catalog baselines into Quote Builder: selected product, variant, USD baseline, market/currency, price tiers, missing-price warnings, FX lock reuse, and override approval thresholds across create, edit, revise, and duplicate quote flows.</td><td>Catalog + Leads updated + Quotes</td><td><span class="status warn">Active</span></td></tr>
+          <tr><td>9</td><td><strong>PR-NS-09 · Admin & Settings workspace rebuild</strong></td><td>Rebuild unified Admin/Settings: organization, team members, invitations, markets, categories, stages, pipelines, audit, AI analytics, security/roles.</td><td>Admin updated</td><td><span class="status neutral">Planned</span></td></tr>
+          <tr><td>10</td><td><strong>PR-NS-10 · Trade Events & Capture lane</strong></td><td>Implement Trade Events & Capture from Admin and Leads: event setup, lead source labels, trade-show capture defaults, vCard scan/capture handoff, and event analytics hooks.</td><td>Admin updated + Leads updated</td><td><span class="status neutral">Planned</span></td></tr>
+          <tr><td>11</td><td><strong>PR-NS-11 · Cross-page workflow/data consistency</strong></td><td>Connect Leads, Pipeline, Quotes, Orders, Catalog, and Admin so stage movement, quote status, order conversion, product pricing, and blockers stay consistent.</td><td>NorthStar + all page HTMLs</td><td><span class="status neutral">Planned</span></td></tr>
+          <tr><td>12</td><td><strong>PR-NS-12 · Shared shell + design-system consolidation</strong></td><td>Extract/reuse shared topbar, sidebar, filter bar, chips, cards, drawers, tables, modals, vCard behavior, and spacing tokens across all rebuilt pages.</td><td>All page HTMLs</td><td><span class="status neutral">Planned</span></td></tr>
+          <tr><td>13</td><td><strong>PR-NS-13 · Final QA, build, and optional dashboard revisit</strong></td><td>Run end-to-end QA/build pass, verify direct reference URLs, smoke-test workflows, and only then make small dashboard consistency fixes if needed.</td><td>NorthStar + Dashboard + all pages</td><td><span class="status violet">Final</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section grid grid-3">
+      <div class="callout blue"><strong>Why Leads first:</strong> Leads now owns capture, qualification, coverage, quote prep, and the first entry into Quote Builder. It is the root of most operator work.</div>
+      <div class="callout warn"><strong>Why Quotes split in two:</strong> Quote Builder is a creation workflow from a lead; Quotes Workspace is an operating page for approval, status, versioning, and follow-up. They should not be one PR.</div>
+      <div class="callout good"><strong>Why Orders is now first-class:</strong> Orders has a separate execution desk and state machine, so it needs its own PR rather than being hidden under Pipeline or Quotes.</div>
+    </section>
+
+    <section class="section card">
+      <h2>Workflow dependency map</h2>
+      <table class="table" style="margin-top:14px">
+        <thead><tr><th>Flow</th><th>Build path</th><th>Critical handoff</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Capture to lead</strong></td><td>Admin Trade Events → Leads Quick Capture → Lead Queue</td><td>Event/source/product/follow-up values must be created at capture time.</td></tr>
+          <tr><td><strong>Lead to quote</strong></td><td>Lead Command Center → Quote Prep Checklist → Quote Builder</td><td>Readiness gate should prevent sloppy quote creation while still allowing fast qualified inbound leads.</td></tr>
+          <tr><td><strong>Quote to order</strong></td><td>Quote Builder → Quotes Workspace → Accepted Quote → Orders Execution Desk</td><td>Version, approval, override reason, and accepted price must stay locked into the order.</td></tr>
+          <tr><td><strong>Catalog to commercial</strong></td><td>Catalog Pricing → Quote Builder Line Items → Approval Thresholds</td><td>Missing baseline pricing or excessive override must surface before sending.</td></tr>
+          <tr><td><strong>Order execution</strong></td><td>Orders State Machine → Compliance Docs → Dispatch Readiness → Completion</td><td>Compliance and shipping blockers must be explicit, not hidden in notes.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section card">
+      <h2>Direct URLs after deploy</h2>
+      <div class="grid grid-2" style="margin-top:12px">
+        <div class="card soft"><h3>DCC</h3><div class="route">/internal-dcc/</div><p class="desc">Live expected URL: https://www.setuflowcrm.com/internal-dcc/</p></div>
+        <div class="card soft"><h3>Reference folder</h3><div class="route">/reference-html/</div><p class="desc">All attached HTML references are available as direct static files under this path.</p></div>
+      </div>
+    </section>
+
+    <section class="section card" style="border-left: 3px solid #dc2626;">
+      <h2 style="color:#dc2626;">⚠ Known Schema Issues — Needs Fix</h2>
+      <p class="muted" style="margin-top:8px">These database column errors were observed live in the recording (Apr 25, 2026) on the AI Help / AI Suggestions page. They must be addressed in the next Supabase migration before the AI workflow features are usable.</p>
+
+      <table class="table" style="margin-top:14px">
+        <thead>
+          <tr><th>Error</th><th>Table</th><th>Missing Column</th><th>Affected Page</th><th>Fix</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="status warn">Column missing</span></td>
+            <td><code>lead_markets</code></td>
+            <td><code>organization_id</code></td>
+            <td>AI Help / <code>/ai-suggestions</code></td>
+            <td>Add <code>organization_id uuid references organizations(id)</code> to <code>lead_markets</code> table. Backfill from parent <code>leads.organization_id</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="status warn">Column missing</span></td>
+            <td><code>lead_product_interests</code></td>
+            <td><code>organization_id</code></td>
+            <td>AI Help / <code>/ai-suggestions</code></td>
+            <td>Add <code>organization_id uuid references organizations(id)</code> to <code>lead_product_interests</code>. Backfill from parent lead.</td>
+          </tr>
+          <tr>
+            <td><span class="status warn">Column missing</span></td>
+            <td><code>contract_line_items</code></td>
+            <td><code>organization_id</code></td>
+            <td>AI Help / <code>/ai-suggestions</code></td>
+            <td>Add <code>organization_id uuid references organizations(id)</code> to <code>contract_line_items</code>. Backfill from parent contract.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:16px; padding:12px 16px; background:#fef2f2; border-radius:8px; border:1px solid #fecaca;">
+        <p style="font-size:12px; font-weight:700; color:#991b1b; margin-bottom:6px;">Migration steps required:</p>
+        <ol style="font-size:12px; color:#7f1d1d; margin-left:16px; line-height:2">
+          <li>Add <code>organization_id</code> column to <code>lead_markets</code>, <code>lead_product_interests</code>, and <code>contract_line_items</code></li>
+          <li>Create foreign key constraints to <code>organizations(id)</code></li>
+          <li>Backfill existing rows by joining through parent tables (leads → organization_id)</li>
+          <li>Add RLS policies on the new column for each table</li>
+          <li>Add index: <code>CREATE INDEX ON lead_markets(organization_id);</code> etc.</li>
+          <li>Re-test <code>/ai-suggestions</code> page — the "Some live data could not be loaded" banner should disappear</li>
+        </ol>
+      </div>
+
+      <div style="margin-top:12px; padding:10px 14px; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0; font-size:12px; color:#166534;">
+        <strong>Until fixed:</strong> The AI Help page loads with partial data warnings but remains usable. Lead queue, command center, quote builder, and all non-AI pages are unaffected.
+      </div>
+    </section>
+
+    <div class="footer">
+      <div>SETU Flow Internal DCC · Light mode · NorthStar rebuild plan reset</div>
+      <div>CURRENTLY WORKING ON: PR-NS-08 · PR-NS-07.6 BUILD FIX COMPLETE</div>
+    </div>
+  </main>
+</body>
+</html>

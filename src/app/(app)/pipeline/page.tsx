@@ -59,7 +59,7 @@ export default async function PipelinePage({
   const isStageConfigurationEmpty = data.stages.length === 0 || data.pipelines.length === 0;
 
   return (
-    <div style={{ margin: '-16px -24px -16px', background: 'var(--page-bg)', minHeight: 'calc(100vh - 56px)' }}>
+    <div className="space-y-4">
       <QueryIssuesAlert issues={data.queryIssues} />
       <PipelineBoard
         currentUserId={workspace.user?.id ?? ''}

@@ -10,10 +10,22 @@ const PRODUCT_SHELL_TABS: ContextTab[] = primaryAppShellNav.map((item) => ({
 const ADMIN_TABS: ContextTab[] = adminAppShellTabs.map((item) => ({ href: item.href, label: item.label, exact: item.exact }));
 
 export function getRouteMeta(pathname: string): RouteMeta {
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+  if (pathname.startsWith('/admin/')) {
     return {
-      title: 'Admin / Workspace',
-      description: 'Unified Admin + Settings workspace for organization, team, invitations, reference lists, audit, AI analytics, and security controls.',
+      title: pathname.startsWith('/admin/invitations')
+        ? 'Invitations'
+        : pathname.startsWith('/admin/audit')
+          ? 'Audit trail'
+          : pathname.startsWith('/admin/ai-analytics')
+            ? 'AI review'
+            : pathname.startsWith('/admin/organization')
+              ? 'Organization setup'
+              : pathname.startsWith('/admin/product-management')
+                ? 'Catalog admin'
+                : pathname.startsWith('/admin/users')
+                  ? 'People & access'
+                  : 'Admin / Organization',
+      description: 'Use admin for workspace setup: organization defaults, people access, invitations, audit proof, and admin-only controls. This is not the daily work route.',
       sectionLabel: 'Workspace setup',
       tabs: ADMIN_TABS,
       showWorkspaceModeSwitch: false,

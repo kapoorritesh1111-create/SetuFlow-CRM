@@ -283,7 +283,6 @@ export function ProductsManager({
   const [activeStep, setActiveStep] = useState<WizardStepKey>('basics');
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [activeCategoryTab, setActiveCategoryTab] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
   const [pricingFilter, setPricingFilter] = useState<'all' | 'priced' | 'unpriced'>('all');
   const [pricingStatusFilter, setPricingStatusFilter] = useState<'all' | 'active' | 'future' | 'expired'>('all');
@@ -329,18 +328,9 @@ export function ProductsManager({
       const matchesCategory = categoryFilter === 'all' ? true : product.categoryId === categoryFilter;
       const matchesPricing =
         pricingFilter === 'all' ? true : pricingFilter === 'priced' ? product.baselineStatus !== 'missing' : product.baselineStatus !== 'covered';
-      const cat = (product.categoryPath ?? '').toLowerCase();
-      const matchesCategoryTab = activeCategoryTab === 'all' ? true
-        : activeCategoryTab === 'snacks' ? (cat.includes('snack')||cat.includes('crisp')||cat.includes('chip')||cat.includes('vacuum'))
-        : activeCategoryTab === 'powders' ? (cat.includes('powder')||cat.includes('spray'))
-        : activeCategoryTab === 'sweeteners' ? (cat.includes('sweet')||cat.includes('jaggery')||cat.includes('sugar'))
-        : activeCategoryTab === 'onion' ? (cat.includes('onion')||cat.includes('garlic'))
-        : activeCategoryTab === 'freeze' ? cat.includes('freeze')
-        : activeCategoryTab === 'ready' ? product.baselineStatus === 'covered'
-        : true;
-      return matchesSearch && matchesStatus && matchesCategory && matchesPricing && matchesCategoryTab;
+      return matchesSearch && matchesStatus && matchesCategory && matchesPricing;
     });
-  }, [workspaceProducts, searchValue, statusFilter, categoryFilter, pricingFilter, activeCategoryTab]);
+  }, [workspaceProducts, searchValue, statusFilter, categoryFilter, pricingFilter]);
 
   useEffect(() => {
     setVisibleCount(pageSize);
@@ -661,28 +651,6 @@ export function ProductsManager({
         ))}
       </div>
 
-      {/* ── CATEGORY VIEW TABS — matches reference HTML .view-tabs ── */}
-      <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',alignItems:'stretch',gap:'0',overflowX:'auto'}}>
-        {[
-          {id:'all',icon:'▦',label:'All products',count:filteredProducts.length},
-          {id:'snacks',icon:'📦',label:'Snacks & crisps',count:filteredProducts.filter(p=>p.categoryPath?.toLowerCase().includes('snack')||p.categoryPath?.toLowerCase().includes('crisp')||p.categoryPath?.toLowerCase().includes('chip')||p.categoryPath?.toLowerCase().includes('vacuum')).length},
-          {id:'powders',icon:'🌿',label:'Powders',count:filteredProducts.filter(p=>p.categoryPath?.toLowerCase().includes('powder')||p.categoryPath?.toLowerCase().includes('spray')).length},
-          {id:'sweeteners',icon:'🍯',label:'Sweeteners',count:filteredProducts.filter(p=>p.categoryPath?.toLowerCase().includes('sweet')||p.categoryPath?.toLowerCase().includes('jaggery')||p.categoryPath?.toLowerCase().includes('sugar')).length},
-          {id:'onion',icon:'🧅',label:'Onion & garlic',count:filteredProducts.filter(p=>p.categoryPath?.toLowerCase().includes('onion')||p.categoryPath?.toLowerCase().includes('garlic')).length},
-          {id:'freeze',icon:'❄',label:'Freeze-dried',count:filteredProducts.filter(p=>p.categoryPath?.toLowerCase().includes('freeze')).length},
-          {id:'ready',icon:'✓',label:'Quote-ready',count:filteredProducts.filter(p=>p.baselineStatus==='covered').length},
-        ].map(tab=>{
-          const isActive = (activeCategoryTab??'all')===tab.id;
-          return (
-            <button key={tab.id} type="button" onClick={()=>setActiveCategoryTab(tab.id)}
-              style={{display:'flex',alignItems:'center',gap:'6px',padding:'11px 14px',fontSize:'12px',fontWeight:isActive?700:500,color:isActive?'#0b2e4a':'#64748b',background:'white',border:'none',borderBottom:isActive?'2px solid #0c7fff':'2px solid transparent',cursor:'pointer',whiteSpace:'nowrap',transition:'color .12s',marginBottom:'-1px',flexShrink:0}}>
-              <span>{tab.icon}</span>{tab.label}
-              <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:'20px',height:'18px',padding:'0 5px',borderRadius:'999px',fontSize:'10px',fontWeight:800,background:isActive?'#0c7fff':'#f1f5f9',color:isActive?'white':'#64748b'}}>{tab.count}</span>
-            </button>
-          );
-        })}
-      </div>
-
       {/* ── FILTER BAR ── */}
       <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'10px 24px',display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
         <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8'}}>Filter:</span>
@@ -704,14 +672,15 @@ export function ProductsManager({
         <span style={{marginLeft:'auto',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{Math.min(visibleCount,filteredSummary.total)} of {filteredSummary.total} products · {marketsCount} markets</span>
       </div>
 
-      {/* ── STATS STRIP — matches reference HTML: Total/Quote-ready/Pricing gaps/Variants/Inactive ── */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'10px',padding:'16px 24px 0'}}>
+      {/* ── STATS STRIP ── */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>
         {[
-          {label:'Total products',value:filteredSummary.total,meta:'Across all categories',accent:'#0c7fff'},
-          {label:'Quote-ready',value:totalCovered,meta:'Priced + in catalog',accent:'#059669'},
-          {label:'Pricing gaps',value:totalGaps,meta:'Missing market prices',accent:totalGaps>0?'#d97706':'#cbd5e1'},
-          {label:'Total variants',value:filteredProducts.reduce((s,p)=>s+(p.variantCount??0),0),meta:'Pack sizes & formats',accent:'#7c3aed'},
-          {label:'Inactive',value:filteredProducts.filter(p=>!p.isActive).length,meta:'Deactivated from quotes',accent:filteredProducts.filter(p=>!p.isActive).length>0?'#dc2626':'#cbd5e1'},
+          {label:'Total products',value:filteredSummary.total,meta:'In catalog',accent:'#0c7fff'},
+          {label:'Active',value:totalActive,meta:'Visible to buyers',accent:'#059669'},
+          {label:'Baseline covered',value:totalCovered,meta:'With catalog price',accent:'#059669'},
+          {label:'Baseline gaps',value:totalGaps,meta:'Missing price coverage',accent:totalGaps>0?'#d97706':'#cbd5e1'},
+          {label:'Categories',value:categoryOptions.length,meta:'Product categories',accent:'#7c3aed'},
+          {label:'Markets covered',value:`${workspaceSummary.marketsCovered}/${marketsCount}`,meta:'Active market coverage',accent:'#0c7fff'},
         ].map(sc=>(
           <div key={sc.label} style={{position:'relative',overflow:'hidden',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white',padding:'13px 15px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer'}}>
             <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:sc.accent,borderRadius:'16px 16px 0 0'}}/>
@@ -762,102 +731,78 @@ export function ProductsManager({
             </div>
 
             {filteredProducts.length ? (
-              <div style={{overflowX:'auto',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white'}}>
-                {/* Table header — 9 cols matching reference */}
-                <div style={{display:'grid',gridTemplateColumns:'28px 1fr 100px 70px 90px 90px 90px 110px 80px',padding:'9px 14px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'9px',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',alignItems:'center',gap:'0',minWidth:'860px'}}>
-                  <div><input type="checkbox" style={{width:'13px',height:'13px'}} onChange={()=>{}} /></div>
-                  <div>Product / SKU</div>
-                  <div>Category</div>
-                  <div style={{textAlign:'center'}}>Variants</div>
-                  <div style={{textAlign:'right'}}>Ex-Factory</div>
-                  <div style={{textAlign:'right'}}>FOB</div>
-                  <div style={{textAlign:'right'}}>CIF</div>
-                  <div style={{textAlign:'center'}}>Coverage</div>
-                  <div style={{textAlign:'center'}}>Status</div>
+              <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+                <div className="hidden grid-cols-[minmax(0,1.2fr)_0.8fr_0.8fr_0.9fr_0.8fr] gap-3 border-b border-slate-200 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 lg:grid">
+                  <div>Product</div>
+                  <div>Catalog truth</div>
+                  <div>Coverage</div>
+                  <div>Status</div>
+                  <div className="text-right">Actions</div>
                 </div>
-                <div style={{minWidth:'860px'}}>
-                  {(() => {
-                    // Group products by category for group headers
-                    const groups: Array<{categoryPath: string; products: typeof visibleProducts}> = [];
-                    visibleProducts.forEach(product => {
-                      const cat = product.categoryPath ?? 'Other';
-                      const existing = groups.find(g => g.categoryPath === cat);
-                      if (existing) existing.products.push(product);
-                      else groups.push({categoryPath: cat, products: [product]});
-                    });
-                    const catDotColor = (cat: string) => {
-                      const l = cat.toLowerCase();
-                      if (l.includes('snack')||l.includes('crisp')||l.includes('chip')||l.includes('vacuum')) return '#7c3aed';
-                      if (l.includes('powder')||l.includes('spray')) return '#059669';
-                      if (l.includes('sweet')||l.includes('jaggery')||l.includes('sugar')) return '#d97706';
-                      if (l.includes('onion')||l.includes('garlic')) return '#ea580c';
-                      if (l.includes('freeze')) return '#0c7fff';
-                      return '#64748b';
-                    };
-                    const getCoverageGapBadge = (p: typeof visibleProducts[0]) => {
-                      const covered = p.baselineCoverageCount ?? 0;
-                      const total = p.activeMarketCount ?? 0;
-                      if (total === 0) return {icon:'—',bg:'#f1f5f9',border:'#e2e8f0',color:'#64748b',text:'No markets'};
-                      if (covered === total) return {icon:'✓',bg:'#f0fdf4',border:'#a7f3d0',color:'#15803d',text:`${covered}/${total} markets`};
-                      if (covered === 0) return {icon:'✕',bg:'#fff1f2',border:'#fecaca',color:'#dc2626',text:`0/${total} markets`};
-                      return {icon:'⚠',bg:'#fffbeb',border:'#fde68a',color:'#92400e',text:`${covered}/${total} markets`};
-                    };
-                    // Price helpers — show ex_factory, fob, cif from product prices
-                    const getPriceCell = (p: typeof visibleProducts[0], basis: string) => {
-                      // Try to find a price for this basis from product data
-                      const price = (p as any)[`${basis}Price`] ?? null;
-                      const currency = (p as any)[`${basis}PriceCurrency`] ?? p.latestPriceCurrency ?? 'USD';
-                      if (price != null && Number(price) > 0) return `${currency} ${Number(price).toFixed(2)}`;
-                      // Fallback: show latest price for ex_factory only
-                      if (basis === 'ex_factory' && p.latestPrice != null) return formatMoney(p.latestPrice, p.latestPriceCurrency);
-                      return null;
-                    };
-                    return groups.map(group => (
-                      <div key={group.categoryPath}>
-                        {/* Category group header */}
-                        <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 14px',background:'rgba(248,250,252,.8)',borderBottom:'1px solid #e2e8f0'}}>
-                          <div style={{width:'8px',height:'8px',borderRadius:'50%',background:catDotColor(group.categoryPath),flexShrink:0}}/>
-                          <span style={{fontSize:'10px',fontWeight:800,letterSpacing:'.12em',textTransform:'uppercase',color:'#475569'}}>{group.categoryPath}</span>
-                          <span style={{fontSize:'10px',color:'#94a3b8',marginLeft:'auto'}}>{group.products.length} product{group.products.length===1?'':'s'}</span>
-                        </div>
-                        {group.products.map(product => {
-                          const isSelected = product.id === selectedProduct?.id;
-                          const gap = getCoverageGapBadge(product);
-                          const exFact = getPriceCell(product, 'ex_factory');
-                          const fob = getPriceCell(product, 'fob');
-                          const cif = getPriceCell(product, 'cif');
-                          return (
-                            <div key={product.id}
-                              onClick={() => setSelectedProductId(product.id)}
-                              style={{display:'grid',gridTemplateColumns:'28px 1fr 100px 70px 90px 90px 90px 110px 80px',padding:'10px 14px',borderBottom:'1px solid #f1f5f9',alignItems:'center',cursor:'pointer',background:isSelected?'rgba(12,127,255,.04)':'white',transition:'background .1s',gap:'0'}}>
-                              <div onClick={e=>e.stopPropagation()}>
-                                <input type="checkbox" style={{width:'13px',height:'13px'}} onChange={()=>{}} onClick={e=>e.stopPropagation()} />
-                              </div>
-                              <div>
-                                <div style={{fontSize:'13px',fontWeight:600,color:'#0f172a'}}>{product.name}</div>
-                                <div style={{fontSize:'10px',color:'#94a3b8',marginTop:'1px'}}>SKU {product.sku??'—'} · {product.supplierName??'—'}</div>
-                              </div>
-                              <div style={{fontSize:'11px',color:'#64748b'}}>{product.categoryPath?.split('/').pop()??'—'}</div>
-                              <div style={{textAlign:'center',fontSize:'12px',fontWeight:600,color:'#334155'}}>{product.variantCount??'—'}</div>
-                              <div style={{textAlign:'right',fontSize:'12px',fontWeight:600,color:exFact?'#1e293b':'#cbd5e1',fontStyle:exFact?'normal':'italic'}}>{exFact??'— add'}</div>
-                              <div style={{textAlign:'right',fontSize:'12px',fontWeight:600,color:fob?'#1e293b':'#cbd5e1',fontStyle:fob?'normal':'italic'}}>{fob??'— add'}</div>
-                              <div style={{textAlign:'right',fontSize:'12px',fontWeight:600,color:cif?'#1e293b':'#cbd5e1',fontStyle:cif?'normal':'italic'}}>{cif??'— add'}</div>
-                              <div style={{textAlign:'center'}}>
-                                <span style={{display:'inline-flex',alignItems:'center',gap:'3px',fontSize:'10px',fontWeight:700,padding:'2px 7px',borderRadius:'999px',background:gap.bg,border:`1px solid ${gap.border}`,color:gap.color,whiteSpace:'nowrap'}}>
-                                  {gap.icon} {gap.text}
-                                </span>
-                              </div>
-                              <div style={{textAlign:'center'}}>
-                                <span style={{fontSize:'10px',fontWeight:700,padding:'2px 7px',borderRadius:'999px',background:product.isActive?'#f0fdf4':'#f1f5f9',border:`1px solid ${product.isActive?'#a7f3d0':'#e2e8f0'}`,color:product.isActive?'#15803d':'#64748b'}}>
-                                  {product.isActive?'Active':'Inactive'}
-                                </span>
-                              </div>
+                <div className="divide-y divide-slate-200">
+                  {visibleProducts.map((product) => {
+                    const isSelected = product.id === selectedProduct?.id;
+                    return (
+                      <div
+                        key={product.id}
+                        className={`grid gap-4 px-5 py-4 transition lg:grid-cols-[minmax(0,1.2fr)_0.8fr_0.8fr_0.9fr_0.8fr] ${isSelected ? 'bg-brand-50/60' : 'bg-white hover:bg-slate-50'}`}
+                      >
+                        <button type="button" onClick={() => setSelectedProductId(product.id)} className="text-left">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">{product.name}</p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                {product.categoryPath ?? 'Uncategorized'}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                SKU {product.sku ?? '—'} · Supplier {product.supplierName ?? '—'}
+                              </p>
                             </div>
-                          );
-                        })}
+                            <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusTone(product.isActive)}`}>
+                              {product.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </button>
+                        <button type="button" onClick={() => setSelectedProductId(product.id)} className="text-left">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {formatMoney(product.latestPrice, product.latestPriceCurrency)}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {product.latestPriceEffectiveFrom
+                              ? `Effective ${formatDate(product.latestPriceEffectiveFrom)}`
+                              : 'No baseline row yet'}
+                          </p>
+                        </button>
+                        <button type="button" onClick={() => setSelectedProductId(product.id)} className="text-left">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {product.baselineCoverageCount}/{product.activeMarketCount} active markets{product.priceCount === 1 ? '' : 's'}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {product.marketCount} market{product.marketCount === 1 ? '' : 's'} · {product.variantCount}{' '}
+                            variant{product.variantCount === 1 ? '' : 's'}
+                          </p>
+                        </button>
+                        <div className="flex items-start gap-2">
+                          <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getPricingTone(product)}`}>
+                            {product.priceCount ? 'Catalog ready' : 'Pricing gap'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-start justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              workspaceMode === 'catalog'
+                                ? openCatalogPricingDrawer(product)
+                                : openEditDrawer(product)
+                            }
+                            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-300"
+                          >
+                            {workspaceMode === 'catalog' ? 'Manage pricing' : 'Edit'}
+                          </button>
+                        </div>
                       </div>
-                    ));
-                  })()}
+                    );
+                  })}
                 </div>
                 {canLoadMoreProducts ? (
                   <div className="flex justify-center border-t border-slate-200 bg-slate-50 px-5 py-4">

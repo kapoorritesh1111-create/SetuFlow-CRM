@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { batchMoveLeadsToStage, moveLeadToStage } from '@/features/pipeline/server';
+import { moveLeadToStage } from '@/features/pipeline/server';
 import { addLeadNote, scheduleLeadFollowUp } from '@/features/leads/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { parseLeadWorkflow, summarizeLeadCoverageSelections } from '@/lib/lead-workflow';
@@ -11,7 +11,6 @@ import { isPipelineInJourney, type LeadJourney } from '@/lib/journey';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildPipelineAiMessage, buildPipelineLaneSummary, getBoardMessageTone, normalizeLeadTypeParam } from '@/features/pipeline/logic/board';
 import { LeadCard } from '@/features/pipeline/ui/lead-card';
-import { PipelineDetailPanel } from '@/features/pipeline/ui/pipeline-detail-panel';
 import type { PipelineBoardProps, Lead, Stage, FollowUp, Activity } from '@/features/pipeline/types/board';
 import { buildStageMoveReadiness, type StageMoveReadiness } from '@/lib/queries/pipeline-stage-gating';
 import { cn, formatDateTime } from '@/lib/utils';
@@ -75,9 +74,6 @@ export function PipelineBoard({
   const [localLeadMarkets, setLocalLeadMarkets] = useState(leadMarkets);
   const [localLeadProductInterests, setLocalLeadProductInterests] = useState(leadProductInterests);
   const [localFollowUps, setLocalFollowUps] = useState(followUps);
-  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
-  const [detailPanelLeadId, setDetailPanelLeadId] = useState<string | null>(null);
-  const [bulkStageId, setBulkStageId] = useState('');
 
   const activityMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -447,39 +443,6 @@ export function PipelineBoard({
     });
   };
 
-
-  const handleSelectedLeadChange = (leadId: string, selected: boolean) => {
-    setSelectedLeadIds((current) => {
-      const next = new Set(current);
-      if (selected) next.add(leadId); else next.delete(leadId);
-      return next;
-    });
-  };
-
-  const handleBulkMove = () => {
-    const leadIds = Array.from(selectedLeadIds);
-    if (!bulkStageId || leadIds.length === 0) return;
-    const previous = localLeads;
-    const optimisticUpdatedAt = new Date().toISOString();
-    setLocalLeads((current) => current.map((lead) => leadIds.includes(lead.id) ? { ...lead, stage_id: bulkStageId, updated_at: optimisticUpdatedAt } : lead));
-    setMessage('Moving selected leads...');
-    const formData = new FormData();
-    leadIds.forEach((leadId) => formData.append('lead_ids', leadId));
-    formData.append('stage_id', bulkStageId);
-    startTransition(() => {
-      void batchMoveLeadsToStage(undefined, formData).then((result) => {
-        setMessage(result?.error ?? result?.success ?? '');
-        if (result?.error) {
-          setLocalLeads(previous);
-          return;
-        }
-        setSelectedLeadIds(new Set());
-        setBulkStageId('');
-        router.refresh();
-      });
-    });
-  };
-
   const handleAddNote = (leadId: string, note: string) => {
     const formData = new FormData();
     formData.append('lead_id', leadId);
@@ -564,19 +527,6 @@ export function PipelineBoard({
     const blockedCount = stageLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0);
 
     return (
-      <>
-      {selectedLeadIds.size >= 1 ? (
-        <div style={{position:'sticky',top:'4px',zIndex:30,marginBottom:'12px',display:'flex',flexWrap:'wrap',alignItems:'center',gap:'8px',borderRadius:'14px',border:'1px solid #e2e8f0',background:'rgba(255,255,255,.96)',padding:'10px 14px',boxShadow:'0 4px 14px rgba(15,23,42,.12)',backdropFilter:'blur(8px)'}}>
-          <span style={{fontSize:'12px',fontWeight:700,color:'#0f172a'}}>{selectedLeadIds.size} lead{selectedLeadIds.size > 1 ? 's' : ''} selected — Move to:</span>
-          <select value={bulkStageId} onChange={(event) => setBulkStageId(event.target.value)} style={{height:'32px',borderRadius:'7px',border:'1px solid #e2e8f0',padding:'0 10px',fontSize:'12px',background:'#f8fafc',minWidth:'140px'}}>
-            <option value="">Choose stage…</option>
-            {stages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
-          </select>
-          <button type="button" onClick={handleBulkMove} disabled={!bulkStageId || isPending} style={{padding:'5px 14px',borderRadius:'7px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,border:'none',cursor:'pointer',opacity:!bulkStageId ? 0.5 : 1}}>Move</button>
-          <button type="button" onClick={() => setSelectedLeadIds(new Set())} style={{padding:'5px 12px',borderRadius:'7px',border:'1px solid #e2e8f0',background:'white',color:'#475569',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>Clear</button>
-        </div>
-      ) : null}
-
       <PipelineLaneSection
         key={`${group.name}-${stacked ? 'stacked' : 'board'}`}
         title={group.name}
@@ -651,9 +601,6 @@ export function PipelineBoard({
                   : { status: 'ready', summary: 'Stage movement is ready under the current workflow.', blockers: [], warnings: [], actionItems: ['Advance stage'], canMove: true };
               })()}
               countryCode={lead.country_id ? (countryById.get(lead.country_id)?.iso2_code ?? null) : (lead.country ? (countryCodeByName.get(lead.country.trim().toLowerCase()) ?? null) : null)}
-              isSelected={selectedLeadIds.has(lead.id)}
-                          onOpenDetail={(leadId) => setDetailPanelLeadId(leadId)}
-              onSelectedChange={handleSelectedLeadChange}
               coverageSummary={`${getLeadCoverageSummary(lead)} · ${getLeadCoverageActionSummary(lead)}`}
               moveOptions={filteredStageGroups
                 .map((stageGroup) => {
@@ -674,7 +621,6 @@ export function PipelineBoard({
         })}
         {!stageLeads.length ? <div className="rounded-[1.2rem] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">{stacked ? 'No leads match this stage right now.' : 'Drop a lead here or adjust filters to repopulate this stage.'}</div> : null}
       </PipelineLaneSection>
-      </>
     );
   };
 
@@ -707,6 +653,15 @@ export function PipelineBoard({
   const totalPipelineValue = filteredLeads.reduce((sum, lead) => sum + (Number(lead.deal_value ?? 0) || 0), 0);
   const valueCurrency = filteredLeads.find((lead) => lead.deal_currency)?.deal_currency ?? 'USD';
   const blockedRecordCount = filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0);
+  const selectedLead = filteredLeads[0] ?? null;
+  const selectedStageName = selectedLead?.stage_id
+    ? filteredStageGroups.find((group) => group.stages.some((stage) => stage.id === selectedLead.stage_id))?.name ?? 'Unassigned stage'
+    : 'Unassigned stage';
+  const selectedOwner = selectedLead?.owner_user_id ? ownerLabelMap.get(selectedLead.owner_user_id) ?? 'Unassigned' : 'Unassigned';
+  const selectedCurrentStage = selectedLead?.stage_id ? stageById.get(selectedLead.stage_id) ?? null : null;
+  const selectedReadiness = selectedLead && selectedCurrentStage ? getStageMoveReadinessForLead(selectedLead, selectedCurrentStage) : null;
+  const selectedQuoteCount = selectedLead ? getLeadActiveQuoteCount(selectedLead.id) : 0;
+  const selectedRfqCount = selectedLead ? getLeadOpenRfqCount(selectedLead.id) : 0;
   const pipelineModeLabel = workspaceMode === 'buyers' ? 'Buyer pipeline' : workspaceMode === 'suppliers' ? 'Supplier pipeline' : 'All pipelines';
 
   const resetFilters = () => {
@@ -726,6 +681,27 @@ export function PipelineBoard({
   // ── NORTHSTAR RENDER ─────────────────────────────────────────────────────────
   return (
     <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
+
+      {/* TOPBAR */}
+      <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
+        <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'5px 12px',borderRadius:'6px',background:'rgba(11,46,74,.06)',border:'1px solid rgba(11,46,74,.12)'}}>
+            <div style={{width:'22px',height:'22px',borderRadius:'4px',background:'linear-gradient(135deg,#0b2e4a,#0c7fff)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'9px',fontWeight:800,color:'white'}}>BO</div>
+            <div><div style={{fontSize:'10px',fontWeight:800,color:'#0b2e4a'}}>Blue Orbit Int&apos;l</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Flow CRM</div></div>
+          </div>
+          <div style={{width:'1px',height:'24px',background:'#e2e8f0'}}/>
+          <div><div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#0c7fff'}}>Pipeline / Risks</div><div style={{fontSize:'16px',fontWeight:700,color:'#1e293b',letterSpacing:'-.3px'}}>Kanban Board</div></div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+          <div style={{display:'flex',background:'#f1f5f9',borderRadius:'6px',padding:'3px',border:'1px solid #e2e8f0',gap:'2px'}}>
+            {([['all','All'],['buyers','Buyers'],['suppliers','Suppliers']] as Array<[string,string]>).map(([mode,label])=>(
+              <button key={mode} type="button" onClick={()=>{setWorkspaceMode(mode as any);setLeadTypeFilter(workspaceModeToLeadJourney(mode as any));}} style={{padding:'4px 12px',borderRadius:'6px',fontSize:'11px',fontWeight:600,cursor:'pointer',border:'none',background:workspaceMode===mode?'#0b2e4a':'transparent',color:workspaceMode===mode?'white':'#64748b',transition:'all .15s'}}>{label}</button>
+            ))}
+          </div>
+          <button type="button" style={{display:'flex',alignItems:'center',gap:'7px',padding:'7px 14px',borderRadius:'6px',background:'linear-gradient(135deg,#0b2e4a,#0c7fff 160%)',color:'white',border:'none',fontSize:'12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px rgba(12,127,255,.35)'}} onClick={()=>window.location.href=PRODUCT_ROUTES.app.leads+'?contact-exchange=1'}>Share my vCard</button>
+          <a href={PRODUCT_ROUTES.app.leads} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>＋ Quick Lead</a>
+        </div>
+      </header>
 
       {/* PAGE NAV TABS */}
       <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',alignItems:'center',gap:0}}>
@@ -838,7 +814,7 @@ export function PipelineBoard({
           <div style={{display:'none'}} className="md:hidden">
             {filteredStageGroups.map(group=>renderLane(group,true))}
           </div>
-          <div style={{padding:'14px 24px 24px',overflowX:'auto',display:'flex',gap:'12px',minHeight:0,WebkitOverflowScrolling:'touch'}}>
+          <div style={{padding:'14px 24px 24px',overflowX:'auto',display:'flex',gap:'12px',minHeight:0,WebkitOverflowScrolling:'touch'} as React.CSSProperties}>
             {visualStageGroups.map(group=>(
               <div key={group.stage.id} style={{flexShrink:0,width:'256px',display:'flex',flexDirection:'column',gap:'8px'}}>
                 {/* Lane header */}
@@ -860,7 +836,7 @@ export function PipelineBoard({
                   </div>
                 </div>
                 {/* Lane cards */}
-                <div style={{display:'flex',flexDirection:'column',gap:'7px',minHeight:'60px'}} onDragOver={canManageLeads ? (event) => { event.preventDefault(); } : undefined} onDragEnter={canManageLeads ? () => { if (draggedLeadId) setDragOverStageId(group.name); } : undefined} onDragLeave={canManageLeads ? () => { if (dragOverStageId === group.name) setDragOverStageId(null); } : undefined} onDrop={canManageLeads ? () => { if (draggedLeadId) { const draggedLead = localLeads.find((lead) => lead.id === draggedLeadId); if (draggedLead) { const targetStage = group.stages.find((stage) => stage.pipeline_id === draggedLead.pipeline_id) ?? group.stages[0]; if (draggedLead.stage_id !== targetStage.id) handleMove(draggedLeadId, targetStage.id); } setDraggedLeadId(null); setDragOverStageId(null); } } : undefined}>
+                <div style={{display:'flex',flexDirection:'column',gap:'7px',minHeight:'60px'}}>
                   {group.leads.map(lead=>{
                     const readiness = getStageMoveReadinessForLead(lead, group.stage);
                     const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
@@ -868,7 +844,7 @@ export function PipelineBoard({
                     const cardBorderLeft = isBlocked?'3px solid #f43f5e':followUpState==='overdue'?'3px solid #f59e0b':'3px solid #10b981';
                     const commercialReadiness = getLeadPricingReadiness(lead.id);
                     return (
-                      <div key={lead.id} draggable={canManageLeads} onDragStart={() => setDraggedLeadId(lead.id)} onDragEnd={() => { setDraggedLeadId(null); setDragOverStageId(null); }} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'16px',padding:'12px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:canManageLeads?'grab':'pointer',transition:'box-shadow .15s,transform .15s',borderLeft:cardBorderLeft}} onClick={()=>setDetailPanelLeadId(lead.id)}>
+                      <div key={lead.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'16px',padding:'12px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer',transition:'box-shadow .15s,transform .15s',borderLeft:cardBorderLeft}} onClick={()=>navigateToLeadCommandCenter(router, buildLeadCommandCenterHref(lead.id))}>
                         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'6px',marginBottom:'8px'}}>
                           <div style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',flexShrink:0}}>
                             {lead.country?'🌍':'🏢'}
@@ -877,7 +853,7 @@ export function PipelineBoard({
                             <div style={{fontSize:'12px',fontWeight:800,color:'#1e293b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.company_name}</div>
                             <div style={{fontSize:'10px',color:'#64748b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.contact_name??'—'}</div>
                           </div>
-                          <button style={{width:'26px',height:'26px',borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',color:'#64748b',cursor:'pointer',flexShrink:0}} onClick={e=>{e.stopPropagation();setDetailPanelLeadId(lead.id);}}>→</button>
+                          <button style={{width:'26px',height:'26px',borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',color:'#64748b',cursor:'pointer',flexShrink:0}} onClick={e=>{e.stopPropagation();navigateToLeadCommandCenter(router, buildLeadCommandCenterHref(lead.id));}}>→</button>
                         </div>
                         <div style={{display:'flex',gap:'4px',marginBottom:'8px',flexWrap:'wrap'}}>
                           {followUpState==='overdue'&&<span style={{display:'inline-flex',alignItems:'center',padding:'1px 7px',borderRadius:'999px',fontSize:'9px',fontWeight:700,letterSpacing:'.04em',border:'1px solid',background:'#fff1f2',borderColor:'#fecaca',color:'#e11d48'}}>Overdue</span>}
@@ -893,7 +869,7 @@ export function PipelineBoard({
                         </div>
                         {/* Actions */}
                         <div style={{display:'flex',gap:'4px',flexWrap:'wrap'}}>
-                          <button style={{padding:'3px 8px',borderRadius:'6px',fontSize:'9px',fontWeight:700,border:'1px solid #e2e8f0',background:isBlocked?'#fff1f2':'#0b2e4a',color:isBlocked?'#dc2626':'white',cursor:isBlocked?'not-allowed':'pointer'}} onClick={e=>{e.stopPropagation();setDetailPanelLeadId(lead.id);}}>Advance</button>
+                          <button style={{padding:'3px 8px',borderRadius:'6px',fontSize:'9px',fontWeight:700,border:'1px solid #e2e8f0',background:isBlocked?'#fff1f2':'#0b2e4a',color:isBlocked?'#dc2626':'white',cursor:isBlocked?'not-allowed':'pointer'}} onClick={e=>{e.stopPropagation();}} disabled={isBlocked}>Advance</button>
                           <button style={{padding:'3px 8px',borderRadius:'6px',fontSize:'9px',fontWeight:700,border:'1px solid #e2e8f0',background:'white',color:'#475569',cursor:'pointer'}} onClick={e=>{e.stopPropagation();navigateToLeadCommandCenter(router, buildLeadCommandCenterHref(lead.id));}}>Open</button>
                         </div>
                         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'6px',marginTop:'8px',paddingTop:'7px',borderTop:'1px solid #e2e8f0'}}>
@@ -909,48 +885,37 @@ export function PipelineBoard({
             ))}
           </div>
 
+          {/* Detail panel / review */}
+          {selectedLead&&(
+            <div style={{margin:'0 24px 24px',background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',overflow:'hidden',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
+              <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px'}}>
+                <div>
+                  <div style={{fontSize:'18px',fontWeight:800,color:'#0f172a',marginBottom:'2px'}}>{selectedLead.company_name}</div>
+                  <div style={{fontSize:'11px',color:'#64748b'}}>{selectedStageName} · {selectedOwner} · {selectedLead.lead_type}</div>
+                </div>
+                <div style={{display:'flex',gap:'8px'}}>
+                  <a href={buildLeadCommandCenterHref(selectedLead.id)} style={{padding:'7px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Open command center</a>
+                  <a href={PRODUCT_ROUTES.app.quotes} style={{padding:'7px 14px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',color:'#334155',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>Open quotes</a>
+                  <a href={PRODUCT_ROUTES.app.orders} style={{padding:'7px 14px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',color:'#334155',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>Open order</a>
+                </div>
+              </div>
+              <div style={{padding:'16px 20px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}>
+                  <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>Move readiness</div>
+                  <div style={{fontSize:'13px',fontWeight:700,color:'#1e293b',marginBottom:'4px'}}>{selectedReadiness?.summary??'Select a card to review readiness.'}</div>
+                  {selectedReadiness?.blockers?.length?<ul style={{marginTop:'8px',paddingLeft:'16px',display:'flex',flexDirection:'column',gap:'4px'}}>{selectedReadiness.blockers.slice(0,3).map(b=><li key={b} style={{fontSize:'11px',color:'#dc2626'}}>{b}</li>)}</ul>:<p style={{fontSize:'12px',color:'#059669',marginTop:'4px'}}>No visible blockers</p>}
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                  <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}><div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Quotes</div><div style={{fontSize:'22px',fontWeight:800,color:'#0f172a'}}>{selectedQuoteCount}</div></div>
+                  <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}><div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>RFQs</div><div style={{fontSize:'22px',fontWeight:800,color:'#0f172a'}}>{selectedRfqCount}</div></div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!filteredLeads.length&&<div style={{margin:'14px 24px',padding:'40px',textAlign:'center',background:'white',borderRadius:'22px',border:'2px dashed #e2e8f0',fontSize:'13px',color:'#64748b'}}>No pipeline cards match the current filters. Reset filters or switch journey modes.</div>}
         </>
       )}
-
-      {/* Detail panel */}
-      {detailPanelLeadId && (() => {
-        const panelLead = localLeads.find(l => l.id === detailPanelLeadId);
-        if (!panelLead) return null;
-        const panelStageMeta = panelLead.stage_id ? stageMetaMap.get(panelLead.stage_id) : null;
-        const panelHealth = computeLeadHealth({
-          created_at: panelLead.created_at,
-          updated_at: panelLead.updated_at,
-          last_contacted_at: panelLead.last_contacted_at,
-          next_follow_up_at: panelLead.next_follow_up_at,
-          lastActivityAt: activityMap.get(panelLead.id),
-          lastStageChangeAt: stageHistoryMap.get(panelLead.id),
-          stageSortOrder: panelStageMeta?.sortOrder ?? null,
-          stageCount: panelStageMeta?.stageCount ?? null,
-          isClosedStage: panelStageMeta?.isClosed ?? null,
-        });
-        const panelStage = panelLead.stage_id ? stageById.get(panelLead.stage_id) ?? stages.find((s) => s.id === panelLead.stage_id) ?? null : null;
-        const panelReadiness: StageMoveReadiness = panelStage ? getStageMoveReadinessForLead(panelLead, panelStage) : { status: 'ready', summary: 'No stage assigned yet.', blockers: [], warnings: [], actionItems: ['Assign stage'], canMove: true };
-        const panelPricingLabel = getPricingReadinessLabel(readinessByLeadId.get(panelLead.id)?.pricingReadiness ?? 'missing');
-        const panelOwner = profiles.find(p => p.id === panelLead.owner_user_id)?.full_name ?? 'Unassigned';
-        const panelHref = buildLeadCommandCenterHref(panelLead.id);
-        return (
-          <PipelineDetailPanel
-            lead={panelLead as any}
-            stages={stages}
-            ownerLabel={panelOwner}
-            health={panelHealth}
-            moveReadiness={panelReadiness}
-            pricingLabel={panelPricingLabel}
-            commandCenterHref={panelHref}
-            onClose={() => setDetailPanelLeadId(null)}
-            onMove={(leadId, stageId) => { handleMove(leadId, stageId); setDetailPanelLeadId(null); }}
-            onSchedule={(leadId, at) => void handleScheduleFollowUp(leadId, at)}
-            onAddNote={(leadId, note) => void handleAddNote(leadId, note)}
-            isPending={isPending}
-          />
-        );
-      })()}
     </div>
   );
 }

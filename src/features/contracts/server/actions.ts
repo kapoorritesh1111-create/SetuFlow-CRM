@@ -172,12 +172,6 @@ export async function progressContract(
   const progressedContract = Array.isArray(progressedContractResult) ? progressedContractResult[0] : progressedContractResult;
   const subject = typeof progressedContract?.subject === 'string' ? progressedContract.subject : 'Contract updated';
 
-  if (['signed', 'active', 'completed'].includes(nextStatus) && contract.quote_id) {
-    await db.from('quotes').update({ status: 'converted' }).eq('id', contract.quote_id).eq('organization_id', workspace.organization.id);
-    revalidatePath('/quotes');
-    revalidatePath('/orders');
-  }
-
   revalidatePath('/contracts');
   revalidatePath('/documents');
   revalidatePath('/compliance');

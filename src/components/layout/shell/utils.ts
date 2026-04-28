@@ -30,7 +30,7 @@ export function getNavItemIcon(href: string) {
   if (href.includes(PRODUCT_ROUTES.app.orders)) return 'shopping-bag';
   if (href.includes('/pipeline')) return 'warning';
   if (href.includes(PRODUCT_ROUTES.app.products)) return 'archive';
-  if (href.includes('/admin')) return 'building-o';
+  if (href.includes(PRODUCT_ROUTES.app.settings)) return 'sliders';
   if (href.includes(PRODUCT_ROUTES.app.dashboard)) return 'dashboard';
   if (href.includes('/trade-events')) return 'calendar';
   if (href.includes('/contact-exchange/vcard')) return 'address-card-o';

@@ -1080,27 +1080,10 @@ export function LeadsWorkspace({
   ].filter(Boolean).length;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: '10px' }}>
-        {[
-          { label: 'Total leads', value: sortedLeads.length, meta: 'Current view', accent: '#0c7fff' },
-          { label: 'Overdue', value: summary.overdue, meta: 'Needs action', accent: summary.overdue ? '#dc2626' : '#cbd5e1' },
-          { label: 'Due today', value: summary.dueToday, meta: 'Scheduled work', accent: '#d97706' },
-          { label: 'Fresh', value: summary.hot, meta: 'Healthy queue', accent: '#059669' },
-          { label: 'Blocked', value: summary.blocked, meta: 'Recovery lane', accent: '#7c3aed' },
-          { label: 'Selected', value: selectedLeadIds.length, meta: 'Bulk actions', accent: '#64748b' },
-        ].map((stat) => (
-          <div key={stat.label} style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px', border: '1px solid #e2e8f0', background: 'white', padding: '13px 15px', boxShadow: '0 1px 3px rgba(15,23,42,.06)' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: stat.accent }} />
-            <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '7px' }}>{stat.label}</div>
-            <div style={{ fontSize: '22px', fontWeight: 800, letterSpacing: '-.03em', color: '#0f172a', lineHeight: 1 }}>{stat.value}</div>
-            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', fontWeight: 600 }}>{stat.meta}</div>
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-col">
 
       {/* ═══ PAGE NAV TABS — inline view switcher ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0', display: 'flex', alignItems: 'center' }}>
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center' }}>
         <button type="button" onClick={() => setActiveView('list')} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'list' ? '#0b2e4a' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'list' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: 'pointer' }}>
           📋 Lead Queue
           <span style={{ background: summary.overdue > 0 ? '#f43f5e' : '#64748b', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{sortedLeads.length}</span>
@@ -1119,7 +1102,7 @@ export function LeadsWorkspace({
       </div>
 
       {/* ═══ FILTER BAR — matches spec .filter-bar ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '10px 0', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
 
         {/* Search box inline */}
         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '200px' }}>
@@ -1218,7 +1201,7 @@ export function LeadsWorkspace({
       </div>
 
       {/* ═══ SAVED VIEWS BAR — matches spec .saved-views ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0', display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
         {savedViews.map((view) => {
           const active = savedView === view.id;
           const isOverdue = view.id === 'overdue';
@@ -1284,7 +1267,7 @@ export function LeadsWorkspace({
       ) : (
         <>
       {/* ═══ MAIN TABLE SECTION ═══ */}
-      <div style={{ flex: 1, padding: '14px 0 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
         {!canManageLeads && readOnlyMessage ? (
           <StateMessage title="Read-only lead queue" tone="warning" description={`${readOnlyMessage} Open leads and review status. Ask an admin to enable edits.`} />

@@ -268,34 +268,21 @@ export default function DashboardInteractive({
   const blockedQueueCount = filteredAttentionItems.filter((item) => item.statusTag === 'blocked').length;
   const filteredKpis = useMemo<DashboardKpi[]>(() => {
     const hasScopedFilters = Boolean(filters.marketCode || filters.productName || filters.stageFilter || filters.statusFilter || filters.timeRange !== 'this-month');
-
-    const addDrillThrough = (kpi: DashboardKpi): DashboardKpi => {
-      const drillMap: Partial<Record<DashboardKpi['id'], { label: string; href: string }>> = {
-        'open-leads':          { label: 'View all leads',       href: '/leads' },
-        'overdue-followups':   { label: 'Open follow-up queue', href: '/leads?view=overdue' },
-        'active-quotes':       { label: 'Open quotes workspace',href: '/quotes' },
-        'pipeline-value':      { label: 'View pipeline board',  href: '/pipeline' },
-        'compliance-blockers': { label: 'View order blockers',  href: '/orders' },
-      };
-      const drill = drillMap[kpi.id];
-      return drill ? { ...kpi, drillThroughLabel: drill.label, href: kpi.href ?? drill.href } : kpi;
-    };
-
-    if (!hasScopedFilters) return data.kpis.map(addDrillThrough);
+    if (!hasScopedFilters) return data.kpis;
 
     return data.kpis.map((kpi) => {
       if (kpi.id === 'open-leads') {
         const count = filters.marketCode ? visibleLeadCount : (filters.stageFilter ? filteredStageCounts.reduce((sum, stage) => sum + stage.count, 0) : visibleLeadCount);
-        return addDrillThrough({
+        return {
           ...kpi,
           value: count,
           rawValue: count,
           contextLabel: count ? `${visibleBuyerCount} buyers · ${visibleSupplierCount} suppliers in motion` : 'No active opportunities in this view',
-        });
+        };
       }
 
       if (kpi.id === 'overdue-followups') {
-        return addDrillThrough({
+        return {
           ...kpi,
           value: overdueQueueCount,
           rawValue: overdueQueueCount,
@@ -303,20 +290,20 @@ export default function DashboardInteractive({
           trendLabel: overdueQueueCount ? 'Priority work today' : 'Queue clear',
           trendDirection: overdueQueueCount ? 'up' : 'neutral',
           intent: overdueQueueCount ? 'warning' : 'success',
-        });
+        };
       }
 
       if (kpi.id === 'active-quotes') {
-        return addDrillThrough({
+        return {
           ...kpi,
           value: visibleQuoteCount,
           rawValue: visibleQuoteCount,
           contextLabel: visibleQuoteCount ? 'Track live pricing and buyer response' : 'No live quotes in the current view',
-        });
+        };
       }
 
       if (kpi.id === 'compliance-blockers') {
-        return addDrillThrough({
+        return {
           ...kpi,
           value: blockedQueueCount,
           rawValue: blockedQueueCount,
@@ -324,19 +311,19 @@ export default function DashboardInteractive({
           trendLabel: blockedQueueCount ? 'Needs clearance' : 'Clear to progress',
           trendDirection: blockedQueueCount ? 'up' : 'neutral',
           intent: blockedQueueCount ? 'danger' : 'success',
-        });
+        };
       }
 
       if (kpi.id === 'pipeline-value') {
-        return addDrillThrough({
+        return {
           ...kpi,
           value: formatCompactCurrency(visiblePipelineValue),
           rawValue: visiblePipelineValue,
           contextLabel: visiblePipelineValue ? 'Current value across active stages' : 'No visible value in this view',
-        });
+        };
       }
 
-      return addDrillThrough(kpi);
+      return kpi;
     });
   }, [data.kpis, filteredStageCounts, filters.marketCode, filters.productName, filters.stageFilter, filters.statusFilter, filters.timeRange, overdueQueueCount, blockedQueueCount, visibleLeadCount, visibleBuyerCount, visibleSupplierCount, visibleQuoteCount, visiblePipelineValue]);
   const resultSummary = `${filteredCountries.length} market${filteredCountries.length === 1 ? '' : 's'} · ${visibleLeadCount} leads · ${filteredAttentionItems.length} action${filteredAttentionItems.length === 1 ? '' : 's'}`;

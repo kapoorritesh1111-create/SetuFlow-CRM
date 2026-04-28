@@ -18,7 +18,7 @@ export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
 
 export type QuoteWorkflowMeta = {
   templateId?: string | null;
-  pricingBasis?: 'ex_factory' | 'fob' | 'cif' | 'bulk_chips' | null;
+  pricingBasis?: 'ex_factory' | 'fob' | 'cif' | null;
   approval?: ApprovalMeta;
   sentAt?: string | null;
   revisedAt?: string | null;
@@ -117,24 +117,4 @@ export function getQuoteStatusBadgeClasses(status: QuoteStatus) {
     default:
       return 'bg-slate-100 text-slate-700';
   }
-}
-
-export type QuoteOverrideThresholdLine = {
-  unit_price?: number | null;
-  catalog_price_amount?: number | null;
-};
-
-export function getOverrideDeltaPercent(line: QuoteOverrideThresholdLine) {
-  if (typeof line.unit_price !== 'number' || typeof line.catalog_price_amount !== 'number' || line.catalog_price_amount <= 0) return null;
-  return ((line.unit_price - line.catalog_price_amount) / line.catalog_price_amount) * 100;
-}
-
-export function getOverrideThresholdCheck(line: QuoteOverrideThresholdLine, thresholdPercent: number | null | undefined) {
-  const deltaPercent = getOverrideDeltaPercent(line);
-  const threshold = typeof thresholdPercent === 'number' && Number.isFinite(thresholdPercent) ? thresholdPercent : 15;
-  return {
-    deltaPercent,
-    thresholdPercent: threshold,
-    approvalRequired: deltaPercent != null && Math.abs(deltaPercent) >= threshold,
-  };
 }

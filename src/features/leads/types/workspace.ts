@@ -33,8 +33,6 @@ export type LeadRow = {
   phone_secondary_country_code: string | null;
 };
 
-export type CaptureDefaults = { default_product_label?: string | null; default_lead_type?: 'buyer' | 'supplier' | null; default_follow_up_days?: number | null };
-export type TradeEventOption = { id: string; name: string; city?: string | null; country?: string | null; starts_on?: string | null; ends_on?: string | null; capture_defaults?: CaptureDefaults | null };
 export type Option = { id: string; name: string };
 export type ProductCategory = { id: string; name: string; is_active?: boolean; sort_order?: number; parent_id?: string | null };
 export type Product = { id: string; name: string; sku: string | null; category_id: string | null };
@@ -65,9 +63,6 @@ export type LeadQuickCapturePrefill = {
   sourceType?: string;
   sourceLabel?: string;
   selectedProductIds?: string[];
-  tradeEventId?: string;
-  defaultProductLabel?: string;
-  defaultLeadType?: 'buyer' | 'supplier';
   autoOpenQuoteAfterSave?: boolean;
   title?: string;
   description?: string;
@@ -82,7 +77,7 @@ export type LeadsWorkspaceProps = {
   stages: Stage[];
   pipelines: Pipeline[];
   nextSteps: Option[];
-  tradeEvents: TradeEventOption[];
+  tradeEvents: Option[];
   productCategories: ProductCategory[];
   products: Product[];
   markets: Option[];
@@ -130,7 +125,7 @@ export type LeadDrawerProps = {
   stages: Stage[];
   pipelines: Pipeline[];
   nextSteps: Option[];
-  tradeEvents: TradeEventOption[];
+  tradeEvents: Option[];
   productCategories?: ProductCategory[];
   products: Product[];
   markets: Market[];

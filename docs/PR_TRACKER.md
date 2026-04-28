@@ -1,13 +1,59 @@
 # SETU Flow PR Tracker
 
-Current development reset is based on the attached HTML references. The next sequence is locked as:
+NorthStar rebuild is active. PR-NS-07.5 is closed in this repo pass; PR-NS-08 is now the active next implementation step.
 
-1. PR-0 — Shell Alignment Lock
-2. PR-1 — Admin + Settings Unified Workspace
-3. PR-2 — Catalog HTML Parity + Quote-Readiness Workflow
-4. PR-3 — Pipeline HTML Parity
-5. PR-4 — Quotes Recovery + HTML Parity
-6. PR-5 — Orders HTML Parity
-7. PR-6 — Final QA Pass
+## Current completed pass
 
-Do not start page-only work before PR-0. The root visual drift is caused by shared shell geometry and duplicate route wrappers.
+### PR-NS-07.5 — NorthStar visual parity hardening
+
+Status: Completed
+
+Goal: make Quotes, Orders, Pipeline, and Catalog look and feel like the redesign HTML, not just behave correctly.
+
+Completed alignment:
+- Quotes uses the shared NorthStar command hero, exact Quotes Workspace language, All/Buyers/Suppliers switch, Export, + New quote, status/date/company filters, KPI rhythm, approval queue, quote table, detail panel, FX/override visibility, and workflow CTAs from the quotes redesign.
+- Orders uses the shared NorthStar command hero, Orders Execution Desk language, Open order, View quote, Upload document, Export, All/Buyers/Suppliers switch, execution KPI cards, order lifecycle, blockers, and dispatch readiness context from the orders redesign.
+- Pipeline uses the redesign language for Pipeline / Risks and Kanban Board, with Quick Lead, Follow-up Queue, Dashboard link, blocker-first filters, KPI cards, lane board, stage movement guards, and quote/order handoff CTAs.
+- Catalog uses Catalog — Products, Pricing & Variants language, Products/Pricing/Spreadsheet modes, Export, Add product, Pricing gaps, KPI coverage, product table pricing columns, inline USD baseline editing, drawer editing, and quote-ready signals.
+- Shared workspace surface tokens were tightened so the four pages use the same rounded command-card, metric-card, CTA, and table-shell feel.
+- Internal DCC, Release Proof, root page, and NorthStar reference notes now mark PR-NS-07.5 complete and keep PR-NS-08 as the active next development step.
+
+Acceptance proof:
+- Quotes, Orders, Pipeline, and Catalog are now visually aligned to their redesign HTML patterns across command header, filters, KPI rhythm, CTAs, tables/cards, right/detail context, and workflow language.
+- Existing quote FX, quote override, order execution, pipeline gating, and catalog pricing logic were not changed.
+
+## Completed NorthStar sequence
+
+- PR-NS-01 — Leads foundation rebuild
+- PR-NS-02 — Lead Command Center workflow depth
+- PR-NS-02B — Leads Reference Fidelity Lock
+- PR-NS-03 — Quote Builder governed workflow
+- PR-NS-04 — Quotes Workspace rebuild
+- PR-NS-05 — Pipeline execution board rebuild
+- PR-NS-06 — Orders execution desk rebuild
+- PR-NS-07 — Catalog operational rebuild
+- PR-NS-07.5 — NorthStar visual parity hardening
+
+## Active next step
+
+### PR-NS-08 — Catalog-to-Quote data wiring hardening
+
+Scope:
+- Harden catalog baselines into Quote Builder.
+- Carry selected product, variant, USD catalog baseline, market/currency, pricing tier, missing-price warnings, FX lock reuse, and override approval thresholds across create, edit, revise, and duplicate quote flows.
+- Preserve the visual parity layer completed in PR-NS-07.5.
+
+## Next prompt
+
+PR-NS-08 — Catalog-to-Quote data wiring hardening
+
+### PR-NS-07.6 — Vercel build recovery + redesign reference lock
+
+Status: Completed in this repo pass.
+
+- Fixed the Pipeline board production type failure from the visual parity pass by adding an explicit visual stage group model that exposes the representative `stage` and filtered lane `leads` used by the NorthStar board renderer.
+- Preserved the grouped-stage pipeline behavior used to avoid duplicate buyer/supplier lanes.
+- Re-locked the four attached redesign HTML files into `/public/reference-html/` for Quotes, Orders, Pipeline, and Catalog so the repo references match the latest uploaded designs.
+- Visual/functionality review found remaining parity work is mostly exact interaction/data wiring, not the shell rhythm: Catalog drawer/wizard behavior, Orders document upload state, Pipeline drag/drop persistence, and Quotes version/revise/approval persistence need PR-NS-08+ hardening.
+
+Next active development remains PR-NS-08 — Catalog-to-Quote data wiring hardening.

@@ -346,7 +346,7 @@ export type LeadsPageData = QueryIssuePayload & {
   >[];
   pipelines: Pick<PipelineRow, 'id' | 'name' | 'lead_type' | 'is_default'>[];
   nextSteps: Pick<NextStepRow, 'id' | 'name'>[];
-  tradeEvents: Pick<TradeEventRow, 'id' | 'name' | 'capture_defaults'>[];
+  tradeEvents: Pick<TradeEventRow, 'id' | 'name'>[];
   productCategories: Pick<ProductCategoryRow, 'id' | 'name' | 'is_active' | 'sort_order' | 'parent_id'>[];
   products: Pick<ProductRow, 'id' | 'name' | 'sku' | 'category_id'>[];
   markets: Pick<MarketRow, 'id' | 'name'>[];
@@ -854,7 +854,7 @@ export type TasksWorkspaceData = QueryIssuePayload & {
 export type TradeEventsData = QueryIssuePayload & {
   events: Pick<
     TradeEventRow,
-    'id' | 'name' | 'city' | 'country' | 'starts_on' | 'ends_on' | 'notes' | 'created_at' | 'updated_at' | 'organization_id' | 'capture_defaults'
+    'id' | 'name' | 'city' | 'country' | 'starts_on' | 'ends_on' | 'notes' | 'created_at' | 'updated_at' | 'organization_id'
   >[];
   entries: Pick<
     TradeEventEntryRow,
@@ -2184,7 +2184,7 @@ export async function getLeadsPageData(organizationId: string): Promise<LeadsPag
         .eq('organization_id', organizationId)
         .eq('is_active', true)
         .order('sort_order', { ascending: true }),
-      supabase.from('trade_events').select('id, name, city, country, starts_on, ends_on, capture_defaults').eq('organization_id', organizationId).or(`starts_on.is.null,ends_on.is.null,and(starts_on.lte.${new Date().toISOString().slice(0, 10)},ends_on.gte.${new Date().toISOString().slice(0, 10)})`).order('starts_on', { ascending: false }),
+      supabase.from('trade_events').select('id, name').eq('organization_id', organizationId).order('starts_on', { ascending: false }),
       supabase
         .from('product_categories')
         .select('id, name, is_active, sort_order, parent_id')
@@ -2348,7 +2348,7 @@ export async function getLeadsPageData(organizationId: string): Promise<LeadsPag
     currentVersionIds.length
       ? supabase
           .from('quote_versions')
-          .select('id, quote_id, version_no, status, created_at, approved_at, sent_at, pdf_document_id, quote_pricing_snapshots(fx_rate, fx_display_currency)')
+          .select('id, quote_id, version_no, status, created_at, approved_at, sent_at, pdf_document_id')
           .in('id', currentVersionIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
@@ -2688,7 +2688,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
       ? supabase.from('documents').select('id, related_entity, related_id, file_name, doc_type, status, uploaded_at, uploaded_by, reviewer_user_id, reviewed_at, review_notes, expires_at, version, version_label, requirement_code').eq('organization_id', organizationId).eq('related_entity', 'quote').in('related_id', quoteIds).order('uploaded_at', { ascending: false })
       : Promise.resolve({ data: [], error: null }),
     currentVersionIds.length
-      ? supabase.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at, pdf_document_id, quote_pricing_snapshots(fx_rate, fx_display_currency)').in('id', currentVersionIds)
+      ? supabase.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at, pdf_document_id').in('id', currentVersionIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -3130,7 +3130,7 @@ export async function getTradeEventsData(organizationId: string): Promise<TradeE
   const [eventsResult, entriesResult] = await Promise.all([
     supabase
       .from('trade_events')
-      .select('id, name, city, country, starts_on, ends_on, notes, created_at, updated_at, organization_id, capture_defaults')
+      .select('id, name, city, country, starts_on, ends_on, notes, created_at, updated_at, organization_id')
       .eq('organization_id', organizationId)
       .order('starts_on', { ascending: false, nullsFirst: false }),
     (supabase as any)

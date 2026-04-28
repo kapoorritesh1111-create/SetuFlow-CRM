@@ -87,8 +87,6 @@ export interface LeadCardProps {
   moveOptions: LeadCardMoveOption[];
   countryCode?: string | null;
   coverageSummary?: string;
-  isSelected?: boolean;
-  onSelectedChange?: (leadId: string, selected: boolean) => void;
 }
 
 export interface PipelineBoardProps {

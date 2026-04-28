@@ -427,7 +427,7 @@ export function buildContactPostApplyAssist(args: {
   );
 
   const followUpPrompts = buildFollowUpPrompts(draft, duplicateMatches);
-  const operatorChecklist = ['Next: confirm products & follow-up date before saving', ...buildOperatorChecklist(duplicateMatches)];
+  const operatorChecklist = buildOperatorChecklist(duplicateMatches);
   const workflowHandoffSuggestions = buildWorkflowHandoffSuggestions(draft, duplicateMatches);
   const saveReadyReview = buildSaveReadyReview(draft, duplicateMatches);
   const guardrails = [

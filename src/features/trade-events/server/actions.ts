@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
-type ActionState = { error?: string; success?: string; entryId?: string };
+type ActionState = { error?: string; success?: string };
 
 function normalizeIsoDateTime(value: string) {
   if (!value) return null;
@@ -348,7 +348,7 @@ export async function saveTradeEventEntry(_: ActionState | undefined, formData: 
   revalidatePath('/leads');
   revalidatePath('/dashboard');
 
-  return { success: 'Trade event entry captured.', entryId: createdEntry?.id ?? undefined };
+  return { success: 'Trade event entry captured.' };
 }
 
 export async function convertTradeEventEntryToLead(formData: FormData): Promise<void> {
@@ -365,7 +365,7 @@ export async function convertTradeEventEntryToLead(formData: FormData): Promise<
 
   const { data: entry, error: entryError } = await db
     .from('trade_event_entries')
-    .select('id, organization_id, trade_event_id, captured_company_name, captured_contact_name, captured_job_title, captured_email, captured_phone, captured_country, captured_notes, source_label, status, converted_lead_id, trade_events(capture_defaults)')
+    .select('id, organization_id, trade_event_id, captured_company_name, captured_contact_name, captured_job_title, captured_email, captured_phone, captured_country, captured_notes, source_label, status, converted_lead_id')
     .eq('organization_id', workspace.organization.id)
     .eq('id', entryId)
     .maybeSingle();
@@ -415,7 +415,7 @@ export async function convertTradeEventEntryToLead(formData: FormData): Promise<
     phone: String(entry.captured_phone ?? '').trim() || null,
     country: capturedCountry || null,
     country_id: countryId,
-    source_type: 'trade_event',
+    source_type: 'trade_event_entry',
     source_label: String(entry.source_label ?? '').trim() || 'trade_event_entry',
     stage_id: stageId,
     pipeline_id: pipelineId,
@@ -442,19 +442,6 @@ export async function convertTradeEventEntryToLead(formData: FormData): Promise<
     if (validIds.length === 1) {
       await db.from('lead_markets').insert({ lead_id: createdLead.id, market_id: marketId });
     }
-  }
-
-  const captureDefaults = (entry as any)?.trade_events?.capture_defaults && typeof (entry as any).trade_events.capture_defaults === 'object' ? (entry as any).trade_events.capture_defaults : {};
-  const defaultProductLabel = typeof captureDefaults.default_product_label === 'string' ? captureDefaults.default_product_label.trim() : '';
-  if (defaultProductLabel) {
-    await db.from('lead_product_interests').insert({
-      organization_id: workspace.organization.id,
-      lead_id: createdLead.id,
-      product_id: null,
-      label: defaultProductLabel,
-      interest_type: 'confirmed_product',
-      source_context: { source: 'trade_event_capture_defaults', trade_event_id: entry.trade_event_id, entry_id: entry.id },
-    });
   }
 
   await db.from('lead_follow_ups').insert({
@@ -513,7 +500,7 @@ export async function convertTradeEventEntryToLead(formData: FormData): Promise<
       normalized_payload: {
         lead_id: createdLead.id,
         company_name: createdLead.company_name,
-        source_type: 'trade_event',
+        source_type: 'trade_event_entry',
       },
     })
     .eq('organization_id', workspace.organization.id)

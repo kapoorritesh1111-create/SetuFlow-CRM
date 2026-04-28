@@ -11,12 +11,6 @@ import { buildStageMoveReadiness } from '@/lib/queries/pipeline-stage-gating';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
-function isMissingRpcFunction(error: any) {
-  const message = String(error?.message ?? '').toLowerCase();
-  const code = String(error?.code ?? '');
-  return code === '42883' || message.includes('function') && message.includes('does not exist');
-}
-
 type ActionState = {
   error?: string;
   success?: string;
@@ -206,35 +200,3 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
 }
 
 export const moveLeadStage = moveLeadToStage;
-
-export async function batchMoveLeadsToStage(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
-  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
-  const workspace = await getWorkspaceAccess();
-  if (!workspace.user || !workspace.organization || !workspace.membership) return { error: 'Not authenticated.' };
-  if (!hasWorkspaceCapability(workspace.currentRoles, 'lead.manage')) {
-    return { error: getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage') ?? 'Your current role cannot update the pipeline.' };
-  }
-  const stageId = String(formData.get('stage_id') ?? '').trim();
-  const leadIds = formData.getAll('lead_ids').map((value) => String(value).trim()).filter(Boolean);
-  if (!stageId || leadIds.length === 0) return { error: 'Select leads and a target stage.' };
-  const db = (await createClient()) as any;
-  const { error: rpcError } = await db.rpc('app_batch_move_lead_stage_tx', {
-    p_organization_id: workspace.organization.id,
-    p_lead_ids: leadIds,
-    p_stage_id: stageId,
-    p_actor_user_id: workspace.user.id,
-  });
-  if (rpcError && !isMissingRpcFunction(rpcError)) return { error: rpcError.message };
-  if (rpcError && isMissingRpcFunction(rpcError)) {
-    for (const leadId of leadIds) {
-      const next = new FormData();
-      next.append('lead_id', leadId);
-      next.append('stage_id', stageId);
-      const result = await moveLeadToStage(undefined, next);
-      if (result?.error) return result;
-    }
-  }
-  revalidatePath('/pipeline');
-  revalidatePath('/leads');
-  return { success: `${leadIds.length} lead${leadIds.length === 1 ? '' : 's'} moved.` };
-}

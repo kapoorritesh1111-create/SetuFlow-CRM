@@ -53,14 +53,11 @@ function getPasswordResetRedirectUrl() {
   return url.toString();
 }
 
-function sanitizeReturnPath(value: FormDataEntryValue | null | undefined, fallback: string) {
-  if (typeof value !== 'string') return fallback;
-  if (value === '/admin/invitations' || value === '/admin/users') return value;
-  if (value.startsWith('/admin?section=')) return value;
-  return fallback;
+function sanitizeReturnPath(value: FormDataEntryValue | null | undefined, fallback: '/admin/users' | '/admin/invitations') {
+  return value === '/admin/invitations' || value === '/admin/users' ? value : fallback;
 }
 
-function redirectWithNotice(path: string, notice?: string): never {
+function redirectWithNotice(path: '/admin/users' | '/admin/invitations', notice?: string): never {
   if (!notice) {
     redirect(path);
   }
@@ -827,110 +824,4 @@ export async function registerAndAcceptInvitation(formData: FormData): Promise<v
   revalidatePath('/admin/invitations');
   revalidatePath('/admin/users');
   redirect('/dashboard');
-}
-
-function normalizeText(value: FormDataEntryValue | null | undefined) { const text = String(value ?? '').trim(); return text.length > 0 ? text : null; }
-function normalizeNumber(value: FormDataEntryValue | null | undefined, fallback = 0) { const parsed = Number(String(value ?? '').trim()); return Number.isFinite(parsed) ? parsed : fallback; }
-function normalizeDate(value: FormDataEntryValue | null | undefined) { const text = normalizeText(value); return text && /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null; }
-function checked(formData: FormData, key: string) { return formData.get(key) === 'on'; }
-async function getAdminMutationContext() { return getAdminContext(); }
-async function revalidateAdminReferencePaths(extraPath?: string) { ['/admin/organization','/admin/markets','/admin/stages','/admin/pipelines','/admin/trade-events','/admin/security'].forEach((path) => revalidatePath(path)); if (extraPath) revalidatePath(extraPath); }
-
-export async function createMarket(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const name = normalizeText(formData.get('name')); if (!name) return; await context.supabase.from('markets').insert({ organization_id: context.organization.id, name, market_code: normalizeText(formData.get('market_code')), sort_order: normalizeNumber(formData.get('sort_order')), is_active: true }); await revalidateAdminReferencePaths('/admin/markets'); redirect('/admin/markets?notice=market-created'); }
-export async function updateMarket(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const id = normalizeText(formData.get('id')); const name = normalizeText(formData.get('name')); if (!id || !name) return; await context.supabase.from('markets').update({ name, market_code: normalizeText(formData.get('market_code')), sort_order: normalizeNumber(formData.get('sort_order')), is_active: checked(formData, 'is_active'), updated_at: new Date().toISOString() }).eq('id', id).eq('organization_id', context.organization.id); await revalidateAdminReferencePaths('/admin/markets'); redirect('/admin/markets?notice=market-updated'); }
-export async function createNextStep(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const name = normalizeText(formData.get('name')); if (!name) return; await context.supabase.from('next_steps').insert({ organization_id: context.organization.id, name, sort_order: normalizeNumber(formData.get('sort_order')), is_active: true }); await revalidateAdminReferencePaths('/admin/stages'); redirect('/admin/stages?notice=next-step-created'); }
-export async function updateNextStep(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const id = normalizeText(formData.get('id')); const name = normalizeText(formData.get('name')); if (!id || !name) return; await context.supabase.from('next_steps').update({ name, sort_order: normalizeNumber(formData.get('sort_order')), is_active: checked(formData, 'is_active'), updated_at: new Date().toISOString() }).eq('id', id).eq('organization_id', context.organization.id); await revalidateAdminReferencePaths('/admin/stages'); redirect('/admin/stages?notice=next-step-updated'); }
-export async function createPipeline(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const name = normalizeText(formData.get('name')); const leadType = normalizeText(formData.get('lead_type')) ?? 'buyer'; if (!name || !['buyer','supplier','both'].includes(leadType)) return; await context.supabase.from('pipelines').insert({ organization_id: context.organization.id, name, lead_type: leadType, is_default: checked(formData, 'is_default') }); await revalidateAdminReferencePaths('/admin/pipelines'); redirect('/admin/pipelines?notice=pipeline-created'); }
-export async function updatePipeline(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const id = normalizeText(formData.get('id')); const name = normalizeText(formData.get('name')); const leadType = normalizeText(formData.get('lead_type')) ?? 'buyer'; if (!id || !name || !['buyer','supplier','both'].includes(leadType)) return; await context.supabase.from('pipelines').update({ name, lead_type: leadType, is_default: checked(formData, 'is_default'), updated_at: new Date().toISOString() }).eq('id', id).eq('organization_id', context.organization.id); await revalidateAdminReferencePaths('/admin/pipelines'); redirect('/admin/pipelines?notice=pipeline-updated'); }
-export async function createPipelineStage(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const pipelineId = normalizeText(formData.get('pipeline_id')); const name = normalizeText(formData.get('name')); if (!pipelineId || !name) return; const { data: pipeline } = await context.supabase.from('pipelines').select('id').eq('id', pipelineId).eq('organization_id', context.organization.id).maybeSingle(); if (!pipeline) return; await context.supabase.from('pipeline_stages').insert({ pipeline_id: pipelineId, name, sort_order: normalizeNumber(formData.get('sort_order')), color: normalizeText(formData.get('color')), is_closed: checked(formData, 'is_closed'), is_won: checked(formData, 'is_won'), is_lost: checked(formData, 'is_lost') }); await revalidateAdminReferencePaths('/admin/stages'); redirect('/admin/stages?notice=stage-created'); }
-export async function updatePipelineStage(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const id = normalizeText(formData.get('id')); const name = normalizeText(formData.get('name')); if (!id || !name) return; const { data: stage } = await context.supabase.from('pipeline_stages').select('id, pipelines!inner(organization_id)').eq('id', id).maybeSingle(); if (!stage || (stage as any).pipelines?.organization_id !== context.organization.id) return; await context.supabase.from('pipeline_stages').update({ name, sort_order: normalizeNumber(formData.get('sort_order')), color: normalizeText(formData.get('color')), is_closed: checked(formData, 'is_closed'), is_won: checked(formData, 'is_won'), is_lost: checked(formData, 'is_lost'), updated_at: new Date().toISOString() }).eq('id', id); await revalidateAdminReferencePaths('/admin/stages'); redirect('/admin/stages?notice=stage-updated'); }
-export async function createTradeEvent(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const name = normalizeText(formData.get('name')); if (!name) return; await context.supabase.from('trade_events').insert({ organization_id: context.organization.id, name, city: normalizeText(formData.get('city')), country: normalizeText(formData.get('country')), starts_on: normalizeDate(formData.get('starts_on')), ends_on: normalizeDate(formData.get('ends_on')), notes: normalizeText(formData.get('notes')), capture_defaults: buildTradeEventCaptureDefaults(formData) }); await revalidateAdminReferencePaths('/admin/trade-events'); redirect('/admin/trade-events?notice=event-created'); }
-function buildTradeEventCaptureDefaults(formData: FormData) {
-  const productLabel = normalizeText(formData.get('default_product_label'));
-  const leadType = normalizeText(formData.get('default_lead_type'));
-  const followUpDaysRaw = normalizeText(formData.get('default_follow_up_days'));
-  const followUpDays = followUpDaysRaw ? Number(followUpDaysRaw) : null;
-
-  return {
-    default_product_label: productLabel || null,
-    default_lead_type: leadType === 'supplier' ? 'supplier' : leadType === 'buyer' ? 'buyer' : null,
-    default_follow_up_days: Number.isFinite(followUpDays) && followUpDays !== null ? Math.max(0, Math.trunc(followUpDays)) : null,
-  };
-}
-
-export async function updateTradeEvent(formData: FormData): Promise<void> {
-  const context = await getAdminMutationContext();
-  if (!context) return;
-  const id = normalizeText(formData.get('id'));
-  const name = normalizeText(formData.get('name'));
-  if (!id || !name) return;
-  await context.supabase
-    .from('trade_events')
-    .update({
-      name,
-      city: normalizeText(formData.get('city')),
-      country: normalizeText(formData.get('country')),
-      starts_on: normalizeDate(formData.get('starts_on')),
-      ends_on: normalizeDate(formData.get('ends_on')),
-      notes: normalizeText(formData.get('notes')),
-      capture_defaults: buildTradeEventCaptureDefaults(formData),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .eq('organization_id', context.organization.id);
-  await revalidateAdminReferencePaths('/admin/trade-events');
-  redirect('/admin/trade-events?notice=event-updated');
-}
-
-export async function updateApprovalThreshold(formData: FormData) {
-  const context = await getAdminContext();
-  if (!context) redirect('/admin/security');
-  const threshold = Number(String(formData.get('threshold_pct') ?? '15'));
-  const normalized = Number.isFinite(threshold) ? Math.min(100, Math.max(0, threshold)) : 15;
-  const { error } = await context.supabase
-    .from('organizations')
-    .update({ approval_threshold_pct: normalized })
-    .eq('id', context.organization.id);
-  if (error) redirect('/admin/security?notice=threshold-error');
-  revalidatePath('/admin/security');
-  revalidatePath('/admin/organization');
-  redirect('/admin/security?notice=threshold-updated');
-}
-
-export async function createRole(formData: FormData): Promise<void> {
-  const context = await getAdminMutationContext();
-  if (!context) return;
-  const name = normalizeText(formData.get('name'));
-  if (!name) return;
-  await context.supabase.from('roles').insert({
-    organization_id: context.organization.id,
-    name,
-    description: normalizeText(formData.get('description')),
-  });
-  await revalidateAdminReferencePaths('/admin/security');
-  redirect('/admin/security?notice=role-created');
-}
-
-export async function updateRolePermissions(formData: FormData): Promise<void> {
-  const context = await getAdminMutationContext();
-  if (!context) return;
-  const roleId = normalizeText(formData.get('role_id'));
-  if (!roleId) return;
-  const { data: role } = await context.supabase
-    .from('roles')
-    .select('id, organization_id')
-    .eq('id', roleId)
-    .or(`organization_id.eq.${context.organization.id},organization_id.is.null`)
-    .maybeSingle();
-  if (!role) return;
-  const permissions = String(formData.get('permissions') ?? '')
-    .split(/\r?\n/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-  await context.supabase.from('role_permissions').delete().eq('role_id', roleId);
-  if (permissions.length > 0) {
-    await context.supabase.from('role_permissions').insert(permissions.map((permission) => ({ role_id: roleId, permission })));
-  }
-  await revalidateAdminReferencePaths('/admin/security');
-  redirect('/admin/security?notice=permissions-updated');
 }

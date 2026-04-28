@@ -10,8 +10,8 @@ export type TradeReadinessSignal = {
 
 export type QuoteTradeWorkflow = {
   journey: TradeJourney;
-  pricingBasis: 'ex_factory' | 'fob' | 'cif' | 'bulk_chips' | null;
-  incotermLabel: 'EXW' | 'FOB' | 'CIF' | 'Bulk chips' | 'Not set';
+  pricingBasis: 'ex_factory' | 'fob' | 'cif' | null;
+  incotermLabel: 'EXW' | 'FOB' | 'CIF' | 'Not set';
   handoffLabel: string;
 };
 

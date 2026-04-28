@@ -20,7 +20,7 @@ export function inferQuoteTradeWorkflow(input: {
 }): QuoteTradeWorkflow {
   const parsed = parseQuoteWorkflow(input.notes);
   const pricingBasis = parsed.meta.pricingBasis ?? null;
-  const incotermLabel = pricingBasis === 'ex_factory' ? 'EXW' : pricingBasis === 'cif' ? 'CIF' : pricingBasis === 'fob' ? 'FOB' : pricingBasis === 'bulk_chips' ? 'Bulk chips' : 'Not set';
+  const incotermLabel = pricingBasis === 'ex_factory' ? 'EXW' : pricingBasis === 'cif' ? 'CIF' : pricingBasis === 'fob' ? 'FOB' : 'Not set';
   const journey: TradeJourney = input.leadType === 'buyer' ? 'buyer' : input.leadType === 'supplier' ? 'supplier' : 'mixed';
 
   return {
