@@ -16,7 +16,7 @@ export function normalizeCurrencyCode(value: string | null | undefined) {
   return normalized || null;
 }
 
-export type PricingBasisOption = 'ex_factory' | 'fob' | 'cif';
+export type PricingBasisOption = 'ex_factory' | 'fob' | 'cif' | 'bulk_chips';
 
 export type CatalogProductOption = {
   id: string;
@@ -99,8 +99,13 @@ function normalizeBasis(value: string | null | undefined): PricingBasisOption {
     case 'exfactory':
       return 'ex_factory';
     case 'cif':
-    case 'cif':
       return 'cif';
+    case 'bulk_chips':
+    case 'bulk':
+    case 'bulk_kg':
+    case 'bulk/kg':
+    case 'kg':
+      return 'bulk_chips';
     default:
       return 'fob';
   }
@@ -176,6 +181,7 @@ function chooseBasisAmount(rule: CatalogPricingRuleLike | null | undefined, vari
   const amounts = resolveRuleAmounts(rule, variant);
   if (basis === 'ex_factory') return amounts.exFactory;
   if (basis === 'cif') return amounts.cifBase;
+  if (basis === 'bulk_chips') return amounts.bulk ?? amounts.fob;
   return amounts.fob;
 }
 
