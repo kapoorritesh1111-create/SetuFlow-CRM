@@ -967,8 +967,22 @@ export function PipelineBoard({
       {detailPanelLeadId && (() => {
         const panelLead = localLeads.find(l => l.id === detailPanelLeadId);
         if (!panelLead) return null;
-        const panelReadiness = buildStageMoveReadiness(panelLead, stages.find(s => s.id === panelLead.stage_id) ?? null, localFollowUps.filter(f => f.lead_id === panelLead.id));
-        const panelHealth = computeLeadHealth(panelLead, localFollowUps.filter(f => f.lead_id === panelLead.id), activityMap.get(panelLead.id) ?? null);
+        const panelCurrentStage = panelLead.stage_id ? stageById.get(panelLead.stage_id) ?? null : null;
+        const panelReadiness = panelCurrentStage
+          ? getStageMoveReadinessForLead(panelLead, panelCurrentStage)
+          : { status: 'ready', summary: 'Stage movement is ready under the current workflow.', blockers: [], warnings: [], actionItems: ['Advance stage'], canMove: true };
+        const panelStageMeta = panelLead.stage_id ? stageMetaMap.get(panelLead.stage_id) : null;
+        const panelHealth = computeLeadHealth({
+          created_at: panelLead.created_at,
+          updated_at: panelLead.updated_at,
+          last_contacted_at: panelLead.last_contacted_at,
+          next_follow_up_at: panelLead.next_follow_up_at,
+          lastActivityAt: activityMap.get(panelLead.id),
+          lastStageChangeAt: stageHistoryMap.get(panelLead.id),
+          stageSortOrder: panelStageMeta?.sortOrder ?? null,
+          stageCount: panelStageMeta?.stageCount ?? null,
+          isClosedStage: panelStageMeta?.isClosed ?? null,
+        });
         const panelOwner = profiles.find(p => p.id === panelLead.owner_user_id)?.full_name ?? 'Unassigned';
         const panelHref = buildLeadCommandCenterHref(panelLead.id);
         return (

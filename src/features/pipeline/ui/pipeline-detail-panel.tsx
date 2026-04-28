@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { navigateToLeadCommandCenter } from '@/lib/lead-command-center-navigation';
 
 type Stage = { id: string; name: string; sort_order: number | null };
-type MoveReadiness = { status: 'ok' | 'at_risk' | 'blocked'; blockers: string[]; summary: string };
+type MoveReadiness = { status: 'ready' | 'at_risk' | 'blocked'; blockers: string[]; warnings?: string[]; actionItems?: string[]; summary: string };
 
 export interface PipelineDetailPanelProps {
   lead: {
