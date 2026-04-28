@@ -2310,6 +2310,7 @@ function QuoteReviewPanel({
   lineItems,
   templateId,
   products,
+  pricingBasis,
   quoteSendGuard,
 }: {
   currency: string;
