@@ -261,6 +261,9 @@ function inputClassName() {
   return "min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400";
 }
 
+const DEFAULT_CATALOG_PRICE_CURRENCY = "USD";
+const DEFAULT_QUOTE_VALIDITY_DAYS = 7;
+
 function normalizeCurrency(value: string) {
   return value
     .toUpperCase()
@@ -315,21 +318,21 @@ function buildLineFromProduct(
   currency: string,
   pricingBasis: PricingBasis = "fob",
 ): DraftQuoteLine {
-  const normalizedCurrency =
-    normalizeCurrency(product?.catalogPriceCurrency || currency) || "USD";
+  const quoteCurrency = normalizeCurrency(currency) || DEFAULT_CATALOG_PRICE_CURRENCY;
+  const catalogCurrency = DEFAULT_CATALOG_PRICE_CURRENCY;
   const basisAmount = getProductBasisAmount(product, pricingBasis);
   return {
     product_id: product?.id ?? "",
     product_variant_id: product?.defaultVariantId ?? "",
     catalog_price_id: product?.catalogPriceId ?? "",
     catalog_price_amount: typeof basisAmount === "number" ? basisAmount : null,
-    catalog_price_currency: normalizedCurrency,
+    catalog_price_currency: catalogCurrency,
     quantity:
       typeof product?.moqValue === "number" && product.moqValue > 0
         ? product.moqValue
         : 1,
     unit_price: typeof basisAmount === "number" ? basisAmount : 0,
-    currency: normalizedCurrency,
+    currency: quoteCurrency,
     source_ex_factory_usd: product?.exFactoryPriceAmount ?? null,
     source_fob_usd: product?.fobPriceAmount ?? product?.catalogPriceAmount ?? null,
     source_bulk_usd_per_kg: product?.bulkPriceAmount ?? null,
@@ -1897,27 +1900,31 @@ function mapTemplateLinesToDraftLines(
   templateId: string,
   currency: string,
   pricingBasis: PricingBasis = "fob",
+  products: ProductOption[] = [],
 ): DraftQuoteLine[] {
   const template = getPricingTemplate(templateId);
   if (!template)
-    return [buildLineFromProduct(undefined, currency, pricingBasis)];
-  return applyPricingTemplate(template, currency).map((line): DraftQuoteLine => ({
-    product_id: line.product_id,
-    product_variant_id: "",
-    catalog_price_id: "",
-    catalog_price_amount: null,
-    catalog_price_currency:
-      normalizeCurrency(line.currency || currency) || "USD",
-    quantity: line.quantity,
-    unit_price: line.unit_price,
-    currency: normalizeCurrency(line.currency || currency) || "USD",
-    source_ex_factory_usd: null,
-    source_fob_usd: null,
-    source_bulk_usd_per_kg: null,
-    freight_add_on_usd: null,
-    override_reason: "",
-    notes: line.notes,
-  }));
+    return [buildLineFromProduct(products[0], currency, pricingBasis)];
+  return applyPricingTemplate(template, currency).map((line): DraftQuoteLine => {
+    const matchedProduct = products.find((product) => product.id === line.product_id);
+    const catalogLine = buildLineFromProduct(matchedProduct, currency, pricingBasis);
+    const templateCurrency = normalizeCurrency(line.currency || currency) || normalizeCurrency(currency) || DEFAULT_CATALOG_PRICE_CURRENCY;
+    return {
+      ...catalogLine,
+      product_id: line.product_id || catalogLine.product_id,
+      quantity:
+        typeof matchedProduct?.moqValue === "number" && matchedProduct.moqValue > 0
+          ? matchedProduct.moqValue
+          : catalogLine.quantity || line.quantity || 1,
+      unit_price:
+        typeof catalogLine.catalog_price_amount === "number"
+          ? catalogLine.catalog_price_amount
+          : line.unit_price,
+      currency: templateCurrency,
+      catalog_price_currency: DEFAULT_CATALOG_PRICE_CURRENCY,
+      notes: line.notes,
+    };
+  });
 }
 
 function getQuoteRiskFlags({
@@ -2132,6 +2139,9 @@ function QuoteVersionCheckpointPanel({
 }) {
   const { scopedVersions, currentVersion, sentVersion, approvedVersion } =
     getQuoteVersionCheckpoint(quote, quoteVersions);
+  const sentAtMs = sentVersion?.sent_at ? Date.parse(sentVersion.sent_at) : null;
+  const quoteExpiresAt = sentAtMs ? new Date(sentAtMs + DEFAULT_QUOTE_VALIDITY_DAYS * 24 * 60 * 60 * 1000) : null;
+  const quoteExpired = quoteExpiresAt ? Date.now() > quoteExpiresAt.getTime() : false;
   const title = mode === "review" ? "Version continuity" : "Checkpoint history";
   const description =
     mode === "review"
@@ -2142,6 +2152,21 @@ function QuoteVersionCheckpointPanel({
     <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
       <p className="font-medium text-slate-900">{title}</p>
       <p className="mt-2">{description}</p>
+      {sentVersion?.sent_at ? (
+        <div
+          className={`mt-4 rounded-2xl border px-3 py-3 ${quoteExpired ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}
+        >
+          <p className="text-sm font-semibold">Quote validity: {quoteExpired ? "expired" : "active"}</p>
+          <p className="mt-1 text-xs">
+            This quote is valid for {DEFAULT_QUOTE_VALIDITY_DAYS} days after send
+            {quoteExpiresAt ? `, through ${formatDateTime(quoteExpiresAt.toISOString())}` : ""}.
+            {" "}
+            {quoteExpired
+              ? "Resend or revise the quote if there has been no customer action."
+              : "Follow up before expiry if the buyer has not responded."}
+          </p>
+        </div>
+      ) : null}
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-3 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -2800,6 +2825,7 @@ export function QuoteCreateWizardForm({
                                 nextId,
                                 template.currency,
                                 pricingBasis,
+                                products,
                               ),
                             );
                           }
@@ -3393,6 +3419,7 @@ function QuoteSummaryCards({
   lineItems,
   templateId,
   products,
+  pricingBasis,
   quoteSendGuard,
 }: {
   currency: string;
@@ -3402,6 +3429,7 @@ function QuoteSummaryCards({
   lineItems: DraftQuoteLine[];
   templateId: string;
   products: ProductOption[];
+  pricingBasis: PricingBasis;
   quoteSendGuard?: ProgressionGuardSummary;
 }) {
   const totals = computeQuoteTotals(lineItems, normalizeCurrency(currency));

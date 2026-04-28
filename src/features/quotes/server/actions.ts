@@ -280,6 +280,15 @@ function normalizePercent(value: number | null) {
   return Math.round(value * 10) / 10;
 }
 
+function hasQuoteSelfApprovalAuthority(currentRoles: string[] | undefined) {
+  const roles = new Set((currentRoles ?? []).map((role) => String(role ?? "").trim().toLowerCase()));
+  return roles.has("owner") || roles.has("admin") || roles.has("manager");
+}
+
+function hasManualPriceChange(lineItems: ParsedLineItem[]) {
+  return lineItems.some((item) => Boolean(item.is_price_overridden) || (typeof item.unit_price === "number" && typeof item.catalog_price_amount === "number" && Number(item.unit_price) !== Number(item.catalog_price_amount)));
+}
+
 function buildQuoteSendDecisionSnapshot(input: {
   quoteId: string;
   quoteVersionId: string | null;
@@ -689,8 +698,8 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
   const currency = normalizeCurrencyCode(String(formData.get('currency') ?? '').trim());
   const status = String(formData.get('status') ?? 'draft').trim() || 'draft';
   const templateId = String(formData.get('template_id') ?? '').trim() || null;
-  const approvalRequired = String(formData.get('approval_required') ?? '').trim() === 'true';
-  const approvalState = (String(formData.get('approval_state') ?? '').trim() ||
+  let approvalRequired = String(formData.get('approval_required') ?? '').trim() === 'true';
+  let approvalState = (String(formData.get('approval_state') ?? '').trim() ||
     (approvalRequired ? 'pending' : 'not_required')) as ApprovalState;
   const plainNotes = String(formData.get('notes') ?? '').trim();
   const pricingBasisRaw = String(formData.get('pricing_basis') ?? 'fob').trim().toLowerCase();
@@ -701,6 +710,12 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
     lineItems = parseLineItems(formData);
   } catch {
     return { error: 'Failed to parse quote line items.' };
+  }
+
+  const actorCanSelfApproveQuote = hasQuoteSelfApprovalAuthority(workspace.currentRoles);
+  if (!actorCanSelfApproveQuote) {
+    approvalRequired = true;
+    approvalState = 'pending';
   }
 
   const validationError = validateQuoteInput({ leadId, currency, status, approvalRequired, approvalState, lineItems });
@@ -1001,8 +1016,8 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
   const status = String(formData.get('status') ?? 'draft').trim() || 'draft';
   const currency = normalizeCurrencyCode(String(formData.get('currency') ?? '').trim());
   const templateId = String(formData.get('template_id') ?? '').trim() || null;
-  const approvalRequired = String(formData.get('approval_required') ?? '').trim() === 'true';
-  const approvalState = (String(formData.get('approval_state') ?? '').trim() ||
+  let approvalRequired = String(formData.get('approval_required') ?? '').trim() === 'true';
+  let approvalState = (String(formData.get('approval_state') ?? '').trim() ||
     (approvalRequired ? 'pending' : 'not_required')) as ApprovalState;
   const plainNotes = String(formData.get('notes') ?? '').trim();
   const pricingBasisRaw = String(formData.get('pricing_basis') ?? 'fob').trim().toLowerCase();
@@ -1013,6 +1028,12 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     lineItems = parseLineItems(formData);
   } catch {
     return { error: 'Failed to parse quote line items.' };
+  }
+
+  const actorCanSelfApproveQuote = hasQuoteSelfApprovalAuthority(workspace.currentRoles);
+  if (!actorCanSelfApproveQuote && hasManualPriceChange(lineItems)) {
+    approvalRequired = true;
+    approvalState = 'pending';
   }
 
   const validationError = validateQuoteInput({
