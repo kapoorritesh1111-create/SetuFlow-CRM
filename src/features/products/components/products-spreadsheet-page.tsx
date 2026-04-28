@@ -246,13 +246,6 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         <div className="rounded-2xl border border-violet-200 bg-violet-50 p-5 shadow-sm dark:border-violet-900/60 dark:bg-violet-950/35"><div className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-700 dark:text-violet-200">Active markets</div><div className="mt-3 text-3xl font-semibold text-violet-900 dark:text-violet-100">{usdCatalogRows}</div><p className="mt-2 text-xs text-violet-800 dark:text-violet-200">USD priced rows</p></div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-100"><strong>USD catalog source:</strong> catalog pricing remains USD; quote currency is selected separately in the quote workspace.</div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"><strong>MOQ defaults:</strong> {missingMoqRows ? `${missingMoqRows} rows missing MOQ defaults` : 'covered for visible rows'}.</div>
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/35 dark:text-rose-100"><strong>Stale price warnings:</strong> {stalePriceRows} visible rows need review. Latest update: {latestPricingUpdate}.</div>
-      </section>
-
-
       {isEmptyWorkspace ? (
         <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/82">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">No products configured yet</div>
