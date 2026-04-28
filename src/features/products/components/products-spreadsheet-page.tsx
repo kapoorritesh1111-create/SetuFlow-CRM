@@ -27,6 +27,14 @@ function formatRelativeDate(value: string | null | undefined) {
   return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
 }
 
+function isStalePriceDate(value: string | null | undefined) {
+  if (!value) return true;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return true;
+  const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+  return Date.now() - date.getTime() > ninetyDaysMs;
+}
+
 type Props = {
   canManageCatalog?: boolean;
   readOnlyMessage?: string | null;
@@ -115,6 +123,9 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
     const latest = rows.map((row) => row.updated_at).filter((value): value is string => Boolean(value)).sort().at(-1);
     return formatRelativeDate(latest);
   }, [rows]);
+  const stalePriceRows = useMemo(() => filteredRows.filter((row) => isStalePriceDate(row.updated_at)).length, [filteredRows]);
+  const missingMoqRows = useMemo(() => filteredRows.filter((row) => row.moq_value == null && !row.moq_display).length, [filteredRows]);
+  const usdCatalogRows = useMemo(() => filteredRows.filter((row) => [row.ex_factory_display, row.fob_display, row.bulk_display, row.cif_display].some((display) => typeof display === 'string' && display.includes('USD'))).length, [filteredRows]);
 
   const summary = response?.summary;
   const pricingCoverage = formatPercent(summary?.priced_variants ?? 0, summary?.visible_variants ?? 0);
@@ -189,6 +200,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
             </Link>
             <a href="/api/products/spreadsheet?page_size=1000" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>⬇ Export</a>
             <button type="button" onClick={() => setGapFilter('has_gap')} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Pricing gaps</button>
+            <Link href="/quotes?source=catalog" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Quote handoff</Link>
             <button type="button" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`} onClick={() => void loadSpreadsheet()}>
               Refresh
             </button>
@@ -228,13 +240,15 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/70"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">Where am I</p><p className="mt-2 text-sm text-slate-700 dark:text-slate-200">Catalog is the USD source of truth for products, variants, and pricing baselines.</p></div>
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">What blocks me</p><p className="mt-2 text-sm text-amber-900 dark:text-amber-100">Missing pricing, not quoteable, inactive products, or bulk gaps stop the quick quote path.</p></div>
+            <div className="flex items-center justify-between gap-3"><span>MOQ defaults</span><strong>{missingMoqRows ? `${missingMoqRows} missing` : 'Covered'}</strong></div>
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/35"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">What do I do next</p><p className="mt-2 text-sm text-emerald-900 dark:text-emerald-100">Fix gaps inline or in the drawer, then use Quick quote when the product is ready.</p></div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-200">{readyToSellRows.length} ready to sell now</span>
             <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-200">{quoteReadyRows.length} quote-ready rows</span>
             <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200">{gapRows} blockers to clean</span>
+            <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/35 dark:text-rose-200">{stalePriceRows} stale price warnings</span>
+            <div className="flex items-center justify-between gap-3"><span>MOQ defaults</span><strong>{missingMoqRows ? `${missingMoqRows} missing` : 'Covered'}</strong></div>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200">Latest pricing update: {latestPricingUpdate}</span>
           </div>
         </div>
@@ -243,6 +257,12 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Workflow review</p>
           <h2 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">Price gaps and quote readiness are visible before handoff</h2>
           <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">Use this panel as the Catalog review lane: export the catalog, review blockers, open AI guidance, or jump into Quote only after the product is active, quote-ready, and priced.</p>
+          <div className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900/60">
+            <div className="flex items-center justify-between gap-3"><span>USD catalog prices</span><strong>{usdCatalogRows} rows</strong></div>
+            <div className="flex items-center justify-between gap-3"><span>MOQ defaults</span><strong>{missingMoqRows ? `${missingMoqRows} missing` : 'Covered'}</strong></div>
+            <div className="flex items-center justify-between gap-3"><span>Stale price warnings</span><strong>{stalePriceRows}</strong></div>
+            <div className="flex items-center justify-between gap-3"><span>Quote handoff</span><Link href={tradeShowReadyHref} className="font-semibold text-blue-700 hover:text-blue-800 dark:text-sky-200">Open with product context →</Link></div>
+          </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <a href="/api/products/spreadsheet?page_size=1000" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`}>Export catalog</a>
             <Link href="/ai-suggestions?family=quote" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Open AI guidance</Link>
