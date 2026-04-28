@@ -79,7 +79,7 @@ export function OrganizationWorkspace({
     ? `${governanceContext.missingCount} governance gaps still need owner/admin attention.`
     : 'No critical governance blocker is visible on this overview.';
   const primaryLaneHref = !governanceContext.isReady
-    ? governanceContext.missingItems[0]?.href ?? '/settings/lists'
+    ? governanceContext.missingItems[0]?.href ?? '/admin/organization#settings-lists'
     : '/admin/users';
   const primaryLaneLabel = !governanceContext.isReady
     ? `Fix ${governanceContext.missingItems[0]?.label ?? 'governance gap'}`
@@ -96,7 +96,7 @@ export function OrganizationWorkspace({
           <>
             <Link href={primaryLaneHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">{primaryLaneLabel}</Link>
             <Link href="/admin/invitations" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Invitations</Link>
-            <Link href="/settings/lists" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Settings lists</Link>
+            <Link href="/admin/organization#settings-lists" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Settings lists</Link>
           </>
         }
         meta={
@@ -217,7 +217,7 @@ export function OrganizationWorkspace({
               <p className="text-sm font-semibold text-slate-900">My Card settings</p>
               <p className="mt-1 text-sm text-slate-600">Update the digital vCard, social links, QR destination, and public share details used by signed-in workspace users.</p>
             </Link>
-            <Link href="/settings/lists" className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
+            <Link href="/admin/organization#settings-lists" className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
               <p className="text-sm font-semibold text-slate-900">Settings lists</p>
               <p className="mt-1 text-sm text-slate-600">Maintain organization-scoped reference data that powers pipelines, products, markets, and next steps.</p>
             </Link>
@@ -403,7 +403,7 @@ export function OrganizationWorkspace({
               Keep role changes in the users workspace, invitation actions in the invitations workspace, and reference data edits in settings lists so organization administration stays clear and schema-safe.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/settings/lists" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">Open settings lists</Link>
+              <Link href="/admin/organization#settings-lists" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">Open settings lists</Link>
               <Link href="/approval-send" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">Review approvals & sending</Link>
             </div>
           </div>

@@ -85,7 +85,7 @@ export default async function AdminOrganizationPage() {
   const productsCount = productsResult.count ?? 0;
   const gapItems: AdminGapItem[] = [
     marketsCount === 0 ? { icon: '🌍', text: 'No markets configured', href: '/admin/markets' } : null,
-    countriesCount === 0 ? { icon: '🗺️', text: 'No countries configured', href: '/settings/lists?tab=countries' } : null,
+    countriesCount === 0 ? { icon: '🗺️', text: 'No countries configured', href: '/admin/organization#settings-lists' } : null,
     threshold == null ? { icon: '🔒', text: 'Approval threshold not set', href: '/admin/security' } : null,
     pipelinesCount === 0 ? { icon: '🧩', text: 'No pipelines configured', href: '/admin/pipelines' } : null,
     stagesCount === 0 ? { icon: '🧭', text: 'No stages configured', href: '/admin/stages' } : null,
@@ -111,13 +111,20 @@ export default async function AdminOrganizationPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <AdminRouteCard title="Users" eyebrow="Workspace access" href="/admin/users" description="Manage active users, disabled memberships, and role assignment pressure in the rebuilt admin lane." stats={[{ label: 'Active', value: summary.activeUsers, tone: countTone(summary.activeUsers) }, { label: 'Disabled', value: summary.disabledUsers, tone: summary.disabledUsers ? 'warning' : 'success' }]} />
         <AdminRouteCard title="Invitations" eyebrow="Onboarding" href="/admin/invitations" description="Draft, send, resend, revoke, and audit invitations without leaving the admin command space." stats={[{ label: 'Open', value: openInvitations, tone: openInvitations ? 'warning' : 'success' }, { label: 'Records', value: invitations.length, tone: 'info' }]} />
-        <AdminRouteCard title="Settings lists" eyebrow="Reference data" href="/settings/lists" description="Preserved settings list management for markets, countries, next steps, product categories, pipelines, and stages." stats={[{ label: 'Markets', value: marketsCount, tone: countTone(marketsCount) }, { label: 'Countries', value: countriesCount, tone: countTone(countriesCount) }]} />
+        <AdminRouteCard title="Settings lists" eyebrow="Reference data" href="#settings-lists" description="Preserved settings list management for markets, countries, next steps, product categories, pipelines, and stages." stats={[{ label: 'Markets', value: marketsCount, tone: countTone(marketsCount) }, { label: 'Countries', value: countriesCount, tone: countTone(countriesCount) }]} />
         <AdminRouteCard title="Product management" eyebrow="Catalog operations" href="/admin/product-management" description="Keep product setup and quote-readiness visible as its own lane in the same shell." stats={[{ label: 'Products', value: productsCount, tone: countTone(productsCount) }, { label: 'Categories', value: categoriesCount, tone: countTone(categoriesCount) }]} />
         <AdminRouteCard title="Trade events & capture" eyebrow="Capture defaults" href="/admin/trade-events" description="Maintain event source attribution, contact capture defaults, and trade-show intake readiness." stats={[{ label: 'Events', value: tradeEventsCount, tone: countTone(tradeEventsCount) }, { label: 'Capture', value: 'Default lane', tone: 'info' }]} />
         <AdminRouteCard title="Markets / Countries" eyebrow="Coverage" href="/admin/markets" description="Review market coverage and country setup used by lead routing, quotes, and catalog pricing." stats={[{ label: 'Markets', value: marketsCount, tone: countTone(marketsCount) }, { label: 'Countries', value: countriesCount, tone: countTone(countriesCount) }]} />
         <AdminRouteCard title="Pipelines / Stages" eyebrow="Workflow" href="/admin/stages" description="Control buyer/supplier board lanes and operator next-step labels from rebuilt admin sections." stats={[{ label: 'Pipelines', value: pipelinesCount, tone: countTone(pipelinesCount) }, { label: 'Stages', value: stagesCount, tone: countTone(stagesCount) }]} />
         <AdminRouteCard title="Roles / Governance" eyebrow="Security" href="/admin/security" description="Surface role badges, owner/admin coverage, approval threshold controls, and governance blockers." stats={[{ label: 'Roles', value: roles.length, tone: countTone(roles.length) }, { label: 'Owner/admin', value: ownerAdminMembers, tone: countTone(ownerAdminMembers) }]} />
         <AdminRouteCard title="Audit & AI analytics" eyebrow="Governance" href="/admin/audit" description="Keep audit history and AI usage governance reachable from the unified admin workspace." stats={[{ label: 'Audit', value: 'Ready', tone: 'info' }, { label: 'AI', value: 'Tracked', tone: 'info' }]} />
+      </section>
+
+      <section id="settings-lists" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AdminRouteCard title="Markets" eyebrow="Reference list" href="/admin/markets" description="Open the rebuilt market management lane inside Admin." stats={[{ label: 'Rows', value: marketsCount, tone: countTone(marketsCount) }]} />
+        <AdminRouteCard title="Categories" eyebrow="Reference list" href="/admin/product-management" description="Product categories stay governed through product management in Admin." stats={[{ label: 'Rows', value: categoriesCount, tone: countTone(categoriesCount) }]} />
+        <AdminRouteCard title="Stages & next steps" eyebrow="Reference list" href="/admin/stages" description="Lead workflow stages and next-step labels stay in the rebuilt Admin shell." stats={[{ label: 'Stages', value: stagesCount, tone: countTone(stagesCount) }, { label: 'Next steps', value: nextStepsCount, tone: countTone(nextStepsCount) }]} />
+        <AdminRouteCard title="Pipelines" eyebrow="Reference list" href="/admin/pipelines" description="Buyer and supplier pipeline lanes are no longer split into Settings." stats={[{ label: 'Rows', value: pipelinesCount, tone: countTone(pipelinesCount) }]} />
       </section>
 
       <SectionCard eyebrow="Governance" title="Approval threshold control" description="The reference redesign requires threshold visibility from organization overview and security routes.">

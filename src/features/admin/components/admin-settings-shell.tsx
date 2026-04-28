@@ -27,7 +27,7 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
     label: 'Reference lists',
     items: [
       { key: 'markets', href: '/admin/markets', icon: '🌍', label: 'Markets' },
-      { key: 'categories', href: '/settings/lists?tab=product-categories', icon: '📦', label: 'Categories' },
+      { key: 'categories', href: '/admin/organization#settings-lists', icon: '📦', label: 'Categories' },
       { key: 'stages', href: '/admin/stages', icon: '◎', label: 'Stages & next steps' },
       { key: 'pipelines', href: '/admin/pipelines', icon: '⊕', label: 'Pipelines' },
       { key: 'trade-events', href: '/admin/trade-events', icon: '🏭', label: 'Trade events' },

@@ -2171,7 +2171,7 @@ function InlineQuoteBuilder({
     if (sourceItems.length) {
       return sourceItems.map((item) => {
         const qty = Number(item.quantity ?? 1) || 1;
-        const rawPrice = item.unit_price ?? item.catalog_price_amount ?? null;
+        const rawPrice = (Number(item.unit_price ?? 0) > 0 ? item.unit_price : null) ?? item.catalog_price_amount ?? null;
         const unitPrice = rawPrice == null ? null : Number(rawPrice);
         const lineCurrency = String(item.currency ?? item.catalog_price_currency ?? latestQuote?.currency ?? lead.deal_currency ?? 'USD');
         return {
@@ -2213,7 +2213,7 @@ function InlineQuoteBuilder({
           || Boolean(productSku && ruleSku && productSku === ruleSku);
       }) ?? null;
       const rulePrice = selectedRule
-        ? selectedRule.fob_usd_per_unit ?? selectedRule.ex_factory_usd_per_unit ?? selectedRule.fob_usd_per_case ?? selectedRule.ex_factory_usd_per_case ?? selectedRule.bulk_usd_per_kg ?? selectedRule.fob_usd ?? selectedRule.ex_factory_usd ?? selectedRule.fob_inr ?? selectedRule.ex_factory_inr ?? null
+        ? selectedRule.fob_usd_per_case ?? selectedRule.fob_usd_per_unit ?? selectedRule.ex_factory_usd_per_case ?? selectedRule.ex_factory_usd_per_unit ?? selectedRule.bulk_usd_per_kg ?? selectedRule.fob_usd ?? selectedRule.ex_factory_usd ?? selectedRule.fob_inr ?? selectedRule.ex_factory_inr ?? null
         : null;
       const unitPrice = selectedPrice ? Number(selectedPrice.price) : rulePrice == null ? null : Number(rulePrice);
       const lineCurrency = selectedPrice?.currency ?? (selectedRule?.fob_inr || selectedRule?.ex_factory_inr ? 'INR' : latestQuote?.currency ?? lead.deal_currency ?? 'USD');
@@ -2365,8 +2365,8 @@ function InlineQuoteBuilder({
                       return (
                         <tr key={item.id} className="border-t border-[#f1f5f9] hover:bg-[#f8fafc]">
                           <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.productLabel}</div><div className="mt-1 text-[10px] text-[#64748b]">{item.variantLabel ? `${item.variantLabel} · ` : ''}{item.source === 'coverage' ? 'coverage/catalog fallback' : item.source === 'rfq' ? 'RFQ line' : 'quote draft line'}</div>{item.note ? <div className="mt-1 text-[10px] text-[#94a3b8]">{item.note}</div> : null}</td>
-                          <td className="px-[10px] py-[10px]"><input readOnly title="Line edits persist through the saved quote workflow. Use Create/open draft preview to edit governed quote lines." className="w-[68px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px] text-center text-[12px] font-semibold text-[#64748b] outline-none" value={qty} /></td>
-                          <td className="px-[10px] py-[10px]">{price == null ? <span className="rounded-full bg-[#fff1f2] px-2 py-1 text-[10px] font-bold text-[#be123c]">Price missing</span> : <input readOnly title="Price edits persist through the saved quote workflow. Use Create/open draft preview to edit governed pricing." className="w-[90px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[5px_7px] text-right text-[12px] font-bold text-[#64748b] outline-none" value={price.toLocaleString()} />}</td>
+                          <td className="px-[10px] py-[10px]"><input title="Quantity is editable in the governed saved quote. This preview seeds MOQ/catalog quantity before opening the draft." className="w-[68px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-center text-[12px] font-semibold text-[#0f172a] outline-none" defaultValue={qty} /></td>
+                          <td className="px-[10px] py-[10px]">{price == null ? <span className="rounded-full bg-[#fff1f2] px-2 py-1 text-[10px] font-bold text-[#be123c]">Price missing</span> : <input title="Price is editable in the governed saved quote. This preview shows the catalog baseline." className="w-[90px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px_7px] text-right text-[12px] font-bold text-[#0f172a] outline-none" defaultValue={price.toLocaleString()} />}</td>
                           <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{item.currency} {item.total.toLocaleString()}</td>
                         </tr>
                       );

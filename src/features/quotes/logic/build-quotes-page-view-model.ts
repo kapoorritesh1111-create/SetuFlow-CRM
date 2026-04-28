@@ -28,7 +28,7 @@ type QuoteLineItemRow = {
   override_reason: string | null;
   notes: string | null;
 };
-type ProductRow = { id: string; name: string | null; sku: string | null };
+type ProductRow = { id: string; name: string | null; sku: string | null; catalogPriceAmount?: number | string | null; catalogPriceCurrency?: string | null };
 type QuoteVersionRow = {
   id: string;
   quote_id: string | null;
@@ -175,7 +175,8 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
     const quoteLines = (lineItemsByQuote.get(quote.id) ?? []).map((line, index) => {
       const product = line.product_id ? productMap.get(line.product_id) : null;
       const quantity = numberOrNull(line.quantity) ?? 0;
-      const unitPrice = numberOrNull(line.unit_price);
+      const catalogPriceAmount = numberOrNull(line.catalog_price_amount) ?? numberOrNull((product as ProductRow | null | undefined)?.catalogPriceAmount);
+      const unitPrice = numberOrNull(line.unit_price) ?? catalogPriceAmount;
       return {
         id: line.id,
         quoteId: quote.id,
@@ -184,8 +185,8 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
         quantity,
         unitPrice,
         currency: line.currency ?? quote.currency,
-        catalogPriceAmount: numberOrNull(line.catalog_price_amount),
-        catalogPriceCurrency: line.catalog_price_currency,
+        catalogPriceAmount,
+        catalogPriceCurrency: line.catalog_price_currency ?? (product as ProductRow | null | undefined)?.catalogPriceCurrency ?? null,
         isPriceOverridden: Boolean(line.is_price_overridden),
         overrideReason: line.override_reason,
         notes: line.notes,

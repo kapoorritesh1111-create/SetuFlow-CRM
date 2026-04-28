@@ -50,7 +50,7 @@ export default async function ProductManagementPage() {
         description="Admin-owned catalog governance for categories, products, packaging, UOM, base pricing, and the approval-protected commercial posture used by leads, quotes, and orders."
         actions={[
           { label: 'Organization', href: '/admin/organization' },
-          { label: 'Settings lists', href: '/settings/lists' },
+          { label: 'Settings lists', href: '/admin/organization#settings-lists' },
           { label: 'Products workspace', href: '/products', type: 'primary' },
         ]}
       />

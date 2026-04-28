@@ -113,6 +113,20 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const lineItems = Array.isArray(lineItemsResult.data) ? lineItemsResult.data : [];
   const productIds = [...new Set(lineItems.map((l: any) => l.product_id).filter(Boolean))];
   const productsResult = productIds.length ? await db.from('products').select('id, name, sku').eq('organization_id', organizationId).in('id', productIds) : { data: [], error: null };
+  const pricingRulesResult = productIds.length
+    ? await db.from('product_pricing_rules').select('product_id, product_variant_id, is_active, is_quoteable, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr').eq('organization_id', organizationId).in('product_id', productIds)
+    : { data: [], error: null };
+  const priceByProductId = new Map<string, { amount: number; currency: string }>();
+  for (const rule of Array.isArray(pricingRulesResult.data) ? pricingRulesResult.data : []) {
+    if (!rule?.product_id || rule.is_active === false || rule.is_quoteable === false || priceByProductId.has(rule.product_id)) continue;
+    const amount = [rule.fob_usd_per_case, rule.fob_usd_per_unit, rule.ex_factory_usd_per_case, rule.ex_factory_usd_per_unit, rule.bulk_usd_per_kg, rule.fob_usd, rule.ex_factory_usd, rule.fob_inr, rule.ex_factory_inr]
+      .map((value) => Number(value)).find((value) => Number.isFinite(value) && value > 0);
+    if (amount) priceByProductId.set(rule.product_id, { amount, currency: rule.fob_inr || rule.ex_factory_inr ? 'INR' : 'USD' });
+  }
+  const pricedProducts = (Array.isArray(productsResult.data) ? productsResult.data : []).map((product: any) => {
+    const price = priceByProductId.get(product.id);
+    return price ? { ...product, catalogPriceAmount: price.amount, catalogPriceCurrency: price.currency } : product;
+  });
 
   const baseViewModelInput = {
     quotes, leads: Array.isArray(leadsResult.data) ? leadsResult.data : [],
@@ -120,7 +134,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     negotiations: Array.isArray(negotiationsResult.data) ? negotiationsResult.data : [],
     communications: Array.isArray(communicationsResult.data) ? communicationsResult.data : [],
     contracts: Array.isArray(contractsResult.data) ? contractsResult.data : [],
-    lineItems, products: Array.isArray(productsResult.data) ? productsResult.data : [],
+    lineItems, products: pricedProducts,
   };
 
   const viewModel = buildQuotesPageViewModel({ ...baseViewModelInput, selectedQuoteId });
@@ -164,19 +178,27 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
       </header>
 
       {/* ── FILTER BAR ─────────────────────────────────── */}
-      <form action="/quotes" style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'10px 24px',display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
-        <input type="hidden" name="mode" value={filters.mode}/>
-        <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 10px',border:'1px solid #e2e8f0',borderRadius:'6px',background:'white',height:'32px',minWidth:'200px'}}>
-          <input name="q" defaultValue={filters.q} placeholder="Search company, quote ref, product..." style={{border:'none',outline:'none',fontSize:'11px',color:'#1e293b',background:'transparent',width:'100%'}}/>
-        </div>
-        <select name="status" defaultValue={filters.status} style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 12px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',cursor:'pointer',minWidth:'130px'}}>
-          {FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All statuses':labelizeStatus(s)}</option>)}
-        </select>
-        {/* Quick-filter chips */}
-        {approvalQueueCount>0 && <span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>Pending approval ({approvalQueueCount})</span>}
-        {expiringSoonCount>0 && <span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#9f1239',cursor:'pointer'}}>Expiring ({expiringSoonCount})</span>}
-        <button type="submit" style={{padding:'0 12px',height:'32px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:700,border:'none',cursor:'pointer'}}>Apply</button>
-        <span style={{marginLeft:'auto',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{filteredItems.length} quotes · {formatQuoteMoney(totalValue,'USD')} total value</span>
+      <form action="/quotes" style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'14px 24px 12px',display:'grid',gridTemplateColumns:'minmax(220px,1.4fr) minmax(160px,.8fr) minmax(150px,.7fr) auto auto',alignItems:'end',gap:'10px'}}>
+        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
+          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Search</span>
+          <span style={{display:'flex',alignItems:'center',gap:'8px',padding:'0 12px',border:'1px solid #e2e8f0',borderRadius:'8px',background:'white',height:'36px',boxShadow:'0 1px 2px rgba(15,23,42,.03)'}}>
+            <span style={{color:'#0c7fff'}}>🔍</span><input name="q" defaultValue={filters.q} placeholder="Search company, quote ref, product..." style={{border:'none',outline:'none',fontSize:'12px',color:'#1e293b',background:'transparent',width:'100%'}}/>
+          </span>
+        </label>
+        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
+          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Status</span>
+          <select name="status" defaultValue={filters.status} style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
+            {FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All statuses':labelizeStatus(s)}</option>)}
+          </select>
+        </label>
+        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
+          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Mode</span>
+          <select name="mode" defaultValue={filters.mode} style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
+            {FILTER_MODES.map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase()+m.slice(1)}</option>)}
+          </select>
+        </label>
+        <button type="submit" style={{padding:'0 16px',height:'36px',borderRadius:'8px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:700,border:'none',cursor:'pointer'}}>Apply</button>
+        <span style={{justifySelf:'end',alignSelf:'center',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{filteredItems.length} quotes · {formatQuoteMoney(totalValue,'USD')} total value</span>
       </form>
 
       {/* ── STATS STRIP ────────────────────────────────── */}
