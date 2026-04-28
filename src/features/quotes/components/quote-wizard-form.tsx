@@ -121,10 +121,10 @@ type DraftQuoteLine = {
   quantity: number;
   unit_price: number;
   currency: string;
-  source_ex_factory_usd: number | null;
-  source_fob_usd: number | null;
-  source_bulk_usd_per_kg: number | null;
-  freight_add_on_usd: number | null;
+  source_ex_factory_usd?: number | null;
+  source_fob_usd?: number | null;
+  source_bulk_usd_per_kg?: number | null;
+  freight_add_on_usd?: number | null;
   override_reason: string;
   notes: string;
 };
@@ -1901,7 +1901,7 @@ function mapTemplateLinesToDraftLines(
   const template = getPricingTemplate(templateId);
   if (!template)
     return [buildLineFromProduct(undefined, currency, pricingBasis)];
-  return applyPricingTemplate(template, currency).map((line) => ({
+  return applyPricingTemplate(template, currency).map((line): DraftQuoteLine => ({
     product_id: line.product_id,
     product_variant_id: "",
     catalog_price_id: "",
@@ -1911,6 +1911,10 @@ function mapTemplateLinesToDraftLines(
     quantity: line.quantity,
     unit_price: line.unit_price,
     currency: normalizeCurrency(line.currency || currency) || "USD",
+    source_ex_factory_usd: null,
+    source_fob_usd: null,
+    source_bulk_usd_per_kg: null,
+    freight_add_on_usd: null,
     override_reason: "",
     notes: line.notes,
   }));
