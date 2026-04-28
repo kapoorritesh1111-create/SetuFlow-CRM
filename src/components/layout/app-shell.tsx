@@ -34,6 +34,8 @@ export function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [vcardModalOpen, setVcardModalOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [topbarDate, setTopbarDate] = useState('');
+  const [origin, setOrigin] = useState('');
 
   const normalizedRoles = useMemo(() => normalizeWorkspaceRoles(currentRoles), [currentRoles]);
   const currentRole = useMemo(() => getPrimaryWorkspaceRole(normalizedRoles) ?? 'member', [normalizedRoles]);
@@ -42,10 +44,10 @@ export function AppShell({
   const workspaceMode = getWorkspaceModeFromLocation(pathname, searchParams.get('mode'));
   const workspaceBasePath = getWorkspaceBasePath(pathname);
   const showWorkspaceModeSwitch = routeMeta.showWorkspaceModeSwitch ?? true;
-  const topbarDate = useMemo(
-    () => new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
-    [],
-  );
+  useEffect(() => {
+    setOrigin(window.location.origin);
+    setTopbarDate(new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()));
+  }, []);
 
   const currentWorkspaceModeHref = (mode: 'all' | 'buyers' | 'suppliers') => {
     if (!workspaceBasePath) return pathname;
@@ -76,7 +78,7 @@ export function AppShell({
 
     async function generateQr() {
       if (!vcardModalOpen) return;
-      const absoluteShareLink = typeof window === 'undefined' ? shareLink : `${window.location.origin}${shareLink}`;
+      const absoluteShareLink = origin ? `${origin}${shareLink}` : shareLink;
       try {
         const dataUrl = await QRCode.toDataURL(absoluteShareLink, {
           errorCorrectionLevel: 'M',
@@ -97,11 +99,11 @@ export function AppShell({
     return () => {
       active = false;
     };
-  }, [shareLink, vcardModalOpen]);
+  }, [origin, shareLink, vcardModalOpen]);
 
   const handleCopyShareLink = async () => {
     if (typeof window === 'undefined' || !navigator.clipboard) return;
-    const absolute = `${window.location.origin}${shareLink}`;
+    const absolute = `${origin || window.location.origin}${shareLink}`;
     await navigator.clipboard.writeText(absolute);
   };
 
@@ -193,7 +195,7 @@ export function AppShell({
                   <span>🔗</span>
                   <span>Copy link</span>
                 </button>
-                <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(typeof window === 'undefined' ? shareLink : `${window.location.origin}${shareLink}`)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
+                <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(origin ? `${origin}${shareLink}` : shareLink)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
                   <span>✉</span>
                   <span>Send email</span>
                 </a>
@@ -231,13 +233,13 @@ export function AppShell({
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0c7fff]">Trade Command Center</p>
                       <h1 className="truncate text-base font-bold tracking-[-0.3px] text-slate-950">
                         {routeMeta.title}
-                        {routeMeta.title === 'Dashboard' && (
+                        {routeMeta.title === 'Dashboard' && topbarDate ? (
                           <span className="ml-2 text-sm font-normal text-slate-400">— {topbarDate}</span>
-                        )}
+                        ) : null}
                       </h1>
-                      {routeMeta.title !== 'Dashboard' && (
+                      {routeMeta.title !== 'Dashboard' && topbarDate ? (
                         <p className="mt-0.5 text-[11px] text-slate-500">{topbarDate}</p>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 

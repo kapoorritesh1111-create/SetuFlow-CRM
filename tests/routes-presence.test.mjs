@@ -24,6 +24,7 @@ test('canonical manifest keeps the operator path visible in primary navigation',
     '/pipeline',
   ]);
   assert.equal(primaryNav.includes('/products'), true, 'catalog should remain in primary navigation');
-  assert.equal(primaryNav.includes('/settings/lists'), true, 'settings should remain in primary navigation');
+  assert.equal(primaryNav.includes('/settings/lists'), false, 'settings lists should redirect into unified admin, not primary navigation');
+  assert.equal(primaryNav.includes('/products'), true, 'catalog should remain in primary navigation');
   assert.equal(primaryNav.at(-1), '/dashboard', 'overview should be present but demoted to the end');
 });
