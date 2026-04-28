@@ -184,12 +184,12 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
   };
 
   return (
-    <div className="space-y-6">
-      <div className={cn('overflow-hidden p-6', workspaceHeroClass)}>
+    <div className="space-y-4">
+      <div className={cn('overflow-hidden px-6 py-5', workspaceHeroClass)}>
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600 dark:text-sky-300">Catalog</div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">Products & Pricing</h1>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">Products & Pricing</h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">Products, variants, USD baselines, MOQ defaults, and quote-ready pricing in one command workspace.</p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3">
@@ -252,25 +252,6 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/35 dark:text-rose-100"><strong>Stale price warnings:</strong> {stalePriceRows} visible rows need review. Latest update: {latestPricingUpdate}.</div>
       </section>
 
-      <ProductsToolbar
-        search={search}
-        onSearchChange={(value) => { setPage(1); setSearch(value); }}
-        category={category}
-        onCategoryChange={(value) => { setPage(1); setCategory(value); }}
-        categories={categories}
-        pricingMode={pricingMode}
-        onPricingModeChange={(value) => { setPage(1); setPricingMode(value); }}
-        gapFilter={gapFilter}
-        onGapFilterChange={setGapFilter}
-        activeFilter={activeFilter}
-        onActiveFilterChange={setActiveFilter}
-        quoteableFilter={quoteableFilter}
-        onQuoteableFilterChange={(value) => { setPage(1); setQuoteableFilter(value); }}
-        totalRows={totalRows}
-        filteredRows={filteredRows.length}
-        gapRows={gapRows}
-        inactiveRows={inactiveRows}
-      />
 
       {isEmptyWorkspace ? (
         <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/82">
@@ -308,20 +289,6 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
           onActionBlocked={setActionBlockedMessage}
         />
       ) : null}
-
-      <section className={cn('p-5', workspacePanelClass)}>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Commercial handoff</div>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">USD catalog prices now feed quotes through the selected quote/company currency. Missing catalog pricing must be fixed here before quote send.</p>
-          </div>
-          <div className="flex flex-wrap gap-3 text-sm font-semibold">
-            <Link href="/leads" className={`rounded-xl px-3 py-2 ${workspaceSecondaryButtonClass}`}>Leads</Link>
-            <Link href="/pipeline" className={`rounded-xl px-3 py-2 ${workspaceSecondaryButtonClass}`}>Pipeline</Link>
-            <Link href="/quotes" className={`rounded-xl px-3 py-2 ${workspaceSecondaryButtonClass}`}>Quotes</Link>
-          </div>
-        </div>
-      </section>
 
       <div className={cn('flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between', workspacePanelClass)}>
         <div className="text-sm text-slate-600 dark:text-slate-300">Page {page} of {totalPages}. Showing {filteredRows.length} rows in this view.</div>
