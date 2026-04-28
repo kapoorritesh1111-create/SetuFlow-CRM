@@ -19,6 +19,7 @@ import { navigateToLeadCommandCenter } from '@/lib/lead-command-center-navigatio
 import { buildLeadCommercialReadiness, getPricingReadinessClasses, getPricingReadinessLabel } from '@/lib/catalog-pricing-model';
 import { buildLeadDocumentRequirementState, type DocumentRequirementRule } from '@/lib/document-requirements';
 import PipelineLaneSection from './PipelineLaneSection';
+import PipelineBoardFilters from './PipelineBoardFilters';
 import { ToolbarActionButton, ToolbarField, ToolbarSearchInput, ToolbarSelect, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
@@ -103,7 +104,7 @@ export function PipelineBoard({
   }, [stages]);
 
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
-  const [followUpFilter, setFollowUpFilter] = useState(() => searchParams.get('follow') ?? '');
+  const [followUpTiming, setFollowUpTiming] = useState(() => searchParams.get('follow') ?? '');
   // ownerFilter controls whether we show only the current user's leads or all leads.  An empty
   // string means "all leads"; "mine" means only leads owned by the logged‑in user.  This
   // provides a quick way for users to focus on their own portfolio without scrolling through
@@ -112,13 +113,13 @@ export function PipelineBoard({
   // all owners.  This general form makes it easy to expand the dropdown in the
   // future, such as when co‑ownership or additional roles are introduced.
   const [ownerFilter, setOwnerFilter] = useState(() => searchParams.get('owner') ?? '');
-  // productFilter and marketFilter allow users to narrow the board to leads interested in a
+  // productId and marketId allow users to narrow the board to leads interested in a
   // specific product category or market.  An empty string means "all".  We use the
   // leadProductsMap and leadMarketsMap computed below to determine membership.
-  const [productFilter, setProductFilter] = useState(() => searchParams.get('category') ?? '');
-  const [marketFilter, setMarketFilter] = useState(() => searchParams.get('market') ?? '');
+  const [productId, setProductId] = useState(() => searchParams.get('product') ?? searchParams.get('category') ?? '');
+  const [marketId, setMarketId] = useState(() => searchParams.get('market') ?? '');
   const [message, setMessage] = useState('');
-  const [filtersOpen, setFiltersOpen] = useState(() => ['follow','owner','category','market'].some((key) => Boolean(searchParams.get(key))));
+  const [filtersOpen, setFiltersOpen] = useState(() => ['follow','owner','product','category','market'].some((key) => Boolean(searchParams.get(key))));
   const [isPending, startTransition] = useTransition();
   const [leadTypeFilter, setLeadTypeFilter] = useState<'' | LeadJourney>(() => normalizeLeadTypeParam(searchParams.get('mode')) || initialLeadType);
 
@@ -266,12 +267,12 @@ export function PipelineBoard({
     const nextLeadType = normalizeLeadTypeParam(searchParams.get('mode')) || initialLeadType;
     setWorkspaceMode(nextLeadType === 'buyer' ? 'buyers' : nextLeadType === 'supplier' ? 'suppliers' : 'all');
     setSearch(searchParams.get('q') ?? '');
-    setFollowUpFilter(searchParams.get('follow') ?? '');
+    setFollowUpTiming(searchParams.get('follow') ?? '');
     setOwnerFilter(searchParams.get('owner') ?? '');
-    setProductFilter(searchParams.get('category') ?? '');
-    setMarketFilter(searchParams.get('market') ?? '');
+    setProductId(searchParams.get('product') ?? searchParams.get('category') ?? '');
+    setMarketId(searchParams.get('market') ?? '');
     setLeadTypeFilter(nextLeadType);
-    setFiltersOpen(['follow', 'owner', 'category', 'market'].some((key) => Boolean(searchParams.get(key))));
+    setFiltersOpen(['follow', 'owner', 'product', 'category', 'market'].some((key) => Boolean(searchParams.get(key))));
     urlSyncReady.current = true;
   }, [searchParams, initialLeadType]);
 
@@ -280,10 +281,10 @@ export function PipelineBoard({
     const params = new URLSearchParams(searchParams.toString());
     const mappings: Array<[string, string]> = [
       ['q', search],
-      ['follow', followUpFilter],
+      ['follow', followUpTiming],
       ['owner', ownerFilter],
-      ['category', productFilter],
-      ['market', marketFilter],
+      ['product', productId],
+      ['market', marketId],
       ['mode', workspaceMode === 'all' ? '' : workspaceMode],
     ];
     mappings.forEach(([key, value]) => {
@@ -296,7 +297,7 @@ export function PipelineBoard({
     if (nextQuery !== currentQuery) {
       router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
     }
-  }, [pathname, router, search, followUpFilter, ownerFilter, productFilter, marketFilter, searchParams, workspaceMode]);
+  }, [pathname, router, search, followUpTiming, ownerFilter, productId, marketId, searchParams, workspaceMode]);
 
   const buildPipelineReturnHref = () => {
     const currentQuery = searchParams.toString();
@@ -323,17 +324,6 @@ export function PipelineBoard({
     for (const item of localLeadProductInterests) map.set(item.lead_id, [...(map.get(item.lead_id) ?? []), item.product_id]);
     return map;
   }, [localLeadProductInterests]);
-
-  const leadCategoryMap = useMemo(() => {
-    const productCategoryMap = new Map(products.map((product) => [product.id, product.category_id]));
-    const map = new Map<string, string[]>();
-    for (const item of localLeadProductInterests) {
-      const categoryId = productCategoryMap.get(item.product_id);
-      if (!categoryId) continue;
-      map.set(item.lead_id, [...(map.get(item.lead_id) ?? []), categoryId]);
-    }
-    return map;
-  }, [localLeadProductInterests, products]);
 
   const leadFollowUpsMap = useMemo(() => {
     const map = new Map<string, FollowUp[]>();
@@ -386,17 +376,27 @@ export function PipelineBoard({
   }, [orderedStageGroups, pipelines, leadTypeFilter]);
   const filteredLeads = useMemo(() => {
     const needle = search.trim().toLowerCase();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(todayStart);
+    weekEnd.setDate(todayStart.getDate() + 7);
+
     return localLeads.filter((lead) => {
       const followState = getFollowUpVisualState(lead.next_follow_up_at);
+      const followUpAt = lead.next_follow_up_at ? new Date(lead.next_follow_up_at) : null;
+      const isThisWeek = Boolean(followUpAt && followUpAt >= todayStart && followUpAt <= weekEnd);
       const matchesSearch = !needle || [lead.company_name, lead.contact_name ?? '', lead.country ?? ''].some((item) => item.toLowerCase().includes(needle));
-      const matchesFollowUp = !followUpFilter || followState === followUpFilter;
+      const matchesFollowUp = !followUpTiming
+        || followState === followUpTiming
+        || (followUpTiming === 'week' && isThisWeek)
+        || (followUpTiming === 'none' && followState === 'unscheduled');
       const matchesOwner = !ownerFilter || lead.owner_user_id === ownerFilter;
-      const matchesProduct = !productFilter || (leadCategoryMap.get(lead.id)?.includes(productFilter) ?? false);
-      const matchesMarket = !marketFilter || (leadMarketsMap.get(lead.id)?.includes(marketFilter) ?? false);
+      const matchesProduct = !productId || (leadProductsMap.get(lead.id)?.includes(productId) ?? false);
+      const matchesMarket = !marketId || (leadMarketsMap.get(lead.id)?.includes(marketId) ?? false);
       const matchesLeadType = !leadTypeFilter || lead.lead_type === leadTypeFilter;
       return matchesSearch && matchesFollowUp && matchesOwner && matchesProduct && matchesMarket && matchesLeadType;
     });
-  }, [localLeads, search, followUpFilter, ownerFilter, productFilter, marketFilter, leadTypeFilter, leadCategoryMap, leadMarketsMap]);
+  }, [localLeads, search, followUpTiming, ownerFilter, productId, marketId, leadTypeFilter, leadProductsMap, leadMarketsMap]);
 
   type VisualStageGroup = (typeof filteredStageGroups)[number] & {
     stage: Stage;
@@ -486,7 +486,7 @@ export function PipelineBoard({
   };
 
 
-  const activeFilterCount = [followUpFilter, ownerFilter, productFilter, marketFilter].filter(Boolean).length;
+  const activeFilterCount = [followUpTiming, ownerFilter, productId, marketId].filter(Boolean).length;
   const overdueCount = filteredLeads.filter((lead) => getFollowUpVisualState(lead.next_follow_up_at) === 'overdue').length;
   const todayCount = filteredLeads.filter((lead) => getFollowUpVisualState(lead.next_follow_up_at) === 'today').length;
   const atRiskCount = filteredLeads.filter((lead) => {
@@ -680,10 +680,10 @@ export function PipelineBoard({
   const pipelineModeLabel = workspaceMode === 'buyers' ? 'Buyer pipeline' : workspaceMode === 'suppliers' ? 'Supplier pipeline' : 'All pipelines';
 
   const resetFilters = () => {
-    setFollowUpFilter('');
+    setFollowUpTiming('');
     setOwnerFilter('');
-    setProductFilter('');
-    setMarketFilter('');
+    setProductId('');
+    setMarketId('');
     setLeadTypeFilter(initialLeadType);
     setMessage('');
   };
@@ -732,24 +732,25 @@ export function PipelineBoard({
       {/* FILTER BAR */}
       <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'10px 24px',display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
         <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginRight:'4px'}}>Filter:</span>
-        <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 10px',border:'1px solid #e2e8f0',borderRadius:'6px',background:'white',height:'32px',minWidth:'180px'}}>
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#94a3b8" strokeWidth="1.8"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search company, contact, country…" style={{border:'none',outline:'none',fontSize:'11px',color:'#1e293b',background:'transparent',width:'100%'}}/>
-        </div>
-        <select value={followUpFilter} onChange={e=>setFollowUpFilter(e.target.value)} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'130px'}}>
-          <option value="">All timing</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="unscheduled">Unscheduled</option>
-        </select>
-        <select value={ownerFilter} onChange={e=>setOwnerFilter(e.target.value)} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'120px'}}>
-          <option value="">All owners</option>{profiles.map(p=><option key={p.id} value={p.id}>{p.full_name??p.username??'Unassigned'}</option>)}
-        </select>
-        <select value={productFilter} onChange={e=>setProductFilter(e.target.value)} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'130px'}}>
-          <option value="">All products</option>{productCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select value={marketFilter} onChange={e=>setMarketFilter(e.target.value)} style={{border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',fontSize:'11px',fontWeight:600,color:'#1e293b',minWidth:'120px'}}>
-          <option value="">All markets</option>{markets.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
-        {overdueCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#991b1b',cursor:'pointer'}}>⚠ {overdueCount} overdue <span>×</span></span>}
-        {todayCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>📅 {todayCount} due today <span>×</span></span>}
+        <PipelineBoardFilters
+          search={search}
+          onSearchChange={setSearch}
+          leadType={leadTypeFilter}
+          onLeadTypeChange={(value) => setLeadTypeFilter(normalizeLeadTypeParam(value))}
+          ownerId={ownerFilter}
+          onOwnerIdChange={setOwnerFilter}
+          owners={profiles.map((profile) => ({ id: profile.id, label: profile.full_name ?? profile.username ?? 'Unassigned' }))}
+          followUpTiming={followUpTiming}
+          onFollowUpTimingChange={setFollowUpTiming}
+          productId={productId}
+          onProductIdChange={setProductId}
+          products={products.map((product) => ({ id: product.id, label: product.name }))}
+          marketId={marketId}
+          onMarketIdChange={setMarketId}
+          markets={markets.map((market) => ({ id: market.id, label: market.name }))}
+        />
+        {overdueCount>0&&<button type="button" onClick={()=>setFollowUpTiming('overdue')} style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#991b1b',cursor:'pointer'}}>⚠ {overdueCount} overdue <span>×</span></button>}
+        {todayCount>0&&<button type="button" onClick={()=>setFollowUpTiming('today')} style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>📅 {todayCount} due today <span>×</span></button>}
         {activeFilterCount>0&&<button type="button" onClick={resetFilters} style={{fontSize:'10px',fontWeight:700,padding:'3px 10px',borderRadius:'999px',border:'1px solid #e2e8f0',background:'white',color:'#64748b',cursor:'pointer'}}>Reset</button>}
         <span style={{marginLeft:'auto',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{filteredLeads.length} leads · {filteredStageGroups.length} stages · {valueCurrency} {Math.round(totalPipelineValue).toLocaleString()} pipeline</span>
       </div>
@@ -793,32 +794,23 @@ export function PipelineBoard({
       {/* FILTERS PANEL */}
       {showPipelineBoard&&filtersOpen&&(
         <div style={{margin:'0 24px',padding:'16px',background:'white',borderRadius:'16px',border:'1px solid #e2e8f0',marginTop:'14px'}}>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'12px'}}>
-            <div>
-              <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Follow-up</div>
-              <select value={followUpFilter} onChange={e=>setFollowUpFilter(e.target.value)} style={{width:'100%',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'0 10px',height:'36px',fontSize:'12px'}}>
-                <option value="">All</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="unscheduled">Unscheduled</option>
-              </select>
-            </div>
-            <div>
-              <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Owner</div>
-              <select value={ownerFilter} onChange={e=>setOwnerFilter(e.target.value)} style={{width:'100%',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'0 10px',height:'36px',fontSize:'12px'}}>
-                <option value="">All</option>{profiles.map(p=><option key={p.id} value={p.id}>{p.full_name??p.username??'Unassigned'}</option>)}
-              </select>
-            </div>
-            <div>
-              <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Category</div>
-              <select value={productFilter} onChange={e=>setProductFilter(e.target.value)} style={{width:'100%',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'0 10px',height:'36px',fontSize:'12px'}}>
-                <option value="">All</option>{productCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>Market</div>
-              <select value={marketFilter} onChange={e=>setMarketFilter(e.target.value)} style={{width:'100%',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'0 10px',height:'36px',fontSize:'12px'}}>
-                <option value="">All</option>{markets.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
-          </div>
+          <PipelineBoardFilters
+            search={search}
+            onSearchChange={setSearch}
+            leadType={leadTypeFilter}
+            onLeadTypeChange={(value) => setLeadTypeFilter(normalizeLeadTypeParam(value))}
+            ownerId={ownerFilter}
+            onOwnerIdChange={setOwnerFilter}
+            owners={profiles.map((profile) => ({ id: profile.id, label: profile.full_name ?? profile.username ?? 'Unassigned' }))}
+            followUpTiming={followUpTiming}
+            onFollowUpTimingChange={setFollowUpTiming}
+            productId={productId}
+            onProductIdChange={setProductId}
+            products={products.map((product) => ({ id: product.id, label: product.name }))}
+            marketId={marketId}
+            onMarketIdChange={setMarketId}
+            markets={markets.map((market) => ({ id: market.id, label: market.name }))}
+          />
           {activeFilterCount>0&&<button type="button" onClick={resetFilters} style={{marginTop:'12px',padding:'6px 14px',borderRadius:'6px',background:'#f1f5f9',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',cursor:'pointer'}}>Reset all filters</button>}
         </div>
       )}

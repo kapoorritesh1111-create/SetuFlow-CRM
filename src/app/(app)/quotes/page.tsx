@@ -39,9 +39,9 @@ function getValidityLabel(item: QuoteWorkspaceItem) {
   const updatedAt = Date.parse(item.updatedAt);
   if (!Number.isFinite(updatedAt)) return { label: 'Validity unknown', rose: false, amber: false, emerald: false };
   const daysSinceUpdate = Math.floor((Date.now() - updatedAt) / (24*60*60*1000));
-  const daysLeft = Math.max(0, 30 - daysSinceUpdate);
-  if (daysLeft <= 3) return { label: `${daysLeft} days left!`, rose: true, amber: false, emerald: false };
-  if (daysLeft <= 7) return { label: `${daysLeft} days left`, rose: false, amber: true, emerald: false };
+  const daysLeft = Math.max(0, 7 - daysSinceUpdate);
+  if (daysLeft <= 1) return { label: `${daysLeft} days left!`, rose: true, amber: false, emerald: false };
+  if (daysLeft <= 4) return { label: `${daysLeft} days left`, rose: false, amber: true, emerald: false };
   return { label: `${daysLeft} days left`, rose: false, amber: false, emerald: false };
 }
 function filterItems(items: ReturnType<typeof buildQuotesPageViewModel>['items'], f: {q:string;status:string;company:string;from:string;to:string;mode:string}) {
