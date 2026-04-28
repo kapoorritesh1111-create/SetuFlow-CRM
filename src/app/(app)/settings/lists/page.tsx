@@ -5,7 +5,8 @@ import { getSettingsListsData } from '@/lib/queries/settings-lists';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { WorkspaceState } from '@/components/ui/workspace-state';
-import { ToolbarStat, WorkspaceHeader, WorkspaceToolbar } from '@/components/ui/workspace-toolbar';
+import { ToolbarStat, WorkspaceToolbar } from '@/components/ui/workspace-toolbar';
+import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';
 
 type MarketRow = { id: string; name: string; market_code: string | null; sort_order: number | null; is_active: boolean };
 type CountryRow = { id: string; name: string; iso2_code: string | null; iso3_code: string | null; phone_code: string | null; market_id: string | null; sort_order: number | null; is_active: boolean };
@@ -126,27 +127,31 @@ export default async function SettingsListsPage({
         ? 'Add next steps'
         : 'Edit one list';
 
+  const settingsGapItems: AdminGapItem[] = [
+    !markets.length ? { icon: '🌍', text: 'No markets configured', href: '/admin/markets' } : null,
+    !countries.length ? { icon: '🗺️', text: 'No countries configured', href: '/settings/lists?tab=countries' } : null,
+    !nextSteps.length ? { icon: '🧭', text: 'No next steps configured', href: '/admin/stages' } : null,
+    !productCategories.length ? { icon: '🏷️', text: 'No product categories configured', href: '/settings/lists?tab=product-categories' } : null,
+  ].filter(Boolean) as AdminGapItem[];
+
   return (
-    <div className="space-y-6">
-      <WorkspaceHeader
-        eyebrow="Settings"
+    <AdminSettingsShell active="categories" organizationName={workspace.organization.name} missingCount={settingsGapItems.length} sectionTitle="Reference lists" gapItems={settingsGapItems}>
+      <AdminPageHero
         title="Reference settings and defaults"
         description={`Where am I: settings lists. What is blocking me: ${blockerSummary} What do I do next: ${primarySetupLabel.toLowerCase()} and leave the rest alone.`}
         badge={workspace.organization.name}
-        actions={
+        cta={
           <>
             <a href={primarySetupHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">{primarySetupLabel}</a>
             <a href="/admin/organization" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open Admin</a>
           </>
         }
-        meta={
-          <>
-            <ToolbarStat label="Reference rows" value={String(totalLists)} />
-            <ToolbarStat label="Markets" value={String(markets.length)} tone={markets.length ? 'default' : 'warning'} />
-            <ToolbarStat label="Countries" value={String(countries.length)} tone={countries.length ? 'default' : 'warning'} />
-            <ToolbarStat label="Next steps" value={String(nextSteps.length)} tone={nextSteps.length ? 'default' : 'warning'} />
-          </>
-        }
+        stats={[
+          { label: 'Reference rows', value: totalLists },
+          { label: 'Markets', value: markets.length, tone: markets.length ? 'default' : 'warning' },
+          { label: 'Countries', value: countries.length, tone: countries.length ? 'default' : 'warning' },
+          { label: 'Next steps', value: nextSteps.length, tone: nextSteps.length ? 'default' : 'warning' },
+        ]}
       />
       <WorkspaceToolbar
         actionSlot={
@@ -175,6 +180,6 @@ export default async function SettingsListsPage({
         <ListCard title="Pipelines" items={pipelines.map((item) => `${item.name} · ${item.lead_type}`)} />
         <ListCard title="Pipeline stages" items={stages.map((item) => item.name)} />
       </div>
-    </div>
+    </AdminSettingsShell>
   );
 }

@@ -4,20 +4,24 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { WorkspaceHeader, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { cn } from '@/lib/utils';
 
-export type AdminNavKey = 'overview' | 'users' | 'markets' | 'stages' | 'pipelines' | 'trade-events' | 'security' | 'audit';
+export type AdminNavKey = 'overview' | 'users' | 'invitations' | 'markets' | 'categories' | 'stages' | 'pipelines' | 'trade-events' | 'product-management' | 'security' | 'audit' | 'ai-analytics';
 
 const nav = [
   { label: 'Governance', items: [
     { key: 'overview', href: '/admin/organization', icon: '🏢', label: 'Organization' },
     { key: 'users', href: '/admin/users', icon: '👥', label: 'Users' },
-    { key: 'security', href: '/admin/security', icon: '🛡️', label: 'Security', badge: 'New' },
+    { key: 'invitations', href: '/admin/invitations', icon: '✉️', label: 'Invitations' },
+    { key: 'security', href: '/admin/security', icon: '🛡️', label: 'Security / Roles', badge: 'New' },
     { key: 'audit', href: '/admin/audit', icon: '📜', label: 'Audit' },
+    { key: 'ai-analytics', href: '/admin/ai-analytics', icon: '✨', label: 'AI analytics' },
   ] },
   { label: 'Reference lists', items: [
-    { key: 'markets', href: '/admin/markets', icon: '🌍', label: 'Markets', badge: 'New' },
+    { key: 'markets', href: '/admin/markets', icon: '🌍', label: 'Markets / Countries', badge: 'New' },
+    { key: 'categories', href: '/settings/lists?tab=product-categories', icon: '🏷️', label: 'Product categories' },
     { key: 'stages', href: '/admin/stages', icon: '🧭', label: 'Stages / Next Steps', badge: 'New' },
     { key: 'pipelines', href: '/admin/pipelines', icon: '🧩', label: 'Pipelines', badge: 'New' },
-    { key: 'trade-events', href: '/admin/trade-events', icon: '🎪', label: 'Trade Events', badge: 'New' },
+    { key: 'trade-events', href: '/admin/trade-events', icon: '🎪', label: 'Trade Events / Capture', badge: 'New' },
+    { key: 'product-management', href: '/admin/product-management', icon: '📦', label: 'Product management' },
   ] },
 ] as const;
 
