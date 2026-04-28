@@ -697,27 +697,6 @@ export function PipelineBoard({
   return (
     <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
 
-      {/* TOPBAR */}
-      <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
-        <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
-          <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'5px 12px',borderRadius:'6px',background:'rgba(11,46,74,.06)',border:'1px solid rgba(11,46,74,.12)'}}>
-            <div style={{width:'22px',height:'22px',borderRadius:'4px',background:'linear-gradient(135deg,#0b2e4a,#0c7fff)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'9px',fontWeight:800,color:'white'}}>BO</div>
-            <div><div style={{fontSize:'10px',fontWeight:800,color:'#0b2e4a'}}>Blue Orbit Int&apos;l</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Flow CRM</div></div>
-          </div>
-          <div style={{width:'1px',height:'24px',background:'#e2e8f0'}}/>
-          <div><div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#0c7fff'}}>Pipeline / Risks</div><div style={{fontSize:'16px',fontWeight:700,color:'#1e293b',letterSpacing:'-.3px'}}>Kanban Board</div></div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-          <div style={{display:'flex',background:'#f1f5f9',borderRadius:'6px',padding:'3px',border:'1px solid #e2e8f0',gap:'2px'}}>
-            {([['all','All'],['buyers','Buyers'],['suppliers','Suppliers']] as Array<[string,string]>).map(([mode,label])=>(
-              <button key={mode} type="button" onClick={()=>{setWorkspaceMode(mode as any);setLeadTypeFilter(workspaceModeToLeadJourney(mode as any));}} style={{padding:'4px 12px',borderRadius:'6px',fontSize:'11px',fontWeight:600,cursor:'pointer',border:'none',background:workspaceMode===mode?'#0b2e4a':'transparent',color:workspaceMode===mode?'white':'#64748b',transition:'all .15s'}}>{label}</button>
-            ))}
-          </div>
-          <button type="button" style={{display:'flex',alignItems:'center',gap:'7px',padding:'7px 14px',borderRadius:'6px',background:'linear-gradient(135deg,#0b2e4a,#0c7fff 160%)',color:'white',border:'none',fontSize:'12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px rgba(12,127,255,.35)'}} onClick={()=>window.location.href=PRODUCT_ROUTES.app.leads+'?contact-exchange=1'}>Share my vCard</button>
-          <a href={PRODUCT_ROUTES.app.leads} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>＋ Quick Lead</a>
-        </div>
-      </header>
-
       {/* PAGE NAV TABS */}
       <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',alignItems:'center',gap:0}}>
         <div style={{padding:'12px 16px',fontSize:'12px',fontWeight:700,color:'#0b2e4a',cursor:'pointer',borderBottom:'2px solid #0c7fff',marginBottom:'-1px',display:'flex',alignItems:'center',gap:'6px',whiteSpace:'nowrap'}}>
@@ -791,30 +770,6 @@ export function PipelineBoard({
         </div>
       )}
 
-      {/* FILTERS PANEL */}
-      {showPipelineBoard&&filtersOpen&&(
-        <div style={{margin:'0 24px',padding:'16px',background:'white',borderRadius:'16px',border:'1px solid #e2e8f0',marginTop:'14px'}}>
-          <PipelineBoardFilters
-            search={search}
-            onSearchChange={setSearch}
-            leadType={leadTypeFilter}
-            onLeadTypeChange={(value) => setLeadTypeFilter(normalizeLeadTypeParam(value))}
-            ownerId={ownerFilter}
-            onOwnerIdChange={setOwnerFilter}
-            owners={profiles.map((profile) => ({ id: profile.id, label: profile.full_name ?? profile.username ?? 'Unassigned' }))}
-            followUpTiming={followUpTiming}
-            onFollowUpTimingChange={setFollowUpTiming}
-            productId={productId}
-            onProductIdChange={setProductId}
-            products={products.map((product) => ({ id: product.id, label: product.name }))}
-            marketId={marketId}
-            onMarketIdChange={setMarketId}
-            markets={markets.map((market) => ({ id: market.id, label: market.name }))}
-          />
-          {activeFilterCount>0&&<button type="button" onClick={resetFilters} style={{marginTop:'12px',padding:'6px 14px',borderRadius:'6px',background:'#f1f5f9',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',cursor:'pointer'}}>Reset all filters</button>}
-        </div>
-      )}
-
       {/* KANBAN BOARD */}
       {showPipelineBoard&&(
         <>
@@ -823,7 +778,25 @@ export function PipelineBoard({
           </div>
           <div style={{padding:'14px 24px 24px',overflowX:'auto',display:'flex',gap:'12px',minHeight:0,WebkitOverflowScrolling:'touch'} as React.CSSProperties}>
             {visualStageGroups.map(group=>(
-              <div key={group.stage.id} style={{flexShrink:0,width:'256px',display:'flex',flexDirection:'column',gap:'8px'}}>
+              <div
+                key={group.stage.id}
+                style={{flexShrink:0,width:'256px',display:'flex',flexDirection:'column',gap:'8px'}}
+                onDragOver={(event) => { event.preventDefault(); if (draggedLeadId) setDragOverStageId(group.stage.id); }}
+                onDragLeave={() => { if (dragOverStageId === group.stage.id) setDragOverStageId(null); }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (!draggedLeadId) return;
+                  const draggedLead = localLeads.find((lead) => lead.id === draggedLeadId);
+                  if (!draggedLead || draggedLead.stage_id === group.stage.id) {
+                    setDraggedLeadId(null);
+                    setDragOverStageId(null);
+                    return;
+                  }
+                  handleMove(draggedLeadId, group.stage.id);
+                  setDraggedLeadId(null);
+                  setDragOverStageId(null);
+                }}
+              >
                 {/* Lane header */}
                 <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'12px 14px',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
                   <div style={{height:'3px',borderRadius:'99px',marginBottom:'10px',background:getStageAccent(group.stage.name)}}/>
@@ -851,7 +824,14 @@ export function PipelineBoard({
                     const cardBorderLeft = isBlocked?'3px solid #f43f5e':followUpState==='overdue'?'3px solid #f59e0b':'3px solid #10b981';
                     const commercialReadiness = getLeadPricingReadiness(lead.id);
                     return (
-                      <div key={lead.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'16px',padding:'12px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer',transition:'box-shadow .15s,transform .15s',borderLeft:cardBorderLeft}} onClick={()=>navigateToLeadCommandCenter(router, buildLeadCommandCenterHref(lead.id))}>
+                      <div
+                        key={lead.id}
+                        draggable
+                        onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; setDraggedLeadId(lead.id); }}
+                        onDragEnd={() => { setDraggedLeadId(null); setDragOverStageId(null); }}
+                        style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'16px',padding:'12px',boxShadow:draggedLeadId===lead.id?'0 12px 24px rgba(15,23,42,.16)':'0 1px 3px rgba(15,23,42,.06)',cursor:'grab',transition:'box-shadow .15s,transform .15s',borderLeft:cardBorderLeft,opacity:draggedLeadId===lead.id ? .8 : 1}}
+                        onClick={()=>navigateToLeadCommandCenter(router, buildLeadCommandCenterHref(lead.id))}
+                      >
                         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'6px',marginBottom:'8px'}}>
                           <div style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',flexShrink:0}}>
                             {lead.country?'🌍':'🏢'}

@@ -2163,11 +2163,11 @@ function InlineQuoteBuilder({
   const variantNameMap = React.useMemo(() => new Map(variants.map((variant) => [variant.id, variant.name])), [variants]);
   const marketNameMap = React.useMemo(() => new Map(markets.map((market) => [market.id, market.name])), [markets]);
 
-  const quoteItems = latestQuote?.lineItems ?? [];
-  const rfqItems = rfqs.flatMap((rfq) => rfq.lineItems ?? []);
-  const sourceItems = quoteItems.length ? quoteItems : rfqItems;
+  const quoteItems = React.useMemo(() => latestQuote?.lineItems ?? [], [latestQuote?.lineItems]);
+  const rfqItems = React.useMemo(() => rfqs.flatMap((rfq) => rfq.lineItems ?? []), [rfqs]);
+  const sourceItems = React.useMemo(() => quoteItems.length ? quoteItems : rfqItems, [quoteItems, rfqItems]);
 
-  const displayLines = React.useMemo<DisplayLine[]>(() => {
+  const baseDisplayLines = React.useMemo<DisplayLine[]>(() => {
     if (sourceItems.length) {
       return sourceItems.map((item) => {
         const qty = Number(item.quantity ?? 1) || 1;
@@ -2239,8 +2239,32 @@ function InlineQuoteBuilder({
     });
   }, [lead.deal_currency, latestQuote?.currency, marketNameMap, prices, pricingRules, productNameMap, quoteItems.length, selectedMarketIds, selectedMarketNames, selectedProductIds, selectedProductNames, sourceItems, variantNameMap, variants]);
 
+  const [editableLines, setEditableLines] = React.useState<DisplayLine[]>(baseDisplayLines);
+  const [termsCurrency, setTermsCurrency] = React.useState(latestQuote?.currency ?? baseDisplayLines.find((item) => item.currency)?.currency ?? lead.deal_currency ?? 'USD');
+  const [termsIncoterm, setTermsIncoterm] = React.useState('FOB');
+  const [paymentTerms, setPaymentTerms] = React.useState('30% advance, 70% on BL');
+  const [quoteValidityDays, setQuoteValidityDays] = React.useState('30');
+  const [portOfLoading, setPortOfLoading] = React.useState('');
+  const [deliveryNotes, setDeliveryNotes] = React.useState('');
+
+  React.useEffect(() => {
+    setEditableLines(baseDisplayLines);
+    setTermsCurrency(latestQuote?.currency ?? baseDisplayLines.find((item) => item.currency)?.currency ?? lead.deal_currency ?? 'USD');
+  }, [baseDisplayLines, latestQuote?.currency, lead.deal_currency]);
+
+  const updateEditableLine = (lineId: string, field: 'quantity' | 'unitPrice', value: string) => {
+    const normalized = Number(value.replace(/,/g, ''));
+    setEditableLines((current) => current.map((line) => {
+      if (line.id !== lineId) return line;
+      const nextQuantity = field === 'quantity' ? (Number.isFinite(normalized) && normalized > 0 ? normalized : 0) : line.quantity;
+      const nextUnitPrice = field === 'unitPrice' ? (Number.isFinite(normalized) ? normalized : 0) : line.unitPrice;
+      return { ...line, quantity: nextQuantity, unitPrice: nextUnitPrice, total: nextQuantity * (nextUnitPrice ?? 0), priceStatus: nextUnitPrice && nextUnitPrice > 0 ? 'priced' : 'missing' };
+    }));
+  };
+
+  const displayLines = editableLines;
   const subtotal = displayLines.reduce((sum, item) => sum + item.total, 0);
-  const currency = latestQuote?.currency ?? displayLines.find((item) => item.currency)?.currency ?? lead.deal_currency ?? 'USD';
+  const currency = termsCurrency || displayLines.find((item) => item.currency)?.currency || lead.deal_currency || 'USD';
   const blockerCount = readiness?.blockerCount ?? complianceItems.length;
   const pricingReady = displayLines.length > 0 && displayLines.every((item) => item.priceStatus === 'priced');
   const hasQuoteDraft = Boolean(latestQuote);
@@ -2369,8 +2393,8 @@ function InlineQuoteBuilder({
                       return (
                         <tr key={item.id} className="border-t border-[#f1f5f9] hover:bg-[#f8fafc]">
                           <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.productLabel}</div><div className="mt-1 text-[10px] text-[#64748b]">{item.variantLabel ? `${item.variantLabel} · ` : ''}{item.source === 'coverage' ? 'coverage/catalog fallback' : item.source === 'rfq' ? 'RFQ line' : 'quote draft line'}</div>{item.note ? <div className="mt-1 text-[10px] text-[#94a3b8]">{item.note}</div> : null}</td>
-                          <td className="px-[10px] py-[10px]"><input title="Quantity is editable in the governed saved quote. This preview seeds MOQ/catalog quantity before opening the draft." className="w-[68px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-center text-[12px] font-semibold text-[#0f172a] outline-none" defaultValue={qty} /></td>
-                          <td className="px-[10px] py-[10px]">{price == null ? <span className="rounded-full bg-[#fff1f2] px-2 py-1 text-[10px] font-bold text-[#be123c]">Price missing</span> : <input title="Price is editable in the governed saved quote. This preview shows the catalog baseline." className="w-[90px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px_7px] text-right text-[12px] font-bold text-[#0f172a] outline-none" defaultValue={price.toLocaleString()} />}</td>
+                          <td className="px-[10px] py-[10px]"><input title="Quantity updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[68px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-center text-[12px] font-semibold text-[#0f172a] outline-none" value={qty} onChange={(event) => updateEditableLine(item.id, 'quantity', event.target.value)} /></td>
+                          <td className="px-[10px] py-[10px]"><input title="Unit price updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[90px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px_7px] text-right text-[12px] font-bold text-[#0f172a] outline-none" value={price ?? ''} onChange={(event) => updateEditableLine(item.id, 'unitPrice', event.target.value)} placeholder="Price" /></td>
                           <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{item.currency} {item.total.toLocaleString()}</td>
                         </tr>
                       );
@@ -2393,27 +2417,34 @@ function InlineQuoteBuilder({
               </div>
             ) : builderStep === 2 ? (
               <div className="grid grid-cols-2 gap-[10px]">
-                {[
-                  { label: 'Currency', val: currency, type: 'select', opts: ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'JPY'] },
-                  { label: 'Incoterm', val: 'FOB', type: 'select', opts: ['FOB', 'CIF', 'EXW', 'DDP', 'CFR'] },
-                  { label: 'Payment terms', val: '30% advance, 70% on BL', type: 'text' },
-                  { label: 'Quote validity (days)', val: '30', type: 'text' },
-                  { label: 'Port of loading', val: '', type: 'text', placeholder: 'e.g. JNPT Mumbai' },
-                  { label: 'Delivery notes', val: '', type: 'textarea', placeholder: 'Packaging, labelling, or shipping notes…' },
-                ].map((field) => (
-                  <div key={field.label} className={`flex flex-col gap-[4px] ${field.type === 'textarea' ? 'col-span-2' : ''}`}>
-                    <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">{field.label}</label>
-                    {field.type === 'select' ? (
-                      <select disabled title="Terms persist through the saved quote workflow. Use Create/open draft preview to edit governed terms." className="w-full rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] font-semibold text-[#64748b] outline-none" value={field.val}>
-                        {field.opts?.map((o) => <option key={o}>{o}</option>)}
-                      </select>
-                    ) : field.type === 'textarea' ? (
-                      <textarea readOnly title="Terms persist through the saved quote workflow. Use Create/open draft preview to edit governed terms." className="w-full resize-y rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] text-[#64748b] outline-none" value={field.val} placeholder={field.placeholder} style={{ minHeight: '68px' }} />
-                    ) : (
-                      <input readOnly title="Terms persist through the saved quote workflow. Use Create/open draft preview to edit governed terms." className="w-full rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-[8px_10px] text-[12px] font-semibold text-[#64748b] outline-none" value={field.val} placeholder={field.placeholder ?? ''} />
-                    )}
-                  </div>
-                ))}
+                <div className="flex flex-col gap-[4px]">
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Currency</label>
+                  <select className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={termsCurrency} onChange={(event) => setTermsCurrency(event.target.value)}>
+                    {['USD', 'EUR', 'GBP', 'INR', 'CAD', 'JPY'].map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-[4px]">
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Incoterm</label>
+                  <select className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={termsIncoterm} onChange={(event) => setTermsIncoterm(event.target.value)}>
+                    {['FOB', 'CIF', 'EXW', 'DDP', 'CFR'].map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-[4px]">
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Payment terms</label>
+                  <input className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={paymentTerms} onChange={(event) => setPaymentTerms(event.target.value)} />
+                </div>
+                <div className="flex flex-col gap-[4px]">
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Quote validity (days)</label>
+                  <input className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={quoteValidityDays} onChange={(event) => setQuoteValidityDays(event.target.value)} />
+                </div>
+                <div className="flex flex-col gap-[4px]">
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Port of loading</label>
+                  <input className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={portOfLoading} onChange={(event) => setPortOfLoading(event.target.value)} placeholder="e.g. JNPT Mumbai" />
+                </div>
+                <div className="col-span-2 flex flex-col gap-[4px]">
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Delivery notes</label>
+                  <textarea className="w-full resize-y rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] text-[#0f172a] outline-none" value={deliveryNotes} onChange={(event) => setDeliveryNotes(event.target.value)} placeholder="Packaging, labelling, or shipping notes..." style={{ minHeight: '68px' }} />
+                </div>
               </div>
             ) : builderStep === 3 ? (
               <div className="grid grid-cols-2 gap-[8px]">
