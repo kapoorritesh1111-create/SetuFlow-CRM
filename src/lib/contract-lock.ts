@@ -1,3 +1,5 @@
+import { getPricingBasisLabel as getCanonicalPricingBasisLabel, normalizePricingBasis, type QuotePricingBasis } from '@/lib/pricing-basis-contract';
+
 export type ContractCommercialSnapshot = {
   quoteId?: string | null;
   acceptedVersionId?: string | null;
@@ -9,7 +11,7 @@ export type ContractCommercialSnapshot = {
   commercialHandoffAt?: string | null;
   quoteStatus?: string | null;
   quoteCurrency?: string | null;
-  pricingBasis?: string | null;
+  pricingBasis?: QuotePricingBasis | null;
   pricingBasisLabel?: string | null;
   approvalRequired?: boolean;
   approvalState?: string | null;
@@ -67,8 +69,8 @@ export function parseContractCommercialSnapshot(value: unknown): ContractCommerc
     commercialHandoffAt: maybeString(record.commercial_handoff_at),
     quoteStatus: maybeString(record.quote_status),
     quoteCurrency: maybeString(record.quote_currency),
-    pricingBasis: maybeString(record.pricing_basis),
-    pricingBasisLabel: maybeString(record.pricing_basis_label) ?? maybeString(record.pricing_basis),
+    pricingBasis: record.pricing_basis == null ? null : normalizePricingBasis(record.pricing_basis),
+    pricingBasisLabel: maybeString(record.pricing_basis_label) ?? getCanonicalPricingBasisLabel(record.pricing_basis),
     approvalRequired: typeof record.approval_required === 'boolean' ? record.approval_required : false,
     approvalState: maybeString(record.approval_state),
     approvalLabel: maybeString(record.approval_label) ?? maybeString(record.approval_state),
@@ -119,19 +121,8 @@ export function getCommercialLockStateLabel(lockState: string | null | undefined
   }
 }
 
-export function getPricingBasisLabel(pricingBasis: string | null | undefined) {
-  switch (String(pricingBasis ?? '').toLowerCase()) {
-    case 'ex_factory':
-      return 'Ex-Factory';
-    case 'fob':
-      return 'FOB';
-    case 'cif':
-      return 'CIF';
-    case 'bulk_chips':
-      return 'Bulk chips';
-    default:
-      return pricingBasis ?? 'Unspecified';
-  }
+export function getPricingBasisLabel(pricingBasis: unknown) {
+  return pricingBasis == null ? 'Unspecified' : getCanonicalPricingBasisLabel(pricingBasis);
 }
 
 export function getApprovalStateLabel(approvalState: string | null | undefined) {

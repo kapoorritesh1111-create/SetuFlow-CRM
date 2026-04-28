@@ -12,11 +12,14 @@ export type TradeReadinessSignal = {
 };
 
 export type QuoteTradeWorkflow = {
+  journey: TradeJourney;
+  pricingBasis: QuotePricingBasis | null;
   incotermLabel: 'EXW' | 'FOB' | 'CIF' | 'Bulk/Kg' | 'Not set';
   handoffLabel: string;
 };
 
 export type OrderTradeWorkflow = {
+  journey: TradeJourney;
   journeyLabel: string;
   freightReadiness: TradeReadinessSignal;
   complianceReadiness: TradeReadinessSignal;

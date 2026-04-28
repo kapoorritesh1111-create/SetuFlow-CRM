@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
-import { normalizePricingBasis } from '@/lib/pricing-basis-contract'
+import { normalizePricingBasis, type QuotePricingBasis } from '@/lib/pricing-basis-contract'
 import { openOrCreateLeadQuoteDraft } from '@/features/leads/server/actions'
 import { moveLeadToStage } from '@/features/pipeline/server/actions'
 import type { LeadQualificationStatus } from '@/lib/lead-workflow'
@@ -96,7 +96,7 @@ function buildLiveWorkflowCards(snapshot: LeadProfileSnapshot, input: {
   marketCount: number
   quoteCount: number
   quoteNumber?: string | null
-  pricingBasis?: string | null
+  pricingBasis?: QuotePricingBasis | null
   nextFollowUpAt?: string | null
   overdueCount: number
   dueSoonCount: number
