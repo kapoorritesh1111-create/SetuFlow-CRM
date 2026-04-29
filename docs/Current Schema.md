@@ -1148,6 +1148,7 @@ CREATE TABLE public.quotes (
   import_run_id uuid,
   source_file_name text,
   source_hash text,
+  sent_at timestamp with time zone,
   CONSTRAINT quotes_pkey PRIMARY KEY (id),
   CONSTRAINT quotes_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
   CONSTRAINT quotes_rfq_id_fkey FOREIGN KEY (rfq_id) REFERENCES public.rfqs(id),
