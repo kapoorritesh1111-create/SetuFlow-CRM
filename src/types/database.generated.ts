@@ -4134,6 +4134,7 @@ export type Database = {
           pricing_basis: string | null
           quote_number: string | null
           rfq_id: string | null
+          sent_at: string | null
           source_file_name: string | null
           source_hash: string | null
           source_type: string
@@ -4166,6 +4167,7 @@ export type Database = {
           pricing_basis?: string | null
           quote_number?: string | null
           rfq_id?: string | null
+          sent_at?: string | null
           source_file_name?: string | null
           source_hash?: string | null
           source_type?: string
@@ -4198,6 +4200,7 @@ export type Database = {
           pricing_basis?: string | null
           quote_number?: string | null
           rfq_id?: string | null
+          sent_at?: string | null
           source_file_name?: string | null
           source_hash?: string | null
           source_type?: string

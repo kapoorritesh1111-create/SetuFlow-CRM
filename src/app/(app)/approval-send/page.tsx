@@ -42,7 +42,7 @@ async function confirmAndSendQuote(formData: FormData) {
   const sentAt = new Date().toISOString();
   await typedSupabase
     .from('quotes')
-    .update({ status: 'sent', updated_at: sentAt })
+    .update({ status: 'sent', sent_at: sentAt, updated_at: sentAt })
     .eq('organization_id', workspace.organization.id)
     .eq('id', quoteId);
 
@@ -146,7 +146,7 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
 
   const version = (versions ?? []).find((entry) => entry.id === quote.accepted_version_id || entry.id === quote.current_version_id) ?? versions?.[0] ?? null;
   const { data: lines } = version?.id
-    ? await supabase
+    ? await typedSupabase
       .from('quote_version_line_items')
       .select('id, final_case_price, final_kg_price, final_unit_price, display_currency, is_overridden')
       .eq('quote_version_id', version.id)
