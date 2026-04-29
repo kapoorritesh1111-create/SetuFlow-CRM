@@ -9,7 +9,7 @@ import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
 import { SavedViewsBar, ToolbarActionButton, ToolbarSearchInput, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, recordLeadQuoteApprovalRequest } from '@/features/leads/server/actions';
+import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, saveLeadQuoteDraftPreview, recordLeadQuoteApprovalRequest } from '@/features/leads/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
 import { JOURNEY_COPY, isPipelineInJourney, type LeadJourney } from '@/lib/journey';
@@ -89,6 +89,7 @@ type FormState = { error?: string; success?: string };
 type SavedView = 'all' | 'mine' | 'overdue' | 'today' | 'trade-event' | 'buyers' | 'suppliers';
 type SortMode = 'follow-up' | 'created' | 'company' | 'health';
 type DrawerMode = 'quick' | 'full';
+type QuotePreviewSavePayload = { currency: string; lines: Array<{ id?: string; productId: string | null; productVariantId?: string | null; quantity: number; unitPrice: number | null; currency: string; catalogPriceAmount?: number | null; catalogPriceCurrency?: string | null; notes?: string | null; source?: string | null }> };
 type LeadOpenStep = 'basics' | 'workflow' | 'coverage' | 'quotes';
 
 type SignalTone = 'slate' | 'blue' | 'emerald' | 'amber' | 'rose' | 'violet';
@@ -928,11 +929,12 @@ export function LeadsWorkspace({
     });
   };
 
-  const handleInlineOpenOrCreateQuote = (leadId: string) => {
+  const handleInlineOpenOrCreateQuote = (leadId: string, preview?: QuotePreviewSavePayload) => {
     openLeadInlineQuoteBuilder(leadId);
     setInlineActionState({});
     startInlineActionTransition(() => {
-      void openOrCreateLeadQuoteDraft(leadId).then((result) => {
+      const action = preview ? saveLeadQuoteDraftPreview({ leadId, ...preview }) : openOrCreateLeadQuoteDraft(leadId);
+      void action.then((result) => {
         setInlineActionState(result ?? {});
         if (result?.success) router.refresh();
       });
@@ -1500,7 +1502,7 @@ type InlineLeadWorkspaceProps = {
   onScheduleFollowUp: (leadId: string, scheduledAt: string) => void;
   onCompleteFollowUp: (leadId: string, followUpId?: string | null) => void;
   onMoveToStage: (leadId: string, stageId: string) => void;
-  onOpenOrCreateQuote: (leadId: string) => void;
+  onOpenOrCreateQuote: (leadId: string, preview?: QuotePreviewSavePayload) => void;
   onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
   onBackToList: () => void;
   onOpenCommandCenter: () => void;
@@ -1683,7 +1685,7 @@ function InlineCommandCenter({
   onCompleteFollowUp: (leadId: string, followUpId?: string | null) => void;
   onMoveToStage: (leadId: string, stageId: string) => void;
   onOpenQuoteBuilder: () => void;
-  onOpenOrCreateQuote: (leadId: string) => void;
+  onOpenOrCreateQuote: (leadId: string, preview?: QuotePreviewSavePayload) => void;
   onBackToList: () => void;
 }) {
   const [activePillar, setActivePillar] = React.useState<'follow_up' | 'qualification' | 'coverage' | 'commercial' | null>(null);
@@ -2137,7 +2139,7 @@ function InlineQuoteBuilder({
   stableNowIso: string;
   inlineActionState: FormState;
   isInlineActionPending: boolean;
-  onOpenOrCreateQuote: (leadId: string) => void;
+  onOpenOrCreateQuote: (leadId: string, preview?: QuotePreviewSavePayload) => void;
   onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
   onOpenCommandCenter: () => void;
 }) {
@@ -2149,7 +2151,10 @@ function InlineQuoteBuilder({
     id: string;
     productId: string | null;
     productLabel: string;
+    productVariantId?: string | null;
     variantLabel?: string | null;
+    catalogPriceAmount?: number | null;
+    catalogPriceCurrency?: string | null;
     quantity: number;
     unitPrice: number | null;
     currency: string;
@@ -2182,7 +2187,10 @@ function InlineQuoteBuilder({
           id: item.id,
           productId: item.product_id ?? null,
           productLabel: (item.product_id ? productNameMap.get(item.product_id) : null) ?? item.product_id ?? 'Catalog line',
+          productVariantId: item.product_variant_id ?? null,
           variantLabel: item.product_variant_id ? variantNameMap.get(item.product_variant_id) ?? item.product_variant_id : null,
+          catalogPriceAmount: item.catalog_price_amount ?? fallbackPrice?.price ?? rulePrice ?? null,
+          catalogPriceCurrency: item.catalog_price_currency ?? fallbackPrice?.currency ?? lineCurrency,
           quantity: qty,
           unitPrice,
           currency: lineCurrency,
@@ -2227,7 +2235,10 @@ function InlineQuoteBuilder({
         id: `coverage-${productId}`,
         productId,
         productLabel: productLabel || 'Mapped product',
+        productVariantId: selectedPrice?.product_variant_id ?? productVariants[0]?.id ?? null,
         variantLabel,
+        catalogPriceAmount: unitPrice,
+        catalogPriceCurrency: String(lineCurrency ?? 'USD'),
         quantity: 1,
         unitPrice,
         currency: String(lineCurrency ?? 'USD'),
@@ -2272,6 +2283,26 @@ function InlineQuoteBuilder({
   const approvalReady = hasQuoteDraft && displayLines.length > 0;
   const canSendQuote = sendReady;
 
+  const buildQuotePreviewSavePayload = React.useCallback((): QuotePreviewSavePayload => ({
+    currency,
+    lines: displayLines.map((line) => ({
+      id: line.source === 'quote' ? line.id : undefined,
+      productId: line.productId,
+      productVariantId: line.productVariantId ?? null,
+      quantity: Number(line.quantity) || 0,
+      unitPrice: line.unitPrice == null ? null : Number(line.unitPrice),
+      currency: currency || line.currency || 'USD',
+      catalogPriceAmount: line.catalogPriceAmount ?? line.unitPrice ?? null,
+      catalogPriceCurrency: line.catalogPriceCurrency ?? line.currency ?? currency ?? 'USD',
+      notes: line.note ?? null,
+      source: line.source,
+    })),
+  }), [currency, displayLines]);
+
+  const saveQuotePreview = React.useCallback(() => {
+    onOpenOrCreateQuote(lead.id, buildQuotePreviewSavePayload());
+  }, [buildQuotePreviewSavePayload, lead.id, onOpenOrCreateQuote]);
+
   return (
     <div className="flex flex-col gap-3 px-6 py-4 pb-20" style={{ background: '#f0f4f8' }}>
 
@@ -2297,7 +2328,7 @@ function InlineQuoteBuilder({
           <div className="mt-[2px] text-[9px] uppercase tracking-[.12em] text-white/50">Draft quote total</div>
           <div className="mt-[10px] flex justify-end gap-[6px]">
             <button type="button" onClick={onOpenCommandCenter} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white" style={{ background: 'rgba(255,255,255,.12)' }}>← Back to CC</button>
-            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white disabled:opacity-60" style={{ background: 'rgba(255,255,255,.12)' }}>Create/open draft preview</button>
+            <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white disabled:opacity-60" style={{ background: 'rgba(255,255,255,.12)' }}>Create/open draft preview</button>
           </div>
         </div>
       </div>
@@ -2352,7 +2383,7 @@ function InlineQuoteBuilder({
                 {builderStep === 0 ? 'Product & buyer lock' : builderStep === 1 ? 'Build pricing lines' : builderStep === 2 ? 'Set commercial terms' : builderStep === 3 ? 'Review quote package' : 'Approve and send safely'}
               </div>
             </div>
-            <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
+            <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
           </div>
           <div className="border-b border-[#e2e8f0] bg-[#f8fafc] px-[18px] py-[10px] text-[11px] leading-[1.6] text-[#475569]">
             This inline view is a quote preview and readiness handoff. Use <strong>Create/open draft preview</strong> to create or refresh the governed draft. Detailed quantity, pricing, terms, PDF, approval, and send actions remain in the saved quote workflow.
@@ -2501,7 +2532,7 @@ function InlineQuoteBuilder({
                   <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none disabled:cursor-not-allowed disabled:opacity-60">
                     Request approval
                   </button>
-                  <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569] disabled:opacity-60">
+                  <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569] disabled:opacity-60">
                     Create/open draft preview
                   </button>
                 </div>
@@ -2548,11 +2579,11 @@ function InlineQuoteBuilder({
       {/* Sticky bottom bar */}
       <div className="sticky bottom-3 z-10 rounded-[24px] border border-[#e2e8f0] bg-white/95 p-3 shadow-xl backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setBuilderStep((s) => Math.min(s + 1, steps.length - 1))} disabled={builderStep >= steps.length - 1}
+          <button type="button" onClick={() => { saveQuotePreview(); setBuilderStep((s) => Math.min(s + 1, steps.length - 1)); }} disabled={builderStep >= steps.length - 1}
             className="rounded-[22px] bg-[#0b2e4a] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" title={builderStep >= steps.length - 1 ? 'Send is disabled in the inline builder until the governed quote send workflow is connected.' : undefined}>
             {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : canSendQuote ? 'Send ready in quote workflow' : 'Review blockers'}
           </button>
-          <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
+          <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
           <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:cursor-not-allowed disabled:opacity-60">Request approval</button>
           <span className="ml-auto rounded-full bg-[#f1f5f9] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#64748b]">
             Command Center · Quote Preview · {steps[builderStep]}

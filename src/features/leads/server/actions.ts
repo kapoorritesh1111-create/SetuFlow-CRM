@@ -1208,6 +1208,126 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
   };
 }
 
+type QuotePreviewSaveInput = {
+  leadId: string;
+  currency?: string | null;
+  lines?: Array<{
+    id?: string | null;
+    productId?: string | null;
+    productVariantId?: string | null;
+    quantity?: number | null;
+    unitPrice?: number | null;
+    currency?: string | null;
+    catalogPriceAmount?: number | null;
+    catalogPriceCurrency?: string | null;
+    notes?: string | null;
+    source?: string | null;
+  }>;
+};
+
+export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): Promise<QuoteDraftActionState & { quoteId?: string }> {
+  const opened = await openOrCreateLeadQuoteDraft(input.leadId);
+  if (opened.error || !opened.quoteId) return opened;
+
+  const workspace = await requireWorkspace();
+  const currentUser = workspace.user;
+  const organization = workspace.organization;
+  if (!currentUser || !organization) return { error: 'Not authenticated.' };
+
+  const supabase = await createClient();
+  const db = supabase as any;
+  const nowIso = new Date().toISOString();
+  const currency = normalizeQuoteDisplayCurrency(input.currency ?? opened.quote?.currency ?? 'USD');
+  const previewLines = (input.lines ?? [])
+    .filter((line) => line.productId || line.notes)
+    .map((line) => {
+      const quantity = Number(line.quantity ?? 0);
+      const unitPrice = line.unitPrice == null ? null : Number(line.unitPrice);
+      const catalogPriceAmount = line.catalogPriceAmount == null ? unitPrice : Number(line.catalogPriceAmount);
+      const lineCurrency = normalizeQuoteDisplayCurrency(line.currency ?? currency);
+      const catalogCurrency = normalizeQuoteDisplayCurrency(line.catalogPriceCurrency ?? lineCurrency);
+      const isPriceOverridden = catalogPriceAmount != null && unitPrice != null && Number(unitPrice) !== Number(catalogPriceAmount);
+      return {
+        quote_id: opened.quoteId,
+        product_id: line.productId || null,
+        product_variant_id: line.productVariantId || null,
+        catalog_price_id: null,
+        catalog_price_amount: Number.isFinite(catalogPriceAmount as number) ? catalogPriceAmount : null,
+        catalog_price_currency: catalogCurrency,
+        quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+        unit_price: unitPrice != null && Number.isFinite(unitPrice) ? unitPrice : null,
+        currency: lineCurrency,
+        is_price_overridden: isPriceOverridden,
+        override_reason: isPriceOverridden ? 'Edited in Leads quote preview' : null,
+        overridden_by: isPriceOverridden ? currentUser.id : null,
+        overridden_at: isPriceOverridden ? nowIso : null,
+        notes: line.notes ?? null,
+      };
+    });
+
+  const { data: quote, error: quoteError } = await db
+    .from('quotes')
+    .select('id, lead_id, current_version_id')
+    .eq('organization_id', organization.id)
+    .eq('id', opened.quoteId)
+    .maybeSingle();
+  if (quoteError) return { error: quoteError.message };
+  if (!quote?.id) return { error: 'Quote not found in the active workspace.' };
+
+  const { error: quoteUpdateError } = await db
+    .from('quotes')
+    .update({ currency, display_currency: currency, updated_at: nowIso })
+    .eq('organization_id', organization.id)
+    .eq('id', quote.id);
+  if (quoteUpdateError) return { error: quoteUpdateError.message };
+
+  const { error: deleteLineError } = await db.from('quote_line_items').delete().eq('quote_id', quote.id);
+  if (deleteLineError) return { error: deleteLineError.message };
+  if (previewLines.length) {
+    const { error: insertLineError } = await db.from('quote_line_items').insert(previewLines);
+    if (insertLineError) return { error: insertLineError.message };
+  }
+
+  if (quote.current_version_id) {
+    const { error: deleteVersionLineError } = await db.from('quote_version_line_items').delete().eq('quote_version_id', quote.current_version_id);
+    if (deleteVersionLineError) return { error: deleteVersionLineError.message };
+    const versionLines = previewLines.map((line) => ({
+      quote_version_id: quote.current_version_id,
+      product_id: line.product_id,
+      product_variant_id: line.product_variant_id,
+      moq: line.quantity,
+      final_unit_price: line.unit_price,
+      display_currency: line.currency,
+      line_notes: line.notes ?? 'Saved from Leads quote preview',
+    }));
+    if (versionLines.length) {
+      const { error: insertVersionLineError } = await db.from('quote_version_line_items').insert(versionLines);
+      if (insertVersionLineError) return { error: insertVersionLineError.message };
+    }
+  }
+
+  const { error: communicationError } = await insertCommunication(db, {
+    organization_id: organization.id,
+    lead_id: input.leadId,
+    related_entity: 'quote',
+    related_id: quote.id,
+    communication_type: 'system_note',
+    direction: 'internal',
+    channel: 'system',
+    subject: 'Quote preview saved',
+    body: `Quote preview saved with ${previewLines.length} line${previewLines.length === 1 ? '' : 's'} and ${currency} currency.`,
+    summary: 'Quote preview saved',
+    created_by: currentUser.id,
+    metadata: { source: 'saveLeadQuoteDraftPreview' },
+  });
+  if (communicationError?.message) return { error: communicationError.message };
+
+  revalidatePath('/leads');
+  revalidatePath('/quotes');
+  revalidateLeadSurfaces(input.leadId);
+  return { success: 'Quote preview saved to the active draft.', quoteId: quote.id };
+}
+
 export async function saveLead(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
   if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
 
