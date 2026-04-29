@@ -174,7 +174,8 @@ export async function saveTradeEventCaptureDefaults(formData: FormData) {
   const sourceLabel = formData.get('source_label') as string;
   const quickLeadTitle = formData.get('quick_lead_title') as string;
   if (!eventId) return;
-  await supabase.from('trade_events')
+  const db = supabase as any;
+  await db.from('trade_events')
     .update({ capture_defaults: { source_label: sourceLabel, quick_lead_title: quickLeadTitle } })
     .eq('id', eventId);
   revalidatePath('/admin/trade-events');
