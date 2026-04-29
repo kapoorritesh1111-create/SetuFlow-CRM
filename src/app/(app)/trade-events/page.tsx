@@ -9,6 +9,20 @@ import { createClient } from '@/lib/supabase/server';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
+type CaptureDefaultsRow = {
+  id: string;
+  capture_defaults: { source_label?: string | null; quick_lead_title?: string | null } | null;
+};
+
+type TradeEventsCaptureDefaultsDb = {
+  from: (table: 'trade_events') => {
+    select: (columns: string) => {
+      eq: (column: 'organization_id', value: string) => Promise<{ data: CaptureDefaultsRow[] | null }>;
+    };
+  };
+};
+
+
 export default async function TradeEventsPage({ searchParams }: { searchParams?: { notice?: string | string[] } }) {
   const workspace = await requireWorkspace();
 
@@ -26,12 +40,13 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
 
   const data = await getTradeEventsData(workspace.organization.id);
   const supabase = await createClient();
-  const { data: captureDefaultRows } = await (supabase as any)
+  const captureDefaultsDb = supabase as unknown as TradeEventsCaptureDefaultsDb;
+  const { data: captureDefaultRows } = await captureDefaultsDb
     .from('trade_events')
     .select('id, capture_defaults')
     .eq('organization_id', workspace.organization.id);
   const captureDefaultsByEventId = new Map<string, { source_label?: string | null; quick_lead_title?: string | null } | null>(
-    (captureDefaultRows ?? []).map((row: any) => [row.id, row.capture_defaults ?? null]),
+    (captureDefaultRows ?? []).map((row) => [row.id, row.capture_defaults ?? null]),
   );
   const noticeKey = Array.isArray(searchParams?.notice) ? searchParams.notice[0] ?? null : searchParams?.notice ?? null;
   const entryCountByEvent = new Map<string, number>();

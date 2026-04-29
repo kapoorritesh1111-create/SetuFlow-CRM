@@ -9,6 +9,11 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 
 type ActionState = { error?: string; success?: string };
 
+type TradeEventsActionDb = {
+  from: (table: string) => any;
+};
+
+
 function normalizeIsoDateTime(value: string) {
   if (!value) return null;
   const date = new Date(value);
@@ -117,7 +122,7 @@ export async function saveTradeEvent(_: ActionState | undefined, formData: FormD
   if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase as unknown as TradeEventsActionDb;
   const id = String(formData.get('id') ?? '').trim() || null;
   const organization_id = workspace.organization.id;
   const previousEvent = id
@@ -174,7 +179,7 @@ export async function saveTradeEventCaptureDefaults(formData: FormData) {
   const sourceLabel = formData.get('source_label') as string;
   const quickLeadTitle = formData.get('quick_lead_title') as string;
   if (!eventId) return;
-  const db = supabase as any;
+  const db = supabase as unknown as TradeEventsActionDb;
   await db.from('trade_events')
     .update({ capture_defaults: { source_label: sourceLabel, quick_lead_title: quickLeadTitle } })
     .eq('id', eventId);
@@ -192,7 +197,7 @@ export async function deleteTradeEvent(_: ActionState | undefined, formData: For
   if (!id) return { error: 'Trade event ID is required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase as unknown as TradeEventsActionDb;
   const { data: existingEvent } = await db.from('trade_events').select('id, name, city, country, starts_on, ends_on').eq('id', id).eq('organization_id', workspace.organization.id).maybeSingle();
   const { error } = await db.from('trade_events').delete().eq('id', id).eq('organization_id', workspace.organization.id);
   if (error) return { error: error.message };
@@ -222,7 +227,7 @@ export async function saveTradeEventEntry(_: ActionState | undefined, formData: 
   if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase as unknown as TradeEventsActionDb;
 
   const trade_event_id = String(formData.get('trade_event_id') ?? '').trim();
   const captured_company_name = String(formData.get('captured_company_name') ?? '').trim();
@@ -377,7 +382,7 @@ export async function convertTradeEventEntryToLead(formData: FormData): Promise<
   if (!entryId) return;
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase as unknown as TradeEventsActionDb;
 
   const { data: entry, error: entryError } = await db
     .from('trade_event_entries')
