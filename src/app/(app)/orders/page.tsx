@@ -294,6 +294,8 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   const supabase = await createClient();
   const db = supabase as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   const orgId = workspace.organization.id;
+  const requestedQuoteId = Array.isArray(searchParams?.quoteId) ? searchParams?.quoteId[0] ?? null : searchParams?.quoteId ?? null;
+  const requestedLeadId = Array.isArray(searchParams?.leadId) ? searchParams?.leadId[0] ?? null : searchParams?.leadId ?? null;
   const normalizedRoles = new Set((workspace.currentRoles ?? []).map((role) => String(role).trim().toLowerCase()).filter(Boolean));
   const primaryOperationalContext = normalizedRoles.has('sourcing') || normalizedRoles.has('procurement')
     ? 'supplier'
@@ -301,7 +303,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       ? 'buyer'
       : 'mixed';
 
-  // 1. Fetch accepted or sent quotes — sent quotes are ingested into contracts from approval-send
+  // 1. Fetch accepted or sent quotes, plus the explicit handoff quote so Create order never lands empty.
   const { data: rawQuotes, error: quotesError } = await db
     .from('quotes')
     .select('id, status, currency, updated_at, lead_id, current_version_id, accepted_version_id, pricing_basis')
@@ -309,6 +311,18 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
     .in('status', ['accepted', 'sent'])
     .order('updated_at', { ascending: false })
     .limit(50);
+
+
+  const quoteRows: QuoteRow[] = Array.isArray(rawQuotes) ? (rawQuotes as QuoteRow[]) : [];
+  if (requestedQuoteId && !quoteRows.some((quote) => quote.id === requestedQuoteId)) {
+    const { data: handoffQuote } = await db
+      .from('quotes')
+      .select('id, status, currency, updated_at, lead_id, current_version_id, accepted_version_id, pricing_basis')
+      .eq('organization_id', orgId)
+      .eq('id', requestedQuoteId)
+      .maybeSingle();
+    if (handoffQuote) quoteRows.unshift(handoffQuote as QuoteRow);
+  }
 
   if (quotesError) {
     return (
@@ -319,7 +333,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
     );
   }
 
-  const quotes: QuoteRow[] = Array.isArray(rawQuotes) ? (rawQuotes as QuoteRow[]) : [];
+  const quotes: QuoteRow[] = quoteRows;
 
   if (quotes.length === 0) {
     return (
@@ -562,13 +576,13 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
     };
   });
 
-  const accepted = orders.filter(o => o.quoteStatus === 'accepted');
+  const accepted = orders.filter(o => o.quoteStatus === 'accepted' || o.quoteStatus === 'sent' || Boolean(o.contract));
 
   const noticeKey = Array.isArray(searchParams?.notice) ? searchParams?.notice[0] ?? null : searchParams?.notice ?? null;
   const notice = decodeNotice(noticeKey);
   const handoffKey = Array.isArray(searchParams?.handoff) ? searchParams?.handoff[0] ?? null : searchParams?.handoff ?? null;
-  const focusQuoteId = Array.isArray(searchParams?.quoteId) ? searchParams?.quoteId[0] ?? null : searchParams?.quoteId ?? null;
-  const focusLeadId = Array.isArray(searchParams?.leadId) ? searchParams?.leadId[0] ?? null : searchParams?.leadId ?? null;
+  const focusQuoteId = requestedQuoteId;
+  const focusLeadId = requestedLeadId;
   const modeParam = Array.isArray(searchParams?.mode) ? searchParams?.mode[0] ?? 'all' : searchParams?.mode ?? 'all';
   const perspectiveMode = modeParam === 'buyers' || modeParam === 'suppliers' ? modeParam : 'all';
   const perspectiveAccepted = accepted.filter((order) => perspectiveMode === 'all' ? true : perspectiveMode === 'buyers' ? order.leadType === 'buyer' : order.leadType === 'supplier');

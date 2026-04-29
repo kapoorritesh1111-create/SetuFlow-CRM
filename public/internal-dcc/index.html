@@ -87,10 +87,10 @@
 <div class="tp a" id="tab-status">
   <div class="sec grid g2">
     <div>
-      <div class="co g"><strong>Core CRM — pre-QA state confirmed:</strong> Bug A (trade_event_id attribution) and Bug B (/approval-send replaced) both fixed by code inspection. Orders ingests sent quotes. All 12 previous fixes intact. 2 small gaps remain: add 'quote-sent' to decodeNotice, remove 6 trade-events as any casts now that capture_defaults is in generated types.</div>
+      <div class="co g"><strong>Core CRM — QA proof green:</strong> Full grep checklist, typecheck, tests, and production build passed. quote-sent notice is present, trade-events as any casts are removed, and Orders now keeps explicit quote handoffs visible in the redesigned execution workspace.</div>
       <div class="co r"><strong>Critical nav finding:</strong> route-meta.ts line 143 and manifest.json lines 356/373 explicitly label trade events as <em>"intentionally demoted from the main daily shell"</em> and <em>"useful supporting surface, intentionally not promoted as part of the core trade loop."</em> For importers/exporters who use trade shows as their primary lead generation engine, this is the wrong decision. The Trade Show Workflow PRs must promote trade events to a primary nav slot.</div>
       <div class="co t"><strong>New module — Trade Show Workflow:</strong> Added as a first-class module alongside core CRM. Three phases tracked: Before the show (create, capture defaults, share link), At the show (Quick Lead, fast-field form, card scan), After the show (event summary, bulk follow-up, conversion tracking, ROI report). Offline sync deferred post-investor-demo.</div>
-      <div class="co w"><strong>Pending proof — PR-SCHEMA-FIX-QUOTE-ORDER-LOOP:</strong> Migration 111 aligns the quote sent lifecycle with the generated type contract. Apply migration 111 in Supabase, regenerate DB types from live DB, then run build. Scores stay unchanged until proof is green.</div>
+      <div class="co w"><strong>Proof passed — PR-FINAL-GREP-GATE-FIX:</strong> Release gate greps, npm test, and npm run build are green. This DCC update records the verified state; additional Trade Show UX work remains planned for a later PR.</div>
 
       <div class="co v"><strong>Deferred — Offline capture:</strong> Offline sync requires a service worker and a local lead queue that syncs on reconnect. This is the right investment for export/import clients who use SETU at convention centers with unreliable WiFi. Tracked in NorthStar as a post-investor-demo v2 item. Not in scope for current investor-demo build.</div>
     </div>
@@ -200,7 +200,7 @@
 
 <!-- ══════════════════ MODULES ══════════════════ -->
 <div class="tp" id="tab-modules">
-  <div class="co b">Core CRM scores unchanged from previous audit. Trade Show is a new module. Build proof still pending — no module can claim 100% without green build confirmation.</div>
+  <div class="co b">Core CRM proof is green after the final grep gate. Trade Show remains a tracked module for later investor-demo PRs; this update does not add new Trade Show scope or change the DCC format.</div>
   <section class="sec card">
     <h2>All module readiness &mdash; honest scores</h2>
     <div class="mr"><div class="mn">Dashboard</div><div class="bw"><div class="bf g" style="width:84%"></div></div><div class="mp" style="color:var(--good)">84%</div><span class="s good">KPI hrefs confirmed. World map renders. No active events strip yet (Trade Show PR adds it).</span></div>
@@ -254,11 +254,11 @@
   <section class="sec">
     <div class="card" style="margin-bottom:10px">
       <h2>Full PR plan — core CRM + Trade Show</h2>
-      <div class="co b">Core CRM: 2 tiny fixes then QA-RELEASE. Trade Show: 4 PRs in sequence after QA-RELEASE. Smart reminders after investor demo.</div>
+      <div class="co b">Core CRM: final grep gate and build proof passed. Trade Show: 4 PRs remain in sequence after this verified baseline. Smart reminders after investor demo.</div>
       <table class="t" style="margin-top:10px"><thead><tr><th>#</th><th>PR</th><th>Files</th><th>Score lift</th><th>Status</th></tr></thead><tbody>
         <tr><td colspan="5" style="background:#f8fafc;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;padding:6px 10px">CORE CRM — finish line</td></tr>
-        <tr><td>FC-1</td><td><strong>PR-FINAL-CLEANUP</strong> — quote-sent notice + as any removal</td><td><code>orders/page.tsx</code> (1 line), <code>trade-events/server/actions.ts</code>, <code>trade-events/page.tsx</code></td><td>Orders 88&rarr;90%, Trade 82&rarr;88%</td><td><span class="s neutral">Do now</span></td></tr>
-        <tr><td>FC-2</td><td><strong>PR-QA-RELEASE</strong> — full grep checklist + build proof + DCC truth</td><td><code>internal-dcc/index.html</code> only</td><td>Core CRM sign-off</td><td><span class="s violet">After FC-1</span></td></tr>
+        <tr><td>FC-1</td><td><strong>PR-FINAL-GREP-GATE-FIX</strong> — quote-sent notice + as any removal + order handoff visibility</td><td><code>orders/page.tsx</code>, <code>trade-events/server/actions.ts</code>, <code>trade-events/page.tsx</code></td><td>Orders 88&rarr;90%, Trade 82&rarr;88%</td><td><span class="s good">Proof green</span></td></tr>
+        <tr><td>FC-2</td><td><strong>PR-QA-RELEASE</strong> — full grep checklist + build proof + DCC truth</td><td><code>internal-dcc/index.html</code> only</td><td>Core CRM sign-off</td><td><span class="s good">Proof green</span></td></tr>
         <tr><td colspan="5" style="background:#f0fdfa;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#0f766e;padding:6px 10px">TRADE SHOW — investor demo build</td></tr>
         <tr><td>TS-1</td><td><strong>PR-TRADESHOW-NAV</strong> — promote nav + mobile event page + dashboard strip</td><td><code>manifest.json</code>, <code>route-meta.ts</code>, <code>trade-events/page.tsx</code> (mobile-first layout), <code>dashboard/_lib/render-dashboard-page.tsx</code> (active events strip)</td><td>Trade Show 25&rarr;48%</td><td><span class="s teal">After QA</span></td></tr>
         <tr><td>TS-2</td><td><strong>PR-TRADESHOW-CAPTURE</strong> — fast-field form + share link + card scan link to event</td><td><code>trade-events/page.tsx</code> (fast-field drawer), <code>leads/page.tsx</code> (eventId fast mode), <code>contact-exchange/scan/page.tsx</code> (pass eventId)</td><td>Trade Show 48&rarr;65%</td><td><span class="s teal">After TS-1</span></td></tr>
