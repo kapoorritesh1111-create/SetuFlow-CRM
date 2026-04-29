@@ -131,6 +131,12 @@ function getHealthIcon(health: string): IconComponent {
   return CalendarCheck;
 }
 
+function formatPreviewAmount(value: number | null | undefined) {
+  const amount = Number(value ?? 0);
+  if (!Number.isFinite(amount)) return '0';
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amount);
+}
+
 function getStableFollowUpVisualState(scheduledAt?: string | null, nowIso?: string | null) {
   if (!scheduledAt || !nowIso) return scheduledAt ? 'upcoming' : 'unscheduled';
   const target = new Date(scheduledAt);
@@ -2324,7 +2330,7 @@ function InlineQuoteBuilder({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[24px] font-extrabold tracking-[-0.5px]">{subtotal > 0 ? `${currency} ${subtotal.toLocaleString()}` : (quotes.length > 0 ? `${quotes.length} quote${quotes.length === 1 ? '' : 's'}` : '—')}</div>
+          <div className="text-[24px] font-extrabold tracking-[-0.5px]">{subtotal > 0 ? `${currency} ${formatPreviewAmount(subtotal)}` : (quotes.length > 0 ? `${quotes.length} quote${quotes.length === 1 ? '' : 's'}` : '—')}</div>
           <div className="mt-[2px] text-[9px] uppercase tracking-[.12em] text-white/50">Draft quote total</div>
           <div className="mt-[10px] flex justify-end gap-[6px]">
             <button type="button" onClick={onOpenCommandCenter} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white" style={{ background: 'rgba(255,255,255,.12)' }}>← Back to CC</button>
@@ -2426,7 +2432,7 @@ function InlineQuoteBuilder({
                           <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.productLabel}</div><div className="mt-1 text-[10px] text-[#64748b]">{item.variantLabel ? `${item.variantLabel} · ` : ''}{item.source === 'coverage' ? 'coverage/catalog fallback' : item.source === 'rfq' ? 'RFQ line' : 'quote draft line'}</div>{item.note ? <div className="mt-1 text-[10px] text-[#94a3b8]">{item.note}</div> : null}</td>
                           <td className="px-[10px] py-[10px]"><input title="Quantity updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[68px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-center text-[12px] font-semibold text-[#0f172a] outline-none" value={qty} onChange={(event) => updateEditableLine(item.id, 'quantity', event.target.value)} /></td>
                           <td className="px-[10px] py-[10px]"><input title="Unit price updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[90px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px_7px] text-right text-[12px] font-bold text-[#0f172a] outline-none" value={price ?? ''} onChange={(event) => updateEditableLine(item.id, 'unitPrice', event.target.value)} placeholder="Price" /></td>
-                          <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{item.currency} {item.total.toLocaleString()}</td>
+                          <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{item.currency} {formatPreviewAmount(item.total)}</td>
                         </tr>
                       );
                     }) : (
@@ -2435,12 +2441,12 @@ function InlineQuoteBuilder({
                   </tbody>
                 </table>
                 <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px_14px]">
-                  {[['Subtotal', `${currency} ${subtotal.toLocaleString()}`], ['Freight (est.)', '—'], ['Taxes', '—']].map(([k, v]) => (
+                  {[['Subtotal', `${currency} ${formatPreviewAmount(subtotal)}`], ['Freight (est.)', '—'], ['Taxes', '—']].map(([k, v]) => (
                     <div key={k} className="flex justify-between py-[3px] text-[12px]"><span className="text-[#64748b]">{k}</span><span className="font-bold text-[#1e293b]">{v}</span>
                     </div>
                   ))}
                   <div className="mt-[5px] h-px bg-[#e2e8f0]" />
-                  <div className="flex justify-between py-[6px] text-[13px]"><span className="font-bold text-[#0f172a]">Grand total</span><span className="text-[16px] font-extrabold text-[#0b2e4a]">{currency} {subtotal.toLocaleString()}</span></div>
+                  <div className="flex justify-between py-[6px] text-[13px]"><span className="font-bold text-[#0f172a]">Grand total</span><span className="text-[16px] font-extrabold text-[#0b2e4a]">{currency} {formatPreviewAmount(subtotal)}</span></div>
                 </div>
                 {subtotal > 0 && (subtotal / (displayLines.length || 1)) > 10000 ? (
                   <div className="rounded-[6px] border border-[#fde68a] bg-[#fffbeb] p-[9px_13px] text-[11px] leading-[1.55] text-[#92400e]">⚠ Pricing override detected — overrides above 10% require manager approval before send.</div>
@@ -2480,7 +2486,7 @@ function InlineQuoteBuilder({
             ) : builderStep === 3 ? (
               <div className="grid grid-cols-2 gap-[8px]">
                 {[
-                  { label: 'Pricing check', items: [['Subtotal', `${currency} ${subtotal.toLocaleString()}`], ['Line items', String(displayLines.length)], ['Status', pricingReady ? 'Ready ✓' : 'Incomplete']] },
+                  { label: 'Pricing check', items: [['Subtotal', `${currency} ${formatPreviewAmount(subtotal)}`], ['Line items', String(displayLines.length)], ['Status', pricingReady ? 'Ready ✓' : 'Incomplete']] },
                   { label: 'Documents check', items: [['Linked files', String(documents.length)], ['Latest', documents[0]?.file_name ?? 'None linked'], ['Status', documents.length > 0 ? 'Ready ✓' : 'Missing']] },
                   { label: 'Compliance check', items: [['Active items', String(complianceItems.length)], ['Blockers', String(blockerCount)], ['Gate', blockerCount === 0 ? 'Clear ✓' : 'Blocked']] },
                   { label: 'Quote version', items: [['Version', latestVersion?.version_no ? `v${latestVersion.version_no}` : 'v1 draft'], ['Status', latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'], ['Updated', latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'Not saved']] },
@@ -2546,7 +2552,7 @@ function InlineQuoteBuilder({
           {/* Quote summary card — spec .qb-rc */}
           <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
             <div className="mb-[6px] text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Quote v1</div>
-            <div className="mb-[6px] text-[14px] font-extrabold text-[#0f172a]">{currency} {subtotal.toLocaleString()}</div>
+            <div className="mb-[6px] text-[14px] font-extrabold text-[#0f172a]">{currency} {formatPreviewAmount(subtotal)}</div>
             {[['Lines', String(displayLines.length)], ['Status', latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'], ['Version', latestVersion ? `v${latestVersion.version_no}` : 'v1'], ['Updated', latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'Not saved']].map(([k, v]) => (
               <div key={k} className="flex justify-between border-b border-[#f8fafc] py-[3px] text-[11px]">
                 <span className="text-[#64748b]">{k}</span><span className="font-bold text-[#1e293b]">{v}</span>

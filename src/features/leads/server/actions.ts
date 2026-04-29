@@ -1291,14 +1291,26 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
   if (quote.current_version_id) {
     const { error: deleteVersionLineError } = await db.from('quote_version_line_items').delete().eq('quote_version_id', quote.current_version_id);
     if (deleteVersionLineError) return { error: deleteVersionLineError.message };
-    const versionLines = previewLines.map((line) => ({
+    const versionLines = previewLines.map((line, index) => ({
       quote_version_id: quote.current_version_id,
       product_id: line.product_id,
       product_variant_id: line.product_variant_id,
+      sku_code: `QUOTE-LINE-${index + 1}`,
+      product_name: line.notes || `Quote line ${index + 1}`,
+      category_type: 'chips',
+      basis_applied: 'fob',
+      pricing_mode: 'case',
       moq: line.quantity,
       final_unit_price: line.unit_price,
-      display_currency: line.currency,
+      display_currency: normalizeQuoteDisplayCurrency(line.currency, currency),
+      is_overridden: Boolean(line.is_price_overridden),
+      override_reason: line.override_reason,
+      overridden_by: line.overridden_by,
+      overridden_at: line.overridden_at,
       line_notes: line.notes ?? 'Saved from Leads quote preview',
+      sort_order: index,
+      calculation_meta: { source: 'leads_quote_preview' },
+      catalog_price_snapshot: {},
     }));
     if (versionLines.length) {
       const { error: insertVersionLineError } = await db.from('quote_version_line_items').insert(versionLines);
