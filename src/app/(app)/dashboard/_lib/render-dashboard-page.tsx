@@ -18,6 +18,18 @@ type ActiveTradeEventStripData = {
   captureHref: string;
 };
 
+type ActiveTradeEventRow = {
+  id: string;
+  name: string;
+  starts_on: string | null;
+  ends_on: string | null;
+};
+
+type TradeEventEntryCountRow = {
+  id: string;
+  trade_event_id: string | null;
+};
+
 function todayDateKey() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -33,7 +45,7 @@ async function getActiveTradeEventStripData(organizationId: string): Promise<Act
   const supabase = await createClient();
   const today = todayDateKey();
   const { startIso, endIso } = dayBoundsIso(today);
-  const { data: activeEvents } = await supabase
+  const { data: activeEventRows } = await (supabase as any)
     .from('trade_events')
     .select('id, name, starts_on, ends_on')
     .eq('organization_id', organizationId)
@@ -42,10 +54,12 @@ async function getActiveTradeEventStripData(organizationId: string): Promise<Act
     .order('starts_on', { ascending: true, nullsFirst: false })
     .limit(6);
 
-  if (!activeEvents?.length) return null;
+  const activeEvents = (activeEventRows ?? []) as ActiveTradeEventRow[];
+
+  if (!activeEvents.length) return null;
 
   const eventIds = activeEvents.map((event) => event.id);
-  const { data: todayEntries } = await (supabase as any)
+  const { data: todayEntryRows } = await (supabase as any)
     .from('trade_event_entries')
     .select('id, trade_event_id')
     .eq('organization_id', organizationId)
@@ -55,7 +69,8 @@ async function getActiveTradeEventStripData(organizationId: string): Promise<Act
     .limit(1000);
 
   const firstEvent = activeEvents[0];
-  const leadsCapturedToday = (todayEntries ?? []).filter((entry: { trade_event_id?: string | null }) => entry.trade_event_id === firstEvent.id).length;
+  const todayEntries = (todayEntryRows ?? []) as TradeEventEntryCountRow[];
+  const leadsCapturedToday = todayEntries.filter((entry) => entry.trade_event_id === firstEvent.id).length;
   const sourceLabel = encodeURIComponent(firstEvent.name);
 
   return {
