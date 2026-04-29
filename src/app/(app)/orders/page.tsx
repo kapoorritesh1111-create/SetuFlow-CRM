@@ -583,7 +583,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   const docsPendingCount = perspectiveAccepted.filter(o => o.operationalControls.documentRequirementSummary.blockerCount > 0).length;
   const inExecutionCount = perspectiveAccepted.filter(o => o.executionBlockers.length === 0 && !['completed'].includes(o.executionState)).length;
   const execValue = perspectiveAccepted.reduce((s, o) => s + (o.dealValue ?? 0), 0);
-  const avgCycle = 34; // demo value
+  const avgCycle = null;
 
   const EXECUTION_STAGES_NS = [
     { key: 'draft', label: 'Quote\nAccepted' },
@@ -627,24 +627,41 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       </header>
 
       {/* FILTER BAR */}
-      <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'10px 24px',display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
-        <div style={{display:'flex',alignItems:'center',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',gap:'6px',cursor:'pointer',minWidth:'130px'}}>
-          <div><div style={{fontSize:'9px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#94a3b8',lineHeight:1}}>Execution state</div><div style={{fontSize:'11px',fontWeight:600,color:'#1e293b',lineHeight:'1.4'}}>All states</div></div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',gap:'6px',cursor:'pointer',minWidth:'110px'}}>
-          <div><div style={{fontSize:'9px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#94a3b8',lineHeight:1}}>Compliance</div><div style={{fontSize:'11px',fontWeight:600,color:'#1e293b',lineHeight:'1.4'}}>All</div></div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',gap:'6px',cursor:'pointer',minWidth:'110px'}}>
-          <div><div style={{fontSize:'9px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#94a3b8',lineHeight:1}}>Owner</div><div style={{fontSize:'11px',fontWeight:600,color:'#1e293b',lineHeight:'1.4'}}>All owners</div></div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',border:'1px solid #e2e8f0',borderRadius:'6px',background:'#f8fafc',padding:'0 10px',height:'32px',gap:'6px',cursor:'pointer',minWidth:'110px'}}>
-          <div><div style={{fontSize:'9px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#94a3b8',lineHeight:1}}>Market</div><div style={{fontSize:'11px',fontWeight:600,color:'#1e293b',lineHeight:'1.4'}}>All markets</div></div>
-        </div>
-        {blockedCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#9f1239',cursor:'pointer'}}>Dispatch blocked ({blockedCount})</span>}
-        {docsPendingCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>Docs pending ({docsPendingCount})</span>}
-        <span style={{marginLeft:'auto',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{perspectiveAccepted.length} active orders · {execValue>0?`$${Math.round(execValue/1000)}K`:''} execution value</span>
-      </div>
-
+      <form action={PRODUCT_ROUTES.app.orders} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'18px 18px 0 0',padding:'14px 24px 12px',display:'grid',gridTemplateColumns:'minmax(160px,.8fr) minmax(150px,.7fr) minmax(150px,.7fr) minmax(150px,.7fr) auto auto',alignItems:'end',gap:'10px'}}>
+        <input type="hidden" name="mode" value={perspectiveMode} />
+        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
+          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Execution state</span>
+          <select name="executionState" defaultValue="all" style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
+            <option value="all">All states</option>
+          </select>
+        </label>
+        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
+          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Compliance</span>
+          <select name="compliance" defaultValue="all" style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
+            <option value="all">All</option>
+          </select>
+        </label>
+        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
+          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Owner</span>
+          <select name="owner" defaultValue="all" style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
+            <option value="all">All owners</option>
+          </select>
+        </label>
+        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
+          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Market</span>
+          <select name="market" defaultValue="all" style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
+            <option value="all">All markets</option>
+          </select>
+        </label>
+        <button type="submit" style={{padding:'0 16px',height:'36px',borderRadius:'8px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:700,border:'none',cursor:'pointer'}}>Apply</button>
+        <span style={{justifySelf:'end',alignSelf:'center',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{perspectiveAccepted.length} active orders · {execValue>0?`$${Math.round(execValue/1000)}K`:'—'} execution value</span>
+        {(blockedCount>0||docsPendingCount>0)&&(
+          <div style={{gridColumn:'1 / -1',display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap',paddingTop:'2px'}}>
+            {blockedCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#9f1239',cursor:'pointer'}}>Dispatch blocked ({blockedCount})</span>}
+            {docsPendingCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>Docs pending ({docsPendingCount})</span>}
+          </div>
+        )}
+      </form>
       {/* STATS STRIP */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>
         {[
@@ -653,7 +670,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
           {label:'In execution',value:inExecutionCount,meta:'Docs complete, dispatching',accent:'#0c7fff'},
           {label:'Delivered',value:dispatchedCount,meta:'Awaiting payment confirmation',accent:'#059669'},
           {label:'Execution value',value:execValue>0?`$${Math.round(execValue/1000)}K`:'—',meta:'All active orders',accent:'#7c3aed'},
-          {label:'Avg cycle time',value:`${avgCycle}d`,meta:'Accepted to delivered',accent:'#cbd5e1'},
+          {label:'Avg cycle time',value:avgCycle ? `${avgCycle}d` : '—',meta:'Accepted to delivered',accent:'#cbd5e1'},
         ].map(sc=>(
           <div key={sc.label} style={{position:'relative',overflow:'hidden',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white',padding:'13px 15px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer'}}>
             <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:sc.accent,borderRadius:'16px 16px 0 0'}}/>
@@ -764,12 +781,12 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                   },
                   {
                     label:'Payment status',
-                    badge:'30% received',
-                    badgeTone:'ok',
-                    sub:`${formatMoneyValue((order.dealValue??0)*0.3,order.currency)} of ${formatMoneyValue(order.dealValue,order.currency)}`,
+                    badge:'Tracking pending',
+                    badgeTone:'neutral',
+                    sub:'Payment integration not yet configured',
                   },
                 ].map((sig,i)=>{
-                  const bc = sig.badgeTone==='block'?{bg:'#fff1f2',border:'#fecaca',color:'#9f1239'}:sig.badgeTone==='warn'?{bg:'#fffbeb',border:'#fde68a',color:'#92400e'}:{bg:'#ecfdf5',border:'#a7f3d0',color:'#059669'};
+                  const bc = sig.badgeTone==='block'?{bg:'#fff1f2',border:'#fecaca',color:'#9f1239'}:sig.badgeTone==='warn'?{bg:'#fffbeb',border:'#fde68a',color:'#92400e'}:sig.badgeTone==='neutral'?{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'}:{bg:'#ecfdf5',border:'#a7f3d0',color:'#059669'};
                   return (
                     <div key={sig.label} style={{padding:'12px 16px',borderRight:i<3?'1px solid #e2e8f0':undefined}}>
                       <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'5px'}}>{sig.label}</div>

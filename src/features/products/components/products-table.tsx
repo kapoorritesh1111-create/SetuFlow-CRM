@@ -195,7 +195,7 @@ export function ProductsTable({ rows, loading, viewMode, sortBy, sortOrder, onSo
               <div className="flex items-center justify-center gap-2">
                 <StatusDot active={row.is_active && row.is_quoteable} />
                 <button type="button" onClick={(event) => { event.stopPropagation(); onOpenProduct(row.product_id); }} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${workspaceSecondaryButtonClass}`}>{getProductGapActionLabel(row)}</button>
-                {row.is_active && row.is_quoteable ? <Link href={`/leads?quickLead=1&sourceType=trade_show&sourceLabel=Trade%20show%20fast%20lane&autoQuote=1&productId=${encodeURIComponent(row.product_id)}`} onClick={(event) => event.stopPropagation()} className="sr-only">Quick quote</Link> : null}
+                {row.is_active && row.is_quoteable && (row.ex_factory_value != null || row.fob_value != null) ? <Link href={`/leads?quickLead=1&sourceType=trade_show&sourceLabel=Trade%20show%20fast%20lane&autoQuote=1&productId=${encodeURIComponent(row.product_id)}`} onClick={(event) => event.stopPropagation()} className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Quick quote</Link> : null}
               </div>
             </div>
           );

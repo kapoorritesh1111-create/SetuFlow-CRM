@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import RightDrawer, { DrawerActionBar, DrawerSection } from '@/components/RightDrawer';
-import { deleteTradeEvent, saveTradeEvent } from '@/features/trade-events/server/actions';
+import { deleteTradeEvent, saveTradeEvent, saveTradeEventCaptureDefaults } from '@/features/trade-events/server/actions';
 
 type TradeEvent = {
   id: string;
@@ -12,6 +12,7 @@ type TradeEvent = {
   starts_on: string | null;
   ends_on: string | null;
   notes: string | null;
+  capture_defaults?: { source_label?: string | null; quick_lead_title?: string | null } | null;
 };
 
 export function TradeEventsManager({ events }: { events: TradeEvent[] }) {
@@ -51,6 +52,14 @@ export function TradeEventsManager({ events }: { events: TradeEvent[] }) {
       <input type="date" name="starts_on" defaultValue={event?.starts_on ?? ''} />
       <input type="date" name="ends_on" defaultValue={event?.ends_on ?? ''} />
       <textarea name="notes" className="md:col-span-2" rows={3} placeholder="Notes" defaultValue={event?.notes ?? ''} />
+    </>
+  );
+
+  const renderCaptureDefaultFields = (event?: TradeEvent) => (
+    <>
+      <input type="hidden" name="event_id" defaultValue={event?.id ?? ''} />
+      <input name="source_label" placeholder="Quick Lead source label" defaultValue={event?.capture_defaults?.source_label ?? ''} />
+      <input name="quick_lead_title" placeholder="Quick Lead default title" defaultValue={event?.capture_defaults?.quick_lead_title ?? ''} />
     </>
   );
 
@@ -136,6 +145,20 @@ export function TradeEventsManager({ events }: { events: TradeEvent[] }) {
             <div className="grid gap-3 md:grid-cols-2">{renderFields(editingEvent)}</div>
           </DrawerSection>
         </form>
+
+        {editingEvent ? (
+          <form id="trade-event-capture-defaults-form" action={saveTradeEventCaptureDefaults} className="mt-5 space-y-5">
+            <DrawerSection
+              title="Quick Lead defaults"
+              description="Prefill the Trade Event → Quick Lead handoff once the capture_defaults migration has been applied."
+            >
+              <div className="grid gap-3 md:grid-cols-2">{renderCaptureDefaultFields(editingEvent)}</div>
+              <button type="submit" disabled={isPending} className="mt-3 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+                Save Quick Lead defaults
+              </button>
+            </DrawerSection>
+          </form>
+        ) : null}
       </RightDrawer>
     </div>
   );

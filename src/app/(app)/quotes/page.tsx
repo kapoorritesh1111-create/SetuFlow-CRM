@@ -327,7 +327,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
               {/* Details */}
               <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}>
                 <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>Quote details</div>
-                {[['Company',selected.companyName],['Contact',selected.contactName??'Not set'],['Currency',selected.currency??'USD'],['Subtotal',formatQuoteMoney(selected.subtotal,selected.currency)]].map(([k,v])=>(
+                {[['Company',selected.companyName],['Contact',selected.contactName??'Not set'],['Currency',selected.currency??'USD'],['FX',selected.currency == null || selected.currency === 'USD' ? 'No conversion — catalog currency (USD)' : `${selected.currency} quote · FX applied at version send time`],['Subtotal',formatQuoteMoney(selected.subtotal,selected.currency)]].map(([k,v])=>(
                   <div key={k as string} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',padding:'3px 0',borderBottom:'1px solid rgba(0,0,0,.03)'}}>
                     <span style={{color:'#64748b'}}>{k}</span><span style={{fontWeight:700,color:'#1e293b'}}>{v}</span>
                   </div>

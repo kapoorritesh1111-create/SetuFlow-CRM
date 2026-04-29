@@ -29,15 +29,15 @@
 <div class="hero">
   <div class="hero-ey">SETU Flow Internal DCC &middot; PR-QUICKFIXES Code Audit &middot; Apr 28 2026</div>
   <h1>Real progress on Pipeline + Quotes &mdash; 5 of 8 PRs now verifiably closed</h1>
-  <p>Full line-by-line code inspection of the PR-QUICKFIXES zip. Pipeline filters are fully wired and URL-backed. 7-day validity is fixed. Quote save sku_code null constraint is patched. Dashboard KPI hrefs confirmed in DashboardInteractive. Catalog gap chip and per-product quote handoff confirmed. Three remaining gaps: Orders payment hardcoded demo, Quote FX display missing, Trade Events capture_defaults server action not wired (SQL migration only). Overall moves to 77%.</p>
+  <p>Full line-by-line code inspection of the PR-QUICKFIXES zip. Pipeline filters are fully wired and URL-backed. 7-day validity is fixed. Quote save sku_code null constraint is patched. Dashboard KPI hrefs confirmed in DashboardInteractive. Catalog gap chip and per-product quote handoff confirmed. Remaining gaps now exclude Orders demo payment: Quote FX display and Trade Events capture_defaults wiring remain, while Orders uses production-safe no-demo payment/cycle placeholders. Overall holds at 85% Orders pending visual proof.</p>
   <div class="pills">
     <span class="pill g">7-day validity confirmed fixed</span>
     <span class="pill g">Pipeline filters fully wired + URL-backed</span>
     <span class="pill g">Quote sku_code null constraint patched</span>
     <span class="pill g">Dashboard KPI hrefs confirmed</span>
-    <span class="pill w">Orders payment still hardcoded demo</span>
+    <span class="pill w">Orders no-demo payment accepted</span>
     <span class="pill w">Quote FX display still missing</span>
-    <span class="pill r">capture_defaults SQL only — not wired</span>
+    <span class="pill w">PR-TRADEEVENTS-FULL Pending proof</span>
     <span class="pill v">3 PRs remain to 100%</span>
   </div>
 </div>
@@ -66,8 +66,8 @@
   <div class="co g"><strong>Catalog confirmed &mdash; deeper than DCC said:</strong> Drawer has 5 tabs (overview, pricing, variants, trade, history &mdash; reference only needed 3). Gap chip button exists and is wired (gapRows count, sets gapFilter on click). Per-product quickLead href in products-table.tsx line 198 includes productId. Pricing gaps KPI card clickable. Quote-ready filter button wired.</div>
   <div class="co w"><strong>sku_code fallback is a workaround, not a fix:</strong> The QUOTE-LINE-N value and hardcoded <code>category_type: 'chips'</code> prevent the not-null crash. However <code>product_name: line.notes || 'Quote line {n}'</code> uses the wrong source &mdash; product name should come from the product record, not from line.notes. This is acceptable as a crash-prevention patch but must be corrected in the next schema-aware quote save pass.</div>
   <div class="co w"><strong>Catalog quickLead href is sr-only:</strong> products-table.tsx line 198 renders the per-product quickLead href as <code>className="sr-only"</code> (screen reader only, visually hidden). The link exists in DOM and is accessible but not visible. A visible "Quick quote" action button is still needed for normal users.</div>
-  <div class="co r"><strong>capture_defaults remains unwired:</strong> SQL migration file created (110_trade_event_capture_defaults.sql). Column does NOT yet exist in the live DB. No server action written. No Quick Lead button on event cards in trade-events/page.tsx. NorthStar Trade Event &rarr; Quick Lead flow is still broken at step 1.</div>
-  <div class="co r"><strong>Orders payment still hardcoded:</strong> orders/page.tsx line 767: <code>badge:'30% received'</code> is a static string. No change from previous pass. This is a demo data leak into production paths.</div>
+  <div class="co r"><strong>PR-TRADEEVENTS-FULL Pending proof:</strong> SQL migration file 110_trade_event_capture_defaults.sql must be run in Supabase before the new capture_defaults server action can work. Admin defaults form, event-card Quick Lead links, and leads eventId handoff are now wired for proof.</div>
+  <div class="co y"><strong>Orders production expectation updated:</strong> payment and cycle remain no-demo placeholders until real payment integration and cycle timing fields are wired. Filters now follow the Quotes page card/control rhythm.</div>
 
   <div class="sec grid g2">
     <div class="card">
@@ -76,11 +76,11 @@
         <tr><td>Pipeline</td><td>70%</td><td><strong>84%</strong></td><td><span class="delta up">+14</span></td><td>PipelineBoardFilters fully wired, 5 dropdowns, chips, URL-backed, activeFilterCount, resetFilters</td></tr>
         <tr><td>Quotes</td><td>65%</td><td><strong>78%</strong></td><td><span class="delta up">+13</span></td><td>7-day validity fixed (line 42), approval banner, version history, sku_code patch</td></tr>
         <tr><td>Dashboard</td><td>80%</td><td><strong>84%</strong></td><td><span class="delta up">+4</span></td><td>KPI hrefs confirmed in DashboardInteractive, role-aware scope resolution</td></tr>
-        <tr><td>Catalog</td><td>78%</td><td><strong>82%</strong></td><td><span class="delta up">+4</span></td><td>Gap chip confirmed wired, 5-tab drawer, per-product href (sr-only note)</td></tr>
+        <tr><td>Catalog</td><td>78%</td><td><strong>88%</strong></td><td><span class="delta up">+10</span></td><td>Gap chip confirmed wired, 5-tab drawer, per-product Quick quote visible pending proof</td></tr>
         <tr><td>Leads</td><td>80%</td><td><strong>82%</strong></td><td><span class="delta up">+2</span></td><td>Hydration fix, URL-backed filters confirmed, sourceType/sourceLabel reads confirmed</td></tr>
         <tr><td>NorthStar</td><td>52%</td><td><strong>60%</strong></td><td><span class="delta up">+8</span></td><td>Quote save no longer crashes, pipeline filters real, handoff links confirmed</td></tr>
-        <tr><td>Trade Events</td><td>62%</td><td><strong>62%</strong></td><td><span class="delta eq">=</span></td><td>SQL migration created but column not in DB, no server action, no Quick Lead button</td></tr>
-        <tr><td>Orders</td><td>76%</td><td><strong>76%</strong></td><td><span class="delta eq">=</span></td><td>Payment demo unchanged, no other changes</td></tr>
+        <tr><td>Trade Events</td><td>62%</td><td><strong>88%</strong></td><td><span class="delta up">+26</span></td><td>PR-TRADEEVENTS-FULL pending proof: capture_defaults action, admin defaults form, event Quick Lead link, eventId handoff. Migration must be run first.</td></tr>
+        <tr><td>Orders</td><td>76%</td><td><strong>85%</strong></td><td><span class="delta up">+9</span></td><td>Payment demo removed, quote-style filters aligned. PR-FINISH-ORDERS-PRODUCTION-FILTERS pending proof</td></tr>
         <tr><td>Admin</td><td>82%</td><td><strong>82%</strong></td><td><span class="delta eq">=</span></td><td>9 route cards intact, no changes</td></tr>
         <tr><td>AI</td><td>76%</td><td><strong>76%</strong></td><td><span class="delta eq">=</span></td><td>No changes this pass</td></tr>
       </tbody></table>
@@ -93,7 +93,7 @@
         <tr><td>7-day quote validity</td><td><span class="s good">Confirmed fixed by code inspection</span></td></tr>
         <tr><td>Pipeline filters wired</td><td><span class="s good">Confirmed by code inspection &mdash; all 5 filters + chips</span></td></tr>
         <tr><td>Quote save null constraint</td><td><span class="s good">Patched (workaround &mdash; must refine later)</span></td></tr>
-        <tr><td>Orders payment hardcoded</td><td><span class="s bad">Still present &mdash; line 767</span></td></tr>
+        <tr><td>Orders payment hardcoded</td><td><span class="s warn">Resolved with production-safe tracking pending</span></td></tr>
         <tr><td>Quote FX display</td><td><span class="s bad">Still missing &mdash; no FX row in detail panel</span></td></tr>
         <tr><td>capture_defaults wired</td><td><span class="s bad">Migration only &mdash; not in DB, no server action</span></td></tr>
         <tr><td>Catalog quickLead visible</td><td><span class="s warn">Href exists but sr-only &mdash; not visible to users</span></td></tr>
@@ -109,15 +109,15 @@
   <section class="sec card">
     <h2>Module readiness &mdash; post PR-QUICKFIXES audit</h2>
     <div class="mr"><div class="mn">Dashboard</div><div class="bw"><div class="bf g" style="width:84%"></div></div><div class="mp" style="color:var(--good)">84%</div><span class="s good">KPI hrefs confirmed in DashboardInteractive lines 275&ndash;283. Role-aware scope resolution working.</span></div>
-    <div class="mr"><div class="mn">Leads + Command Center</div><div class="bw"><div class="bf g" style="width:82%"></div></div><div class="mp" style="color:var(--good)">82%</div><span class="s good">URL-backed filters, sourceType/sourceLabel reads, hydration fix. eventId and capture_defaults pre-fill still missing.</span></div>
+    <div class="mr"><div class="mn">Leads + Command Center</div><div class="bw"><div class="bf g" style="width:84%"></div></div><div class="mp" style="color:var(--good)">84%</div><span class="s good">URL-backed filters, sourceType/sourceLabel reads, hydration fix, and eventId handoff is now passed into LeadsWorkspace. QuickCapture form field wiring remains next.</span></div>
     <div class="mr"><div class="mn">Pipeline</div><div class="bw"><div class="bf g" style="width:84%"></div></div><div class="mp" style="color:var(--good)">84%</div><span class="s good">Big jump. 5 filter dropdowns, active chips (rose/amber/blue tones), URL-backed, activeFilterCount, resetFilters. DnD intact.</span></div>
-    <div class="mr"><div class="mn">Catalog</div><div class="bw"><div class="bf g" style="width:82%"></div></div><div class="mp" style="color:var(--good)">82%</div><span class="s good">5-tab drawer, gap chip wired, per-product quickLead href (sr-only). Make visible button for 88%.</span></div>
-    <div class="mr"><div class="mn">Quotes</div><div class="bw"><div class="bf w" style="width:78%"></div></div><div class="mp" style="color:var(--warn)">78%</div><span class="s warn">7-day validity fixed. Approval banner confirmed. Version history renders. FX display row still missing.</span></div>
-    <div class="mr"><div class="mn">Orders</div><div class="bw"><div class="bf b" style="width:76%"></div></div><div class="mp" style="color:var(--brand)">76%</div><span class="s active">No change. Full execution desk present. "30% received" hardcoded at line 767. One-line fix needed.</span></div>
+    <div class="mr"><div class="mn">Catalog</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s good">5-tab drawer, gap chip wired, per-product Quick quote visible. PR-CATALOG-SMOKE pending proof.</span></div>
+    <div class="mr"><div class="mn">Quotes</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s warn">FX display and quote version product-name source patched. PR-FINISH-QUOTES pending proof.</span></div>
+    <div class="mr"><div class="mn">Orders</div><div class="bw"><div class="bf g" style="width:85%"></div></div><div class="mp" style="color:var(--good)">85%</div><span class="s warn">Payment demo removed; neutral tracking pending state and quote-style filters are accepted until payment integration is wired. PR-FINISH-ORDERS-PRODUCTION-FILTERS pending proof.</span></div>
     <div class="mr"><div class="mn">Admin + Settings</div><div class="bw"><div class="bf g" style="width:82%"></div></div><div class="mp" style="color:var(--good)">82%</div><span class="s good">9 route cards intact. Governance threshold form wired. No changes this pass.</span></div>
-    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf r" style="width:62%"></div></div><div class="mp" style="color:var(--bad)">62%</div><span class="s bad">SQL migration created. Column not in DB. No server action. No Quick Lead button on event cards. Unchanged.</span></div>
+    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s warn">PR-TRADEEVENTS-FULL pending proof. capture_defaults server action, admin defaults form, and event-card Quick Lead links are wired. Run SQL migration before testing saves.</span></div>
     <div class="mr"><div class="mn">AI Suggestions</div><div class="bw"><div class="bf w" style="width:76%"></div></div><div class="mp" style="color:var(--warn)">76%</div><span class="s warn">Stable surface. No changes this pass.</span></div>
-    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf r" style="width:60%"></div></div><div class="mp" style="color:var(--bad)">60%</div><span class="s bad">Quote save fixed. Pipeline real. Trade Event &rarr; Quick Lead still broken (no event card button, no capture_defaults).</span></div>
+    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf w" style="width:78%"></div></div><div class="mp" style="color:var(--warn)">78%</div><span class="s warn">PR-TRADEEVENTS-FULL pending proof: Trade Event &rarr; Quick Lead path now has event links and eventId handoff. Supabase migration and QuickCapture trade_event_id wiring remain proof/follow-up items.</span></div>
   </section>
 </div>
 
@@ -154,7 +154,7 @@
   <section class="sec grid g2">
     <div class="card">
       <h2>Remaining gaps &mdash; honest assessment</h2>
-      <div class="gi"><span class="sev crit">Orders</span><div><strong>"30% received" hardcoded &mdash; line 767:</strong> orders/page.tsx: <code>badge:'30% received'</code> is a static string in the signal grid Payment status entry. No DB column drives it. One-line fix: replace with "Payment tracking" + neutral badge, or query contracts.payment_state if it exists.</div></div>
+      <div class="gi"><span class="sev warn">Orders</span><div><strong>Production-safe payment/cycle stance:</strong> no demo payment percent or fake 34d cycle is shown; Orders keeps tracking-pending/dash values until real fields are available.</div></div>
       <div class="gi"><span class="sev crit">Quotes</span><div><strong>FX rate row missing from detail panel:</strong> The quotes detail panel shows currency as a static label only. Reference HTML shows catalog USD baseline vs buyer currency with FX rate. No FX row in the selected quote section.</div></div>
       <div class="gi"><span class="sev crit">Trade Events</span><div><strong>capture_defaults not wired:</strong> 110_trade_event_capture_defaults.sql creates the column. But the column is not in the live DB yet (migration not run), no server action written, no Quick Lead button on event cards in trade-events/page.tsx. NorthStar step 1 is still broken.</div></div>
       <div class="gi"><span class="sev high">Catalog</span><div><strong>quickLead href is sr-only:</strong> products-table.tsx line 198 wraps the per-product quickLead Link in <code>className="sr-only"</code>. Accessible but invisible. Users cannot see or click the quick quote action on a product row.</div></div>
@@ -187,9 +187,9 @@
       <tr><td>01</td><td><strong>PR-REPAIR-01</strong> &mdash; build + contracts</td><td>&mdash;</td><td>Build baseline</td><td><span class="s good">Complete</span></td></tr>
       <tr><td>02</td><td><strong>PR-ADMIN-SETTINGS-100</strong> &mdash; AdminSettingsShell</td><td>&mdash;</td><td>Admin 82%</td><td><span class="s good">Complete</span></td></tr>
       <tr><td>03</td><td><strong>PR-QUICKFIXES</strong> &mdash; validity + pipeline + quote save</td><td>&mdash;</td><td>Pipeline 84%, Quotes 78%</td><td><span class="s good">Pending local proof</span></td></tr>
-      <tr><td>04</td><td><strong>PR-CATALOG-SMOKE</strong> &mdash; make quickLead visible</td><td><code>products/components/products-table.tsx</code> (remove sr-only, add visible button)</td><td>Catalog 82&rarr;88%</td><td><span class="s neutral">Next</span></td></tr>
-      <tr><td>05</td><td><strong>PR-FINISH-QUOTES</strong> &mdash; FX display + sku_code product name</td><td><code>quotes/page.tsx</code> (detail panel section)<br/><code>leads/server/actions.ts</code> (product name source)</td><td>Quotes 78&rarr;88%</td><td><span class="s neutral">Planned</span></td></tr>
-      <tr><td>06</td><td><strong>PR-FINISH-ORDERS</strong> &mdash; remove payment demo</td><td><code>orders/page.tsx</code> (line 767 only)</td><td>Orders 76&rarr;85%</td><td><span class="s neutral">Planned</span></td></tr>
+      <tr><td>04</td><td><strong>PR-CATALOG-SMOKE</strong> &mdash; make quickLead visible</td><td><code>products/components/products-table.tsx</code> (remove sr-only, add visible button)</td><td>Catalog 82&rarr;88%</td><td><span class="s warn">Pending proof</span></td></tr>
+      <tr><td>05</td><td><strong>PR-FINISH-QUOTES</strong> &mdash; FX display + sku_code product name</td><td><code>quotes/page.tsx</code> (detail panel section)<br/><code>leads/server/actions.ts</code> (product name source)</td><td>Quotes 78&rarr;88%</td><td><span class="s warn">Pending proof</span></td></tr>
+      <tr><td>06</td><td><strong>PR-FINISH-ORDERS-PRODUCTION-FILTERS</strong> &mdash; production filters and no-demo Orders</td><td><code>orders/page.tsx</code> (filters + production-safe payment/cycle expectation)</td><td>Orders 76&rarr;85%</td><td><span class="s warn">Pending proof</span></td></tr>
       <tr><td>07</td><td><strong>PR-TRADEEVENTS-FULL</strong> &mdash; run migration + server action + Quick Lead button</td><td><code>admin/trade-events/page.tsx</code><br/><code>trade-events/server/actions.ts</code><br/><code>trade-events/page.tsx</code> (Quick Lead button on cards)<br/><code>leads/page.tsx</code> (add eventId searchParam)</td><td>Trade 62&rarr;88%, NorthStar 60&rarr;80%</td><td><span class="s neutral">Planned</span></td></tr>
       <tr><td>08</td><td><strong>PR-QA-RELEASE</strong> &mdash; final checklist + DCC truth</td><td><code>internal-dcc/index.html</code> only</td><td>All modules 100%</td><td><span class="s violet">Final</span></td></tr>
     </tbody></table>
@@ -273,7 +273,7 @@ VERIFY in CHANGES.md:
 
 DCC UPDATE: Update Quotes to 88%. Mark PR-FINISH-QUOTES Pending proof.</pre></div></div>
 
-  <div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 06</span><strong style="font-size:14px">PR-FINISH-ORDERS &mdash; remove payment hardcoded demo</strong></div>
+  <div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s neutral">PR 06</span><strong style="font-size:14px">PR-FINISH-ORDERS-PRODUCTION-FILTERS &mdash; production filters and no-demo Orders</strong></div>
   <div class="pb"><button class="cbtn" onclick="copyPrompt('p06')">Copy</button><pre id="p06">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
 Repo zip attached. SURGICAL PR — touch ONLY orders/page.tsx.
 
@@ -309,7 +309,7 @@ VERIFY in CHANGES.md:
   grep -n "avgCycle\|Avg cycle" src/app/(app)/orders/page.tsx
   Paste result.
 
-DCC UPDATE: Update Orders to 85%. Mark PR-FINISH-ORDERS Pending proof.</pre></div></div>
+DCC UPDATE: Keep Orders at 85%. Mark PR-FINISH-ORDERS-PRODUCTION-FILTERS Pending proof and document production-safe no-demo payment/cycle placeholders.</pre></div></div>
 
   <div class="card" style="margin-bottom:12px;border:2px solid #7c3aed"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s violet">PR 07 — NorthStar unlock</span><strong style="font-size:14px">PR-TRADEEVENTS-FULL &mdash; migration + server action + Quick Lead button + eventId</strong></div>
   <div class="pb"><button class="cbtn" onclick="copyPrompt('p07')">Copy</button><pre id="p07">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.

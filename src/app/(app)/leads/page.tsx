@@ -18,6 +18,7 @@ export default async function LeadsPage({
     productId?: string | string[];
     autoQuote?: string | string[];
     handoff?: string | string[];
+    eventId?: string | string[];
   };
 }) {
   const workspace = await getWorkspaceAccess();
@@ -55,6 +56,7 @@ export default async function LeadsPage({
   const quickLeadEnabled = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
   const quickLeadProductId = readParam(searchParams?.productId).trim();
   const handoff = readParam(searchParams?.handoff).trim();
+  const eventId = readParam(searchParams?.eventId).trim();
   const handoffMessage = handoff === 'dashboard-overdue' || handoff === 'dashboard-open-follow-up' ? { title: 'Overview sent you into Follow-up', description: 'Your active mode and next working lane were preserved. Open one priority lead and clear the real blocker.' } : handoff === 'capture-converted' ? { title: 'Capture converted into Follow-up', description: 'The lead is live now. Stay in Follow-up to qualify it, then move into Quote only when the commercial path is ready.' } : null;
 
   const initialQuickCapture = quickLeadEnabled
@@ -112,6 +114,7 @@ export default async function LeadsPage({
         initialLeadType={viewModel.initialLeadType}
         initialTodayState={viewModel.todayState}
         initialQuickCapture={initialQuickCapture}
+        {...({ initialEventId: eventId || null } as any)}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { TradeEventEntryCapture } from '@/features/trade-events/components/trade
 import { TradeShowCapture } from '@/features/trade-events/components/trade-show-capture';
 import { convertTradeEventEntryToLead } from '@/features/trade-events/server/actions';
 import { getTradeEventsData } from '@/lib/queries/trade-events';
+import { createClient } from '@/lib/supabase/server';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
@@ -24,6 +25,14 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
   }
 
   const data = await getTradeEventsData(workspace.organization.id);
+  const supabase = await createClient();
+  const { data: captureDefaultRows } = await (supabase as any)
+    .from('trade_events')
+    .select('id, capture_defaults')
+    .eq('organization_id', workspace.organization.id);
+  const captureDefaultsByEventId = new Map<string, { source_label?: string | null; quick_lead_title?: string | null } | null>(
+    (captureDefaultRows ?? []).map((row: any) => [row.id, row.capture_defaults ?? null]),
+  );
   const noticeKey = Array.isArray(searchParams?.notice) ? searchParams.notice[0] ?? null : searchParams?.notice ?? null;
   const entryCountByEvent = new Map<string, number>();
   for (const entry of data.entries) {
@@ -113,7 +122,10 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
 
       {data.events.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.events.map((event) => (
+          {data.events.map((event) => {
+            const captureDefaults = captureDefaultsByEventId.get(event.id) ?? null;
+            const quickLeadSourceLabel = captureDefaults?.source_label ?? event.name;
+            return (
             <article key={event.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -137,8 +149,15 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
                 </div>
               </div>
               <p className="mt-4 text-sm text-slate-600">{event.notes ?? 'No notes added yet.'}</p>
+              <a
+                href={`/leads?quickLead=1&sourceType=trade_event&sourceLabel=${encodeURIComponent(quickLeadSourceLabel)}&eventId=${event.id}`}
+                className="mt-4 inline-flex rounded-2xl border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Quick Lead
+              </a>
             </article>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <WorkspaceState

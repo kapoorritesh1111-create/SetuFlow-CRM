@@ -167,6 +167,21 @@ export async function saveTradeEvent(_: ActionState | undefined, formData: FormD
   return { success: id ? 'Trade event updated.' : 'Trade event created.' };
 }
 
+export async function saveTradeEventCaptureDefaults(formData: FormData) {
+  'use server';
+  const supabase = await createClient();
+  const eventId = formData.get('event_id') as string;
+  const sourceLabel = formData.get('source_label') as string;
+  const quickLeadTitle = formData.get('quick_lead_title') as string;
+  if (!eventId) return;
+  await supabase.from('trade_events')
+    .update({ capture_defaults: { source_label: sourceLabel, quick_lead_title: quickLeadTitle } })
+    .eq('id', eventId);
+  revalidatePath('/admin/trade-events');
+  revalidatePath('/trade-events');
+  revalidatePath('/leads');
+}
+
 export async function deleteTradeEvent(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
   if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
   const workspace = await requireWorkspace();

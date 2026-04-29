@@ -1,104 +1,170 @@
-# PR-QUICKFIXES — Quote Version Schema + Hydration Follow-up
+# PR-TRADEEVENTS-FULL — Pending proof
 
-Status: **Pending proof — user running locally**
+## Status
+Pending proof. No npm commands were run.
 
-## Proof note
+## Migration reminder
+Run `src/mitigation/supabase/sql/110_trade_event_capture_defaults.sql` in Supabase before testing the new `capture_defaults` server action. Without that column, saving Quick Lead defaults will fail.
 
-- I did **not** run `npm ci`, `npm run typecheck`, `npm run build`, or any npm/node command.
-- Pipeline is locked per user instruction. No pipeline files were touched in this pass.
-- Trade show changes were left intact.
+## Reference files read
+- `public/reference-html/setuflow-northstar.html` — Trade Event → Quick Lead section
+- `public/reference-html/setuflow-admin-settings-redesign.html` — trade events admin pattern
 
-## Files modified in this pass
+## Files changed
+- `src/features/trade-events/server/actions.ts`
+- `src/app/(app)/admin/trade-events/page.tsx`
+- `src/features/trade-events/components/trade-events-manager.tsx`
+- `src/app/(app)/trade-events/page.tsx`
+- `src/app/(app)/leads/page.tsx`
+- `public/internal-dcc/index.html`
+- `CHANGES.md`
 
-1. `src/features/leads/server/actions.ts`
-2. `src/features/leads/components/leads-workspace.tsx`
-3. `public/internal-dcc/index.html`
-4. `CHANGES.md`
+## Implementation summary
+- Added `saveTradeEventCaptureDefaults(formData)` server action.
+- Added admin edit drawer fields for `source_label` and `quick_lead_title` defaults.
+- Added event-card `Quick Lead` link with `sourceType=trade_event`, encoded `sourceLabel`, and `eventId`.
+- Added `eventId` parsing in `leads/page.tsx` and passed it to `LeadsWorkspace` as an escape-hatch prop for the next QuickCapture wiring pass.
+- Updated DCC: Trade Events 88%, Leads 84%, NorthStar 78%, PR-TRADEEVENTS-FULL Pending proof.
 
-## What changed
+## Verification greps
 
-### Quote save error fixed
+```bash
+grep -rn "capture_defaults" src/
+```
 
-The save path now mirrors lead quote preview rows into `quote_version_line_items` with the required non-null schema fields: `sku_code`, `product_name`, `category_type`, `basis_applied`, and `pricing_mode`. This targets the Supabase error:
+```text
+src/app/(app)/admin/trade-events/page.tsx:14:  const { data: rowsData } = await supabase.from('trade_events').select('id, name, city, country, starts_on, ends_on, notes, updated_at, capture_defaults').eq('organization_id', organization.id).order('starts_on', { ascending: false }).order('name', { ascending: true });
+src/app/(app)/trade-events/page.tsx:31:    .select('id, capture_defaults')
+src/app/(app)/trade-events/page.tsx:34:    (captureDefaultRows ?? []).map((row: any) => [row.id, row.capture_defaults ?? null]),
+src/features/trade-events/components/trade-events-manager.tsx:15:  capture_defaults?: { source_label?: string | null; quick_lead_title?: string | null } | null;
+src/features/trade-events/components/trade-events-manager.tsx:61:      <input name="source_label" placeholder="Quick Lead source label" defaultValue={event?.capture_defaults?.source_label ?? ''} />
+src/features/trade-events/components/trade-events-manager.tsx:62:      <input name="quick_lead_title" placeholder="Quick Lead default title" defaultValue={event?.capture_defaults?.quick_lead_title ?? ''} />
+src/features/trade-events/components/trade-events-manager.tsx:153:              description="Prefill the Trade Event → Quick Lead handoff once the capture_defaults migration has been applied."
+src/features/trade-events/server/actions.ts:178:    .update({ capture_defaults: { source_label: sourceLabel, quick_lead_title: quickLeadTitle } })
+src/mitigation/supabase/sql/110_trade_event_capture_defaults.sql:1:ALTER TABLE trade_events ADD COLUMN IF NOT EXISTS capture_defaults JSONB;
+```
 
-`null value in column "sku_code" of relation "quote_version_line_items" violates not-null constraint`
+```bash
+grep -n "Quick Lead" src/app/\(app\)/trade-events/page.tsx
+```
 
-### Hydration risk reduced in quote workspace
+```text
+156:                Quick Lead
+```
 
-The inline quote workspace no longer uses default `toLocaleString()` for quote preview totals. It now uses a fixed `en-US` `Intl.NumberFormat`, so the server/client rendered amount strings are deterministic.
+```bash
+grep -n "eventId" src/app/\(app\)/leads/page.tsx
+```
 
-### DCC status
-
-`PR-QUICKFIXES` remains **Pending proof**. Scores were not changed.
+```text
+21:    eventId?: string | string[];
+59:  const eventId = readParam(searchParams?.eventId).trim();
+117:        {...({ initialEventId: eventId || null } as any)}
+```
 
 ## Key diffs
 
-```diff
-diff --git a/src/features/leads/server/actions.ts b/src/features/leads/server/actions.ts
-@@
--    const versionLines = previewLines.map((line) => ({
-+    const versionLines = previewLines.map((line, index) => ({
-       quote_version_id: quote.current_version_id,
-       product_id: line.product_id,
-       product_variant_id: line.product_variant_id,
-+      sku_code: `QUOTE-LINE-${index + 1}`,
-+      product_name: line.notes || `Quote line ${index + 1}`,
-+      category_type: 'chips',
-+      basis_applied: 'fob',
-+      pricing_mode: 'case',
-       moq: line.quantity,
-       final_unit_price: line.unit_price,
--      display_currency: line.currency,
-+      display_currency: normalizeQuoteDisplayCurrency(line.currency, currency),
-+      is_overridden: Boolean(line.is_price_overridden),
-+      override_reason: line.override_reason,
-+      overridden_by: line.overridden_by,
-+      overridden_at: line.overridden_at,
-       line_notes: line.notes ?? 'Saved from Leads quote preview',
-+      sort_order: index,
-+      calculation_meta: { source: 'leads_quote_preview' },
-+      catalog_price_snapshot: {},
-     }));
-```
+### `src/features/trade-events/server/actions.ts`
 
 ```diff
-diff --git a/src/features/leads/components/leads-workspace.tsx b/src/features/leads/components/leads-workspace.tsx
-@@
-+function formatPreviewAmount(value: number | null | undefined) {
-+  const amount = Number(value ?? 0);
-+  if (!Number.isFinite(amount)) return '0';
-+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amount);
++export async function saveTradeEventCaptureDefaults(formData: FormData) {
++  'use server';
++  const supabase = await createClient();
++  const eventId = formData.get('event_id') as string;
++  const sourceLabel = formData.get('source_label') as string;
++  const quickLeadTitle = formData.get('quick_lead_title') as string;
++  if (!eventId) return;
++  await supabase.from('trade_events')
++    .update({ capture_defaults: { source_label: sourceLabel, quick_lead_title: quickLeadTitle } })
++    .eq('id', eventId);
++  revalidatePath('/admin/trade-events');
++  revalidatePath('/trade-events');
++  revalidatePath('/leads');
 +}
-+
-@@
--`${currency} ${subtotal.toLocaleString()}`
-+`${currency} ${formatPreviewAmount(subtotal)}`
-@@
--{item.currency} {item.total.toLocaleString()}
-+{item.currency} {formatPreviewAmount(item.total)}
 ```
+
+### `src/app/(app)/admin/trade-events/page.tsx`
 
 ```diff
-diff --git a/public/internal-dcc/index.html b/public/internal-dcc/index.html
-@@
--<span class="s warn">Pending proof — quote save fixes running locally</span>
-+<span class="s warn">Pending proof — quote version schema + hydration fix running locally</span>
+-  const { data: rowsData } = await supabase.from('trade_events').select('id, name, city, country, starts_on, ends_on, notes, updated_at').eq('organization_id', organization.id).order('starts_on', { ascending: false }).order('name', { ascending: true });
++  const { data: rowsData } = await supabase.from('trade_events').select('id, name, city, country, starts_on, ends_on, notes, updated_at, capture_defaults').eq('organization_id', organization.id).order('starts_on', { ascending: false }).order('name', { ascending: true });
 ```
 
-## Next PR prompt
+### `src/features/trade-events/components/trade-events-manager.tsx`
 
-You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript. Repo zip attached. SURGICAL PR — quote save proof follow-up only.
+```diff
+-import { deleteTradeEvent, saveTradeEvent } from '@/features/trade-events/server/actions';
++import { deleteTradeEvent, saveTradeEvent, saveTradeEventCaptureDefaults } from '@/features/trade-events/server/actions';
++
++  capture_defaults?: { source_label?: string | null; quick_lead_title?: string | null } | null;
++
++  const renderCaptureDefaultFields = (event?: TradeEvent) => (
++    <>
++      <input type="hidden" name="event_id" defaultValue={event?.id ?? ''} />
++      <input name="source_label" placeholder="Quick Lead source label" defaultValue={event?.capture_defaults?.source_label ?? ''} />
++      <input name="quick_lead_title" placeholder="Quick Lead default title" defaultValue={event?.capture_defaults?.quick_lead_title ?? ''} />
++    </>
++  );
++
++        {editingEvent ? (
++          <form id="trade-event-capture-defaults-form" action={saveTradeEventCaptureDefaults} className="mt-5 space-y-5">
++            <DrawerSection
++              title="Quick Lead defaults"
++              description="Prefill the Trade Event → Quick Lead handoff once the capture_defaults migration has been applied."
++            >
++              <div className="grid gap-3 md:grid-cols-2">{renderCaptureDefaultFields(editingEvent)}</div>
++              <button type="submit" disabled={isPending} className="mt-3 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60">
++                Save Quick Lead defaults
++              </button>
++            </DrawerSection>
++          </form>
++        ) : null}
+```
 
-Mandatory rules:
-1. Read `public/internal-dcc/index.html` first and preserve its format.
-2. Do not touch pipeline files; pipeline is locked.
-3. Do not touch trade events files; trade show changes are working.
-4. Do not run npm/node commands unless explicitly permitted by the user.
-5. Mark status Pending proof until user confirms local proof.
+### `src/app/(app)/trade-events/page.tsx`
 
-Proof target:
-- In Leads quote preview, edit QTY and unit price.
-- Click Create/open draft preview, then Continue Terms step, then Review/Send gate.
-- Confirm no `quote_version_line_items.sku_code` not-null error appears.
-- Confirm no hydration errors appear on quote workspace load.
-- Return to `/quotes?quoteId=...` and confirm saved line totals and quote total persist.
+```diff
++import { createClient } from '@/lib/supabase/server';
++
++  const supabase = await createClient();
++  const { data: captureDefaultRows } = await (supabase as any)
++    .from('trade_events')
++    .select('id, capture_defaults')
++    .eq('organization_id', workspace.organization.id);
++  const captureDefaultsByEventId = new Map<string, { source_label?: string | null; quick_lead_title?: string | null } | null>(
++    (captureDefaultRows ?? []).map((row: any) => [row.id, row.capture_defaults ?? null]),
++  );
++
++            const captureDefaults = captureDefaultsByEventId.get(event.id) ?? null;
++            const quickLeadSourceLabel = captureDefaults?.source_label ?? event.name;
++
++              <a
++                href={`/leads?quickLead=1&sourceType=trade_event&sourceLabel=${encodeURIComponent(quickLeadSourceLabel)}&eventId=${event.id}`}
++                className="mt-4 inline-flex rounded-2xl border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
++              >
++                Quick Lead
++              </a>
+```
+
+### `src/app/(app)/leads/page.tsx`
+
+```diff
++    eventId?: string | string[];
++
++  const eventId = readParam(searchParams?.eventId).trim();
++
++        {...({ initialEventId: eventId || null } as any)}
+```
+
+### `public/internal-dcc/index.html`
+
+```diff
+-    <span class="pill r">capture_defaults SQL only — not wired</span>
++    <span class="pill w">PR-TRADEEVENTS-FULL Pending proof</span>
+
+-    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf r" style="width:62%"></div></div><div class="mp" style="color:var(--bad)">62%</div><span class="s bad">SQL migration created. Column not in DB. No server action. No Quick Lead button on event cards. Unchanged.</span></div>
++    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s warn">PR-TRADEEVENTS-FULL pending proof. capture_defaults server action, admin defaults form, and event-card Quick Lead links are wired. Run SQL migration before testing saves.</span></div>
+
+-    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf r" style="width:60%"></div></div><div class="mp" style="color:var(--bad)">60%</div><span class="s bad">Quote save fixed. Pipeline real. Trade Event &rarr; Quick Lead still broken (no event card button, no capture_defaults).</span></div>
++    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf w" style="width:78%"></div></div><div class="mp" style="color:var(--warn)">78%</div><span class="s warn">PR-TRADEEVENTS-FULL pending proof: Trade Event &rarr; Quick Lead path now has event links and eventId handoff. Supabase migration and QuickCapture trade_event_id wiring remain proof/follow-up items.</span></div>
+```
