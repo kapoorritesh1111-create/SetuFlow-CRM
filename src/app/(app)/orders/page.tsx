@@ -6,24 +6,19 @@
  */
 
 import Link from 'next/link';
-import { PageHeader } from '@/components/ui/page-header';
-import { SectionCard } from '@/components/ui/section-card';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
-import { cn, formatDateTime } from '@/lib/utils';
-import { workspaceHeroClass, workspacePrimaryButtonClass, workspaceSecondaryButtonClass } from '@/components/ui/workspace-surfaces';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { inferOrderTradeWorkflow } from '@/features/trade-workflow/logic';
 import { predictOrderDelay } from '@/features/ai/logic/intelligence';
 import { AICompactActionBrief, AIInsightCard, AIOrderDelayPanel } from '@/features/ai/ui/intelligence-panels';
-import { uploadOrderDocument, uploadOrderDocumentAction } from '@/features/orders/server/actions';
+import { uploadOrderDocumentAction } from '@/features/orders/server/actions';
 import { TradeSignalGrid } from '@/features/trade-workflow/ui';
 import { extractLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attributes';
 import { getCommercialLockStateLabel, parseContractCommercialSnapshot } from '@/lib/contract-lock';
+import { OrderDetailPanel } from '@/features/orders/components/OrderDetailPanel';
 import { evaluateOrderExecution, getOrderExecutionStateLabel } from '@/lib/order-execution';
 import { buildOrderOperationalControlState, type OrderOperationalControlState } from '@/lib/order-operations';
 import type { DocumentRequirementRule } from '@/lib/document-requirements';
@@ -270,7 +265,7 @@ function decodeNotice(noticeKey: string | null) {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default async function OrdersPage({ searchParams }: { searchParams?: { notice?: string | string[]; mode?: string | string[]; handoff?: string | string[]; quoteId?: string | string[]; leadId?: string | string[] } }) {
+export default async function OrdersPage({ searchParams }: { searchParams?: { notice?: string | string[]; mode?: string | string[]; handoff?: string | string[]; quoteId?: string | string[]; leadId?: string | string[]; openOrderId?: string | string[] } }) {
   const workspace = await getWorkspaceAccess();
 
   if (!workspace.membership || !workspace.organization) {
@@ -296,6 +291,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   const orgId = workspace.organization.id;
   const requestedQuoteId = Array.isArray(searchParams?.quoteId) ? searchParams?.quoteId[0] ?? null : searchParams?.quoteId ?? null;
   const requestedLeadId = Array.isArray(searchParams?.leadId) ? searchParams?.leadId[0] ?? null : searchParams?.leadId ?? null;
+  const openOrderId = Array.isArray(searchParams?.openOrderId) ? searchParams?.openOrderId[0] ?? null : searchParams?.openOrderId ?? null;
   const normalizedRoles = new Set((workspace.currentRoles ?? []).map((role) => String(role).trim().toLowerCase()).filter(Boolean));
   const primaryOperationalContext = normalizedRoles.has('sourcing') || normalizedRoles.has('procurement')
     ? 'supplier'
@@ -335,34 +331,66 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
   const quotes: QuoteRow[] = quoteRows;
 
+  const modeParam = Array.isArray(searchParams?.mode) ? searchParams?.mode[0] ?? 'all' : searchParams?.mode ?? 'all';
+  const perspectiveMode = modeParam === 'buyers' || modeParam === 'suppliers' ? modeParam : 'all';
+
   if (quotes.length === 0) {
+    // ── NS EMPTY STATE — same shell as live workspace, queue just empty ──────
     return (
-      <div className="space-y-6 p-4 sm:p-6">
-        <StateMessage
-          title={primaryOperationalContext === 'supplier' ? 'Supplier execution context is active' : primaryOperationalContext === 'buyer' ? 'Buyer execution context is active' : 'Mixed execution context is active'}
-          description={primaryOperationalContext === 'supplier' ? 'Orders is now the execution workspace for supplier-side fulfilment. The primary action is to open one accepted record and clear blockers.' : primaryOperationalContext === 'buyer' ? 'Orders is now the execution workspace for buyer-side fulfilment. The primary action is to open one accepted record and keep execution moving.' : 'Orders is showing accepted work across buyer and supplier activity. Focus on one accepted record at a time and clear blockers first.'}
-          tone="neutral"
-        />
-        <PageHeader
-          eyebrow="Orders / Execution"
-          title="Orders / Execution"
-          description="Accepted and sent quotes become operational orders here with documents, compliance, and execution status in one place."
-          badge="Live"
-          status="No orders yet"
-          actions={[]}
-        />
-        <SectionCard
-          eyebrow="No orders yet"
-          title="Orders appear here when quotes are sent"
-          description="Confirm and send an approved quote, and it will appear here with its full execution context."
-        >
-          <Link
-            href={PRODUCT_ROUTES.app.leads}
-            className="inline-flex rounded-2xl bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
-          >
-            Go to Leads
-          </Link>
-        </SectionCard>
+      <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
+        {/* TOPBAR */}
+        <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
+          <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'5px 12px',borderRadius:'6px',background:'rgba(31,72,124,.06)',border:'1px solid rgba(31,72,124,.12)'}}>
+              <div><div style={{fontSize:'11px',fontWeight:800,color:'#1F487C',letterSpacing:'-.1px'}}>SETU <span style={{color:'#279491'}}>Flow</span> CRM</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Groups LLC</div></div>
+            </div>
+            <div style={{width:'1px',height:'24px',background:'#e2e8f0'}}/>
+            <div><div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#0c7fff'}}>Execution</div><div style={{fontSize:'16px',fontWeight:700,color:'#1e293b',letterSpacing:'-.3px'}}>Orders Desk</div></div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+            <div style={{display:'flex',background:'#f1f5f9',borderRadius:'6px',padding:'3px',border:'1px solid #e2e8f0',gap:'2px'}}>
+              {(['all','buyers','suppliers'] as const).map(m=>(
+                <Link key={m} href={m==='all'?PRODUCT_ROUTES.app.orders:`${PRODUCT_ROUTES.app.orders}?mode=${m}`} style={{padding:'4px 11px',borderRadius:'5px',fontSize:'11px',fontWeight:600,textDecoration:'none',background:perspectiveMode===m?'#0b2e4a':'transparent',color:perspectiveMode===m?'white':'#64748b'}}>{m.charAt(0).toUpperCase()+m.slice(1)}</Link>
+              ))}
+            </div>
+            <Link href="/quotes?export=csv" style={{padding:'7px 12px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:600,color:'#334155',textDecoration:'none'}}>Export</Link>
+          </div>
+        </header>
+
+        {/* STATS STRIP — all zero */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>
+          {[
+            {label:'Dispatch blocked',value:'0',sub:'No blockers'},
+            {label:'Docs pending',value:'0',sub:'Upload required'},
+            {label:'In execution',value:'0',sub:'Docs complete, dispatching'},
+            {label:'Delivered',value:'0',sub:'Awaiting payment confirmation'},
+            {label:'Execution value',value:'—',sub:'All active orders'},
+            {label:'Avg cycle time',value:'—',sub:'Accepted to delivered'},
+          ].map((kpi)=>(
+            <div key={kpi.label} style={{background:'white',borderRadius:'12px',border:'1px solid #e2e8f0',padding:'14px 16px'}}>
+              <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'4px'}}>{kpi.label}</div>
+              <div style={{fontSize:'24px',fontWeight:800,color:'#0b2e4a',letterSpacing:'-.5px',lineHeight:'1'}}>{kpi.value}</div>
+              <div style={{fontSize:'10px',color:'#94a3b8',marginTop:'4px'}}>{kpi.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* EMPTY ORDER QUEUE */}
+        <div style={{margin:'20px 24px',background:'white',borderRadius:'18px',border:'2px dashed #e2e8f0',padding:'60px 40px',textAlign:'center'}}>
+          <div style={{width:'56px',height:'56px',borderRadius:'14px',background:'#f1f5f9',border:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',fontSize:'24px'}}>📦</div>
+          <div style={{fontSize:'18px',fontWeight:700,color:'#0b2e4a',marginBottom:'8px'}}>No orders yet</div>
+          <div style={{fontSize:'13px',color:'#64748b',maxWidth:'440px',margin:'0 auto 24px',lineHeight:'1.6'}}>
+            {primaryOperationalContext === 'supplier'
+              ? 'Accepted supplier quotes will appear here as operational orders with documents, compliance, and dispatch readiness in one place.'
+              : primaryOperationalContext === 'buyer'
+              ? 'Send an approved quote to a buyer and it will appear here with its full execution context and blockers visible.'
+              : 'Accepted and sent quotes become operational orders here. Send a quote to get started.'}
+          </div>
+          <div style={{display:'flex',gap:'12px',justifyContent:'center'}}>
+            <Link href={PRODUCT_ROUTES.app.leads} style={{padding:'10px 20px',borderRadius:'8px',background:'#0b2e4a',color:'white',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>Go to Follow-up</Link>
+            <Link href={PRODUCT_ROUTES.app.quotes} style={{padding:'10px 20px',borderRadius:'8px',border:'1px solid #e2e8f0',background:'white',color:'#334155',fontSize:'13px',fontWeight:600,textDecoration:'none'}}>View Quotes</Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -583,8 +611,6 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   const handoffKey = Array.isArray(searchParams?.handoff) ? searchParams?.handoff[0] ?? null : searchParams?.handoff ?? null;
   const focusQuoteId = requestedQuoteId;
   const focusLeadId = requestedLeadId;
-  const modeParam = Array.isArray(searchParams?.mode) ? searchParams?.mode[0] ?? 'all' : searchParams?.mode ?? 'all';
-  const perspectiveMode = modeParam === 'buyers' || modeParam === 'suppliers' ? modeParam : 'all';
   const perspectiveAccepted = accepted.filter((order) => perspectiveMode === 'all' ? true : perspectiveMode === 'buyers' ? order.leadType === 'buyer' : order.leadType === 'supplier');
   const focusedOrder = focusQuoteId ? accepted.find((order) => order.quoteId === focusQuoteId) ?? null : focusLeadId ? accepted.find((order) => order.leadId === focusLeadId) ?? null : perspectiveAccepted[0] ?? null;
   const handoffMessage = handoffKey === 'quote-to-orders' ? { title: 'Quote handoff continues here', description: 'The commercial decision is finished. Stay in Orders to confirm documents, compliance, and release readiness on the accepted record.', tone: 'success' as const } : handoffKey === 'dashboard-execution' ? { title: 'Dashboard routed you into execution', description: 'This jump preserved your active mode so you can work the next accepted record instead of reopening the watchtower.', tone: 'success' as const } : handoffKey === 'approval-send-open-orders' ? { title: 'Sending hands off to execution here', description: 'Use Orders when the next question is fulfilment readiness, release evidence, or dispatch posture.', tone: 'success' as const } : handoffKey === 'dashboard-open-orders' ? { title: 'Order queue opened from Overview', description: 'The next working route is now in focus. Open the accepted record instead of scanning every card first.', tone: 'success' as const } : null;
@@ -741,7 +767,14 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                   <div style={{fontSize:'9px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>{(order.currency??'USD')} · {order.pricingBasisLabel}</div>
                   <div style={{display:'flex',gap:'6px',marginTop:'4px'}}>
                     <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${order.quoteId}`} style={{padding:'6px 14px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:700,color:'#334155',textDecoration:'none'}}>View quote</Link>
-                    <Link href={`#order-${order.quoteId}`} style={{padding:'6px 14px',borderRadius:'6px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Open order</Link>
+                    <Link
+                      href={openOrderId === order.quoteId
+                        ? `${PRODUCT_ROUTES.app.orders}?mode=${perspectiveMode}`
+                        : `${PRODUCT_ROUTES.app.orders}?mode=${perspectiveMode}&openOrderId=${order.quoteId}`}
+                      style={{padding:'6px 14px',borderRadius:'6px',background: openOrderId === order.quoteId ? '#334155' : '#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}
+                    >
+                      {openOrderId === order.quoteId ? 'Close order' : 'Open order'}
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -864,6 +897,34 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                   </button>
                 </div>
               </div>
+
+              {/* ── ORDER DETAIL PANEL — expands when openOrderId matches ── */}
+              {openOrderId === order.quoteId && (
+                <OrderDetailPanel
+                  quoteId={order.quoteId}
+                  leadId={order.leadId}
+                  contractId={order.contract?.id ?? null}
+                  companyName={order.companyName}
+                  executionState={order.executionState}
+                  executionBlockers={order.executionBlockers}
+                  canAdvance={order.canAdvanceExecution}
+                  nextExecutionState={order.nextExecutionState}
+                  documents={order.documents.map(d => ({
+                    id: d.id,
+                    file_name: d.file_name,
+                    doc_type: d.doc_type,
+                    status: d.status,
+                    uploaded_at: d.uploaded_at,
+                    requirement_code: d.requirement_code,
+                  }))}
+                  docBlockers={docBlockers}
+                  docOk={docOk}
+                  pricingBasisLabel={order.pricingBasisLabel}
+                  currency={order.currency}
+                  dealValue={order.dealValue}
+                  updatedAt={order.updatedAt}
+                />
+              )}
             </div>
           );
         })}

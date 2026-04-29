@@ -20,6 +20,7 @@ const PRIMARY_LABELS: Record<string, string> = {
   '/orders': 'Orders',
   '/pipeline': 'Pipeline',
   '/products': 'Catalog',
+  '/trade-events': 'Events',
 };
 
 const UTILITY_LABELS: Record<string, string> = {

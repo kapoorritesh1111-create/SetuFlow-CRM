@@ -1,12 +1,21 @@
 # SETU Flow PR Tracker
 
-NorthStar rebuild is active. PR-NS-07.5 is closed in this repo pass; PR-NS-08 is now the active next implementation step.
+NorthStar rebuild is active. PR-NS-09A hotfix is closed in this repo pass; PR-NS-09 full pass is the active next implementation step.
 
 ## Current completed pass
 
-### PR-NS-07.5 — NorthStar visual parity hardening
+### PR-NS-09A — Hotfix: Trade Show Nav · Quote Constraint · Orders Workspace · Open Order
 
 Status: Completed
+
+Fixes applied:
+- `category_type: 'general'` → `'chips'` in `leads/server/actions.ts` — resolves constraint violation on inline quote wizard (edit quote, Terms/Review/Send Gate steps).
+- `/trade-events` added to `PRIMARY_LABELS` in `navigation.tsx` — Trade Events now visible in sidebar as "Events" with calendar icon.
+- "Trade Show" button added to global topbar (`app-shell.tsx`) beside + Quick Lead.
+- Orders empty state replaced: old `PageHeader`/`SectionCard` workspace replaced with full NS Orders Desk shell (topbar, stats strip, empty queue card with CTAs).
+- "Open order" button fixed: was `#anchor` scroll → now navigates to `leads?leadId=...&handoff=order-open&quoteId=...`.
+- Removed unused imports from orders page.
+
 
 Goal: make Quotes, Orders, Pipeline, and Catalog look and feel like the redesign HTML, not just behave correctly.
 

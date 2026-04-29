@@ -1291,13 +1291,32 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
   if (quote.current_version_id) {
     const { error: deleteVersionLineError } = await db.from('quote_version_line_items').delete().eq('quote_version_id', quote.current_version_id);
     if (deleteVersionLineError) return { error: deleteVersionLineError.message };
+
+    // Derive category_type per product from catalog — fall back to 'chips'
+    const previewProductIds = previewLines.map((l) => l.product_id).filter(Boolean);
+    let previewCategoryMap: Record<string, 'chips' | 'powders'> = {};
+    if (previewProductIds.length > 0) {
+      const { data: prodRows } = await db.from('products').select('id, category_id').in('id', previewProductIds);
+      const catIds = (prodRows ?? []).map((p: any) => p.category_id).filter(Boolean);
+      if (catIds.length > 0) {
+        const { data: catRows } = await db.from('product_categories').select('id, category_type').in('id', catIds);
+        const catMap: Record<string, 'chips' | 'powders'> = {};
+        for (const cat of (catRows ?? [])) {
+          if (cat.category_type === 'chips' || cat.category_type === 'powders') catMap[cat.id] = cat.category_type;
+        }
+        for (const prod of (prodRows ?? [])) {
+          if (prod.category_id && catMap[prod.category_id]) previewCategoryMap[prod.id] = catMap[prod.category_id];
+        }
+      }
+    }
+
     const versionLines = previewLines.map((line, index) => ({
       quote_version_id: quote.current_version_id,
       product_id: line.product_id,
       product_variant_id: line.product_variant_id,
       sku_code: `QUOTE-LINE-${index + 1}`,
       product_name: `Product ${index + 1}`,
-      category_type: 'general',
+      category_type: (line.product_id && previewCategoryMap[line.product_id]) ? previewCategoryMap[line.product_id] : 'chips',
       basis_applied: 'fob',
       pricing_mode: 'case',
       moq: line.quantity,

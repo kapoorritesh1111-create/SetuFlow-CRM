@@ -282,6 +282,11 @@ export function AppShell({
                       <span>Quick Lead</span>
                     </a>
 
+                    <a href="/trade-events" className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" title="Trade Events — capture leads on the show floor">
+                      <FaIcon icon="calendar" fixedWidth className="text-sm" />
+                      <span>Trade Show</span>
+                    </a>
+
                     <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-sm font-semibold text-white shadow-soft ring-1 ring-white/20">
                       {getInitials(profile?.full_name ?? profile?.username)}
                     </div>
