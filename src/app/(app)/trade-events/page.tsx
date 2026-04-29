@@ -21,7 +21,28 @@ type TradeEventsCaptureDefaultsDb = {
     };
   };
 };
-
+function formatTradeEventDateRange(startsOn?: string | null, endsOn?: string | null) {
+  if (!startsOn && !endsOn) return 'Dates not set';
+  const parseDate = (value?: string | null) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+  const start = parseDate(startsOn);
+  const end = parseDate(endsOn);
+  if (!start && !end) return 'Dates not set';
+  if (start && !end) return formatDate(startsOn);
+  if (!start && end) return formatDate(endsOn);
+  const sameYear = start!.getUTCFullYear() === end!.getUTCFullYear();
+  const startLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  }).format(start!);
+  const endLabel = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(end!);
+  return `${startLabel} – ${endLabel}`;
+}
 
 export default async function TradeEventsPage({ searchParams }: { searchParams?: { notice?: string | string[] } }) {
   const workspace = await requireWorkspace();
@@ -140,36 +161,42 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
           {data.events.map((event) => {
             const captureDefaults = captureDefaultsByEventId.get(event.id) ?? null;
             const quickLeadSourceLabel = captureDefaults?.source_label ?? event.name;
+            const eventEntryCount = entryCountByEvent.get(event.id) ?? 0;
+            const captureHref = `/leads?quickLead=1&sourceType=trade_event&eventId=${event.id}&sourceLabel=${encodeURIComponent(quickLeadSourceLabel)}`;
             return (
             <article key={event.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-4">
+                <span className="inline-flex w-fit rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-base font-semibold text-emerald-800">
+                  {eventEntryCount} lead{eventEntryCount === 1 ? '' : 's'} captured
+                </span>
                 <div>
-                  <p className="text-lg font-semibold text-slate-900">{event.name}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{event.name}</p>
+                  <p className="mt-2 text-sm font-medium text-slate-700">{formatTradeEventDateRange(event.starts_on, event.ends_on)}</p>
                   <p className="mt-1 text-sm text-slate-600">
                     {[event.city, event.country].filter(Boolean).join(', ') || 'Location not set'}
                   </p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                  {entryCountByEvent.get(event.id) ?? 0} entries
-                </span>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Starts</p>
-                  <p className="mt-1 text-sm text-slate-800">{formatDate(event.starts_on)}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Ends</p>
-                  <p className="mt-1 text-sm text-slate-800">{formatDate(event.ends_on)}</p>
-                </div>
               </div>
               <p className="mt-4 text-sm text-slate-600">{event.notes ?? 'No notes added yet.'}</p>
-              <a
-                href={`/leads?quickLead=1&sourceType=trade_event&sourceLabel=${encodeURIComponent(quickLeadSourceLabel)}&eventId=${event.id}`}
-                className="mt-4 inline-flex rounded-2xl border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Quick Lead
-              </a>
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <a
+                  href={captureHref}
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-700 px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-800 sm:flex-1"
+                >
+                  Capture lead
+                </a>
+                <button
+                  type="button"
+                  data-share-capture-link={captureHref}
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M7 6.5h7.5v9H7z" />
+                    <path d="M5.5 13.5h-1v-9H12v1" />
+                  </svg>
+                  <span>Share capture link</span>
+                </button>
+              </div>
             </article>
             );
           })}
@@ -181,6 +208,29 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
           description="Add records for IndusFood, Gulfood, Anuga, and other shows to power source reporting."
         />
       )}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            document.addEventListener('click', async function (event) {
+              var button = event.target && event.target.closest ? event.target.closest('[data-share-capture-link]') : null;
+              if (!button) return;
+              var link = button.getAttribute('data-share-capture-link');
+              if (!link) return;
+              var absoluteLink = new URL(link, window.location.origin).toString();
+              try {
+                await navigator.clipboard.writeText(absoluteLink);
+                var label = button.querySelector('span');
+                if (!label) return;
+                var original = label.textContent || 'Share capture link';
+                label.textContent = 'Copied!';
+                window.setTimeout(function () { label.textContent = original; }, 2000);
+              } catch (error) {
+                window.prompt('Copy capture link', absoluteLink);
+              }
+            });
+          `,
+        }}
+      />
     </div>
   );
 }

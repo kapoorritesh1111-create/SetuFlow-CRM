@@ -1,0 +1,374 @@
+diff -ruN setu_pr2_original/SetuFlow-CRM-main/CHANGES.md setu_pr2/SetuFlow-CRM-main/CHANGES.md
+--- setu_pr2_original/SetuFlow-CRM-main/CHANGES.md	2026-04-29 16:40:46.000000000 +0000
++++ setu_pr2/SetuFlow-CRM-main/CHANGES.md	2026-04-29 16:45:42.314031298 +0000
+@@ -46,3 +46,52 @@
+ 
+ - No npm commands were run.
+ - Pending proof: no browser/runtime verification was performed in this environment.
++
++---
++
++# Trade Show PR 2 — Pending proof
++
++DCC: Trade Show 48→65%. TS-2 Pending proof.
++
++## Files touched
++
++- `src/app/(app)/leads/page.tsx`
++- `src/features/leads/types/workspace.ts`
++- `src/features/leads/components/leads-workspace.tsx`
++- `src/features/leads/components/lead-drawer.tsx`
++- `src/features/leads/components/LeadDrawerFooter.tsx`
++- `src/app/(app)/contact-exchange/scan/page.tsx`
++- `src/components/contact-exchange/contact-intake-review.tsx`
++- `src/features/leads/server/contact-scan-actions.ts`
++
++## Changes
++
++- Added `initialFastField` detection on `/leads` only when both `quickLead=1` and `eventId` are present.
++- Opened the lead drawer immediately in quick mode for event fast-field capture while preserving the existing `trade_event_id` prefill.
++- Added a fast-field drawer state for trade-event quick lead links:
++  - company name
++  - contact name
++  - product interest dropdown
++  - `Add more details` toggle for the rest of the existing quick drawer fields
++  - `Save contact` submit label
++- Preserved the existing regular lead drawer for non-event entry points.
++- Passed `eventId` through `/contact-exchange/scan` into the scan review client component.
++- Included `trade_event_id` in the contact-scan lead creation payload when an event is present.
++
++## Verification
++
++```bash
++grep -n "initialFastField\|fast.field\|fastField" src/features/leads/types/workspace.ts
++# >= 1 match
++
++grep -n "initialFastField\|fast.field\|fastField" src/features/leads/components/leads-workspace.tsx
++# >= 2 matches
++
++grep -n "eventId" src/app/(app)/contact-exchange/scan/page.tsx
++# >= 1 match
++```
++
++## Notes
++
++- No npm commands were run.
++- Pending proof: no browser/runtime verification was performed in this environment.
+diff -ruN setu_pr2_original/SetuFlow-CRM-main/src/app/(app)/contact-exchange/scan/page.tsx setu_pr2/SetuFlow-CRM-main/src/app/(app)/contact-exchange/scan/page.tsx
+--- setu_pr2_original/SetuFlow-CRM-main/src/app/(app)/contact-exchange/scan/page.tsx	2026-04-29 15:56:52.000000000 +0000
++++ setu_pr2/SetuFlow-CRM-main/src/app/(app)/contact-exchange/scan/page.tsx	2026-04-29 16:45:04.838166484 +0000
+@@ -32,7 +32,13 @@
+   'Continue into the CRM workflow once the information is ready.',
+ ];
+ 
+-export default async function ScanContactInfoPage() {
++export default async function ScanContactInfoPage({
++  searchParams,
++}: {
++  searchParams?: { eventId?: string | string[] };
++}) {
++  const readParam = (value?: string | string[]) => Array.isArray(value) ? value[0] ?? '' : value ?? '';
++  const eventId = readParam(searchParams?.eventId).trim();
+   const workspace = await requireWorkspace();
+ 
+   if (!workspace.membership || !workspace.organization) {
+@@ -83,7 +89,7 @@
+         </div>
+       </SectionCard>
+ 
+-      <ContactIntakeReview />
++      <ContactIntakeReview initialEventId={eventId || null} />
+ 
+       <SectionCard>
+         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Input methods</p>
+diff -ruN setu_pr2_original/SetuFlow-CRM-main/src/app/(app)/leads/page.tsx setu_pr2/SetuFlow-CRM-main/src/app/(app)/leads/page.tsx
+--- setu_pr2_original/SetuFlow-CRM-main/src/app/(app)/leads/page.tsx	2026-04-29 15:56:52.000000000 +0000
++++ setu_pr2/SetuFlow-CRM-main/src/app/(app)/leads/page.tsx	2026-04-29 16:43:50.115384197 +0000
+@@ -57,6 +57,7 @@
+   const quickLeadProductId = readParam(searchParams?.productId).trim();
+   const handoff = readParam(searchParams?.handoff).trim();
+   const eventId = readParam(searchParams?.eventId).trim();
++  const initialFastField = quickLeadEnabled && Boolean(eventId);
+   const handoffMessage = handoff === 'dashboard-overdue' || handoff === 'dashboard-open-follow-up' ? { title: 'Overview sent you into Follow-up', description: 'Your active mode and next working lane were preserved. Open one priority lead and clear the real blocker.' } : handoff === 'capture-converted' ? { title: 'Capture converted into Follow-up', description: 'The lead is live now. Stay in Follow-up to qualify it, then move into Quote only when the commercial path is ready.' } : null;
+ 
+   const initialQuickCapture = quickLeadEnabled
+@@ -115,6 +116,7 @@
+         initialTodayState={viewModel.todayState}
+         initialQuickCapture={initialQuickCapture}
+         initialEventId={eventId || null}
++        initialFastField={initialFastField}
+       />
+     </div>
+   );
+diff -ruN setu_pr2_original/SetuFlow-CRM-main/src/components/contact-exchange/contact-intake-review.tsx setu_pr2/SetuFlow-CRM-main/src/components/contact-exchange/contact-intake-review.tsx
+--- setu_pr2_original/SetuFlow-CRM-main/src/components/contact-exchange/contact-intake-review.tsx	2026-04-29 15:56:52.000000000 +0000
++++ setu_pr2/SetuFlow-CRM-main/src/components/contact-exchange/contact-intake-review.tsx	2026-04-29 16:45:04.837556215 +0000
+@@ -54,7 +54,7 @@
+   return profile === 'business_card' ? 'business card' : profile === 'screenshot' ? 'screenshot' : profile === 'scan_pdf' ? 'scan-PDF' : 'generic source';
+ }
+ 
+-export function ContactIntakeReview() {
++export function ContactIntakeReview({ initialEventId = null }: { initialEventId?: string | null }) {
+   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+   const [publicCardUrl, setPreviewUrl] = useState('');
+   const [assistText, setAssistText] = useState('');
+@@ -163,6 +163,7 @@
+       formData.set('source_label', draft.sourceLabel || selectedFile?.name || 'Contact scan review');
+       formData.set('source_profile', extraction?.sourceProfile || 'generic');
+       formData.set('extraction_boundary', extraction?.boundary || 'server_manual_text');
++      if (initialEventId) formData.set('trade_event_id', initialEventId);
+ 
+       const result = await createLeadFromContactScanReview(formData);
+       if (result.error) throw new Error(result.error);
+diff -ruN setu_pr2_original/SetuFlow-CRM-main/src/features/leads/components/LeadDrawerFooter.tsx setu_pr2/SetuFlow-CRM-main/src/features/leads/components/LeadDrawerFooter.tsx
+--- setu_pr2_original/SetuFlow-CRM-main/src/features/leads/components/LeadDrawerFooter.tsx	2026-04-29 15:56:52.000000000 +0000
++++ setu_pr2/SetuFlow-CRM-main/src/features/leads/components/LeadDrawerFooter.tsx	2026-04-29 16:44:19.933248124 +0000
+@@ -24,6 +24,7 @@
+   formId?: string;
+   wizard?: WizardFooterMeta;
+   disableSubmit?: boolean;
++  submitLabel?: string;
+ }
+ 
+ export default function LeadDrawerFooter({
+@@ -37,6 +38,7 @@
+   formId,
+   wizard,
+   disableSubmit = false,
++  submitLabel,
+ }: LeadDrawerFooterProps) {
+   const isFinalStep = wizard ? wizard.activeStepIndex === wizard.totalSteps - 1 : true;
+ 
+@@ -110,7 +112,7 @@
+             disabled={isPending || disableSubmit}
+             className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+           >
+-            {isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : isQuickMode ? '✓ Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead'}
++            {isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : submitLabel ?? (isQuickMode ? '✓ Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead')}
+           </button>
+         )}
+         {isEditingExistingLead && !isQuickMode && isFinalStep && onCreateQuote ? (
+diff -ruN setu_pr2_original/SetuFlow-CRM-main/src/features/leads/components/lead-drawer.tsx setu_pr2/SetuFlow-CRM-main/src/features/leads/components/lead-drawer.tsx
+--- setu_pr2_original/SetuFlow-CRM-main/src/features/leads/components/lead-drawer.tsx	2026-04-29 15:56:52.000000000 +0000
++++ setu_pr2/SetuFlow-CRM-main/src/features/leads/components/lead-drawer.tsx	2026-04-29 16:45:04.836912501 +0000
+@@ -219,10 +219,12 @@
+   navigationMeta,
+   initialStepId,
+   prefill = null,
++  fastFieldMode = false,
+ }: LeadDrawerProps) {
+   const router = useRouter();
+   const isQuickMode = mode === 'quick';
+   const isEditingExistingLead = Boolean(lead?.id);
++  const isFastFieldMode = Boolean(fastFieldMode && isQuickMode && !isEditingExistingLead && lead?.trade_event_id);
+   const prefilledProductIds = useMemo(() => Array.from(new Set(prefill?.selectedProductIds ?? [])).filter(Boolean), [prefill]);
+   const [autoOpenQuoteAfterSave, setAutoOpenQuoteAfterSave] = useState(Boolean(prefill?.autoOpenQuoteAfterSave && !isEditingExistingLead));
+   const shouldAutoOpenQuoteAfterSave = Boolean(autoOpenQuoteAfterSave && !isEditingExistingLead);
+@@ -269,6 +271,7 @@
+   const [pendingMarketName, setPendingMarketName] = useState('');
+   const [activeStepId, setActiveStepId] = useState<LeadWizardStepId>(initialStepId ?? 'basics');
+   const [validationIssues, setValidationIssues] = useState<string[]>([]);
++  const [showFastFieldDetails, setShowFastFieldDetails] = useState(false);
+   const companyInputRef = useRef<HTMLInputElement | null>(null);
+   const quoteProductsRef = useRef<HTMLDivElement | null>(null);
+   const formRef = useRef<HTMLFormElement | null>(null);
+@@ -575,6 +578,15 @@
+     );
+   };
+ 
++  const handleFastFieldProductChange = (productId: string) => {
++    if (!productId) {
++      setCoverageSelections([createCoverageSelection('', [], 0)]);
++      return;
++    }
++    const product = products.find((item) => item.id === productId);
++    setCoverageSelections([createCoverageSelection(product?.category_id ?? '', [productId], 0)]);
++  };
++
+   const handleToggleCoverageProduct = (key: string, productId: string, checked: boolean) => {
+     setCoverageSelections((current) =>
+       current.map((selection) => {
+@@ -869,7 +881,7 @@
+           setPhone('');
+           setPhoneSecondary('');
+           setWebsite('');
+-          setTradeEventId('');
++          setTradeEventId(isFastFieldMode ? lead?.trade_event_id ?? '' : '');
+           setPipelineId('');
+           setStageId('');
+           setCountryId('');
+@@ -1102,7 +1114,7 @@
+ 
+       <div className="space-y-5 px-5 py-5">
+         {/* ── SCAN CAPTURE HERO — spec: Quick Lead opens with scan as primary action ── */}
+-        {!isEditingExistingLead && isQuickMode ? (
++        {!isEditingExistingLead && isQuickMode && !isFastFieldMode ? (
+           <div style={{ borderRadius: '16px', border: '1px solid #e0f2fe', background: 'linear-gradient(135deg,#f0f9ff 0%,#f8fafc 100%)', padding: '16px 18px' }}>
+             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+               <div>
+@@ -1341,6 +1353,65 @@
+         {/* ── QUICK MODE: compact single-screen form matching spec HTML drawer ── */}
+         {isQuickMode && !isEditingExistingLead ? (
+           <div className="space-y-4">
++            {isFastFieldMode ? (
++              <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/70 p-4">
++                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Trade show fast field</p>
++                <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Save the contact in 30 seconds</h3>
++                <p className="mt-1 text-sm text-emerald-800">Company, contact, and product interest stay up front. Add the rest only when there is time.</p>
++              </div>
++            ) : null}
++
++            {isFastFieldMode ? (
++              <div className="space-y-3">
++                <label className="block space-y-2">
++                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Company name *</span>
++                  <input
++                    name="company_name"
++                    value={companyName}
++                    onChange={(event) => setCompanyName(event.target.value)}
++                    placeholder="e.g. Metro Retail GmbH"
++                    required
++                    ref={companyInputRef}
++                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
++                  />
++                </label>
++                <label className="block space-y-2">
++                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contact name</span>
++                  <input
++                    name="contact_name"
++                    value={contactName}
++                    onChange={(event) => setContactName(event.target.value)}
++                    placeholder="Primary contact person"
++                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
++                  />
++                </label>
++                <label className="block space-y-2">
++                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Product interest</span>
++                  <select
++                    value={selectedProductIdSet[0] ?? ''}
++                    onChange={(event) => handleFastFieldProductChange(event.target.value)}
++                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
++                  >
++                    <option value="">Select product interest…</option>
++                    {products.map((product) => (
++                      <option key={product.id} value={product.id}>
++                        {product.name}{product.sku ? ` · ${product.sku}` : ''}
++                      </option>
++                    ))}
++                  </select>
++                </label>
++                <button
++                  type="button"
++                  onClick={() => setShowFastFieldDetails((current) => !current)}
++                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
++                >
++                  {showFastFieldDetails ? 'Hide extra details' : 'Add more details'}
++                </button>
++              </div>
++            ) : null}
++
++            {(!isFastFieldMode || showFastFieldDetails) ? (
++              <>
+             {/* Lead type switch */}
+             <div>
+               <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Lead type</p>
+@@ -1474,6 +1545,9 @@
+               </div>
+             </div>
+ 
++              </>
++            ) : null}
++
+             {/* Validation */}
+             {validationIssues.length > 0 ? (
+               <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#fff1f2', border: '1px solid #fecaca', fontSize: '12px', color: '#b91c1c', fontWeight: 600 }}>{validationIssues[0]}</div>
+@@ -1896,6 +1970,7 @@
+             onNext: handleNextStep,
+           }}
+           disableSubmit={isEditingExistingLead && !hasLeadChanges}
++          submitLabel={isFastFieldMode ? 'Save contact' : undefined}
+         />
+       }
+     >
+diff -ruN setu_pr2_original/SetuFlow-CRM-main/src/features/leads/components/leads-workspace.tsx setu_pr2/SetuFlow-CRM-main/src/features/leads/components/leads-workspace.tsx
+--- setu_pr2_original/SetuFlow-CRM-main/src/features/leads/components/leads-workspace.tsx	2026-04-29 15:56:52.000000000 +0000
++++ setu_pr2/SetuFlow-CRM-main/src/features/leads/components/leads-workspace.tsx	2026-04-29 16:43:50.128823507 +0000
+@@ -276,6 +276,7 @@
+   isWorkspaceEmpty = false,
+   initialQuickCapture = null,
+   initialEventId = null,
++  initialFastField = false,
+ }: LeadsWorkspaceProps) {
+   const router = useRouter();
+   const pathname = usePathname();
+@@ -309,7 +310,7 @@
+   const [batchStageId, setBatchStageId] = useState('');
+   const [batchStageState, setBatchStageState] = useState<FormState>({});
+   const [isBatchStagePending, startBatchStageTransition] = useTransition();
+-  const [drawerState, setDrawerState] = useState<DrawerState>({ open: false, mode: 'quick', leadId: null, initialStepId: 'basics' });
++  const [drawerState, setDrawerState] = useState<DrawerState>({ open: Boolean(initialFastField && initialEventId), mode: 'quick', leadId: null, initialStepId: 'basics' });
+   const [spotlightLeadId, setSpotlightLeadId] = useState<string | null>(null);
+   const [visibleCount, setVisibleCount] = useState(50);
+   const [actionsExpanded, setActionsExpanded] = useState(false);
+@@ -1062,7 +1063,7 @@
+   }, [pathname, router, searchParams]);
+ 
+   useEffect(() => {
+-    if (!initialQuickCapture || !canManageLeads) return;
++    if ((!initialQuickCapture && !initialFastField) || !canManageLeads) return;
+     setDrawerState((current) => (current.open ? current : { open: true, mode: 'quick', leadId: null, initialStepId: 'basics' }));
+     const params = new URLSearchParams(searchParams.toString());
+     let changed = false;
+@@ -1076,7 +1077,7 @@
+       const query = params.toString();
+       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+     }
+-  }, [canManageLeads, initialQuickCapture, pathname, router, searchParams]);
++  }, [canManageLeads, initialFastField, initialQuickCapture, pathname, router, searchParams]);
+ 
+   const clearFilters = () => {
+     setWorkspaceMode('all');
+@@ -1505,6 +1506,7 @@
+         canNavigateNext={false}
+         navigationMeta={drawerState.leadId ? 'Editing selected lead in the inline Leads workspace.' : 'Create a new lead from the inline Leads workspace.'}
+         prefill={drawerState.open && !drawerState.leadId ? initialQuickCapture : null}
++        fastFieldMode={Boolean(initialFastField && initialEventId && !drawerState.leadId)}
+       />
+     </div>
+   );
+diff -ruN setu_pr2_original/SetuFlow-CRM-main/src/features/leads/server/contact-scan-actions.ts setu_pr2/SetuFlow-CRM-main/src/features/leads/server/contact-scan-actions.ts
+--- setu_pr2_original/SetuFlow-CRM-main/src/features/leads/server/contact-scan-actions.ts	2026-04-29 15:56:52.000000000 +0000
++++ setu_pr2/SetuFlow-CRM-main/src/features/leads/server/contact-scan-actions.ts	2026-04-29 16:45:04.838467199 +0000
+@@ -179,6 +179,7 @@
+   const extractionBoundary = String(formData.get('extraction_boundary') ?? '').trim() || 'server_manual_text';
+   const rawSourceLabel = String(formData.get('source_label') ?? '').trim() || 'Contact scan review';
+   const sourceLabel = rawSourceLabel.startsWith('Contact Scan') ? rawSourceLabel : `Contact Scan Review · ${rawSourceLabel}`;
++  const tradeEventId = String(formData.get('trade_event_id') ?? '').trim();
+ 
+   const leadFormData = new FormData();
+   leadFormData.set('lead_type', leadType);
+@@ -199,6 +200,7 @@
+   ));
+   leadFormData.set('next_follow_up_at', buildDefaultFollowUpAt());
+   leadFormData.set('intro_sent', 'false');
++  if (tradeEventId) leadFormData.set('trade_event_id', tradeEventId);
+ 
+   const result = await saveLead(undefined, leadFormData);
+   if (result.error) return { error: result.error };
+diff -ruN setu_pr2_original/SetuFlow-CRM-main/src/features/leads/types/workspace.ts setu_pr2/SetuFlow-CRM-main/src/features/leads/types/workspace.ts
+--- setu_pr2_original/SetuFlow-CRM-main/src/features/leads/types/workspace.ts	2026-04-29 15:56:52.000000000 +0000
++++ setu_pr2/SetuFlow-CRM-main/src/features/leads/types/workspace.ts	2026-04-29 16:43:50.114902645 +0000
+@@ -104,6 +104,7 @@
+   storageKey?: string;
+   initialQuickCapture?: LeadQuickCapturePrefill | null;
+   initialEventId?: string | null;
++  initialFastField?: boolean;
+ };
+ 
+ export type LeadDrawerLead = Pick<LeadRow,
+@@ -160,4 +161,5 @@
+   navigationMeta?: string;
+   initialStepId?: LeadWizardStepId;
+   prefill?: LeadQuickCapturePrefill | null;
++  fastFieldMode?: boolean;
+ };

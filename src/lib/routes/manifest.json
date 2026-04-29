@@ -86,6 +86,20 @@
       "navKey": "q"
     },
     {
+      "href": "/trade-events",
+      "label": "Trade events",
+      "exact": true,
+      "description": "Manage trade shows and events. Capture leads on the show floor and track conversion.",
+      "aliases": [
+        "events",
+        "trade show",
+        "trade events",
+        "show floor",
+        "primary trade events"
+      ],
+      "navKey": "t"
+    },
+    {
       "href": "/approval-send",
       "label": "Approvals & Sending",
       "exact": true,
@@ -288,6 +302,20 @@
           "navKey": "q"
         },
         {
+          "href": "/trade-events",
+          "label": "Trade events",
+          "exact": true,
+          "description": "Manage trade shows and events. Capture leads on the show floor and track conversion.",
+          "aliases": [
+            "events",
+            "trade show",
+            "trade events",
+            "show floor",
+            "primary trade events"
+          ],
+          "navKey": "t"
+        },
+        {
           "href": "/approval-send",
           "label": "Approvals & Sending",
           "exact": true,
@@ -367,16 +395,6 @@
           ]
         },
         {
-          "href": "/trade-events",
-          "label": "Trade events",
-          "exact": true,
-          "description": "Manage trade-show support without bloating the daily core shell.",
-          "aliases": [
-            "events",
-            "trade show"
-          ]
-        },
-        {
           "href": "/ai-suggestions",
           "label": "AI assist",
           "exact": true,
@@ -406,7 +424,6 @@
     "Compliance",
     "Contracts",
     "Tasks",
-    "Trade events",
     "AI assist",
     "My Card"
   ],

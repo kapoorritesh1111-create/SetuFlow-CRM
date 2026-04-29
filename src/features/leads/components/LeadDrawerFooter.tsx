@@ -24,6 +24,7 @@ interface LeadDrawerFooterProps {
   formId?: string;
   wizard?: WizardFooterMeta;
   disableSubmit?: boolean;
+  submitLabel?: string;
 }
 
 export default function LeadDrawerFooter({
@@ -37,6 +38,7 @@ export default function LeadDrawerFooter({
   formId,
   wizard,
   disableSubmit = false,
+  submitLabel,
 }: LeadDrawerFooterProps) {
   const isFinalStep = wizard ? wizard.activeStepIndex === wizard.totalSteps - 1 : true;
 
@@ -110,7 +112,7 @@ export default function LeadDrawerFooter({
             disabled={isPending || disableSubmit}
             className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
-            {isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : isQuickMode ? '✓ Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead'}
+            {isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : submitLabel ?? (isQuickMode ? '✓ Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead')}
           </button>
         )}
         {isEditingExistingLead && !isQuickMode && isFinalStep && onCreateQuote ? (

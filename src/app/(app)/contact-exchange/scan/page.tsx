@@ -32,7 +32,13 @@ const reviewSteps = [
   'Continue into the CRM workflow once the information is ready.',
 ];
 
-export default async function ScanContactInfoPage() {
+export default async function ScanContactInfoPage({
+  searchParams,
+}: {
+  searchParams?: { eventId?: string | string[] };
+}) {
+  const readParam = (value?: string | string[]) => Array.isArray(value) ? value[0] ?? '' : value ?? '';
+  const eventId = readParam(searchParams?.eventId).trim();
   const workspace = await requireWorkspace();
 
   if (!workspace.membership || !workspace.organization) {
@@ -83,7 +89,7 @@ export default async function ScanContactInfoPage() {
         </div>
       </SectionCard>
 
-      <ContactIntakeReview />
+      <ContactIntakeReview initialEventId={eventId || null} />
 
       <SectionCard>
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Input methods</p>

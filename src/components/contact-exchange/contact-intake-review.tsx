@@ -54,7 +54,7 @@ function humanizeProfile(profile: ContactServerExtractionResult['sourceProfile']
   return profile === 'business_card' ? 'business card' : profile === 'screenshot' ? 'screenshot' : profile === 'scan_pdf' ? 'scan-PDF' : 'generic source';
 }
 
-export function ContactIntakeReview() {
+export function ContactIntakeReview({ initialEventId = null }: { initialEventId?: string | null }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [publicCardUrl, setPreviewUrl] = useState('');
   const [assistText, setAssistText] = useState('');
@@ -163,6 +163,7 @@ export function ContactIntakeReview() {
       formData.set('source_label', draft.sourceLabel || selectedFile?.name || 'Contact scan review');
       formData.set('source_profile', extraction?.sourceProfile || 'generic');
       formData.set('extraction_boundary', extraction?.boundary || 'server_manual_text');
+      if (initialEventId) formData.set('trade_event_id', initialEventId);
 
       const result = await createLeadFromContactScanReview(formData);
       if (result.error) throw new Error(result.error);

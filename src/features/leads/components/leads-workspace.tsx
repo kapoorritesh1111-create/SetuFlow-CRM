@@ -276,6 +276,7 @@ export function LeadsWorkspace({
   isWorkspaceEmpty = false,
   initialQuickCapture = null,
   initialEventId = null,
+  initialFastField = false,
 }: LeadsWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -309,7 +310,7 @@ export function LeadsWorkspace({
   const [batchStageId, setBatchStageId] = useState('');
   const [batchStageState, setBatchStageState] = useState<FormState>({});
   const [isBatchStagePending, startBatchStageTransition] = useTransition();
-  const [drawerState, setDrawerState] = useState<DrawerState>({ open: false, mode: 'quick', leadId: null, initialStepId: 'basics' });
+  const [drawerState, setDrawerState] = useState<DrawerState>({ open: Boolean(initialFastField && initialEventId), mode: 'quick', leadId: null, initialStepId: 'basics' });
   const [spotlightLeadId, setSpotlightLeadId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(50);
   const [actionsExpanded, setActionsExpanded] = useState(false);
@@ -1062,7 +1063,7 @@ export function LeadsWorkspace({
   }, [pathname, router, searchParams]);
 
   useEffect(() => {
-    if (!initialQuickCapture || !canManageLeads) return;
+    if ((!initialQuickCapture && !initialFastField) || !canManageLeads) return;
     setDrawerState((current) => (current.open ? current : { open: true, mode: 'quick', leadId: null, initialStepId: 'basics' }));
     const params = new URLSearchParams(searchParams.toString());
     let changed = false;
@@ -1076,7 +1077,7 @@ export function LeadsWorkspace({
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }
-  }, [canManageLeads, initialQuickCapture, pathname, router, searchParams]);
+  }, [canManageLeads, initialFastField, initialQuickCapture, pathname, router, searchParams]);
 
   const clearFilters = () => {
     setWorkspaceMode('all');
@@ -1505,6 +1506,7 @@ export function LeadsWorkspace({
         canNavigateNext={false}
         navigationMeta={drawerState.leadId ? 'Editing selected lead in the inline Leads workspace.' : 'Create a new lead from the inline Leads workspace.'}
         prefill={drawerState.open && !drawerState.leadId ? initialQuickCapture : null}
+        fastFieldMode={Boolean(initialFastField && initialEventId && !drawerState.leadId)}
       />
     </div>
   );

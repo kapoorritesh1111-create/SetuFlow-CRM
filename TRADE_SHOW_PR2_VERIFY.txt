@@ -1,0 +1,17 @@
+VERIFY 1
+107:  initialFastField?: boolean;
+164:  fastFieldMode?: boolean;
+VERIFY 2
+279:  initialFastField = false,
+313:  const [drawerState, setDrawerState] = useState<DrawerState>({ open: Boolean(initialFastField && initialEventId), mode: 'quick', leadId: null, initialStepId: 'basics' });
+1066:    if ((!initialQuickCapture && !initialFastField) || !canManageLeads) return;
+1080:  }, [canManageLeads, initialFastField, initialQuickCapture, pathname, router, searchParams]);
+1509:        fastFieldMode={Boolean(initialFastField && initialEventId && !drawerState.leadId)}
+VERIFY 3
+38:  searchParams?: { eventId?: string | string[] };
+41:  const eventId = readParam(searchParams?.eventId).trim();
+92:      <ContactIntakeReview initialEventId={eventId || null} />
+EXTRA
+1389:                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Product interest</span>
+1408:                  {showFastFieldDetails ? 'Hide extra details' : 'Add more details'}
+1973:          submitLabel={isFastFieldMode ? 'Save contact' : undefined}

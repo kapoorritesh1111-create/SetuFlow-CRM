@@ -179,6 +179,7 @@ export async function createLeadFromContactScanReview(formData: FormData): Promi
   const extractionBoundary = String(formData.get('extraction_boundary') ?? '').trim() || 'server_manual_text';
   const rawSourceLabel = String(formData.get('source_label') ?? '').trim() || 'Contact scan review';
   const sourceLabel = rawSourceLabel.startsWith('Contact Scan') ? rawSourceLabel : `Contact Scan Review · ${rawSourceLabel}`;
+  const tradeEventId = String(formData.get('trade_event_id') ?? '').trim();
 
   const leadFormData = new FormData();
   leadFormData.set('lead_type', leadType);
@@ -199,6 +200,7 @@ export async function createLeadFromContactScanReview(formData: FormData): Promi
   ));
   leadFormData.set('next_follow_up_at', buildDefaultFollowUpAt());
   leadFormData.set('intro_sent', 'false');
+  if (tradeEventId) leadFormData.set('trade_event_id', tradeEventId);
 
   const result = await saveLead(undefined, leadFormData);
   if (result.error) return { error: result.error };

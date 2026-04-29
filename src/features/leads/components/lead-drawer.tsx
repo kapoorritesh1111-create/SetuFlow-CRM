@@ -219,10 +219,12 @@ export function LeadDrawer({
   navigationMeta,
   initialStepId,
   prefill = null,
+  fastFieldMode = false,
 }: LeadDrawerProps) {
   const router = useRouter();
   const isQuickMode = mode === 'quick';
   const isEditingExistingLead = Boolean(lead?.id);
+  const isFastFieldMode = Boolean(fastFieldMode && isQuickMode && !isEditingExistingLead && lead?.trade_event_id);
   const prefilledProductIds = useMemo(() => Array.from(new Set(prefill?.selectedProductIds ?? [])).filter(Boolean), [prefill]);
   const [autoOpenQuoteAfterSave, setAutoOpenQuoteAfterSave] = useState(Boolean(prefill?.autoOpenQuoteAfterSave && !isEditingExistingLead));
   const shouldAutoOpenQuoteAfterSave = Boolean(autoOpenQuoteAfterSave && !isEditingExistingLead);
@@ -269,6 +271,7 @@ export function LeadDrawer({
   const [pendingMarketName, setPendingMarketName] = useState('');
   const [activeStepId, setActiveStepId] = useState<LeadWizardStepId>(initialStepId ?? 'basics');
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
+  const [showFastFieldDetails, setShowFastFieldDetails] = useState(false);
   const companyInputRef = useRef<HTMLInputElement | null>(null);
   const quoteProductsRef = useRef<HTMLDivElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -575,6 +578,15 @@ export function LeadDrawer({
     );
   };
 
+  const handleFastFieldProductChange = (productId: string) => {
+    if (!productId) {
+      setCoverageSelections([createCoverageSelection('', [], 0)]);
+      return;
+    }
+    const product = products.find((item) => item.id === productId);
+    setCoverageSelections([createCoverageSelection(product?.category_id ?? '', [productId], 0)]);
+  };
+
   const handleToggleCoverageProduct = (key: string, productId: string, checked: boolean) => {
     setCoverageSelections((current) =>
       current.map((selection) => {
@@ -869,7 +881,7 @@ export function LeadDrawer({
           setPhone('');
           setPhoneSecondary('');
           setWebsite('');
-          setTradeEventId('');
+          setTradeEventId(isFastFieldMode ? lead?.trade_event_id ?? '' : '');
           setPipelineId('');
           setStageId('');
           setCountryId('');
@@ -1102,7 +1114,7 @@ export function LeadDrawer({
 
       <div className="space-y-5 px-5 py-5">
         {/* ── SCAN CAPTURE HERO — spec: Quick Lead opens with scan as primary action ── */}
-        {!isEditingExistingLead && isQuickMode ? (
+        {!isEditingExistingLead && isQuickMode && !isFastFieldMode ? (
           <div style={{ borderRadius: '16px', border: '1px solid #e0f2fe', background: 'linear-gradient(135deg,#f0f9ff 0%,#f8fafc 100%)', padding: '16px 18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
               <div>
@@ -1341,6 +1353,65 @@ export function LeadDrawer({
         {/* ── QUICK MODE: compact single-screen form matching spec HTML drawer ── */}
         {isQuickMode && !isEditingExistingLead ? (
           <div className="space-y-4">
+            {isFastFieldMode ? (
+              <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/70 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Trade show fast field</p>
+                <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Save the contact in 30 seconds</h3>
+                <p className="mt-1 text-sm text-emerald-800">Company, contact, and product interest stay up front. Add the rest only when there is time.</p>
+              </div>
+            ) : null}
+
+            {isFastFieldMode ? (
+              <div className="space-y-3">
+                <label className="block space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Company name *</span>
+                  <input
+                    name="company_name"
+                    value={companyName}
+                    onChange={(event) => setCompanyName(event.target.value)}
+                    placeholder="e.g. Metro Retail GmbH"
+                    required
+                    ref={companyInputRef}
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </label>
+                <label className="block space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contact name</span>
+                  <input
+                    name="contact_name"
+                    value={contactName}
+                    onChange={(event) => setContactName(event.target.value)}
+                    placeholder="Primary contact person"
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </label>
+                <label className="block space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Product interest</span>
+                  <select
+                    value={selectedProductIdSet[0] ?? ''}
+                    onChange={(event) => handleFastFieldProductChange(event.target.value)}
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  >
+                    <option value="">Select product interest…</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}{product.sku ? ` · ${product.sku}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowFastFieldDetails((current) => !current)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  {showFastFieldDetails ? 'Hide extra details' : 'Add more details'}
+                </button>
+              </div>
+            ) : null}
+
+            {(!isFastFieldMode || showFastFieldDetails) ? (
+              <>
             {/* Lead type switch */}
             <div>
               <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Lead type</p>
@@ -1473,6 +1544,9 @@ export function LeadDrawer({
                 </div>
               </div>
             </div>
+
+              </>
+            ) : null}
 
             {/* Validation */}
             {validationIssues.length > 0 ? (
@@ -1896,6 +1970,7 @@ export function LeadDrawer({
             onNext: handleNextStep,
           }}
           disableSubmit={isEditingExistingLead && !hasLeadChanges}
+          submitLabel={isFastFieldMode ? 'Save contact' : undefined}
         />
       }
     >

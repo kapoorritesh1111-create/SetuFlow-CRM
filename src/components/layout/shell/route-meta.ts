@@ -140,11 +140,11 @@ export function getRouteMeta(pathname: string): RouteMeta {
       tabs: PRODUCT_SHELL_TABS,
     };
   }
-  if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Useful capture support, intentionally demoted from the main daily shell.', sectionLabel: 'Demoted side tools', showWorkspaceModeSwitch: false };
+  if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Trade show command center. Capture leads on the floor, review entries, and track conversion to pipeline.', showWorkspaceModeSwitch: false };
   if (pathname.startsWith('/settings/lists')) return { title: 'Admin & Settings', description: 'Settings lists are unified inside the Admin workspace.', sectionLabel: 'Workspace setup', tabs: PRODUCT_SHELL_TABS, showWorkspaceModeSwitch: false };
-  if (pathname.startsWith('/ai-suggestions')) return { title: 'AI help', description: 'Keep AI help contextual and bounded. It should point the team to the next safe action inside Follow-up, Quote, Approvals & Sending, or Orders instead of becoming its own product.', sectionLabel: 'Demoted side tools' };
-  if (pathname.startsWith('/contact-exchange/vcard')) return { title: 'My Card', description: 'Personal sharing tool, intentionally secondary to the trade operating spine.', sectionLabel: 'Demoted side tools' };
-  if (pathname.startsWith('/tasks')) return { title: 'Tasks', description: 'Supporting work tracker that should not outrank the core trade flow.', sectionLabel: 'Demoted side tools' };
+  if (pathname.startsWith('/ai-suggestions')) return { title: 'AI help', description: 'Keep AI help contextual and bounded. It should point the team to the next safe action inside Follow-up, Quote, Approvals & Sending, or Orders instead of becoming its own product.', sectionLabel: 'Supporting tools' };
+  if (pathname.startsWith('/contact-exchange/vcard')) return { title: 'My Card', description: 'Personal sharing tool for lightweight contact exchange.', sectionLabel: 'Supporting tools' };
+  if (pathname.startsWith('/tasks')) return { title: 'Tasks', description: 'Supporting work tracker that should not outrank the core trade flow.', sectionLabel: 'Supporting tools' };
   if (pathname.startsWith('/documents')) return { title: 'Documents', description: 'Review files, documentary completeness, expiry, and evidence gaps close to the core workflow.', sectionLabel: 'Risk and control' };
   if (pathname.startsWith('/compliance')) return { title: 'Compliance', description: 'Keep compliance blockers visible before commercial or execution moves go too far.', sectionLabel: 'Risk and control' };
   return { title: 'Workspace', description: 'Operate daily work from a cleaner shell that matches how the team actually works.', sectionLabel: 'SETU Flow workspace' };

@@ -104,6 +104,7 @@ export type LeadsWorkspaceProps = {
   storageKey?: string;
   initialQuickCapture?: LeadQuickCapturePrefill | null;
   initialEventId?: string | null;
+  initialFastField?: boolean;
 };
 
 export type LeadDrawerLead = Pick<LeadRow,
@@ -160,4 +161,5 @@ export type LeadDrawerProps = {
   navigationMeta?: string;
   initialStepId?: LeadWizardStepId;
   prefill?: LeadQuickCapturePrefill | null;
+  fastFieldMode?: boolean;
 };
