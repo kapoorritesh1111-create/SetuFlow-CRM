@@ -1,403 +1,562 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SETU Flow DCC — Apr 29 2026 · Build-Fix Audit</title>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>SETU Flow DCC — Apr 29 2026 · Pre-QA + Trade Show UX Plan</title>
   <style>
-    :root{--bg:#f2f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--mu:#64748b;--brand:#0c7fff;--good:#059669;--warn:#d97706;--bad:#dc2626;--violet:#7c3aed;--sh:0 4px 18px rgba(15,23,42,.07);--r:18px}
+    :root{--bg:#f2f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--mu:#64748b;--brand:#0c7fff;--good:#059669;--warn:#d97706;--bad:#dc2626;--violet:#7c3aed;--teal:#0d9488;--sh:0 4px 18px rgba(15,23,42,.07);--r:18px}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.55}
-    .wrap{max-width:1440px;margin:0 auto;padding:20px 18px 80px}h1,h2,h3,p{margin:0}
-    .hero{background:linear-gradient(135deg,#0b2e4a 0%,#1a4f7a 55%,#279491 100%);color:#fff;border-radius:22px;padding:24px;box-shadow:var(--sh)}
+    .wrap{max-width:1480px;margin:0 auto;padding:20px 18px 100px}h1,h2,h3,p{margin:0}
+    .hero{background:linear-gradient(135deg,#0b2e4a 0%,#1a4f7a 55%,#0d9488 100%);color:#fff;border-radius:22px;padding:24px 28px;box-shadow:var(--sh)}
     .hero-ey{font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:8px}
-    .hero h1{font-size:24px;font-weight:900;letter-spacing:-.04em;line-height:1.07}.hero p{margin-top:8px;color:rgba(255,255,255,.82);font-size:12px;line-height:1.7;max-width:1060px}
+    .hero h1{font-size:24px;font-weight:900;letter-spacing:-.04em;line-height:1.07}.hero p{margin-top:8px;color:rgba(255,255,255,.82);font-size:12px;line-height:1.7;max-width:1080px}
     .pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}.pill{display:inline-flex;padding:3px 9px;border-radius:999px;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:#fff}
-    .pill.g{background:#d1fae5;color:#065f46;border-color:#a7f3d0}.pill.w{background:#fef3c7;color:#92400e;border-color:#fde68a}.pill.r{background:#fee2e2;color:#991b1b;border-color:#fecaca}.pill.v{background:#ede9fe;color:#5b21b6;border-color:#ddd6fe}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px}.card h2{font-size:15px;font-weight:800;margin-bottom:8px}
-    .grid{display:grid;gap:10px}.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}.sec{margin-top:14px}.mu{color:var(--mu)}.sm{font-size:11px}
+    .pill.g{background:#d1fae5;color:#065f46;border-color:#a7f3d0}.pill.w{background:#fef3c7;color:#92400e;border-color:#fde68a}.pill.r{background:#fee2e2;color:#991b1b;border-color:#fecaca}.pill.v{background:#ede9fe;color:#5b21b6;border-color:#ddd6fe}.pill.t{background:#ccfbf1;color:#0f766e;border-color:#99f6e4}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px}.card h2{font-size:15px;font-weight:800;margin-bottom:8px}.card h3{font-size:13px;font-weight:700;margin-bottom:5px}
+    .grid{display:grid;gap:10px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}.sec{margin-top:14px}.mu{color:var(--mu)}.sm{font-size:11px}
     code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f1f5f9;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:10px;color:#334155}
     .kp .n{font-size:26px;font-weight:900;letter-spacing:-.04em}.kp .l{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--mu);margin-top:2px}
     .s{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
-    .s.good{background:#f0fdf4;color:var(--good);border:1px solid #a7f3d0}.s.warn{background:#fffbeb;color:var(--warn);border:1px solid #fde68a}.s.bad{background:#fee2e2;color:var(--bad);border:1px solid #fecaca}.s.active{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}.s.neutral{background:#f1f5f9;color:#475569;border:1px solid var(--line)}.s.violet{background:#f5f3ff;color:var(--violet);border:1px solid #ddd6fe}
+    .s.good{background:#f0fdf4;color:var(--good);border:1px solid #a7f3d0}.s.warn{background:#fffbeb;color:var(--warn);border:1px solid #fde68a}.s.bad{background:#fee2e2;color:var(--bad);border:1px solid #fecaca}.s.active{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}.s.neutral{background:#f1f5f9;color:#475569;border:1px solid var(--line)}.s.violet{background:#f5f3ff;color:var(--violet);border:1px solid #ddd6fe}.s.teal{background:#f0fdfa;color:var(--teal);border:1px solid #99f6e4}.s.deferred{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
     .t{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:12px}
     .t th{background:#f8fafc;color:#94a3b8;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.12em;padding:7px 10px;border-bottom:1px solid var(--line)}.t td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}.t tr:last-child td{border-bottom:0}
     .co{border-radius:12px;padding:11px 14px;border:1px solid;margin-bottom:8px;font-size:12px}
-    .co.g{background:#f0fdf4;border-color:#a7f3d0;color:#065f46}.co.b{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}.co.w{background:#fffbeb;border-color:#fde68a;color:#92400e}.co.r{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+    .co.g{background:#f0fdf4;border-color:#a7f3d0;color:#065f46}.co.b{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}.co.w{background:#fffbeb;border-color:#fde68a;color:#92400e}.co.r{background:#fef2f2;border-color:#fecaca;color:#991b1b}.co.t{background:#f0fdfa;border-color:#99f6e4;color:#0f766e}.co.v{background:#faf5ff;border-color:#e9d5ff;color:#6b21a8}
     .tb{display:flex;gap:2px;background:#f1f5f9;border-radius:11px;padding:3px;margin-top:14px;flex-wrap:wrap}
     .tbtn{padding:7px 13px;border-radius:8px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--mu);transition:.12s;white-space:nowrap}
     .tbtn.a{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(15,23,42,.07)}.tbtn:hover:not(.a){color:var(--text)}.tp{display:none;margin-top:14px}.tp.a{display:block}
     .mr{display:flex;align-items:center;gap:9px;margin-bottom:7px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
-    .mn{font-weight:700;font-size:12px;min-width:175px}.bw{background:#f1f5f9;border-radius:999px;height:6px;overflow:hidden;flex:1}
-    .bf{height:100%;border-radius:999px}.bf.g{background:var(--good)}.bf.w{background:var(--warn)}.bf.b{background:var(--brand)}.bf.r{background:var(--bad)}
-    .mp{font-size:12px;font-weight:900;min-width:38px;text-align:right}
+    .mn{font-weight:700;font-size:12px;min-width:190px}.bw{background:#f1f5f9;border-radius:999px;height:6px;overflow:hidden;flex:1}
+    .bf{height:100%;border-radius:999px}.bf.g{background:var(--good)}.bf.w{background:var(--warn)}.bf.b{background:var(--brand)}.bf.r{background:var(--bad)}.bf.t{background:var(--teal)}.bf.v{background:var(--violet)}.mp{font-size:12px;font-weight:900;min-width:42px;text-align:right}
     .pb{background:#0f172a;border-radius:12px;padding:14px;margin-top:8px;position:relative}
     .pb pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#e2e8f0;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:600px;overflow-y:auto}
     .cbtn{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:6px;padding:3px 11px;font-size:10px;font-weight:700;cursor:pointer}
     .gi{display:flex;gap:8px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:#f8fafc;margin-bottom:5px;font-size:11px;line-height:1.6}
     .sev{font-size:9px;font-weight:900;text-transform:uppercase;padding:2px 6px;border-radius:999px;white-space:nowrap;margin-top:3px;flex-shrink:0}
-    .sev.crit{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}.sev.high{background:#fff7ed;color:#9a3412;border:1px solid #fdba74}.sev.med{background:#fffbeb;color:#92400e;border:1px solid #fde68a}.sev.ok{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
-    .delta{display:inline-flex;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px}
-    .delta.up{background:#d1fae5;color:#065f46}.delta.eq{background:#f1f5f9;color:#475569}.delta.dn{background:#fee2e2;color:#991b1b}
-    .fact-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
-    .fact-row:last-child{border-bottom:0}
-    .fact-label{font-weight:700;min-width:200px;color:#334155}.fact-val{color:var(--mu);flex:1}
-    .fact-val.ok{color:var(--good);font-weight:700}.fact-val.no{color:var(--bad);font-weight:700}.fact-val.partial{color:var(--warn);font-weight:700}
-    @media(max-width:900px){.g2,.g4{grid-template-columns:1fr 1fr}}@media(max-width:600px){.g2,.g4{grid-template-columns:1fr}}
+    .sev.crit{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}.sev.high{background:#fff7ed;color:#9a3412;border:1px solid #fdba74}.sev.med{background:#fffbeb;color:#92400e;border:1px solid #fde68a}.sev.ok{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}.sev.new{background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4}.sev.def{background:#faf5ff;color:#6b21a8;border:1px solid #e9d5ff}
+    .phase-card{border-radius:14px;padding:14px;border:1px solid}
+    .phase-before{background:#f0fdfa;border-color:#5eead4}.phase-at{background:#fffbeb;border-color:#fcd34d}.phase-after{background:#f5f3ff;border-color:#c4b5fd}
+    .phase-title{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+    .phase-before .phase-title{color:#0f766e}.phase-at .phase-title{color:#92400e}.phase-after .phase-title{color:#6b21a8}
+    .feat-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:11px}
+    .feat-row:last-child{border-bottom:0}.feat-name{font-weight:600;flex:1}.feat-status{font-size:9px;font-weight:900;padding:2px 7px;border-radius:999px;text-transform:uppercase}
+    .fs-done{background:#d1fae5;color:#065f46}.fs-partial{background:#fef3c7;color:#92400e}.fs-new{background:#e0f2fe;color:#0369a1}.fs-deferred{background:#faf5ff;color:#6b21a8}
+    .delta{display:inline-flex;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px}.delta.up{background:#d1fae5;color:#065f46}.delta.eq{background:#f1f5f9;color:#475569}
+    @media(max-width:1050px){.g2,.g3,.g4,.g5{grid-template-columns:1fr 1fr}}@media(max-width:640px){.g2,.g3,.g4,.g5{grid-template-columns:1fr}.tbtn{padding:5px 9px;font-size:10px}}
   </style>
 </head>
 <body>
 <div class="wrap">
 
+<!-- HERO -->
 <div class="hero">
-  <div class="hero-ey">SETU Flow Internal DCC &middot; PR-TRADEEVENTS-BUILD-FIX Audit &middot; Apr 29 2026</div>
-  <h1>Schema confirmed in DB &mdash; but Bug C is a workaround, not a fix. Bugs A &amp; B unchanged.</h1>
-  <p>Good news: the schema confirms <code>capture_defaults</code> column is live in the database (NOT NULL DEFAULT '{}'). Bad news: only ONE file was changed this pass (trade-events/server/actions.ts), and the change replaced <code>(supabase as any).from()</code> with <code>const db = supabase as any; db.from()</code> &mdash; functionally identical, not a real fix. The generated types file <code>database.generated.ts</code> still has NO <code>capture_defaults</code> field on trade_events. <code>npm run typecheck</code> will still fail on strict mode. Bug A (initialEventId discarded) and Bug B (/approval-send = IntegrationsWorkspace) are completely unchanged. The codebase has 100+ <code>as any</code> casts across 30+ files &mdash; this is systemic and predates these PRs. Overall score holds at 80%.</p>
+  <div class="hero-ey">SETU Flow Internal DCC &middot; Pre-QA + Trade Show UX Plan &middot; Apr 29 2026</div>
+  <h1>88% on core CRM &mdash; Trade Show workflow added as investor-demo priority</h1>
+  <p>All previous scores and verified fixes are preserved. This update adds the Trade Show Workflow as a new first-class module. Code audit confirms trade events are currently <strong>intentionally demoted</strong> in the nav manifest — the opposite of what importers and exporters need. The trade show module covers the full Before / At / After lifecycle: nav promotion, fast-field capture form, event summary with conversion stats, bulk follow-up queue, share link, and ROI report. Offline sync is tracked as a post-investor-demo NorthStar item. Two small fixes (quote-sent notice + trade-events as any casts) remain before PR-QA-RELEASE on the core CRM.</p>
   <div class="pills">
-    <span class="pill g">capture_defaults column confirmed in live DB</span>
-    <span class="pill g">All previous fixes still intact</span>
-    <span class="pill w">Bug C = workaround only (const db = supabase as any)</span>
-    <span class="pill w">Generated types NOT regenerated &mdash; capture_defaults missing</span>
-    <span class="pill r">Bug A unchanged &mdash; initialEventId still discarded</span>
-    <span class="pill r">Bug B unchanged &mdash; /approval-send = IntegrationsWorkspace</span>
-    <span class="pill r">100+ as any casts across 30+ files &mdash; systemic</span>
+    <span class="pill g">Core CRM 88% — all previous fixes intact</span>
+    <span class="pill r">Trade events intentionally demoted in nav manifest</span>
+    <span class="pill t">New: Trade Show Workflow module added</span>
+    <span class="pill w">2 small fixes before QA-RELEASE</span>
+    <span class="pill v">Offline sync → deferred post-investor-demo</span>
+    <span class="pill w">Build proof pending</span>
   </div>
 </div>
 
-<section class="sec grid g4">
-  <div class="card kp"><div class="n" style="color:var(--warn)">80%</div><div class="l">Overall readiness</div><p class="mu sm">No change from previous pass. Schema migration confirmed in DB (+positive). But generated types not regenerated, Bug A &amp; B unchanged, approval-send still wrong route.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--bad)">2</div><div class="l">Critical bugs open</div><p class="mu sm">Bug A: initialEventId discarded via as any (leads/page.tsx line 117). Bug B: /approval-send renders IntegrationsWorkspace. Both unchanged from previous pass.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--warn)">100+</div><div class="l">as any casts found</div><p class="mu sm">Across 30+ files in src/. This is systemic — predates these PRs. The "fix" for Bug C added to the total rather than reducing it.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--good)">1</div><div class="l">Real progress this pass</div><p class="mu sm">Schema confirms capture_defaults is in the live DB with NOT NULL DEFAULT '{}'. Migration ran successfully. All previous fixes intact.</p></div>
+<!-- KPI STRIP -->
+<section class="sec grid g5">
+  <div class="card kp"><div class="n" style="color:var(--good)">88%</div><div class="l">Core CRM ready</div><p class="mu sm">All previously verified fixes intact. 2 small gaps before QA-RELEASE: quote-sent notice + trade-events as any.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--bad)">25%</div><div class="l">Trade Show ready</div><p class="mu sm">Skeleton exists. Create event, capture defaults, Quick Lead button, entry count. Nav, fast-form, ROI, bulk queue all missing.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--teal)">4</div><div class="l">Trade Show PRs</div><p class="mu sm">TS-PR1: Nav + mobile page. TS-PR2: Fast-field form + share link. TS-PR3: Event summary + bulk queue. TS-PR4: ROI report.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--violet)">1</div><div class="l">Deferred item</div><p class="mu sm">Offline capture + sync. Tracked in NorthStar. Target: post-investor-demo v2. Service worker + local queue required.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--warn)">2</div><div class="l">Core fixes left</div><p class="mu sm">Add quote-sent to decodeNotice (1 line). Remove trade-events as any (6 lines). Then PR-QA-RELEASE.</p></div>
 </section>
 
+<!-- TAB BAR -->
 <div class="tb">
-  <button class="tbtn a" onclick="showTab('verdict',this)">&#128269; Verdict</button>
+  <button class="tbtn a" onclick="showTab('status',this)">&#128202; Status</button>
+  <button class="tbtn" onclick="showTab('tradeshow',this)">&#127979; Trade Show</button>
+  <button class="tbtn" onclick="showTab('northstar',this)">&#9889; NorthStar</button>
   <button class="tbtn" onclick="showTab('modules',this)">Module Scores</button>
-  <button class="tbtn" onclick="showTab('bugstatus',this)">Bug Status</button>
-  <button class="tbtn" onclick="showTab('systemic',this)">&#9888; Systemic Issue</button>
+  <button class="tbtn" onclick="showTab('confirmed',this)">&#10003; Confirmed</button>
   <button class="tbtn" onclick="showTab('prs',this)">PR Plan</button>
-  <button class="tbtn" onclick="showTab('prompts',this)">&#9889; Next Prompts</button>
+  <button class="tbtn" onclick="showTab('prompts',this)">Prompts</button>
 </div>
 
-<!-- VERDICT -->
-<div class="tp a" id="tab-verdict">
+<!-- ══════════════════ STATUS ══════════════════ -->
+<div class="tp a" id="tab-status">
   <div class="sec grid g2">
-    <div class="card">
-      <h2>What this PR actually did vs what was claimed</h2>
-      <div class="fact-row"><div class="fact-label">Claim</div><div class="fact-val">"Fixed Vercel typecheck failure in saveTradeEventCaptureDefaults"</div></div>
-      <div class="fact-row"><div class="fact-label">What actually changed</div><div class="fact-val no">1 line in trade-events/server/actions.ts only. Changed <code>(supabase as any).from()</code> to <code>const db = supabase as any; db.from()</code>. Functionally identical.</div></div>
-      <div class="fact-row"><div class="fact-label">Did typecheck pass?</div><div class="fact-val partial">Unknown — npm commands not run. The cast still exists, just renamed.</div></div>
-      <div class="fact-row"><div class="fact-label">Generated types updated?</div><div class="fact-val no">No. database.generated.ts trade_events Row type has NO capture_defaults field. The cast is still necessary because the types are stale.</div></div>
-      <div class="fact-row"><div class="fact-label">Schema in live DB?</div><div class="fact-val ok">Yes — confirmed. Current_Schema.md shows: <code>capture_defaults jsonb NOT NULL DEFAULT '{}'</code></div></div>
-      <div class="fact-row"><div class="fact-label">Bug A fixed?</div><div class="fact-val no">No. leads/page.tsx line 117 still has <code>{...({ initialEventId: eventId || null } as any)}</code></div></div>
-      <div class="fact-row"><div class="fact-label">Bug B fixed?</div><div class="fact-val no">No. approval-send/page.tsx still imports and renders IntegrationsWorkspace.</div></div>
-      <div class="fact-row"><div class="fact-label">All previous fixes intact?</div><div class="fact-val ok">Yes — 7-day validity, FX row, orders payment, catalog quick quote, pipeline filters, trade event Quick Lead button all confirmed.</div></div>
+    <div>
+      <div class="co g"><strong>Core CRM — pre-QA state confirmed:</strong> Bug A (trade_event_id attribution) and Bug B (/approval-send replaced) both fixed by code inspection. Orders ingests sent quotes. All 12 previous fixes intact. 2 small gaps remain: add 'quote-sent' to decodeNotice, remove 6 trade-events as any casts now that capture_defaults is in generated types.</div>
+      <div class="co r"><strong>Critical nav finding:</strong> route-meta.ts line 143 and manifest.json lines 356/373 explicitly label trade events as <em>"intentionally demoted from the main daily shell"</em> and <em>"useful supporting surface, intentionally not promoted as part of the core trade loop."</em> For importers/exporters who use trade shows as their primary lead generation engine, this is the wrong decision. The Trade Show Workflow PRs must promote trade events to a primary nav slot.</div>
+      <div class="co t"><strong>New module — Trade Show Workflow:</strong> Added as a first-class module alongside core CRM. Three phases tracked: Before the show (create, capture defaults, share link), At the show (Quick Lead, fast-field form, card scan), After the show (event summary, bulk follow-up, conversion tracking, ROI report). Offline sync deferred post-investor-demo.</div>
+      <div class="co v"><strong>Deferred — Offline capture:</strong> Offline sync requires a service worker and a local lead queue that syncs on reconnect. This is the right investment for export/import clients who use SETU at convention centers with unreliable WiFi. Tracked in NorthStar as a post-investor-demo v2 item. Not in scope for current investor-demo build.</div>
     </div>
-    <div class="card">
-      <h2>The real vs fake path to resolving Bug C</h2>
-      <div class="co r"><strong>What was done (workaround):</strong><br/>Changed <code>await (supabase as any).from('trade_events').update(...)</code><br/>to <code>const db = supabase as any; await db.from('trade_events').update(...)</code><br/><br/>This is the same cast — just stored in a variable. TypeScript sees <code>as any</code> either way. The generated types are still stale. If typecheck ran in strict mode on the new types it would still fail on any place that tries to query <code>capture_defaults</code> without the cast.</div>
-      <div class="co g"><strong>What the real fix looks like:</strong><br/>1. Migration confirmed in DB ✅ (already done)<br/>2. Run: <code>npx supabase gen types typescript --linked &gt; src/types/database.generated.ts</code><br/>3. Now database.generated.ts includes <code>capture_defaults: Json</code> on trade_events Row<br/>4. Remove <code>const db = supabase as any</code> in trade-events/server/actions.ts lines 177 and 120<br/>5. Use <code>supabase.from('trade_events').update({ capture_defaults: ... })</code> directly<br/>6. Also fix (supabase as any) in trade-events/page.tsx line 29<br/>7. Typecheck now passes on the trade events code</div>
-      <div class="co w"><strong>Systemic context:</strong> The <code>const db = supabase as any</code> pattern is used in 20+ other server action files — leads/server/actions.ts (14 instances), quotes/server/actions.ts (3), settings/server/actions.ts (4), tasks/server/actions.ts (5), and others. This is the established codebase workaround for tables whose columns aren't in the generated types. Bug C is just one instance of a systemic pattern. The next PR should fix only the trade-events instances, not attempt to refactor all 100+ casts.</div>
+    <div>
+      <div class="card">
+        <h2>What to build vs what to defer</h2>
+        <table class="t"><thead><tr><th>Feature</th><th>For investor demo</th><th>Post-demo</th></tr></thead><tbody>
+          <tr><td>Trade events in primary nav</td><td><span class="s teal">&#10003; Build now</span></td><td>&mdash;</td></tr>
+          <tr><td>Mobile-first event page</td><td><span class="s teal">&#10003; Build now</span></td><td>&mdash;</td></tr>
+          <tr><td>Fast-field 3-field capture form</td><td><span class="s teal">&#10003; Build now</span></td><td>&mdash;</td></tr>
+          <tr><td>Event share link / QR</td><td><span class="s teal">&#10003; Build now</span></td><td>&mdash;</td></tr>
+          <tr><td>Event summary card (entries + converted)</td><td><span class="s teal">&#10003; Build now</span></td><td>&mdash;</td></tr>
+          <tr><td>Bulk follow-up queue per event</td><td><span class="s teal">&#10003; Build now</span></td><td>&mdash;</td></tr>
+          <tr><td>Leads event filter</td><td><span class="s teal">&#10003; Build now</span></td><td>&mdash;</td></tr>
+          <tr><td>Smart reminders (event start, 48hr follow-up)</td><td><span class="s warn">&#9888; Nice to have</span></td><td>&#10003;</td></tr>
+          <tr><td>Event ROI report (cost vs pipeline)</td><td><span class="s teal">&#10003; Build now</span></td><td>&mdash;</td></tr>
+          <tr><td>Offline capture + sync</td><td><span class="s deferred">Deferred</span></td><td><span class="s violet">&#10003; v2 priority</span></td></tr>
+        </tbody></table>
+      </div>
     </div>
   </div>
-  <div class="co b" style="margin-top:10px"><strong>What you should do before the next PR:</strong> Run <code>npx supabase gen types typescript --linked &gt; src/types/database.generated.ts</code> in your local environment or in the Supabase CLI. Attach the regenerated file to the next zip. That single file update will let the trade-events as any casts be removed cleanly and will unlock proper typecheck for capture_defaults throughout the codebase.</div>
 </div>
 
-<!-- MODULES -->
-<div class="tp" id="tab-modules">
-  <div class="co b">Scores unchanged from previous audit. Only 1 file changed this pass (trade-events/server/actions.ts). No module gains or losses.</div>
+<!-- ══════════════════ TRADE SHOW ══════════════════ -->
+<div class="tp" id="tab-tradeshow">
+  <div class="co r"><strong>Code audit finding:</strong> Trade events are explicitly marked as "intentionally demoted" in the nav manifest. Every Trade Show PR must begin by updating manifest.json and route-meta.ts to promote trade events to a primary nav item. Without this, all the feature work below is inaccessible to clients at a show.</div>
+
+  <!-- Phase cards -->
+  <div class="sec grid g3">
+    <div class="phase-card phase-before">
+      <div class="phase-title">&#128198; Before the show</div>
+      <div class="feat-row"><span class="feat-name">Create event (name, dates, city)</span><span class="feat-status fs-done">Exists</span></div>
+      <div class="feat-row"><span class="feat-name">Set capture defaults (source label, products)</span><span class="feat-status fs-done">Exists</span></div>
+      <div class="feat-row"><span class="feat-name">Generate share link / QR for mobile capture</span><span class="feat-status fs-new">Build</span></div>
+      <div class="feat-row"><span class="feat-name">Event published to team (notify)</span><span class="feat-status fs-new">Build</span></div>
+    </div>
+    <div class="phase-card phase-at">
+      <div class="phase-title">&#127979; At the show</div>
+      <div class="feat-row"><span class="feat-name">Quick Lead button on event card</span><span class="feat-status fs-done">Exists</span></div>
+      <div class="feat-row"><span class="feat-name">Fast-field form (3 fields only)</span><span class="feat-status fs-new">Build</span></div>
+      <div class="feat-row"><span class="feat-name">Card scan → lead, event linked</span><span class="feat-status fs-partial">Partial</span></div>
+      <div class="feat-row"><span class="feat-name">Live entry counter on event card</span><span class="feat-status fs-done">Exists</span></div>
+      <div class="feat-row"><span class="feat-name">Offline capture + sync on reconnect</span><span class="feat-status fs-deferred">Deferred v2</span></div>
+    </div>
+    <div class="phase-card phase-after">
+      <div class="phase-title">&#128200; After the show</div>
+      <div class="feat-row"><span class="feat-name">Event summary card (entries, converted, pipeline)</span><span class="feat-status fs-new">Build</span></div>
+      <div class="feat-row"><span class="feat-name">Bulk follow-up queue per event</span><span class="feat-status fs-new">Build</span></div>
+      <div class="feat-row"><span class="feat-name">Leads event filter (filter by show)</span><span class="feat-status fs-new">Build</span></div>
+      <div class="feat-row"><span class="feat-name">Conversion tracking (leads&rarr;quotes&rarr;orders)</span><span class="feat-status fs-partial">Partial</span></div>
+      <div class="feat-row"><span class="feat-name">Event ROI report</span><span class="feat-status fs-new">Build</span></div>
+      <div class="feat-row"><span class="feat-name">Smart reminders (48hr follow-up prompt)</span><span class="feat-status fs-new">Build</span></div>
+    </div>
+  </div>
+
+  <!-- Access entry points -->
+  <div class="sec card">
+    <h2>Access entry points &mdash; what must change in the shell</h2>
+    <div class="grid g2" style="margin-top:10px">
+      <div>
+        <div class="gi"><span class="sev crit">Fix first</span><div><strong>Nav manifest promotion:</strong> manifest.json currently has trade events under <code>"Useful supporting surfaces, intentionally not promoted."</code> Move it into the primary nav section alongside Leads, Pipeline, Quotes. Also update route-meta.ts line 143 to remove the "demoted" language and give it a proper description.</div></div>
+        <div class="gi"><span class="sev new">Build</span><div><strong>Dashboard active events strip:</strong> When an event is active (starts_on &le; today &le; ends_on), show a prominent banner on the dashboard with event name, day count, entry count, and a large "Capture lead" CTA. Currently only buried in country-insight-drawer.</div></div>
+        <div class="gi"><span class="sev new">Build</span><div><strong>Mobile-first event page:</strong> The trade events page needs a large-button layout optimized for phone use. Entry counter visible at top. Quick Lead and Card Scan as primary actions. Event name and dates in hero. This is what a user opens standing at a booth.</div></div>
+      </div>
+      <div>
+        <div class="gi"><span class="sev new">Build</span><div><strong>Leads workspace event filter:</strong> Add a "Source event" filter chip to the Leads filter bar. Clicking it shows a dropdown of all trade events and filters leads by trade_event_id. Should appear as an active chip like the existing filter chips in PipelineBoardFilters.</div></div>
+        <div class="gi"><span class="sev med">Nice to have</span><div><strong>Smart reminders:</strong> "SIAL Paris starts in 2 days — your capture defaults are set." and "48 hours since SIAL Paris — 34 leads have no follow-up scheduled." These are dashboard notices or notification banner. After investor demo is fine.</div></div>
+        <div class="gi"><span class="sev new">Build</span><div><strong>Event share link:</strong> Each event card should have a "Share capture link" button that generates a URL like <code>/leads?quickLead=1&amp;sourceType=trade_event&amp;eventId={id}</code> with a copy-to-clipboard action and QR code display. Team members use this on their phones.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Honest score -->
+  <div class="sec card">
+    <h2>Trade Show Workflow &mdash; honest score</h2>
+    <div class="mr"><div class="mn">Nav &amp; shell access</div><div class="bw"><div class="bf r" style="width:10%"></div></div><div class="mp" style="color:var(--bad)">10%</div><span class="s bad">Nav is explicitly demoted. No dashboard strip. No mobile-first page.</span></div>
+    <div class="mr"><div class="mn">Before-show setup</div><div class="bw"><div class="bf w" style="width:55%"></div></div><div class="mp" style="color:var(--warn)">55%</div><span class="s warn">Create event + capture defaults exist. Share link / QR missing.</span></div>
+    <div class="mr"><div class="mn">At-show capture</div><div class="bw"><div class="bf w" style="width:40%"></div></div><div class="mp" style="color:var(--warn)">40%</div><span class="s warn">Quick Lead button + entry count exist. Fast-field form missing. Card scan not linked to events.</span></div>
+    <div class="mr"><div class="mn">Post-show follow-up</div><div class="bw"><div class="bf r" style="width:15%"></div></div><div class="mp" style="color:var(--bad)">15%</div><span class="s bad">isConverted check exists but not surfaced. No bulk queue. No event filter in Leads. No ROI report.</span></div>
+    <div class="mr"><div class="mn">Overall Trade Show UX</div><div class="bw"><div class="bf r" style="width:25%"></div></div><div class="mp" style="color:var(--bad)">25%</div><span class="s bad">Skeleton only. 4 PRs to investor-demo ready.</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════ NORTHSTAR ══════════════════ -->
+<div class="tp" id="tab-northstar">
   <section class="sec card">
-    <h2>Module readiness &mdash; unchanged from previous pass</h2>
-    <div class="mr"><div class="mn">Dashboard</div><div class="bw"><div class="bf g" style="width:84%"></div></div><div class="mp" style="color:var(--good)">84%</div><span class="s good">Unchanged. KPI hrefs confirmed. World map renders.</span></div>
-    <div class="mr"><div class="mn">Leads + Command Center</div><div class="bw"><div class="bf g" style="width:82%"></div></div><div class="mp" style="color:var(--good)">82%</div><span class="s warn">Unchanged. Bug A still open &mdash; initialEventId discarded via as any.</span></div>
-    <div class="mr"><div class="mn">Pipeline</div><div class="bw"><div class="bf g" style="width:84%"></div></div><div class="mp" style="color:var(--good)">84%</div><span class="s good">Unchanged. 5 filters + chips + URL-backed + DnD intact.</span></div>
-    <div class="mr"><div class="mn">Catalog</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s good">Unchanged. Visible Quick quote button. 5-tab drawer. Gap chip wired.</span></div>
-    <div class="mr"><div class="mn">Quotes</div><div class="bw"><div class="bf g" style="width:83%"></div></div><div class="mp" style="color:var(--good)">83%</div><span class="s good">Unchanged. 7-day validity, FX row, approval banner, version history.</span></div>
-    <div class="mr"><div class="mn">Orders</div><div class="bw"><div class="bf g" style="width:85%"></div></div><div class="mp" style="color:var(--good)">85%</div><span class="s good">Unchanged. No hardcoded demo data. Full execution desk.</span></div>
-    <div class="mr"><div class="mn">Admin + Settings</div><div class="bw"><div class="bf g" style="width:82%"></div></div><div class="mp" style="color:var(--good)">82%</div><span class="s good">Unchanged. 9 route cards intact.</span></div>
-    <div class="mr"><div class="mn">Trade Events</div><div class="bw"><div class="bf w" style="width:78%"></div></div><div class="mp" style="color:var(--warn)">78%</div><span class="s warn">Up +3. Migration confirmed in DB. capture_defaults form + server action + Quick Lead button present. Generated types still stale &mdash; workaround cast remains.</span></div>
-    <div class="mr"><div class="mn">AI Suggestions</div><div class="bw"><div class="bf w" style="width:76%"></div></div><div class="mp" style="color:var(--warn)">76%</div><span class="s warn">Unchanged.</span></div>
-    <div class="mr"><div class="mn">Cross-page NorthStar</div><div class="bw"><div class="bf r" style="width:58%"></div></div><div class="mp" style="color:var(--bad)">58%</div><span class="s bad">Unchanged. Bug B open: /approval-send = IntegrationsWorkspace. Bug A open: trade_event_id not written to leads.</span></div>
-  </section>
-</div>
-
-<!-- BUG STATUS -->
-<div class="tp" id="tab-bugstatus">
-  <section class="sec grid g2">
-    <div class="card">
-      <h2>Bug A &mdash; initialEventId discarded <span class="s bad" style="margin-left:6px">OPEN</span></h2>
-      <div class="co r"><strong>Location:</strong> src/app/(app)/leads/page.tsx line 117<br/><code>{...({ initialEventId: eventId || null } as any)}</code><br/><br/><strong>Effect:</strong> LeadsWorkspaceProps has no initialEventId field. The prop is spread via TypeScript bypass and silently discarded by LeadsWorkspace. trade_event_id is never written to leads created from trade event Quick Lead buttons. The entire Trade Event attribution chain breaks at the final step.<br/><br/><strong>Status:</strong> Unchanged. Not touched in this pass.</div>
-      <p class="sm mu">Fix requires: add <code>initialEventId?: string | null</code> to LeadsWorkspaceProps → read it in LeadsWorkspace → include it in the QuickCapture prefill so trade_event_id writes on lead save.</p>
-
-      <h2 style="margin-top:16px">Bug B &mdash; /approval-send = IntegrationsWorkspace <span class="s bad" style="margin-left:6px">OPEN</span></h2>
-      <div class="co r"><strong>Location:</strong> src/app/(app)/approval-send/page.tsx<br/>Still imports and renders <code>IntegrationsWorkspace</code>.<br/><br/><strong>Effect:</strong> Users sent to /approval-send after quote approval land on the integrations sync page. No quote send confirmation, no status transition, no redirect to /orders. NorthStar step 4 is completely broken.<br/><br/><strong>Status:</strong> Unchanged. Not touched in this pass.</div>
-      <p class="sm mu">Fix requires: replace route content with a quote approval + send confirmation screen that reads quoteId from searchParams, shows quote summary, transitions status to 'sent', and redirects to /orders.</p>
-    </div>
-    <div class="card">
-      <h2>Bug C &mdash; (supabase as any) typecast <span class="s warn" style="margin-left:6px">WORKAROUND</span></h2>
-      <div class="co w"><strong>What changed:</strong><br/>Before: <code>await (supabase as any).from('trade_events').update(...)</code><br/>After: <code>const db = supabase as any; await db.from('trade_events').update(...)</code><br/><br/>This is the same cast. Same TypeScript escape hatch. Same stale types. Same outcome if typecheck runs.<br/><br/><strong>Root cause still present:</strong> database.generated.ts has no capture_defaults field on trade_events Row/Insert/Update types. The generated types must be regenerated from the live DB to remove the need for the cast.<br/><br/><strong>Positive:</strong> The schema confirms the migration ran in the live DB. Once types are regenerated, removing the cast is a 2-line fix.</div>
-      <div class="co g"><strong>What you need to run:</strong><br/><code>npx supabase gen types typescript --linked \<br/>  &gt; src/types/database.generated.ts</code><br/><br/>Then attach the updated file in the next zip. Once capture_defaults appears in the generated Row type, the <code>const db = supabase as any</code> casts in trade-events/ can be removed cleanly.</div>
-      <div class="co b"><strong>Context:</strong> The broader codebase has 100+ as any casts across 30+ files. This is an established workaround for tables/columns not yet in generated types. The trade-events instances (lines 120, 177 in server/actions.ts) are now consistent with the rest of the codebase's approach. Fix them when you regenerate types &mdash; don't attempt to fix all 100+ in one PR.</div>
-    </div>
-  </section>
-</div>
-
-<!-- SYSTEMIC -->
-<div class="tp" id="tab-systemic">
-  <section class="sec grid g2">
-    <div class="card">
-      <h2>The systemic as any problem</h2>
-      <p class="sm" style="margin-bottom:10px">The codebase has over 100 <code>as any</code> casts across 30+ files. This is a systemic type safety issue, not just a Bug C problem. These are the most impactful clusters:</p>
-      <div class="gi"><span class="sev high">14 instances</span><div><strong>src/features/leads/server/actions.ts</strong> &mdash; <code>const db = supabase as any</code> pattern used on nearly every server action. This file is the most at-risk because it handles quote saves, lead creates, and stage transitions.</div></div>
-      <div class="gi"><span class="sev high">8 instances</span><div><strong>src/lib/queries/data.ts</strong> &mdash; Dashboard and lead data queries. Many tables queried as any because generated types are behind the actual schema.</div></div>
-      <div class="gi"><span class="sev med">5 instances</span><div><strong>src/features/trade-events/server/actions.ts</strong> &mdash; The specific file from this PR. All 5 are <code>const db = supabase as any</code>.</div></div>
-      <div class="gi"><span class="sev med">5 instances</span><div><strong>src/features/tasks/server/actions.ts</strong></div></div>
-      <div class="gi"><span class="sev med">4 instances</span><div><strong>src/features/settings/server/actions.ts</strong></div></div>
-      <div class="gi"><span class="sev med">3 instances</span><div><strong>src/features/quotes/server/actions.ts</strong></div></div>
-      <div class="gi"><span class="sev low">2 instances</span><div><strong>src/features/orders/server/actions.ts</strong></div></div>
-    </div>
-    <div class="card">
-      <h2>Why this matters &mdash; and why not to panic</h2>
-      <div class="co w"><strong>Why it matters:</strong> TypeScript's entire value is catching bugs at compile time. Every <code>as any</code> is a gap in that safety net. If a DB column is renamed or removed, the code will silently break at runtime instead of failing at compile time. The more as any casts, the more risk of silent production failures.</div>
-      <div class="co b"><strong>Why not to panic:</strong> The <code>const db = supabase as any</code> pattern works at runtime because the actual SQL still runs against the real DB schema. The only failure mode is typecheck — not user-facing crashes. The app has been running with this pattern for months.</div>
-      <div class="co g"><strong>The right fix strategy:</strong><br/>1. Regenerate types: <code>npx supabase gen types typescript --linked &gt; src/types/database.generated.ts</code><br/>2. This alone will resolve 60-70% of the casts because most tables ARE in the schema.<br/>3. For remaining tables (rate_limit_hits, communications, audit_logs, etc.) that are in the DB but may be missing from types: add them to the schema or extend the type manually.<br/>4. Do this as ONE separate PR: "PR-REGEN-TYPES" — do not mix with feature work.</div>
-      <div class="co r"><strong>Do NOT:</strong> Try to fix all 100+ casts in a single PR. Do NOT mix type cleanup with Bug A and Bug B fixes. Each must be a separate, verifiable PR with its own proof.</div>
-    </div>
-  </section>
-</div>
-
-<!-- PR PLAN -->
-<div class="tp" id="tab-prs">
-  <section class="sec card">
-    <h2>Updated PR plan &mdash; 4 PRs to 100%</h2>
-    <div class="co b"><strong>Priority order:</strong> PR-REGEN-TYPES must come before PR-FIX-TYPEHACKS so the type file is clean when initialEventId is added. PR-FIX-APPROVALSEND can run in parallel.</div>
-    <table class="t"><thead><tr><th>#</th><th>PR</th><th>Files</th><th>Score lift</th><th>Status</th></tr></thead><tbody>
-      <tr><td>P1&ndash;P7</td><td>Previous PRs (REPAIR through BUILD-FIX)</td><td>&mdash;</td><td>Baseline 80%</td><td><span class="s good">Done</span></td></tr>
-      <tr><td>P8</td><td><strong>PR-REGEN-TYPES</strong><br/>Regenerate database.generated.ts from live DB, remove trade-events as any casts</td><td>
-        <code>src/types/database.generated.ts</code> (regenerated)<br/>
-        <code>src/features/trade-events/server/actions.ts</code> (remove as any)<br/>
-        <code>src/app/(app)/trade-events/page.tsx</code> (remove as any)
-      </td><td>Trade Events 78&rarr;85%</td><td><span class="s neutral">Do first</span></td></tr>
-      <tr><td>P9</td><td><strong>PR-FIX-TYPEHACKS</strong><br/>Wire initialEventId properly in LeadsWorkspaceProps</td><td>
-        <code>src/features/leads/types/workspace.ts</code><br/>
-        <code>src/features/leads/components/leads-workspace.tsx</code><br/>
-        <code>src/app/(app)/leads/page.tsx</code>
-      </td><td>Leads 82&rarr;88%, NorthStar 58&rarr;68%</td><td><span class="s neutral">After P8</span></td></tr>
-      <tr><td>P10</td><td><strong>PR-FIX-APPROVALSEND</strong><br/>Replace approval-send route with real quote send flow</td><td>
-        <code>src/app/(app)/approval-send/page.tsx</code> (replace entirely)
-      </td><td>NorthStar 68&rarr;88%</td><td><span class="s neutral">Parallel OK</span></td></tr>
-      <tr><td>P11</td><td><strong>PR-QA-RELEASE</strong><br/>Final grep checklist + build proof + DCC truth</td><td>
-        <code>public/internal-dcc/index.html</code> only
-      </td><td>All 100%</td><td><span class="s violet">Final</span></td></tr>
+    <h2>NorthStar end-to-end flow &mdash; 10 core steps + 3 Trade Show steps + 1 deferred</h2>
+    <table class="t"><thead><tr><th>Step</th><th>Flow</th><th>Implementation</th><th>Status</th></tr></thead><tbody>
+      <tr><td>TS-1</td><td>Admin creates trade event with capture defaults</td><td>admin/trade-events/page.tsx. capture_defaults server action. source_label + quick_lead_title fields.</td><td><span class="s good">&#10003; Live</span></td></tr>
+      <tr><td>TS-2</td><td>Share link / QR sent to team for mobile</td><td>Not built. Needs share link button on event card + QR display.</td><td><span class="s bad">&#10007; Missing</span></td></tr>
+      <tr><td>TS-3</td><td>Team member taps Quick Lead at booth</td><td>trade-events/page.tsx line 153. Correct eventId + sourceLabel in href.</td><td><span class="s good">&#10003; Live</span></td></tr>
+      <tr><td>TS-4</td><td>Fast 3-field form (company, name, product)</td><td>Not built. Current drawer has full form. Needs fast-field mode gated by eventId param.</td><td><span class="s bad">&#10007; Missing</span></td></tr>
+      <tr><td>TS-5</td><td>Lead saved with trade_event_id attribution</td><td>initialEventId wired through LeadsWorkspaceProps. lead-drawer.tsx writes trade_event_id. actions.ts saves to DB.</td><td><span class="s good">&#10003; Live</span></td></tr>
+      <tr><td>1</td><td>Lead CC &rarr; qualification &rarr; quote build</td><td>WorkflowTab. LeadCommandCenterPage. QuotePrepChecklist.</td><td><span class="s good">&#10003; Live</span></td></tr>
+      <tr><td>2</td><td>Quote &rarr; approval gate (override present)</td><td>quote_versions.status = approval_pending. Approval banner at quotes/page.tsx line 317.</td><td><span class="s good">&#10003; Live</span></td></tr>
+      <tr><td>3</td><td>Approved quote &rarr; /approval-send &rarr; Confirm &amp; Send</td><td>buildApprovalSendHref &rarr; /approval-send. Real send flow. Transitions status to 'sent'. RPC for contract.</td><td><span class="s good">&#10003; Live</span></td></tr>
+      <tr><td>4</td><td>Redirect &rarr; Orders. Sent quote visible as order.</td><td>redirect('/orders?notice=quote-sent'). Orders ingests ['accepted','sent'].</td><td><span class="s warn">&#9888; No banner</span></td></tr>
+      <tr><td>5</td><td>Orders execution desk &rarr; compliance &rarr; dispatch</td><td>Full execution desk. 6-stage stepper. Signal grid. Compliance checklist. Document upload.</td><td><span class="s good">&#10003; Live</span></td></tr>
+      <tr><td>6</td><td>Dashboard KPI drilldowns</td><td>DashboardInteractive lines 275&ndash;283. Role-aware scope.</td><td><span class="s good">&#10003; Live</span></td></tr>
+      <tr><td>TS-6</td><td>Post-show: event summary with conversion stats</td><td>Not built. Entry count exists. Converted count and pipeline value not aggregated per event.</td><td><span class="s bad">&#10007; Missing</span></td></tr>
+      <tr><td>TS-7</td><td>Bulk follow-up queue for event leads</td><td>Not built. Leads filter by trade_event_id possible in DB but no UI surface.</td><td><span class="s bad">&#10007; Missing</span></td></tr>
+      <tr style="background:#faf5ff"><td>&#128274; Deferred</td><td>Offline capture + sync on reconnect</td><td>Requires service worker + local lead queue. Convention centers have poor WiFi. Post-investor-demo v2.</td><td><span class="s deferred">Post-demo v2</span></td></tr>
     </tbody></table>
   </section>
+  <div class="co v" style="margin-top:10px"><strong>Offline sync reminder:</strong> This is the highest-value engineering investment for trade show users. Service worker caches the quick-lead form. Submissions queue in IndexedDB. Sync fires on reconnect. Without this, a lead lost due to a bad WiFi connection at GULFOOD is a real business cost. Target for v2 after investor demo is live and approved.</div>
 </div>
 
-<!-- PROMPTS -->
+<!-- ══════════════════ MODULES ══════════════════ -->
+<div class="tp" id="tab-modules">
+  <div class="co b">Core CRM scores unchanged from previous audit. Trade Show is a new module. Build proof still pending — no module can claim 100% without green build confirmation.</div>
+  <section class="sec card">
+    <h2>All module readiness &mdash; honest scores</h2>
+    <div class="mr"><div class="mn">Dashboard</div><div class="bw"><div class="bf g" style="width:84%"></div></div><div class="mp" style="color:var(--good)">84%</div><span class="s good">KPI hrefs confirmed. World map renders. No active events strip yet (Trade Show PR adds it).</span></div>
+    <div class="mr"><div class="mn">Leads + Command Center</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s good">trade_event_id attribution complete. URL-backed filters. Quick Lead flow. Missing: event filter chip in Leads toolbar.</span></div>
+    <div class="mr"><div class="mn">Pipeline</div><div class="bw"><div class="bf g" style="width:84%"></div></div><div class="mp" style="color:var(--good)">84%</div><span class="s good">5 filters + chips + URL-backed + DnD intact. Country filter is text-search only.</span></div>
+    <div class="mr"><div class="mn">Catalog</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s good">Visible Quick quote. 5-tab drawer. Gap chip wired.</span></div>
+    <div class="mr"><div class="mn">Quotes</div><div class="bw"><div class="bf g" style="width:83%"></div></div><div class="mp" style="color:var(--good)">83%</div><span class="s good">7-day validity, FX row, approval banner, version history.</span></div>
+    <div class="mr"><div class="mn">Orders</div><div class="bw"><div class="bf g" style="width:88%"></div></div><div class="mp" style="color:var(--good)">88%</div><span class="s warn">Sent quotes ingested. Full execution desk. Missing: quote-sent notice banner (1-line fix).</span></div>
+    <div class="mr"><div class="mn">Admin + Settings</div><div class="bw"><div class="bf g" style="width:82%"></div></div><div class="mp" style="color:var(--good)">82%</div><span class="s good">9 route cards. Governance threshold. Trade event capture_defaults form wired.</span></div>
+    <div class="mr"><div class="mn">Trade Events (core)</div><div class="bw"><div class="bf w" style="width:82%"></div></div><div class="mp" style="color:var(--warn)">82%</div><span class="s warn">capture_defaults in types. Quick Lead button live. Admin form wired. as any casts remain (6 instances).</span></div>
+    <div class="mr"><div class="mn">Trade Show Workflow (new)</div><div class="bw"><div class="bf r" style="width:25%"></div></div><div class="mp" style="color:var(--bad)">25%</div><span class="s bad">Skeleton only. Nav demoted. Fast-form, summary, bulk queue, ROI report, share link all missing. 4 PRs.</span></div>
+    <div class="mr"><div class="mn">AI Suggestions</div><div class="bw"><div class="bf w" style="width:76%"></div></div><div class="mp" style="color:var(--warn)">76%</div><span class="s warn">Stable. Applied-to-communications workflow not in scope for this release.</span></div>
+    <div class="mr"><div class="mn">Cross-page NorthStar (core)</div><div class="bw"><div class="bf g" style="width:90%"></div></div><div class="mp" style="color:var(--good)">90%</div><span class="s warn">All 10 core steps verified. Only gap: quote-sent notice banner (1-line fix).</span></div>
+    <div class="mr"><div class="mn">NorthStar + Trade Show</div><div class="bw"><div class="bf w" style="width:55%"></div></div><div class="mp" style="color:var(--warn)">55%</div><span class="s warn">TS-3 (Quick Lead button) and TS-5 (trade_event_id saves) live. TS-2,4,6,7 and offline all missing.</span></div>
+  </section>
+</div>
+
+<!-- ══════════════════ CONFIRMED ══════════════════ -->
+<div class="tp" id="tab-confirmed">
+  <section class="sec grid g2">
+    <div class="card">
+      <h2>Core CRM &mdash; all confirmed working</h2>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>/approval-send real flow:</strong> confirmAndSendQuote at line 20. Transitions quotes + quote_versions to 'sent'. Calls RPC for contract. Redirects to /orders.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>trade_event_id full attribution chain:</strong> initialEventId &rarr; LeadsWorkspaceProps &rarr; initialEventLead &rarr; lead-drawer prefill &rarr; formData &rarr; actions.ts &rarr; DB insert.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Orders sent quote ingestion:</strong> .in('status', ['accepted', 'sent']) confirmed. executionEvaluation treats both as quoteAccepted=true.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>7-day quote validity:</strong> quotes/page.tsx line 42: <code>Math.max(0, 7 - daysSinceUpdate)</code></div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Quotes FX row in detail panel:</strong> 'No conversion — catalog currency (USD)' / FX applied row confirmed at line 330.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Orders payment 'Tracking pending':</strong> line 784. No hardcoded demo data. avgCycle shows '—'.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Catalog visible Quick quote:</strong> products-table.tsx line 198. Styled button. sr-only removed.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Trade event Quick Lead button:</strong> trade-events/page.tsx line 156. Correct eventId in href.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>PipelineBoardFilters wired:</strong> import line 22, render line 714. 5 filters + chips + URL-backed + DnD intact.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Admin 9 route cards:</strong> 14 AdminRouteCard renders. Governance threshold. capture_defaults form.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>capture_defaults in generated types:</strong> database.generated.ts lines 5278/5291/5304. Row, Insert, Update all present.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>leads/page.tsx as any removed:</strong> initialEventId={eventId || null} without cast.</div></div>
+    </div>
+    <div class="card">
+      <h2>Trade Show &mdash; what already exists in codebase</h2>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Create event form:</strong> admin/trade-events/page.tsx has name, city, country, starts_on, ends_on, notes fields. Fully functional.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>capture_defaults admin form:</strong> source_label + quick_lead_title fields. saveTradeEventCaptureDefaults server action. 1-arg shape correct.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Quick Lead button on event cards:</strong> trade-events/page.tsx lines 153&ndash;156. sourceType, sourceLabel, eventId all in href.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Live entry counter:</strong> entryCountByEvent Map at line 37. Renders on each event card at line 138.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>isConverted flag per entry:</strong> trade-events/page.tsx line 84 checks status='converted' + converted_lead_id. Link to lead exists. Not yet aggregated into a summary stat.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>Card scan exists (partially):</strong> /contact-exchange/scan exists. ContactIntakeReview component exists. Not yet linked to trade event ID — scan saves lead without trade_event_id.</div></div>
+      <div class="gi"><span class="sev ok">&#10003;</span><div><strong>trade_event_id in leads schema:</strong> LeadRow type confirmed. DB column exists. actions.ts saves it. Filter by trade_event_id is possible in DB queries.</div></div>
+    </div>
+  </section>
+</div>
+
+<!-- ══════════════════ PR PLAN ══════════════════ -->
+<div class="tp" id="tab-prs">
+  <section class="sec">
+    <div class="card" style="margin-bottom:10px">
+      <h2>Full PR plan — core CRM + Trade Show</h2>
+      <div class="co b">Core CRM: 2 tiny fixes then QA-RELEASE. Trade Show: 4 PRs in sequence after QA-RELEASE. Smart reminders after investor demo.</div>
+      <table class="t" style="margin-top:10px"><thead><tr><th>#</th><th>PR</th><th>Files</th><th>Score lift</th><th>Status</th></tr></thead><tbody>
+        <tr><td colspan="5" style="background:#f8fafc;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;padding:6px 10px">CORE CRM — finish line</td></tr>
+        <tr><td>FC-1</td><td><strong>PR-FINAL-CLEANUP</strong> — quote-sent notice + as any removal</td><td><code>orders/page.tsx</code> (1 line), <code>trade-events/server/actions.ts</code>, <code>trade-events/page.tsx</code></td><td>Orders 88&rarr;90%, Trade 82&rarr;88%</td><td><span class="s neutral">Do now</span></td></tr>
+        <tr><td>FC-2</td><td><strong>PR-QA-RELEASE</strong> — full grep checklist + build proof + DCC truth</td><td><code>internal-dcc/index.html</code> only</td><td>Core CRM sign-off</td><td><span class="s violet">After FC-1</span></td></tr>
+        <tr><td colspan="5" style="background:#f0fdfa;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#0f766e;padding:6px 10px">TRADE SHOW — investor demo build</td></tr>
+        <tr><td>TS-1</td><td><strong>PR-TRADESHOW-NAV</strong> — promote nav + mobile event page + dashboard strip</td><td><code>manifest.json</code>, <code>route-meta.ts</code>, <code>trade-events/page.tsx</code> (mobile-first layout), <code>dashboard/_lib/render-dashboard-page.tsx</code> (active events strip)</td><td>Trade Show 25&rarr;48%</td><td><span class="s teal">After QA</span></td></tr>
+        <tr><td>TS-2</td><td><strong>PR-TRADESHOW-CAPTURE</strong> — fast-field form + share link + card scan link to event</td><td><code>trade-events/page.tsx</code> (fast-field drawer), <code>leads/page.tsx</code> (eventId fast mode), <code>contact-exchange/scan/page.tsx</code> (pass eventId)</td><td>Trade Show 48&rarr;65%</td><td><span class="s teal">After TS-1</span></td></tr>
+        <tr><td>TS-3</td><td><strong>PR-TRADESHOW-POSTSHOW</strong> — event summary stats + bulk follow-up queue + leads event filter</td><td><code>trade-events/page.tsx</code> (summary card with conversion stats), <code>leads/components/LeadsToolbar.tsx</code> (event filter chip), <code>lib/queries/trade-events.ts</code></td><td>Trade Show 65&rarr;82%</td><td><span class="s teal">After TS-2</span></td></tr>
+        <tr><td>TS-4</td><td><strong>PR-TRADESHOW-ROI</strong> — event ROI report (cost vs pipeline)</td><td><code>trade-events/page.tsx</code> (ROI panel), <code>lib/queries/trade-events.ts</code> (pipeline value per event query)</td><td>Trade Show 82&rarr;92%</td><td><span class="s teal">After TS-3</span></td></tr>
+        <tr><td colspan="5" style="background:#faf5ff;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#6b21a8;padding:6px 10px">DEFERRED — post investor demo v2</td></tr>
+        <tr><td>V2-1</td><td><strong>PR-OFFLINE-CAPTURE</strong> — service worker + local lead queue + sync on reconnect</td><td>New: <code>public/sw.js</code>, <code>src/lib/offline-queue.ts</code>, <code>trade-events/page.tsx</code> (offline indicator)</td><td>Trade Show 92&rarr;100%</td><td><span class="s deferred">v2</span></td></tr>
+        <tr><td>V2-2</td><td><strong>PR-SMART-REMINDERS</strong> — event start alerts + 48hr follow-up prompts</td><td>Dashboard notice system, cron or webhook trigger</td><td>NorthStar 100%</td><td><span class="s deferred">v2</span></td></tr>
+      </tbody></table>
+    </div>
+  </section>
+</div>
+
+<!-- ══════════════════ PROMPTS ══════════════════ -->
 <div class="tp" id="tab-prompts">
-  <div class="co r"><strong>Before running any of these prompts:</strong> Run <code>npx supabase gen types typescript --linked &gt; src/types/database.generated.ts</code> locally first. Then include the updated database.generated.ts in the zip you send to GPT for PR-REGEN-TYPES. Without this file, PR-REGEN-TYPES cannot remove the casts safely.</div>
+  <div class="co t"><strong>Order:</strong> Run FC-1 and FC-2 first to close the core CRM. Then run TS-1 through TS-4 in sequence. Each TS prompt is standalone — attach the latest zip each time.</div>
 
-  <div class="card" style="margin-bottom:12px;border:2px solid var(--brand)">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s active">Do first &mdash; run types locally</span><strong style="font-size:14px">PR-REGEN-TYPES &mdash; Clean generated types + remove trade-events as any</strong></div>
-    <div class="pb"><button class="cbtn" onclick="copyPrompt('p8')">Copy</button><pre id="p8">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
-Repo zip attached. The user has already regenerated src/types/database.generated.ts from the live DB
-by running: npx supabase gen types typescript --linked
+  <!-- FC-1 -->
+  <div class="card" style="margin-bottom:12px;border:2px solid var(--warn)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s warn">Core — do first</span><strong style="font-size:14px">PR-FINAL-CLEANUP &mdash; quote-sent notice + remove trade-events as any</strong></div>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('pfc')">Copy</button><pre id="pfc">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. SURGICAL — touch ONLY these 3 files. No npm commands. Return zip + CHANGES.md + diffs.
 
-ENVIRONMENT: Do NOT run npm commands. Return zip + CHANGES.md + diffs. Mark "Pending proof."
+FILES: src/app/(app)/orders/page.tsx · src/features/trade-events/server/actions.ts · src/app/(app)/trade-events/page.tsx
 
-PREREQUISITE CHECK: Confirm capture_defaults appears in database.generated.ts:
-  grep -n "capture_defaults" src/types/database.generated.ts
-  If it returns 0 results: STOP. Tell the user to regenerate types first. Do NOT proceed.
-  If it returns results: proceed.
+FIX 1 — orders/page.tsx: Add 'quote-sent' to decodeNotice (after 'quote-accepted' check):
+  if (noticeKey === 'quote-sent') {
+    return { title: 'Quote sent to buyer', description: 'The quote is live in the execution workspace. Track buyer response and document readiness from here.', tone: 'success' as const };
+  }
+VERIFY: grep -n "quote-sent" src/app/(app)/orders/page.tsx → must return 1 match.
 
-FILES TO TOUCH:
-  src/features/trade-events/server/actions.ts
-  src/app/(app)/trade-events/page.tsx
+FIX 2 — trade-events/server/actions.ts: capture_defaults is now in generated types (lines 5278/5291/5304).
+Remove all instances of: const db = supabase as any;
+Where db is used ONLY for .from('trade_events') queries (lines ~120, 177, 195, 225, 380).
+Replace: const db = supabase as any; await db.from('trade_events')...
+With: await supabase.from('trade_events')...
+VERIFY: grep -n "as any" src/features/trade-events/server/actions.ts → must return 0.
 
-TASK 1 — Remove as any from trade-events/server/actions.ts
-Find all instances of: const db = supabase as any;
-Lines 120 and 177 (and any others in this file that reference trade_events table).
+FIX 3 — trade-events/page.tsx line 29:
+Change: await (supabase as any).from('trade_events')
+To: await supabase.from('trade_events')
+VERIFY: grep -n "as any" src/app/(app)/trade-events/page.tsx → must return 0.
 
-For each instance where db is used to query trade_events:
-  Replace: const db = supabase as any; await db.from('trade_events')...
-  With: await supabase.from('trade_events')...
-
-Check if the generated type for capture_defaults is Json or a more specific type.
-If Json, the update call shape stays the same:
-  await supabase.from('trade_events')
-    .update({ capture_defaults: { source_label: sourceLabel, quick_lead_title: quickLeadTitle } })
-    .eq('id', eventId);
-
-Leave any db = supabase as any instances that query OTHER tables (not trade_events) unchanged.
-We are only fixing trade_events in this PR.
-
-TASK 2 — Remove as any from trade-events/page.tsx
-Line 29 currently: await (supabase as any).from('trade_events').select('id, capture_defaults')
-
-After types are regenerated, change to:
-  const { data: captureDefaultRows } = await supabase
-    .from('trade_events')
-    .select('id, capture_defaults')
-    .eq('organization_id', workspace.organization.id);
-
-Then update the Map construction to use the correct type:
-  const captureDefaultsByEventId = new Map(
-    (captureDefaultRows ?? []).map((row) => [row.id, row.capture_defaults ?? null])
-  );
-
-VERIFY in CHANGES.md:
-  grep -n "as any" src/features/trade-events/server/actions.ts — should show 0 trade_events-related casts
-  grep -n "as any" src/app/(app)/trade-events/page.tsx — must show 0 results
-  grep -n "capture_defaults" src/types/database.generated.ts — must show ≥1 result
-
-DCC UPDATE: Trade Events 85%. Mark PR-REGEN-TYPES Pending proof.</pre></div>
+DCC: Trade Events 88%, Orders 90%. Mark FC-1 Pending proof.</pre></div>
   </div>
 
-  <div class="card" style="margin-bottom:12px;border:2px solid #dc2626">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s bad">Bug A fix</span><strong style="font-size:14px">PR-FIX-TYPEHACKS &mdash; Wire initialEventId to LeadsWorkspace properly</strong></div>
-    <div class="pb"><button class="cbtn" onclick="copyPrompt('p9')">Copy</button><pre id="p9">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
-Repo zip attached. SURGICAL PR — touch ONLY the 3 files listed.
-
-ENVIRONMENT: Do NOT run npm commands. Return zip + CHANGES.md + diffs. Mark "Pending proof."
-
-FILES TO TOUCH:
-  src/features/leads/types/workspace.ts
-  src/features/leads/components/leads-workspace.tsx
-  src/app/(app)/leads/page.tsx
-
-THE PROBLEM (confirmed by code inspection):
-  leads/page.tsx line 117: {...({ initialEventId: eventId || null } as any)}
-  LeadsWorkspaceProps (workspace.ts) has NO initialEventId field.
-  LeadsWorkspace ignores this prop entirely — it's spread via TypeScript bypass and discarded.
-  Result: trade_event_id is NEVER written to leads created from trade event Quick Lead buttons.
-
-TASK 1 — Add initialEventId to LeadsWorkspaceProps (workspace.ts)
-Find the LeadsWorkspaceProps type. Add after initialQuickCapture:
-  initialEventId?: string | null;
-
-TASK 2 — Consume initialEventId in LeadsWorkspace (leads-workspace.tsx)
-Add initialEventId to the destructured props:
-  function LeadsWorkspace({ ..., initialQuickCapture = null, initialEventId = null, ... }: LeadsWorkspaceProps) {
-
-Find the useEffect that handles initialQuickCapture (search for "initialQuickCapture" in the file).
-Inside that effect, when it builds or uses initialQuickCapture to prefill a new lead:
-  - If initialEventId is set AND the quick capture is opening for a new lead (no leadId in drawer state):
-    Add trade_event_id to the prefill context so it writes when the lead is saved.
-
-Find where the lead drawer save payload writes source_type and source_label.
-Confirm trade_event_id is in LeadDrawerLead type (already confirmed it is).
-If the prefill / save payload does not already include trade_event_id:
-  Add: if (initialEventId) payload.lead.trade_event_id = initialEventId;
-
-TASK 3 — Remove as any from leads/page.tsx
-Line 117 currently: {...({ initialEventId: eventId || null } as any)}
-Change to: initialEventId={eventId || null}
-(This is now valid after TASK 1 adds the prop to the type.)
-
-VERIFY in CHANGES.md:
-  grep -n "initialEventId" src/features/leads/types/workspace.ts — must return 1 match
-  grep -n "initialEventId" src/features/leads/components/leads-workspace.tsx — must return ≥2 matches
-  grep -n "as any" src/app/(app)/leads/page.tsx — must show 0 results for initialEventId line
-  grep -n "trade_event_id" src/features/leads/components/leads-workspace.tsx — paste all results
-
-DCC UPDATE: Leads 88%, NorthStar 68%. Mark PR-FIX-TYPEHACKS Pending proof.</pre></div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px;border:2px solid #dc2626">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s bad">Bug B fix &mdash; can run parallel</span><strong style="font-size:14px">PR-FIX-APPROVALSEND &mdash; Build real quote approval + send route</strong></div>
-    <div class="pb"><button class="cbtn" onclick="copyPrompt('p10')">Copy</button><pre id="p10">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
-Repo zip attached. SURGICAL PR — touch ONLY approval-send/page.tsx.
-
-ENVIRONMENT: Do NOT run npm commands. Return zip + CHANGES.md + diffs. Mark "Pending proof."
-
-THE PROBLEM (confirmed by code inspection):
-  src/app/(app)/approval-send/page.tsx currently renders IntegrationsWorkspace.
-  This is the integrations sync page — completely wrong.
-  The NorthStar flow sends users here after approving a pending_approval quote.
-  They land on the integrations UI instead of a quote send confirmation screen.
-
-FILE TO TOUCH: src/app/(app)/approval-send/page.tsx (replace content entirely)
-
-Read first:
-  public/reference-html/setuflow-northstar.html (Approval → Send section)
-  public/reference-html/setuflow-quotes-redesign.html (approval banner + send flow)
-  src/lib/workflow/handoffs.ts — find how quoteId is passed to this route (check buildApprovalSendHref)
-
-TASK — Replace approval-send/page.tsx with a real quote approval + send screen:
-
-The page must:
-1. Read quoteId from searchParams (check handoffs.ts for exact param name)
-2. Import createClient from @/lib/supabase/server and requireWorkspace from @/lib/workspace/auth
-3. If no quoteId: render WorkspaceState with title "Select a quote to send" and link to /quotes?status=pending_approval
-4. Fetch the quote by ID: quotes table + quote_versions + basic lead info (company_name, contact_name)
-5. If quote is already sent: render WorkspaceState "Quote already sent" with link to /orders
-6. Show quote summary (server component, no client JS needed):
-   - Quote number + version
-   - Buyer company + contact
-   - Line count + subtotal + currency
-   - Validity: 7 days from today
-   - Any price override note (if is_overridden)
-7. Show two actions:
-   A. "Confirm & Send" — form with 1-arg server action that:
-      - Updates quotes SET status='sent', sent_at=now() WHERE id=quoteId
-      - Calls revalidatePath('/quotes') and revalidatePath('/orders')  
-      - redirects to '/orders?notice=quote-sent&quoteId=' + quoteId
-   B. "Back to quotes" — link to /quotes
-
-The server action must be 1-arg (formData: FormData) for use as direct form action={...}.
-Include a hidden input: <input type="hidden" name="quote_id" value={quoteId} />
-
-VERIFY in CHANGES.md:
-  grep -n "IntegrationsWorkspace" src/app/(app)/approval-send/page.tsx — must return 0
-  grep -n "Confirm.*Send\|status.*sent\|quote-sent" src/app/(app)/approval-send/page.tsx — must return ≥3
-  grep -n "redirect.*orders" src/app/(app)/approval-send/page.tsx — must return 1
-
-DCC UPDATE: NorthStar 88%. Mark PR-FIX-APPROVALSEND Pending proof.</pre></div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s violet">Final</span><strong style="font-size:14px">PR-QA-RELEASE &mdash; Final proof + DCC truth</strong></div>
-    <div class="pb"><button class="cbtn" onclick="copyPrompt('p11')">Copy</button><pre id="p11">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
-Repo zip attached. FINAL QA — read-only verification. Only public/internal-dcc/index.html updated.
+  <!-- FC-2 -->
+  <div class="card" style="margin-bottom:12px;border:2px solid var(--violet)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s violet">Core — final gate</span><strong style="font-size:14px">PR-QA-RELEASE &mdash; full proof + DCC truth</strong></div>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('pqa')">Copy</button><pre id="pqa">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. FINAL QA — read-only. Only public/internal-dcc/index.html updated.
 
 MANDATORY: npm ci → npm run typecheck → npm test → npm run build — ALL must pass. Paste full output.
+If ANY fails: STOP. Report error. Do NOT update DCC.
 
-RUN THESE GREPS AND PASTE ALL RESULTS:
+GREPS — paste all results:
+  grep -n "7 - daysSinceUpdate" src/app/(app)/quotes/page.tsx                    ← 1
+  grep -n "quote-sent" src/app/(app)/orders/page.tsx                             ← ≥1
+  grep -n "'accepted', 'sent'" src/app/(app)/orders/page.tsx                     ← 1
+  grep -n "IntegrationsWorkspace" src/app/(app)/approval-send/page.tsx           ← 0
+  grep -n "Confirm.*Send" src/app/(app)/approval-send/page.tsx                   ← ≥1
+  grep -n "Tracking pending" src/app/(app)/orders/page.tsx                       ← 1
+  grep -n "30% received" src/app/(app)/orders/page.tsx                           ← 0
+  grep -n "sr-only" src/features/products/components/products-table.tsx          ← 0
+  grep -n "Quick Lead" src/app/(app)/trade-events/page.tsx                       ← ≥1
+  grep -rn "capture_defaults" src/ | grep -v sql | grep -v ".bak"               ← ≥5
+  grep -n "as any" src/features/trade-events/server/actions.ts                   ← 0
+  grep -n "as any" src/app/(app)/trade-events/page.tsx                           ← 0
+  grep -n "as any" src/app/(app)/leads/page.tsx                                  ← 0
+  grep -n "initialEventId" src/features/leads/types/workspace.ts                 ← 1
+  grep -n "trade_event_id: initialEventId" src/features/leads/components/leads-workspace.tsx ← 1
+  grep -n "PipelineBoardFilters" src/features/pipeline/components/pipeline-board.tsx ← ≥2
+  grep -c "AdminRouteCard" src/app/(app)/admin/organization/page.tsx              ← 14
 
-Core bug fixes:
-  grep -n "7 - daysSinceUpdate" src/app/(app)/quotes/page.tsx                          ← must show 1
-  grep -n "Tracking pending" src/app/(app)/orders/page.tsx                              ← must show 1
-  grep -n "30% received" src/app/(app)/orders/page.tsx                                  ← must show 0
-  grep -n "IntegrationsWorkspace" src/app/(app)/approval-send/page.tsx                  ← must show 0
-  grep -n "Confirm.*Send\|quote-sent" src/app/(app)/approval-send/page.tsx              ← must show ≥3
+Each pass ✅. Each fail → keep below 100% and note file + line.
+Only update DCC after ALL pass + green build. This is the core CRM release gate.</pre></div>
+  </div>
 
-Trade events:
-  grep -rn "capture_defaults" src/ | grep -v sql | grep -v ".bak"                       ← must show ≥5
-  grep -n "Quick Lead" src/app/(app)/trade-events/page.tsx                              ← must show ≥1
-  grep -n "capture_defaults" src/types/database.generated.ts                            ← must show ≥1
-  grep -n "as any" src/app/(app)/trade-events/page.tsx                                  ← must show 0
-  grep -n "as any" src/features/trade-events/server/actions.ts | grep trade_events      ← must show 0
+  <!-- TS-1 -->
+  <div class="card" style="margin-bottom:12px;border:2px solid var(--teal)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s teal">Trade Show PR 1</span><strong style="font-size:14px">PR-TRADESHOW-NAV &mdash; Promote nav + mobile event page + dashboard active strip</strong></div>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('pts1')">Copy</button><pre id="pts1">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. Trade Show PR 1 — nav promotion + mobile event page + dashboard strip.
+No npm commands. Return zip + CHANGES.md + diffs. Mark "Pending proof."
 
-Leads + attribution:
-  grep -n "initialEventId" src/features/leads/types/workspace.ts                        ← must show 1
-  grep -n "initialEventId" src/features/leads/components/leads-workspace.tsx            ← must show ≥2
-  grep -n "as any" src/app/(app)/leads/page.tsx                                         ← must show 0
+FILES TO TOUCH:
+  src/lib/routes/manifest.json
+  src/components/layout/shell/route-meta.ts
+  src/app/(app)/trade-events/page.tsx
+  src/app/(app)/dashboard/_lib/render-dashboard-page.tsx
 
-Other confirmed fixes:
-  grep -n "sr-only" src/features/products/components/products-table.tsx                 ← must show 0
-  grep -n "No conversion\|FX applied" src/app/(app)/quotes/page.tsx                     ← must show 1
-  grep -n "PipelineBoardFilters" src/features/pipeline/components/pipeline-board.tsx    ← must show ≥2
+CONTEXT: Trade events are a primary lead generation tool for importers/exporters who attend trade shows
+like GULFOOD, SIAL, Anuga multiple times per year. The current nav intentionally demotes trade events.
+This must be corrected before the investor demo.
 
-For each PASSING: mark ✅ in DCC.
-For each FAILING: keep module below 100% and note the file + line.
-Only update scores after ALL greps pass AND npm build is green.
-Return updated zip.</pre></div>
+TASK 1 — Promote trade events in manifest.json
+Find the section where trade events currently sits (under "Useful supporting surfaces" or similar demoted section).
+Move the trade-events nav item into the primary navigation section alongside Leads, Pipeline, Quotes.
+Give it a proper description: "Manage trade shows and events. Capture leads on the show floor and track conversion."
+Remove any "demoted" or "not promoted" language from the description.
+
+TASK 2 — Update route-meta.ts
+Find line 143 (approximate): the trade-events route entry that says "intentionally demoted from the main daily shell."
+Replace description with: "Trade show command center. Capture leads on the floor, review entries, and track conversion to pipeline."
+Remove the sectionLabel about "Demoted side tools".
+
+TASK 3 — Mobile-first event page layout (trade-events/page.tsx)
+The events page is used on a phone at a trade show. Restructure the primary event card layout:
+- Move the entry count to the TOP of each event card in a large badge (e.g. "14 leads captured")
+- The Quick Lead button must be large (full width of card on mobile, min-height 48px) and visually prominent
+- The event name should be the hero text (text-2xl font-semibold)
+- Add event date range below the name (starts_on to ends_on formatted as "Apr 28 – May 1 2026")
+- Add a "Share capture link" button: copies /leads?quickLead=1&sourceType=trade_event&eventId={id}&sourceLabel={encodedName} to clipboard
+  Style: secondary button, icon for clipboard, small, shows "Copied!" for 2 seconds after click
+- Keep the existing entry list section below each event card
+
+Do NOT remove any existing functionality. Only restructure the visual layout and add the share button.
+
+TASK 4 — Dashboard active events strip (render-dashboard-page.tsx)
+After the existing KPI strip, add a query for active trade events (starts_on <= today <= ends_on).
+If 1 or more active events exist, render a banner strip before the main KPI grid:
+  - Teal/emerald background
+  - "Live at [Event Name]" as the title
+  - Entry count badge: "N leads captured today"
+  - Large "Capture lead" button linking to /leads?quickLead=1&sourceType=trade_event&eventId={id}&sourceLabel={encodedName}
+  - If multiple events active, show the first one with a "+N more" indicator
+If no active events, render nothing (no empty state).
+
+VERIFY:
+  grep -n "Capture lead\|capture.*lead\|Share capture" src/app/(app)/trade-events/page.tsx → ≥1
+  grep -n "demoted\|Demoted\|intentionally not promoted" src/components/layout/shell/route-meta.ts → 0
+  grep -n "trade.event\|tradeEvent" src/lib/routes/manifest.json | grep -i "primary\|core\|main" → ≥1
+
+DCC: Trade Show 25→48%. Mark TS-1 Pending proof.</pre></div>
+  </div>
+
+  <!-- TS-2 -->
+  <div class="card" style="margin-bottom:12px;border:2px solid var(--teal)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s teal">Trade Show PR 2</span><strong style="font-size:14px">PR-TRADESHOW-CAPTURE &mdash; Fast-field form + card scan event link</strong></div>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('pts2')">Copy</button><pre id="pts2">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. Trade Show PR 2 — fast-field form + card scan linked to events.
+No npm commands. Return zip + CHANGES.md + diffs. Mark "Pending proof."
+
+FILES TO TOUCH:
+  src/app/(app)/leads/page.tsx
+  src/features/leads/components/leads-workspace.tsx
+  src/app/(app)/contact-exchange/scan/page.tsx
+
+CONTEXT: At a trade show, users have 30 seconds per contact. The current lead drawer has 15+ fields.
+A fast-field mode should show only 3 fields when launched from a trade event Quick Lead link.
+
+TASK 1 — Fast-field mode in leads-workspace.tsx
+When the LeadsWorkspace receives BOTH initialEventId AND the URL param quickLead=1:
+  - Open the drawer immediately in 'quick' mode
+  - In this fast-field mode, render the basics step with ONLY these fields visible initially:
+    1. Company name (required)
+    2. Contact name
+    3. Product interest (dropdown from available products, pre-filled from capture_defaults if available)
+  - All other fields (phone, email, country, etc.) hidden behind an "Add more details" toggle
+  - The trade_event_id is pre-filled from initialEventId (already wired — just ensure it stays)
+  - "Save contact" button text instead of "Save lead"
+
+This fast-field mode is ONLY activated when both conditions are true:
+  - searchParams has quickLead=1
+  - searchParams has eventId (not null)
+Do NOT change the regular lead drawer for other entry points.
+
+TASK 2 — leads/page.tsx: detect fast-field mode and pass it down
+Check if both quickLead and eventId are in searchParams.
+If yes: pass a new prop initialFastField={true} to LeadsWorkspace.
+Add initialFastField?: boolean to LeadsWorkspaceProps in workspace.ts.
+
+TASK 3 — Card scan linked to event (contact-exchange/scan/page.tsx)
+The card scan page (/contact-exchange/scan) saves leads but does not link to a trade event.
+Add: read eventId from the scan page searchParams.
+If eventId is present, include it in the lead creation payload so the scanned lead gets trade_event_id set.
+Check how the scan page submits to ensure trade_event_id is included in the save payload.
+
+VERIFY:
+  grep -n "initialFastField\|fast.field\|fastField" src/features/leads/types/workspace.ts → ≥1
+  grep -n "initialFastField\|fast.field\|fastField" src/features/leads/components/leads-workspace.tsx → ≥2
+  grep -n "eventId" src/app/(app)/contact-exchange/scan/page.tsx → ≥1
+
+DCC: Trade Show 48→65%. Mark TS-2 Pending proof.</pre></div>
+  </div>
+
+  <!-- TS-3 -->
+  <div class="card" style="margin-bottom:12px;border:2px solid var(--teal)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s teal">Trade Show PR 3</span><strong style="font-size:14px">PR-TRADESHOW-POSTSHOW &mdash; Event summary + bulk follow-up queue + leads event filter</strong></div>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('pts3')">Copy</button><pre id="pts3">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. Trade Show PR 3 — post-show analytics, bulk follow-up, leads event filter.
+No npm commands. Return zip + CHANGES.md + diffs. Mark "Pending proof."
+
+FILES TO TOUCH:
+  src/app/(app)/trade-events/page.tsx
+  src/lib/queries/trade-events.ts (or equivalent query file)
+  src/features/leads/components/LeadsToolbar.tsx (or LeadsFiltersPanel.tsx — whichever has the filter bar)
+
+TASK 1 — Event summary card with conversion stats (trade-events/page.tsx)
+Each event card currently shows only entry count. Add a stats row below the entry count:
+  - Total entries (already exists as entryCountByEvent.get(event.id))
+  - Converted leads: count of entries where status='converted' AND converted_lead_id is not null
+  - Open leads (converted but not yet quoted): count leads where trade_event_id=event.id AND no quote
+  - Pipeline value: sum of deal_value from leads where trade_event_id=event.id AND deal_value is not null
+
+For the conversion stats, add a new query in the page.tsx (or trade-events.ts query file) that:
+  - Fetches leads where trade_event_id IN (event IDs for this org)
+  - Groups by trade_event_id and calculates: lead count, leads with a quote, sum(deal_value)
+  - Builds a Map<eventId, { leadCount, quotedCount, pipelineValue, currency }>
+
+Render these as a 3-stat mini strip on each event card:
+  [14 entries] [8 leads] [3 quoted] [USD 42,000 pipeline]
+
+TASK 2 — Bulk follow-up queue section (trade-events/page.tsx)
+After the events grid, add a "Follow-up needed" section.
+Query: leads WHERE trade_event_id IN (event IDs) AND next_follow_up_at IS NULL AND trade_event_id IS NOT NULL
+If leads exist: show them as a list with company name, contact name, event source, and a link to:
+  /leads/${lead.id}?tab=workflow&handoff=trade-event-follow-up
+If none: show "All event leads have follow-up scheduled ✓"
+Limit to 20, with a "View all in Leads" link.
+
+TASK 3 — Leads workspace event filter chip
+Find the Leads filter bar (LeadsToolbar.tsx or LeadsFiltersPanel.tsx — check which renders the filter chips).
+Add a "Source event" filter after the existing filter chips.
+The filter should:
+  - Show a dropdown of trade events (use the tradeEvents prop already passed to LeadsWorkspace)
+  - When selected: filter leads by trade_event_id matching the selected event
+  - Show as an active chip (same style as existing active filter chips)
+  - URL-backed: add eventId to the URL searchParams when active
+Read searchParams for eventId in leads/page.tsx and pass as initialEventId filter.
+
+VERIFY:
+  grep -n "pipelineValue\|pipeline.*value\|deal_value.*trade" src/app/(app)/trade-events/page.tsx → ≥1
+  grep -n "follow-up needed\|follow.up.*queue\|Follow.up needed" src/app/(app)/trade-events/page.tsx → ≥1
+  grep -n "tradeEvent\|trade_event.*filter\|event.*filter" src/features/leads/components/LeadsToolbar.tsx → ≥1
+
+DCC: Trade Show 65→82%. Mark TS-3 Pending proof.</pre></div>
+  </div>
+
+  <!-- TS-4 -->
+  <div class="card" style="margin-bottom:12px;border:2px solid var(--teal)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="s teal">Trade Show PR 4</span><strong style="font-size:14px">PR-TRADESHOW-ROI &mdash; Event ROI report panel</strong></div>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('pts4')">Copy</button><pre id="pts4">You are a senior full-stack engineer on SETU Flow CRM — Next.js 14 App Router, Supabase, TypeScript.
+Repo zip attached. Trade Show PR 4 — event ROI report.
+No npm commands. Return zip + CHANGES.md + diffs. Mark "Pending proof."
+
+FILE TO TOUCH: src/app/(app)/trade-events/page.tsx
+
+CONTEXT: Importers and exporters pay £8,000–£30,000 for a trade show stand. They need to see
+the business case for attending each event. This ROI panel should be the closing section of each event card.
+
+TASK — Add an ROI report section to each event card:
+
+Per event, show a collapsible "Event performance" panel (collapsed by default, click to expand):
+
+Stats to show:
+  - Leads captured: total entry count (already available)
+  - Converted to CRM: lead count with trade_event_id = this event
+  - Conversion rate: (leads / entries) %
+  - Quotes raised: count of quotes where lead.trade_event_id = this event AND quote exists
+  - Pipeline value: sum of deal_value from leads (already computed in TS-3)
+  - Orders placed: count of contracts where lead.trade_event_id = this event AND contract.status = 'active'
+
+Display as a 2-column grid of stat cards inside the panel.
+Add a "vs. prev. event" comparison if more than 1 event exists (compare entries and pipeline value
+with the immediately preceding event by starts_on date).
+
+If an event has no leads yet (new or upcoming), show: "No pipeline data yet — leads will appear here after the show."
+
+The panel must use the data already fetched in TS-3 (leadStatsByEvent Map).
+Do NOT add a new DB query — reuse the existing data.
+
+Note at bottom of each ROI panel:
+"Event cost entry coming soon — ROI % will appear once cost is recorded."
+(This is a future feature — just note it, don't build it yet.)
+
+VERIFY:
+  grep -n "ROI\|roi\|Event performance\|event.*performance" src/app/(app)/trade-events/page.tsx → ≥2
+  grep -n "Conversion rate\|conversion.*rate\|Orders placed" src/app/(app)/trade-events/page.tsx → ≥1
+
+DCC: Trade Show 82→92%. Mark TS-4 Pending proof.
+
+ALSO UPDATE DCC: Add to NorthStar deferred section:
+"V2-1 PR-OFFLINE-CAPTURE: Service worker + local lead queue + sync on reconnect.
+ Target: post-investor-demo. Convention centers have unreliable WiFi. Without offline support,
+ leads captured during connectivity outages are lost. This is the highest-value v2 investment
+ for trade show users."</pre></div>
+  </div>
+
+  <!-- OFFLINE reminder box -->
+  <div class="co v">
+    <strong>&#128274; Post-investor-demo reminder: Offline capture (V2-1)</strong><br/>
+    Service worker caches the fast-field form. Submissions queue in IndexedDB. Sync fires automatically on reconnect with visual queue indicator ("3 leads pending sync"). This is not in scope for the investor demo build but is the most important v2 engineering investment for trade show users. Convention centers at GULFOOD, SIAL, Anuga reliably have poor WiFi during peak hours. Every lost lead because the form errored is a direct business cost to the client.
   </div>
 </div>
 
 </div>
 <script>
 function showTab(id,btn){document.querySelectorAll('.tp').forEach(t=>t.classList.remove('a'));document.getElementById('tab-'+id).classList.add('a');document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('a'));btn.classList.add('a')}
-function copyPrompt(id){const el=document.getElementById(id);navigator.clipboard.writeText(el.innerText).then(()=>{const b=event.target;b.textContent='Copied';setTimeout(()=>b.textContent='Copy',900)})}
+function copyPrompt(id){const el=document.getElementById(id);navigator.clipboard.writeText(el.innerText).then(()=>{const b=event.target;b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1000)})}
 </script>
 </body>
 </html>

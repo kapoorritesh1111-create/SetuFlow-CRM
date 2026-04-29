@@ -301,12 +301,12 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       ? 'buyer'
       : 'mixed';
 
-  // 1. Fetch accepted quotes only — orders should represent won commercial work
+  // 1. Fetch accepted or sent quotes — sent quotes are ingested into contracts from approval-send
   const { data: rawQuotes, error: quotesError } = await db
     .from('quotes')
     .select('id, status, currency, updated_at, lead_id, current_version_id, accepted_version_id, pricing_basis')
     .eq('organization_id', orgId)
-    .in('status', ['accepted'])
+    .in('status', ['accepted', 'sent'])
     .order('updated_at', { ascending: false })
     .limit(50);
 
@@ -332,15 +332,15 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         <PageHeader
           eyebrow="Orders / Execution"
           title="Orders / Execution"
-          description="Accepted quotes become operational orders here with documents, compliance, and execution status in one place."
+          description="Accepted and sent quotes become operational orders here with documents, compliance, and execution status in one place."
           badge="Live"
           status="No orders yet"
           actions={[]}
         />
         <SectionCard
           eyebrow="No orders yet"
-          title="Orders appear here when quotes are accepted"
-          description="Accept a quote from the lead quote workspace and it will appear here with its full execution context."
+          title="Orders appear here when quotes are sent"
+          description="Confirm and send an approved quote, and it will appear here with its full execution context."
         >
           <Link
             href={PRODUCT_ROUTES.app.leads}
@@ -515,7 +515,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
     });
 
     const executionEvaluation = evaluateOrderExecution({
-      quoteAccepted: String(q.status ?? '').toLowerCase() === 'accepted',
+      quoteAccepted: ['accepted', 'sent'].includes(String(q.status ?? '').toLowerCase()),
       hasContract: Boolean(contract),
       contractStatus: contract?.status,
       contractSignedAt: contract?.signed_at,
