@@ -210,12 +210,44 @@ async function updateQuoteDirect(db: any, params: {
   if (versionError) return { data: null, error: versionError };
 
   const versionId = version.id;
-  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: 'powders', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price, display_currency: line.currency ?? params.currency, is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
+
+  // Derive category_type from product catalog — fall back to 'chips'
+  const productIds = params.lineItems.map((l) => l.product_id).filter(Boolean);
+  let productCategoryMap: Record<string, 'chips' | 'powders'> = {};
+  if (productIds.length > 0) {
+    const { data: productRows } = await db
+      .from('products')
+      .select('id, category_id')
+      .in('id', productIds);
+    const categoryIds = (productRows ?? []).map((p: any) => p.category_id).filter(Boolean);
+    if (categoryIds.length > 0) {
+      const { data: catRows } = await db
+        .from('product_categories')
+        .select('id, category_type')
+        .in('id', categoryIds);
+      const catMap: Record<string, 'chips' | 'powders'> = {};
+      for (const cat of (catRows ?? [])) {
+        if (cat.category_type === 'chips' || cat.category_type === 'powders') {
+          catMap[cat.id] = cat.category_type;
+        }
+      }
+      for (const prod of (productRows ?? [])) {
+        if (prod.category_id && catMap[prod.category_id]) {
+          productCategoryMap[prod.id] = catMap[prod.category_id];
+        }
+      }
+    }
+  }
+
+  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: (line.product_id && productCategoryMap[line.product_id]) ? productCategoryMap[line.product_id] : 'chips', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price, display_currency: line.currency ?? params.currency, is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
   if (versionLines.length) {
     const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
     if (versionLineError) return { data: null, error: versionLineError };
   }
-  const { error: quoteVersionUpdateError } = await db.from('quotes').update({ current_version_id: versionId, updated_at: nowIso }).eq('id', params.quoteId);
+  // Set current_version_id and accepted_version_id (on send) atomically
+  const versionUpdatePayload: Record<string, unknown> = { current_version_id: versionId, updated_at: nowIso };
+  if (params.status === 'sent') versionUpdatePayload.accepted_version_id = versionId;
+  const { error: quoteVersionUpdateError } = await db.from('quotes').update(versionUpdatePayload).eq('id', params.quoteId);
   if (quoteVersionUpdateError) return { data: null, error: quoteVersionUpdateError };
 
   await insertNegotiationEvent(db, { quote_id: params.quoteId, quote_version_id: versionId, event_type: nextVersionNo === 1 ? 'version_created' : 'version_revised', actor_user_id: params.actorUserId, message: 'Quote version v' + nextVersionNo + ' saved without overwriting earlier versions.', payload: { source: 'updateQuoteDirect', previous_version_id: params.quoteVersionId, version_no: nextVersionNo } });
@@ -1153,7 +1185,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
         if (!isMissingRpcFunction(sendFanoutError)) return { error: sendFanoutError.message };
         const sentAt = new Date().toISOString();
         const [{ error: quoteSendError }, { error: versionSendError }] = await Promise.all([
-          db.from('quotes').update({ status: 'sent', updated_at: sentAt }).eq('organization_id', organization.id).eq('id', quoteId),
+          db.from('quotes').update({ status: 'sent', accepted_version_id: existing.current_version_id, updated_at: sentAt }).eq('organization_id', organization.id).eq('id', quoteId),
           db.from('quote_versions').update({ status: 'sent', sent_at: sentAt, sent_by: currentUser.id, updated_at: sentAt }).eq('id', existing.current_version_id),
         ]);
         if (quoteSendError) return { error: quoteSendError.message };
