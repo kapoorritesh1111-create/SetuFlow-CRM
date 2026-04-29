@@ -468,3 +468,74 @@ Result:
 - Confirm quote status is `sent`.
 - Confirm linked `contracts` row exists for the quote.
 - Confirm the sent quote appears in Orders.
+
+---
+
+# Build fix — approval-send typed Supabase client
+
+## Status
+Pending proof. No npm commands were run.
+
+## Build error addressed
+Vercel failed on `src/app/(app)/approval-send/page.tsx` because the app-level Supabase client still uses the legacy `src/types/database.ts` table map, where the `quotes` update payload resolves to `never` for the new approval-send flow.
+
+## Fix
+- Imported `SupabaseClient` and the regenerated `src/types/database.generated.ts` `Database` type.
+- Cast the server client to `SupabaseClient<GeneratedDatabase>` inside `approval-send/page.tsx`.
+- Reused the typed client for `quotes`, `quote_versions`, `leads`, and the contract ingestion RPC.
+- Avoided `as any` while preserving the existing NorthStar order-ingestion behavior.
+
+## Diff snippet
+
+```diff
++import type { SupabaseClient } from '@supabase/supabase-js';
++import type { Database as GeneratedDatabase } from '@/types/database.generated';
+...
+   const supabase = await createClient();
+-  const { data: quote, error: quoteError } = await supabase
++  const typedSupabase = supabase as unknown as SupabaseClient<GeneratedDatabase>;
++  const { data: quote, error: quoteError } = await typedSupabase
+     .from('quotes')
+...
+-  await supabase
++  await typedSupabase
+     .from('quotes')
+     .update({ status: 'sent', updated_at: sentAt })
+...
+-  await supabase.rpc('app_ensure_contract_for_accepted_quote_tx', {
++  await typedSupabase.rpc('app_ensure_contract_for_accepted_quote_tx', {
+```
+
+## Verification commands
+
+```bash
+grep -n "typedSupabase\|SupabaseClient\|status: 'sent'\|quote-sent" src/app/(app)/approval-send/page.tsx
+```
+
+Result:
+
+```text
+7:import type { SupabaseClient } from '@supabase/supabase-js';
+32:  const typedSupabase = supabase as unknown as SupabaseClient<GeneratedDatabase>;
+33:  const { data: quote, error: quoteError } = await typedSupabase
+43:  await typedSupabase
+45:    .update({ status: 'sent', updated_at: sentAt })
+49:  await typedSupabase
+51:    .update({ status: 'sent', sent_at: sentAt })
+55:  await typedSupabase.rpc('app_ensure_contract_for_accepted_quote_tx', {
+64:  redirect(`/orders?notice=quote-sent&eId=${quoteId}`);
+100:  const typedSupabase = supabase as unknown as SupabaseClient<GeneratedDatabase>;
+101:  const { data: quote, error: quoteError } = await typedSupabase
+133:    typedSupabase
+139:    typedSupabase
+```
+
+```bash
+grep -n "as any" src/app/(app)/approval-send/page.tsx
+```
+
+Result:
+
+```text
+0 matches
+```

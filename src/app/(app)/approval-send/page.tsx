@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database as GeneratedDatabase } from '@/types/database.generated';
 
 function readParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -27,7 +29,8 @@ async function confirmAndSendQuote(formData: FormData) {
   if (!workspace.organization) redirect('/quotes?status=pending_approval');
 
   const supabase = await createClient();
-  const { data: quote, error: quoteError } = await supabase
+  const typedSupabase = supabase as unknown as SupabaseClient<GeneratedDatabase>;
+  const { data: quote, error: quoteError } = await typedSupabase
     .from('quotes')
     .select('id, lead_id, organization_id, status, currency, display_currency, pricing_basis')
     .eq('organization_id', workspace.organization.id)
@@ -37,19 +40,19 @@ async function confirmAndSendQuote(formData: FormData) {
   if (quoteError || !quote) redirect('/quotes?status=pending_approval');
 
   const sentAt = new Date().toISOString();
-  await supabase
+  await typedSupabase
     .from('quotes')
     .update({ status: 'sent', updated_at: sentAt })
     .eq('organization_id', workspace.organization.id)
     .eq('id', quoteId);
 
-  await supabase
+  await typedSupabase
     .from('quote_versions')
     .update({ status: 'sent', sent_at: sentAt })
     .eq('quote_id', quoteId)
     .eq('status', 'approved');
 
-  await supabase.rpc('app_ensure_contract_for_accepted_quote_tx', {
+  await typedSupabase.rpc('app_ensure_contract_for_accepted_quote_tx', {
     p_organization_id: workspace.organization.id,
     p_quote_id: quote.id,
     p_lead_id: quote.lead_id,
@@ -94,7 +97,8 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
   }
 
   const supabase = await createClient();
-  const { data: quote, error: quoteError } = await supabase
+  const typedSupabase = supabase as unknown as SupabaseClient<GeneratedDatabase>;
+  const { data: quote, error: quoteError } = await typedSupabase
     .from('quotes')
     .select('id, lead_id, organization_id, quote_number, status, currency, display_currency, current_version_id, accepted_version_id, pricing_basis')
     .eq('organization_id', workspace.organization.id)
@@ -126,13 +130,13 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
   }
 
   const [{ data: lead }, { data: versions }] = await Promise.all([
-    supabase
+    typedSupabase
       .from('leads')
       .select('id, company_name, contact_name')
       .eq('organization_id', workspace.organization.id)
       .eq('id', quote.lead_id)
       .maybeSingle(),
-    supabase
+    typedSupabase
       .from('quote_versions')
       .select('id, version_no, status, total_line_count, display_currency, valid_until')
       .eq('quote_id', quote.id)
