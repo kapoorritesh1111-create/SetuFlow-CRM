@@ -103,6 +103,7 @@ export type LeadsWorkspaceProps = {
   initialTodayState?: TodayLayerState;
   storageKey?: string;
   initialQuickCapture?: LeadQuickCapturePrefill | null;
+  initialEventId?: string | null;
 };
 
 export type LeadDrawerLead = Pick<LeadRow,

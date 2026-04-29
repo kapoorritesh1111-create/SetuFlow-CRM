@@ -114,7 +114,7 @@ export default async function LeadsPage({
         initialLeadType={viewModel.initialLeadType}
         initialTodayState={viewModel.todayState}
         initialQuickCapture={initialQuickCapture}
-        {...({ initialEventId: eventId || null } as any)}
+        initialEventId={eventId || null}
       />
     </div>
   );

@@ -275,6 +275,7 @@ export function LeadsWorkspace({
   readOnlyMessage = null,
   isWorkspaceEmpty = false,
   initialQuickCapture = null,
+  initialEventId = null,
 }: LeadsWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -771,6 +772,42 @@ export function LeadsWorkspace({
     return workspaceLeads.find((lead) => lead.id === drawerState.leadId);
   }, [drawerState.leadId, workspaceLeads]);
 
+
+  const initialEventLead = useMemo<LeadDrawerLead | undefined>(() => {
+    if (!initialEventId || drawerState.leadId) return undefined;
+    return {
+      id: '',
+      company_name: '',
+      contact_name: null,
+      job_title: null,
+      email: null,
+      phone: null,
+      phone_secondary: null,
+      lead_type: 'buyer',
+      country: null,
+      country_id: null,
+      source_type: initialQuickCapture?.sourceType ?? null,
+      source_label: initialQuickCapture?.sourceLabel ?? null,
+      next_follow_up_at: null,
+      created_at: null,
+      updated_at: null,
+      last_contacted_at: null,
+      stage_id: null,
+      next_step_id: null,
+      owner_user_id: null,
+      trade_event_id: initialEventId,
+      notes: null,
+      website: null,
+      social_handle: null,
+      deal_value: null,
+      deal_currency: null,
+      pipeline_id: null,
+      intro_sent: false,
+      phone_country_code: null,
+      phone_secondary_country_code: null,
+    };
+  }, [drawerState.leadId, initialEventId, initialQuickCapture?.sourceLabel, initialQuickCapture?.sourceType]);
+
   const spotlightLead = useMemo(() => {
     const preferredId = spotlightLeadId ?? selectedLeadIds[0] ?? sortedLeads[0]?.id ?? null;
     return sortedLeads.find((lead) => lead.id === preferredId) ?? sortedLeads[0];
@@ -1029,7 +1066,7 @@ export function LeadsWorkspace({
     setDrawerState((current) => (current.open ? current : { open: true, mode: 'quick', leadId: null, initialStepId: 'basics' }));
     const params = new URLSearchParams(searchParams.toString());
     let changed = false;
-    for (const key of ['quickLead', 'autoQuote', 'productId', 'sourceType', 'sourceLabel']) {
+    for (const key of ['quickLead', 'autoQuote', 'productId', 'sourceType', 'sourceLabel', 'eventId']) {
       if (params.has(key)) {
         params.delete(key);
         changed = true;
@@ -1438,7 +1475,7 @@ export function LeadsWorkspace({
           setActiveView('quote');
         }}
         mode={drawerState.mode}
-        lead={drawerState.leadId ? selectedLead : undefined}
+        lead={drawerState.leadId ? selectedLead : initialEventLead}
         title={drawerState.leadId ? 'Edit Lead' : drawerState.mode === 'quick' ? 'Quick Add Lead' : 'Full Add Lead'}
         currentUserId={currentUserId}
         stages={stages}
