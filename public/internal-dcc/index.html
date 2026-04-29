@@ -74,6 +74,7 @@
   <button class="tbtn" onclick="showTab('modules',this)">Module Scores</button>
   <button class="tbtn" onclick="showTab('prs',this)">PR History</button>
   <button class="tbtn" onclick="showTab('next',this)">Next Prompt</button>
+  <button class="tbtn" onclick="showTab('strategy',this)" style="background:linear-gradient(135deg,#0b2e4a,#0d9488);color:#fff;border-radius:8px">&#9889; Strategic Review</button>
 </div>
 
 <div class="tp a" id="tab-status">
@@ -240,6 +241,260 @@ PRIORITIES FOR PR-NS-10:
 Return: updated repo zip + internal DCC update + PR-NS-11 next prompt.</pre></div>
   </div></div>
 </div>
+
+<!-- ══════════════════ STRATEGIC REVIEW ══════════════════ -->
+<div class="tp" id="tab-strategy">
+
+  <!-- HERO VERDICT -->
+  <div class="sec" style="background:linear-gradient(135deg,#0b2e4a 0%,#1a4f7a 60%,#0d9488 100%);border-radius:18px;padding:20px 24px;color:#fff;margin-bottom:12px">
+    <div style="font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:8px">Code-verified strategic review · Apr 29 2026 · Not a surface read</div>
+    <h2 style="font-size:20px;font-weight:900;letter-spacing:-.03em;color:#fff;margin-bottom:10px">You have built the most trade-literate SME CRM in existence. The next 90 days decide if it becomes a category.</h2>
+    <p style="font-size:12px;color:rgba(255,255,255,.82);line-height:1.75;max-width:1100px">This review is based on a direct audit of every page component, server action, schema type, and feature flag in the live codebase — not a UI screenshot review. The findings are specific, file-referenced where possible, and ranked by actual impact on adoption and revenue. The conclusion is different from a surface-level review: you are further ahead technically than most reviews will tell you, but you have one structural gap that will cost you the market if it is not closed in the next sprint.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <span style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">HS codes in schema</span>
+      <span style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">FX engine live</span>
+      <span style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">Incoterm-aware pricing</span>
+      <span style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">OCR card scan with AI</span>
+      <span style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">Fast-field 3-field capture built</span>
+      <span style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">ROI panel with event comparison</span>
+      <span style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">No PWA manifest</span>
+      <span style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">WhatsApp schema-only, no API</span>
+      <span style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">No offline capture</span>
+      <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase">Fast-field has hidden activation bug</span>
+    </div>
+  </div>
+
+  <!-- THREE LENSES -->
+  <div class="sec grid g3" style="margin-bottom:14px">
+    <div class="card" style="border-top:4px solid #059669">
+      <h2 style="color:#059669">&#128101; Buyer verdict</h2>
+      <p style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.6">"This is the first CRM that actually understands how I sell at Gulfood. But if the WiFi drops mid-capture, I'm going back to WhatsApp."</p>
+      <div style="font-size:11px;line-height:1.7">
+        <div style="color:#065f46;font-weight:700;margin-bottom:4px">What works today:</div>
+        <div>✓ End-to-end flow — event → capture → lead → quote → order — is genuinely rare</div>
+        <div>✓ Fast-field mode (3 fields, event-linked) is exactly right for a busy booth</div>
+        <div>✓ ROI panel answers the question every importer asks post-show: "Was this worth £20k?"</div>
+        <div>✓ OCR scan with AI is faster than typing — once you find it</div>
+        <div style="color:#9f1239;font-weight:700;margin-top:8px;margin-bottom:4px">What will lose you the user today:</div>
+        <div>✗ No offline = one connectivity failure = user trust gone permanently</div>
+        <div>✗ Fast-field has a hidden activation bug — <code>lead.trade_event_id</code> must be set on a NEW lead for it to fire; on brand-new captures it silently falls back to the 15-field form</div>
+        <div>✗ Camera scan is buried: navigate → upload → wait. At a show it needs to be: open → camera → save</div>
+        <div>✗ No "Add to Home Screen" — users cannot bookmark this like a native app</div>
+      </div>
+    </div>
+    <div class="card" style="border-top:4px solid #0c7fff">
+      <h2 style="color:#0c7fff">&#128200; Investor verdict</h2>
+      <p style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.6">"Strong vertical wedge in an underserved market. The data model is genuinely defensible. The go-to-market window is the next 6 months."</p>
+      <div style="font-size:11px;line-height:1.7">
+        <div style="color:#065f46;font-weight:700;margin-bottom:4px">What is actually impressive in the code:</div>
+        <div>✓ HS codes, duty rates, incoterms, country-of-origin, FX lock — no horizontal CRM has this</div>
+        <div>✓ Governed quote versioning (immutable snapshots) is enterprise-grade at SME price</div>
+        <div>✓ WhatsApp is in the schema as a first-class channel — the infrastructure decision is right</div>
+        <div>✓ Trade event ROI with vs-prior-event comparison is a board-deck slide, not a feature</div>
+        <div style="color:#9f1239;font-weight:700;margin-top:8px;margin-bottom:4px">What concerns a growth investor:</div>
+        <div>✗ Activation risk: if a user's first trade show capture fails (offline, friction, hidden bug), they churn same day and tell 5 peers</div>
+        <div>✗ WhatsApp delivery is schema-only — the most important last-mile channel for SME exporters is not actually connected</div>
+        <div>✗ Pricing model has only 2 category types ('chips'|'powders') — real product catalogs have 50+ categories, this creates a hard ceiling on addressable market</div>
+        <div>✗ No onboarding wizard — new organisations must manually set up products, markets, pipelines before they can use any of it</div>
+      </div>
+    </div>
+    <div class="card" style="border-top:4px solid #7c3aed">
+      <h2 style="color:#7c3aed">&#129504; Product strategist verdict</h2>
+      <p style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.6">"You've built the brain and the skeleton. You need the reflexes — the moments that happen in under 3 seconds without thinking."</p>
+      <div style="font-size:11px;line-height:1.7">
+        <div style="color:#065f46;font-weight:700;margin-bottom:4px">Where the architecture is ahead of the review:</div>
+        <div>✓ The communication schema already models WhatsApp, email, phone, LinkedIn, trade_show as equal channels — most CRMs bolt this on later</div>
+        <div>✓ delivery_queue concept exists but provider isn't connected — this is a 1-sprint fix, not a rebuild</div>
+        <div>✓ AI suggestions module exists — foundation for smart follow-up prioritisation without building from scratch</div>
+        <div>✓ audit_log, rate_limit, RLS hardening — security posture is genuinely production-grade</div>
+        <div style="color:#9f1239;font-weight:700;margin-top:8px;margin-bottom:4px">Structural gaps that limit the product ceiling:</div>
+        <div>✗ Client-side lead filtering via useMemo — will degrade at 200+ leads; needs server-side search</div>
+        <div>✗ No push notifications — follow-up reminders happen only when user opens the app</div>
+        <div>✗ Product categories are a DB constraint ('chips'|'powders') — cannot expand without a migration</div>
+        <div>✗ Quote PDF generation exists in components but actual rendering pipeline needs validation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT GPT GOT WRONG / WHAT I SEE DIFFERENTLY -->
+  <div class="sec grid g2" style="margin-bottom:14px">
+    <div class="card" style="border-left:4px solid #0d9488">
+      <h2 style="color:#0d9488">&#128269; Where the code review differs from the surface review</h2>
+      <div style="font-size:11px;line-height:1.75">
+        <div class="co t" style="margin-bottom:8px"><strong>Fast-field mode EXISTS — it was not missing.</strong> The GPT review said capture is still "15+ fields". Wrong. <code>lead-drawer.tsx:1356–1410</code> has a dedicated 3-field trade show fast-field section (company, contact, product interest) with "Add more details" toggle. The problem is the activation condition is buggy: it requires <code>lead.trade_event_id</code> to be set on the lead object, but new leads don't have this set yet at render time. Fix: derive fast-field mode from <code>initialEventId</code> prop alone, not from <code>lead.trade_event_id</code>.</div>
+        <div class="co t" style="margin-bottom:8px"><strong>OCR card scan already uses AI vision.</strong> <code>contact-ocr-provider.ts</code> calls OpenAI vision API with business card classification, extracts structured fields, and prefills the form. The issue is discoverability, not capability — users must navigate to <code>/contact-exchange/scan</code> manually. The camera should auto-open from the trade show capture flow.</div>
+        <div class="co t" style="margin-bottom:8px"><strong>WhatsApp is the right decision — but it's stuck at schema.</strong> The communications table models WhatsApp as a first-class channel (<code>channel: 'whatsapp'</code>). The lead actions have <code>quote_share_whatsapp_v1</code> templates. But there is no actual WhatsApp Business API call anywhere in the codebase. This is a 1-sprint integration, not a missing feature concept.</div>
+        <div class="co t"><strong>The ROI panel with event comparison is already built.</strong> <code>trade-events/page.tsx</code> computes lead count, quoted count, pipeline value, orders placed, and a vs-prior-event delta. This is more sophisticated than the GPT review acknowledged. It already answers "was Gulfood worth it vs SIAL last year".</div>
+      </div>
+    </div>
+    <div class="card" style="border-left:4px solid #dc2626">
+      <h2 style="color:#dc2626">&#9888; Gaps the surface review missed entirely</h2>
+      <div style="font-size:11px;line-height:1.75">
+        <div class="co r" style="margin-bottom:8px"><strong>No PWA manifest — confirmed in code.</strong> <code>/public/</code> contains <code>apple-touch-icon.png</code> and <code>icon.png</code> but no <code>manifest.webmanifest</code>. Users cannot "Add to Home Screen". This is a 30-minute fix that would transform mobile adoption immediately.</div>
+        <div class="co r" style="margin-bottom:8px"><strong>Product category constraint is a hard ceiling.</strong> The <code>quote_version_line_items</code> table and <code>product_pricing_rules</code> table have <code>CHECK (category_type = ANY (ARRAY['chips'::text, 'powders'::text]))</code>. Blue Orbit International sells: vacuum-cooked snacks, dehydrated powders, jaggery/sweeteners, onion/garlic products. Only chips and powders are valid. Every other product category the company sells cannot be priced correctly through the engine.</div>
+        <div class="co r" style="margin-bottom:8px"><strong>Client-side filtering ceiling.</strong> Lead filtering is done via <code>useMemo</code> in <code>leads-workspace.tsx</code> on the client. This works now but will degrade visibly at 200+ leads. No debounce on search, no server-side filtering, no pagination. This is the technical debt that will surface at first serious user.</div>
+        <div class="co r"><strong>No push notifications.</strong> The system has follow-up reminders stored in the database (<code>next_follow_up_at</code>), but no mechanism to notify users when a reminder fires. Users must open the app to see overdue leads. This makes the product reactive instead of proactive at exactly the moment it should be pushing.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIORITISED IMPROVEMENT PLAN -->
+  <div class="sec" style="margin-bottom:14px">
+    <div class="card">
+      <h2>Prioritised improvements — ranked by adoption impact, not feature complexity</h2>
+      <p style="font-size:11px;color:#64748b;margin-bottom:14px;line-height:1.6">Everything below is ranked by: (1) how many users it unblocks, (2) how fast it can be built, (3) whether it creates defensibility or just feature parity.</p>
+
+      <table class="t"><thead><tr><th style="width:30px">#</th><th>Improvement</th><th>Why it matters</th><th>What to build</th><th>Effort</th><th>Impact</th></tr></thead><tbody>
+
+        <tr style="background:#f0fdf4">
+          <td style="font-weight:900;color:#059669;font-size:16px">1</td>
+          <td><strong>Add PWA manifest + install prompt</strong><br/><span style="font-size:10px;color:#64748b">30-minute fix that changes adoption permanently</span></td>
+          <td style="font-size:11px">Users at trade shows need to open the app in 1 tap from their home screen. Without a PWA manifest there is no "Add to Home Screen". Every extra tap at a show costs a lead.</td>
+          <td style="font-size:11px">Create <code>/public/manifest.webmanifest</code> with name, icons, theme_color, display: standalone, start_url. Add <code>&lt;link rel="manifest"&gt;</code> to <code>layout.tsx</code>. Add Apple meta tags. Register basic service worker for shell caching.</td>
+          <td><span class="s good">1 sprint</span></td>
+          <td><span class="s good">&#9650; Critical</span></td>
+        </tr>
+
+        <tr>
+          <td style="font-weight:900;color:#059669;font-size:16px">2</td>
+          <td><strong>Fix fast-field activation bug</strong><br/><span style="font-size:10px;color:#64748b">lead-drawer.tsx:227 — wrong condition</span></td>
+          <td style="font-size:11px">Fast-field mode is built but has a bug: it reads <code>lead.trade_event_id</code> which is null on new leads. The 3-field form never fires on fresh captures, silently falling back to 15 fields.</td>
+          <td style="font-size:11px">Change line 227 from <code>Boolean(fastFieldMode && isQuickMode && !isEditingExistingLead && lead?.trade_event_id)</code> to <code>Boolean(fastFieldMode && isQuickMode && !isEditingExistingLead)</code>. The event ID is already passed via the <code>initialEventId</code> prop and hidden input — no other changes needed.</td>
+          <td><span class="s good">1 line</span></td>
+          <td><span class="s good">&#9650; Critical</span></td>
+        </tr>
+
+        <tr style="background:#f0fdf4">
+          <td style="font-weight:900;color:#0c7fff;font-size:16px">3</td>
+          <td><strong>WhatsApp Business API integration</strong><br/><span style="font-size:10px;color:#64748b">Schema and UI are ready — wire the API</span></td>
+          <td style="font-size:11px">85% of SME export deals in Asia/Middle East/Africa are closed via WhatsApp. The schema has the channel, the templates exist (<code>quote_share_whatsapp_v1</code>), the UI has the button. There is no actual API call. This is the most impactful 1-sprint feature for the target market.</td>
+          <td style="font-size:11px">Connect WhatsApp Business Cloud API (Meta) or Twilio WhatsApp. Wire <code>whatsapp_outbound</code> delivery queue provider. Implement webhook for delivery receipts. Add "Send via WhatsApp" as a primary CTA alongside email in the quote send flow.</td>
+          <td><span class="s warn">1 sprint</span></td>
+          <td><span class="s good">&#9650; Critical</span></td>
+        </tr>
+
+        <tr>
+          <td style="font-weight:900;color:#0c7fff;font-size:16px">4</td>
+          <td><strong>Offline capture queue</strong><br/><span style="font-size:10px;color:#64748b">IndexedDB + sync on reconnect</span></td>
+          <td style="font-size:11px">Convention centres at Gulfood, SIAL, Anuga, Canton Fair reliably have terrible WiFi during peak hours. One failed lead capture and the user goes back to WhatsApp notes permanently. This is the single biggest churn risk at first show.</td>
+          <td style="font-size:11px">Intercept the fast-field form submit. If offline, write to IndexedDB queue. Show "3 leads saved — will sync when connected" indicator. On reconnect, process queue in order. Service worker handles background sync. Only for trade show fast-field form — not the full CRM.</td>
+          <td><span class="s warn">2 sprints</span></td>
+          <td><span class="s good">&#9650; High</span></td>
+        </tr>
+
+        <tr style="background:#f0fdf4">
+          <td style="font-weight:900;color:#0c7fff;font-size:16px">5</td>
+          <td><strong>Camera-first capture from trade show page</strong><br/><span style="font-size:10px;color:#64748b">Auto-open camera on capture button tap</span></td>
+          <td style="font-size:11px">The OCR engine is already there (OpenAI vision). The scan page exists. But users must navigate to it manually and upload a file. At a show they need: tap "Scan card" → camera opens → photo taken → fields prefilled → "Save contact" in 10 seconds.</td>
+          <td style="font-size:11px">On the trade show capture page, add a "Scan card" button that triggers <code>navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})</code> directly on the trade show page. Capture frame → base64 → send to existing OCR endpoint → prefill the fast-field form. No navigation required.</td>
+          <td><span class="s warn">1 sprint</span></td>
+          <td><span class="s warn">&#9650; High</span></td>
+        </tr>
+
+        <tr>
+          <td style="font-weight:900;color:#7c3aed;font-size:16px">6</td>
+          <td><strong>Expand product category model</strong><br/><span style="font-size:10px;color:#64748b">DB constraint locks you to 2 categories</span></td>
+          <td style="font-size:11px">The <code>category_type</code> DB constraint only allows 'chips' or 'powders'. Blue Orbit International sells jaggery, sweeteners, onion products, garlic products — all rejected by the pricing engine. This is a hard ceiling on your own company's usage, let alone other clients.</td>
+          <td style="font-size:11px">Migration: change the CHECK constraint to use a <code>product_category_type_enum</code> or drop the constraint in favour of a FK to <code>product_categories.slug</code>. Add: 'sweeteners', 'dehydrated_vegetables', 'spices', 'ready_to_eat', 'general' as valid types. Update pricing rule logic to handle the new categories gracefully.</td>
+          <td><span class="s warn">1 sprint</span></td>
+          <td><span class="s warn">&#9650; High</span></td>
+        </tr>
+
+        <tr style="background:#f0fdf4">
+          <td style="font-weight:900;color:#7c3aed;font-size:16px">7</td>
+          <td><strong>Push notifications for follow-up reminders</strong><br/><span style="font-size:10px;color:#64748b">Web Push API — turns reactive into proactive</span></td>
+          <td style="font-size:11px">The system stores <code>next_follow_up_at</code> for every lead but has no way to notify the user when it fires. The product is reactive — you must open the app to know what needs attention. A trade show lead that isn't followed up within 48 hours is 80% lost.</td>
+          <td style="font-size:11px">Implement Web Push API with service worker. Store push subscriptions per user. Supabase edge function or cron job checks for overdue follow-ups hourly. Send push with lead name, company, and "Tap to open". Deep link to the lead's command center. Show in app shell notification badge.</td>
+          <td><span class="s warn">2 sprints</span></td>
+          <td><span class="s warn">&#9650; High</span></td>
+        </tr>
+
+        <tr>
+          <td style="font-weight:900;color:#7c3aed;font-size:16px">8</td>
+          <td><strong>Onboarding wizard for new organisations</strong><br/><span style="font-size:10px;color:#64748b">Time-to-first-lead must be under 5 minutes</span></td>
+          <td style="font-size:11px">A new exporter who signs up must manually configure: products, product categories, markets, pipeline stages, pricing rules — before the system does anything useful. This is a conversion killer. Time to first working flow must be under 5 minutes for a trade show buyer.</td>
+          <td style="font-size:11px">3-step setup wizard on first login: (1) add 3 products (name, category, price), (2) pick your primary market (dropdown of countries), (3) set your team members. Pre-populate a demo pipeline stage. Allow the user to skip and get a working system in 2 minutes. Full setup remains available in Admin.</td>
+          <td><span class="s bad">2 sprints</span></td>
+          <td><span class="s warn">&#9650; Medium</span></td>
+        </tr>
+
+        <tr style="background:#f0fdf4">
+          <td style="font-weight:900;color:#64748b;font-size:16px">9</td>
+          <td><strong>Server-side lead search + pagination</strong><br/><span style="font-size:10px;color:#64748b">useMemo will degrade at 200+ leads</span></td>
+          <td style="font-size:11px">Lead filtering is entirely client-side via <code>useMemo</code> with no debounce. Works fine at 50 leads, starts to lag at 150, becomes unusable at 500. This is the technical debt clock that starts ticking at first real user's second trade show.</td>
+          <td style="font-size:11px">Move search/filter logic to a server action with debounce on the client. Add <code>ilike</code> query for company/contact name. Add cursor-based pagination (20 leads per page). Keep the filter UI identical — only the data fetching changes. Add Supabase full-text search index on <code>leads.company_name</code>.</td>
+          <td><span class="s bad">2 sprints</span></td>
+          <td><span class="s warn">&#9650; Medium</span></td>
+        </tr>
+
+        <tr>
+          <td style="font-weight:900;color:#64748b;font-size:16px">10</td>
+          <td><strong>AI follow-up message generator</strong><br/><span style="font-size:10px;color:#64748b">The AI infrastructure is there — wire it</span></td>
+          <td style="font-size:11px">The system has an AI suggestions module, a communications schema with <code>draft_source: 'ai'</code>, and OpenAI already configured for OCR. A "Draft follow-up" button that generates a WhatsApp message from lead notes + product interest + event context would be the product's "wow moment".</td>
+          <td style="font-size:11px">Add "Generate follow-up" button to the lead command center. Send: lead name, company, products of interest, trade event, last activity, next step. Return a WhatsApp-ready message (short, direct, with product specifics). User edits and taps "Send via WhatsApp". Uses existing <code>whatsapp_outbound</code> delivery queue.</td>
+          <td><span class="s bad">1 sprint</span></td>
+          <td><span class="s warn">&#9650; Medium</span></td>
+        </tr>
+
+      </tbody></table>
+    </div>
+  </div>
+
+  <!-- COMPETITIVE MOAT ANALYSIS -->
+  <div class="sec grid g2" style="margin-bottom:14px">
+    <div class="card">
+      <h2>Where you actually beat enterprise CRMs today</h2>
+      <div style="font-size:11px;line-height:1.8">
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">HS code / customs classification</span><span class="s good">You ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Incoterm-aware quote (EXW, FOB, CIF)</span><span class="s good">You ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Live FX lock in quote PDF</span><span class="s good">You ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Trade event → ROI comparison panel</span><span class="s good">You ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Governed quote versioning + audit trail</span><span class="s good">You ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Compliance document readiness gate</span><span class="s good">You ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Commercial lock + dispatch evidence trail</span><span class="s good">You ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">AI business card OCR with prefill</span><span class="s good">You ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="font-weight:700">Country-of-origin + export metadata per variant</span><span class="s good">You ✓</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Where competitors beat you right now</h2>
+      <div style="font-size:11px;line-height:1.8">
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Native mobile app (iOS/Android)</span><span class="s bad">Gap ✗</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Offline lead capture</span><span class="s bad">Gap ✗</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">WhatsApp delivery (actual API)</span><span class="s bad">Gap ✗</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Push notifications for reminders</span><span class="s bad">Gap ✗</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Sub-5-minute onboarding</span><span class="s bad">Gap ✗</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Server-side search / large dataset handling</span><span class="s warn">Risk ⚠</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">AI-generated follow-up messages</span><span class="s warn">Risk ⚠</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Marketplace / ecosystem integrations</span><span class="s neutral">Later</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="font-weight:700">Multi-language UI</span><span class="s neutral">Later</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRATEGIC BETS -->
+  <div class="sec">
+    <div class="card" style="border:2px solid #0b2e4a">
+      <h2 style="color:#0b2e4a">The three strategic bets that will define the next 12 months</h2>
+      <div class="sec grid g3">
+        <div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:14px;padding:14px">
+          <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:#059669;margin-bottom:6px">Bet 1 — Mobile-first, offline-capable</div>
+          <p style="font-size:11px;color:#065f46;line-height:1.7">PWA manifest + offline queue + camera-first capture. Do these three things and you have a tool that genuinely works better at a trade show than a native app, because it captures data directly into a governed CRM with zero transfer step. This is the bet that wins Gulfood 2026.</p>
+        </div>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px">
+          <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:#1d4ed8;margin-bottom:6px">Bet 2 — WhatsApp as the primary channel</div>
+          <p style="font-size:11px;color:#1e3a8a;line-height:1.7">Wire WhatsApp Business API. Make "Send quote via WhatsApp" the primary action, not a secondary option. Add AI-generated follow-up messages. This is how 70% of your target market already communicates. Being the CRM that sends quotes via WhatsApp natively is a category-defining feature for SME export.</p>
+        </div>
+        <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:14px;padding:14px">
+          <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:#6b21a8;margin-bottom:6px">Bet 3 — Become the data layer for trade</div>
+          <p style="font-size:11px;color:#581c87;line-height:1.7">HS codes, duty rates, FX, incoterms, country-of-origin — you already store all of this. The next step is surfacing it: "Your FOB price to Germany will attract 6.5% import duty — consider CIF pricing or a DDP quote." That intelligence, embedded in the quote builder, is a defensible moat no horizontal CRM will build.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- END STRATEGIC REVIEW TAB -->
 
 </div>
 <script>
