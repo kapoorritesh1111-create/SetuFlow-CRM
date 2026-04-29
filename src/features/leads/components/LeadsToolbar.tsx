@@ -36,6 +36,9 @@ interface LeadsToolbarProps {
   queueLabel: string;
   secondaryMeta?: string;
   onReset?: () => void;
+  tradeEvents?: Array<{ id: string; name: string }>;
+  tradeEventFilter?: string;
+  onTradeEventFilterChange?: (eventId: string) => void;
 }
 
 const LeadsToolbar: React.FC<LeadsToolbarProps> = ({
@@ -56,6 +59,9 @@ const LeadsToolbar: React.FC<LeadsToolbarProps> = ({
   queueLabel,
   secondaryMeta,
   onReset,
+  tradeEvents = [],
+  tradeEventFilter = '',
+  onTradeEventFilterChange,
 }) => {
   return (
     <section className="space-y-3">
@@ -130,6 +136,20 @@ const LeadsToolbar: React.FC<LeadsToolbarProps> = ({
               <ToolbarActionButton type="button" onClick={onToggleFilters} className="min-h-10 rounded-[1rem] px-4 py-2">
                 {showFilters ? 'Hide filters' : activeFilterCount ? `Filters (${activeFilterCount})` : 'Filters'}
               </ToolbarActionButton>
+              {tradeEvents.length ? (
+                <select
+                  value={tradeEventFilter}
+                  onChange={(event) => onTradeEventFilterChange?.(event.target.value)}
+                  className="min-h-10 rounded-[1rem] border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
+                  aria-label="Source event filter"
+                >
+                  <option value="">Source event: all</option>
+                  {tradeEvents.map((tradeEvent) => (
+                    <option key={tradeEvent.id} value={tradeEvent.id}>{tradeEvent.name}</option>
+                  ))}
+                </select>
+              ) : null}
+              {tradeEventFilter ? <ToolbarStat label={`Source event filter active`} tone="info" /> : null}
               {onReset ? (
                 <ToolbarActionButton type="button" onClick={onReset} className="min-h-10 rounded-[1rem] px-4 py-2">
                   Reset

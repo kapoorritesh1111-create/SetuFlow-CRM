@@ -301,6 +301,7 @@ export function LeadsWorkspace({
   const [countryIdFilter, setCountryIdFilter] = useState('');
   const [marketIdFilter, setMarketIdFilter] = useState('');
   const [productIdFilter, setProductIdFilter] = useState('');
+  const [tradeEventFilter, setTradeEventFilter] = useState(initialEventId ?? '');
   const [sortMode, setSortMode] = useState<SortMode>('follow-up');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
@@ -335,6 +336,10 @@ export function LeadsWorkspace({
   useEffect(() => {
     setTodayFilter(initialTodayState?.activeFilter ?? getPreferredTodayFilter(initialTodayState));
   }, [initialTodayState]);
+
+  useEffect(() => {
+    setTradeEventFilter(initialEventId ?? '');
+  }, [initialEventId]);
 
   useEffect(() => {
     setWorkspaceLeads(leads);
@@ -556,6 +561,7 @@ export function LeadsWorkspace({
   const stageMap = useMemo(() => new Map(availableStages.map((stage) => [stage.id, stage.name])), [availableStages]);
   const nextStepMap = useMemo(() => new Map(nextSteps.map((step) => [step.id, step.name])), [nextSteps]);
   const ownerMap = useMemo(() => new Map(profiles.map((profile) => [profile.id, labelForProfile(profile)])), [profiles]);
+  const tradeEventMap = useMemo(() => new Map(tradeEvents.map((event) => [event.id, event.name])), [tradeEvents]);
 
   const leadMarketsMap = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -618,6 +624,7 @@ export function LeadsWorkspace({
       const matchesCountry = !countryIdFilter || lead.country_id === countryIdFilter;
       const matchesMarket = !marketIdFilter || (leadMarketsMap.get(lead.id)?.includes(marketIdFilter) ?? false);
       const matchesProduct = !productIdFilter || (leadProductsMap.get(lead.id)?.includes(productIdFilter) ?? false);
+      const matchesTradeEvent = !tradeEventFilter || lead.trade_event_id === tradeEventFilter;
 
       const matchesFilters =
         (!leadTypeFilter || lead.lead_type === leadTypeFilter) &&
@@ -626,12 +633,13 @@ export function LeadsWorkspace({
         matchesStage &&
         matchesCountry &&
         matchesMarket &&
-        matchesProduct;
+        matchesProduct &&
+        matchesTradeEvent;
 
       const matchesToday = todayFilter === 'all-open' ? true : todayLeadIdSet.has(lead.id);
       return matchesSavedView && matchesSearch && matchesFilters && matchesToday;
     });
-  }, [currentUserId, leadTypeFilter, ownerId, savedView, search, pipelineIdFilter, stageIdFilter, countryIdFilter, marketIdFilter, productIdFilter, todayFilter, todayLeadIdSet, workspaceLeads, leadMarketsMap, leadProductsMap, stableNowIso]);
+  }, [currentUserId, leadTypeFilter, ownerId, savedView, search, pipelineIdFilter, stageIdFilter, countryIdFilter, marketIdFilter, productIdFilter, tradeEventFilter, todayFilter, todayLeadIdSet, workspaceLeads, leadMarketsMap, leadProductsMap, stableNowIso]);
 
   const sortedLeads = useMemo(() => {
     const items = [...preparedLeads];
@@ -775,7 +783,7 @@ export function LeadsWorkspace({
 
 
   const initialEventLead = useMemo<LeadDrawerLead | undefined>(() => {
-    if (!initialEventId || drawerState.leadId) return undefined;
+    if (!initialFastField || !initialEventId || drawerState.leadId) return undefined;
     return {
       id: '',
       company_name: '',
@@ -807,7 +815,7 @@ export function LeadsWorkspace({
       phone_country_code: null,
       phone_secondary_country_code: null,
     };
-  }, [drawerState.leadId, initialEventId, initialQuickCapture?.sourceLabel, initialQuickCapture?.sourceType]);
+  }, [drawerState.leadId, initialEventId, initialFastField, initialQuickCapture?.sourceLabel, initialQuickCapture?.sourceType]);
 
   const spotlightLead = useMemo(() => {
     const preferredId = spotlightLeadId ?? selectedLeadIds[0] ?? sortedLeads[0]?.id ?? null;
@@ -1079,6 +1087,18 @@ export function LeadsWorkspace({
     }
   }, [canManageLeads, initialFastField, initialQuickCapture, pathname, router, searchParams]);
 
+  const handleTradeEventFilterChange = (eventId: string) => {
+    setTradeEventFilter(eventId);
+    const params = new URLSearchParams(searchParams.toString());
+    if (eventId) {
+      params.set('eventId', eventId);
+    } else {
+      params.delete('eventId');
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
   const clearFilters = () => {
     setWorkspaceMode('all');
     setLeadTypeFilter('');
@@ -1090,6 +1110,7 @@ export function LeadsWorkspace({
     setCountryIdFilter('');
     setMarketIdFilter('');
     setProductIdFilter('');
+    handleTradeEventFilterChange('');
   };
 
   const resetWorkspaceChrome = () => {
@@ -1123,6 +1144,7 @@ export function LeadsWorkspace({
     countryIdFilter,
     marketIdFilter,
     productIdFilter,
+    tradeEventFilter,
   ].filter(Boolean).length;
 
   return (
@@ -1230,6 +1252,28 @@ export function LeadsWorkspace({
             </select>
           </div>
         </div>
+
+        {/* Source event filter */}
+        <div style={{ display: 'flex', alignItems: 'center', border: tradeEventFilter ? '1px solid #10b981' : '1px solid #e2e8f0', borderRadius: '6px', background: tradeEventFilter ? '#ecfdf5' : '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '150px' }}>
+          <span style={{ fontSize: '13px' }}>🎪</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: tradeEventFilter ? '#047857' : '#94a3b8', lineHeight: 1 }}>Source event</span>
+            <select value={tradeEventFilter} onChange={(e) => handleTradeEventFilterChange(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
+            >
+              <option value="">All events ▾</option>
+              {tradeEvents.map((tradeEvent) => <option key={tradeEvent.id} value={tradeEvent.id}>{tradeEvent.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {tradeEventFilter ? (
+          <button type="button" onClick={() => handleTradeEventFilterChange('')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '999px', fontSize: '10px', fontWeight: 700, border: '1px solid #a7f3d0', background: '#ecfdf5', color: '#047857', cursor: 'pointer' }}
+          >
+            Source event: {tradeEventMap.get(tradeEventFilter) ?? 'Selected event'} <span style={{ opacity: .65 }}>×</span>
+          </button>
+        ) : null}
 
         {/* Active filter chips */}
         {activeFilterCount > 0 ? (
