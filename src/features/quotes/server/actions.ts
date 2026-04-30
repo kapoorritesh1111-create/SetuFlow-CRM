@@ -805,8 +805,6 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
         organizationId: organization.id,
         actorUserId: currentUser.id,
         action: 'quote_send_blocked',
-    | 'quote_accepted'
-    | 'quote_rejected'
         quoteId: null,
         leadId,
         next: { status: 'sent' },
@@ -1286,8 +1284,6 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
         organizationId: organization.id,
         actorUserId: currentUser.id,
         action: 'quote_send_blocked',
-    | 'quote_accepted'
-    | 'quote_rejected'
         quoteId,
         leadId: existing.lead_id,
         previous: { status: existing.status ?? null },

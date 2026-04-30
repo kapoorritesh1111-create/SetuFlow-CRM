@@ -97,3 +97,17 @@ Scope:
 ## Mandatory build-output rule
 
 Every future build must return the full updated repo zip and include the next prompt in `public/internal-dcc/index.html`. Do not run `npm ci` unless explicitly requested.
+
+## PR-NS-19B build syntax fix
+
+Status: Complete in this returned zip.
+
+What changed:
+- Fixed the Vercel compile blocker in `src/features/quotes/server/actions.ts` where two TypeScript union members (`'quote_accepted'` / `'quote_rejected'`) were accidentally inserted inside two `writeQuoteAuditLog` object literals.
+- Confirmed the bad fragments no longer appear outside the intended `writeQuoteAuditLog` action type definition.
+- Preserved the full 9-item PR queue and PR-NS-20 as the next planned PR.
+
+Verification:
+- Live Vercel state was checked and showed the latest production deployment in `ERROR` on the failed build.
+- No `npm ci` was run.
+- Full local build was not run in this pass.
