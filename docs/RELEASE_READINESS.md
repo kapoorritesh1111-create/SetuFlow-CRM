@@ -54,3 +54,22 @@ Live proof:
 ## Release decision
 
 PR-NS-19 supports a controlled investor demo of accepted quote to draft order execution. It does not yet support a claim that SETU Flow is fully launch-ready or that post-order fulfilment is proven end-to-end.
+
+
+## PR-NS-20 release update
+
+PR-NS-20 improves release trust by narrowing the most relevant quote/order RPC exposure without changing runtime application code.
+
+| Area | Honest readiness after PR-NS-20 |
+|---|---:|
+| Core CRM workflow | 81–85% |
+| Quote → Order revenue path | 84–89% |
+| Investor demo safety | 80–86% scripted; still lower if unscripted |
+| First paying customer readiness | 70–76% |
+| Security/RPC trust for quote/order path | 72–80% |
+| Mobile-native promise | 40–50% until PR-NS-21 |
+| Sprint completion toward current NorthStar | 79% |
+
+Live verification after hardening confirms Q-00025 remains accepted, contract `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` remains linked, and 11 contract line items remain visible.
+
+Remaining release blockers: mobile promise alignment, richer order execution proof, integration proof mode, and final claim reconciliation.

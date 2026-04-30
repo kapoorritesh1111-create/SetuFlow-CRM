@@ -70,17 +70,15 @@ Verification:
 
 ## Active next PR
 
-### PR-NS-20 — Quote/order RPC permission hardening and trigger search-path cleanup
+### PR-NS-21 — Mobile promise alignment
 
-Priority: Critical / High
+Priority: High
 
 Scope:
-- Do role-safe hardening for quote/order RPC exposure flagged by Supabase advisors.
-- Revoke anon execution from quote/order SECURITY DEFINER RPCs where safe.
-- Preserve authenticated/server-side execution paths used by the app.
-- Add or verify `SET search_path TO public` for quote/order trigger functions.
-- Regression-test the golden accepted-order path after hardening.
-- Keep all DCC tabs and the full 9-item PR queue synchronized.
+- Reconcile desktop-supported vs mobile-supported claims.
+- Keep mobile claims honest for investor and buyer demos.
+- Update DCC, investor script, release readiness, and page score wording.
+- Do not remove the proven Q-00025 quote/order handoff claims.
 
 ## Queued PRs to 100%
 
@@ -111,3 +109,35 @@ Verification:
 - Live Vercel state was checked and showed the latest production deployment in `ERROR` on the failed build.
 - No `npm ci` was run.
 - Full local build was not run in this pass.
+
+
+## PR-NS-20 quote/order RPC permission hardening
+
+Status: Complete.
+
+What changed:
+- Verified Supabase project `sjzfzloggabsmcuxktnl` was `ACTIVE_HEALTHY` before hardening.
+- Verified Vercel latest production deployment `dpl_6WDgCcGH8xSgdwVN89BdBwdoxQic` was `READY` before packaging.
+- Re-verified Q-00025 remains `accepted` with accepted version `7f8efd6b-6e19-4941-b974-a5fc61738b0f`.
+- Re-verified contract/order execution record `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` remains linked and has 11 contract line items.
+- Reviewed Supabase advisor findings for quote/order RPC exposure and mutable search_path.
+- Applied safe quote/order hardening in live Supabase: revoked broad `PUBLIC`/anonymous execute from scoped quote/order RPCs, granted back to `authenticated`, and pinned search_path on quote/order helper/trigger functions.
+- Added matching migration `20260430_pr_ns_20_quote_order_rpc_hardening.sql`.
+
+Verification:
+- Scoped quote/order RPC privilege re-check confirmed key exposed RPCs now show `authenticated` only, not `anon`.
+- Search path re-check confirmed quote/order helper functions are pinned to `search_path=public`.
+- Golden source check after hardening confirmed Q-00025 remains accepted and linked to contract `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` with 11 contract lines.
+- No `npm ci`, local typecheck, or local build was run.
+
+## Active next PR
+
+### PR-NS-21 — Mobile promise alignment
+
+Priority: High
+
+Scope:
+- Reconcile mobile-supported vs desktop-only product claims.
+- Make demos, docs, DCC, and investor scripts honest about mobile readiness.
+- Preserve the live Q-00025 accepted quote/order proof.
+- Keep all DCC tabs and the full 9-item PR queue synchronized.

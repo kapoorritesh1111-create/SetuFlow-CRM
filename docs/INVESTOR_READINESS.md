@@ -47,3 +47,24 @@ Avoid saying:
 ## Investor confidence impact
 
 PR-NS-19 raises confidence because the core revenue handoff is now backed by live IDs and line-count continuity. The next investor-risk reducers are PR-NS-20 RPC hardening and PR-NS-22 order execution proof hardening.
+
+
+## PR-NS-20 investor update
+
+PR-NS-20 reduces security-trust risk around the quote/order path. Scoped quote/order SECURITY DEFINER RPCs were hardened by removing anonymous/broad PUBLIC execution and preserving authenticated application execution. Quote/order helper functions were pinned to `search_path=public` where safe.
+
+The live golden journey still holds after hardening:
+
+| Proof point | Live value |
+|---|---|
+| Quote | `Q-00025` / `b6f8111a-3b32-456d-92f0-412c898bf13b` |
+| Quote status | `accepted` |
+| Accepted version | `7f8efd6b-6e19-4941-b974-a5fc61738b0f` |
+| Contract/order execution | `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` |
+| Contract lines | `11` |
+
+Updated investor wording:
+
+> “The live golden quote-to-order path is proven, and the quote/order RPC surface has been narrowed so anonymous execution is no longer available on the scoped workflow RPCs while authenticated app flows remain intact.”
+
+Do not claim all Supabase advisor findings are closed; PR-NS-20 intentionally scoped to quote/order workflow findings only.

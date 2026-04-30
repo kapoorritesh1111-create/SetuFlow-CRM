@@ -97,3 +97,28 @@ PR-NS-19 patched the functional accepted-handoff RPC. It did not complete broad 
 ## Current conclusion
 
 PR-NS-19 proves the golden path through accepted quote and draft order execution handoff. The next trust layer is not another acceptance pass; it is order execution hardening and/or RPC permission hardening with role regression tests.
+
+
+## PR-NS-20 live hardening audit
+
+Date: 2026-04-30
+
+Live checks performed before and after hardening:
+
+| Check | Result |
+|---|---|
+| Supabase project | `sjzfzloggabsmcuxktnl` ACTIVE_HEALTHY |
+| Vercel latest deployment | `dpl_6WDgCcGH8xSgdwVN89BdBwdoxQic` READY |
+| Q-00025 quote status | `accepted` |
+| Accepted version | `7f8efd6b-6e19-4941-b974-a5fc61738b0f` |
+| Contract/order execution | `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` |
+| Contract line items | `11` |
+
+Safe hardening applied:
+- Revoked `PUBLIC` execution and granted `authenticated` execution for scoped quote/order RPCs.
+- Pinned quote/order helper and trigger functions to `search_path=public`.
+- Left authenticated execution available so server-side app flows are not intentionally broken.
+
+Not changed:
+- Non-quote/order advisor findings remain queued.
+- Broad authenticated SECURITY DEFINER policy strategy remains a later deeper security pass.

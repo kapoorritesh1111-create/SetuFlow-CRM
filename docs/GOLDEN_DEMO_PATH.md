@@ -51,3 +51,12 @@ Do not claim dispatch or completion is proven yet. PR-NS-19 proves accepted quot
 ## Operational rule
 
 Future demo/data PRs must keep these IDs current in this file, `docs/DEMO_DATA_AUDIT.md`, `docs/PR_TRACKER.md`, and `public/internal-dcc/index.html`. If the live record is changed, record the before/after state and whether production data was mutated.
+
+
+## PR-NS-20 hardening note
+
+The golden Q-00025 path was re-verified after quote/order RPC hardening. The accepted quote, accepted version, linked draft contract/order execution record, and 11 contract lines remain intact.
+
+Demo-safe statement:
+
+> “The Q-00025 golden handoff remains live after quote/order RPC hardening: accepted quote, accepted version, and draft order execution record with 11 lines.”

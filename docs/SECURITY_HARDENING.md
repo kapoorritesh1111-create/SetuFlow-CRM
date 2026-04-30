@@ -74,3 +74,16 @@ No hardening change should weaken the product contract:
 - override reason stays mandatory
 - approval remains mandatory when policy threshold is met
 - communications, integrations, and AI remain downstream of governed commercial truth
+
+## PR-NS-20 quote/order RPC hardening
+
+Date: 2026-04-30
+
+Scoped live hardening applied for quote/order workflow functions:
+
+- Revoked broad `PUBLIC` execution from quote/order SECURITY DEFINER workflow RPCs.
+- Granted execution back to `authenticated` so server-side authenticated app flows remain available.
+- Pinned quote/order helper and trigger functions to `search_path=public`.
+- Re-verified Q-00025 accepted quote and linked contract/order execution record after hardening.
+
+Functions scoped in this pass include quote create/update/send, accepted quote contract handoff, quote contract snapshot, contract sync/progression, and contract workspace update RPCs. Broader non-quote/order advisor findings remain queued for a later security pass.
