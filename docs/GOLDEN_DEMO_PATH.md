@@ -60,3 +60,28 @@ The golden Q-00025 path was re-verified after quote/order RPC hardening. The acc
 Demo-safe statement:
 
 > “The Q-00025 golden handoff remains live after quote/order RPC hardening: accepted quote, accepted version, and draft order execution record with 11 lines.”
+
+## PR-NS-21 mobile demo boundary
+
+The Q-00025 golden path remains the investor revenue proof, and it should be demonstrated on desktop unless PR-NS-22 or later explicitly proves additional mobile execution behavior.
+
+Mobile-safe adjunct:
+
+> For trade shows, the phone/tablet capture wedge supports lead capture and scoped offline queueing. The accepted quote to draft order execution path remains desktop-first in the demo.
+
+## PR-NS-22 order execution proof
+
+The golden revenue path is now demoable as:
+
+1. Lead exists for Setu Groups / Ritesh Kapoor.
+2. Q-00025 is accepted.
+3. Contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` exists.
+4. 11 contract line items preserve commercial continuity.
+5. Orders shows the order is still draft execution because documents are missing.
+6. The next safe action is to upload/approve signed contract, commercial invoice, and packing list before release.
+
+Investor-safe wording:
+
+> The order handoff is proven, and Orders now shows exactly why it cannot be released or dispatched yet.
+
+Do not say Q-00025 is shipped, released, dispatch-ready, or complete.

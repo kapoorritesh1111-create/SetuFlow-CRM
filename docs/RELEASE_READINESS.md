@@ -73,3 +73,39 @@ PR-NS-20 improves release trust by narrowing the most relevant quote/order RPC e
 Live verification after hardening confirms Q-00025 remains accepted, contract `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` remains linked, and 11 contract line items remain visible.
 
 Remaining release blockers: mobile promise alignment, richer order execution proof, integration proof mode, and final claim reconciliation.
+
+## PR-NS-21 release update
+
+PR-NS-21 improves release trust by removing overbroad mobile claims. It does not add mobile functionality; it aligns product wording with verified behavior.
+
+| Area | Honest readiness after PR-NS-21 |
+|---|---:|
+| Core CRM workflow | 81-85% |
+| Quote -> Order revenue path | 84-89% |
+| Investor demo safety | 82-87% scripted; still lower if unscripted |
+| First paying customer readiness | 71-77% |
+| Security/RPC trust for quote/order path | 72-80% |
+| Mobile truth / claim safety | 70-76% |
+| Mobile-native parity | Not claimed |
+| Sprint completion toward current NorthStar | 81% |
+
+Mobile release boundary:
+- Full CRM, quote authoring/editing, order execution, admin, and investor demo navigation remain desktop-first.
+- Trade-event lead capture is the mobile-friendly wedge.
+- Offline support is scoped to trade-event lead capture queueing and sync only.
+
+Remaining release blockers: richer order execution proof, integration proof mode, first-login/empty-state readiness, and final claim reconciliation.
+
+## PR-NS-22 release update
+
+PR-NS-22 improves Orders release readiness by turning the accepted order into an honest execution workspace proof.
+
+| Area | Honest readiness after PR-NS-22 |
+|---|---:|
+| Quote → order handoff | 91% |
+| Orders execution proof | 86% |
+| Release/dispatch evidence | 62% |
+| Investor demo trust | 90% |
+| Overall release readiness | 84% |
+
+Remaining blockers: Q-00025 has zero linked execution documents, so release/dispatch/completion cannot be claimed until document evidence is uploaded and approved. The full mobile promise remains desktop-first execution plus mobile trade-event capture wedge only.

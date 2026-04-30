@@ -68,3 +68,36 @@ Updated investor wording:
 > “The live golden quote-to-order path is proven, and the quote/order RPC surface has been narrowed so anonymous execution is no longer available on the scoped workflow RPCs while authenticated app flows remain intact.”
 
 Do not claim all Supabase advisor findings are closed; PR-NS-20 intentionally scoped to quote/order workflow findings only.
+
+## PR-NS-21 investor update
+
+PR-NS-21 locks the mobile promise so investor language no longer overclaims mobile-native parity.
+
+Supported investor wording:
+
+> The proven revenue path is desktop-first today: Q-00025 is accepted and linked to draft order execution with all 11 lines. Mobile is positioned as a targeted trade-event capture wedge, including scoped offline lead queueing, not full workflow parity.
+
+Avoid saying:
+- The mobile-native promise is fully proven.
+- The full quote/order path is phone-first.
+- The entire CRM works offline.
+- Mobile app parity is complete.
+
+Impact: investor demo safety improves because mobile claims now match what can be shown without inventing unproven features.
+
+## PR-NS-22 investor update
+
+PR-NS-22 improves investor credibility by making the Orders workspace honest instead of overclaiming execution maturity.
+
+Safe demo line:
+
+> Q-00025 is accepted, has a contract/order record, and preserves all 11 commercial lines. Orders shows the blocker truth: no release or dispatch until signed contract and shipment documents are uploaded and approved.
+
+Avoid:
+
+- Q-00025 is dispatch-ready.
+- The order has shipped.
+- The order is complete.
+- Mobile order execution is proven.
+
+Investor readiness is now stronger because the workspace demonstrates operational discipline: accepted orders do not silently become dispatch-ready without evidence.

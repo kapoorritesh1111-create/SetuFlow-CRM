@@ -122,3 +122,34 @@ Safe hardening applied:
 Not changed:
 - Non-quote/order advisor findings remain queued.
 - Broad authenticated SECURITY DEFINER policy strategy remains a later deeper security pass.
+
+## PR-NS-21 mobile claim audit
+
+Live data proof was rechecked before wording updates:
+- Q-00025 remains `accepted`.
+- Accepted version remains `7f8efd6b-6e19-4941-b974-a5fc61738b0f`.
+- Contract/order remains `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`.
+- Contract line item count remains `11`.
+
+Claim correction:
+- Do not use the golden Q-00025 proof to imply mobile quote/order execution.
+- Mobile proof is limited to selected responsive/mobile shell work and trade-event lead capture/offline queue language.
+- Full quote/order/order-execution demo remains desktop-first.
+
+## PR-NS-22 order execution data proof
+
+Live checked on PR-NS-22:
+
+- Q-00025 / `b6f8111a-3b32-456d-92f0-412c898bf13b` remains `accepted`.
+- Contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` remains `draft` execution.
+- Contract line items remain `11`.
+- Linked documents for the quote/lead/contract were checked and returned `0`.
+
+Result: the accepted-order handoff is real, but the order is not release-ready. The honest proof is blocker visibility and next action, not dispatch readiness.
+
+PR-NS-22 updated the live contract snapshot with:
+
+- `execution_blockers`: signed contract, commercial invoice, packing list, dispatch transport proof, and proof of delivery missing.
+- `execution_snapshot`: line count, contract ID, quote ID, document posture, dispatch controls, next action, and mobile scope.
+
+The Orders code path was patched so contract-level documents are included in the document posture calculation. This prevents uploaded order evidence from being invisible to the Orders workspace.

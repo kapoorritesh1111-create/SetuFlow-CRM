@@ -116,10 +116,10 @@ export function TradeShowCapture({ events }: { events: TradeEventOption[] }) {
         open={open}
         onClose={() => setOpen(false)}
         title={leadType === 'buyer' ? 'Capture buyer lead' : 'Capture supplier lead'}
-        description="This compact flow is optimized for phone and tablet use during trade events."
-        footer={<DrawerActionBar title={online ? 'Create lead' : 'Save offline'} description={online ? 'A next follow-up is still required so the lead enters the operating system cleanly.' : 'Offline captures are queued locally and synced automatically when connection returns.'}><button type="button" onClick={() => setOpen(false)} className="min-h-11 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel</button><button type="submit" form="trade-capture-form" disabled={isPending} className="min-h-11 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{isPending ? 'Saving…' : online ? 'Save lead' : 'Save offline'}</button></DrawerActionBar>}
+        description="Phone/tablet optimized for trade-event lead capture only; full CRM review, quote work, and order execution remain desktop-first."
+        footer={<DrawerActionBar title={online ? 'Create lead' : 'Save offline'} description={online ? 'A next follow-up is still required so the lead enters the operating system cleanly.' : 'Offline queue is limited to trade-event lead capture and syncs when connection returns.'}><button type="button" onClick={() => setOpen(false)} className="min-h-11 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel</button><button type="submit" form="trade-capture-form" disabled={isPending} className="min-h-11 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{isPending ? 'Saving…' : online ? 'Save lead' : 'Save offline'}</button></DrawerActionBar>}
       >
-        {!online ? <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">Saving offline — will sync on reconnect</div> : null}
+        {!online ? <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">Saving offline — trade-event lead capture only; will sync on reconnect</div> : null}
         <form id="trade-capture-form" action={submit} className="space-y-5">
           <DrawerSection title="Lead capture" description="Keep the flow short so reps can capture leads between booth conversations.">
             <div className="grid gap-3 md:grid-cols-2">

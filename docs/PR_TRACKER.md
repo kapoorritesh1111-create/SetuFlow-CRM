@@ -141,3 +141,61 @@ Scope:
 - Make demos, docs, DCC, and investor scripts honest about mobile readiness.
 - Preserve the live Q-00025 accepted quote/order proof.
 - Keep all DCC tabs and the full 9-item PR queue synchronized.
+
+## PR-NS-21 mobile promise alignment
+
+Status: Complete.
+
+What changed:
+- Re-verified Vercel and Supabase live state before repo edits.
+- Re-verified Q-00025 remains `accepted` and linked to draft contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` with 11 contract line items.
+- Audited mobile/offline/desktop claim language across docs, DCC, investor readiness, release readiness, and buyer-facing trade-event capture copy.
+- Added `docs/MOBILE_PROMISE_ALIGNMENT.md` as the canonical wording source for mobile claims.
+- Updated DCC tabs and page scores to state: desktop-first CRM operations, selected mobile-friendly trade-event capture, scoped offline lead queue only.
+- Kept the full 9-item PR queue visible.
+
+Verification:
+- Supabase project `sjzfzloggabsmcuxktnl` was `ACTIVE_HEALTHY`.
+- Golden source query returned Q-00025 as `accepted`, contract `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`, execution state `draft`, accepted version `7f8efd6b-6e19-4941-b974-a5fc61738b0f`, and 11 contract lines.
+- Vercel latest production deployment was checked and recorded in the DCC.
+- No `npm ci`, local typecheck, or local build was run.
+
+## Active next PR
+
+### PR-NS-22 — Order execution proof hardening
+
+Priority: High
+
+Scope:
+- Prove Orders execution depth beyond draft contract creation.
+- Show documents, blockers, continuity, next action, release readiness, and dispatch controls for the Q-00025 path or an approved demo-safe record.
+- Preserve mobile promise truth: desktop-first execution, mobile capture wedge only.
+
+## PR-NS-22 order execution proof hardening
+
+Status: **Complete**.
+
+Live verification first:
+
+- Vercel latest production deployment `dpl_CrZ6mTbN7KrwtMGSQ1GaZuC6TPq2` verified READY.
+- Supabase project `sjzfzloggabsmcuxktnl` verified ACTIVE_HEALTHY.
+- Q-00025 / `b6f8111a-3b32-456d-92f0-412c898bf13b` remains `accepted`.
+- Contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` remains visible with 11 contract line items.
+
+Changes:
+
+- Orders data path now includes contract-level documents, not only quote/lead documents.
+- Live contract execution snapshot records the honest state: draft execution, 11 lines, zero linked documents, release/dispatch blocked, next action defined.
+- Added `docs/ORDER_EXECUTION_PROOF.md` and migration `20260430_pr_ns_22_order_execution_snapshot.sql`.
+- DCC updated across every tab and full 9-item queue retained.
+
+Demo boundary:
+
+- Claim: accepted order exists, line continuity is proven, and blockers/next action are visible.
+- Do not claim: dispatch-ready, released, completed, or mobile order execution.
+
+### Next — PR-NS-23 trade show wedge proof
+
+- Prove trade-event capture to quote handoff and event stats.
+- Preserve desktop-first execution and mobile trade-event capture-only claim.
+- Do not regress Q-00025 accepted order proof.

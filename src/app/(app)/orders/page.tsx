@@ -449,10 +449,26 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   (Array.isArray(leadsResult.data) ? leadsResult.data as LeadRow[] : [])
     .forEach(l => leadMap.set(l.id, l));
 
+  const contractRows: ContractRow[] = Array.isArray(contractsResult.data) ? (contractsResult.data as ContractRow[]) : [];
+  const contractIds = contractRows.map((contract) => contract.id);
+  const contractDocumentsResult = contractIds.length
+    ? await db
+      .from('documents')
+      .select('id, file_name, doc_type, status, uploaded_at, version, related_id, related_entity, requirement_code, expires_at, review_notes')
+      .eq('organization_id', orgId)
+      .eq('related_entity', 'contract')
+      .in('related_id', contractIds)
+      .order('uploaded_at', { ascending: false })
+    : { data: [], error: null };
+  const allDocumentRows: DocRow[] = [
+    ...(Array.isArray(docsResult.data) ? docsResult.data as DocRow[] : []),
+    ...(Array.isArray(contractDocumentsResult.data) ? contractDocumentsResult.data as DocRow[] : []),
+  ];
+
   const docsByQuote = new Map<string, DocRow[]>();
   const docsByLead = new Map<string, DocRow[]>();
-  (Array.isArray(docsResult.data) ? docsResult.data as DocRow[] : [])
-    .forEach(d => {
+  const docsByContract = new Map<string, DocRow[]>();
+  allDocumentRows.forEach(d => {
       if (d.related_entity === 'quote') {
         const arr = docsByQuote.get(d.related_id) ?? [];
         arr.push(d);
@@ -462,6 +478,11 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         const arr = docsByLead.get(d.related_id) ?? [];
         arr.push(d);
         docsByLead.set(d.related_id, arr);
+      }
+      if (d.related_entity === 'contract') {
+        const arr = docsByContract.get(d.related_id) ?? [];
+        arr.push(d);
+        docsByContract.set(d.related_id, arr);
       }
     });
 
@@ -473,11 +494,9 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       complianceByLead.set(c.lead_id, arr);
     });
 
-  const contractRows: ContractRow[] = Array.isArray(contractsResult.data) ? (contractsResult.data as ContractRow[]) : [];
   const contractByQuote = new Map<string, ContractRow>();
   contractRows.forEach(c => contractByQuote.set(c.quote_id, c));
 
-  const contractIds = contractRows.map((contract) => contract.id);
   const contractLineItemsData = contractIds.length
     ? await db.from('contract_line_items').select('id, contract_id, source_quote_version_line_item_id, continuity_source_mode, product_id, product_variant_id, quantity, unit_price, currency, notes, catalog_price_amount, catalog_price_currency, is_price_overridden, override_reason').in('contract_id', contractIds)
     : { data: [], error: null };
@@ -513,6 +532,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
     const contract = contractByQuote.get(q.id) ?? null;
     const quoteDocuments = docsByQuote.get(q.id) ?? [];
     const leadDocuments = docsByLead.get(q.lead_id) ?? [];
+    const contractDocuments = contract?.id ? docsByContract.get(contract.id) ?? [] : [];
     const complianceItems = complianceByLead.get(q.lead_id) ?? [];
     const lineItems = ((contract?.id ? linesByContract.get(contract.id) : []) ?? []).map((line) => {
       const product = line.product_id ? productsById.get(line.product_id) : null;
@@ -541,7 +561,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
       };
     });
 
-    const allDocuments = [...quoteDocuments, ...leadDocuments].sort((left, right) => String(right.uploaded_at ?? '').localeCompare(String(left.uploaded_at ?? '')));
+    const allDocuments = [...quoteDocuments, ...leadDocuments, ...contractDocuments].sort((left, right) => String(right.uploaded_at ?? '').localeCompare(String(left.uploaded_at ?? '')));
     const operationalControls = buildOrderOperationalControlState({
       documents: allDocuments,
       complianceItems,

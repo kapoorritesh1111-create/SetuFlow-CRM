@@ -5,7 +5,7 @@ Locked screen and interaction reference for the completed Sprint 2 Leads and Cap
 
 ## Core rules
 - One screen = one decision
-- Mobile and tablet must work before desktop polish
+- Phone/tablet trade-event capture must stay usable, while full CRM review and operations remain desktop-first until separately proven
 - No hover-only actions
 - Capture is inbound intake only
 - Outbound sharing belongs outside Capture
