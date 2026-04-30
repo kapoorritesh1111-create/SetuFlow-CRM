@@ -87,7 +87,7 @@ export default async function LeadsPage({
         canManageLeads={viewModel.canManageLeads}
         readOnlyMessage={viewModel.readOnlyMessage}
         isWorkspaceEmpty={viewModel.isWorkspaceEmpty}
-        leads={data.leads.map((lead) => ({ ...lead, intro_sent: lead.intro_sent ?? false }))}
+        leads={data.leads.map((lead) => ({ ...lead, whatsapp_number: (lead as any).whatsapp_number ?? null, intro_sent: lead.intro_sent ?? false }))}
         stages={data.stages}
         pipelines={data.pipelines}
         nextSteps={data.nextSteps}
