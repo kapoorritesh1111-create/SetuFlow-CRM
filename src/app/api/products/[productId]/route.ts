@@ -255,7 +255,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { produc
 
   const existingProductResult = await admin
     .from('products')
-    .select('id,name,pricing_type')
+    .select('id,name,pricing_type,category_id')
     .eq('organization_id', organizationId)
     .eq('id', productId)
     .maybeSingle();
@@ -264,7 +264,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { produc
     return NextResponse.json({ error: existingProductResult.error.message }, { status: 500 });
   }
 
-  const existingProduct = existingProductResult.data as { id: string; name: string; pricing_type: string | null } | null;
+  const existingProduct = existingProductResult.data as { id: string; name: string; pricing_type: string | null; category_id: string | null } | null;
   if (!existingProduct) {
     return NextResponse.json({ error: 'Product not found.' }, { status: 404 });
   }
@@ -304,6 +304,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { produc
 
     const productName = (payload.name?.trim() || existingProduct.name).trim();
     const productPricingType = existingProduct.pricing_type;
+
+    // Fetch category name once — used for all variant pricing rule upserts
+    let productCategoryName = '';
+    if (existingProduct.category_id) {
+      const catResult = await admin
+        .from('product_categories')
+        .select('name')
+        .eq('id', existingProduct.category_id)
+        .maybeSingle();
+      productCategoryName = catResult.data?.name ?? '';
+    }
 
     for (const variant of payload.variants) {
       if (!variant.product_variant_id) continue;
@@ -365,7 +376,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { produc
         packLabel: variantRow.pack_label ?? null,
         unitsPerCase: variantRow.units_per_case,
         moq: pricingModeDefault === 'kg' ? variantRow.moq_kg ?? null : variantRow.moq_cases ?? null,
-        categoryType: product?.category_name ?? '',  // real name from product_categories
+        categoryType: productCategoryName,  // real name from product_categories
         pricingType: variant.ex_factory_unit === 'kg' || pricingModeDefault === 'kg' ? 'kg' : 'unit',
         isQuoteable: variant.is_quoteable ?? Boolean(variantRow.is_quoteable ?? true),
         exFactoryValue: variant.ex_factory_value,
