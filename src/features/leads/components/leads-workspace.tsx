@@ -39,6 +39,7 @@ type LeadRow = {
   job_title: string | null;
   email: string | null;
   phone: string | null;
+  whatsapp_number: string | null;
   phone_secondary: string | null;
   website: string | null;
   social_handle: string | null;
@@ -791,6 +792,7 @@ export function LeadsWorkspace({
       job_title: null,
       email: null,
       phone: null,
+      whatsapp_number: null,
       phone_secondary: null,
       lead_type: 'buyer',
       country: null,

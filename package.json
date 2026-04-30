@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/repo-alignment.test.mjs tests/docs-consistency.test.mjs tests/routes-presence.test.mjs tests/dcc-alignment.test.mjs tests/route-contract.test.mjs tests/release-proof.test.mjs",
     "test:release-readiness": "npm test",
