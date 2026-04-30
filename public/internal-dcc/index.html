@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>SETU Flow DCC — Apr 29 2026 · PR-NS-15 Mobile Recovery · Hydration Fix + DCC Update</title>
+  <title>SETU Flow DCC — Apr 29 2026 · PR-NS-16 Premium Mobile UX · Dashboard Leads Orders Polish</title>
   <style>
     :root{--bg:#f2f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--mu:#64748b;--brand:#0c7fff;--good:#059669;--warn:#d97706;--bad:#dc2626;--violet:#7c3aed;--teal:#0d9488;--sh:0 4px 18px rgba(15,23,42,.07);--r:18px}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.55}
@@ -43,15 +43,15 @@
 <div class="wrap">
 
 <div class="hero">
-  <div class="hero-ey">SETU Flow Internal DCC &middot; NS-15 Mobile Recovery &middot; Apr 29 2026</div>
-  <h1>NS-15 mobile recovery &mdash; hydration-safe shell · reference-aligned mobile UX · DCC refresh</h1>
+  <div class="hero-ey">SETU Flow Internal DCC &middot; NS-16 Premium Mobile UX &middot; Apr 29 2026</div>
+  <h1>NS-16 premium mobile UX &mdash; hydration-safe shell · reference HTML aligned premium mobile UX · DCC refresh</h1>
   <p>NS-15 recovery Apr 29 2026. This pass fixes the mobile runtime/hydration issue, tightens the app shell against the reference HTML direction, keeps Tasks available as a differentiated operator workspace, preserves the PR-NS-12/13/14 feature work, and updates Mobile Plan + Strategic Review tabs without changing the DCC format.</p>
   <div class="pills">
     <span class="pill g">Vercel build — Green ✓</span>
     <span class="pill g">NS-12 Mobile PWA — Complete ✓</span>
     <span class="pill g">NS-13 WhatsApp Delivery — Complete ✓</span>
     <span class="pill g">NS-14 Offline Capture — Complete ✓</span>
-    <span class="pill g">NS-15 Mobile Recovery — Complete ✓</span>
+    <span class="pill g">NS-16 Premium Mobile UX — Complete ✓</span>
     <span class="pill g">CategoryType = string (no enum)</span>
     <span class="pill g">057 migration — constraint dropped</span>
     <span class="pill g">14 files fixed</span>
@@ -66,7 +66,7 @@
   <div class="card kp"><div class="n" style="color:var(--teal)">92%</div><div class="l">Trade Show</div><p class="mu sm">Nav live, capture flow complete. Offline V2.</p></div>
   <div class="card kp"><div class="n" style="color:var(--brand)">89%</div><div class="l">Orders Desk</div><p class="mu sm">Panel live. Dispatch wired, needs Supabase proof.</p></div>
   <div class="card kp"><div class="n" style="color:var(--good)">✓</div><div class="l">Vercel Build</div><p class="mu sm">Green. 3 build error passes resolved. TypeScript clean.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--warn)">0</div><div class="l">PR Remaining</div><p class="mu sm">Mobile recovery complete</p></div>
+  <div class="card kp"><div class="n" style="color:var(--warn)">0</div><div class="l">PR Remaining</div><p class="mu sm">Premium mobile UX pass complete</p></div>
 </section>
 
 <div class="tb">
@@ -614,9 +614,9 @@ COMMIT;</pre></div>
         <h2>Mobile Dashboard — design decisions</h2>
         <table class="t"><thead><tr><th>Decision</th><th>Rationale</th></tr></thead><tbody>
           <tr><td>Bottom tab bar replaces sidebar</td><td>Thumb-reachable on 375px screens. 5 icons max.</td></tr>
-          <tr><td>KPI cards = 2-up on modern phones, stacked on narrow screens</td><td>Matches the produced mobile dashboard reference while staying readable at 375px and below.</td></tr>
+          <tr><td>KPI cards = stacked premium cards on phones, 2-up only from small tablet</td><td>Prevents broken vertical text and gives each metric enough room to read like a premium mobile dashboard.</td></tr>
           <tr><td>Floating action button (+ Lead)</td><td>Capture is the #1 mobile action. Always accessible.</td></tr>
-          <tr><td>Dashboard controls = compact horizontal strip</td><td>Filters must not stack into a tall desktop form on phones. Use horizontal scrolling chips/selectors.</td></tr>
+          <tr><td>Dashboard controls = two primary mobile filters + desktop full controls</td><td>Market and Product stay visible on phones; deeper filters move to desktop/tablet so Dashboard stays thumb-first.</td></tr>
           <tr><td>Activity feed = 3 items max</td><td>Scannable. "Show all" expands. No infinite scroll on dashboard.</td></tr>
           <tr><td>Touch targets ≥ 44px</td><td>WCAG 2.5.5. All buttons and tap targets meet minimum.</td></tr>
         </tbody></table>
@@ -679,13 +679,18 @@ COMMIT;</pre></div>
       </div>
     </div>
   </div>
+  <div class="sec grid g3" style="margin-top:10px">
+    <div class="card"><h2>PR-NS-16 premium UX pass</h2><div class="feat-row"><span class="feat-name">Dashboard mobile cards</span><span class="feat-status fs-done">Stacked + readable</span></div><div class="feat-row"><span class="feat-name">Leads mobile queue</span><span class="feat-status fs-done">Toolbar cleaned</span></div><div class="feat-row"><span class="feat-name">Orders mobile execution</span><span class="feat-status fs-done">Rail cleanup</span></div><div class="feat-row"><span class="feat-name">PWA metadata warning</span><span class="feat-status fs-done">themeColor moved</span></div></div>
+    <div class="card"><h2>Premium mobile rule</h2><div class="co b">Do not compress desktop modules into 430px. Phone views use one primary job per screen, thumb-first actions, compact filters, stacked cards, and Tasks-style spacing.</div></div>
+    <div class="card"><h2>Reference source of truth</h2><div class="co g">The files in <code>public/reference-html/</code> remain the visual target for future Next.js work. Tasks is now treated as the product-quality baseline for spacing and hierarchy.</div></div>
+  </div>
 </div>
 <!-- END MOBILE PLAN TAB -->
 
 <!-- ══════════════════ EXECUTION PLAN TAB ══════════════════ -->
 <div class="tp" id="tab-execplan">
   <div class="sec">
-    <div class="co v"><strong>Investor + commercial readiness — Apr 29 2026.</strong> NS-11 schema, NS-12 Mobile PWA, NS-13 WhatsApp delivery, and NS-14 Offline capture are complete. NS-15 fixes the mobile runtime/hydration issues and brings the mobile implementation back toward the reference HTML direction; next sprint can move to validation, Supabase proof, and buyer workflow hardening.</div>
+    <div class="co v"><strong>Investor + commercial readiness — Apr 29 2026.</strong> NS-11 schema, NS-12 Mobile PWA, NS-13 WhatsApp delivery, and NS-14 Offline capture are complete. NS-15 fixed mobile runtime/hydration issues. NS-16 upgrades the actual mobile experience: Dashboard, Leads, and Orders now use premium single-column/thumb-first patterns instead of squeezed desktop layouts; next sprint can move to validation, Supabase proof, and buyer workflow hardening.</div>
 
     <!-- PR-NS-11 -->
     <div class="card" style="border-left:4px solid var(--good);margin-top:12px;opacity:.85">
@@ -990,9 +995,9 @@ COMMIT;</pre></div>
     <div class="card">
       <h2>Where competitors beat you right now</h2>
       <div style="font-size:11px;line-height:1.8">
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Native mobile app (iOS/Android)</span><span class="s bad">Gap ✗</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Offline lead capture</span><span class="s bad">Gap ✗</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">WhatsApp delivery (actual API)</span><span class="s bad">Gap ✗</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">PWA-grade mobile webapp</span><span class="s good">Improved ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Offline lead capture</span><span class="s good">Done ✓</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">WhatsApp delivery via wa.me</span><span class="s good">Done ✓</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Push notifications for reminders</span><span class="s bad">Gap ✗</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Sub-5-minute onboarding</span><span class="s bad">Gap ✗</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0"><span style="font-weight:700">Server-side search / large dataset handling</span><span class="s warn">Risk ⚠</span></div>

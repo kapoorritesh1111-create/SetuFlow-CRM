@@ -139,7 +139,7 @@ export function AppShell({
   );
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]">
+    <div className="setu-mobile-shell min-h-screen overflow-x-clip bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]">
       <a
         href="#app-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900"
@@ -221,10 +221,10 @@ export function AppShell({
           {sidebar}
         </aside>
 
-        <main id="app-content" className="relative min-w-0 overflow-x-clip md:pl-5 xl:pl-6">
+        <main id="app-content" className="relative mx-auto min-w-0 max-w-[430px] overflow-x-clip md:mx-0 md:max-w-none md:pl-5 xl:pl-6">
           <div className="min-h-screen md:rounded-[2rem] md:border md:border-white/80 md:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.98))] md:shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:ring-1 lg:ring-slate-950/[0.03]">
-            <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur md:rounded-t-[2rem]">
-              <div className="px-3 py-3 sm:px-6 md:px-7 md:py-3.5 xl:px-9">
+            <header className="setu-mobile-header sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur md:rounded-t-[2rem]">
+              <div className="setu-mobile-header-inner px-4 py-4 sm:px-6 md:px-7 md:py-3.5 xl:px-9">
                 <div className="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <button
@@ -250,7 +250,7 @@ export function AppShell({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 md:flex-wrap md:justify-end md:overflow-visible md:pb-0">
+                  <div className="setu-mobile-actions flex items-center gap-2 overflow-x-auto pb-1 md:flex-wrap md:justify-end md:overflow-visible md:pb-0">
                     <OfflineIndicator />
                     <button
                       type="button"
@@ -304,7 +304,7 @@ export function AppShell({
                 </div>
               </div>
             </header>
-            <div className="relative px-3 py-4 pb-[calc(92px+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:pb-8 xl:px-8">
+            <div className="setu-mobile-content relative px-4 py-5 pb-[calc(104px+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:pb-8 xl:px-8">
               {isDesktopOnlyRoute ? <DesktopRedirect /> : null}
               <div className={isDesktopOnlyRoute ? 'hidden md:block' : undefined}>{children}</div>
             </div>

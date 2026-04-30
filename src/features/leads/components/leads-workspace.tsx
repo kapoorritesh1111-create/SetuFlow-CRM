@@ -1150,7 +1150,7 @@ export function LeadsWorkspace({
   ].filter(Boolean).length;
 
   return (
-    <div className="flex flex-col">
+    <div className="mobile-premium-leads flex flex-col">
 
       {/* ═══ PAGE NAV TABS — inline view switcher ═══ */}
       <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center' }}>

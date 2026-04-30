@@ -1,12 +1,11 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegistration';
 
 export const metadata: Metadata = {
   title: 'SETU Flow',
   description: 'Trade execution system for import-export sales teams by SETU Groups',
   manifest: '/manifest.json',
-  themeColor: '#0c7fff',
   appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent' },
   icons: {
     icon: [
@@ -16,6 +15,9 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
     shortcut: ['/favicon.ico']
   }
+};
+export const viewport: Viewport = {
+  themeColor: '#0c7fff',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -40,9 +40,9 @@ const TIME_RANGE_OPTIONS: Array<{ value: DashboardTimeRange; label: string }> = 
   { value: 'custom', label: 'Custom' },
 ];
 
-function FilterSelect({ icon, label, value, onChange, children, minWidthClassName = 'min-w-[150px] md:min-w-[188px]' }: FilterSelectProps) {
+function FilterSelect({ icon, label, value, onChange, children, minWidthClassName = 'min-w-0 md:min-w-[188px]' }: FilterSelectProps) {
   return (
-    <label className={`group flex ${minWidthClassName} shrink-0 items-center gap-2 rounded-[1.1rem] border border-slate-200 bg-slate-50/90 px-2.5 py-2 md:gap-3 md:rounded-[1.2rem] md:px-3 md:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition hover:border-slate-300 hover:bg-white`}>
+    <label className={`group flex ${minWidthClassName} min-w-0 items-center gap-2 rounded-[1.1rem] border border-slate-200 bg-slate-50/90 px-2.5 py-2 md:gap-3 md:rounded-[1.2rem] md:px-3 md:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition hover:border-slate-300 hover:bg-white`}>
       <span aria-hidden="true" className="mt-3 hidden shrink-0 text-[14px] leading-none sm:inline">{icon}</span>
       <div className="min-w-0 flex-1">
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</div>
@@ -97,12 +97,12 @@ export function DashboardControlBar({
   const hasActive = Boolean(filters.marketCode || filters.productName || filters.stageFilter || filters.statusFilter || filters.timeRange !== 'this-month');
 
   return (
-    <section className="rounded-[1.5rem] border border-slate-200/85 bg-white px-3 py-3 shadow-[0_14px_34px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.02] sm:px-5 md:rounded-[1.8rem] md:px-4 md:py-4">
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 md:flex-wrap md:gap-3 md:overflow-visible md:pb-0 xl:flex-nowrap">
+    <section className="setu-dashboard-controls rounded-[1.5rem] border border-slate-200/85 bg-white px-3 py-3 shadow-[0_14px_34px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.02] sm:px-5 md:rounded-[1.8rem] md:px-4 md:py-4">
+      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-3 md:overflow-visible md:pb-0 xl:flex-nowrap">
         <span className="hidden shrink-0 pr-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 md:inline md:min-w-[72px]">Viewing:</span>
 
-        <div className="flex min-w-0 flex-1 items-center gap-2 md:flex-wrap md:gap-3">
-          <FilterSelect icon="🌍" label="Market" value={filters.marketCode} onChange={(marketCode) => set({ marketCode })} minWidthClassName="min-w-[150px] md:min-w-[210px]">
+        <div className="contents md:flex md:min-w-0 md:flex-1 md:items-center md:gap-3 md:flex-wrap">
+          <FilterSelect icon="🌍" label="Market" value={filters.marketCode} onChange={(marketCode) => set({ marketCode })} minWidthClassName="md:min-w-[210px]">
             <option value="">All markets</option>
             {availableMarkets.map((market) => (
               <option key={market.code} value={market.code}>{market.name}</option>
@@ -110,7 +110,7 @@ export function DashboardControlBar({
           </FilterSelect>
 
           {availableProducts.length > 0 ? (
-            <FilterSelect icon="📦" label="Product" value={filters.productName} onChange={(productName) => set({ productName })} minWidthClassName="min-w-[150px] md:min-w-[220px]">
+            <FilterSelect icon="📦" label="Product" value={filters.productName} onChange={(productName) => set({ productName })} minWidthClassName="md:min-w-[220px]">
               <option value="">All products</option>
               {availableProducts.map((product) => (
                 <option key={product.id} value={product.name}>{product.name}</option>
@@ -118,28 +118,28 @@ export function DashboardControlBar({
             </FilterSelect>
           ) : null}
 
-          <FilterSelect icon="◎" label="Stage" value={filters.stageFilter} onChange={(stageFilter) => set({ stageFilter })} minWidthClassName="min-w-[145px] md:min-w-[190px]">
+          <FilterSelect icon="◎" label="Stage" value={filters.stageFilter} onChange={(stageFilter) => set({ stageFilter })} minWidthClassName="hidden md:flex md:min-w-[190px]">
             <option value="">All stages</option>
             {availableStages.map((stage) => (
               <option key={stage.id} value={stage.id}>{stage.name}</option>
             ))}
           </FilterSelect>
 
-          <FilterSelect icon="⚡" label="Status" value={filters.statusFilter} onChange={(statusFilter) => set({ statusFilter })} minWidthClassName="min-w-[140px] md:min-w-[170px]">
+          <FilterSelect icon="⚡" label="Status" value={filters.statusFilter} onChange={(statusFilter) => set({ statusFilter })} minWidthClassName="hidden md:flex md:min-w-[170px]">
             <option value="">All statuses</option>
             {availableStatuses.map((status) => (
               <option key={status.value} value={status.value}>{status.label}</option>
             ))}
           </FilterSelect>
 
-          <FilterSelect icon="🗓️" label="Time range" value={filters.timeRange} onChange={(timeRange) => set({ timeRange: timeRange as DashboardTimeRange })} minWidthClassName="min-w-[140px] md:min-w-[170px]">
+          <FilterSelect icon="🗓️" label="Time range" value={filters.timeRange} onChange={(timeRange) => set({ timeRange: timeRange as DashboardTimeRange })} minWidthClassName="hidden md:flex md:min-w-[170px]">
             {TIME_RANGE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </FilterSelect>
         </div>
 
-        {resultSummary ? <div className="ml-auto shrink-0 text-[13px] font-semibold text-slate-500">{resultSummary}</div> : null}
+        {resultSummary ? <div className="col-span-2 text-[12px] font-semibold text-slate-500 md:ml-auto md:shrink-0 md:text-[13px]">{resultSummary}</div> : null}
       </div>
 
       {hasActive ? (

@@ -80,3 +80,219 @@ button {
     min-height: 44px;
   }
 }
+
+/* NS-16 Premium Mobile UX recovery pass */
+@media (max-width: 767px) {
+  :root { color-scheme: light; }
+  body {
+    background:
+      radial-gradient(circle at 18% 0%, rgba(12,127,255,0.13), transparent 28%),
+      linear-gradient(180deg, #edf6ff 0%, #f8fbff 54%, #eef5ff 100%) !important;
+  }
+
+  .setu-mobile-shell {
+    background: transparent !important;
+  }
+
+  .setu-mobile-header {
+    position: sticky;
+    top: 0;
+    border-bottom: 1px solid rgba(148,163,184,0.22) !important;
+    background: rgba(255,255,255,0.92) !important;
+    box-shadow: 0 16px 36px rgba(15,23,42,0.08);
+  }
+
+  .setu-mobile-header-inner {
+    padding: 18px 16px 12px !important;
+  }
+
+  .setu-mobile-actions {
+    margin: 4px -16px -2px;
+    padding: 0 16px 8px !important;
+    scrollbar-width: none;
+  }
+
+  .setu-mobile-actions::-webkit-scrollbar,
+  .setu-dashboard-controls::-webkit-scrollbar,
+  .mobile-premium-leads *::-webkit-scrollbar,
+  .mobile-premium-orders *::-webkit-scrollbar {
+    display: none;
+  }
+
+  .setu-mobile-actions > a,
+  .setu-mobile-actions > button,
+  .setu-mobile-actions > div {
+    min-height: 48px !important;
+    border-radius: 16px !important;
+    flex-shrink: 0;
+  }
+
+  .setu-mobile-actions > a[href*="quickLead"],
+  .setu-mobile-actions > a[href="/trade-events"] {
+    display: none !important;
+  }
+
+  .setu-mobile-actions > div:last-child {
+    display: none !important;
+  }
+
+  .setu-mobile-content {
+    padding-top: 18px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .setu-mobile-tabbar {
+    left: 50% !important;
+    right: auto !important;
+    width: min(100vw, 430px) !important;
+    transform: translateX(-50%);
+    border-radius: 24px 24px 0 0;
+    border: 1px solid rgba(226,232,240,0.95) !important;
+    border-bottom: 0 !important;
+    box-shadow: 0 -18px 44px rgba(15,23,42,0.16) !important;
+  }
+
+  #app-content {
+    background: linear-gradient(180deg,#ffffff 0%,#edf6ff 150px,#f7fbff 100%) !important;
+    box-shadow: 0 0 0 1px rgba(148,163,184,0.16), 0 24px 80px rgba(15,23,42,0.12);
+  }
+
+  /* Dashboard: mobile should feel like a control-room app, not a squeezed desktop. */
+  .setu-dashboard-controls {
+    border-radius: 28px !important;
+    padding: 14px !important;
+    background: rgba(255,255,255,0.92) !important;
+    box-shadow: 0 18px 44px rgba(15,23,42,0.08) !important;
+  }
+
+  .setu-dashboard-controls label {
+    border-radius: 18px !important;
+    padding: 10px !important;
+    background: #f8fbff !important;
+  }
+
+  .setu-kpi-card {
+    min-height: 0 !important;
+    border-radius: 26px !important;
+    padding: 22px !important;
+    box-shadow: 0 18px 44px rgba(15,23,42,0.08) !important;
+  }
+
+  .setu-kpi-card p,
+  .setu-kpi-card span {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+
+  /* Leads: convert dense desktop toolbar into mobile app cards. */
+  .mobile-premium-leads {
+    gap: 16px;
+  }
+
+  .mobile-premium-leads > div[style*="padding: 0 24px"] {
+    margin: -2px -16px 0 !important;
+    padding: 0 16px !important;
+    overflow-x: auto !important;
+    background: rgba(255,255,255,0.92) !important;
+    border-bottom: 1px solid rgba(226,232,240,0.9) !important;
+    gap: 8px !important;
+  }
+
+  .mobile-premium-leads > div[style*="padding: 0 24px"] > * {
+    min-height: 50px !important;
+    border-radius: 16px 16px 0 0 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .mobile-premium-leads > div[style*="padding: 10px 24px"] {
+    margin: 0 !important;
+    padding: 14px !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    border: 1px solid rgba(226,232,240,0.95) !important;
+    border-radius: 28px !important;
+    background: rgba(255,255,255,0.96) !important;
+    box-shadow: 0 18px 44px rgba(15,23,42,0.08) !important;
+  }
+
+  .mobile-premium-leads > div[style*="padding: 10px 24px"] > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 52px !important;
+    border-radius: 16px !important;
+    background: #f8fbff !important;
+  }
+
+  .mobile-premium-leads > div[style*="padding: 10px 24px"] > div:first-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  .mobile-premium-leads > div[style*="padding: 10px 24px"] select,
+  .mobile-premium-leads > div[style*="padding: 10px 24px"] input {
+    min-height: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .mobile-premium-leads [style*="border: 1px solid #e2e8f0"][style*="background: white"] {
+    border-radius: 24px !important;
+    box-shadow: 0 18px 44px rgba(15,23,42,0.08) !important;
+  }
+
+  .mobile-premium-leads [style*="padding: 0 8px 4px"] {
+    padding: 0 0 8px !important;
+  }
+
+  .mobile-premium-leads [style*="display: grid"][style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Orders: remove desktop rails and turn execution into a focused mobile queue. */
+  .mobile-premium-orders {
+    margin: -5px -16px 0 !important;
+    background: transparent !important;
+  }
+
+  .mobile-premium-orders header {
+    display: none !important;
+  }
+
+  .mobile-premium-orders form[action="/orders"],
+  .mobile-premium-orders form[action*="orders"] {
+    margin: 0 16px 16px !important;
+    padding: 14px !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    border-radius: 28px !important;
+    box-shadow: 0 18px 44px rgba(15,23,42,0.08) !important;
+  }
+
+  .mobile-premium-orders form label,
+  .mobile-premium-orders form button,
+  .mobile-premium-orders form a,
+  .mobile-premium-orders form span {
+    min-width: 0 !important;
+  }
+
+  .mobile-premium-orders form label:nth-of-type(n+3),
+  .mobile-premium-orders form span {
+    display: none !important;
+  }
+
+  .mobile-premium-orders [style*="gridTemplateColumns:'repeat(4,1fr)"],
+  .mobile-premium-orders [style*="grid-template-columns:repeat(4,1fr)"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .mobile-premium-orders [style*="padding:'12px 20px'"] {
+    padding: 14px !important;
+  }
+
+  .mobile-premium-orders [style*="minWidth:'90px'"] {
+    min-width: 74px !important;
+  }
+}
