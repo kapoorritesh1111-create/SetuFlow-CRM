@@ -191,13 +191,13 @@
 
 <div class="tp" id="tab-modules">
   <div class="sec"><div class="card">
-    <h2>Module readiness — Apr 29 2026 (after PR-NS-09)</h2>
+    <h2>Module readiness — Apr 29 2026 (after PR-NS-11)</h2>
     <div class="mr"><span class="mn">Dashboard / Overview</span><div class="bw"><div class="bf g" style="width:95%"></div></div><span class="mp" style="color:var(--good)">95%</span></div>
     <div class="mr"><span class="mn">Follow-up / Leads</span><div class="bw"><div class="bf g" style="width:93%"></div></div><span class="mp" style="color:var(--good)">93%</span></div>
-    <div class="mr"><span class="mn">Quote Builder</span><div class="bw"><div class="bf g" style="width:90%"></div></div><span class="mp" style="color:var(--good)">90%</span></div>
+    <div class="mr"><span class="mn">Quote Builder</span><div class="bw"><div class="bf g" style="width:93%"></div></div><span class="mp" style="color:var(--good)">93%</span></div>
     <div class="mr"><span class="mn">Orders / Execution</span><div class="bw"><div class="bf b" style="width:88%"></div></div><span class="mp" style="color:var(--brand)">88%</span></div>
     <div class="mr"><span class="mn">Pipeline / Risks</span><div class="bw"><div class="bf g" style="width:91%"></div></div><span class="mp" style="color:var(--good)">91%</span></div>
-    <div class="mr"><span class="mn">Catalog / Products</span><div class="bw"><div class="bf g" style="width:89%"></div></div><span class="mp" style="color:var(--good)">89%</span></div>
+    <div class="mr"><span class="mn">Catalog / Products</span><div class="bw"><div class="bf g" style="width:95%"></div></div><span class="mp" style="color:var(--good)">95%</span></div>
     <div class="mr"><span class="mn">Trade Show / Events</span><div class="bw"><div class="bf t" style="width:92%"></div></div><span class="mp" style="color:var(--teal)">92%</span></div>
     <div class="mr"><span class="mn">Approval and Sending</span><div class="bw"><div class="bf w" style="width:82%"></div></div><span class="mp" style="color:var(--warn)">82%</span></div>
     <div class="mr"><span class="mn">Admin / Org</span><div class="bw"><div class="bf g" style="width:94%"></div></div><span class="mp" style="color:var(--good)">94%</span></div>
@@ -220,68 +220,264 @@
 </div>
 
 <div class="tp" id="tab-next">
-  <div class="sec"><div class="card">
-    <h2>PR-NS-12 — Next prompt (Mobile PWA implementation)</h2>
-    <div class="pb"><button class="cbtn" onclick="copyPrompt('p12')">Copy</button><pre id="p12">Continue from PR-NS-11 baseline (SetuFlow-CRM-NS11-FINAL.zip).
+  <div class="sec">
+    <div class="co b" style="margin-bottom:14px"><strong>Four copyable prompts below — one per upcoming PR.</strong> Use the next one each session. They are self-contained: each includes enough context to continue without needing a DCC update.</div>
 
-NS-11 is complete. category_type constraint dropped from product_pricing_rules and
-quote_version_line_items. CategoryType = string. TemplateType = unit_case|kg|mixed.
-All 14 affected files fixed. Vercel build green. 057 migration applied to live DB.
+    <!-- NS-12 -->
+    <div class="card" style="margin-bottom:12px">
+      <h2 style="color:var(--brand)">PR-NS-12 — Mobile PWA Implementation</h2>
+      <div class="pb" style="margin-top:8px"><button class="cbtn" onclick="copyPrompt('p12')">Copy</button><pre id="p12">Continue from PR-NS-11 baseline (SetuFlow-CRM-NS11-FINAL.zip).
 
-PRIORITIES FOR PR-NS-12 — MOBILE PWA IMPLEMENTATION:
+COMPLETED SO FAR:
+- NS-09: Order Detail Panel, category_type catalog derivation, accepted_version_id
+- NS-10: Vercel build green, live dispatch wired (needs Supabase proof)
+- NS-11: category_type CHECK constraint DROPPED from product_pricing_rules +
+  quote_version_line_items. CategoryType = string. TemplateType = unit_case|kg|mixed.
+  14 files fixed. 057 migration applied to live DB. Vercel build green.
 
-1. PWA MANIFEST
-   Create: public/manifest.json
-   {
-     "name": "SETU Flow CRM",
-     "short_name": "SETU Flow",
-     "start_url": "/dashboard",
-     "display": "standalone",
-     "background_color": "#0b2e4a",
-     "theme_color": "#0c7fff",
-     "orientation": "portrait-primary",
-     "icons": [
-       { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-       { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-     ]
-   }
+MOBILE REFERENCE SCREENS ALREADY PRODUCED (in public/reference-html/):
+  setuflow-mobile-dashboard.html     — Dashboard (done)
+  setuflow-mobile-leads-list.html    — Leads list (done)
+  setuflow-mobile-lead-detail.html   — Lead detail + log activity (done)
+  setuflow-mobile-mycard.html        — vCard QR share (done)
+  setuflow-mobile-capture.html       — Trade show capture (done)
+  setuflow-mobile-order-status.html  — Order status read-only (done)
+  setuflow-mobile-tasks-redirect.html — Tasks + desktop redirect pattern (done)
+
+MOBILE SCREEN STRATEGY:
+  Build native: Dashboard, Leads, Capture, My Card, Tasks, Order Status (read-only)
+  Redirect to desktop: Pipeline, Quote Builder, Catalog, Admin, Reports, Full Orders Desk
+
+PRIORITIES FOR PR-NS-12:
+
+1. PWA MANIFEST — public/manifest.json
+   { "name":"SETU Flow CRM", "short_name":"SETU Flow", "start_url":"/dashboard",
+     "display":"standalone", "background_color":"#0b2e4a", "theme_color":"#0c7fff",
+     "orientation":"portrait-primary",
+     "icons":[{"src":"/icons/icon-192.png","sizes":"192x192","type":"image/png"},
+              {"src":"/icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}] }
    Add <link rel="manifest" href="/manifest.json"> to src/app/layout.tsx
+   Add <meta name="theme-color" content="#0c7fff"> to src/app/layout.tsx
 
-2. BOTTOM TAB BAR COMPONENT
-   Create: src/components/shell/MobileTabBar.tsx
-   5 tabs: Home (/dashboard), Leads (/leads), Capture (/contact-exchange/scan),
-           Orders (/orders), More (slide-up sheet)
-   Hidden on desktop (≥ 768px). Shown on mobile only.
-   Reference: public/reference-html/setuflow-mobile-dashboard.html
+2. BOTTOM TAB BAR — src/components/shell/MobileTabBar.tsx
+   5 tabs: Home(/dashboard) Leads(/leads) Capture(/contact-exchange/scan) Orders(/orders) More
+   Height: 64px + safe-area-inset-bottom. Hidden on ≥768px (CSS only).
+   Active tab: brand-blue with 3px top indicator.
+   Touch targets: each tab flex:1, min 44px height.
 
-3. HIDE SIDEBAR ON MOBILE
-   src/components/shell/app-shell.tsx
-   Add: @media (max-width: 767px) { sidebar: display none; }
-   Show MobileTabBar instead. FAB (+ Quick Lead) fixed bottom-right.
+3. APP SHELL — src/components/shell/app-shell.tsx
+   At <768px: hide sidebar, show MobileTabBar at bottom.
+   Floating Action Button (QuickLeadFAB): 52×52px, bottom-right, z-index 300.
+   Opens existing Quick Lead drawer.
 
-4. FLOATING ACTION BUTTON
-   Create: src/components/shell/QuickLeadFAB.tsx
-   52×52px, bottom-right, fixed, opens Quick Lead drawer.
-   Visible on all mobile tab screens.
+4. DASHBOARD MOBILE RESPONSIVE — src/features/dashboard/
+   KPI grid: grid-template-columns: 1fr 1fr at <768px (not the 5-column desktop).
+   Use existing reference: setuflow-mobile-dashboard.html.
 
-5. DASHBOARD — MOBILE STACK
-   src/features/dashboard/ — KPI cards stack 2-column at mobile (not 5-column).
-   Reference: public/reference-html/setuflow-mobile-dashboard.html
+5. DESKTOP REDIRECT COMPONENT — src/components/shell/DesktopRedirect.tsx
+   Shown at <768px for: /pipeline, /quotes, /products, /admin, /approval-send, /reports
+   Shows: icon + "Open on desktop" + copy link + email link + list of what works on mobile.
+   Pattern: setuflow-mobile-tasks-redirect.html (Desktop Redirect Pattern tab).
 
 6. TOUCH TARGET AUDIT
-   All interactive elements ≥ 44px (WCAG 2.5.5).
-   Tab items 64px tall. Icon buttons 40×40px minimum.
+   All buttons, links, inputs: min 44×44px touch target.
+   Sidebar nav items on mobile: not applicable (hidden).
+   Tab bar items: 64px tall automatically.
 
-7. DESKTOP REDIRECT FOR COMPLEX SCREENS
-   Pipeline, Quote Builder, Catalog, Reports → show redirect screen on mobile.
-   Pattern: public/reference-html/setuflow-mobile-tasks-redirect.html
+7. INTERNAL DCC UPDATE
+   Update public/internal-dcc/index.html — mark NS-12 done.
 
-8. INTERNAL DCC UPDATE
-   Update public/internal-dcc/index.html with PR-NS-12 completion status.
+Return: updated repo zip + updated DCC + confirm Vercel build green.</pre></div>
+    </div>
 
-Return: updated repo zip + updated DCC + PR-NS-13 next prompt.</pre></div>
-  </div></div>
+    <!-- NS-13 -->
+    <div class="card" style="margin-bottom:12px">
+      <h2 style="color:var(--violet)">PR-NS-13 — WhatsApp Quote Delivery</h2>
+      <div class="pb" style="margin-top:8px"><button class="cbtn" onclick="copyPrompt('p13')">Copy</button><pre id="p13">Continue from PR-NS-12 baseline.
+
+COMPLETED SO FAR:
+- NS-11: category_type schema fixed. CategoryType=string. Build green.
+- NS-12: Mobile PWA — manifest, bottom tab bar, FAB, dashboard responsive,
+  desktop redirect component. Vercel build green.
+
+CONTEXT — WHY WHATSAPP:
+70% of target market (SME food exporters) communicates via WhatsApp.
+"Send quote via WhatsApp" as the primary send action is a category-defining
+differentiator vs Salesforce, HubSpot, Pipedrive — none do this natively.
+The communications table already has channel: 'whatsapp' as an allowed value.
+
+PRIORITIES FOR PR-NS-13:
+
+1. SCHEMA — add whatsapp_number to leads
+   Migration: mitigation/supabase/sql/058_leads_whatsapp_field.sql
+   ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS whatsapp_number text;
+   No constraint — format varies by country (+971..., +91...).
+
+2. LEAD FORM — WhatsApp field
+   src/features/leads/components/LeadForm.tsx (or equivalent)
+   Add: WhatsApp / Phone field (text input, inputmode="tel")
+   Label: "WhatsApp" with 📱 icon. Optional field. Below email.
+   Save to: leads.whatsapp_number
+
+3. LEAD DETAIL — display WhatsApp number
+   Show in contact section with tap-to-open: https://wa.me/{number}
+   Remove +, spaces, dashes before building URL.
+
+4. QUOTE APPROVAL / SEND PAGE — primary WhatsApp button
+   src/features/quotes/components/QuoteApprovalPage.tsx (or equivalent)
+   Add: "Send via WhatsApp" as PRIMARY button (not secondary).
+   "Send via Email" becomes secondary.
+   Only show WhatsApp button if lead.whatsapp_number is set.
+   On click → call whatsapp delivery server action.
+
+5. WHATSAPP DELIVERY SERVER ACTION
+   src/features/quotes/server/whatsapp-delivery.ts (new file)
+   Input: quoteId, leadId, organizationId
+   Build wa.me URL: https://wa.me/{number}?text={encodedMessage}
+   Message template: quote summary (buyer name, products, total, validity, PDF link)
+   Log to communications table: channel='whatsapp', status='sent'
+   Return: { url: string } — client opens in new tab (no API key needed for wa.me)
+   Note: wa.me links open WhatsApp web/app and pre-fill message. Zero API setup required.
+   Upgrade path: Twilio WhatsApp Business API when volume justifies it.
+
+6. QUOTE PDF SHARE LINK
+   For wa.me to work, quote must have a shareable link (not just email attachment).
+   Check if quotes already have a public/shareable URL. If not, add one:
+   src/app/api/quotes/[quoteId]/share/route.ts — returns a signed URL or public link.
+
+7. INTERNAL DCC UPDATE
+   Update public/internal-dcc/index.html — mark NS-13 done.
+
+Return: updated repo zip + updated DCC + confirm Vercel build green.</pre></div>
+    </div>
+
+    <!-- NS-14 -->
+    <div class="card" style="margin-bottom:12px">
+      <h2 style="color:var(--amber)">PR-NS-14 — Offline Lead Capture (PWA)</h2>
+      <div class="pb" style="margin-top:8px"><button class="cbtn" onclick="copyPrompt('p14')">Copy</button><pre id="p14">Continue from PR-NS-13 baseline.
+
+COMPLETED SO FAR:
+- NS-11: category_type schema fixed. Build green.
+- NS-12: Mobile PWA manifest, bottom tab bar, FAB, responsive dashboard, redirect.
+- NS-13: WhatsApp quote delivery via wa.me. Lead form + send page updated. Build green.
+
+CONTEXT — WHY OFFLINE:
+Trade show venues (Gulfood, Anuga, SIAL) have unreliable WiFi.
+Without offline capture, leads are lost when connectivity drops.
+With offline capture: leads save locally → sync automatically on reconnect.
+This is the feature that makes SETU Flow irreplaceable on the show floor.
+
+PRIORITIES FOR PR-NS-14:
+
+1. SERVICE WORKER — public/sw.js
+   Register in src/app/layout.tsx:
+   if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js') }
+   The SW should:
+   - Cache the capture page (/contact-exchange/scan) for offline use
+   - Cache static assets (CSS, fonts, logo)
+   - Queue failed POST requests (lead saves) using Background Sync API
+   - Serve the cached capture page when offline
+
+2. INDEXEDDB OFFLINE QUEUE — src/lib/offline/lead-queue.ts
+   Functions:
+   - enqueueCapture(lead: OfflineLead): Promise<void>
+   - listPending(): Promise<OfflineLead[]>
+   - markSynced(id: string): Promise<void>
+   - clearSynced(): Promise<void>
+   OfflineLead type: { id, capturedAt, name, company, country, whatsapp, notes,
+                       product_interests: string[], lead_type, event_id }
+   Use idb-keyval or raw IndexedDB (prefer raw for zero deps).
+
+3. CAPTURE FORM — offline mode
+   src/features/trade-events/components/CaptureDrawer.tsx (or equivalent)
+   When offline (navigator.onLine === false):
+   - Show offline indicator banner ("Saving offline — will sync on reconnect")
+   - Save to IndexedDB queue instead of server action
+   - Show success state same as online (don't block the user)
+   When back online:
+   - Trigger sync automatically via Background Sync or window 'online' event
+
+4. SYNC ON RECONNECT — src/lib/offline/sync.ts
+   Listen for window 'online' event.
+   Read all pending leads from IndexedDB.
+   POST each to the existing lead creation server action.
+   On success: mark as synced in IndexedDB.
+   Conflict resolution: server wins (if lead already exists by name+company, skip).
+   Show sync result toast: "3 leads synced from offline queue"
+
+5. OFFLINE STATUS INDICATOR — src/components/shell/OfflineIndicator.tsx
+   Show in top bar when navigator.onLine === false.
+   "● Offline — leads saving locally" (amber pill).
+   Disappear when back online + sync completes.
+
+6. TEST SCENARIOS
+   - Capture lead with WiFi off → appears in queue → WiFi on → syncs → appears in leads list
+   - Multiple leads captured offline → all sync correctly
+   - Duplicate prevention (same lead captured twice offline)
+
+7. INTERNAL DCC UPDATE
+   Update public/internal-dcc/index.html — mark NS-14 done.
+
+Return: updated repo zip + updated DCC + confirm Vercel build green.</pre></div>
+    </div>
+
+    <!-- NS-15 (live dispatch validation) -->
+    <div class="card" style="margin-bottom:12px">
+      <h2 style="color:var(--teal)">PR-NS-15 — Live Dispatch Validation + Supabase Proof</h2>
+      <div class="pb" style="margin-top:8px"><button class="cbtn" onclick="copyPrompt('p15')">Copy</button><pre id="p15">Continue from PR-NS-14 baseline.
+
+COMPLETED SO FAR:
+- NS-11: category_type schema fixed. Build green.
+- NS-12: Mobile PWA. NS-13: WhatsApp delivery. NS-14: Offline capture.
+
+OUTSTANDING FROM NS-10 (carried forward):
+Live dispatch advance has never been validated against the live Supabase DB.
+The progressOrderExecution server action is wired and TypeScript-clean,
+but we have not confirmed that contracts.execution_state actually advances.
+This is the last unresolved item from the NS-10 pass.
+
+PRIORITIES FOR PR-NS-15:
+
+1. LIVE DISPATCH ADVANCE VALIDATION
+   Test in live Supabase environment (not sandbox):
+   a. Find a contract in execution_state = 'confirmed'
+   b. Click "Advance to next stage" in the Order Detail Panel
+   c. Confirm: contracts.execution_state updates correctly
+   d. Confirm: revalidatePath fires and UI refreshes
+   e. Test blocked order: blocker message shown, advance prevented
+
+2. ORDER-TO-CONTRACT INTEGRITY CHECK
+   For each accepted quote, verify:
+   - contracts row exists with correct quote_id and lead_id
+   - quotes.accepted_version_id is set (fixed in NS-09, verify live)
+   - Order card shows correct execution_state from contracts row
+   - accepted_version_id matches the version actually sent
+
+3. APPROVAL-SEND HANDOFF VERIFICATION
+   When a quote is approved and sent:
+   - Navigates to /orders with ?notice=quote-accepted
+   - Green banner appears
+   - Order card for that quote appears in the queue
+   - Fallback current_version_id still correct after NS-09 fix
+
+4. CATEGORY_TYPE LIVE VERIFICATION (NS-11 follow-up)
+   After migration 057 was applied:
+   - Create a new quote with a "Natural Sweeteners" product
+   - Confirm quote_version_line_items.category_type = "Natural Sweeteners" (not 'chips')
+   - Confirm product_pricing_rules.category_type = "Natural Sweeteners" for that product
+   - Confirm NO constraint violation on insert
+
+5. INTERNAL DCC UPDATE
+   Update public/internal-dcc/index.html — mark NS-15 done.
+   Mark Live Dispatch as Validated (green) — remove the amber warning pill.
+
+Return: updated repo zip + updated DCC + full validation evidence summary.</pre></div>
+    </div>
+
+  </div>
 </div>
+
+
 
 <!-- NS-11 FIXES TAB -->
 <div class="tp" id="tab-ns11fixes">
@@ -330,19 +526,19 @@ Return: updated repo zip + updated DCC + PR-NS-13 next prompt.</pre></div>
 <!-- ══════════════════ SCHEMA FIX TAB ══════════════════ -->
 <div class="tp" id="tab-schema">
   <div class="sec">
-    <div class="co r"><strong>Critical schema gap identified:</strong> <code>category_type</code> CHECK constraint in <code>pricing_rule_set_items</code> and <code>quote_line_items</code> only allows <code>'chips'</code> and <code>'powders'</code>. Blue Orbit International has 7 distinct product families. This constraint blocks correct category derivation for sweeteners, onion, garlic, and freeze-dried products.</div>
+    <div class="co g"><strong>Schema gap RESOLVED (NS-11 · Apr 29 2026).</strong> Migration 057 applied to live DB. The hardcoded <code>category_type</code> CHECK constraint has been dropped from both tables. Column is now plain <code>text</code> and nullable — any admin-defined category name is valid. Existing rows backfilled with real names from <code>product_categories</code>.</div>
 
     <div class="sec grid g2" style="margin-top:10px">
       <div class="card">
-        <h2>Current constraint (blocking)</h2>
-        <table class="t"><thead><tr><th>Table</th><th>Current CHECK</th><th>Status</th></tr></thead><tbody>
-          <tr><td><code>pricing_rule_set_items</code></td><td><code>'chips' | 'powders'</code></td><td><span class="s bad">Too narrow</span></td></tr>
-          <tr><td><code>quote_line_items</code></td><td><code>'chips' | 'powders'</code></td><td><span class="s bad">Too narrow</span></td></tr>
-          <tr><td><code>product_categories</code></td><td>No category_type column</td><td><span class="s bad">Missing</span></td></tr>
+        <h2>After migration 057 — live DB state</h2>
+        <table class="t"><thead><tr><th>Table</th><th>Before</th><th>After</th></tr></thead><tbody>
+          <tr><td><code>product_pricing_rules</code></td><td><code>NOT NULL CHECK ('chips'|'powders')</code></td><td><span class="s good">text (nullable) ✓</span></td></tr>
+          <tr><td><code>quote_version_line_items</code></td><td><code>NOT NULL CHECK ('chips'|'powders')</code></td><td><span class="s good">text (nullable) ✓</span></td></tr>
+          <tr><td>Existing rows</td><td>proxy values 'chips' or 'powders'</td><td><span class="s good">real names from product_categories ✓</span></td></tr>
         </tbody></table>
       </div>
       <div class="card">
-        <h2>Required expanded values</h2>
+        <h2>Real categories in the DB (admin-managed)</h2>
         <table class="t"><thead><tr><th>Value</th><th>Maps to</th></tr></thead><tbody>
           <tr><td><code>chips</code></td><td>Vacuum-cooked fruit &amp; vegetable chips</td></tr>
           <tr><td><code>powders</code></td><td>Dehydrated + spray-dried powders</td></tr>
@@ -356,68 +552,50 @@ Return: updated repo zip + updated DCC + PR-NS-13 next prompt.</pre></div>
     </div>
 
     <div class="card" style="margin-top:10px">
-      <h2>Migration SQL — 057_expand_category_type_constraint.sql</h2>
-      <div class="pb"><button class="cbtn" onclick="copyPrompt('sql057')">Copy</button><pre id="sql057">-- Migration 057: Expand category_type constraint beyond 2 values
--- Covers: pricing_rule_set_items, quote_line_items, product_categories
--- Run in Supabase SQL editor — no data loss (existing 'chips'/'powders' rows remain valid)
+      <h2>Migration 057 — APPLIED TO LIVE DB ✓</h2>
+      <div class="pb"><button class="cbtn" onclick="copyPrompt('sql057')">Copy</button><pre id="sql057">-- Migration 057 (FINAL — applied Apr 29 2026)
+-- Drops category_type CHECK constraint. Makes column nullable.
+-- Correct table names: product_pricing_rules + quote_version_line_items
 
 BEGIN;
 
--- 1. Add category_type to product_categories (new column, nullable to allow migration)
-ALTER TABLE public.product_categories
-  ADD COLUMN IF NOT EXISTS category_type text
-  CHECK (category_type = ANY (ARRAY[
-    'chips','powders','sweeteners','onion','garlic','freeze_dried','other'
-  ]));
+ALTER TABLE public.product_pricing_rules
+  DROP CONSTRAINT IF EXISTS product_pricing_rules_category_type_check;
 
--- 2. pricing_rule_set_items — drop old constraint, add expanded
-ALTER TABLE public.pricing_rule_set_items
-  DROP CONSTRAINT IF EXISTS pricing_rule_set_items_category_type_check;
+ALTER TABLE public.quote_version_line_items
+  DROP CONSTRAINT IF EXISTS quote_version_line_items_category_type_check;
 
-ALTER TABLE public.pricing_rule_set_items
-  ADD CONSTRAINT pricing_rule_set_items_category_type_check
-  CHECK (category_type = ANY (ARRAY[
-    'chips','powders','sweeteners','onion','garlic','freeze_dried','other'
-  ]));
+-- Safety net for auto-generated constraint name variants
+DO $$
+DECLARE r RECORD;
+BEGIN
+  FOR r IN SELECT conname, conrelid::regclass AS tbl FROM pg_constraint
+    WHERE contype = 'c'
+      AND conrelid IN ('public.product_pricing_rules'::regclass,
+                       'public.quote_version_line_items'::regclass)
+      AND pg_get_constraintdef(oid) LIKE '%category_type%'
+  LOOP
+    EXECUTE format('ALTER TABLE %s DROP CONSTRAINT IF EXISTS %I', r.tbl, r.conname);
+  END LOOP;
+END; $$;
 
--- 3. quote_line_items — drop old constraint, add expanded
-ALTER TABLE public.quote_line_items
-  DROP CONSTRAINT IF EXISTS quote_line_items_category_type_check;
+ALTER TABLE public.product_pricing_rules ALTER COLUMN category_type DROP NOT NULL;
+ALTER TABLE public.quote_version_line_items ALTER COLUMN category_type DROP NOT NULL;
 
-ALTER TABLE public.quote_line_items
-  ADD CONSTRAINT quote_line_items_category_type_check
-  CHECK (category_type = ANY (ARRAY[
-    'chips','powders','sweeteners','onion','garlic','freeze_dried','other'
-  ]));
+UPDATE public.product_pricing_rules ppr
+SET category_type = pc.name
+FROM public.products p JOIN public.product_categories pc ON pc.id = p.category_id
+WHERE ppr.product_id = p.id AND ppr.category_type IN ('chips', 'powders');
 
--- 4. Backfill product_categories.category_type from product name patterns
--- (Adjust WHERE clauses to match your actual category names)
-UPDATE public.product_categories SET category_type = 'sweeteners'
-  WHERE lower(name) LIKE '%jaggery%' OR lower(name) LIKE '%palm%' OR lower(name) LIKE '%coconut sugar%';
-
-UPDATE public.product_categories SET category_type = 'onion'
-  WHERE lower(name) LIKE '%onion%';
-
-UPDATE public.product_categories SET category_type = 'garlic'
-  WHERE lower(name) LIKE '%garlic%';
-
-UPDATE public.product_categories SET category_type = 'freeze_dried'
-  WHERE lower(name) LIKE '%freeze%' OR lower(name) LIKE '%ready%to%eat%';
-
-UPDATE public.product_categories SET category_type = 'powders'
-  WHERE lower(name) LIKE '%powder%' OR lower(name) LIKE '%spray%' OR lower(name) LIKE '%dehydrat%';
-
-UPDATE public.product_categories SET category_type = 'chips'
-  WHERE lower(name) LIKE '%chip%' OR lower(name) LIKE '%vacuum%';
-
--- Catch-all for anything not yet mapped
-UPDATE public.product_categories SET category_type = 'other'
-  WHERE category_type IS NULL;
+UPDATE public.quote_version_line_items qvli
+SET category_type = pc.name
+FROM public.products p JOIN public.product_categories pc ON pc.id = p.category_id
+WHERE qvli.product_id = p.id AND qvli.category_type IN ('chips', 'powders');
 
 COMMIT;</pre></div>
     </div>
 
-    <div class="co b" style="margin-top:10px"><strong>Code changes required alongside migration:</strong> Update <code>src/features/quotes/pricing/repositories/pricing-rule.repository.ts</code> — expand <code>category_type: 'chips' | 'powders'</code> union to include all 7 values. Update fallback from <code>'chips'</code> to <code>'other'</code> in both <code>updateQuoteDirect</code> and <code>saveLeadQuoteDraftPreview</code>. Add category_type selector to CategoryForm.tsx.</div>
+    <div class="co g" style="margin-top:10px"><strong>All code changes shipped in NS-11.</strong> CategoryType = string. TemplateType = unit_case|kg|mixed. pricingMode drives all business logic. 14 files fixed. Vercel build green. No further code changes needed for this migration.</div>
   </div>
 </div>
 <!-- END SCHEMA FIX TAB -->
@@ -502,17 +680,17 @@ COMMIT;</pre></div>
 <!-- ══════════════════ EXECUTION PLAN TAB ══════════════════ -->
 <div class="tp" id="tab-execplan">
   <div class="sec">
-    <div class="co v"><strong>Investor + commercial readiness execution plan — Apr 29 2026.</strong> Four PRs required to close the gap between current state and a mobile-ready, fully commercial SaaS product. Ordered by impact and dependency.</div>
+    <div class="co v"><strong>Investor + commercial readiness — Apr 29 2026.</strong> NS-11 (schema) complete. Three PRs remain. NS-12 Mobile PWA is active. Reference screens for all 6 mobile screens already produced. NS-13 WhatsApp and NS-14 Offline follow.</div>
 
     <!-- PR-NS-11 -->
-    <div class="card" style="border-left:4px solid var(--teal);margin-top:12px">
+    <div class="card" style="border-left:4px solid var(--good);margin-top:12px;opacity:.85">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <h2 style="color:var(--teal)">PR-NS-11 — Schema: Multi-Category Expansion</h2>
-        <div style="display:flex;gap:5px"><span class="s teal">Priority 1</span><span class="s active">Infrastructure</span></div>
+        <h2 style="color:var(--good)">PR-NS-11 — Schema: Multi-Category Expansion ✓</h2>
+        <div style="display:flex;gap:5px"><span class="s good">Done · Apr 29</span><span class="s good">Build green</span></div>
       </div>
-      <div class="co t" style="margin-bottom:8px"><strong>Why now:</strong> The category_type constraint blocks correct quote line items for 5 of 7 product families. Any quote for sweeteners, onion, garlic, or freeze-dried will violate DB constraints. This is a correctness blocker, not a feature.</div>
+      <div class="co g" style="margin-bottom:8px"><strong>Completed:</strong> category_type constraint dropped from product_pricing_rules + quote_version_line_items. CategoryType = string. TemplateType = unit_case|kg|mixed. 14 files fixed across 3 Vercel build error passes. 057 migration applied to live DB. Schema doc updated.</div>
       <table class="t"><thead><tr><th>Task</th><th>File</th><th>Type</th></tr></thead><tbody>
-        <tr><td>Migration SQL — expand CHECK on pricing_rule_set_items</td><td><code>mitigation/supabase/sql/057_expand_category_type_constraint.sql</code></td><td><span class="s teal">Schema</span></td></tr>
+        <tr><td>Migration 057 — DROP constraint + make nullable on product_pricing_rules + quote_version_line_items</td><td><code>mitigation/supabase/sql/057_drop_category_type_constraint.sql</code></td><td><span class="s good">Applied ✓</span></td></tr>
         <tr><td>Migration SQL — expand CHECK on quote_line_items</td><td>Same migration file</td><td><span class="s teal">Schema</span></td></tr>
         <tr><td>Add category_type to product_categories table</td><td>Same migration file</td><td><span class="s teal">Schema</span></td></tr>
         <tr><td>Expand TypeScript union type</td><td><code>src/features/quotes/pricing/repositories/pricing-rule.repository.ts</code></td><td><span class="s active">Code</span></td></tr>
@@ -526,7 +704,7 @@ COMMIT;</pre></div>
     <div class="card" style="border-left:4px solid var(--brand);margin-top:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
         <h2 style="color:var(--brand)">PR-NS-12 — Mobile-First PWA</h2>
-        <div style="display:flex;gap:5px"><span class="s active">Priority 2</span><span class="s violet">Competitive</span></div>
+        <div style="display:flex;gap:5px"><span class="s active">Priority 1 — Active</span><span class="s violet">Competitive</span></div>
       </div>
       <div class="co b" style="margin-bottom:8px"><strong>Why now:</strong> Mobile native app is listed as Gap ✗ vs. competitors. A well-executed PWA closes this gap for trade show use (Gulfood 2026). Mobile Dashboard + Pipeline are the highest-traffic screens and must work perfectly at 375px. Reference HTMLs are already produced — implementation in Next.js is the remaining work.</div>
       <table class="t"><thead><tr><th>Task</th><th>File</th><th>Type</th></tr></thead><tbody>
