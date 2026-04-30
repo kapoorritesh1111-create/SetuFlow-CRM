@@ -199,3 +199,23 @@ Demo boundary:
 - Prove trade-event capture to quote handoff and event stats.
 - Preserve desktop-first execution and mobile trade-event capture-only claim.
 - Do not regress Q-00025 accepted order proof.
+
+## PR-NS-23 trade show wedge proof
+
+Status: Complete in repo/package.
+
+Live verification:
+- Vercel latest production deployment `dpl_4YXrY6K72P51b19qTVNZi5CR65N7` was READY.
+- Supabase project `sjzfzloggabsmcuxktnl` was ACTIVE_HEALTHY.
+- Q-00025 remained accepted and contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` remained visible with 11 lines.
+- Trade-event live proof: Anuga 14 leads / 6 quotes / 0 contracts; Gulfood 13 leads / 6 quotes / 1 contract; IndusFood 14 leads / 9 quotes / 3 contracts.
+- `trade_event_entries` currently has 0 rows, so live intake queue conversion is not yet proven.
+
+Code/docs changes:
+- Added `docs/TRADE_SHOW_WEDGE_PROOF.md`.
+- Updated Trade Events UI wording and metrics so seeded event-linked leads are not mislabeled as intake queue captures.
+- Preserved PR-NS-21 mobile promise truth: desktop-first execution, mobile trade-event capture wedge only.
+
+### Next — PR-NS-24 integration proof mode
+
+Prove WhatsApp/email proof mode honestly. Separate real sends, draft-only proof, and simulated connector proof. Keep Q-00025 and trade-event proof boundaries intact.

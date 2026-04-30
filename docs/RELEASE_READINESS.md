@@ -109,3 +109,16 @@ PR-NS-22 improves Orders release readiness by turning the accepted order into an
 | Overall release readiness | 84% |
 
 Remaining blockers: Q-00025 has zero linked execution documents, so release/dispatch/completion cannot be claimed until document evidence is uploaded and approved. The full mobile promise remains desktop-first execution plus mobile trade-event capture wedge only.
+
+## PR-NS-23 release update
+
+PR-NS-23 improves trade-event release credibility by separating live event-linked CRM/quote proof from unproven intake queue volume.
+
+| Area | Honest readiness after PR-NS-23 |
+|---|---:|
+| Trade-event event stats | 88% |
+| Trade-event lead-to-quote handoff | 86% |
+| Trade-event intake queue live proof | 55% |
+| Mobile promise truth | 82% |
+
+Remaining release blocker: `trade_event_entries` has 0 live rows, so live booth intake conversion and offline queue sync cannot be claimed as proven production behavior yet.

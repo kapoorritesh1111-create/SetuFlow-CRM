@@ -85,3 +85,15 @@ Investor-safe wording:
 > The order handoff is proven, and Orders now shows exactly why it cannot be released or dispatched yet.
 
 Do not say Q-00025 is shipped, released, dispatch-ready, or complete.
+
+## PR-NS-23 trade-show wedge proof
+
+After the desktop-first Q-00025 revenue proof, the trade-show wedge can be shown as a separate source-motion proof:
+
+1. Open Trade Events.
+2. Show Anuga, Gulfood, and IndusFood event cards.
+3. Explain that live event-linked data proves lead-to-quote handoff: Anuga 14 leads / 6 quotes, Gulfood 13 leads / 6 quotes / 1 contract, IndusFood 14 leads / 9 quotes / 3 contracts.
+4. Show the capture/intake UI as the mobile-friendly booth capture wedge.
+5. State the boundary clearly: live intake queue rows are currently 0, so offline queue sync is scoped capability, not proven production volume.
+
+Do not combine this with claims of mobile quote/order execution.

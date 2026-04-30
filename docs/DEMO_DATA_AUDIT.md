@@ -153,3 +153,18 @@ PR-NS-22 updated the live contract snapshot with:
 - `execution_snapshot`: line count, contract ID, quote ID, document posture, dispatch controls, next action, and mobile scope.
 
 The Orders code path was patched so contract-level documents are included in the document posture calculation. This prevents uploaded order evidence from being invisible to the Orders workspace.
+
+## PR-NS-23 trade-show wedge data proof
+
+Live checked on PR-NS-23:
+
+- Anuga: 14 event-linked leads, 6 quote handoffs, 0 contract handoffs, 0 intake queue rows.
+- Gulfood: 13 event-linked leads, 6 quote handoffs, 1 contract handoff, 0 intake queue rows.
+- IndusFood: 14 event-linked leads, 9 quote handoffs, 3 contract handoffs, 0 intake queue rows.
+- `trade_event_entries`: 0 total rows, 0 converted entries, 0 entries with converted leads.
+
+Demo-safe wording:
+
+- Say live event records prove event-linked leads, quote handoffs, and contract handoffs.
+- Say intake queue and conversion UI exist as the capture wedge path.
+- Do not say the live offline queue has synced booth entries until `trade_event_entries` contains captured/converted proof rows.

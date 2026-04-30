@@ -38,6 +38,7 @@ type TradeEventAnalytics = {
   pipelineValue: number;
   currency: string;
   ordersPlaced: number;
+  orderHandoffCount: number;
 };
 
 type FollowUpNeededLead = {
@@ -165,9 +166,14 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
     const quoteRows = (quoteResult.data ?? []) as TradeEventQuoteRow[];
     const quotedLeadIds = new Set<string>(quoteRows.map((quote) => quote.lead_id).filter((leadId): leadId is string => Boolean(leadId)));
     const activeContractCountByLeadId = new Map<string, number>();
+    const contractCountByLeadId = new Map<string, number>();
     for (const quote of quoteRows) {
       if (!quote.lead_id) continue;
+      const contractCount = (quote.contracts ?? []).length;
       const activeContractCount = (quote.contracts ?? []).filter((contract) => String(contract.status ?? '').toLowerCase() === 'active').length;
+      if (contractCount > 0) {
+        contractCountByLeadId.set(quote.lead_id, (contractCountByLeadId.get(quote.lead_id) ?? 0) + contractCount);
+      }
       if (activeContractCount > 0) {
         activeContractCountByLeadId.set(quote.lead_id, (activeContractCountByLeadId.get(quote.lead_id) ?? 0) + activeContractCount);
       }
@@ -189,6 +195,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
         pipelineValue: 0,
         currency: lead.deal_currency || 'USD',
         ordersPlaced: 0,
+        orderHandoffCount: 0,
       };
       const dealValue = typeof lead.deal_value === 'number' ? lead.deal_value : Number(lead.deal_value ?? 0);
       const isQuoted = quotedLeadIds.has(lead.id);
@@ -197,6 +204,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
       current.openLeadCount += isQuoted ? 0 : 1;
       current.pipelineValue += Number.isFinite(dealValue) ? dealValue : 0;
       current.ordersPlaced += activeContractCountByLeadId.get(lead.id) ?? 0;
+      current.orderHandoffCount += contractCountByLeadId.get(lead.id) ?? 0;
       current.currency = lead.deal_currency || current.currency || 'USD';
       analyticsByEventId.set(eventId, current);
     }
@@ -211,8 +219,8 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
   eventsByStartDate.forEach((event, index) => {
     const previousEvent = eventsByStartDate[index - 1];
     if (!previousEvent) return;
-    const currentAnalytics = analyticsByEventId.get(event.id) ?? { leadCount: 0, quotedCount: 0, openLeadCount: 0, pipelineValue: 0, currency: 'USD', ordersPlaced: 0 };
-    const previousAnalytics = analyticsByEventId.get(previousEvent.id) ?? { leadCount: 0, quotedCount: 0, openLeadCount: 0, pipelineValue: 0, currency: 'USD', ordersPlaced: 0 };
+    const currentAnalytics = analyticsByEventId.get(event.id) ?? { leadCount: 0, quotedCount: 0, openLeadCount: 0, pipelineValue: 0, currency: 'USD', ordersPlaced: 0, orderHandoffCount: 0 };
+    const previousAnalytics = analyticsByEventId.get(previousEvent.id) ?? { leadCount: 0, quotedCount: 0, openLeadCount: 0, pipelineValue: 0, currency: 'USD', ordersPlaced: 0, orderHandoffCount: 0 };
     previousEventPerformanceById.set(event.id, {
       entryDelta: (entryCountByEvent.get(event.id) ?? 0) - (entryCountByEvent.get(previousEvent.id) ?? 0),
       pipelineDelta: currentAnalytics.pipelineValue - previousAnalytics.pipelineValue,
@@ -226,9 +234,14 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Trade events</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Shows and source touchpoints</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Track the trade events that generate buyer and supplier relationships across your organization.
+          Track event-sourced leads, quote handoffs, and follow-up readiness. The mobile/tablet promise here is scoped to trade-event capture only; core CRM, quote, and order execution remain desktop-first.
         </p>
       </div>
+
+      <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
+        <p className="font-semibold uppercase tracking-[0.16em]">PR-NS-23 proof boundary</p>
+        <p className="mt-2">Live event records currently prove event-linked leads, quote handoffs, and event analytics. Intake queue rows may still be empty for seeded events, so do not present offline queue sync as live production evidence until booth entries are captured and converted.</p>
+      </section>
 
       <QueryIssuesAlert issues={data.queryIssues} />
       {noticeKey === 'capture-converted' ? (
@@ -308,20 +321,20 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
             const quickLeadSourceLabel = captureDefaults?.source_label ?? event.name;
             const eventEntryCount = entryCountByEvent.get(event.id) ?? 0;
             const captureHref = `/leads?quickLead=1&sourceType=trade_event&eventId=${event.id}&sourceLabel=${encodeURIComponent(quickLeadSourceLabel)}`;
-            const analytics = analyticsByEventId.get(event.id) ?? { leadCount: 0, quotedCount: 0, openLeadCount: 0, pipelineValue: 0, currency: 'USD', ordersPlaced: 0 };
+            const analytics = analyticsByEventId.get(event.id) ?? { leadCount: 0, quotedCount: 0, openLeadCount: 0, pipelineValue: 0, currency: 'USD', ordersPlaced: 0, orderHandoffCount: 0 };
             const conversionRate = eventEntryCount > 0 ? Math.round((analytics.leadCount / eventEntryCount) * 100) : 0;
             const previousPerformance = previousEventPerformanceById.get(event.id);
             return (
             <article key={event.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
               <div className="flex flex-col gap-4">
                 <span className="inline-flex w-fit rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-base font-semibold text-emerald-800">
-                  {eventEntryCount} lead{eventEntryCount === 1 ? '' : 's'} captured
+                  {eventEntryCount} intake entr{eventEntryCount === 1 ? 'y' : 'ies'}
                 </span>
                 <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 text-xs font-semibold text-slate-700 sm:grid-cols-4">
                   <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{eventEntryCount} entries</span>
-                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{(convertedEntryCountByEventId.get(event.id) ?? analytics.leadCount) || analytics.leadCount} leads</span>
-                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{analytics.quotedCount} quoted</span>
-                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{formatPipelineValue(analytics.pipelineValue, analytics.currency)} pipeline</span>
+                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{analytics.leadCount} event leads</span>
+                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{analytics.quotedCount} quote handoffs</span>
+                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{analytics.orderHandoffCount} order handoffs</span>
                 </div>
                 <div>
                   <p className="text-2xl font-semibold tracking-tight text-slate-900">{event.name}</p>
@@ -360,16 +373,16 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
                 </summary>
                 {analytics.leadCount === 0 ? (
                   <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-                    No pipeline data yet — leads will appear here after the show.
+                    No event-linked leads yet — capture or link leads before claiming quote handoff proof.
                   </p>
                 ) : (
                   <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Leads captured</p><p className="mt-2 text-xl font-semibold text-slate-900">{eventEntryCount}</p></div>
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Converted to CRM</p><p className="mt-2 text-xl font-semibold text-slate-900">{analytics.leadCount}</p></div>
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Conversion rate</p><p className="mt-2 text-xl font-semibold text-slate-900">{conversionRate}%</p></div>
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quotes raised</p><p className="mt-2 text-xl font-semibold text-slate-900">{analytics.quotedCount}</p></div>
+                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Intake queue rows</p><p className="mt-2 text-xl font-semibold text-slate-900">{eventEntryCount}</p></div>
+                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Event-linked leads</p><p className="mt-2 text-xl font-semibold text-slate-900">{analytics.leadCount}</p></div>
+                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Entry conversion rate</p><p className="mt-2 text-xl font-semibold text-slate-900">{conversionRate}%</p></div>
+                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quote handoffs</p><p className="mt-2 text-xl font-semibold text-slate-900">{analytics.quotedCount}</p></div>
                     <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Pipeline value</p><p className="mt-2 text-xl font-semibold text-slate-900">{formatPipelineValue(analytics.pipelineValue, analytics.currency)}</p></div>
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Orders placed</p><p className="mt-2 text-xl font-semibold text-slate-900">{analytics.ordersPlaced}</p></div>
+                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Order handoffs</p><p className="mt-2 text-xl font-semibold text-slate-900">{analytics.orderHandoffCount}</p></div>
                   </div>
                 )}
                 {previousPerformance ? (
@@ -378,7 +391,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
                     <p className="mt-1">Entries {formatSignedDelta(previousPerformance.entryDelta)} · Pipeline {formatSignedPipelineDelta(previousPerformance.pipelineDelta, analytics.currency)}</p>
                   </div>
                 ) : null}
-                <p className="mt-4 text-xs font-medium text-slate-500">Event cost entry coming soon — ROI % will appear once cost is recorded.</p>
+                <p className="mt-4 text-xs font-medium text-slate-500">Proof boundary: entries show the capture queue; event-linked leads and quote handoffs show CRM/quote follow-through. Offline queue sync is scoped to capture only and is not proof of full offline CRM.</p>
               </details>
             </article>
             );

@@ -101,3 +101,17 @@ Avoid:
 - Mobile order execution is proven.
 
 Investor readiness is now stronger because the workspace demonstrates operational discipline: accepted orders do not silently become dispatch-ready without evidence.
+
+## PR-NS-23 investor update
+
+PR-NS-23 strengthens the trade-show wedge story without inflating the mobile promise.
+
+Safe investor line:
+
+> Trade Events already shows event-sourced pipeline follow-through: Anuga, Gulfood, and IndusFood have live linked leads and quote handoffs, with Gulfood and IndusFood also showing contract handoffs. The mobile wedge is the booth capture/intake path; offline queueing remains scoped to capture and should not be described as full offline CRM.
+
+Avoid:
+
+- “The trade-show offline queue has proven production sync volume.”
+- “SETU Flow is fully mobile-native.”
+- “Quotes and Orders are mobile execution workflows.”
