@@ -1,62 +1,56 @@
-# Release readiness
+# SETU Flow Release Readiness
 
-## Current state
+Updated: 2026-04-30  
+Baseline: PR-NS-19 Controlled Golden Acceptance Run and Orders Proof
 
-The reset roadmap is complete in the shipped repo baseline. The governed commercial workflow remains primary, accepted quotes still anchor downstream order truth, communications remain approval-aware, AI remains bounded and advisory, and the internal DCC now matches the repo-backed release posture without stale reset-roadmap drift.
+## Readiness snapshot
 
-## Current readiness scores
+| Area | Honest readiness |
+|---|---:|
+| Core CRM workflow | 80–84% |
+| Quote → Order revenue path | 82–88% |
+| Investor demo safety | 78–84% scripted; still lower if unscripted |
+| First paying customer readiness | 68–74% |
+| Mobile-native promise | 40–50% until mobile scope is reconciled |
+| Sprint completion toward current NorthStar | 76% |
 
-- Engineering baseline: 96%
-- Demo readiness: 96%
-- Buyer readiness: 96%
-- Investor readiness: 96%
-- Overall readiness: 96%
-- Security hardening: 96%
+## PR-NS-19 release gate result
 
-## Module readiness
+PR-NS-19 materially improved release confidence because the named golden record is no longer just a candidate. The live path now proves:
 
-| Module | Readiness | Read now as |
-|---|---:|---|
-| Capture | 96% | Cleared |
-| Follow-up | 96% | Cleared |
-| Quote | 99% | Cleared |
-| Approval / Send | 98% | Cleared |
-| Orders / Execution | 98% | Cleared |
-| Pipeline / Risks | 96% | Cleared |
-| Dashboard / Overview | 96% | Cleared |
-| Catalog | 96% | Cleared |
-| Settings / Lists | 96% | Cleared |
-| Admin / Organization | 96% | Cleared |
-| Trade workflow | 96% | Cleared |
-| AI | 96% | Cleared |
+```text
+Lead -> Quote -> Sent -> Accepted -> Draft Order / Contract Execution
+```
 
-## What PR-FINISH-06 proves
+Live proof:
 
-- the DCC, release wording, and repo-backed readiness surfaces now agree on the final reset baseline
-- every tracked module remains at or above the 96% threshold
-- workflow order is unchanged, so the workflow diagram remains the same
-- the product keeps one governed operator path visible without reopening solved workflows
-- AI remains provider-backed, bounded, and operator-reviewed rather than authoritative
+| Proof point | Live value |
+|---|---|
+| Quote | `Q-00025` |
+| Quote ID | `b6f8111a-3b32-456d-92f0-412c898bf13b` |
+| Accepted version | `7f8efd6b-6e19-4941-b974-a5fc61738b0f` |
+| Contract/order execution record | `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` |
+| Contract line count | `11` |
+| Execution state | `draft` |
 
-## What is proven directly in repo behavior
+## What is now stronger
 
-- governed lead, quote, approval, communication, accepted-quote, and contract continuity flow
-- bounded assistive AI with operator review and collapsed reasoning
-- workflow and setup surfaces that keep the next action visible without extra scan weight
-- centralized release-gate command wiring through repo-backed proof scripts
+- The golden record is accepted in live Supabase.
+- Quote and quote-version statuses are aligned at `accepted`.
+- The accepted quote handoff creates a contract/order execution record.
+- Contract line count matches the quote line count.
+- The accepted-handoff RPC now handles schemas where `contract_line_items.organization_id` is required.
+- The Orders source query can return the accepted quote with its draft execution record.
+- The DCC PR queue has been restored to the full 9-item roadmap.
 
-## What is still outside repo scope
+## Remaining release blockers
 
-- external deployment execution in the target hosting environment
-- secrets management and rotation
-- infrastructure controls and network policy
-- external monitoring, alerting, and incident processes
-- third-party audit or certification
+1. RPC/RLS permission hardening needs role-safe implementation and regression testing.
+2. Order execution proof needs richer blockers, documents, continuity, next-action, release, and dispatch evidence.
+3. Contract signing posture is still draft; signed/active contract readiness is not proven.
+4. Mobile promise alignment remains unresolved.
+5. Integrations and first-login empty state still need proof passes before broad buyer rollout.
 
-## Remaining PRs
+## Release decision
 
-- None in the reset roadmap
-
-## Release rule
-
-Describe the repo as ready for final sign-off on the reset roadmap. Do not describe the product as externally audited or production-hardened end to end, because that proof still sits outside repo scope.
+PR-NS-19 supports a controlled investor demo of accepted quote to draft order execution. It does not yet support a claim that SETU Flow is fully launch-ready or that post-order fulfilment is proven end-to-end.

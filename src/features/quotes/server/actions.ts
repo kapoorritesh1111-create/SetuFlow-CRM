@@ -261,6 +261,8 @@ async function writeQuoteAuditLog(input: {
     | 'quote_updated'
     | 'quote_sent'
     | 'quote_send_blocked'
+    | 'quote_accepted'
+    | 'quote_rejected'
     | 'pricing_quote_approval_requested'
     | 'pricing_quote_approved'
     | 'pricing_quote_rejected';
@@ -803,6 +805,8 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
         organizationId: organization.id,
         actorUserId: currentUser.id,
         action: 'quote_send_blocked',
+    | 'quote_accepted'
+    | 'quote_rejected'
         quoteId: null,
         leadId,
         next: { status: 'sent' },
@@ -995,6 +999,152 @@ export async function logQuoteNegotiationResponse(_: QuoteActionState | undefine
   return { success: responseMeta.subject, mode: 'update' };
 }
 
+export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined, formData: FormData): Promise<QuoteActionState> {
+  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
+
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
+  const currentUser = workspace.user;
+  const organization = workspace.organization;
+  if (!hasWorkspaceCapability(workspace.currentRoles, 'quote.send')) {
+    return { error: getReadOnlyWorkspaceMessage(workspace.currentRoles, 'quote.send') ?? 'You do not have permission to record quote outcomes.' };
+  }
+
+  const quoteId = String(formData.get('quote_id') ?? '').trim();
+  const outcome = String(formData.get('status') ?? '').trim().toLowerCase();
+  const plainNotes = String(formData.get('notes') ?? '').trim();
+  if (!quoteId) return { error: 'Quote ID is required.' };
+  if (outcome !== 'accepted' && outcome !== 'rejected') return { error: 'Quote outcome must be accepted or rejected.' };
+
+  const supabase = await createClient();
+  const db = supabase as any;
+  const { data: existing, error: existingError } = await db
+    .from('quotes')
+    .select('id, lead_id, organization_id, status, notes, current_version_id, accepted_version_id')
+    .eq('organization_id', organization.id)
+    .eq('id', quoteId)
+    .maybeSingle();
+
+  if (existingError) return { error: existingError.message };
+  if (!existing) return { error: 'Quote not found.' };
+
+  const previousStatus = String(existing.status ?? '').trim().toLowerCase();
+  if (previousStatus === outcome) {
+    return { success: outcome === 'accepted' ? 'Quote is already accepted.' : 'Quote is already rejected.', mode: 'update' };
+  }
+  if (previousStatus !== 'sent') {
+    await writeQuoteAuditLog({
+      organizationId: organization.id,
+      actorUserId: currentUser.id,
+      action: outcome === 'accepted' ? 'quote_accepted' : 'quote_rejected',
+      quoteId,
+      leadId: existing.lead_id,
+      previous: { status: previousStatus },
+      next: { status: outcome },
+      metadata: { source: 'recordQuoteOutcomeWorkflow', blocked_reason: 'outcome_requires_sent_quote' },
+    });
+    return { error: `Only sent quotes can be marked ${outcome}. Current status is ${previousStatus || 'unknown'}.` };
+  }
+
+  const nowIso = new Date().toISOString();
+  const outcomeVersionId = existing.accepted_version_id ?? existing.current_version_id ?? null;
+  const { error: quoteUpdateError } = await db
+    .from('quotes')
+    .update({
+      status: outcome,
+      accepted_version_id: outcome === 'accepted' ? outcomeVersionId : existing.accepted_version_id ?? outcomeVersionId,
+      updated_at: nowIso,
+    })
+    .eq('organization_id', organization.id)
+    .eq('id', quoteId)
+    .eq('status', 'sent');
+  if (quoteUpdateError) return { error: quoteUpdateError.message };
+
+  if (outcomeVersionId) {
+    const versionPatch = outcome === 'accepted'
+      ? { status: 'accepted', updated_at: nowIso }
+      : { status: 'rejected', updated_at: nowIso };
+    const { error: versionUpdateError } = await db
+      .from('quote_versions')
+      .update(versionPatch)
+      .eq('id', outcomeVersionId)
+      .eq('quote_id', quoteId);
+    if (versionUpdateError) return { error: versionUpdateError.message };
+  }
+
+  let handoffContractId: string | null = null;
+  if (outcome === 'accepted') {
+    const { data: handoffResult, error: handoffError } = await db.rpc('app_ensure_contract_for_accepted_quote_tx', {
+      p_organization_id: organization.id,
+      p_quote_id: quoteId,
+      p_lead_id: existing.lead_id,
+      p_notes: plainNotes || 'Quote accepted; order execution handoff created from quote outcome action.',
+    });
+    if (handoffError) {
+      return { error: `Quote accepted status was recorded, but order handoff failed: ${handoffError.message}` };
+    }
+    const handoffRow = Array.isArray(handoffResult) ? handoffResult[0] : handoffResult;
+    handoffContractId = handoffRow?.contract_id ?? null;
+  }
+
+  const subject = outcome === 'accepted' ? 'Quote accepted' : 'Quote rejected';
+  const body = plainNotes || (outcome === 'accepted'
+    ? 'Customer accepted the sent quote. Order execution handoff is now available.'
+    : 'Customer rejected the sent quote. Quote editing remains locked; create a revision if needed.');
+
+  const { error: communicationError } = await insertCommunication(db, {
+    organization_id: organization.id,
+    lead_id: existing.lead_id,
+    related_entity: 'quote',
+    related_id: quoteId,
+    communication_type: 'system_note',
+    direction: 'internal',
+    channel: 'system',
+    subject,
+    body,
+    summary: outcome === 'accepted' ? 'Quote accepted and handed to Orders.' : 'Quote rejected and locked.',
+    created_by: currentUser.id,
+    metadata: { source: 'recordQuoteOutcomeWorkflow', outcome, quote_version_id: outcomeVersionId, contract_id: handoffContractId },
+  });
+  if (communicationError?.message) return { error: communicationError.message };
+
+  const { error: negotiationError } = await insertNegotiationEvent(db, {
+    quote_id: quoteId,
+    quote_version_id: outcomeVersionId,
+    event_type: outcome,
+    actor_user_id: currentUser.id,
+    actor_name: currentUser.email ?? currentUser.id,
+    message: body,
+    payload: { source: 'recordQuoteOutcomeWorkflow', outcome, contract_id: handoffContractId },
+  });
+  if (negotiationError?.message) return { error: negotiationError.message };
+
+  await writeQuoteAuditLog({
+    organizationId: organization.id,
+    actorUserId: currentUser.id,
+    action: outcome === 'accepted' ? 'quote_accepted' : 'quote_rejected',
+    quoteId,
+    leadId: existing.lead_id,
+    previous: { status: previousStatus },
+    next: { status: outcome, quote_version_id: outcomeVersionId, contract_id: handoffContractId },
+    metadata: { source: 'recordQuoteOutcomeWorkflow', handoff: outcome === 'accepted' ? 'orders_contract_rpc' : 'outcome_only' },
+  });
+
+  const fetched = await fetchQuoteRecord(db, organization.id, quoteId);
+  if (fetched.error) return { error: fetched.error };
+
+  revalidateCommercialViews(existing.lead_id);
+  revalidatePath('/contracts');
+  revalidatePath('/orders');
+  return {
+    success: outcome === 'accepted'
+      ? 'Quote accepted. Orders workspace handoff is ready.'
+      : 'Quote rejected. The sent commercial record remains locked.',
+    record: fetched.record,
+    mode: 'update',
+  };
+}
+
 export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formData: FormData): Promise<QuoteActionState> {
   if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
 
@@ -1136,6 +1286,8 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
         organizationId: organization.id,
         actorUserId: currentUser.id,
         action: 'quote_send_blocked',
+    | 'quote_accepted'
+    | 'quote_rejected'
         quoteId,
         leadId: existing.lead_id,
         previous: { status: existing.status ?? null },

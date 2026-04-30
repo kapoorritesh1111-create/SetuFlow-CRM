@@ -1,72 +1,49 @@
-# Investor readiness
+# SETU Flow Investor Readiness
 
-## Executive view
+Updated: 2026-04-30  
+Baseline: PR-NS-19 Controlled Golden Acceptance Run and Orders Proof
 
-Setu Flow is now easiest to understand as a governed commercial system.
+## Current investor posture
 
-The strongest investor-safe claim is:
+PR-NS-19 upgrades the investor story from “candidate prepared” to “live accepted-order handoff proven.” The named golden record now supports a controlled demo through accepted quote and draft order execution.
 
-> Setu Flow makes commercial truth primary, then forces communication, integration, AI, and downstream execution to follow that governed truth.
+## Named golden journey
 
-That is the core differentiation now visible in the shipped baseline.
+| Field | Live value |
+|---|---|
+| Buyer | `Setu Groups` |
+| Contact | `Ritesh Kapoor` |
+| Lead ID | `262ddf46-ecfe-4385-aaf5-18387d2a79f9` |
+| Quote | `Q-00025` |
+| Quote ID | `b6f8111a-3b32-456d-92f0-412c898bf13b` |
+| Version ID | `7f8efd6b-6e19-4941-b974-a5fc61738b0f` |
+| Contract / order execution ID | `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` |
+| Commercial lines | 11 quote lines, 11 version lines, 11 contract lines |
 
-## What is proven directly in repo behavior
+## Investor-ready claim status
 
-### Governed commercial core
-- catalog/base price is the default source of truth
-- quote overrides require reason capture
-- quote overrides require approval when policy thresholds are met
-- accepted quotes are the admission rule for order / contract continuity
-- downstream continuity preserves `quote_id` linkage
+| Claim | Status after PR-NS-19 |
+|---|---|
+| “The system has real buyer/quote data.” | Supported. |
+| “The sent quote can become accepted safely.” | Supported live on Q-00025. |
+| “This named live record completed accepted-to-order handoff.” | Supported through draft contract/order execution. |
+| “Orders has a live contract for this accepted quote.” | Supported by contract `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`. |
+| “All order execution, documents, dispatch, and completion are proven.” | Not yet supported. |
+| “RPC/RLS hardening is complete.” | Not yet supported. |
 
-### Communication and integration discipline
-- outbound quote communication is approval-aware
-- email and WhatsApp delivery are modeled as governed outbound events
-- integration architecture includes webhook ingestion, adapters, governed processing, sync logs, and replay posture
-- downstream communication and sync reflect governed state rather than creating it
+## Honest investor script
 
-### AI boundaries
-- AI is provider-backed, assistive, and operator-reviewed
-- AI can draft, summarize, and recommend the next safe action
-- AI cannot autonomously approve, price, dispatch, or mutate commercial truth
+Use this wording after PR-NS-19:
 
-### Repo-level hardening
-- browser-facing security headers are centralized in middleware
-- runtime and verification expectations are documented
-- repo cleanup posture is documented for cleaner handoff
+> “This is the live golden buyer journey. Setu Groups’ quote Q-00025 was sent, accepted, and handed off into Orders as contract d129ffe2-c913-4cf7-9a7b-86ea6c9da54e with all 11 commercial lines preserved. The next proof layer is operational execution: document blockers, release readiness, dispatch evidence, and RPC permission hardening.”
 
-## What is proven by aligned docs and readiness surfaces
+Avoid saying:
 
-- the DCC provides a non-technical control panel for current readiness
-- the README states the system order and runtime/verification expectations
-- architecture and release docs now explain the same commercial-first story
-- the PR tracker now cleanly shows the readiness stack as complete
+- “The order has shipped.”
+- “The contract is signed and active.”
+- “All Supabase RPC/RLS advisor findings are closed.”
+- “The mobile-native promise is fully proven.”
 
-This matters because an investor can now review the product without reconstructing the narrative from scattered engineering details.
+## Investor confidence impact
 
-## What is still partial or deferred
-
-### Partial
-- provider-scale communication and integration operating maturity
-- execution-stage showcase depth beyond the commercial core
-- broader proof of live callback / delivery operations at scale
-
-### Deferred to production or future scale proof
-- infrastructure firewalling and WAF posture
-- secrets rotation discipline
-- monitoring / alerting / SIEM maturity
-- external security audit or certification
-- large-scale production performance evidence
-
-## Why this is investable now
-
-- the product is no longer just feature-rich; it is system-coherent
-- the commercial contract is differentiated and defensible
-- the team can explain what is proven, what is partial, and what is next without overclaiming
-- the repo is materially easier to diligence and hand off
-
-## Final investor-safe verdict
-
-The current repo baseline is credible for investor review because it demonstrates a governed commercial core, bounded AI, approval-aware communication, visible hardening, and a concise diligence story.
-
-The honest remaining gap is not product coherence. It is scale-proof, production-operations maturity, and external validation.
+PR-NS-19 raises confidence because the core revenue handoff is now backed by live IDs and line-count continuity. The next investor-risk reducers are PR-NS-20 RPC hardening and PR-NS-22 order execution proof hardening.

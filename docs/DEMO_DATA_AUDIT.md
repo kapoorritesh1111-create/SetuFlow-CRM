@@ -1,80 +1,99 @@
 # Demo Data Audit
 
-This document summarizes what the uploaded Supabase export currently proves.
+Updated: 2026-04-30  
+Baseline: PR-NS-19 Controlled Golden Acceptance Run and Orders Proof
 
-## Confirmed counts
+## Live verification summary
 
-The current export shows:
+Project `sjzfzloggabsmcuxktnl` (`SETU Flow CRM`) was checked before mutation and was `ACTIVE_HEALTHY`. Vercel project `setu-flow-crm` was also checked before repo changes; latest production deployment remained `READY` at `dpl_AbF8tddXDqGQKpKxiNMjLvpCx8rr`.
 
-- 35 buyers
-- 10 suppliers
-- 21 products
-- 31 variants
-- 8 quotes
-- 3 contracts
-- 7 documents
-- 0 integrations configured fileciteturn3file0
+## Golden candidate before mutation
 
-## Commercial strengths
+| Field | Before PR-NS-19 |
+|---|---|
+| Golden buyer / lead | `Setu Groups` / `Ritesh Kapoor` |
+| Lead ID | `262ddf46-ecfe-4385-aaf5-18387d2a79f9` |
+| Quote | `Q-00025` |
+| Quote ID | `b6f8111a-3b32-456d-92f0-412c898bf13b` |
+| Current quote version ID | `7f8efd6b-6e19-4941-b974-a5fc61738b0f` |
+| Parent quote status | `sent` |
+| Current quote version status | `sent` |
+| Quote line items | `11` |
+| Quote version line items | `11` |
+| Existing contract/order | none |
 
-### Market and lead coverage
-The dataset includes buyer and supplier leads across North America, Europe, the Middle East, Asia, Oceania, and Africa. The lead pool is large enough for a serious demo. fileciteturn3file0
+## Live blocker found during controlled acceptance
 
-### Product coverage
-The dataset includes chips, powders, jaggery-related items, and multiple variant/pack forms. This is enough to support category and product-specific storytelling. fileciteturn3file0
+The first guarded acceptance transaction failed and rolled back safely. The failure was real and schema-related:
 
-### Pricing policy exists
-The pricing engine settings show:
+```text
+contract_line_items.organization_id is NOT NULL, but app_ensure_contract_for_accepted_quote_tx did not insert organization_id into contract_line_items.
+```
 
-- `require_approval_for_override = true`
-- `approval_threshold_percent = 5` fileciteturn3file11
+Rollback was verified immediately after the failed run:
 
-### Continuity exists in part of the downstream chain
-Some contract line items already preserve:
+```text
+quotes.status = sent
+quote_versions.status = sent
+quotes.accepted_version_id = null
+no contract committed
+```
 
-- source quote line item id
-- catalog price amount
-- final unit price
-- product variant id
-- continuity snapshot details fileciteturn3file6turn3file15
+## Corrective live patch and repo migration
 
-## Data gaps that matter
+PR-NS-19 patched `app_ensure_contract_for_accepted_quote_tx` live and added the same correction as a repo migration:
 
-### Accepted-state mismatch
-The summary reports:
+```text
+supabase/migrations/20260430_pr_ns_19_accepted_quote_contract_handoff_fix.sql
+```
 
-- `accepted_quotes = 0`
-- `quotes_requiring_approval = 0` fileciteturn3file0
+The patched RPC now:
 
-But quote negotiation events include accepted events for multiple quote ids. fileciteturn3file0turn3file1
+- inserts `contract_line_items.organization_id`,
+- preserves `source_quote_line_item_id`,
+- records `contracts.accepted_quote_version_id`,
+- sets `commercial_lock_state='accepted_locked'`, and
+- stamps `accepted_at` / `commercial_handoff_at`.
 
-That means the current dataset weakens trust unless these states are reconciled.
+## Golden acceptance after mutation
 
-### Execution is structurally present, not yet operationally convincing
-Contracts exist, but visible examples still show:
+The controlled second acceptance run completed successfully.
 
-- `status = draft`
-- `execution_state = draft`
-- `approval_state = not_required` fileciteturn3file3turn3file12
+| Field | After PR-NS-19 |
+|---|---|
+| Quote status | `accepted` |
+| Quote accepted version | `7f8efd6b-6e19-4941-b974-a5fc61738b0f` |
+| Quote version status | `accepted` |
+| Quote version approved_at | `2026-04-30 19:10:38.786256+00` |
+| Contract ID | `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` |
+| Contract status | `draft` |
+| Contract execution state | `draft` |
+| Contract accepted quote version | `7f8efd6b-6e19-4941-b974-a5fc61738b0f` |
+| Contract lock state | `accepted_locked` |
+| Contract line items | `11` |
+| Acceptance communication | `5d2395f6-3a88-4399-b578-2142ac767f8a` |
+| Acceptance negotiation event | `5bbc4b7b-a6f7-4db6-99f2-d987da5f7260` |
+| Acceptance audit log | `a4ac95ed-bf28-4853-aff8-f40678d4e9a8` |
 
-### Contract continuity is inconsistent
-Some contract lines are rich and continuity-aware. Others still have:
+## Orders source visibility proof
 
-- null `product_variant_id`
-- null `catalog_price_amount`
-- empty `continuity_snapshot`
-- null `source_quote_line_item_id` fileciteturn3file4turn3file7turn3file14
+The live Orders source query returned:
 
-### Integrations are absent in current live configuration
-The export shows `integrations = 0`. fileciteturn3file0
+```text
+quote_id = b6f8111a-3b32-456d-92f0-412c898bf13b
+quote_number = Q-00025
+quote_status = accepted
+contract_id = d129ffe2-c913-4cf7-9a7b-86ea6c9da54e
+execution_state = draft
+accepted_quote_version_id = 7f8efd6b-6e19-4941-b974-a5fc61738b0f
+```
+
+This proves the accepted quote is available to the Orders execution workspace source path. A protected browser/runtime fetch was not performed in PR-NS-19.
+
+## RPC/RLS advisor audit note
+
+PR-NS-19 patched the functional accepted-handoff RPC. It did not complete broad RPC permission hardening. Supabase advisors still require a dedicated role-safe hardening PR for anon/authenticated SECURITY DEFINER execution exposure and mutable trigger-function search paths.
 
 ## Current conclusion
 
-The demo data is good enough to support a real product demo.
-
-It is **not yet clean enough** to justify strong claims such as:
-
-- full investor readiness
-- fully proven acceptance-to-execution continuity
-- production-grade integration maturity
-- fully surfaced override approval proof
+PR-NS-19 proves the golden path through accepted quote and draft order execution handoff. The next trust layer is not another acceptance pass; it is order execution hardening and/or RPC permission hardening with role regression tests.

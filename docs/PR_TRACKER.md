@@ -1,68 +1,99 @@
 # SETU Flow PR Tracker
 
-NorthStar rebuild is active. PR-NS-09A hotfix is closed in this repo pass; PR-NS-09 full pass is the active next implementation step.
+Updated: 2026-04-30  
+Current baseline: PR-NS-19 Controlled Golden Acceptance Run and Orders Proof.
 
-## Current completed pass
+## Current truth reset
 
-### PR-NS-09A — Hotfix: Trade Show Nav · Quote Constraint · Orders Workspace · Open Order
+PR-NS-19 completed the controlled live golden acceptance proof for `Setu Groups` / `Q-00025`. The full buyer revenue path is now proven through:
 
-Status: Completed
+```text
+Lead -> Quote -> Sent -> Accepted -> Draft Order / Contract Execution
+```
 
-Fixes applied:
-- `category_type: 'general'` → `'chips'` in `leads/server/actions.ts` — resolves constraint violation on inline quote wizard (edit quote, Terms/Review/Send Gate steps).
-- `/trade-events` added to `PRIMARY_LABELS` in `navigation.tsx` — Trade Events now visible in sidebar as "Events" with calendar icon.
-- "Trade Show" button added to global topbar (`app-shell.tsx`) beside + Quick Lead.
-- Orders empty state replaced: old `PageHeader`/`SectionCard` workspace replaced with full NS Orders Desk shell (topbar, stats strip, empty queue card with CTAs).
-- "Open order" button fixed: was `#anchor` scroll → now navigates to `leads?leadId=...&handoff=order-open&quoteId=...`.
-- Removed unused imports from orders page.
+This does **not** yet prove signed contract readiness, release readiness, dispatch, completion, or full RPC/RLS hardening.
 
+## Live verification baseline
 
-Goal: make Quotes, Orders, Pipeline, and Catalog look and feel like the redesign HTML, not just behave correctly.
+Supabase and Vercel were checked before PR-NS-19 mutation and repo changes.
 
-Completed alignment:
-- Quotes uses the shared NorthStar command hero, exact Quotes Workspace language, All/Buyers/Suppliers switch, Export, + New quote, status/date/company filters, KPI rhythm, approval queue, quote table, detail panel, FX/override visibility, and workflow CTAs from the quotes redesign.
-- Orders uses the shared NorthStar command hero, Orders Execution Desk language, Open order, View quote, Upload document, Export, All/Buyers/Suppliers switch, execution KPI cards, order lifecycle, blockers, and dispatch readiness context from the orders redesign.
-- Pipeline uses the redesign language for Pipeline / Risks and Kanban Board, with Quick Lead, Follow-up Queue, Dashboard link, blocker-first filters, KPI cards, lane board, stage movement guards, and quote/order handoff CTAs.
-- Catalog uses Catalog — Products, Pricing & Variants language, Products/Pricing/Spreadsheet modes, Export, Add product, Pricing gaps, KPI coverage, product table pricing columns, inline USD baseline editing, drawer editing, and quote-ready signals.
-- Shared workspace surface tokens were tightened so the four pages use the same rounded command-card, metric-card, CTA, and table-shell feel.
-- Internal DCC, Release Proof, root page, and NorthStar reference notes now mark PR-NS-07.5 complete and keep PR-NS-08 as the active next development step.
+- Supabase SETU Flow CRM project: `sjzfzloggabsmcuxktnl` — ACTIVE_HEALTHY.
+- Vercel project `setu-flow-crm` latest production deployment: `dpl_AbF8tddXDqGQKpKxiNMjLvpCx8rr` — READY.
+- Golden candidate before mutation: quote `Q-00025`, quote ID `b6f8111a-3b32-456d-92f0-412c898bf13b`, current version `7f8efd6b-6e19-4941-b974-a5fc61738b0f`, both quote and version status `sent`, with 11 quote lines and 11 version lines.
+- First acceptance attempt failed safely and rolled back because `contract_line_items.organization_id` was required but missing from the accepted-quote RPC insert.
+- Live RPC `app_ensure_contract_for_accepted_quote_tx` was patched and the same patch was added as a migration.
+- Controlled acceptance succeeded. Quote and version are now `accepted`.
+- Contract/order execution record created: `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`.
+- Contract line item count: `11`.
+- Communication proof: `5d2395f6-3a88-4399-b578-2142ac767f8a`.
+- Negotiation event proof: `5bbc4b7b-a6f7-4db6-99f2-d987da5f7260`.
+- Audit proof: `a4ac95ed-bf28-4853-aff8-f40678d4e9a8`.
+- Orders source query returned accepted quote `Q-00025` with contract `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` and execution state `draft`.
 
-Acceptance proof:
-- Quotes, Orders, Pipeline, and Catalog are now visually aligned to their redesign HTML patterns across command header, filters, KPI rhythm, CTAs, tables/cards, right/detail context, and workflow language.
-- Existing quote FX, quote override, order execution, pipeline gating, and catalog pricing logic were not changed.
+## Completed before this DCC refresh
 
-## Completed NorthStar sequence
+- PR-NS-01 to PR-NS-07.6 — Core NorthStar rebuild and visual parity sequence.
+- PR-NS-08 — Catalog-to-Quote data wiring hardening.
+- PR-NS-09 / 09A — Orders panel, hotfixes, trade events visibility, quote constraints, orders empty state.
+- PR-NS-10 — Vercel build proof and dispatch wiring posture.
+- PR-NS-11 — Schema category_type fix and code sweep.
+- PR-NS-12 — Mobile-first PWA shell.
+- PR-NS-13 — WhatsApp quote delivery posture.
+- PR-NS-14 — Offline trade-show capture posture.
+- PR-NS-16 — Premium mobile shell alignment.
+- PR-NS-16A — Investor-grade gap closure DCC refresh.
+- PR-NS-16B — Live Supabase/Vercel connector baseline and DCC prompt update.
+- PR-NS-17 — Sent quote outcome handoff fix.
+- PR-NS-18 — Golden demo data and RPC/RLS reconciliation.
+- PR-NS-19 — Controlled golden acceptance run and Orders proof.
 
-- PR-NS-01 — Leads foundation rebuild
-- PR-NS-02 — Lead Command Center workflow depth
-- PR-NS-02B — Leads Reference Fidelity Lock
-- PR-NS-03 — Quote Builder governed workflow
-- PR-NS-04 — Quotes Workspace rebuild
-- PR-NS-05 — Pipeline execution board rebuild
-- PR-NS-06 — Orders execution desk rebuild
-- PR-NS-07 — Catalog operational rebuild
-- PR-NS-07.5 — NorthStar visual parity hardening
+## Completed PR
 
-## Active next step
+### PR-NS-19 — Controlled golden acceptance run and Orders proof
 
-### PR-NS-08 — Catalog-to-Quote data wiring hardening
+Status: Complete.
+
+What changed:
+- Verified Q-00025 before mutation.
+- Confirmed the PR-NS-18 quote/version mismatch was already reconciled in live data.
+- Ran a guarded acceptance attempt and discovered a real contract-line schema blocker.
+- Patched `app_ensure_contract_for_accepted_quote_tx` so contract line items include `organization_id` and contract continuity fields.
+- Reran controlled acceptance successfully.
+- Updated DCC, demo, readiness, investor, and tracker files.
+- Restored the full 9-item PR queue in the DCC so later roadmap items are no longer hidden.
+
+Verification:
+- Live Supabase project/status/RPC/data checks were performed.
+- Live Vercel latest deployment state was checked.
+- Quote status, quote version status, accepted version, contract, contract line count, communication, negotiation event, audit log, and Orders source visibility were verified.
+- No `npm ci`, local typecheck, or local build was run.
+
+## Active next PR
+
+### PR-NS-20 — Quote/order RPC permission hardening and trigger search-path cleanup
+
+Priority: Critical / High
 
 Scope:
-- Harden catalog baselines into Quote Builder.
-- Carry selected product, variant, USD catalog baseline, market/currency, pricing tier, missing-price warnings, FX lock reuse, and override approval thresholds across create, edit, revise, and duplicate quote flows.
-- Preserve the visual parity layer completed in PR-NS-07.5.
+- Do role-safe hardening for quote/order RPC exposure flagged by Supabase advisors.
+- Revoke anon execution from quote/order SECURITY DEFINER RPCs where safe.
+- Preserve authenticated/server-side execution paths used by the app.
+- Add or verify `SET search_path TO public` for quote/order trigger functions.
+- Regression-test the golden accepted-order path after hardening.
+- Keep all DCC tabs and the full 9-item PR queue synchronized.
 
-## Next prompt
+## Queued PRs to 100%
 
-PR-NS-08 — Catalog-to-Quote data wiring hardening
+1. PR-NS-20 — Quote/order RPC permission hardening and trigger search-path cleanup.
+2. PR-NS-21 — Mobile promise alignment.
+3. PR-NS-22 — Order execution proof hardening.
+4. PR-NS-23 — Trade show wedge proof.
+5. PR-NS-24 — Integration proof mode.
+6. PR-NS-25 — First-login and empty-state hardening.
+7. PR-NS-26 — Claim reconciliation and investor script lock.
+8. PR-NS-27 — Final 100% verification pass.
+9. PR-NS-28 — Post-lock launch rehearsal and regression buffer.
 
-### PR-NS-07.6 — Vercel build recovery + redesign reference lock
+## Mandatory build-output rule
 
-Status: Completed in this repo pass.
-
-- Fixed the Pipeline board production type failure from the visual parity pass by adding an explicit visual stage group model that exposes the representative `stage` and filtered lane `leads` used by the NorthStar board renderer.
-- Preserved the grouped-stage pipeline behavior used to avoid duplicate buyer/supplier lanes.
-- Re-locked the four attached redesign HTML files into `/public/reference-html/` for Quotes, Orders, Pipeline, and Catalog so the repo references match the latest uploaded designs.
-- Visual/functionality review found remaining parity work is mostly exact interaction/data wiring, not the shell rhythm: Catalog drawer/wizard behavior, Orders document upload state, Pipeline drag/drop persistence, and Quotes version/revise/approval persistence need PR-NS-08+ hardening.
-
-Next active development remains PR-NS-08 — Catalog-to-Quote data wiring hardening.
+Every future build must return the full updated repo zip and include the next prompt in `public/internal-dcc/index.html`. Do not run `npm ci` unless explicitly requested.

@@ -1,8 +1,7 @@
 # Golden Demo Path
 
-## Purpose
-
-This file defines the one canonical buyer/investor path that should be used in demos after PR-31.
+Updated: 2026-04-30  
+Baseline: PR-NS-19 Controlled Golden Acceptance Run and Orders Proof
 
 ## Canonical path
 
@@ -10,47 +9,45 @@ This file defines the one canonical buyer/investor path that should be used in d
 Capture / Lead
 -> Product or Category Interest
 -> Quote from catalog baseline
--> Override only if needed
--> Override reason required
--> Approval required when policy threshold is met
+-> Sent quote
 -> Accepted quote
 -> Order / Contract
 -> Execution
 ```
 
-## Why this is the best path already present in the repo
+## Named live golden journey
 
-This path is the most coherent because it matches the current code and documentation posture instead of inventing an idealized future flow.
+PR-NS-19 completed the controlled live acceptance run for the approved golden candidate.
 
-### Step-by-step rationale
+| Demo object | Live value |
+|---|---|
+| Lead | `Setu Groups` / `Ritesh Kapoor` |
+| Lead ID | `262ddf46-ecfe-4385-aaf5-18387d2a79f9` |
+| Quote | `Q-00025` |
+| Quote ID | `b6f8111a-3b32-456d-92f0-412c898bf13b` |
+| Current / accepted version | `7f8efd6b-6e19-4941-b974-a5fc61738b0f` |
+| Contract / order execution record | `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` |
+| Commercial lines | 11 quote lines, 11 quote-version lines, 11 contract lines |
 
-1. **Lead capture exists and is commercially legible.**
-2. **Interest is attached to the commercial record, not hidden in freeform notes.**
-3. **Quote starts from catalog truth.**
-4. **Override logic is governed, not silent.**
-5. **Approval remains part of the story where policy requires it.**
-6. **Accepted quote is the handoff into Orders.**
-7. **Contract/order continuity preserves line-level commercial truth.**
-8. **Execution continues the record, even though proof maturity still needs work.**
+## Current proof level
 
-## Proven checkpoints
-
-| Checkpoint | State | Why |
+| Checkpoint | State | Evidence |
 |---|---|---|
-| Catalog baseline | Proven | Product pricing is treated as upstream truth. |
-| Override reason | Proven | Quote workflow validates reason capture for overridden lines. |
-| Approval posture | Proven | Approval state is explicitly modeled and validated when required. |
-| Accepted quote to Orders | Proven | Orders is scoped to accepted quotes. |
-| Contract continuity | Proven | Contracts link by `quote_id` and preserve line-level commercial values. |
+| Lead exists | Proven live | Named buyer record exists. |
+| Quote exists | Proven live | `Q-00025` exists with 11 line items. |
+| Sent quote | Proven live before acceptance | Parent quote and current version were both `sent` before PR-NS-19 mutation. |
+| Accepted outcome | Proven live | `quotes.status=accepted`, `quote_versions.status=accepted`, and `quotes.accepted_version_id=7f8efd6b-6e19-4941-b974-a5fc61738b0f`. |
+| Order / contract handoff | Proven live | Contract `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` exists for quote `Q-00025`. |
+| Execution workspace source visibility | Proven by source query | The Orders source query can return accepted quote `Q-00025` with contract `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` and execution state `draft`. |
 
-## Inferred or incomplete checkpoints
+## Demo script note
 
-| Checkpoint | State | Why |
-|---|---|---|
-| Best approval-required accepted sample | Inferred | The workflow supports it, but the cleanest seeded demo record still needs stronger showcase quality. |
-| Strong execution maturity | Partial | States and blockers exist, but visible runtime examples are still light. |
-| Integration-backed end-to-end proof | Open | This remains a future pass. |
+Use this investor-safe wording:
 
-## Demo rule
+> “This is the live golden buyer journey for Setu Groups. The quote Q-00025 moved from sent to accepted, created a contract/order execution record, and carried all 11 commercial lines into the execution workspace. The order is now in draft execution posture, ready for the next proof layer: document blockers, commercial lock evidence, release readiness, and dispatch controls.”
 
-When presenting this path, do not add optional branches unless they strengthen understanding. The purpose of this file is to keep the demo story clean, singular, and non-technical.
+Do not claim dispatch or completion is proven yet. PR-NS-19 proves accepted quote to draft order execution handoff, not shipment execution.
+
+## Operational rule
+
+Future demo/data PRs must keep these IDs current in this file, `docs/DEMO_DATA_AUDIT.md`, `docs/PR_TRACKER.md`, and `public/internal-dcc/index.html`. If the live record is changed, record the before/after state and whether production data was mutated.

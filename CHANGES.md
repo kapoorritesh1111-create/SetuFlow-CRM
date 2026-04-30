@@ -1,40 +1,28 @@
-# Trade Show PR 4 Build Fix — Pending proof
+# PR-NS-16B — Live Connector DCC Baseline
 
-## Status
-- TS-4 Pending proof
-- Build-fix pass for Vercel type error in dashboard active event strip.
-- No npm commands were run.
+Date: 2026-04-30
 
-## Root cause
-- The dashboard active trade-event strip queried `trade_events` through the typed Supabase client, but the narrowed result was inferred as `never[]` during Vercel type checking.
-- The failure surfaced at `activeEvents.map((event) => event.id)` in `src/app/(app)/dashboard/_lib/render-dashboard-page.tsx`.
+Changed:
+- Updated the DCC operating model now that Supabase and Vercel are connected to GPT.
+- Tested Supabase access and confirmed SETU Flow CRM project `sjzfzloggabsmcuxktnl` is ACTIVE_HEALTHY.
+- Tested Vercel access and confirmed team `team_FUuclvXHj0efPiI9SQJvY1nK` and project `prj_j3kkTnBcjXKyLLEw9IEMXBfVzfFG` are accessible.
+- Recorded latest observed Vercel production deployment `dpl_AbF8tddXDqGQKpKxiNMjLvpCx8rr` as READY.
+- Added `docs/LIVE_CONNECTOR_DEVELOPMENT_BASELINE.md`.
+- Updated PR tracker, release readiness, investor readiness, and PR-NS-17+ gap closure plan to require live Supabase/Vercel verification when relevant.
+- Updated internal DCC prompt requirements so future builds record live verification results.
 
-## Schema/reference review
-- Confirmed `docs/Current Schema.md` includes the trade-show fields used by the feature:
-  - `trade_events.id`, `name`, `starts_on`, `ends_on`, `capture_defaults`
-  - `trade_event_entries.trade_event_id`, `captured_at`, `status`, `converted_lead_id`
-  - `leads.trade_event_id`, `deal_value`, `deal_currency`, `next_follow_up_at`
-  - `quotes.lead_id`
-  - `contracts.lead_id`, `quote_id`, `status`
-- Confirmed the failing dashboard query only needs `id`, `name`, `starts_on`, and `ends_on`, all present in the current schema/reference files.
+No application runtime code was changed in this pass.
 
-## Changes
-- Added explicit local row types for dashboard active trade events and same-day entry counts.
-- Routed the active trade-event strip Supabase calls through typed local result casts so Vercel no longer sees `event` as `never`.
-- Preserved the existing active event banner behavior and capture URL shape.
-- Kept the TS-4 ROI panel and NorthStar/DCC deferred offline-capture note from the previous package.
+No `npm ci` was run.
 
-## Files touched
-- `src/app/(app)/dashboard/_lib/render-dashboard-page.tsx`
-- `CHANGES.md`
+# PR-NS-16A — Investor-Grade Gap Closure DCC Refresh
 
-## Verification
-```bash
-grep -n "ActiveTradeEventRow\|TradeEventEntryCountRow\|activeEventRows" src/app/(app)/dashboard/_lib/render-dashboard-page.tsx
-grep -n "eventIds = activeEvents.map" src/app/(app)/dashboard/_lib/render-dashboard-page.tsx
-grep -n "ROI\|roi\|Event performance\|event.*performance" src/app/(app)/trade-events/page.tsx
-grep -n "Conversion rate\|conversion.*rate\|Orders placed" src/app/(app)/trade-events/page.tsx
-```
+Date: 2026-04-30
 
-## Build note
-- A full Next/Vercel build was not run because this handoff requested no npm commands, and the attached repo zip does not include `node_modules`.
+Changed:
+- Replaced optimistic DCC readiness posture with investor-grade truth reset.
+- Added critical/high/medium/low/nice-to-have PR ladder from PR-NS-17 through PR-NS-25.
+- Added mandatory future-build rules: update DCC in all affected tabs, list changed files, return full repo zip, include next prompt, and do not run `npm ci`.
+- Updated PR tracker, release readiness, investor readiness, and added the dedicated gap closure plan doc.
+
+No application runtime code was changed in this pass.

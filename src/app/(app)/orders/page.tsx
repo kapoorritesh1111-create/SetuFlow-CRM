@@ -240,7 +240,7 @@ function dispatchGate(controls: OrderOperationalControlState): { label: string; 
 function decodeNotice(noticeKey: string | null) {
   if (!noticeKey) return null;
   if (noticeKey === 'quote-accepted' || noticeKey === 'quote-sent') {
-    return { title: 'Quote moved into Orders', description: 'The sent quote is now visible in the order workspace so the team can verify documents, compliance, and execution readiness.', tone: 'success' as const };
+    return { title: 'Quote moved into Orders', description: 'The accepted quote is now visible in the order workspace so the team can verify documents, compliance, and execution readiness.', tone: 'success' as const };
   }
   if (noticeKey.startsWith('order-state-progressed:')) {
     const state = noticeKey.split(':')[1] ?? 'updated';

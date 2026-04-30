@@ -28,6 +28,7 @@ import { FilterField } from "@/features/quotes/ui/filter-field";
 import { formatQuoteMoney } from "@/features/quotes/logic/formatting";
 import {
   logQuoteNegotiationResponse,
+  recordQuoteOutcomeWorkflow,
   updateQuoteWorkflow,
 } from "@/features/quotes/server/actions";
 import {
@@ -699,8 +700,8 @@ function getOutcomeAction(
     label: outcome === "accepted" ? "Mark accepted" : "Mark rejected",
     description:
       outcome === "accepted"
-        ? "Record the customer win and move the commercial flow into the order workspace."
-        : "Log a lost or declined quote without digging through the full editor.",
+        ? "Record the customer win through the guarded outcome path and move the commercial flow into Orders without reopening quote editing."
+        : "Log a lost or declined quote through the guarded outcome path without reopening quote editing.",
     run: {
       status: outcome,
       approvalRequired,
@@ -1538,7 +1539,12 @@ export function QuoteWorkspace({
     setWorkflowNotice(null);
     setQuickActionQuoteId(quote.id);
     startWorkflowTransition(() => {
-      void updateQuoteWorkflow(
+      const normalizedActionStatus = String(action.run?.status ?? "").trim().toLowerCase();
+      const workflowAction =
+        normalizedActionStatus === "accepted" || normalizedActionStatus === "rejected"
+          ? recordQuoteOutcomeWorkflow
+          : updateQuoteWorkflow;
+      void workflowAction(
         undefined,
         buildQuickWorkflowFormData(quote, action.run!),
       )
@@ -1555,7 +1561,7 @@ export function QuoteWorkspace({
           if (resultRecord) upsertQuoteRecord(resultRecord as QuoteRecord);
           setComposer(null);
           setComposerNote("");
-          const normalizedStatus = String(action.run?.status ?? "").trim().toLowerCase();
+          const normalizedStatus = normalizedActionStatus;
           const successDescription =
             result?.success ??
             `${action.label} completed for quote ${quote.id.slice(0, 8)}.`;
@@ -1566,11 +1572,13 @@ export function QuoteWorkspace({
             description:
               normalizedStatus === "accepted"
                 ? `${successDescription} Opening the order workspace for execution follow-through.`
-                : successDescription,
+                : normalizedStatus === "rejected"
+                  ? `${successDescription} Quote editing stays locked; use a revision flow for any new commercial version.`
+                  : successDescription,
           });
 
           if (normalizedStatus === "accepted") {
-            window.location.assign(`/orders?notice=quote-accepted`);
+            window.location.assign(`/orders?notice=quote-accepted&quoteId=${quote.id}`);
             return;
           }
         })
