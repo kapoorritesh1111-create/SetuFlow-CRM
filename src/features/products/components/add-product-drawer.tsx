@@ -110,7 +110,7 @@ export function AddProductDrawer({ open, onClose, onCreated }: Props) {
         category_id: form.categoryId,
         brand_name: form.brandName.trim() || null,
         description: form.description.trim() || null,
-        pricing_type: form.pricingType,
+        pricing_type: form.pricingMode,  // 'unit' or 'kg'
         variant: {
           sku_code: form.skuCode.trim(),
           pack_label: form.packLabel.trim(),
@@ -172,9 +172,9 @@ export function AddProductDrawer({ open, onClose, onCreated }: Props) {
 
           <label className="space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Pricing type</span>
-            <select value={form.pricingType} onChange={(e) => setField('pricingType', e.target.value as FormState['pricingType'])} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400">
-              <option value="chips">Chips / snacks</option>
-              <option value="powders">Powders</option>
+            <select value={form.pricingMode} onChange={(e) => setField('pricingMode', e.target.value as FormState['pricingMode'])} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400">
+              <option value="unit">Unit / Case pricing</option>
+              <option value="kg">Per-KG pricing</option>
             </select>
           </label>
 

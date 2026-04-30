@@ -236,9 +236,9 @@ function AddProductModal({
 
           <label className="space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Pricing type</span>
-            <select value={draft.pricingType} onChange={(event) => onChange('pricingType', event.target.value as InlineProductDraft['pricingType'])} className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-300">
-              <option value="chips">Chips / snacks</option>
-              <option value="powders">Powders</option>
+            <select value={draft.pricingMode} onChange={(event) => onChange('pricingMode', event.target.value as InlineProductDraft['pricingMode'])} className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-300">
+              <option value="unit">Unit / Case pricing</option>
+              <option value="kg">Per-KG pricing</option>
             </select>
           </label>
 
@@ -471,7 +471,7 @@ export default function LeadQuickEditDrawer({
         name: newProductDraft.name.trim(),
         category_id: newProductDraft.categoryId,
         brand_name: newProductDraft.brandName.trim() || null,
-        pricing_type: newProductDraft.pricingType,
+        pricing_type: newProductDraft.pricingMode,  // 'unit' or 'kg'
         variant: {
           sku_code: newProductDraft.skuCode.trim(),
           pack_label: newProductDraft.packLabel.trim(),
@@ -503,7 +503,7 @@ export default function LeadQuickEditDrawer({
       setNewProductDraft((current) => ({
         ...INITIAL_INLINE_PRODUCT_DRAFT,
         categoryId: current.categoryId,
-        pricingMode: current.pricingType,
+        pricingMode: current.pricingMode,
       }))
       setMessage(`Added ${createdProduct.name} and selected it in coverage.`)
     } catch (saveError) {
