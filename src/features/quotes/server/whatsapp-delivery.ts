@@ -11,7 +11,7 @@ function appBaseUrl() {
   return (
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}` ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
     'http://localhost:3000'
   ).replace(/\/$/, '');
 }
@@ -48,7 +48,7 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
   const currency = version?.display_currency ?? quote.display_currency ?? quote.currency ?? 'USD';
   const lineItems = Array.isArray(lines) ? lines : [];
   const total = lineItems.reduce((sum: number, line: any) => sum + Number(line.final_case_price ?? line.final_kg_price ?? line.final_unit_price ?? 0), 0);
-  const productSummary = lineItems.map((line: any) => line.product_name ?? line.description).filter(Boolean).slice(0, 4).join(', ') || `${version?.total_line_count ?? lineItems.length || 0} line items`;
+  const productSummary = lineItems.map((line: any) => line.product_name ?? line.description).filter(Boolean).slice(0, 4).join(', ') || `${version?.total_line_count ?? (lineItems.length || 0)} line items`;
   const shareUrl = `${appBaseUrl()}/api/quotes/${quote.id}/share`;
   const validity = version?.valid_until ? new Date(version.valid_until).toISOString().slice(0, 10) : '7 days';
   const buyerName = lead.contact_name || lead.company_name || 'there';

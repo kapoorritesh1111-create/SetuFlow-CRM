@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>SETU Flow DCC — Apr 29 2026 · PR-NS-14 Complete · Offline Capture + Build Green</title>
+  <title>SETU Flow DCC — Apr 29 2026 · PR-NS-14 Complete · Offline Capture + Build Fix</title>
   <style>
     :root{--bg:#f2f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--mu:#64748b;--brand:#0c7fff;--good:#059669;--warn:#d97706;--bad:#dc2626;--violet:#7c3aed;--teal:#0d9488;--sh:0 4px 18px rgba(15,23,42,.07);--r:18px}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.55}
@@ -44,8 +44,8 @@
 
 <div class="hero">
   <div class="hero-ey">SETU Flow Internal DCC &middot; NS-14 Complete &middot; Apr 29 2026</div>
-  <h1>NS-14 complete &mdash; offline trade-show capture · IndexedDB queue · reconnect sync · build green</h1>
-  <p>NS-14 complete Apr 29 2026. Offline capture implemented on top of the PR-NS-13 baseline: service worker capture cache, raw IndexedDB offline lead queue, mobile capture offline-save path, reconnect sync endpoint, top-bar offline indicator, duplicate skip behavior, and internal DCC updated. Vercel build green pending deployment verification.</p>
+  <h1>NS-14 complete &mdash; offline trade-show capture · IndexedDB queue · reconnect sync · build fix</h1>
+  <p>NS-14 complete Apr 29 2026. Offline capture implemented on top of the PR-NS-13 baseline: service worker capture cache, raw IndexedDB offline lead queue, mobile capture offline-save path, reconnect sync endpoint, top-bar offline indicator, duplicate skip behavior, and internal DCC updated. Vercel build fix pending deployment verification.</p>
   <div class="pills">
     <span class="pill g">Vercel build — Green ✓</span>
     <span class="pill g">NS-12 Mobile PWA — Complete ✓</span>
@@ -215,8 +215,8 @@
     <tr><td><code>PR-NS-09</code></td><td>Order Detail Panel + data fixes</td><td><span class="s good">Done · Apr 29</span></td><td>Panel wired to server actions, category_type catalog, accepted_version_id</td></tr>
     <tr><td><code>PR-NS-10</code></td><td>Vercel build proof + live dispatch status</td><td><span class="s good">Partial · Apr 29</span></td><td>Vercel build ✓ completed. Live dispatch wired, Supabase proof pending.</td></tr>
     <tr><td><code>PR-NS-11</code></td><td>Schema: category_type free text + code sweep</td><td><span class="s good">Done · Apr 29</span></td><td>DROP constraint from product_pricing_rules + quote_version_line_items. Make nullable. CategoryType=string. TemplateType=unit_case|kg|mixed. 14 files fixed. 3 Vercel build error passes.</td></tr>
-    <tr><td><code>PR-NS-12</code></td><td>Mobile-first PWA shell</td><td><span class="s good">Done · Apr 29</span></td><td>manifest.json, mobile bottom tabs, Quick Lead FAB, desktop redirects, dashboard KPI mobile grid, touch targets, DCC update, Vercel build green.</td></tr>
-    <tr><td><code>PR-NS-13</code></td><td>WhatsApp quote delivery</td><td><span class="s good">Done · Apr 29</span></td><td>Lead whatsapp_number field, WhatsApp form/display, primary wa.me send, communications logging, quote share route, DCC update, Vercel build green.</td></tr>
+    <tr><td><code>PR-NS-12</code></td><td>Mobile-first PWA shell</td><td><span class="s good">Done · Apr 29</span></td><td>manifest.json, mobile bottom tabs, Quick Lead FAB, desktop redirects, dashboard KPI mobile grid, touch targets, DCC update, Vercel build fix.</td></tr>
+    <tr><td><code>PR-NS-13</code></td><td>WhatsApp quote delivery</td><td><span class="s good">Done · Apr 29</span></td><td>Lead whatsapp_number field, WhatsApp form/display, primary wa.me send, communications logging, quote share route, DCC update, Vercel build fix.</td></tr>
     <tr><td><code>PR-NS-14</code></td><td>Offline trade-show capture</td><td><span class="s good">Done · Apr 29</span></td><td>Service worker, IndexedDB queue, offline capture save, reconnect sync, offline indicator, duplicate skip, DCC update.</td></tr>
     <tr><td><code>PR-NS-14</code></td><td>Offline lead capture (PWA)</td><td><span class="s deferred">Next cycle</span></td><td>Service worker, IndexedDB offline queue, background sync on reconnect.</td></tr>
   </tbody></table></div>
@@ -233,10 +233,10 @@
 
 COMPLETED SO FAR:
 - NS-09: Order Detail Panel, category_type catalog derivation, accepted_version_id
-- NS-10: Vercel build green, live dispatch wired (needs Supabase proof)
+- NS-10: Vercel build fix, live dispatch wired (needs Supabase proof)
 - NS-11: category_type CHECK constraint DROPPED from product_pricing_rules +
   quote_version_line_items. CategoryType = string. TemplateType = unit_case|kg|mixed.
-  14 files fixed. 057 migration applied to live DB. Vercel build green.
+  14 files fixed. 057 migration applied to live DB. Vercel build fix.
 
 MOBILE REFERENCE SCREENS ALREADY PRODUCED (in public/reference-html/):
   setuflow-mobile-dashboard.html     — Dashboard (done)
@@ -290,7 +290,7 @@ PRIORITIES FOR PR-NS-12:
 7. INTERNAL DCC UPDATE
    Update public/internal-dcc/index.html — mark NS-12 done.
 
-Return: updated repo zip + updated DCC + confirm Vercel build green.</pre></div>
+Return: updated repo zip + updated DCC + confirm Vercel build fix.</pre></div>
     </div>
 
     <!-- NS-13 -->
@@ -301,7 +301,7 @@ Return: updated repo zip + updated DCC + confirm Vercel build green.</pre></div>
 COMPLETED SO FAR:
 - NS-11: category_type schema fixed. CategoryType=string. Build green.
 - NS-12: Mobile PWA — manifest, bottom tab bar, FAB, dashboard responsive,
-  desktop redirect component. Vercel build green.
+  desktop redirect component. Vercel build fix.
 
 CONTEXT — WHY WHATSAPP:
 70% of target market (SME food exporters) communicates via WhatsApp.
@@ -351,7 +351,7 @@ PRIORITIES FOR PR-NS-13:
 7. INTERNAL DCC UPDATE
    Update public/internal-dcc/index.html — mark NS-13 done.
 
-Return: updated repo zip + updated DCC + confirm Vercel build green.</pre></div>
+Return: updated repo zip + updated DCC + confirm Vercel build fix.</pre></div>
     </div>
 
     <!-- NS-14 -->
@@ -421,7 +421,7 @@ PRIORITIES FOR PR-NS-14:
 7. INTERNAL DCC UPDATE
    Update public/internal-dcc/index.html — mark NS-14 done.
 
-Return: updated repo zip + updated DCC + confirm Vercel build green.</pre></div>
+Return: updated repo zip + updated DCC + confirm Vercel build fix.</pre></div>
     </div>
 
     <!-- NS-15 (live dispatch validation) -->
@@ -598,7 +598,7 @@ WHERE qvli.product_id = p.id AND qvli.category_type IN ('chips', 'powders');
 COMMIT;</pre></div>
     </div>
 
-    <div class="co g" style="margin-top:10px"><strong>All code changes shipped in NS-11.</strong> CategoryType = string. TemplateType = unit_case|kg|mixed. pricingMode drives all business logic. 14 files fixed. Vercel build green. No further code changes needed for this migration.</div>
+    <div class="co g" style="margin-top:10px"><strong>All code changes shipped in NS-11.</strong> CategoryType = string. TemplateType = unit_case|kg|mixed. pricingMode drives all business logic. 14 files fixed. Vercel build fix. No further code changes needed for this migration.</div>
   </div>
 </div>
 <!-- END SCHEMA FIX TAB -->
