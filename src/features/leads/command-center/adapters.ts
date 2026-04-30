@@ -366,6 +366,7 @@ export function toLeadProfileSnapshot(data: LeadProfileData): LeadProfileSnapsho
       contactName: data.lead?.contact_name ?? null,
       email: data.lead?.email ?? null,
       phone: data.lead?.phone ?? null,
+      whatsappNumber: (data.lead as any)?.whatsapp_number ?? null,
       country: data.lead?.country ?? null,
     },
     pricingReadiness,

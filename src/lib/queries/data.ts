@@ -1245,7 +1245,7 @@ export async function getDashboardData(
       supabase
       	.from('leads')
 		.select(
-				'id, company_name, contact_name, job_title, email, phone, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, last_contacted_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code'
+				'id, company_name, contact_name, job_title, email, phone, whatsapp_number, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, last_contacted_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code'
 				)
         .eq('organization_id', organizationId),
       supabase
@@ -2172,7 +2172,7 @@ export async function getLeadsPageData(organizationId: string): Promise<LeadsPag
       supabase
         .from('leads')
         .select(
-          'id, company_name, contact_name, job_title, email, phone, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, last_contacted_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code'
+          'id, company_name, contact_name, job_title, email, phone, whatsapp_number, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, last_contacted_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code'
         )
         .eq('organization_id', organizationId)
         .order('next_follow_up_at', { ascending: true, nullsFirst: false })
@@ -2575,7 +2575,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     supabase
       .from('leads')
       .select(
-        'id, company_name, contact_name, job_title, email, phone, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code'
+        'id, company_name, contact_name, job_title, email, phone, whatsapp_number, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code'
       )
       .eq('organization_id', organizationId)
       .eq('id', leadId)

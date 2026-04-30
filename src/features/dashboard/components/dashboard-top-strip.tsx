@@ -29,7 +29,7 @@ export function DashboardTopStrip({ kpis, mode = 'all' }: Props) {
   const display = filtered.length >= 2 ? filtered : kpis;
 
   return (
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Commercial signals">
+    <section className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-5" aria-label="Commercial signals">
       {display.map((kpi) => {
         const style = intentStyles[kpi.intent ?? 'default'];
         const trendArrow = kpi.trendDirection === 'up' ? '↑' : kpi.trendDirection === 'down' ? '↓' : '•';

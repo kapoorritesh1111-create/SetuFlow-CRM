@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database as GeneratedDatabase } from '@/types/database.generated';
+import { SendWhatsAppQuoteButton } from '@/features/quotes/components/send-whatsapp-quote-button';
 
 function readParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -132,7 +133,7 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
   const [{ data: lead }, { data: versions }] = await Promise.all([
     typedSupabase
       .from('leads')
-      .select('id, company_name, contact_name')
+      .select('id, company_name, contact_name, whatsapp_number')
       .eq('organization_id', workspace.organization.id)
       .eq('id', quote.lead_id)
       .maybeSingle(),
@@ -216,11 +217,20 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
 
         <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Send actions</p>
-          <p className="mt-2 text-sm text-slate-500">Confirming send updates the quote status and ingests the order into the execution desk without creating duplicates.</p>
-          <form action={confirmAndSendQuote} className="mt-6 space-y-3">
+          <p className="mt-2 text-sm text-slate-500">WhatsApp is the primary send path for SME exporters. Email stays available as a secondary delivery action.</p>
+          <div className="mt-6 space-y-3">
+            {(lead as any)?.whatsapp_number ? (
+              <SendWhatsAppQuoteButton quoteId={quote.id} leadId={quote.lead_id} organizationId={workspace.organization.id} />
+            ) : (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Add a WhatsApp number on the lead before using WhatsApp delivery.
+              </div>
+            )}
+          </div>
+          <form action={confirmAndSendQuote} className="mt-3 space-y-3">
             <input type="hidden" name="quote_id" value={quote.id} />
-            <button type="submit" className="flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
-              Confirm &amp; Send
+            <button type="submit" className="flex min-h-11 w-full items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              Send via Email
             </button>
             <Link href="/quotes" className="flex w-full items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
               Back to quotes

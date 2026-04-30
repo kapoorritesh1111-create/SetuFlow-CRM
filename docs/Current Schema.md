@@ -590,6 +590,7 @@ CREATE TABLE public.leads (
   country_id uuid,
   phone_country_code text,
   phone_secondary_country_code text,
+  whatsapp_number text,
   CONSTRAINT leads_pkey PRIMARY KEY (id),
   CONSTRAINT leads_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id),
   CONSTRAINT leads_country_id_fkey FOREIGN KEY (country_id) REFERENCES public.countries(id),

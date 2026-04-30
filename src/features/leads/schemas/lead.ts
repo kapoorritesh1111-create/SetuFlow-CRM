@@ -8,6 +8,7 @@ export const leadSchema = z.object({
   job_title: z.string().optional(),
   email: z.union([z.string().email(), z.literal('')]).optional(),
   phone: z.string().optional(),
+  whatsapp_number: z.string().optional(),
   phone_secondary: z.string().optional(),
   phone_country_code: z.string().optional(),
   phone_secondary_country_code: z.string().optional(),

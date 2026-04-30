@@ -87,6 +87,7 @@ export type LeadIdentity = {
   contactName?: string | null
   email?: string | null
   phone?: string | null
+  whatsappNumber?: string | null
   country?: string | null
 }
 

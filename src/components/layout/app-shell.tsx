@@ -5,6 +5,9 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import QRCode from 'qrcode';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { ShellNavigation } from '@/components/layout/shell/navigation';
+import { MobileTabBar } from '@/components/shell/MobileTabBar';
+import { DesktopRedirect } from '@/components/shell/DesktopRedirect';
+import { OfflineIndicator } from '@/components/shell/OfflineIndicator';
 import { getRouteMeta } from '@/components/layout/shell/route-meta';
 import { getWorkspaceBasePath, getWorkspaceModeFromLocation, withWorkspaceMode, withWorkspaceModePreservedParams } from '@/components/layout/shell/utils';
 import { cn, getInitials } from '@/lib/utils';
@@ -42,6 +45,8 @@ export function AppShell({
   const workspaceMode = getWorkspaceModeFromLocation(pathname, searchParams.get('mode'));
   const workspaceBasePath = getWorkspaceBasePath(pathname);
   const showWorkspaceModeSwitch = routeMeta.showWorkspaceModeSwitch ?? true;
+  const desktopOnlyRoutes = ['/pipeline', '/quotes', '/products', '/admin', '/approval-send', '/reports'];
+  const isDesktopOnlyRoute = desktopOnlyRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
   const topbarDate = useMemo(
     () => new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
     [],
@@ -139,7 +144,7 @@ export function AppShell({
       </a>
 
       {mobileNavOpen ? (
-        <div className="fixed inset-0 z-[60] lg:hidden">
+        <div className="fixed inset-0 z-[60] md:hidden">
           <button
             type="button"
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
@@ -207,21 +212,21 @@ export function AppShell({
         </div>
       ) : null}
 
-      <div className="grid min-h-screen grid-cols-1 gap-0 px-0 lg:grid-cols-[72px_minmax(0,1fr)] lg:px-4 lg:py-4 xl:px-5">
-        <aside className="hidden flex-col rounded-[2rem] border border-[#d9e2ec] bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.10)] lg:sticky lg:top-4 lg:flex lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      <div className="grid min-h-screen grid-cols-1 gap-0 px-0 md:grid-cols-[72px_minmax(0,1fr)] md:px-4 md:py-4 xl:px-5">
+        <aside className="hidden flex-col rounded-[2rem] border border-[#d9e2ec] bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:sticky md:top-4 md:flex md:h-[calc(100vh-2rem)] md:overflow-y-auto">
           {sidebar}
         </aside>
 
-        <main id="app-content" className="relative min-w-0 overflow-x-clip lg:pl-5 xl:pl-6">
-          <div className="min-h-screen lg:rounded-[2rem] lg:border lg:border-white/80 lg:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.98))] lg:shadow-[0_24px_70px_rgba(15,23,42,0.10)] lg:ring-1 lg:ring-slate-950/[0.03]">
-            <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur lg:rounded-t-[2rem]">
-              <div className="px-4 py-3.5 sm:px-6 lg:px-7 xl:px-9">
+        <main id="app-content" className="relative min-w-0 overflow-x-clip md:pl-5 xl:pl-6">
+          <div className="min-h-screen md:rounded-[2rem] md:border md:border-white/80 md:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.98))] md:shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:ring-1 lg:ring-slate-950/[0.03]">
+            <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur md:rounded-t-[2rem]">
+              <div className="px-4 py-3.5 sm:px-6 md:px-7 xl:px-9">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setMobileNavOpen(true)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-[1rem] border border-slate-200 bg-white text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.08)] hover:bg-slate-50 lg:hidden"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-[1rem] border border-slate-200 bg-white text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.08)] hover:bg-slate-50 md:hidden"
                       aria-label="Open navigation"
                       aria-expanded={mobileNavOpen}
                     >
@@ -242,6 +247,7 @@ export function AppShell({
                   </div>
 
                   <div className="flex flex-wrap items-center justify-end gap-2">
+                    <OfflineIndicator />
                     <button
                       type="button"
                       onClick={() => setVcardModalOpen(true)}
@@ -294,10 +300,15 @@ export function AppShell({
                 </div>
               </div>
             </header>
-            <div className="relative px-4 py-4 sm:px-6 lg:px-7 xl:px-8">{children}</div>
+            <div className="relative px-4 py-4 sm:px-6 md:px-7 xl:px-8">
+              {isDesktopOnlyRoute ? <DesktopRedirect /> : null}
+              <div className={isDesktopOnlyRoute ? 'hidden md:block' : undefined}>{children}</div>
+            </div>
           </div>
         </main>
       </div>
+      <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} aria-label="Quick Lead" className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#0c7fff] text-2xl font-semibold text-white shadow-[0_16px_38px_rgba(12,127,255,0.42)] md:hidden">＋</a>
+      <MobileTabBar />
     </div>
   );
 }

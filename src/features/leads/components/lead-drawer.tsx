@@ -236,6 +236,7 @@ export function LeadDrawer({
   const [jobTitle, setJobTitle] = useState<string>(lead?.job_title ?? '');
   const [email, setEmail] = useState<string>(lead?.email ?? '');
   const [phone, setPhone] = useState<string>(lead?.phone ?? '');
+  const [whatsappNumber, setWhatsappNumber] = useState<string>((lead as any)?.whatsapp_number ?? '');
   const [phoneSecondary, setPhoneSecondary] = useState<string>(lead?.phone_secondary ?? '');
   const [website, setWebsite] = useState<string>(lead?.website ?? '');
   const [tradeEventId, setTradeEventId] = useState<string>(lead?.trade_event_id ?? '');
@@ -379,6 +380,7 @@ export function LeadDrawer({
     setContactName(lead?.contact_name ?? '');
     setEmail(lead?.email ?? '');
     setPhone(lead?.phone ?? '');
+    setWhatsappNumber((lead as any)?.whatsapp_number ?? '');
     setTradeEventId(lead?.trade_event_id ?? '');
     setPipelineId(lead?.pipeline_id ?? '');
     setStageId(lead?.stage_id ?? '');
@@ -814,6 +816,7 @@ export function LeadDrawer({
     formData.set('job_title', jobTitle);
     formData.set('email', email);
     formData.set('phone', phone);
+    formData.set('whatsapp_number', whatsappNumber);
     formData.set('phone_secondary', phoneSecondary);
     formData.set('website', website);
     formData.set('trade_event_id', tradeEventId);
@@ -1077,6 +1080,7 @@ export function LeadDrawer({
       <input type="hidden" name="contact_name" value={contactName} />
       <input type="hidden" name="email" value={email} />
       <input type="hidden" name="phone" value={phone} />
+      <input type="hidden" name="whatsapp_number" value={whatsappNumber} />
       <input type="hidden" name="trade_event_id" value={tradeEventId} />
       <input type="hidden" name="pipeline_id" value={pipelineId} />
       <input type="hidden" name="stage_id" value={stageId} />
@@ -1465,13 +1469,17 @@ export function LeadDrawer({
                 <div>
                   <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Email</label>
                   <input name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@company.com"
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                    style={{ width: '100%', minHeight: '44px', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginTop: '8px', marginBottom: '4px' }}>📱 WhatsApp</label>
+                  <input name="whatsapp_number" inputMode="tel" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} placeholder="+91 98765 43210"
+                    style={{ width: '100%', minHeight: '44px', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Phone</label>
-                  <input name="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+49 151…"
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
+                  <input name="phone" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+49 151…"
+                    style={{ width: '100%', minHeight: '44px', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>

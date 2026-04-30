@@ -108,7 +108,7 @@ export type LeadsWorkspaceProps = {
 };
 
 export type LeadDrawerLead = Pick<LeadRow,
-  'id' | 'company_name' | 'contact_name' | 'job_title' | 'email' | 'phone' | 'phone_secondary' |
+  'id' | 'company_name' | 'contact_name' | 'job_title' | 'email' | 'phone' | 'whatsapp_number' | 'phone_secondary' |
   'lead_type' | 'country' | 'country_id' | 'source_type' | 'source_label' | 'next_follow_up_at' |
   'created_at' | 'updated_at' | 'last_contacted_at' | 'stage_id' | 'next_step_id' | 'owner_user_id' |
   'trade_event_id' | 'notes' | 'website' | 'social_handle' | 'deal_value' | 'deal_currency' |

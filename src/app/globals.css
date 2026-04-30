@@ -65,3 +65,18 @@ button {
     -webkit-text-size-adjust: 100%;
   }
 }
+
+
+@media (max-width: 767px) {
+  body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+}

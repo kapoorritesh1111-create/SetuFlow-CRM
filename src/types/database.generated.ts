@@ -2105,6 +2105,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           website: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           company_name: string
@@ -2146,6 +2147,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           website?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           company_name?: string
@@ -2187,6 +2189,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           website?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: [
           {

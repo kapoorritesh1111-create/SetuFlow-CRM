@@ -1,9 +1,13 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegistration';
 
 export const metadata: Metadata = {
   title: 'SETU Flow',
   description: 'Trade execution system for import-export sales teams by SETU Groups',
+  manifest: '/manifest.json',
+  themeColor: '#0c7fff',
+  appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent' },
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -19,8 +23,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="/vendor/font-awesome/css/font-awesome.min.css" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0c7fff" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
-      <body>{children}</body>
+      <body><ServiceWorkerRegistration />{children}</body>
     </html>
   );
 }

@@ -25,11 +25,11 @@ function SummaryPill({ label, value }: SummaryChip) {
   )
 }
 
-function DetailTile({ label, value }: { label: string; value: string }) {
+function DetailTile({ label, value, href }: { label: string; value: string; href?: string }) {
   return (
     <div className="rounded-[12px] border border-neutral-200/70 bg-neutral-50/80 px-4 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">{label}</p>
-      <p className="mt-2 text-sm font-medium text-neutral-900">{value}</p>
+      {href ? <a href={href} target="_blank" rel="noreferrer" className="mt-2 block min-h-11 text-sm font-medium text-blue-700 hover:text-blue-900">{value}</a> : <p className="mt-2 text-sm font-medium text-neutral-900">{value}</p>}
     </div>
   )
 }
@@ -69,6 +69,7 @@ export function LeadContextRail({
     { label: 'Primary contact', value: snapshot.lead.contactName || 'Not set' },
     { label: 'Email', value: snapshot.lead.email || 'Not set' },
     { label: 'Phone', value: snapshot.lead.phone || 'Not set' },
+    { label: 'WhatsApp', value: snapshot.lead.whatsappNumber || 'Not set', href: snapshot.lead.whatsappNumber ? `https://wa.me/${snapshot.lead.whatsappNumber.replace(/[+\s\-()]/g, '').replace(/[^0-9]/g, '')}` : undefined },
     { label: 'Country', value: snapshot.lead.country || 'Not set' },
     { label: 'Owner', value: snapshot.lead.ownerName || 'Unassigned' },
     { label: 'Products', value: `${snapshot.mapping.productCount} mapped` },
@@ -136,7 +137,7 @@ export function LeadContextRail({
         </summary>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {fullDetails.map((item) => <DetailTile key={item.label} label={item.label} value={item.value} />)}
+          {fullDetails.map((item) => <DetailTile key={item.label} label={item.label} value={item.value} href={(item as any).href} />)}
         </div>
       </details>
     </section>

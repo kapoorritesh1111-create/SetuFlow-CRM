@@ -1384,6 +1384,7 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     job_title: normalizeLeadInputText(formData.get('job_title')),
     email: normalizeLeadEmail(formData.get('email')) ?? '',
     phone: normalizeLeadInputText(formData.get('phone')),
+    whatsapp_number: normalizeLeadInputText(formData.get('whatsapp_number')),
     phone_secondary: normalizeLeadInputText(formData.get('phone_secondary')),
     phone_country_code: normalizeLeadInputText(formData.get('phone_country_code')),
     phone_secondary_country_code: normalizeLeadInputText(formData.get('phone_secondary_country_code')),
@@ -1610,6 +1611,7 @@ const contactSourceContext = {
     job_title: normalizeLeadOptionalText(parsed.data.job_title),
     email: normalizeLeadEmail(parsed.data.email),
     phone: normalizeLeadOptionalText(parsed.data.phone),
+    whatsapp_number: normalizeLeadOptionalText(parsed.data.whatsapp_number),
     phone_secondary: normalizeLeadOptionalText(parsed.data.phone_secondary),
     phone_country_code: normalizeLeadOptionalText(parsed.data.phone_country_code),
     phone_secondary_country_code: normalizeLeadOptionalText(parsed.data.phone_secondary_country_code),
@@ -1825,7 +1827,7 @@ const contactSourceContext = {
 
   const { data: savedLeadRow, error: savedLeadError } = await db
     .from('leads')
-    .select('id, company_name, contact_name, job_title, email, phone, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, last_contacted_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code')
+    .select('id, company_name, contact_name, job_title, email, phone, whatsapp_number, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, last_contacted_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code')
     .eq('id', leadId)
     .eq('organization_id', organization.id)
     .maybeSingle();
@@ -1896,7 +1898,7 @@ export async function saveLeadDetails(_: ActionState | undefined, formData: Form
 
   const { data: existingLead, error: existingLeadError } = await db
     .from('leads')
-    .select('id, company_name, contact_name, email, phone, country')
+    .select('id, company_name, contact_name, email, phone, whatsapp_number, country')
     .eq('id', leadId)
     .eq('organization_id', organization.id)
     .maybeSingle();
