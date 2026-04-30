@@ -77,15 +77,15 @@ export class DefaultQuoteCompilationService implements QuoteCompilationService {
       .map((rule) => {
         const basisApplied = resolveLineBasis({
           quoteBasis: input.pricingBasis,
-          categoryType: rule.categoryType,
+          rule,
         });
         const pricingMode = resolvePricingMode({
-          categoryType: rule.categoryType,
+          rule,
           basisApplied,
         });
         const freightAddOnUsd = resolveFreightAddOnUsd({
           basisApplied,
-          categoryType: rule.categoryType,
+          pricingMode,
           freight,
         });
 

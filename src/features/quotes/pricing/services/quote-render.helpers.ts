@@ -110,7 +110,8 @@ function renderMetaList(items: Array<{ label: string; value: string | null | und
 function renderLinesTable(aggregate: QuoteVersionAggregate, templateType: TemplateType): string {
   const lines = aggregate.lines.filter((line) => {
     if (templateType === 'mixed') return true;
-    return line.categoryType === templateType;
+    if (templateType === 'kg') return line.pricingMode === 'kg' || line.pricingMode === 'bulk_kg';
+    return line.pricingMode === 'unit' || line.pricingMode === 'case';
   });
 
   const columns = templateType === 'kg'
