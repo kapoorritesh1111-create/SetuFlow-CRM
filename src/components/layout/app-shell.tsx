@@ -139,7 +139,7 @@ export function AppShell({
   );
 
   return (
-    <div className="setu-mobile-shell min-h-screen overflow-x-clip bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]">
+    <div className="setu-mobile-shell min-h-screen overflow-x-clip bg-[#f0f4f8] md:bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]">
       <a
         href="#app-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900"
@@ -223,22 +223,52 @@ export function AppShell({
 
         <main id="app-content" className="relative mx-auto min-w-0 max-w-[430px] overflow-x-clip md:mx-0 md:max-w-none md:pl-5 xl:pl-6">
           <div className="min-h-screen md:rounded-[2rem] md:border md:border-white/80 md:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.98))] md:shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:ring-1 lg:ring-slate-950/[0.03]">
-            <header className="setu-mobile-header sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur md:rounded-t-[2rem]">
-              <div className="setu-mobile-header-inner px-4 py-4 sm:px-6 md:px-7 md:py-3.5 xl:px-9">
-                <div className="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setMobileNavOpen(true)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-[1rem] border border-slate-200 bg-white text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.08)] hover:bg-slate-50 md:hidden"
-                      aria-label="Open navigation"
-                      aria-expanded={mobileNavOpen}
-                    >
-                      <span aria-hidden="true">☰</span>
-                    </button>
+            <header className="setu-mobile-header sticky top-0 z-40">
+              {/* ── MOBILE TOP BAR (navy, reference-HTML style) ── */}
+              <div className="flex h-14 items-center justify-between bg-[#0b2e4a] px-4 shadow-[0_1px_8px_rgba(0,0,0,0.2)] md:hidden">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setMobileNavOpen(true)}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-white/85 text-lg"
+                    aria-label="Open navigation"
+                    aria-expanded={mobileNavOpen}
+                  >
+                    ☰
+                  </button>
+                  <div className="min-w-0">
+                    <h1 className="truncate text-[15px] font-extrabold leading-tight tracking-[-0.3px] text-white">
+                      {routeMeta.title}
+                    </h1>
+                    {topbarDate ? (
+                      <p className="text-[10px] text-white/60 leading-none mt-0.5">{topbarDate}</p>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <OfflineIndicator />
+                  <button
+                    type="button"
+                    onClick={() => setVcardModalOpen(true)}
+                    className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-white/10 text-white/85 text-[18px]"
+                    aria-label="Share my vCard"
+                    title="Share my vCard"
+                  >
+                    📇
+                  </button>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-xs font-bold text-white ring-1 ring-white/20">
+                    {getInitials(profile?.full_name ?? profile?.username)}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── DESKTOP HEADER (white, all controls) ── */}
+              <div className="hidden border-b border-slate-200 bg-white/95 backdrop-blur md:block md:rounded-t-[2rem]">
+                <div className="px-7 py-3.5 xl:px-9">
+                  <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0c7fff]">Trade Command Center</p>
-                      <h1 className="truncate text-xl font-semibold text-slate-950 sm:text-2xl">
+                      <h1 className="truncate text-2xl font-semibold text-slate-950">
                         {routeMeta.title}
                         {routeMeta.title === 'Dashboard' && topbarDate ? (
                           <span className="ml-2 text-sm font-normal text-slate-400">— {topbarDate}</span>
@@ -248,70 +278,69 @@ export function AppShell({
                         <p className="mt-1 text-xs text-slate-500">{topbarDate}</p>
                       ) : null}
                     </div>
-                  </div>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <OfflineIndicator />
+                      <button
+                        type="button"
+                        onClick={() => setVcardModalOpen(true)}
+                        className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)] hover:opacity-95"
+                      >
+                        <FaIcon icon="address-card-o" fixedWidth className="text-sm" />
+                        <span>Share my vCard</span>
+                      </button>
 
-                  <div className="setu-mobile-actions flex items-center gap-2 overflow-x-auto pb-1 md:flex-wrap md:justify-end md:overflow-visible md:pb-0">
-                    <OfflineIndicator />
-                    <button
-                      type="button"
-                      onClick={() => setVcardModalOpen(true)}
-                      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)] hover:opacity-95"
-                    >
-                      <FaIcon icon="address-card-o" fixedWidth className="text-sm" />
-                      <span>Share my vCard</span>
-                    </button>
+                      {showWorkspaceModeSwitch ? (
+                        <div className="inline-flex shrink-0 items-center rounded-[0.9rem] border border-slate-200 bg-slate-100 p-1">
+                          {(['all', 'buyers', 'suppliers'] as const).map((value) => {
+                            const active = workspaceMode === value;
+                            return (
+                              <a
+                                key={value}
+                                href={currentWorkspaceModeHref(value)}
+                                aria-current={active ? 'page' : undefined}
+                                className={cn(
+                                  'rounded-[0.7rem] px-3 py-2 text-sm font-medium transition',
+                                  active ? 'bg-[#0b2e4a] text-white shadow-[0_8px_18px_rgba(15,23,42,0.18)]' : 'text-slate-600 hover:bg-white hover:text-slate-900',
+                                )}
+                              >
+                                {value === 'all' ? 'All' : value === 'buyers' ? 'Buyers' : 'Suppliers'}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      ) : null}
 
-                    {showWorkspaceModeSwitch ? (
-                      <div className="inline-flex shrink-0 items-center rounded-[0.9rem] border border-slate-200 bg-slate-100 p-1">
-                        {(['all', 'buyers', 'suppliers'] as const).map((value) => {
-                          const active = workspaceMode === value;
-                          return (
-                            <a
-                              key={value}
-                              href={currentWorkspaceModeHref(value)}
-                              aria-current={active ? 'page' : undefined}
-                              className={cn(
-                                'rounded-[0.7rem] px-3 py-2 text-sm font-medium transition',
-                                active ? 'bg-[#0b2e4a] text-white shadow-[0_8px_18px_rgba(15,23,42,0.18)]' : 'text-slate-600 hover:bg-white hover:text-slate-900',
-                              )}
-                            >
-                              {value === 'all' ? 'All' : value === 'buyers' ? 'Buyers' : 'Suppliers'}
-                            </a>
-                          );
-                        })}
+                      <button type="button" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        <FaIcon icon="sliders" fixedWidth className="text-sm" />
+                        <span>Filters</span>
+                      </button>
+
+                      <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-[#0b2e4a] bg-[#0b2e4a] px-4 text-sm font-semibold text-white hover:bg-[#061c2e]">
+                        <span>＋</span>
+                        <span>Quick Lead</span>
+                      </a>
+
+                      <a href="/trade-events" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" title="Trade Events — capture leads on the show floor">
+                        <FaIcon icon="calendar" fixedWidth className="text-sm" />
+                        <span>Trade Show</span>
+                      </a>
+
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-sm font-semibold text-white shadow-soft ring-1 ring-white/20">
+                        {getInitials(profile?.full_name ?? profile?.username)}
                       </div>
-                    ) : null}
-
-                    <button type="button" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                      <FaIcon icon="sliders" fixedWidth className="text-sm" />
-                      <span>Filters</span>
-                    </button>
-
-                    <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-[#0b2e4a] bg-[#0b2e4a] px-4 text-sm font-semibold text-white hover:bg-[#061c2e]">
-                      <span>＋</span>
-                      <span>Quick Lead</span>
-                    </a>
-
-                    <a href="/trade-events" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" title="Trade Events — capture leads on the show floor">
-                      <FaIcon icon="calendar" fixedWidth className="text-sm" />
-                      <span>Trade Show</span>
-                    </a>
-
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-sm font-semibold text-white shadow-soft ring-1 ring-white/20">
-                      {getInitials(profile?.full_name ?? profile?.username)}
                     </div>
                   </div>
                 </div>
               </div>
             </header>
-            <div className="setu-mobile-content relative px-4 py-5 pb-[calc(104px+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:pb-8 xl:px-8">
+            <div className="setu-mobile-content relative px-4 py-5 pb-[calc(80px+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:pb-8 xl:px-8">
               {isDesktopOnlyRoute ? <DesktopRedirect /> : null}
               <div className={isDesktopOnlyRoute ? 'hidden md:block' : undefined}>{children}</div>
             </div>
           </div>
         </main>
       </div>
-      <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} aria-label="Quick Lead" className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#0c7fff] text-2xl font-semibold text-white shadow-[0_16px_38px_rgba(12,127,255,0.42)] md:hidden">＋</a>
+      <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} aria-label="Quick Lead" className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#0c7fff] text-2xl font-semibold text-white shadow-[0_4px_16px_rgba(12,127,255,0.42)] md:hidden">＋</a>
       <MobileTabBar />
     </div>
   );

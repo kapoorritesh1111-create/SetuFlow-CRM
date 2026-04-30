@@ -1,11 +1,23 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { FaIcon } from '@/components/ui/fa-icon';
 
-const mobileWorks = ['Dashboard', 'Leads', 'Capture', 'My Card', 'Tasks', 'Order Status'];
+const mobileFeatures = [
+  { icon: '⌂', label: 'Dashboard — at-a-glance view' },
+  { icon: '👤', label: 'Leads — find, view, update' },
+  { icon: '📷', label: 'Capture — trade show entry' },
+  { icon: '📇', label: 'My Card — share your contact' },
+  { icon: '✅', label: 'Tasks — what\'s due today' },
+  { icon: '📦', label: 'Order status — read-only' },
+];
 
-export function DesktopRedirect({ title = 'Open on desktop', description = 'This workspace has dense tables, builders, or admin tools that are best used on a desktop screen.' }: { title?: string; description?: string }) {
+export function DesktopRedirect({
+  title = 'Open on desktop',
+  description = 'Pipeline, Quote Builder, Catalog, and Reports are designed for a full screen. They\'re available at the link below on your computer.',
+}: {
+  title?: string;
+  description?: string;
+}) {
   const [copied, setCopied] = useState(false);
   const href = useMemo(() => (typeof window === 'undefined' ? '' : window.location.href), []);
 
@@ -17,27 +29,50 @@ export function DesktopRedirect({ title = 'Open on desktop', description = 'This
   };
 
   return (
-    <section className="md:hidden rounded-[1.6rem] border border-slate-200 bg-white p-5 text-center shadow-[0_18px_48px_rgba(15,23,42,0.10)]">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0b2e4a] text-white shadow-[0_10px_24px_rgba(12,127,255,0.26)]">
-        <FaIcon icon="desktop" fixedWidth className="text-xl" />
+    <section className="md:hidden flex flex-col items-center text-center px-6 py-8">
+      <div className="text-5xl mb-5 opacity-50">🖥</div>
+      <h2 className="text-xl font-black tracking-tight text-slate-800 mb-2">{title}</h2>
+      <p className="text-sm text-slate-500 leading-relaxed max-w-[280px] mx-auto mb-5">{description}</p>
+
+      <div className="font-mono text-[11px] font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-md mb-6">
+        {typeof window !== 'undefined' ? window.location.hostname : 'setuflow.com'}
       </div>
-      <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0c7fff]">Desktop workspace</p>
-      <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{title}</h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-600">{description}</p>
-      <div className="mt-5 grid gap-2">
-        <button type="button" onClick={copyLink} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white hover:bg-[#061c2e]">
-          <FaIcon icon="link" fixedWidth />
-          {copied ? 'Copied link' : 'Copy desktop link'}
+
+      <div className="flex flex-col gap-2 w-full max-w-[280px] mb-4">
+        <button
+          type="button"
+          onClick={copyLink}
+          className="w-full py-4 rounded-[14px] bg-[linear-gradient(135deg,#0b2e4a,#1a4f7a)] text-white text-[15px] font-extrabold"
+        >
+          📋 {copied ? 'Copied!' : 'Copy link for desktop'}
         </button>
-        <a href={`mailto:?subject=${encodeURIComponent('Open this SETU Flow workspace on desktop')}&body=${encodeURIComponent(href)}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100">
-          <FaIcon icon="envelope-o" fixedWidth />
-          Email link to myself
+        <a
+          href={`mailto:?subject=${encodeURIComponent('Open this SETU Flow workspace on desktop')}&body=${encodeURIComponent(href)}`}
+          className="w-full py-4 rounded-[14px] bg-slate-100 border border-slate-200 text-slate-700 text-[15px] font-extrabold text-center"
+        >
+          📧 Email link to myself
         </a>
       </div>
-      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Works on mobile</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {mobileWorks.map((item) => <span key={item} className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">{item}</span>)}
+
+      <p className="text-[11px] text-slate-400 leading-relaxed mb-4">
+        These screens require a keyboard and full viewport.<br />
+        Available on tablet in landscape mode (≥ 1024px).
+      </p>
+
+      <div className="w-full max-w-[320px] bg-white border border-slate-200 rounded-[18px] p-4 text-left">
+        <p className="text-[11px] font-extrabold text-slate-600 uppercase tracking-[0.08em] mb-3">
+          Available on mobile right now
+        </p>
+        <div className="flex flex-col">
+          {mobileFeatures.map((item, i) => (
+            <div
+              key={item.label}
+              className={`flex items-center gap-3 text-sm text-slate-600 py-2.5 ${i < mobileFeatures.length - 1 ? 'border-b border-slate-100' : ''}`}
+            >
+              <span className="text-base shrink-0">{item.icon}</span>
+              <span className="font-medium">{item.label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
