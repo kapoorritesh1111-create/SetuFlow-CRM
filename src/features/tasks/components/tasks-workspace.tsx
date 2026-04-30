@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import RightDrawer, { DrawerActionBar, DrawerSection } from '@/components/RightDrawer';
 import { GenerateFollowUpDraftButton } from '@/features/ai/components/ai-draft-controls';
@@ -69,8 +69,14 @@ export function TasksWorkspace({ data }: Props) {
     return Array.from(options.entries()).map(([id, label]) => ({ id, label })).sort((left, right) => left.label.localeCompare(right.label));
   }, [data.leads]);
 
-  const now = new Date();
-  const today = startOfToday();
+  const [clock, setClock] = useState<{ now: Date; today: Date } | null>(null);
+
+  useEffect(() => {
+    setClock({ now: new Date(), today: startOfToday() });
+  }, []);
+
+  const now = clock?.now;
+  const today = clock?.today;
   const normalizedSearch = normalizeSearchValue(searchValue);
   const filteredTasks = useMemo(() => tasks.filter((task) => {
     const lead = task.lead_id ? leadMap.get(task.lead_id) : null;
@@ -79,7 +85,7 @@ export function TasksWorkspace({ data }: Props) {
     if (ownerFilter !== 'all' && (lead?.owner_user_id ?? '') !== ownerFilter) return false;
     if (focusFilter === 'lead-linked' && !task.lead_id) return false;
     if (focusFilter === 'internal-ops' && task.lead_id) return false;
-    if (focusFilter === 'sla-risk' && (task.status === 'completed' || new Date(task.scheduled_for) >= now)) return false;
+    if (focusFilter === 'sla-risk' && (!now || task.status === 'completed' || new Date(task.scheduled_for) >= now)) return false;
     return true;
   }), [tasks, leadMap, normalizedSearch, ownerFilter, focusFilter, now]);
 
@@ -91,6 +97,10 @@ export function TasksWorkspace({ data }: Props) {
     for (const task of filteredTasks) {
       if (task.status === 'completed') {
         completed.push(task);
+        continue;
+      }
+      if (!today) {
+        upcoming.push(task);
         continue;
       }
       const scheduled = new Date(task.scheduled_for);
@@ -264,7 +274,7 @@ export function TasksWorkspace({ data }: Props) {
                       </div>
                       <div className="text-sm text-slate-600">
                         <p>{formatDate(task.scheduled_for)}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">{completed ? 'Completed' : new Date(task.scheduled_for) < now ? 'Needs action' : 'Scheduled'}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">{completed ? 'Completed' : now && new Date(task.scheduled_for) < now ? 'Needs action' : 'Scheduled'}</p>
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -290,7 +300,7 @@ export function TasksWorkspace({ data }: Props) {
         ))}
       </div>
 
-      <div className="fixed inset-x-4 bottom-4 z-30 rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-soft backdrop-blur md:hidden">
+      <div className="fixed inset-x-4 bottom-[calc(72px+env(safe-area-inset-bottom))] z-30 rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-soft backdrop-blur md:hidden">
         <div className="grid grid-cols-4 gap-2">
           <button type="button" onClick={() => { setEditingTask(null); setTaskDrawerOpen(true); }} className="rounded-2xl bg-slate-900 px-3 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white">New task</button>
           <button type="button" onClick={() => setFieldNoteOpen(true)} className="rounded-2xl border border-slate-200 px-3 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">Note</button>
@@ -317,7 +327,7 @@ export function TasksWorkspace({ data }: Props) {
                 <option value="document_review">Document review</option>
                 <option value="internal_handoff">Internal handoff</option>
               </select>
-              <input name="scheduled_for" type="datetime-local" defaultValue={(editingTask?.scheduled_for ?? new Date(Date.now() + 3600_000).toISOString()).slice(0,16)} required />
+              <input name="scheduled_for" type="datetime-local" defaultValue={(editingTask?.scheduled_for ?? (now ? new Date(now.getTime() + 3600_000).toISOString() : '')).slice(0,16)} required />
               <select name="lead_id" defaultValue={editingTask?.lead_id ?? ''}>
                 <option value="">Internal task</option>
                 {data.leads.map((lead) => <option key={lead.id} value={lead.id}>{lead.company_name} · {lead.lead_type}</option>)}
@@ -348,7 +358,7 @@ export function TasksWorkspace({ data }: Props) {
               <input name="contact_name" placeholder="Contact name" />
               <input name="email" placeholder="Email" type="email" />
               <input name="phone" placeholder="Phone" />
-              <input name="next_follow_up_at" type="datetime-local" defaultValue={new Date(Date.now() + 24 * 3600_000).toISOString().slice(0,16)} required />
+              <input name="next_follow_up_at" type="datetime-local" defaultValue={now ? new Date(now.getTime() + 24 * 3600_000).toISOString().slice(0,16) : ''} required />
               <select name="trade_event_id" defaultValue="">
                 <option value="">No trade event selected</option>
                 {eventOptions.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}

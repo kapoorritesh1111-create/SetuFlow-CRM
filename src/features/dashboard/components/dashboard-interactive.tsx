@@ -42,12 +42,12 @@ function formatCompactCurrency(value: number) {
   }).format(value);
 }
 
-function isWithinTimeRange(value: string | null | undefined, range: DashboardTimeRange) {
+function isWithinTimeRange(value: string | null | undefined, range: DashboardTimeRange, nowIso?: string) {
   if (!value || range === 'custom') return true;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return true;
 
-  const now = new Date();
+  const now = nowIso ? new Date(nowIso) : new Date(0);
   const start = new Date(now);
 
   if (range === 'this-week') {
@@ -75,6 +75,7 @@ export default function DashboardInteractive({
   currentRoles = [],
   dashboardVariant = 'all',
   workspaceMode = 'all',
+  serverNowIso,
 }: DashboardInteractiveProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -211,10 +212,10 @@ export default function DashboardInteractive({
       if (!matchesStage(item.stageId)) return false;
       if (!matchesStatus(item.statusTag)) return false;
       if (!matchesProduct(item.productNames)) return false;
-      if (!isWithinTimeRange(item.dueAt, filters.timeRange)) return false;
+      if (!isWithinTimeRange(item.dueAt, filters.timeRange, serverNowIso)) return false;
       return true;
     });
-  }, [data.attentionItems, filters.marketCode, filters.mode, filters.timeRange, matchesProduct, matchesStage, matchesStatus, snoozedMap]);
+  }, [data.attentionItems, filters.marketCode, filters.mode, filters.timeRange, matchesProduct, matchesStage, matchesStatus, serverNowIso, snoozedMap]);
 
   const filteredCountryInsights = useMemo(() => {
     return data.countryInsights
@@ -235,12 +236,12 @@ export default function DashboardInteractive({
     () =>
       data.countryCoverage.filter((country) => {
         if (filters.marketCode && country.countryCode !== filters.marketCode) return false;
-        if (!isWithinTimeRange(country.lastActivityAt, filters.timeRange)) return false;
+        if (!isWithinTimeRange(country.lastActivityAt, filters.timeRange, serverNowIso)) return false;
         const insight = filteredCountryInsights.find((item) => item.countryCode === country.countryCode);
         const hasAttention = filteredAttentionItems.some((item) => item.marketCode === country.countryCode);
         return Boolean(insight?.topCompanies.length) || hasAttention;
       }),
-    [data.countryCoverage, filteredAttentionItems, filteredCountryInsights, filters.marketCode, filters.timeRange],
+    [data.countryCoverage, filteredAttentionItems, filteredCountryInsights, filters.marketCode, filters.timeRange, serverNowIso],
   );
 
   const filteredStageCounts = useMemo(

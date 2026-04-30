@@ -37,6 +37,8 @@ export function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [vcardModalOpen, setVcardModalOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [topbarDate, setTopbarDate] = useState('');
+  const [absoluteShareUrl, setAbsoluteShareUrl] = useState('');
 
   const normalizedRoles = useMemo(() => normalizeWorkspaceRoles(currentRoles), [currentRoles]);
   const currentRole = useMemo(() => getPrimaryWorkspaceRole(normalizedRoles) ?? 'member', [normalizedRoles]);
@@ -47,10 +49,6 @@ export function AppShell({
   const showWorkspaceModeSwitch = routeMeta.showWorkspaceModeSwitch ?? true;
   const desktopOnlyRoutes = ['/pipeline', '/quotes', '/products', '/admin', '/approval-send', '/reports'];
   const isDesktopOnlyRoute = desktopOnlyRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
-  const topbarDate = useMemo(
-    () => new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
-    [],
-  );
 
   const currentWorkspaceModeHref = (mode: 'all' | 'buyers' | 'suppliers') => {
     if (!workspaceBasePath) return pathname;
@@ -75,13 +73,20 @@ export function AppShell({
     return `/api/public/card-vcf?${params.toString()}`;
   }, [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
 
+  useEffect(() => {
+    setTopbarDate(new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') setAbsoluteShareUrl(`${window.location.origin}${shareLink}`);
+  }, [shareLink]);
 
   useEffect(() => {
     let active = true;
 
     async function generateQr() {
       if (!vcardModalOpen) return;
-      const absoluteShareLink = typeof window === 'undefined' ? shareLink : `${window.location.origin}${shareLink}`;
+      const absoluteShareLink = absoluteShareUrl || shareLink;
       try {
         const dataUrl = await QRCode.toDataURL(absoluteShareLink, {
           errorCorrectionLevel: 'M',
@@ -102,12 +107,11 @@ export function AppShell({
     return () => {
       active = false;
     };
-  }, [shareLink, vcardModalOpen]);
+  }, [absoluteShareUrl, shareLink, vcardModalOpen]);
 
   const handleCopyShareLink = async () => {
     if (typeof window === 'undefined' || !navigator.clipboard) return;
-    const absolute = `${window.location.origin}${shareLink}`;
-    await navigator.clipboard.writeText(absolute);
+    await navigator.clipboard.writeText(absoluteShareUrl || shareLink);
   };
 
   const sidebar = (
@@ -198,7 +202,7 @@ export function AppShell({
                   <span>🔗</span>
                   <span>Copy link</span>
                 </button>
-                <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(typeof window === 'undefined' ? shareLink : `${window.location.origin}${shareLink}`)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
+                <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(absoluteShareUrl || shareLink)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
                   <span>✉</span>
                   <span>Send email</span>
                 </a>
@@ -220,8 +224,8 @@ export function AppShell({
         <main id="app-content" className="relative min-w-0 overflow-x-clip md:pl-5 xl:pl-6">
           <div className="min-h-screen md:rounded-[2rem] md:border md:border-white/80 md:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.98))] md:shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:ring-1 lg:ring-slate-950/[0.03]">
             <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur md:rounded-t-[2rem]">
-              <div className="px-4 py-3.5 sm:px-6 md:px-7 xl:px-9">
-                <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="px-3 py-3 sm:px-6 md:px-7 md:py-3.5 xl:px-9">
+                <div className="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <button
                       type="button"
@@ -236,29 +240,29 @@ export function AppShell({
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0c7fff]">Trade Command Center</p>
                       <h1 className="truncate text-xl font-semibold text-slate-950 sm:text-2xl">
                         {routeMeta.title}
-                        {routeMeta.title === 'Dashboard' && (
+                        {routeMeta.title === 'Dashboard' && topbarDate ? (
                           <span className="ml-2 text-sm font-normal text-slate-400">— {topbarDate}</span>
-                        )}
+                        ) : null}
                       </h1>
-                      {routeMeta.title !== 'Dashboard' && (
+                      {routeMeta.title !== 'Dashboard' && topbarDate ? (
                         <p className="mt-1 text-xs text-slate-500">{topbarDate}</p>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-end gap-2">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 md:flex-wrap md:justify-end md:overflow-visible md:pb-0">
                     <OfflineIndicator />
                     <button
                       type="button"
                       onClick={() => setVcardModalOpen(true)}
-                      className="inline-flex min-h-11 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)] hover:opacity-95"
+                      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)] hover:opacity-95"
                     >
                       <FaIcon icon="address-card-o" fixedWidth className="text-sm" />
                       <span>Share my vCard</span>
                     </button>
 
                     {showWorkspaceModeSwitch ? (
-                      <div className="inline-flex items-center rounded-[0.9rem] border border-slate-200 bg-slate-100 p-1">
+                      <div className="inline-flex shrink-0 items-center rounded-[0.9rem] border border-slate-200 bg-slate-100 p-1">
                         {(['all', 'buyers', 'suppliers'] as const).map((value) => {
                           const active = workspaceMode === value;
                           return (
@@ -278,17 +282,17 @@ export function AppShell({
                       </div>
                     ) : null}
 
-                    <button type="button" className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <button type="button" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                       <FaIcon icon="sliders" fixedWidth className="text-sm" />
                       <span>Filters</span>
                     </button>
 
-                    <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] border border-[#0b2e4a] bg-[#0b2e4a] px-4 text-sm font-semibold text-white hover:bg-[#061c2e]">
+                    <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-[#0b2e4a] bg-[#0b2e4a] px-4 text-sm font-semibold text-white hover:bg-[#061c2e]">
                       <span>＋</span>
                       <span>Quick Lead</span>
                     </a>
 
-                    <a href="/trade-events" className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" title="Trade Events — capture leads on the show floor">
+                    <a href="/trade-events" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" title="Trade Events — capture leads on the show floor">
                       <FaIcon icon="calendar" fixedWidth className="text-sm" />
                       <span>Trade Show</span>
                     </a>
@@ -300,7 +304,7 @@ export function AppShell({
                 </div>
               </div>
             </header>
-            <div className="relative px-4 py-4 sm:px-6 md:px-7 xl:px-8">
+            <div className="relative px-3 py-4 pb-[calc(92px+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:pb-8 xl:px-8">
               {isDesktopOnlyRoute ? <DesktopRedirect /> : null}
               <div className={isDesktopOnlyRoute ? 'hidden md:block' : undefined}>{children}</div>
             </div>

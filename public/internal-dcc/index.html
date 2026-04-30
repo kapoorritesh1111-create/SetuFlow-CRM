@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>SETU Flow DCC — Apr 29 2026 · PR-NS-14 Complete · Offline Capture + Build Fix</title>
+  <title>SETU Flow DCC — Apr 29 2026 · PR-NS-15 Mobile Recovery · Hydration Fix + DCC Update</title>
   <style>
     :root{--bg:#f2f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--mu:#64748b;--brand:#0c7fff;--good:#059669;--warn:#d97706;--bad:#dc2626;--violet:#7c3aed;--teal:#0d9488;--sh:0 4px 18px rgba(15,23,42,.07);--r:18px}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.55}
@@ -43,14 +43,15 @@
 <div class="wrap">
 
 <div class="hero">
-  <div class="hero-ey">SETU Flow Internal DCC &middot; NS-14 Complete &middot; Apr 29 2026</div>
-  <h1>NS-14 complete &mdash; offline trade-show capture · IndexedDB queue · reconnect sync · build fix</h1>
-  <p>NS-14 complete Apr 29 2026. Offline capture implemented on top of the PR-NS-13 baseline: service worker capture cache, raw IndexedDB offline lead queue, mobile capture offline-save path, reconnect sync endpoint, top-bar offline indicator, duplicate skip behavior, and internal DCC updated. Vercel build fix pending deployment verification.</p>
+  <div class="hero-ey">SETU Flow Internal DCC &middot; NS-15 Mobile Recovery &middot; Apr 29 2026</div>
+  <h1>NS-15 mobile recovery &mdash; hydration-safe shell · reference-aligned mobile UX · DCC refresh</h1>
+  <p>NS-15 recovery Apr 29 2026. This pass fixes the mobile runtime/hydration issue, tightens the app shell against the reference HTML direction, keeps Tasks available as a differentiated operator workspace, preserves the PR-NS-12/13/14 feature work, and updates Mobile Plan + Strategic Review tabs without changing the DCC format.</p>
   <div class="pills">
     <span class="pill g">Vercel build — Green ✓</span>
     <span class="pill g">NS-12 Mobile PWA — Complete ✓</span>
     <span class="pill g">NS-13 WhatsApp Delivery — Complete ✓</span>
     <span class="pill g">NS-14 Offline Capture — Complete ✓</span>
+    <span class="pill g">NS-15 Mobile Recovery — Complete ✓</span>
     <span class="pill g">CategoryType = string (no enum)</span>
     <span class="pill g">057 migration — constraint dropped</span>
     <span class="pill g">14 files fixed</span>
@@ -65,7 +66,7 @@
   <div class="card kp"><div class="n" style="color:var(--teal)">92%</div><div class="l">Trade Show</div><p class="mu sm">Nav live, capture flow complete. Offline V2.</p></div>
   <div class="card kp"><div class="n" style="color:var(--brand)">89%</div><div class="l">Orders Desk</div><p class="mu sm">Panel live. Dispatch wired, needs Supabase proof.</p></div>
   <div class="card kp"><div class="n" style="color:var(--good)">✓</div><div class="l">Vercel Build</div><p class="mu sm">Green. 3 build error passes resolved. TypeScript clean.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--warn)">1</div><div class="l">PR Remaining</div><p class="mu sm">NS-14 Offline</p></div>
+  <div class="card kp"><div class="n" style="color:var(--warn)">0</div><div class="l">PR Remaining</div><p class="mu sm">Mobile recovery complete</p></div>
 </section>
 
 <div class="tb">
@@ -606,28 +607,28 @@ COMMIT;</pre></div>
 <!-- ══════════════════ MOBILE PLAN TAB ══════════════════ -->
 <div class="tp" id="tab-mobile">
   <div class="sec">
-    <div class="co b"><strong>Strategy:</strong> SETU Flow must work natively on mobile — not as a shrunken desktop. The two most critical mobile experiences are Dashboard (at-a-glance command) and Pipeline (deal review on the go). These HTML references define the exact layouts Cursor must implement in the Next.js app.</div>
+    <div class="co b"><strong>Strategy:</strong> SETU Flow must work natively on mobile — not as a shrunken desktop. The two most critical mobile experiences are Dashboard (at-a-glance command) and Capture/Tasks (trade-show operator workflow). The reference HTMLs in <code>public/reference-html/</code> remain the source of truth: Dashboard, Leads list/detail, Capture, My Card, Order Status, and Tasks/Desktop Redirect patterns must feel native, not like a compressed desktop.</div>
 
     <div class="sec grid g2" style="margin-top:10px">
       <div class="card">
         <h2>Mobile Dashboard — design decisions</h2>
         <table class="t"><thead><tr><th>Decision</th><th>Rationale</th></tr></thead><tbody>
           <tr><td>Bottom tab bar replaces sidebar</td><td>Thumb-reachable on 375px screens. 5 icons max.</td></tr>
-          <tr><td>KPI cards = full-width stacked</td><td>No 2-column grid at &lt;480px. One metric per card row.</td></tr>
+          <tr><td>KPI cards = 2-up on modern phones, stacked on narrow screens</td><td>Matches the produced mobile dashboard reference while staying readable at 375px and below.</td></tr>
           <tr><td>Floating action button (+ Lead)</td><td>Capture is the #1 mobile action. Always accessible.</td></tr>
-          <tr><td>Pipeline mini-view on dashboard</td><td>Stage counts only, no drag. Tap to go to full Pipeline.</td></tr>
+          <tr><td>Dashboard controls = compact horizontal strip</td><td>Filters must not stack into a tall desktop form on phones. Use horizontal scrolling chips/selectors.</td></tr>
           <tr><td>Activity feed = 3 items max</td><td>Scannable. "Show all" expands. No infinite scroll on dashboard.</td></tr>
           <tr><td>Touch targets ≥ 44px</td><td>WCAG 2.5.5. All buttons and tap targets meet minimum.</td></tr>
         </tbody></table>
       </div>
       <div class="card">
-        <h2>Mobile Pipeline — design decisions</h2>
+        <h2>Mobile routing — design decisions</h2>
         <table class="t"><thead><tr><th>Decision</th><th>Rationale</th></tr></thead><tbody>
-          <tr><td>Horizontal scroll stage lanes</td><td>Swipe left/right to see all stages. Cards are tall, not wide.</td></tr>
-          <tr><td>No drag-and-drop on mobile</td><td>Too unreliable on touch. Use "Move to stage" action sheet instead.</td></tr>
-          <tr><td>Deal card = 3-line max</td><td>Company, value, stage. Tap to expand detail.</td></tr>
-          <tr><td>Stage summary bar at top</td><td>$X total · N deals per stage — always visible above cards.</td></tr>
-          <tr><td>Filter = bottom sheet, not sidebar</td><td>Native mobile pattern. Slide up from bottom.</td></tr>
+          <tr><td>Native mobile screens</td><td>Dashboard, Leads, Capture, My Card, Tasks, and read-only Order Status stay mobile-first.</td></tr>
+          <tr><td>Desktop redirect screens</td><td>Pipeline, Quote Builder, Catalog, Admin, Reports, and full Orders Desk redirect with copy/email link.</td></tr>
+          <tr><td>Tasks becomes a standout workspace</td><td>It is strong enough for desktop and mobile; keep it visible instead of hiding it behind redirects.</td></tr>
+          <tr><td>Bottom tabs prioritize field work</td><td>Home, Leads, Capture, Orders, More route to the workflows used on a show floor.</td></tr>
+          <tr><td>Hydration-safe shell</td><td>Dates, URLs, navigator/window, and online state must render only after mount to avoid React #418/#423/#425.</td></tr>
         </tbody></table>
       </div>
     </div>
@@ -640,8 +641,9 @@ COMMIT;</pre></div>
         <div class="feat-row"><span class="feat-name">PWA manifest.json</span><span class="feat-status fs-done">Done</span></div>
         <div class="feat-row"><span class="feat-name">Touch target audit (all pages)</span><span class="feat-status fs-done">Done</span></div>
         <div class="feat-row"><span class="feat-name">Bottom tab bar component</span><span class="feat-status fs-done">Done</span></div>
-        <div class="feat-row"><span class="feat-name">Mobile lead capture flow</span><span class="feat-status fs-partial">Partial (existing)</span></div>
+        <div class="feat-row"><span class="feat-name">Mobile lead capture flow</span><span class="feat-status fs-done">Done + offline queue</span></div>
         <div class="feat-row"><span class="feat-name">Responsive breakpoint audit</span><span class="feat-status fs-done">Done</span></div>
+        <div class="feat-row"><span class="feat-name">Hydration/runtime console audit</span><span class="feat-status fs-done">Done</span></div>
       </div>
       <div class="card">
         <h2>PWA manifest.json plan</h2>
@@ -669,11 +671,11 @@ COMMIT;</pre></div>
         <table class="t" style="margin-top:6px"><thead><tr><th>Tab</th><th>Icon</th><th>Route</th></tr></thead><tbody>
           <tr><td>Dashboard</td><td>⌂ Home</td><td>/dashboard</td></tr>
           <tr><td>Leads</td><td>👤 Person</td><td>/leads</td></tr>
-          <tr><td>Pipeline</td><td>⬡ Funnel</td><td>/pipeline</td></tr>
+          <tr><td>Capture</td><td>📷 Camera</td><td>/contact-exchange/scan</td></tr>
           <tr><td>Orders</td><td>📦 Box</td><td>/orders</td></tr>
-          <tr><td>More</td><td>⋯ Menu</td><td>slide-up sheet</td></tr>
+          <tr><td>More</td><td>⋯ Menu</td><td>/tasks</td></tr>
         </tbody></table>
-        <div style="font-size:10px;color:var(--mu);margin-top:8px">Trade Events, Quotes, Reports, Settings accessible via "More" sheet. + Quick Lead as FAB overlaid on all tabs.</div>
+        <div style="font-size:10px;color:var(--mu);margin-top:8px">More opens the Tasks operator queue first because it is differentiated and useful on desktop too. Desktop-only workspaces remain available through redirect cards and the full desktop sidebar. + Quick Lead remains as the global FAB.</div>
       </div>
     </div>
   </div>
@@ -683,7 +685,7 @@ COMMIT;</pre></div>
 <!-- ══════════════════ EXECUTION PLAN TAB ══════════════════ -->
 <div class="tp" id="tab-execplan">
   <div class="sec">
-    <div class="co v"><strong>Investor + commercial readiness — Apr 29 2026.</strong> NS-11 schema, NS-12 Mobile PWA, and NS-13 WhatsApp delivery are complete. NS-14 Offline capture is now complete; next sprint can move to validation, Supabase proof, and buyer workflow hardening.</div>
+    <div class="co v"><strong>Investor + commercial readiness — Apr 29 2026.</strong> NS-11 schema, NS-12 Mobile PWA, NS-13 WhatsApp delivery, and NS-14 Offline capture are complete. NS-15 fixes the mobile runtime/hydration issues and brings the mobile implementation back toward the reference HTML direction; next sprint can move to validation, Supabase proof, and buyer workflow hardening.</div>
 
     <!-- PR-NS-11 -->
     <div class="card" style="border-left:4px solid var(--good);margin-top:12px;opacity:.85">
@@ -707,18 +709,18 @@ COMMIT;</pre></div>
     <div class="card" style="border-left:4px solid var(--brand);margin-top:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
         <h2 style="color:var(--brand)">PR-NS-12 — Mobile-First PWA</h2>
-        <div style="display:flex;gap:5px"><span class="s active">Priority 1 — Active</span><span class="s violet">Competitive</span></div>
+        <div style="display:flex;gap:5px"><span class="s good">Done · recovery pass</span><span class="s violet">Competitive</span></div>
       </div>
-      <div class="co b" style="margin-bottom:8px"><strong>Why now:</strong> Mobile native app is listed as Gap ✗ vs. competitors. A well-executed PWA closes this gap for trade show use (Gulfood 2026). Mobile Dashboard + Pipeline are the highest-traffic screens and must work perfectly at 375px. Reference HTMLs are already produced — implementation in Next.js is the remaining work.</div>
+      <div class="co b" style="margin-bottom:8px"><strong>Why now:</strong> Mobile native app is listed as Gap ✗ vs. competitors. A well-executed PWA closes this gap for trade show use (Gulfood 2026). Mobile Dashboard + Capture + Tasks are the highest-traffic show-floor screens and must work perfectly at 375px. Reference HTMLs are already produced and now remain the implementation standard for Next.js follow-up passes.</div>
       <table class="t"><thead><tr><th>Task</th><th>File</th><th>Type</th></tr></thead><tbody>
         <tr><td>PWA manifest.json</td><td><code>public/manifest.json</code></td><td><span class="s teal">Config</span></td></tr>
         <tr><td>Add &lt;link rel="manifest"&gt; to root layout</td><td><code>src/app/layout.tsx</code></td><td><span class="s active">Code</span></td></tr>
         <tr><td>Bottom tab bar component (mobile ≤ 768px)</td><td><code>src/components/shell/MobileTabBar.tsx</code></td><td><span class="s active">UI</span></td></tr>
         <tr><td>Hide sidebar on mobile, show tab bar</td><td><code>src/components/shell/app-shell.tsx</code></td><td><span class="s active">UI</span></td></tr>
         <tr><td>Dashboard — KPI cards mobile stack</td><td><code>src/features/dashboard/</code></td><td><span class="s active">UI</span></td></tr>
-        <tr><td>Pipeline — horizontal stage lanes + "Move to stage" action sheet</td><td><code>src/features/pipeline/</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Desktop redirect pattern for desktop-only workspaces</td><td><code>src/components/shell/DesktopRedirect.tsx</code></td><td><span class="s good">Done</span></td></tr>
         <tr><td>Touch target audit (all interactive elements ≥ 44px)</td><td>Global CSS + component review</td><td><span class="s warn">Audit</span></td></tr>
-        <tr><td>Floating action button (+ Quick Lead) overlay</td><td><code>src/components/shell/QuickLeadFAB.tsx</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Floating action button (+ Quick Lead) overlay</td><td><code>src/components/layout/app-shell.tsx</code></td><td><span class="s good">Done</span></td></tr>
         <tr><td>Update mobile reference HTML files</td><td><code>public/reference-html/setuflow-mobile-dashboard.html</code></td><td><span class="s neutral">Docs</span></td></tr>
       </tbody></table>
     </div>
@@ -877,10 +879,10 @@ COMMIT;</pre></div>
 
         <tr style="background:#f0fdf4">
           <td style="font-weight:900;color:#059669;font-size:16px">1</td>
-          <td><strong>Add PWA manifest + install prompt</strong><br/><span style="font-size:10px;color:#64748b">30-minute fix that changes adoption permanently</span></td>
+          <td><strong>PWA manifest + install prompt</strong><br/><span style="font-size:10px;color:#64748b">Shipped; keep hydration-safe on mobile</span></td>
           <td style="font-size:11px">Users at trade shows need to open the app in 1 tap from their home screen. Without a PWA manifest there is no "Add to Home Screen". Every extra tap at a show costs a lead.</td>
-          <td style="font-size:11px">Create <code>/public/manifest.webmanifest</code> with name, icons, theme_color, display: standalone, start_url. Add <code>&lt;link rel="manifest"&gt;</code> to <code>layout.tsx</code>. Add Apple meta tags. Register basic service worker for shell caching.</td>
-          <td><span class="s good">1 sprint</span></td>
+          <td style="font-size:11px">Manifest, icons, service worker registration, theme color, Apple/mobile web app meta, and offline shell caching are present. Current requirement is QA across iPhone widths and preventing hydration mismatches.</td>
+          <td><span class="s good">Done</span></td>
           <td><span class="s good">&#9650; Critical</span></td>
         </tr>
 
@@ -904,10 +906,10 @@ COMMIT;</pre></div>
 
         <tr>
           <td style="font-weight:900;color:#0c7fff;font-size:16px">4</td>
-          <td><strong>Offline capture queue</strong><br/><span style="font-size:10px;color:#64748b">IndexedDB + sync on reconnect</span></td>
+          <td><strong>Offline capture queue</strong><br/><span style="font-size:10px;color:#64748b">IndexedDB + sync on reconnect — shipped</span></td>
           <td style="font-size:11px">Convention centres at Gulfood, SIAL, Anuga, Canton Fair reliably have terrible WiFi during peak hours. One failed lead capture and the user goes back to WhatsApp notes permanently. This is the single biggest churn risk at first show.</td>
-          <td style="font-size:11px">Intercept the fast-field form submit. If offline, write to IndexedDB queue. Show "3 leads saved — will sync when connected" indicator. On reconnect, process queue in order. Service worker handles background sync. Only for trade show fast-field form — not the full CRM.</td>
-          <td><span class="s warn">2 sprints</span></td>
+          <td style="font-size:11px">Raw IndexedDB queue, service worker cache, reconnect sync endpoint, offline indicator, and capture offline-save path are implemented. Next hardening: prove live Supabase sync and show queue count in UI.</td>
+          <td><span class="s good">Done</span></td>
           <td><span class="s good">&#9650; High</span></td>
         </tr>
 
