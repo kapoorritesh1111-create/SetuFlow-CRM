@@ -139,7 +139,7 @@ async function createQuoteDirect(db: any, params: {
       product_variant_id: line.product_variant_id,
       sku_code: `LINE-${index + 1}`,
       product_name: line.notes || `Product ${index + 1}`,
-      category_type: 'powders',
+      category_type: line.category_type ?? '',  // set from product catalog at call site
       basis_applied: params.pricingBasis,
       pricing_mode: 'case',
       moq: line.quantity,
@@ -211,9 +211,10 @@ async function updateQuoteDirect(db: any, params: {
 
   const versionId = version.id;
 
-  // Derive category_type from product catalog — fall back to 'chips'
+  // Derive category_type from product catalog — uses the real category name from product_categories.
+  // No fallback to 'chips' — if no category is found, use empty string.
   const productIds = params.lineItems.map((l) => l.product_id).filter(Boolean);
-  let productCategoryMap: Record<string, 'chips' | 'powders'> = {};
+  let productCategoryMap: Record<string, string> = {};
   if (productIds.length > 0) {
     const { data: productRows } = await db
       .from('products')
@@ -223,13 +224,11 @@ async function updateQuoteDirect(db: any, params: {
     if (categoryIds.length > 0) {
       const { data: catRows } = await db
         .from('product_categories')
-        .select('id, category_type')
+        .select('id, name')
         .in('id', categoryIds);
-      const catMap: Record<string, 'chips' | 'powders'> = {};
+      const catMap: Record<string, string> = {};
       for (const cat of (catRows ?? [])) {
-        if (cat.category_type === 'chips' || cat.category_type === 'powders') {
-          catMap[cat.id] = cat.category_type;
-        }
+        if (cat.id && cat.name) catMap[cat.id] = cat.name;
       }
       for (const prod of (productRows ?? [])) {
         if (prod.category_id && catMap[prod.category_id]) {
@@ -239,7 +238,7 @@ async function updateQuoteDirect(db: any, params: {
     }
   }
 
-  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: (line.product_id && productCategoryMap[line.product_id]) ? productCategoryMap[line.product_id] : 'chips', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price, display_currency: line.currency ?? params.currency, is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
+  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: (line.product_id && productCategoryMap[line.product_id]) ? productCategoryMap[line.product_id] : '', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price, display_currency: line.currency ?? params.currency, is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
   if (versionLines.length) {
     const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
     if (versionLineError) return { data: null, error: versionLineError };

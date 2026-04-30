@@ -132,7 +132,8 @@ export async function createCatalogProductWithVariant(db: any, input: CreateCata
   const cleanName = normalizedPayload.name;
   const cleanSku = normalizedPayload.variant.sku_code;
   const cleanPackLabel = normalizedPayload.variant.pack_label;
-  const pricingModeDefault = normalizedPayload.variant.pricing_mode_default ?? (normalizedPayload.pricing_type === 'powders' ? 'kg' : 'unit');
+  // pricing_mode_default comes from the variant itself — do not derive from category/pricing_type proxy
+  const pricingModeDefault = normalizedPayload.variant.pricing_mode_default ?? 'unit';
 
   const productInsert = await db
     .from('products')

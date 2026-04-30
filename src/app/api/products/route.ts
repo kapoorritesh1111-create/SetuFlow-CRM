@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   const categoryCheck = await admin
     .from('product_categories')
-    .select('id')
+    .select('id, name')
     .eq('organization_id', organizationId)
     .eq('id', payload.category_id)
     .maybeSingle();
@@ -118,8 +118,8 @@ export async function POST(request: NextRequest) {
       packLabel: catalogResult.variantPackLabel,
       unitsPerCase: catalogResult.unitsPerCase,
       moq: catalogResult.pricingModeDefault === 'kg' ? payload.variant.moq_kg ?? null : payload.variant.moq_cases ?? null,
-      categoryType: payload.pricing_type === 'powders' || catalogResult.pricingModeDefault === 'kg' ? 'powders' : 'chips',
-      pricingType: payload.pricing.ex_factory_unit === 'kg' || catalogResult.pricingModeDefault === 'kg' ? 'powders' : 'chips',
+      categoryType: categoryCheck.data.name ?? '',  // real name from product_categories
+      pricingType: payload.pricing.ex_factory_unit === 'kg' || catalogResult.pricingModeDefault === 'kg' ? 'kg' : 'unit',
       isQuoteable: true,
       exFactoryValue: payload.pricing.ex_factory_value,
       exFactoryUnit: payload.pricing.ex_factory_unit ?? null,

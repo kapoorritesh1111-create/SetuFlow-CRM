@@ -330,15 +330,11 @@ export function ProductsManager({
       const matchesPricing =
         pricingFilter === 'all' ? true : pricingFilter === 'priced' ? product.baselineStatus !== 'missing' : product.baselineStatus !== 'covered';
       const cat = (product.categoryPath ?? '').toLowerCase();
+      // Filter by category ID (from DB) — 'all', 'ready', or a real category UUID
       const matchesCategoryTab =
-        activeCategoryTab === 'all'        ? true
-        : activeCategoryTab === 'snacks'   ? (cat.includes('snack') || cat.includes('crisp') || cat.includes('chip') || cat.includes('vacuum'))
-        : activeCategoryTab === 'powders'  ? (cat.includes('powder') || cat.includes('spray') || cat.includes('dried'))
-        : activeCategoryTab === 'sweet'    ? (cat.includes('sweet') || cat.includes('jaggery') || cat.includes('sugar') || cat.includes('palm'))
-        : activeCategoryTab === 'onion'    ? (cat.includes('onion') || cat.includes('garlic'))
-        : activeCategoryTab === 'freeze'   ? cat.includes('freeze')
-        : activeCategoryTab === 'ready'    ? product.baselineStatus === 'covered'
-        : true;
+        activeCategoryTab === 'all'   ? true
+        : activeCategoryTab === 'ready' ? product.baselineStatus === 'covered'
+        : product.categoryId === activeCategoryTab;
       return matchesSearch && matchesStatus && matchesCategory && matchesPricing && matchesCategoryTab;
     });
   }, [workspaceProducts, searchValue, statusFilter, categoryFilter, pricingFilter, activeCategoryTab]);
@@ -665,14 +661,19 @@ export function ProductsManager({
       {/* ── CATEGORY VIEW TABS — matches reference setuflow-catalog-redesign.html .view-tabs ── */}
       <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',alignItems:'stretch',gap:'0',overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
         {([
-          {id:'all',     icon:'▦',   label:'All products',   count: filteredProducts.length},
-          {id:'snacks',  icon:'📦',  label:'Snacks & crisps', count: workspaceProducts.filter(p=>{const c=(p.categoryPath??'').toLowerCase();return c.includes('snack')||c.includes('crisp')||c.includes('chip')||c.includes('vacuum')}).length},
-          {id:'powders', icon:'🌿',  label:'Powders',         count: workspaceProducts.filter(p=>{const c=(p.categoryPath??'').toLowerCase();return c.includes('powder')||c.includes('spray')||c.includes('dried')}).length},
-          {id:'sweet',   icon:'🍯',  label:'Sweeteners',      count: workspaceProducts.filter(p=>{const c=(p.categoryPath??'').toLowerCase();return c.includes('sweet')||c.includes('jaggery')||c.includes('sugar')||c.includes('palm')}).length},
-          {id:'onion',   icon:'🧅',  label:'Onion & garlic',  count: workspaceProducts.filter(p=>{const c=(p.categoryPath??'').toLowerCase();return c.includes('onion')||c.includes('garlic')}).length},
-          {id:'freeze',  icon:'❄',   label:'Freeze-dried',    count: workspaceProducts.filter(p=>(p.categoryPath??'').toLowerCase().includes('freeze')).length},
-          {id:'ready',   icon:'✓',   label:'Quote-ready',     count: workspaceProducts.filter(p=>p.baselineStatus==='covered').length},
-        ] as Array<{id:string;icon:string;label:string;count:number}>).map(tab=>{
+          { id: 'all',   icon: '▦', label: 'All products', count: filteredProducts.length },
+          // DB-driven tabs: one per active category, sorted by sort_order
+          ...categories
+            .filter((c) => c.isActive && !c.parentId)  // root categories only
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((cat) => ({
+              id: cat.id,
+              icon: '◈',
+              label: cat.name,
+              count: workspaceProducts.filter((p) => p.categoryId === cat.id).length,
+            })),
+          { id: 'ready', icon: '✓', label: 'Quote-ready', count: workspaceProducts.filter((p) => p.baselineStatus === 'covered').length },
+        ] as Array<{ id: string; icon: string; label: string; count: number }>).map((tab) => {
           const isActive = activeCategoryTab === tab.id;
           return (
             <button key={tab.id} type="button" onClick={()=>setActiveCategoryTab(tab.id)}

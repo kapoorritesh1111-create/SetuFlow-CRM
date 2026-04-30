@@ -864,10 +864,57 @@ body{
   <div class="flow-section">
     <div class="flow-section-label">NorthStar deferred — post investor demo v2</div>
     <div class="impl-check">
-      <div class="ic-title">🔒 V2-1 PR-OFFLINE-CAPTURE</div>
+      <div class="ic-title">🔒 V2-1 PR-OFFLINE-CAPTURE → Now PR-NS-14</div>
       <div class="ic-item"><div class="ic-check">→</div>Service worker + local lead queue + sync on reconnect.</div>
       <div class="ic-item"><div class="ic-check">→</div>Target: post-investor-demo. Convention centers have unreliable WiFi. Without offline support, leads captured during connectivity outages are lost.</div>
       <div class="ic-item"><div class="ic-check">→</div>This is the highest-value v2 investment for trade show users.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOBILE-FIRST REQUIREMENTS (PR-NS-12) ══════════════ -->
+  <div class="flow-section" style="border-left:4px solid #0c7fff">
+    <div class="flow-section-label" style="color:#0c7fff">Mobile-First PWA — PR-NS-12 · Reference screens produced</div>
+    <div class="impl-check">
+      <div class="ic-title">📱 MOBILE DASHBOARD — setuflow-mobile-dashboard.html</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Bottom tab bar (5 tabs):</strong> Home · Leads · Pipeline · Orders · More. Replaces sidebar on mobile. Always thumb-reachable. Max width 430px. Height 64px + safe area inset.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Greeting card:</strong> Full-width navy-to-teal gradient. Shows user name, date, 3 at-a-glance stats (tasks due, quotes to send, orders awaiting). Not a desktop header.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>KPI cards:</strong> 2-column grid at mobile (not 5-column desktop). Revenue / Pipeline / New Leads / Active Orders. Font-size 24px value, 10px label, delta indicator. Minimum card height 86px.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Pipeline mini-view:</strong> Horizontal scroll lane cards (swipe). Stage name + deal count + $ value. Tap card → /pipeline. No drag/drop on mobile dashboard.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Activity feed:</strong> 3-item max on dashboard. "Show 14 more" tap. Each item = icon + main text + sub + timestamp. Full-width list card with tap-through to lead/quote/order.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Tasks due:</strong> Full-width cards with checkbox, title, meta, badge (Urgent/Today/This week). Tap → task detail.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>FAB (Floating Action Button):</strong> Fixed bottom-right. 52×52px. Rounded 16px. Opens Quick Lead drawer. Always visible on all tab screens. Blue gradient with shadow.</div>
+      <div class="ic-item"><div class="ic-check">✓</div>Touch targets: all interactive elements ≥ 44px (WCAG 2.5.5). Tab items 64px tall. Icon buttons 40×40px.</div>
+    </div>
+    <div class="impl-check" style="margin-top:10px">
+      <div class="ic-title">📱 MOBILE PIPELINE — setuflow-mobile-pipeline.html</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Stage summary bar:</strong> Sticky below top bar. Horizontal scroll. Each stage tab shows name + "N · $Xk". Active stage highlighted with blue underline. Always visible — provides orientation.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Filter chips:</strong> Horizontal scroll row. All / Buyers / Suppliers / Chips / Powders / Sweeteners / ⚙ All Filters. No sidebar filter panel on mobile. Filters slide up as bottom sheet when ⚙ tapped.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Horizontal stage columns:</strong> Swipe left/right. Each column = 280px wide. Not drag-and-drop (too unreliable on touch). Columns scroll independently within the horizontal container.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Deal cards:</strong> Company · Contact+Country · Value+Currency · Product badges · Date note. Left accent bar: blue=buyer, teal=supplier, rose=overdue/urgent. Tap card → opens inline detail or navigates to lead.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>"Move to stage" action sheet:</strong> Bottom sheet slides up from bottom on deal card tap-hold or context action. Lists all stages with current stage highlighted. Native mobile pattern — no drag.</div>
+      <div class="ic-item"><div class="ic-check">✓</div>Product category badges: chips / powders / sweeteners / onion / garlic — all 7 values supported in deal card badge system.</div>
+    </div>
+    <div class="impl-check" style="margin-top:10px">
+      <div class="ic-title">⚙ PWA MANIFEST — public/manifest.json (PR-NS-12)</div>
+      <div class="ic-item"><div class="ic-check">→</div>display: "standalone" — removes browser chrome when installed from home screen.</div>
+      <div class="ic-item"><div class="ic-check">→</div>start_url: "/dashboard" — opens to dashboard, not login, on launch from home screen.</div>
+      <div class="ic-item"><div class="ic-check">→</div>theme_color: "#0c7fff" — SETU Flow brand blue. Background color: "#0b2e4a" (navy).</div>
+      <div class="ic-item"><div class="ic-check">→</div>Icons: 192×192 + 512×512. Purpose "any maskable" on 512 for Android adaptive icon support.</div>
+      <div class="ic-item"><div class="ic-check">→</div>orientation: "portrait-primary" — pipeline swipe works best in portrait.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MULTI-CATEGORY SCHEMA REQUIREMENT (PR-NS-11) ══════════════ -->
+  <div class="flow-section" style="border-left:4px solid #0d9488">
+    <div class="flow-section-label" style="color:#0d9488">Product Category Schema — PR-NS-11 · Multi-category expansion</div>
+    <div class="impl-check">
+      <div class="ic-title">🗄 SCHEMA REQUIREMENT — category_type must support all 7 product families</div>
+      <div class="ic-item"><div class="ic-check">!</div><strong>Current constraint is too narrow.</strong> Both <code>pricing_rule_set_items</code> and <code>quote_line_items</code> only accept <code>'chips' | 'powders'</code>. Blue Orbit International has 7 product families. Any quote for sweeteners, onion, garlic, or freeze-dried products will violate DB constraints at the line-item level.</div>
+      <div class="ic-item"><div class="ic-check">✓</div><strong>Migration 057 is ready:</strong> mitigation/supabase/sql/057_expand_category_type_constraint.sql. Expands constraint to: chips · powders · sweeteners · onion · garlic · freeze_dried · other. Run in Supabase SQL editor. No data loss.</div>
+      <div class="ic-item"><div class="ic-check">→</div><strong>product_categories table:</strong> New column category_type (nullable text, same CHECK). Backfill via pattern matching on existing category names. Set on all new categories via CategoryForm selector.</div>
+      <div class="ic-item"><div class="ic-check">→</div><strong>Category-type derivation chain:</strong> quote line items derive category_type from: product_id → products.category_id → product_categories.category_type. Fallback: 'other' (not 'chips'). This is the correct default — unknown categories should not be silently mis-classified as chips.</div>
+      <div class="ic-item"><div class="ic-check">→</div><strong>UI requirement:</strong> CategoryForm must render a dropdown with all 7 values and human-readable labels: "Chips (Vacuum-Cooked)", "Powders (Dehydrated/Spray-Dried)", "Sweeteners", "Onion Products", "Garlic Products", "Freeze-Dried", "Other".</div>
+      <div class="ic-item"><div class="ic-check">→</div><strong>Pricing rules:</strong> PricingRuleSetItem.category_type TypeScript union must include all 7 values. Pricing rule queries must not silently filter to only chips/powders.</div>
     </div>
   </div>
 
@@ -880,13 +927,14 @@ body{
       <div class="nf-stat"><div class="nf-stat-val">22</div><div class="nf-stat-lbl">CTAs mapped</div></div>
       <div class="nf-stat"><div class="nf-stat-val">6</div><div class="nf-stat-lbl">Critical paths</div></div>
       <div class="nf-stat"><div class="nf-stat-val">3</div><div class="nf-stat-lbl">Workflow gates</div></div>
-      <div class="nf-stat"><div class="nf-stat-val">9</div><div class="nf-stat-lbl">Admin sections</div></div>
+      <div class="nf-stat"><div class="nf-stat-val">2</div><div class="nf-stat-lbl">Mobile refs</div></div>
       <div class="nf-stat" style="--ns-accent:#059669"><div class="nf-stat-val" style="color:#059669">0</div><div class="nf-stat-lbl">Missed links</div></div>
     </div>
     <div class="nf-right">
       <div style="font-size:12px;font-weight:800;color:#1F487C;margin-bottom:4px">SETU Flow CRM — SETU Groups LLC</div>
       <div style="font-size:10px;color:#94a3b8">Phase 1 · NorthStar Reference · For builder handoff</div>
-      <div style="font-size:10px;color:#cbd5e1;margin-top:3px">Use with SetuFlow-FullPrototype.html for implementation</div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:2px">Mobile: setuflow-mobile-dashboard.html · setuflow-mobile-pipeline.html</div>
+      <div style="font-size:10px;color:#cbd5e1;margin-top:3px">Schema: 057_expand_category_type_constraint.sql · PR-NS-11 through PR-NS-14 planned</div>
     </div>
   </div>
 </div>

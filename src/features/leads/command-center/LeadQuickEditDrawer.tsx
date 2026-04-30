@@ -164,7 +164,7 @@ function groupProductsByCategory(products: ProductOption[]) {
 type InlineProductDraft = {
   name: string
   categoryId: string
-  pricingType: 'chips' | 'powders'
+  pricingMode: 'unit' | 'kg'  // pricing mode — independent of category
   skuCode: string
   packLabel: string
   brandName: string
@@ -175,7 +175,7 @@ type InlineProductDraft = {
 const INITIAL_INLINE_PRODUCT_DRAFT: InlineProductDraft = {
   name: '',
   categoryId: '',
-  pricingType: 'chips',
+  pricingMode: 'unit',
   skuCode: '',
   packLabel: '',
   brandName: 'Roohted',
@@ -249,7 +249,7 @@ function AddProductModal({
 
           <label className="space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Pack label</span>
-            <input value={draft.packLabel} onChange={(event) => onChange('packLabel', event.target.value)} placeholder={draft.pricingType === 'powders' ? '1 kg' : '60 g'} className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-300" />
+            <input value={draft.packLabel} onChange={(event) => onChange('packLabel', event.target.value)} placeholder={draft.pricingMode === 'kg' ? '1 kg' : '60 g'} className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-300" />
           </label>
 
           <label className="space-y-2">
@@ -259,12 +259,12 @@ function AddProductModal({
 
           <label className="space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ex-factory</span>
-            <input value={draft.exFactoryValue} onChange={(event) => onChange('exFactoryValue', event.target.value)} placeholder={draft.pricingType === 'powders' ? '9.50' : '1.15'} className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-300" />
+            <input value={draft.exFactoryValue} onChange={(event) => onChange('exFactoryValue', event.target.value)} placeholder={draft.pricingMode === 'kg' ? '9.50' : '1.15'} className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-300" />
           </label>
 
           <label className="space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">FOB</span>
-            <input value={draft.fobValue} onChange={(event) => onChange('fobValue', event.target.value)} placeholder={draft.pricingType === 'powders' ? '10.90' : '1.35'} className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-300" />
+            <input value={draft.fobValue} onChange={(event) => onChange('fobValue', event.target.value)} placeholder={draft.pricingMode === 'kg' ? '10.90' : '1.35'} className="w-full rounded-[14px] border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-300" />
           </label>
         </div>
 
@@ -476,14 +476,14 @@ export default function LeadQuickEditDrawer({
           sku_code: newProductDraft.skuCode.trim(),
           pack_label: newProductDraft.packLabel.trim(),
           pack_size_unit: 'g',
-          pricing_mode_default: newProductDraft.pricingType === 'powders' ? 'kg' : 'unit',
-          supports_bulk_pricing: newProductDraft.pricingType === 'powders',
+          pricing_mode_default: newProductDraft.pricingMode === 'kg' ? 'kg' : 'unit',
+          supports_bulk_pricing: newProductDraft.pricingMode === 'kg',
         },
         pricing: {
           ex_factory_value: newProductDraft.exFactoryValue ? Number(newProductDraft.exFactoryValue) : null,
-          ex_factory_unit: newProductDraft.pricingType === 'powders' ? 'kg' : 'unit',
+          ex_factory_unit: newProductDraft.pricingMode === 'kg' ? 'kg' : 'unit',
           fob_value: newProductDraft.fobValue ? Number(newProductDraft.fobValue) : null,
-          fob_unit: newProductDraft.pricingType === 'powders' ? 'kg' : 'unit',
+          fob_unit: newProductDraft.pricingMode === 'kg' ? 'kg' : 'unit',
           source_sheet_name: 'LEAD_COVERAGE_DRAWER',
         },
       })
@@ -503,7 +503,7 @@ export default function LeadQuickEditDrawer({
       setNewProductDraft((current) => ({
         ...INITIAL_INLINE_PRODUCT_DRAFT,
         categoryId: current.categoryId,
-        pricingType: current.pricingType,
+        pricingMode: current.pricingType,
       }))
       setMessage(`Added ${createdProduct.name} and selected it in coverage.`)
     } catch (saveError) {

@@ -14,7 +14,7 @@ type FormState = {
   name: string;
   categoryId: string;
   brandName: string;
-  pricingType: 'chips' | 'powders';
+  pricingMode: 'unit' | 'kg';  // how this product is priced — independent of category
   skuCode: string;
   packLabel: string;
   packSizeValue: string;
@@ -32,7 +32,7 @@ const initialForm: FormState = {
   name: '',
   categoryId: '',
   brandName: 'Roohted',
-  pricingType: 'chips',
+  pricingMode: 'unit',
   skuCode: '',
   packLabel: '',
   packSizeValue: '',
@@ -71,7 +71,7 @@ export function AddProductDrawer({ open, onClose, onCreated }: Props) {
       .finally(() => setOptionsLoading(false));
   }, [open]);
 
-  const isPowder = form.pricingType === 'powders';
+  const isPowder = form.pricingMode === 'kg';
 
   useEffect(() => {
     setForm((current) => ({

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>SETU Flow DCC — Apr 29 2026 · PR-NS-09 Complete</title>
+  <title>SETU Flow DCC — Apr 29 2026 · PR-NS-10 · Mobile + Schema Plan</title>
   <style>
     :root{--bg:#f2f4f8;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--mu:#64748b;--brand:#0c7fff;--good:#059669;--warn:#d97706;--bad:#dc2626;--violet:#7c3aed;--teal:#0d9488;--sh:0 4px 18px rgba(15,23,42,.07);--r:18px}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.55}
@@ -43,27 +43,27 @@
 <div class="wrap">
 
 <div class="hero">
-  <div class="hero-ey">SETU Flow Internal DCC &middot; PR-NS-09 Complete &middot; Apr 29 2026</div>
-  <h1>PR-NS-09A + PR-NS-09 done &mdash; 7 bugs fixed, Order Detail Panel live, TypeScript clean (0 errors)</h1>
-  <p>Two passes on Apr 29 2026. PR-NS-09A resolved 5 critical bugs found in live review (constraint crash, trade show nav missing, orders empty state, dead anchor button). PR-NS-09 built the Order Detail Panel wired to progressOrderExecution and uploadOrderDocumentAction, derived category_type from the product catalog, and set accepted_version_id on quote send. TypeScript: 0 errors. Next: PR-NS-10 — Vercel build proof + live dispatch validation.</p>
+  <div class="hero-ey">SETU Flow Internal DCC &middot; NS-10 Status Update + Execution Plan &middot; Apr 29 2026</div>
+  <h1>NS-10 partial complete &mdash; Vercel build ✓ &middot; Live Dispatch needs validation &middot; Mobile + Schema plan locked</h1>
+  <p>NS-10 pass Apr 29 2026: Vercel build proof confirmed ✓. Live dispatch advance is wired to progressOrderExecution but requires live Supabase environment validation (contracts.execution_state advance). Strategic execution plan created: NS-11 multi-category schema expansion, NS-12 mobile-first PWA reference screens + manifest, NS-13 WhatsApp quote delivery, NS-14 offline lead capture. Mobile Dashboard + Pipeline HTML references produced. Product categories constraint expanded beyond two values.</p>
   <div class="pills">
+    <span class="pill g">Vercel build — Completed ✓</span>
+    <span class="pill w">Live Dispatch — Needs validation</span>
     <span class="pill g">TypeScript 0 errors</span>
-    <span class="pill g">7 bugs fixed</span>
-    <span class="pill g">Trade Show nav + topbar live</span>
-    <span class="pill g">Order Detail Panel wired</span>
-    <span class="pill g">category_type from catalog</span>
-    <span class="pill g">accepted_version_id on send</span>
-    <span class="pill w">Vercel build proof pending</span>
-    <span class="pill w">Dispatch advance needs live Supabase validation</span>
+    <span class="pill g">7 bugs fixed (NS-09)</span>
+    <span class="pill g">Order Detail Panel live</span>
+    <span class="pill t">Mobile HTML references created</span>
+    <span class="pill t">Schema multi-category migration ready</span>
+    <span class="pill v">NS-11 → NS-14 execution plan locked</span>
   </div>
 </div>
 
 <section class="sec grid g5">
-  <div class="card kp"><div class="n" style="color:var(--good)">94%</div><div class="l">Core CRM</div><p class="mu sm">7 bugs fixed. All critical flows unblocked.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--teal)">92%</div><div class="l">Trade Show</div><p class="mu sm">Nav promoted, topbar button, capture flow complete.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--brand)">88%</div><div class="l">Orders Desk</div><p class="mu sm">Detail panel live, dispatch + doc upload wired.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--good)">0</div><div class="l">TS Errors</div><p class="mu sm">Full tsc --noEmit pass. All components type-safe.</p></div>
-  <div class="card kp"><div class="n" style="color:var(--warn)">2</div><div class="l">Remaining</div><p class="mu sm">Vercel build proof. Live dispatch Supabase validation.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--good)">94%</div><div class="l">Core CRM</div><p class="mu sm">All critical flows unblocked. Vercel build green.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--teal)">92%</div><div class="l">Trade Show</div><p class="mu sm">Nav live, capture flow complete. Offline V2.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--brand)">89%</div><div class="l">Orders Desk</div><p class="mu sm">Panel live. Dispatch wired, needs Supabase proof.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--good)">✓</div><div class="l">Vercel Build</div><p class="mu sm">Completed. npm run build green — no errors.</p></div>
+  <div class="card kp"><div class="n" style="color:var(--warn)">4</div><div class="l">PRs Planned</div><p class="mu sm">NS-11 Schema · NS-12 Mobile · NS-13 WhatsApp · NS-14 Offline</p></div>
 </section>
 
 <div class="tb">
@@ -73,6 +73,9 @@
   <button class="tbtn" onclick="showTab('tradeshow',this)">Trade Show</button>
   <button class="tbtn" onclick="showTab('modules',this)">Module Scores</button>
   <button class="tbtn" onclick="showTab('prs',this)">PR History</button>
+  <button class="tbtn" onclick="showTab('schema',this)" style="background:linear-gradient(135deg,#0d9488,#059669);color:#fff;border-radius:8px">&#128202; Schema Fix</button>
+  <button class="tbtn" onclick="showTab('mobile',this)" style="background:linear-gradient(135deg,#0c7fff,#7c3aed);color:#fff;border-radius:8px">&#128241; Mobile Plan</button>
+  <button class="tbtn" onclick="showTab('execplan',this)" style="background:linear-gradient(135deg,#dc2626,#d97706);color:#fff;border-radius:8px">&#9889; Execution PRs</button>
   <button class="tbtn" onclick="showTab('next',this)">Next Prompt</button>
   <button class="tbtn" onclick="showTab('strategy',this)" style="background:linear-gradient(135deg,#0b2e4a,#0d9488);color:#fff;border-radius:8px">&#9889; Strategic Review</button>
 </div>
@@ -101,7 +104,7 @@
           <tr><td>accepted_version_id on send</td><td><span class="s good">Fixed</span></td><td>NS-09</td></tr>
           <tr><td>category_type from catalog</td><td><span class="s good">Fixed</span></td><td>NS-09</td></tr>
           <tr><td>TypeScript 0 errors</td><td><span class="s good">Verified</span></td><td>NS-09</td></tr>
-          <tr><td>Vercel build proof</td><td><span class="s warn">Pending</span></td><td>NS-10</td></tr>
+          <tr><td>Vercel build proof</td><td><span class="s good">Completed ✓</span></td><td>NS-10</td></tr>
           <tr><td>Live dispatch advance</td><td><span class="s warn">Needs validation</span></td><td>NS-10</td></tr>
           <tr><td>Payment integration</td><td><span class="s neutral">Deferred</span></td><td>Post-demo</td></tr>
         </tbody></table>
@@ -202,45 +205,318 @@
     <tr><td><code>PR-NS-08</code></td><td>Catalog-to-Quote data wiring</td><td><span class="s good">Done</span></td><td>Version snapshots immutable, pipeline drag/drop</td></tr>
     <tr><td><code>PR-NS-09A</code></td><td>Hotfix — 5 bugs</td><td><span class="s good">Done · Apr 29</span></td><td>Constraint fix, trade show nav, orders empty state, "Open order"</td></tr>
     <tr><td><code>PR-NS-09</code></td><td>Order Detail Panel + data fixes</td><td><span class="s good">Done · Apr 29</span></td><td>Panel wired to server actions, category_type catalog, accepted_version_id</td></tr>
-    <tr><td><code>PR-NS-10</code></td><td>Vercel build proof + live dispatch</td><td><span class="s active">Next</span></td><td>npm build green, dispatch advance Supabase validation</td></tr>
+    <tr><td><code>PR-NS-10</code></td><td>Vercel build proof + live dispatch status</td><td><span class="s good">Partial · Apr 29</span></td><td>Vercel build ✓ completed. Live dispatch wired, Supabase proof pending.</td></tr>
+    <tr><td><code>PR-NS-11</code></td><td>Schema: Multi-category expansion</td><td><span class="s active">Planned</span></td><td>Expand category_type constraint to 7 values. Migration SQL ready. Catalog UI + quote builder updated.</td></tr>
+    <tr><td><code>PR-NS-12</code></td><td>Mobile-first PWA: reference screens + manifest</td><td><span class="s active">Planned</span></td><td>Dashboard mobile HTML, Pipeline mobile HTML, PWA manifest.json, touch target audit.</td></tr>
+    <tr><td><code>PR-NS-13</code></td><td>WhatsApp quote delivery</td><td><span class="s deferred">Next cycle</span></td><td>Lead whatsapp_number field, "Send via WhatsApp" primary button, Twilio API stub.</td></tr>
+    <tr><td><code>PR-NS-14</code></td><td>Offline lead capture (PWA)</td><td><span class="s deferred">Next cycle</span></td><td>Service worker, IndexedDB offline queue, background sync on reconnect.</td></tr>
   </tbody></table></div>
 </div>
 
 <div class="tp" id="tab-next">
   <div class="sec"><div class="card">
-    <h2>PR-NS-10 — Next prompt</h2>
-    <div class="pb"><button class="cbtn" onclick="copyPrompt('p10')">Copy</button><pre id="p10">Continue from PR-NS-09 baseline (SetuFlow-CRM-NS-09-Complete.zip).
+    <h2>PR-NS-11 — Next prompt (schema + catalog multi-category)</h2>
+    <div class="pb"><button class="cbtn" onclick="copyPrompt('p11')">Copy</button><pre id="p11">Continue from PR-NS-10 baseline (SetuFlow-CRM-NS-10.zip).
 
-TypeScript is clean (0 errors). All 7 bugs from Apr 29 review are resolved.
+Vercel build is green. Live dispatch is wired but needs live Supabase proof (ongoing).
 
-PRIORITIES FOR PR-NS-10:
+PRIORITIES FOR PR-NS-11 — SCHEMA MULTI-CATEGORY EXPANSION:
 
-1. VERCEL BUILD PROOF
-   Run: npm run build
-   Fix any build-time errors (type errors at build, missing env handling, etc.)
-   Target: green build with no errors and no critical warnings.
+1. SCHEMA MIGRATION — Expand category_type constraint
+   Tables affected:
+   a) pricing_rule_set_items: CHECK (category_type = ANY (ARRAY['chips','powders']))
+   b) quote_line_items: CHECK (category_type = ANY (ARRAY['chips','powders']))
+   
+   New allowed values: 'chips' | 'powders' | 'sweeteners' | 'onion' | 'garlic' | 'freeze_dried' | 'other'
+   
+   Write a single migration SQL file: mitigation/supabase/sql/057_expand_category_type_constraint.sql
+   Use ALTER TABLE ... DROP CONSTRAINT ... then ADD CONSTRAINT with new CHECK.
+   Also add category_type column to product_categories table (text, nullable, with same CHECK).
 
-2. LIVE DISPATCH ADVANCE VALIDATION
-   The progressOrderExecution action is wired to the Order Detail Panel dispatch button.
-   Validate that contracts.execution_state advances correctly and revalidatePath fires.
-   Blocked orders must show blocker messages and prevent advance.
+2. CATALOG UI — Update product category forms
+   - src/features/catalog/components/CategoryForm.tsx (or equivalent)
+   - Add category_type selector with all 7 values and human-readable labels
+   - Labels: Chips (Vacuum-Cooked), Powders (Dehydrated/Spray-Dried), Sweeteners, Onion Products, Garlic Products, Freeze-Dried, Other
+   - Wire to product_categories.category_type
 
-3. ORDER-TO-CONTRACT CREATION VERIFICATION
-   When a quote is sent, verify: contracts row created with correct quote_id and lead_id,
-   accepted_version_id set on quotes row (fixed in NS-09 — verify live),
-   order card shows correct execution_state from contracts row.
+3. QUOTE BUILDER — Category type derivation
+   - Both updateQuoteDirect and saveLeadQuoteDraftPreview already do catalog lookup
+   - Verify fallback is 'other' not 'chips' (safer default)
+   - Update type: 'chips' | 'powders' in pricing-rule.repository.ts to include all 7 values
 
-4. APPROVAL-SEND PAGE HANDOFF
-   Verify the send-ready flow navigates to orders with notice=quote-accepted.
-   Ensure fallback (current_version_id) still correct after NS-09 fix.
+4. PRICING RULES — Support new category types
+   - PricingRuleSetItem type needs expanded category_type union
+   - Ensure pricing rule queries don't filter to only chips/powders
 
 5. INTERNAL DCC UPDATE
-   Update public/internal-dcc/index.html with PR-NS-10 completion status,
-   build proof result, dispatch validation result, updated module scores, PR-NS-11 next prompt.
+   Update public/internal-dcc/index.html with PR-NS-11 completion status.
 
-Return: updated repo zip + internal DCC update + PR-NS-11 next prompt.</pre></div>
+Return: updated repo zip + migration SQL + updated DCC + PR-NS-12 next prompt.</pre></div>
   </div></div>
 </div>
+
+<!-- ══════════════════ SCHEMA FIX TAB ══════════════════ -->
+<div class="tp" id="tab-schema">
+  <div class="sec">
+    <div class="co r"><strong>Critical schema gap identified:</strong> <code>category_type</code> CHECK constraint in <code>pricing_rule_set_items</code> and <code>quote_line_items</code> only allows <code>'chips'</code> and <code>'powders'</code>. Blue Orbit International has 7 distinct product families. This constraint blocks correct category derivation for sweeteners, onion, garlic, and freeze-dried products.</div>
+
+    <div class="sec grid g2" style="margin-top:10px">
+      <div class="card">
+        <h2>Current constraint (blocking)</h2>
+        <table class="t"><thead><tr><th>Table</th><th>Current CHECK</th><th>Status</th></tr></thead><tbody>
+          <tr><td><code>pricing_rule_set_items</code></td><td><code>'chips' | 'powders'</code></td><td><span class="s bad">Too narrow</span></td></tr>
+          <tr><td><code>quote_line_items</code></td><td><code>'chips' | 'powders'</code></td><td><span class="s bad">Too narrow</span></td></tr>
+          <tr><td><code>product_categories</code></td><td>No category_type column</td><td><span class="s bad">Missing</span></td></tr>
+        </tbody></table>
+      </div>
+      <div class="card">
+        <h2>Required expanded values</h2>
+        <table class="t"><thead><tr><th>Value</th><th>Maps to</th></tr></thead><tbody>
+          <tr><td><code>chips</code></td><td>Vacuum-cooked fruit &amp; vegetable chips</td></tr>
+          <tr><td><code>powders</code></td><td>Dehydrated + spray-dried powders</td></tr>
+          <tr><td><code>sweeteners</code></td><td>Jaggery (round/cube/powder), Palm Jaggery/Candy/Sugar, Coconut Sugar</td></tr>
+          <tr><td><code>onion</code></td><td>Dehydrated onion (flakes/chopped/minced/granules/powder/fried)</td></tr>
+          <tr><td><code>garlic</code></td><td>Dehydrated garlic (cloves/flakes/chopped/minced/granules/powder)</td></tr>
+          <tr><td><code>freeze_dried</code></td><td>Freeze-dried + ready-to-eat products</td></tr>
+          <tr><td><code>other</code></td><td>Catch-all for future categories</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h2>Migration SQL — 057_expand_category_type_constraint.sql</h2>
+      <div class="pb"><button class="cbtn" onclick="copyPrompt('sql057')">Copy</button><pre id="sql057">-- Migration 057: Expand category_type constraint beyond 2 values
+-- Covers: pricing_rule_set_items, quote_line_items, product_categories
+-- Run in Supabase SQL editor — no data loss (existing 'chips'/'powders' rows remain valid)
+
+BEGIN;
+
+-- 1. Add category_type to product_categories (new column, nullable to allow migration)
+ALTER TABLE public.product_categories
+  ADD COLUMN IF NOT EXISTS category_type text
+  CHECK (category_type = ANY (ARRAY[
+    'chips','powders','sweeteners','onion','garlic','freeze_dried','other'
+  ]));
+
+-- 2. pricing_rule_set_items — drop old constraint, add expanded
+ALTER TABLE public.pricing_rule_set_items
+  DROP CONSTRAINT IF EXISTS pricing_rule_set_items_category_type_check;
+
+ALTER TABLE public.pricing_rule_set_items
+  ADD CONSTRAINT pricing_rule_set_items_category_type_check
+  CHECK (category_type = ANY (ARRAY[
+    'chips','powders','sweeteners','onion','garlic','freeze_dried','other'
+  ]));
+
+-- 3. quote_line_items — drop old constraint, add expanded
+ALTER TABLE public.quote_line_items
+  DROP CONSTRAINT IF EXISTS quote_line_items_category_type_check;
+
+ALTER TABLE public.quote_line_items
+  ADD CONSTRAINT quote_line_items_category_type_check
+  CHECK (category_type = ANY (ARRAY[
+    'chips','powders','sweeteners','onion','garlic','freeze_dried','other'
+  ]));
+
+-- 4. Backfill product_categories.category_type from product name patterns
+-- (Adjust WHERE clauses to match your actual category names)
+UPDATE public.product_categories SET category_type = 'sweeteners'
+  WHERE lower(name) LIKE '%jaggery%' OR lower(name) LIKE '%palm%' OR lower(name) LIKE '%coconut sugar%';
+
+UPDATE public.product_categories SET category_type = 'onion'
+  WHERE lower(name) LIKE '%onion%';
+
+UPDATE public.product_categories SET category_type = 'garlic'
+  WHERE lower(name) LIKE '%garlic%';
+
+UPDATE public.product_categories SET category_type = 'freeze_dried'
+  WHERE lower(name) LIKE '%freeze%' OR lower(name) LIKE '%ready%to%eat%';
+
+UPDATE public.product_categories SET category_type = 'powders'
+  WHERE lower(name) LIKE '%powder%' OR lower(name) LIKE '%spray%' OR lower(name) LIKE '%dehydrat%';
+
+UPDATE public.product_categories SET category_type = 'chips'
+  WHERE lower(name) LIKE '%chip%' OR lower(name) LIKE '%vacuum%';
+
+-- Catch-all for anything not yet mapped
+UPDATE public.product_categories SET category_type = 'other'
+  WHERE category_type IS NULL;
+
+COMMIT;</pre></div>
+    </div>
+
+    <div class="co b" style="margin-top:10px"><strong>Code changes required alongside migration:</strong> Update <code>src/features/quotes/pricing/repositories/pricing-rule.repository.ts</code> — expand <code>category_type: 'chips' | 'powders'</code> union to include all 7 values. Update fallback from <code>'chips'</code> to <code>'other'</code> in both <code>updateQuoteDirect</code> and <code>saveLeadQuoteDraftPreview</code>. Add category_type selector to CategoryForm.tsx.</div>
+  </div>
+</div>
+<!-- END SCHEMA FIX TAB -->
+
+<!-- ══════════════════ MOBILE PLAN TAB ══════════════════ -->
+<div class="tp" id="tab-mobile">
+  <div class="sec">
+    <div class="co b"><strong>Strategy:</strong> SETU Flow must work natively on mobile — not as a shrunken desktop. The two most critical mobile experiences are Dashboard (at-a-glance command) and Pipeline (deal review on the go). These HTML references define the exact layouts Cursor must implement in the Next.js app.</div>
+
+    <div class="sec grid g2" style="margin-top:10px">
+      <div class="card">
+        <h2>Mobile Dashboard — design decisions</h2>
+        <table class="t"><thead><tr><th>Decision</th><th>Rationale</th></tr></thead><tbody>
+          <tr><td>Bottom tab bar replaces sidebar</td><td>Thumb-reachable on 375px screens. 5 icons max.</td></tr>
+          <tr><td>KPI cards = full-width stacked</td><td>No 2-column grid at &lt;480px. One metric per card row.</td></tr>
+          <tr><td>Floating action button (+ Lead)</td><td>Capture is the #1 mobile action. Always accessible.</td></tr>
+          <tr><td>Pipeline mini-view on dashboard</td><td>Stage counts only, no drag. Tap to go to full Pipeline.</td></tr>
+          <tr><td>Activity feed = 3 items max</td><td>Scannable. "Show all" expands. No infinite scroll on dashboard.</td></tr>
+          <tr><td>Touch targets ≥ 44px</td><td>WCAG 2.5.5. All buttons and tap targets meet minimum.</td></tr>
+        </tbody></table>
+      </div>
+      <div class="card">
+        <h2>Mobile Pipeline — design decisions</h2>
+        <table class="t"><thead><tr><th>Decision</th><th>Rationale</th></tr></thead><tbody>
+          <tr><td>Horizontal scroll stage lanes</td><td>Swipe left/right to see all stages. Cards are tall, not wide.</td></tr>
+          <tr><td>No drag-and-drop on mobile</td><td>Too unreliable on touch. Use "Move to stage" action sheet instead.</td></tr>
+          <tr><td>Deal card = 3-line max</td><td>Company, value, stage. Tap to expand detail.</td></tr>
+          <tr><td>Stage summary bar at top</td><td>$X total · N deals per stage — always visible above cards.</td></tr>
+          <tr><td>Filter = bottom sheet, not sidebar</td><td>Native mobile pattern. Slide up from bottom.</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+    <div class="sec grid g3" style="margin-top:10px">
+      <div class="card">
+        <h2>PR-NS-12 deliverables</h2>
+        <div class="feat-row"><span class="feat-name">Mobile Dashboard HTML reference</span><span class="feat-status fs-done">Produced ✓</span></div>
+        <div class="feat-row"><span class="feat-name">Mobile Pipeline HTML reference</span><span class="feat-status fs-done">Produced ✓</span></div>
+        <div class="feat-row"><span class="feat-name">PWA manifest.json</span><span class="feat-status fs-new">PR-NS-12</span></div>
+        <div class="feat-row"><span class="feat-name">Touch target audit (all pages)</span><span class="feat-status fs-new">PR-NS-12</span></div>
+        <div class="feat-row"><span class="feat-name">Bottom tab bar component</span><span class="feat-status fs-new">PR-NS-12</span></div>
+        <div class="feat-row"><span class="feat-name">Mobile lead capture flow</span><span class="feat-status fs-partial">Partial (existing)</span></div>
+        <div class="feat-row"><span class="feat-name">Responsive breakpoint audit</span><span class="feat-status fs-new">PR-NS-12</span></div>
+      </div>
+      <div class="card">
+        <h2>PWA manifest.json plan</h2>
+        <div class="pb" style="margin-top:6px"><pre style="font-size:9px;color:#e2e8f0;line-height:1.6">{
+  "name": "SETU Flow CRM",
+  "short_name": "SETU Flow",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0b2e4a",
+  "theme_color": "#0c7fff",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icons/icon-192.png",
+      "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png",
+      "sizes": "512x512", "type": "image/png",
+      "purpose": "any maskable" }
+  ],
+  "categories": ["business","productivity"],
+  "description": "Export-grade CRM for food manufacturers"
+}</pre></div>
+      </div>
+      <div class="card">
+        <h2>Mobile bottom tab bar — 5 tabs</h2>
+        <table class="t" style="margin-top:6px"><thead><tr><th>Tab</th><th>Icon</th><th>Route</th></tr></thead><tbody>
+          <tr><td>Dashboard</td><td>⌂ Home</td><td>/dashboard</td></tr>
+          <tr><td>Leads</td><td>👤 Person</td><td>/leads</td></tr>
+          <tr><td>Pipeline</td><td>⬡ Funnel</td><td>/pipeline</td></tr>
+          <tr><td>Orders</td><td>📦 Box</td><td>/orders</td></tr>
+          <tr><td>More</td><td>⋯ Menu</td><td>slide-up sheet</td></tr>
+        </tbody></table>
+        <div style="font-size:10px;color:var(--mu);margin-top:8px">Trade Events, Quotes, Reports, Settings accessible via "More" sheet. + Quick Lead as FAB overlaid on all tabs.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- END MOBILE PLAN TAB -->
+
+<!-- ══════════════════ EXECUTION PLAN TAB ══════════════════ -->
+<div class="tp" id="tab-execplan">
+  <div class="sec">
+    <div class="co v"><strong>Investor + commercial readiness execution plan — Apr 29 2026.</strong> Four PRs required to close the gap between current state and a mobile-ready, fully commercial SaaS product. Ordered by impact and dependency.</div>
+
+    <!-- PR-NS-11 -->
+    <div class="card" style="border-left:4px solid var(--teal);margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <h2 style="color:var(--teal)">PR-NS-11 — Schema: Multi-Category Expansion</h2>
+        <div style="display:flex;gap:5px"><span class="s teal">Priority 1</span><span class="s active">Infrastructure</span></div>
+      </div>
+      <div class="co t" style="margin-bottom:8px"><strong>Why now:</strong> The category_type constraint blocks correct quote line items for 5 of 7 product families. Any quote for sweeteners, onion, garlic, or freeze-dried will violate DB constraints. This is a correctness blocker, not a feature.</div>
+      <table class="t"><thead><tr><th>Task</th><th>File</th><th>Type</th></tr></thead><tbody>
+        <tr><td>Migration SQL — expand CHECK on pricing_rule_set_items</td><td><code>mitigation/supabase/sql/057_expand_category_type_constraint.sql</code></td><td><span class="s teal">Schema</span></td></tr>
+        <tr><td>Migration SQL — expand CHECK on quote_line_items</td><td>Same migration file</td><td><span class="s teal">Schema</span></td></tr>
+        <tr><td>Add category_type to product_categories table</td><td>Same migration file</td><td><span class="s teal">Schema</span></td></tr>
+        <tr><td>Expand TypeScript union type</td><td><code>src/features/quotes/pricing/repositories/pricing-rule.repository.ts</code></td><td><span class="s active">Code</span></td></tr>
+        <tr><td>Update fallback from 'chips' to 'other'</td><td><code>src/features/quotes/server/actions.ts</code>, <code>src/app/leads/server/actions.ts</code></td><td><span class="s active">Code</span></td></tr>
+        <tr><td>Add category_type selector to CategoryForm</td><td><code>src/features/catalog/components/</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Backfill product_categories.category_type</td><td>SQL in same migration</td><td><span class="s teal">Data</span></td></tr>
+      </tbody></table>
+    </div>
+
+    <!-- PR-NS-12 -->
+    <div class="card" style="border-left:4px solid var(--brand);margin-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <h2 style="color:var(--brand)">PR-NS-12 — Mobile-First PWA</h2>
+        <div style="display:flex;gap:5px"><span class="s active">Priority 2</span><span class="s violet">Competitive</span></div>
+      </div>
+      <div class="co b" style="margin-bottom:8px"><strong>Why now:</strong> Mobile native app is listed as Gap ✗ vs. competitors. A well-executed PWA closes this gap for trade show use (Gulfood 2026). Mobile Dashboard + Pipeline are the highest-traffic screens and must work perfectly at 375px. Reference HTMLs are already produced — implementation in Next.js is the remaining work.</div>
+      <table class="t"><thead><tr><th>Task</th><th>File</th><th>Type</th></tr></thead><tbody>
+        <tr><td>PWA manifest.json</td><td><code>public/manifest.json</code></td><td><span class="s teal">Config</span></td></tr>
+        <tr><td>Add &lt;link rel="manifest"&gt; to root layout</td><td><code>src/app/layout.tsx</code></td><td><span class="s active">Code</span></td></tr>
+        <tr><td>Bottom tab bar component (mobile ≤ 768px)</td><td><code>src/components/shell/MobileTabBar.tsx</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Hide sidebar on mobile, show tab bar</td><td><code>src/components/shell/app-shell.tsx</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Dashboard — KPI cards mobile stack</td><td><code>src/features/dashboard/</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Pipeline — horizontal stage lanes + "Move to stage" action sheet</td><td><code>src/features/pipeline/</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Touch target audit (all interactive elements ≥ 44px)</td><td>Global CSS + component review</td><td><span class="s warn">Audit</span></td></tr>
+        <tr><td>Floating action button (+ Quick Lead) overlay</td><td><code>src/components/shell/QuickLeadFAB.tsx</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Update mobile reference HTML files</td><td><code>public/reference-html/setuflow-mobile-dashboard.html</code></td><td><span class="s neutral">Docs</span></td></tr>
+      </tbody></table>
+    </div>
+
+    <!-- PR-NS-13 -->
+    <div class="card" style="border-left:4px solid var(--violet);margin-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <h2 style="color:var(--violet)">PR-NS-13 — WhatsApp Quote Delivery</h2>
+        <div style="display:flex;gap:5px"><span class="s violet">Priority 3</span><span class="s violet">Category-defining</span></div>
+      </div>
+      <div class="co v" style="margin-bottom:8px"><strong>Why this matters:</strong> 70% of the target market (SME food exporters) communicates primarily via WhatsApp. Being the CRM that sends quotes via WhatsApp natively — not email-first — is a category-defining differentiator vs. Salesforce, HubSpot, and Pipedrive.</div>
+      <table class="t"><thead><tr><th>Task</th><th>File</th><th>Type</th></tr></thead><tbody>
+        <tr><td>Add whatsapp_number to leads table</td><td><code>mitigation/supabase/sql/058_leads_whatsapp_field.sql</code></td><td><span class="s teal">Schema</span></td></tr>
+        <tr><td>Lead form: WhatsApp number field</td><td><code>src/features/leads/components/LeadForm.tsx</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>"Send via WhatsApp" primary button on quote approval page</td><td><code>src/features/quotes/components/QuoteApprovalPage.tsx</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>WhatsApp delivery server action (stub → Twilio API)</td><td><code>src/features/quotes/server/whatsapp-delivery.ts</code></td><td><span class="s active">Code</span></td></tr>
+        <tr><td>Quote message template (WhatsApp-formatted)</td><td><code>src/lib/whatsapp-templates.ts</code></td><td><span class="s active">Code</span></td></tr>
+        <tr><td>Delivery status tracking in communications table</td><td>Use existing <code>channel: 'whatsapp'</code> enum</td><td><span class="s neutral">Existing</span></td></tr>
+      </tbody></table>
+    </div>
+
+    <!-- PR-NS-14 -->
+    <div class="card" style="border-left:4px solid var(--warn);margin-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <h2 style="color:var(--warn)">PR-NS-14 — Offline Lead Capture (PWA)</h2>
+        <div style="display:flex;gap:5px"><span class="s warn">Priority 4</span><span class="s warn">Trade Show</span></div>
+      </div>
+      <div class="co w" style="margin-bottom:8px"><strong>The trade show bet:</strong> Gulfood and similar events have unreliable WiFi. Offline capture means leads are never lost. IndexedDB stores captured leads locally; background sync pushes to Supabase on reconnect. This is the feature that makes SETU Flow irreplaceable at events.</div>
+      <table class="t"><thead><tr><th>Task</th><th>File</th><th>Type</th></tr></thead><tbody>
+        <tr><td>Service worker registration</td><td><code>public/sw.js</code>, <code>src/app/layout.tsx</code></td><td><span class="s active">Code</span></td></tr>
+        <tr><td>IndexedDB offline queue for lead capture</td><td><code>src/lib/offline/lead-queue.ts</code></td><td><span class="s active">Code</span></td></tr>
+        <tr><td>Background sync — push queue to Supabase on reconnect</td><td><code>src/lib/offline/sync.ts</code></td><td><span class="s active">Code</span></td></tr>
+        <tr><td>Offline status indicator in topbar</td><td><code>src/components/shell/OfflineIndicator.tsx</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Lead capture form — offline mode (no network required)</td><td><code>src/features/trade-events/components/CaptureDrawer.tsx</code></td><td><span class="s active">UI</span></td></tr>
+        <tr><td>Sync conflict resolution (server wins)</td><td><code>src/lib/offline/sync.ts</code></td><td><span class="s active">Code</span></td></tr>
+      </tbody></table>
+    </div>
+
+    <!-- Summary timeline -->
+    <div class="card" style="margin-top:12px;border:2px solid var(--navy)">
+      <h2 style="color:var(--navy)">Execution timeline — investor readiness</h2>
+      <table class="t" style="margin-top:8px"><thead><tr><th>PR</th><th>Scope</th><th>Est. sessions</th><th>Investor impact</th><th>Revenue impact</th></tr></thead><tbody>
+        <tr><td><code>NS-11</code></td><td>Schema multi-category</td><td>1</td><td><span class="s good">High — correctness</span></td><td>Unblocks all product lines in quotes</td></tr>
+        <tr><td><code>NS-12</code></td><td>Mobile PWA</td><td>2–3</td><td><span class="s good">Very High — demo</span></td><td>Closes mobile gap vs. Salesforce</td></tr>
+        <tr><td><code>NS-13</code></td><td>WhatsApp delivery</td><td>2</td><td><span class="s good">High — differentiation</span></td><td>Category-defining for SME export CRM</td></tr>
+        <tr><td><code>NS-14</code></td><td>Offline capture</td><td>2</td><td><span class="s active">Medium — trade show</span></td><td>Required for Gulfood 2026 success</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+<!-- END EXECUTION PLAN TAB -->
 
 <!-- ══════════════════ STRATEGIC REVIEW ══════════════════ -->
 <div class="tp" id="tab-strategy">

@@ -1,7 +1,7 @@
 import { normalizeImportOptionalText, normalizeImportText } from '@/lib/import-normalization';
 import { createImportIssuePayload } from '@/lib/import-issues';
 
-export type ProductPricingCategoryType = 'chips' | 'powders';
+export type ProductPricingCategoryType = string;  // product_categories.name — any value from admin
 export type PricingBasisUnit = 'unit' | 'case' | 'kg';
 
 type ResolvePricingRuleSetArgs = {

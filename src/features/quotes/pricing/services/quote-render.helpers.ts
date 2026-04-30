@@ -43,28 +43,25 @@ function formatNumber(value: number | null | undefined): string {
 
 function resolveTemplateName(type: TemplateType): string {
   switch (type) {
-    case 'chips':
-      return 'Chips Quote';
-    case 'powders':
-      return 'Powders Quote';
-    case 'both':
+    case 'unit_case':
+      return 'Unit / Case Quote';
+    case 'kg':
+      return 'Per-KG Quote';
+    case 'mixed':
     default:
       return 'Combined Quote';
   }
 }
 
 export function resolveAggregateTemplateType(aggregate: QuoteVersionAggregate): TemplateType {
-  const categories = new Set(aggregate.lines.map((line) => line.categoryType));
+  // Template type is determined by pricing mode on the lines — not by category name.
+  const modes = new Set(aggregate.lines.map((line) => line.pricingMode));
+  const isAllKg = [...modes].every((m) => m === 'kg' || m === 'bulk_kg');
+  const isAllUnit = [...modes].every((m) => m === 'unit' || m === 'case');
 
-  if (categories.size === 1 && categories.has('chips')) {
-    return 'chips';
-  }
-
-  if (categories.size === 1 && categories.has('powders')) {
-    return 'powders';
-  }
-
-  return 'both';
+  if (isAllKg) return 'kg';
+  if (isAllUnit) return 'unit_case';
+  return 'mixed';
 }
 
 export function resolveRenderTemplate(args: {
@@ -112,18 +109,18 @@ function renderMetaList(items: Array<{ label: string; value: string | null | und
 
 function renderLinesTable(aggregate: QuoteVersionAggregate, templateType: TemplateType): string {
   const lines = aggregate.lines.filter((line) => {
-    if (templateType === 'both') return true;
+    if (templateType === 'mixed') return true;
     return line.categoryType === templateType;
   });
 
-  const columns = templateType === 'powders'
+  const columns = templateType === 'kg'
     ? ['SKU', 'Product', 'HSN', 'MOQ', 'Price / KG', 'Currency']
-    : templateType === 'chips'
+    : templateType === 'unit_case'
       ? ['SKU', 'Product', 'Pack', 'MOQ', 'Price / Unit', 'Price / Case', 'Currency']
       : ['Category', 'SKU', 'Product', 'Pack', 'MOQ', 'Price', 'Currency'];
 
   const rows = lines.map((line) => {
-    if (templateType === 'powders') {
+    if (templateType === 'kg') {
       return `
         <tr>
           <td>${escapeHtml(line.skuCode)}</td>
@@ -136,7 +133,7 @@ function renderLinesTable(aggregate: QuoteVersionAggregate, templateType: Templa
       `;
     }
 
-    if (templateType === 'chips') {
+    if (templateType === 'unit_case') {
       return `
         <tr>
           <td>${escapeHtml(line.skuCode)}</td>

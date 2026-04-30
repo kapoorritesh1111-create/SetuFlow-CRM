@@ -4,7 +4,10 @@ export type PricingBasis = QuotePricingBasis;
 
 export type CurrencyCode = 'USD' | 'INR' | 'EUR' | 'GBP' | 'AED';
 
-export type CategoryType = 'chips' | 'powders';
+// CategoryType is the name of whatever category the admin created in product_categories.
+// It is a free-text label (e.g. "Vacuum-Cooked Chips", "Dehydrated Onion").
+// There is no fixed enum — categories are admin-managed.
+export type CategoryType = string;
 
 export type PricingMode = 'unit' | 'case' | 'kg' | 'bulk_kg';
 
@@ -49,7 +52,12 @@ export type NegotiationEventType =
 
 export type ActorType = 'internal_user' | 'buyer_contact' | 'system';
 
-export type TemplateType = 'chips' | 'powders' | 'both';
+// TemplateType drives quote rendering column layout.
+// It is derived from pricingMode on the line items — NOT from category name.
+// 'unit_case' = unit + case price columns (was 'chips')
+// 'kg'        = kg price column only        (was 'powders')
+// 'mixed'     = both column sets            (was 'both')
+export type TemplateType = 'unit_case' | 'kg' | 'mixed';
 
 export type PricingRuleSetStatus = 'draft' | 'active' | 'archived';
 

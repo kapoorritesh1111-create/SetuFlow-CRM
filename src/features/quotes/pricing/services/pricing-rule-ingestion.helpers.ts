@@ -68,8 +68,9 @@ export function validatePricingRuleImportRows(rows: PricingRuleImportRow[]): Pri
       pushError(errors, row.rowNo, 'MISSING_PRODUCT_NAME', 'Product name is required.');
     }
 
-    if (!['chips', 'powders'].includes(row.categoryType)) {
-      pushError(errors, row.rowNo, 'INVALID_CATEGORY', 'Category type must be chips or powders.');
+    // category_type is free text from product_categories.name — any non-empty value is valid
+    if (!row.categoryType || row.categoryType.trim() === '') {
+      pushError(errors, row.rowNo, 'MISSING_CATEGORY', 'Category type is required. Use the category name from the admin category manager.');
     }
 
     if (!hasAtLeastOnePrice(row)) {

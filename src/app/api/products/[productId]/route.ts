@@ -165,7 +165,7 @@ async function getProductDetailResponse(client: any, organizationId: string, pro
   const variantRows = variants.map((variant) => {
     const rule = currentRules.get(variant.id) ?? null;
     const moqDisplay = variant.moq_cases != null ? `${variant.moq_cases} cases` : variant.moq_kg != null ? `${variant.moq_kg} kg` : null;
-    const exUnit = rule?.ex_factory_usd_per_unit ?? (rule?.pricing_type === 'powders' ? rule?.bulk_usd_per_kg : null) ?? null;
+    const exUnit = rule?.ex_factory_usd_per_unit ?? (variant.pricing_mode_default === 'kg' ? rule?.bulk_usd_per_kg : null) ?? null;
     const exCase = rule?.ex_factory_usd_per_case ?? (exUnit != null && variant.units_per_case != null ? Number((exUnit * Number(variant.units_per_case)).toFixed(2)) : null);
     const fobUnit = rule?.fob_usd_per_unit ?? null;
     const fobCase = rule?.fob_usd_per_case ?? (fobUnit != null && variant.units_per_case != null ? Number((fobUnit * Number(variant.units_per_case)).toFixed(2)) : null);
@@ -365,8 +365,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { produc
         packLabel: variantRow.pack_label ?? null,
         unitsPerCase: variantRow.units_per_case,
         moq: pricingModeDefault === 'kg' ? variantRow.moq_kg ?? null : variantRow.moq_cases ?? null,
-        categoryType: productPricingType === 'powders' || variant.ex_factory_unit === 'kg' || pricingModeDefault === 'kg' ? 'powders' : 'chips',
-        pricingType: variant.ex_factory_unit === 'kg' || pricingModeDefault === 'kg' ? 'powders' : 'chips',
+        categoryType: product?.category_name ?? '',  // real name from product_categories
+        pricingType: variant.ex_factory_unit === 'kg' || pricingModeDefault === 'kg' ? 'kg' : 'unit',
         isQuoteable: variant.is_quoteable ?? Boolean(variantRow.is_quoteable ?? true),
         exFactoryValue: variant.ex_factory_value,
         exFactoryUnit: variant.ex_factory_unit ?? null,

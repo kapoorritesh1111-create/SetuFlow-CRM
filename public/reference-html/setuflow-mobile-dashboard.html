@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SETU Flow — Mobile Dashboard Reference · PR-NS-12</title>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   SETU FLOW MOBILE DASHBOARD — Reference HTML PR-NS-12
+   Target: 375px–430px viewport. Real mobile layout.
+   NOT a shrink-down of the desktop. Purpose-built.
+   All touch targets ≥ 44px (WCAG 2.5.5)
+═══════════════════════════════════════════════════════════ */
+:root {
+  --navy:      #0b2e4a;
+  --navy-deep: #061c2e;
+  --brand:     #0c7fff;
+  --teal:      #0d9488;
+  --emerald:   #059669;
+  --amber:     #d97706;
+  --rose:      #e11d48;
+  --violet:    #7c3aed;
+
+  --slate-950: #0f172a;
+  --slate-800: #1e293b;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --slate-50:  #f8fafc;
+
+  --surface:   #ffffff;
+  --page-bg:   #f0f4f8;
+  --border:    #e2e8f0;
+
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+
+  --shadow-sm: 0 1px 3px rgba(15,23,42,.06);
+  --shadow-md: 0 4px 14px rgba(15,23,42,.08);
+
+  --tab-h: 64px;   /* bottom tab bar height */
+  --top-h: 56px;   /* top header height */
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; overflow-x: hidden; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  background: var(--page-bg);
+  color: var(--slate-950);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* Simulate phone frame in preview */
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── TOP HEADER ─────────────────────────────────────────── */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--navy);
+  height: var(--top-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-shadow: 0 1px 8px rgba(0,0,0,.2);
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.logo-mark {
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--teal) 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: -.5px;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+}
+
+.logo-text span {
+  color: #5ee7df;
+}
+
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.1);
+  border: none;
+  color: rgba(255,255,255,.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .12s;
+}
+
+.icon-btn:active { background: rgba(255,255,255,.22); }
+
+.notif-badge {
+  position: relative;
+}
+
+.notif-badge::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  background: #f43f5e;
+  border: 1.5px solid var(--navy);
+  border-radius: 50%;
+}
+
+/* ── SCROLL CONTENT ─────────────────────────────────────── */
+.scroll-body {
+  padding: 14px 14px calc(var(--tab-h) + 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── GREETING CARD ──────────────────────────────────────── */
+.greeting-card {
+  background: linear-gradient(135deg, var(--navy) 0%, #1a4f7a 60%, var(--teal) 100%);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.greeting-card::before {
+  content: '';
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+}
+
+.greeting-card::after {
+  content: '';
+  position: absolute;
+  right: 20px;
+  bottom: -30px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+}
+
+.greeting-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,.65);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.greeting-name {
+  font-size: 20px;
+  font-weight: 800;
+  margin-top: 2px;
+  letter-spacing: -.4px;
+}
+
+.greeting-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,.7);
+  margin-top: 4px;
+}
+
+.greeting-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.15);
+}
+
+.g-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.g-stat-val {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -.5px;
+}
+
+.g-stat-lbl {
+  font-size: 10px;
+  color: rgba(255,255,255,.6);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+/* ── SECTION HEADER ─────────────────────────────────────── */
+.section-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--slate-800);
+  letter-spacing: -.2px;
+}
+
+.section-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+}
+
+/* ── KPI CARDS — stacked full width ─────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 14px 12px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 86px;
+}
+
+.kpi-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--slate-500);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -.6px;
+  line-height: 1.1;
+}
+
+.kpi-delta {
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.delta-up   { color: var(--emerald); }
+.delta-down { color: var(--rose); }
+.delta-flat { color: var(--slate-400); }
+
+/* Color accents per KPI */
+.kpi-card.kpi-revenue .kpi-value { color: var(--emerald); }
+.kpi-card.kpi-pipeline .kpi-value { color: var(--brand); }
+.kpi-card.kpi-leads    .kpi-value { color: var(--violet); }
+.kpi-card.kpi-orders   .kpi-value { color: var(--teal); }
+
+/* ── PIPELINE MINI LANES ────────────────────────────────── */
+.pipeline-mini {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.pl-lanes {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.pl-lanes::-webkit-scrollbar { display: none; }
+
+.pl-lane {
+  flex: 0 0 auto;
+  min-width: 88px;
+  background: var(--slate-50);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .1s;
+}
+
+.pl-lane:active { background: var(--slate-100); }
+
+.pl-lane-stage {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--slate-500);
+  text-align: center;
+}
+
+.pl-lane-count {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--slate-800);
+  letter-spacing: -.5px;
+}
+
+.pl-lane-val {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--slate-500);
+}
+
+.pl-lane.pl-active {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.pl-lane.pl-active .pl-lane-stage,
+.pl-lane.pl-active .pl-lane-count,
+.pl-lane.pl-active .pl-lane-val {
+  color: #fff;
+}
+
+/* ── ACTIVITY FEED ──────────────────────────────────────── */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .1s;
+}
+
+.activity-item:last-child { border-bottom: 0; }
+.activity-item:active { background: var(--slate-50); }
+
+.act-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.act-icon.ai-lead     { background: #f5f3ff; }
+.act-icon.ai-quote    { background: #eff6ff; }
+.act-icon.ai-order    { background: #ecfdf5; }
+.act-icon.ai-trade    { background: #f0fdfa; }
+.act-icon.ai-alert    { background: #fff7ed; }
+
+.act-body { flex: 1; min-width: 0; }
+
+.act-main {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-800);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-sub {
+  font-size: 11px;
+  color: var(--slate-500);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-time {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--slate-400);
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+/* ── TASKS DUE ──────────────────────────────────────────── */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.task-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .1s;
+}
+
+.task-card:active { background: var(--slate-50); }
+
+.task-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--slate-300);
+  flex-shrink: 0;
+}
+
+.task-body { flex: 1; min-width: 0; }
+
+.task-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-meta {
+  font-size: 11px;
+  color: var(--slate-500);
+  margin-top: 1px;
+}
+
+.task-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.tb-urgent { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; }
+.tb-today  { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.tb-soon   { background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
+
+/* ── BOTTOM TAB BAR ─────────────────────────────────────── */
+.bottom-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 430px;
+  margin: 0 auto;
+  height: var(--tab-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+  box-shadow: 0 -4px 16px rgba(15,23,42,.07);
+  z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  transition: background .1s;
+  border: none;
+  background: none;
+  color: var(--slate-400);
+}
+
+.tab-item:active { background: var(--slate-50); }
+
+.tab-item.tab-active {
+  color: var(--brand);
+}
+
+.tab-item.tab-active .tab-icon::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  background: var(--brand);
+  border-radius: 0 0 3px 3px;
+}
+
+.tab-icon {
+  font-size: 22px;
+  position: relative;
+  line-height: 1;
+}
+
+.tab-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+/* ── FAB — Floating action button ───────────────────────── */
+.fab {
+  position: fixed;
+  bottom: calc(var(--tab-h) + 16px);
+  right: 20px;
+  max-width: 430px;
+  z-index: 300;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--brand) 0%, #0052cc 100%);
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(12,127,255,.4);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .1s, box-shadow .1s;
+}
+
+.fab:active {
+  transform: scale(.94);
+  box-shadow: 0 2px 8px rgba(12,127,255,.35);
+}
+
+/* ── PREVIEW FRAME ──────────────────────────────────────── */
+.preview-note {
+  text-align: center;
+  padding: 8px;
+  font-size: 10px;
+  color: var(--slate-400);
+  background: var(--slate-100);
+  border-bottom: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+<div class="preview-note">SETU Flow — Mobile Dashboard Reference · PR-NS-12 · 375–430px viewport</div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-bar-left">
+    <div class="top-logo">
+      <div class="logo-mark">SF</div>
+      <div class="logo-text">SETU <span>Flow</span></div>
+    </div>
+  </div>
+  <div class="top-bar-actions">
+    <button class="icon-btn notif-badge" aria-label="Notifications">🔔</button>
+    <button class="icon-btn" aria-label="Search">🔍</button>
+    <button class="icon-btn" aria-label="Profile" style="font-size:14px;font-weight:800;background:rgba(255,255,255,.18)">RB</button>
+  </div>
+</div>
+
+<!-- SCROLL BODY -->
+<div class="scroll-body">
+
+  <!-- GREETING -->
+  <div class="greeting-card">
+    <div class="greeting-label">Good morning</div>
+    <div class="greeting-name">Ritesh 👋</div>
+    <div class="greeting-sub">Blue Orbit International · Apr 29, 2026</div>
+    <div class="greeting-stats">
+      <div class="g-stat">
+        <div class="g-stat-val">3</div>
+        <div class="g-stat-lbl">Tasks due</div>
+      </div>
+      <div class="g-stat">
+        <div class="g-stat-val">2</div>
+        <div class="g-stat-lbl">Quotes to send</div>
+      </div>
+      <div class="g-stat">
+        <div class="g-stat-val">1</div>
+        <div class="g-stat-lbl">Order awaiting</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div>
+    <div class="section-hd">
+      <div class="section-title">This month</div>
+      <a href="/reports" class="section-link">Full report →</a>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-revenue">
+        <div class="kpi-label">Revenue</div>
+        <div class="kpi-value">$84k</div>
+        <div class="kpi-delta delta-up">↑ 18% vs last</div>
+      </div>
+      <div class="kpi-card kpi-pipeline">
+        <div class="kpi-label">Pipeline</div>
+        <div class="kpi-value">$312k</div>
+        <div class="kpi-delta delta-up">↑ 7 deals</div>
+      </div>
+      <div class="kpi-card kpi-leads">
+        <div class="kpi-label">New leads</div>
+        <div class="kpi-value">24</div>
+        <div class="kpi-delta delta-flat">→ Same pace</div>
+      </div>
+      <div class="kpi-card kpi-orders">
+        <div class="kpi-label">Active orders</div>
+        <div class="kpi-value">6</div>
+        <div class="kpi-delta delta-down">↓ 1 delayed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE MINI -->
+  <div>
+    <div class="section-hd">
+      <div class="section-title">Pipeline overview</div>
+      <a href="/pipeline" class="section-link">Full view →</a>
+    </div>
+    <div class="pipeline-mini">
+      <div style="font-size:11px;color:var(--slate-500);margin-bottom:2px">Swipe to see all stages →</div>
+      <div class="pl-lanes">
+        <div class="pl-lane">
+          <div class="pl-lane-stage">Inquiry</div>
+          <div class="pl-lane-count">8</div>
+          <div class="pl-lane-val">$41k</div>
+        </div>
+        <div class="pl-lane pl-active">
+          <div class="pl-lane-stage">Qualified</div>
+          <div class="pl-lane-count">5</div>
+          <div class="pl-lane-val">$96k</div>
+        </div>
+        <div class="pl-lane">
+          <div class="pl-lane-stage">Quote sent</div>
+          <div class="pl-lane-count">4</div>
+          <div class="pl-lane-val">$88k</div>
+        </div>
+        <div class="pl-lane">
+          <div class="pl-lane-stage">Negotiation</div>
+          <div class="pl-lane-count">3</div>
+          <div class="pl-lane-val">$64k</div>
+        </div>
+        <div class="pl-lane">
+          <div class="pl-lane-stage">Won</div>
+          <div class="pl-lane-count">4</div>
+          <div class="pl-lane-val">$23k</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <div>
+    <div class="section-hd">
+      <div class="section-title">Recent activity</div>
+      <a href="/leads" class="section-link">All →</a>
+    </div>
+    <div class="activity-list">
+      <div class="activity-item">
+        <div class="act-icon ai-lead">👤</div>
+        <div class="act-body">
+          <div class="act-main">Mehmet K. — Atlas Trading, Turkey</div>
+          <div class="act-sub">New lead · Vacuum chips enquiry · via Trade Show</div>
+        </div>
+        <div class="act-time">2h</div>
+      </div>
+      <div class="activity-item">
+        <div class="act-icon ai-quote">📄</div>
+        <div class="act-body">
+          <div class="act-main">Quote v3 sent — Nguyen Foods</div>
+          <div class="act-sub">$18,400 · Mango + Banana chips · FOB Mumbai</div>
+        </div>
+        <div class="act-time">5h</div>
+      </div>
+      <div class="activity-item">
+        <div class="act-icon ai-order">📦</div>
+        <div class="act-body">
+          <div class="act-main">Order #ORD-0041 dispatched</div>
+          <div class="act-sub">Al Rawabi Group · Sweet potato chips · AWB uploaded</div>
+        </div>
+        <div class="act-time">1d</div>
+      </div>
+      <!-- Show more -->
+      <div class="activity-item" style="justify-content:center;padding:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--brand)">Show 14 more →</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS DUE -->
+  <div>
+    <div class="section-hd">
+      <div class="section-title">Tasks due</div>
+      <a href="/tasks" class="section-link">All →</a>
+    </div>
+    <div class="task-list">
+      <div class="task-card">
+        <div class="task-check"></div>
+        <div class="task-body">
+          <div class="task-title">Follow up: Spice Garden GmbH</div>
+          <div class="task-meta">Jaggery powder quote — 3 days no reply</div>
+        </div>
+        <div class="task-badge tb-urgent">Urgent</div>
+      </div>
+      <div class="task-card">
+        <div class="task-check"></div>
+        <div class="task-body">
+          <div class="task-title">Upload COA — Order #ORD-0044</div>
+          <div class="task-meta">Certificate of Analysis missing · Blocks dispatch</div>
+        </div>
+        <div class="task-badge tb-today">Today</div>
+      </div>
+      <div class="task-card">
+        <div class="task-check"></div>
+        <div class="task-body">
+          <div class="task-title">Review sweetener pricing template</div>
+          <div class="task-meta">Coconut sugar price update — FY2026 Q2</div>
+        </div>
+        <div class="task-badge tb-soon">This week</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end scroll-body -->
+
+<!-- FLOATING ACTION BUTTON -->
+<button class="fab" aria-label="Add quick lead">＋</button>
+
+<!-- BOTTOM TAB BAR -->
+<nav class="bottom-tab-bar" role="navigation" aria-label="Main navigation">
+  <button class="tab-item tab-active" aria-label="Dashboard" aria-current="page">
+    <span class="tab-icon">⌂</span>
+    <span class="tab-label">Home</span>
+  </button>
+  <button class="tab-item" aria-label="Leads">
+    <span class="tab-icon">👤</span>
+    <span class="tab-label">Leads</span>
+  </button>
+  <button class="tab-item" aria-label="Pipeline">
+    <span class="tab-icon">⬡</span>
+    <span class="tab-label">Pipeline</span>
+  </button>
+  <button class="tab-item" aria-label="Orders">
+    <span class="tab-icon">📦</span>
+    <span class="tab-label">Orders</span>
+  </button>
+  <button class="tab-item" aria-label="More">
+    <span class="tab-icon">⋯</span>
+    <span class="tab-label">More</span>
+  </button>
+</nav>
+
+</body>
+</html>

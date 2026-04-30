@@ -11,27 +11,33 @@ function asPositiveNumber(value: number | null | undefined): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
 }
 
+// If the quote basis is bulk_chips but the product is actually kg-priced,
+// fall back to ex_factory. Detected by whether the rule has a bulk_kg price.
 export function resolveLineBasis(input: {
   quoteBasis: PricingBasis;
-  categoryType: PricingRuleRecord['categoryType'];
+  rule: PricingRuleRecord;
 }): PricingBasis {
-  if (input.quoteBasis === 'bulk_chips' && input.categoryType === 'powders') {
+  if (input.quoteBasis === 'bulk_chips' && input.rule.bulkExFactoryUsdPerKg == null) {
     return 'ex_factory';
   }
 
   return input.quoteBasis;
 }
 
+// Pricing mode is determined by what price fields are populated on the rule,
+// not by the category name. If bulk_ex_factory_usd_per_kg is set → kg pricing.
+// If basis is bulk_chips → bulk_kg. Otherwise → unit.
 export function resolvePricingMode(input: {
-  categoryType: PricingRuleRecord['categoryType'];
+  rule: PricingRuleRecord;
   basisApplied: PricingBasis;
 }): PricingMode {
-  if (input.categoryType === 'powders') {
-    return 'kg';
-  }
-
   if (input.basisApplied === 'bulk_chips') {
     return 'bulk_kg';
+  }
+
+  // kg pricing if the rule was loaded with a bulk/kg price
+  if (input.rule.bulkExFactoryUsdPerKg != null) {
+    return 'kg';
   }
 
   return 'unit';
@@ -78,16 +84,17 @@ export function resolveNativePriceForCurrency(input: {
   }
 }
 
+// Freight add-on is based on pricing mode: unit/case → per-unit add-on, kg → per-kg add-on
 export function resolveFreightAddOnUsd(input: {
   basisApplied: PricingBasis;
-  categoryType: PricingRuleRecord['categoryType'];
+  pricingMode: PricingMode;
   freight?: FreightComputationResult | null;
 }): number | null {
   if (input.basisApplied !== 'cif' || !input.freight) {
     return null;
   }
 
-  return input.categoryType === 'chips'
+  return (input.pricingMode === 'unit' || input.pricingMode === 'case')
     ? input.freight.chipsAddOnUsdPerUnit
     : input.freight.powdersAddOnUsdPerKg;
 }

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SETU Flow — Mobile Lead Detail · PR-NS-12</title>
+<style>
+:root{--navy:#0b2e4a;--brand:#0c7fff;--teal:#0d9488;--emerald:#059669;--amber:#d97706;--rose:#e11d48;--violet:#7c3aed;--slate-950:#0f172a;--slate-800:#1e293b;--slate-600:#475569;--slate-500:#64748b;--slate-400:#94a3b8;--slate-300:#cbd5e1;--slate-200:#e2e8f0;--slate-100:#f1f5f9;--slate-50:#f8fafc;--surface:#ffffff;--page-bg:#f0f4f8;--border:#e2e8f0;--r-sm:10px;--r-md:14px;--r-lg:18px;--tab-h:64px;--top-h:56px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;background:var(--page-bg);color:var(--slate-950);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;max-width:430px;margin:0 auto;min-height:100vh;overflow-x:hidden}
+.preview-note{text-align:center;padding:8px;font-size:10px;color:var(--slate-400);background:var(--slate-100);border-bottom:1px solid var(--border)}
+
+/* TOP BAR */
+.top-bar{position:sticky;top:0;z-index:100;background:var(--navy);height:var(--top-h);display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-shadow:0 1px 8px rgba(0,0,0,.2)}
+.icon-btn{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.top-actions{display:flex;gap:4px}
+
+/* HERO SECTION */
+.lead-hero{background:linear-gradient(135deg,var(--navy) 0%,#1a4f7a 60%,var(--teal) 100%);padding:20px 16px 24px;color:#fff}
+.hero-avatar{width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;margin-bottom:12px;border:2px solid rgba(255,255,255,.3)}
+.hero-name{font-size:22px;font-weight:900;letter-spacing:-.4px;line-height:1.1;margin-bottom:3px}
+.hero-title{font-size:13px;color:rgba(255,255,255,.75);margin-bottom:12px}
+.hero-badges{display:flex;gap:5px;flex-wrap:wrap}
+.hero-badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.hb-buyer{background:rgba(12,127,255,.3);color:#93c5fd;border:1px solid rgba(12,127,255,.4)}
+.hb-chips{background:rgba(217,119,6,.25);color:#fcd34d;border:1px solid rgba(217,119,6,.35)}
+.hb-event{background:rgba(13,148,136,.25);color:#5eead4;border:1px solid rgba(13,148,136,.35)}
+
+/* QUICK ACTION ROW */
+.action-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:14px;background:var(--surface);border-bottom:1px solid var(--border)}
+.action-btn{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .1s}
+.action-btn:active{opacity:.7}
+.action-icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.ai-call{background:#dcfce7}
+.ai-wa{background:#d1fce7}
+.ai-email{background:#dbeafe}
+.ai-note{background:#f5f3ff}
+.action-label{font-size:10px;font-weight:700;color:var(--slate-600)}
+
+/* SCROLL BODY */
+.scroll-body{padding:10px 14px calc(var(--tab-h) + 20px);display:flex;flex-direction:column;gap:10px}
+
+/* DETAIL CARD */
+.detail-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.detail-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)}
+.detail-row:last-child{border-bottom:none}
+.dr-icon{font-size:16px;flex-shrink:0;width:28px}
+.dr-body{flex:1;min-width:0}
+.dr-label{font-size:10px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.06em}
+.dr-value{font-size:14px;font-weight:600;color:var(--slate-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dr-action{font-size:12px;font-weight:700;color:var(--brand);flex-shrink:0}
+
+/* STAGE PROGRESS */
+.stage-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.stage-card h3{font-size:12px;font-weight:800;color:var(--slate-500);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.stage-track{display:flex;align-items:center;gap:0;margin-bottom:8px}
+.stage-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.stage-line{flex:1;height:2px}
+.stage-labels{display:flex;justify-content:space-between;margin-top:6px}
+.stage-label{font-size:9px;font-weight:700;color:var(--slate-400);text-align:center;flex:1}
+.stage-label.active{color:var(--brand)}
+.stage-cta{display:flex;gap:6px;margin-top:12px}
+.stage-btn{flex:1;padding:10px;border-radius:var(--r-sm);border:none;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.stage-btn.primary{background:var(--brand);color:#fff}
+.stage-btn.secondary{background:var(--slate-100);color:var(--slate-700)}
+
+/* QUOTE STATUS */
+.quote-status-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.qs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.qs-title{font-size:13px;font-weight:800;color:var(--slate-800)}
+.qs-badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.qs-value{font-size:22px;font-weight:900;color:var(--slate-800);letter-spacing:-.5px;margin-bottom:2px}
+.qs-meta{font-size:11px;color:var(--slate-500);margin-bottom:12px}
+.qs-actions{display:flex;gap:6px}
+.qs-btn{flex:1;padding:10px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface);font-size:12px;font-weight:700;color:var(--slate-700);cursor:pointer;-webkit-tap-highlight-color:transparent;text-align:center}
+.qs-btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+
+/* ACTIVITY FEED */
+.activity-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.ac-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+.ac-title{font-size:13px;font-weight:800;color:var(--slate-800)}
+.ac-item{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.ac-item:last-child{border-bottom:none}
+.ac-dot-col{display:flex;flex-direction:column;align-items:center;gap:0;padding-top:2px}
+.ac-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ac-line{width:1px;flex:1;background:var(--border);margin-top:4px}
+.ac-body{flex:1;min-width:0;padding-bottom:2px}
+.ac-event{font-size:12px;font-weight:600;color:var(--slate-800)}
+.ac-time{font-size:10px;color:var(--slate-400);margin-top:1px}
+
+/* LOG NOTE BOTTOM SHEET */
+.note-sheet{position:fixed;bottom:var(--tab-h);left:0;right:0;max-width:430px;margin:0 auto;background:var(--surface);border-radius:20px 20px 0 0;padding:16px;box-shadow:0 -4px 20px rgba(15,23,42,.12);z-index:400;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,.72,0,1);display:none}
+.note-sheet.open{transform:translateY(0);display:block}
+.ns-handle{width:36px;height:4px;background:var(--slate-300);border-radius:2px;margin:0 auto 14px}
+.ns-title{font-size:14px;font-weight:800;color:var(--slate-800);margin-bottom:10px}
+.ns-textarea{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r-md);font-size:14px;font-family:inherit;color:var(--slate-800);resize:none;outline:none;min-height:80px}
+.ns-type-row{display:flex;gap:6px;margin:10px 0}
+.ns-type-chip{padding:6px 12px;border-radius:999px;border:1.5px solid var(--border);background:var(--surface);font-size:12px;font-weight:700;color:var(--slate-600);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ns-type-chip.selected{background:var(--brand);border-color:var(--brand);color:#fff}
+.ns-save{width:100%;padding:14px;border-radius:var(--r-md);border:none;background:var(--brand);color:#fff;font-size:14px;font-weight:800;cursor:pointer;margin-top:8px}
+
+/* BOTTOM TAB BAR */
+.bottom-tab-bar{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;height:var(--tab-h);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:stretch;box-shadow:0 -4px 16px rgba(15,23,42,.07);z-index:200;padding-bottom:env(safe-area-inset-bottom)}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;border:none;background:none;color:var(--slate-400)}
+.tab-item.tab-active{color:var(--brand)}
+.tab-icon{font-size:22px;line-height:1}
+.tab-label{font-size:10px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="preview-note">SETU Flow — Lead Detail · Mobile Reference · PR-NS-12</div>
+
+<!-- NOTE SHEET -->
+<div class="note-sheet" id="noteSheet">
+  <div class="ns-handle"></div>
+  <div class="ns-title">Log activity</div>
+  <div class="ns-type-row">
+    <div class="ns-type-chip selected" onclick="toggleChip(this)">📞 Call</div>
+    <div class="ns-type-chip" onclick="toggleChip(this)">💬 WhatsApp</div>
+    <div class="ns-type-chip" onclick="toggleChip(this)">📧 Email</div>
+    <div class="ns-type-chip" onclick="toggleChip(this)">📝 Note</div>
+  </div>
+  <textarea class="ns-textarea" placeholder="What did you discuss? Any next steps?"></textarea>
+  <button class="ns-save" onclick="closeNote()">Save activity</button>
+</div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <button class="icon-btn" aria-label="Back" onclick="history.back()">←</button>
+  <div class="top-actions">
+    <button class="icon-btn" aria-label="Edit">✏</button>
+    <button class="icon-btn" aria-label="More">⋯</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="lead-hero">
+  <div class="hero-avatar">MK</div>
+  <div class="hero-name">Mehmet Karahan</div>
+  <div class="hero-title">Head of Procurement · Atlas Trading Co.</div>
+  <div class="hero-badges">
+    <span class="hero-badge hb-buyer">Buyer</span>
+    <span class="hero-badge hb-chips">Chips</span>
+    <span class="hero-badge hb-event">Gulfood '26</span>
+  </div>
+</div>
+
+<!-- QUICK ACTIONS -->
+<div class="action-row">
+  <div class="action-btn" onclick="alert('Calling…')">
+    <div class="action-icon ai-call">📞</div>
+    <div class="action-label">Call</div>
+  </div>
+  <div class="action-btn" onclick="alert('WhatsApp…')">
+    <div class="action-icon ai-wa">💬</div>
+    <div class="action-label">WhatsApp</div>
+  </div>
+  <div class="action-btn" onclick="alert('Email…')">
+    <div class="action-icon ai-email">📧</div>
+    <div class="action-label">Email</div>
+  </div>
+  <div class="action-btn" onclick="openNote()">
+    <div class="action-icon ai-note">📝</div>
+    <div class="action-label">Log note</div>
+  </div>
+</div>
+
+<div class="scroll-body">
+
+  <!-- CONTACT DETAILS -->
+  <div class="detail-card">
+    <div class="detail-row">
+      <span class="dr-icon">📧</span>
+      <div class="dr-body">
+        <div class="dr-label">Email</div>
+        <div class="dr-value">m.karahan@atlastrading.com</div>
+      </div>
+      <span class="dr-action">Copy</span>
+    </div>
+    <div class="detail-row">
+      <span class="dr-icon">📱</span>
+      <div class="dr-body">
+        <div class="dr-label">WhatsApp</div>
+        <div class="dr-value">+90 532 XXX XXXX</div>
+      </div>
+      <span class="dr-action">Open</span>
+    </div>
+    <div class="detail-row">
+      <span class="dr-icon">🌍</span>
+      <div class="dr-body">
+        <div class="dr-label">Country</div>
+        <div class="dr-value">Turkey · Istanbul</div>
+      </div>
+    </div>
+    <div class="detail-row">
+      <span class="dr-icon">📦</span>
+      <div class="dr-body">
+        <div class="dr-label">Product interest</div>
+        <div class="dr-value">Chips · Powders</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE STAGE -->
+  <div class="stage-card">
+    <h3>Pipeline stage</h3>
+    <div class="stage-track">
+      <div class="stage-dot" style="background:var(--emerald)"></div>
+      <div class="stage-line" style="background:var(--emerald)"></div>
+      <div class="stage-dot" style="background:var(--brand)"></div>
+      <div class="stage-line" style="background:var(--border)"></div>
+      <div class="stage-dot" style="background:var(--border)"></div>
+      <div class="stage-line" style="background:var(--border)"></div>
+      <div class="stage-dot" style="background:var(--border)"></div>
+      <div class="stage-line" style="background:var(--border)"></div>
+      <div class="stage-dot" style="background:var(--border)"></div>
+    </div>
+    <div class="stage-labels">
+      <div class="stage-label">Inquiry</div>
+      <div class="stage-label active">Qualified</div>
+      <div class="stage-label">Quote</div>
+      <div class="stage-label">Negot.</div>
+      <div class="stage-label">Won</div>
+    </div>
+    <div class="stage-cta">
+      <button class="stage-btn primary">Build quote</button>
+      <button class="stage-btn secondary">Move stage</button>
+    </div>
+  </div>
+
+  <!-- QUOTE STATUS -->
+  <div class="quote-status-card">
+    <div class="qs-header">
+      <div class="qs-title">Latest quote</div>
+      <span class="qs-badge">Open · 3d</span>
+    </div>
+    <div class="qs-value">$28,400 USD</div>
+    <div class="qs-meta">v2 · Sweet Potato + Banana Chips · FOB Mumbai · Sent Apr 27</div>
+    <div class="qs-actions">
+      <button class="qs-btn primary">Send via WhatsApp</button>
+      <button class="qs-btn">View PDF</button>
+    </div>
+  </div>
+
+  <!-- ACTIVITY TIMELINE -->
+  <div class="activity-card">
+    <div class="ac-header">
+      <div class="ac-title">Activity</div>
+      <a href="#" style="font-size:12px;font-weight:700;color:var(--brand);text-decoration:none" onclick="openNote();return false">+ Log</a>
+    </div>
+    <div class="ac-item">
+      <div class="ac-dot-col">
+        <div class="ac-dot" style="background:var(--brand)"></div>
+        <div class="ac-line"></div>
+      </div>
+      <div class="ac-body">
+        <div class="ac-event">Quote v2 sent via email</div>
+        <div class="ac-time">Apr 27, 2026 · 10:42 AM</div>
+      </div>
+    </div>
+    <div class="ac-item">
+      <div class="ac-dot-col">
+        <div class="ac-dot" style="background:var(--teal)"></div>
+        <div class="ac-line"></div>
+      </div>
+      <div class="ac-body">
+        <div class="ac-event">WhatsApp call — 18 min. Discussed MOQ, pack sizes. Wants 2 SKUs confirmed.</div>
+        <div class="ac-time">Apr 25, 2026 · 3:15 PM</div>
+      </div>
+    </div>
+    <div class="ac-item">
+      <div class="ac-dot-col">
+        <div class="ac-dot" style="background:var(--emerald)"></div>
+      </div>
+      <div class="ac-body">
+        <div class="ac-event">Lead captured at Gulfood 2026. Card scanned.</div>
+        <div class="ac-time">Apr 20, 2026 · 11:08 AM</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<nav class="bottom-tab-bar">
+  <button class="tab-item" aria-label="Dashboard"><span class="tab-icon">⌂</span><span class="tab-label">Home</span></button>
+  <button class="tab-item tab-active" aria-label="Leads" aria-current="page"><span class="tab-icon">👤</span><span class="tab-label">Leads</span></button>
+  <button class="tab-item" aria-label="Capture"><span class="tab-icon">📷</span><span class="tab-label">Capture</span></button>
+  <button class="tab-item" aria-label="Orders"><span class="tab-icon">📦</span><span class="tab-label">Orders</span></button>
+  <button class="tab-item" aria-label="More"><span class="tab-icon">⋯</span><span class="tab-label">More</span></button>
+</nav>
+
+<script>
+function openNote(){document.getElementById('noteSheet').classList.add('open')}
+function closeNote(){document.getElementById('noteSheet').classList.remove('open')}
+function toggleChip(el){document.querySelectorAll('.ns-type-chip').forEach(c=>c.classList.remove('selected'));el.classList.add('selected')}
+document.getElementById('noteSheet').addEventListener('click',e=>{if(e.target===e.currentTarget)closeNote()})
+</script>
+</body>
+</html>

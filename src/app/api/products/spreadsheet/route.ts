@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     const moqUnit = variant.moq_cases != null ? 'cases' : variant.moq_kg != null ? 'kg' : null;
     const moqDisplay = variant.moq_cases != null ? `${variant.moq_cases} cases` : variant.moq_kg != null ? `${variant.moq_kg} kg` : null;
 
-    const exUnit = rule?.ex_factory_usd_per_unit ?? (rule?.pricing_type === 'powders' ? rule?.bulk_usd_per_kg : null) ?? null;
+    const exUnit = rule?.ex_factory_usd_per_unit ?? (variant.pricing_mode_default === 'kg' ? rule?.bulk_usd_per_kg : null) ?? null;
     const exCase = rule?.ex_factory_usd_per_case ?? (exUnit != null && variant.units_per_case != null ? Number((exUnit * Number(variant.units_per_case)).toFixed(2)) : null);
     const fobUnit = rule?.fob_usd_per_unit ?? null;
     const fobCase = rule?.fob_usd_per_case ?? (fobUnit != null && variant.units_per_case != null ? Number((fobUnit * Number(variant.units_per_case)).toFixed(2)) : null);

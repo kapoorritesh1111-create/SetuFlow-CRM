@@ -11,7 +11,7 @@ type ProductPricingRuleRow = {
   sku_code: string;
   hsn_code: string | null;
   product_name: string;
-  category_type: 'chips' | 'powders';
+  category_type: string;  // product_categories.name — free text from admin
   pack_label: string | null;
   units_per_case: number | null;
   moq: number | null;
@@ -41,7 +41,7 @@ export class SupabasePricingRuleRepository implements PricingRuleRepository {
     organizationId: string;
     pricingRuleSetId: string;
     pricingBasis: import('../types').PricingBasis;
-    includeCategories?: Array<'chips' | 'powders'>;
+    includeCategories?: string[];  // category names — empty means include all
     selectedProductIds?: string[];
     selectedProductVariantIds?: string[];
   }): Promise<PricingRuleRecord[]> {

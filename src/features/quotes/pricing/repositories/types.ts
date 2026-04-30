@@ -72,7 +72,7 @@ export interface PricingRuleRecord {
   skuCode: string;
   hsnCode?: string | null;
   productName: string;
-  categoryType: 'chips' | 'powders';
+  categoryType: string;  // product_categories.name — free text, no enum
   packLabel?: string | null;
   unitsPerCase?: number | null;
   moq?: number | null;
@@ -137,7 +137,7 @@ export interface PricingRuleRepository {
     organizationId: string;
     pricingRuleSetId: string;
     pricingBasis: PricingBasis;
-    includeCategories?: Array<'chips' | 'powders'>;
+    includeCategories?: string[];  // category names from product_categories — empty = include all
     selectedProductIds?: string[];
     selectedProductVariantIds?: string[];
   }): Promise<PricingRuleRecord[]>;

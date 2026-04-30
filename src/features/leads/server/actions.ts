@@ -1044,10 +1044,18 @@ async function ensureQuoteLineItemsFromLeadCoverage(
         .filter((productId) => !existingVersionProductIds.has(productId))
         .map((productId) => {
           const baseline = baselineByProductId.get(productId);
+          // Resolve sku_code from the variant (required NOT NULL on quote_version_line_items)
+          const variant = (variantsByProductId.get(productId) ?? []).find(
+            (v: any) => v.id === baseline?.productVariantId
+          ) ?? (variantsByProductId.get(productId) ?? [])[0] ?? null;
           return {
             quote_version_id: currentVersionId,
             product_id: productId,
             product_variant_id: baseline?.productVariantId ?? null,
+            sku_code: variant?.sku_code ?? `SEED-${productId.slice(0, 8)}`,
+            product_name: variant?.pack_label ?? 'Seeded product',
+            basis_applied: preferredBasis,
+            pricing_mode: baseline?.pricingMode === 'kg' ? 'kg' : 'unit',
             moq: baseline?.quantity ?? 1,
             final_unit_price: convertedUnitPrice(baseline),
             display_currency: normalizeQuoteDisplayCurrency(quoteCurrency),
@@ -1292,17 +1300,17 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
     const { error: deleteVersionLineError } = await db.from('quote_version_line_items').delete().eq('quote_version_id', quote.current_version_id);
     if (deleteVersionLineError) return { error: deleteVersionLineError.message };
 
-    // Derive category_type per product from catalog — fall back to 'chips'
+    // Derive category_type from real category name in product_categories — no enum, no fallback
     const previewProductIds = previewLines.map((l) => l.product_id).filter(Boolean);
-    let previewCategoryMap: Record<string, 'chips' | 'powders'> = {};
+    let previewCategoryMap: Record<string, string> = {};
     if (previewProductIds.length > 0) {
       const { data: prodRows } = await db.from('products').select('id, category_id').in('id', previewProductIds);
       const catIds = (prodRows ?? []).map((p: any) => p.category_id).filter(Boolean);
       if (catIds.length > 0) {
-        const { data: catRows } = await db.from('product_categories').select('id, category_type').in('id', catIds);
-        const catMap: Record<string, 'chips' | 'powders'> = {};
+        const { data: catRows } = await db.from('product_categories').select('id, name').in('id', catIds);
+        const catMap: Record<string, string> = {};
         for (const cat of (catRows ?? [])) {
-          if (cat.category_type === 'chips' || cat.category_type === 'powders') catMap[cat.id] = cat.category_type;
+          if (cat.id && cat.name) catMap[cat.id] = cat.name;
         }
         for (const prod of (prodRows ?? [])) {
           if (prod.category_id && catMap[prod.category_id]) previewCategoryMap[prod.id] = catMap[prod.category_id];
@@ -1316,7 +1324,7 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
       product_variant_id: line.product_variant_id,
       sku_code: `QUOTE-LINE-${index + 1}`,
       product_name: `Product ${index + 1}`,
-      category_type: (line.product_id && previewCategoryMap[line.product_id]) ? previewCategoryMap[line.product_id] : 'chips',
+      category_type: (line.product_id && previewCategoryMap[line.product_id]) ? previewCategoryMap[line.product_id] : '',
       basis_applied: 'fob',
       pricing_mode: 'case',
       moq: line.quantity,

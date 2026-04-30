@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SETU Flow — Mobile Leads List · PR-NS-12</title>
+<style>
+:root{--navy:#0b2e4a;--brand:#0c7fff;--teal:#0d9488;--emerald:#059669;--amber:#d97706;--rose:#e11d48;--violet:#7c3aed;--slate-950:#0f172a;--slate-800:#1e293b;--slate-600:#475569;--slate-500:#64748b;--slate-400:#94a3b8;--slate-300:#cbd5e1;--slate-200:#e2e8f0;--slate-100:#f1f5f9;--slate-50:#f8fafc;--surface:#ffffff;--page-bg:#f0f4f8;--border:#e2e8f0;--r-sm:10px;--r-md:14px;--r-lg:18px;--tab-h:64px;--top-h:56px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;background:var(--page-bg);color:var(--slate-950);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;max-width:430px;margin:0 auto;min-height:100vh;overflow-x:hidden}
+.preview-note{text-align:center;padding:8px;font-size:10px;color:var(--slate-400);background:var(--slate-100);border-bottom:1px solid var(--border)}
+
+/* TOP BAR with integrated search */
+.top-bar{position:sticky;top:0;z-index:100;background:var(--navy);padding:0 16px 12px;box-shadow:0 1px 8px rgba(0,0,0,.2)}
+.top-row{height:var(--top-h);display:flex;align-items:center;justify-content:space-between}
+.top-title{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.icon-btn{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* SEARCH BAR */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-input{width:100%;padding:11px 14px 11px 40px;border-radius:10px;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:15px;font-family:inherit;outline:none;-webkit-appearance:none}
+.search-input::placeholder{color:rgba(255,255,255,.5)}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.6;pointer-events:none}
+
+/* FILTER CHIPS */
+.filter-row{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+.filter-row::-webkit-scrollbar{display:none}
+.filter-chip{flex:0 0 auto;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap;transition:all .1s}
+.filter-chip.fc-active{background:rgba(255,255,255,.9);color:var(--navy)}
+
+/* SEGMENT TABS */
+.segment-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex}
+.seg-btn{flex:1;padding:12px;font-size:13px;font-weight:700;color:var(--slate-500);border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;-webkit-tap-highlight-color:transparent;transition:all .12s}
+.seg-btn.active{color:var(--brand);border-bottom-color:var(--brand)}
+
+/* SORTED SECTIONS */
+.section-hd{padding:10px 14px 6px;display:flex;align-items:center;justify-content:space-between}
+.section-hd-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--slate-400)}
+
+/* LEAD CARD */
+.lead-list{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.lead-item{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s}
+.lead-item:last-child{border-bottom:none}
+.lead-item:active{background:var(--slate-50)}
+.lead-avatar{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0}
+.lead-body{flex:1;min-width:0}
+.lead-name{font-size:14px;font-weight:700;color:var(--slate-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lead-company{font-size:12px;color:var(--slate-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lead-meta{display:flex;align-items:center;gap:5px;margin-top:3px}
+.lead-badge{font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;text-transform:uppercase}
+.lb-chips{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.lb-sweet{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.lb-powder{background:#f5f3ff;color:var(--violet);border:1px solid #ddd6fe}
+.lb-onion{background:#ecfdf5;color:var(--emerald);border:1px solid #a7f3d0}
+.lb-buyer{background:#eff6ff;color:var(--brand);border:1px solid #bfdbfe}
+.lb-supp{background:#f0fdfa;color:var(--teal);border:1px solid #99f6e4}
+.lb-hot{background:#fee2e2;color:var(--rose);border:1px solid #fecaca}
+.lead-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.lead-time{font-size:10px;color:var(--slate-400);font-weight:600}
+.lead-next{font-size:10px;color:var(--amber);font-weight:700}
+.lead-next.overdue{color:var(--rose)}
+
+/* SWIPE ACTIONS (visual indicator) */
+.swipe-hint{text-align:center;padding:10px;font-size:11px;color:var(--slate-400)}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(var(--tab-h) + 16px);right:20px;z-index:300;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--brand) 0%,#0052cc 100%);border:none;color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(12,127,255,.4);cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* BOTTOM TAB BAR */
+.bottom-tab-bar{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;height:var(--tab-h);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:stretch;box-shadow:0 -4px 16px rgba(15,23,42,.07);z-index:200;padding-bottom:env(safe-area-inset-bottom)}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;border:none;background:none;color:var(--slate-400)}
+.tab-item.tab-active{color:var(--brand)}
+.tab-icon{font-size:22px;line-height:1}
+.tab-label{font-size:10px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="preview-note">SETU Flow — Leads List · Mobile Reference · PR-NS-12</div>
+
+<!-- TOP BAR with integrated search -->
+<div class="top-bar">
+  <div class="top-row">
+    <div class="top-title">Leads · 47</div>
+    <div style="display:flex;gap:4px">
+      <button class="icon-btn" aria-label="Sort">↕</button>
+    </div>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" type="search" placeholder="Search name, company, country…" inputmode="search">
+  </div>
+  <div class="filter-row">
+    <div class="filter-chip fc-active">All</div>
+    <div class="filter-chip">Buyers</div>
+    <div class="filter-chip">Suppliers</div>
+    <div class="filter-chip">Gulfood '26</div>
+    <div class="filter-chip">Overdue</div>
+    <div class="filter-chip">New this week</div>
+  </div>
+</div>
+
+<!-- SEGMENT: All / Buyers / Suppliers -->
+<div class="segment-bar">
+  <button class="seg-btn active" onclick="setSeg(this)">All (47)</button>
+  <button class="seg-btn" onclick="setSeg(this)">Buyers (31)</button>
+  <button class="seg-btn" onclick="setSeg(this)">Suppliers (16)</button>
+</div>
+
+<!-- OVERDUE SECTION -->
+<div class="section-hd">
+  <div class="section-hd-label">⚠ Follow-up overdue</div>
+</div>
+<div class="lead-list">
+  <div class="lead-item">
+    <div class="lead-avatar" style="background:linear-gradient(135deg,var(--rose),#9f1239)">MK</div>
+    <div class="lead-body">
+      <div class="lead-name">Mehmet Karahan</div>
+      <div class="lead-company">Atlas Trading · Turkey</div>
+      <div class="lead-meta">
+        <span class="lead-badge lb-buyer">Buyer</span>
+        <span class="lead-badge lb-chips">Chips</span>
+      </div>
+    </div>
+    <div class="lead-right">
+      <div class="lead-time">Apr 25</div>
+      <div class="lead-next overdue">4d overdue</div>
+    </div>
+  </div>
+  <div class="lead-item">
+    <div class="lead-avatar" style="background:linear-gradient(135deg,var(--amber),#92400e)">FB</div>
+    <div class="lead-body">
+      <div class="lead-name">Franz Bergmann</div>
+      <div class="lead-company">Spice Garden GmbH · Germany</div>
+      <div class="lead-meta">
+        <span class="lead-badge lb-buyer">Buyer</span>
+        <span class="lead-badge lb-sweet">Jaggery</span>
+      </div>
+    </div>
+    <div class="lead-right">
+      <div class="lead-time">Apr 26</div>
+      <div class="lead-next overdue">3d overdue</div>
+    </div>
+  </div>
+</div>
+
+<!-- TODAY SECTION -->
+<div class="section-hd">
+  <div class="section-hd-label">Due today</div>
+</div>
+<div class="lead-list">
+  <div class="lead-item">
+    <div class="lead-avatar" style="background:linear-gradient(135deg,var(--brand),#0052cc)">KA</div>
+    <div class="lead-body">
+      <div class="lead-name">Khalid Al-Rashid</div>
+      <div class="lead-company">Al Rawabi Group · Saudi Arabia</div>
+      <div class="lead-meta">
+        <span class="lead-badge lb-buyer">Buyer</span>
+        <span class="lead-badge lb-chips">Chips</span>
+        <span class="lead-badge lb-powder">Powders</span>
+      </div>
+    </div>
+    <div class="lead-right">
+      <div class="lead-time">Today</div>
+      <div class="lead-next">Send quote</div>
+    </div>
+  </div>
+  <div class="lead-item">
+    <div class="lead-avatar" style="background:linear-gradient(135deg,var(--teal),#0f766e)">SL</div>
+    <div class="lead-body">
+      <div class="lead-name">Sofia Linden</div>
+      <div class="lead-company">EuroNat · Netherlands</div>
+      <div class="lead-meta">
+        <span class="lead-badge lb-buyer">Buyer</span>
+        <span class="lead-badge lb-onion">Onion</span>
+      </div>
+    </div>
+    <div class="lead-right">
+      <div class="lead-time">Today</div>
+      <div class="lead-next">Follow up</div>
+    </div>
+  </div>
+</div>
+
+<!-- ALL OTHERS -->
+<div class="section-hd">
+  <div class="section-hd-label">All leads — A → Z</div>
+</div>
+<div class="lead-list">
+  <div class="lead-item">
+    <div class="lead-avatar" style="background:linear-gradient(135deg,var(--violet),#5b21b6)">HW</div>
+    <div class="lead-body">
+      <div class="lead-name">Hans Weber</div>
+      <div class="lead-company">Global Fresh GmbH · Germany</div>
+      <div class="lead-meta">
+        <span class="lead-badge lb-buyer">Buyer</span>
+        <span class="lead-badge lb-onion">Onion</span>
+      </div>
+    </div>
+    <div class="lead-right">
+      <div class="lead-time">Apr 28</div>
+      <div class="lead-next">Call May 5</div>
+    </div>
+  </div>
+  <div class="lead-item">
+    <div class="lead-avatar" style="background:linear-gradient(135deg,var(--teal),#0d9488)">MN</div>
+    <div class="lead-body">
+      <div class="lead-name">Minh Nguyen</div>
+      <div class="lead-company">Nguyen Foods Export · Vietnam</div>
+      <div class="lead-meta">
+        <span class="lead-badge lb-buyer">Buyer</span>
+        <span class="lead-badge lb-chips">Chips</span>
+      </div>
+    </div>
+    <div class="lead-right">
+      <div class="lead-time">Apr 29</div>
+      <div class="lead-next">Quote sent</div>
+    </div>
+  </div>
+  <div class="lead-item">
+    <div class="lead-avatar" style="background:linear-gradient(135deg,var(--emerald),#065f46)">RK</div>
+    <div class="lead-body">
+      <div class="lead-name">Ravi Kumar</div>
+      <div class="lead-company">Sun Agro · India (Supplier)</div>
+      <div class="lead-meta">
+        <span class="lead-badge lb-supp">Supplier</span>
+        <span class="lead-badge lb-onion">Garlic</span>
+      </div>
+    </div>
+    <div class="lead-right">
+      <div class="lead-time">Apr 28</div>
+      <div class="lead-next">Call May 1</div>
+    </div>
+  </div>
+</div>
+
+<div class="swipe-hint">Swipe left on a lead to log a note or mark done</div>
+
+<button class="fab" aria-label="Add lead">＋</button>
+
+<nav class="bottom-tab-bar">
+  <button class="tab-item" aria-label="Dashboard"><span class="tab-icon">⌂</span><span class="tab-label">Home</span></button>
+  <button class="tab-item tab-active" aria-label="Leads" aria-current="page"><span class="tab-icon">👤</span><span class="tab-label">Leads</span></button>
+  <button class="tab-item" aria-label="Capture"><span class="tab-icon">📷</span><span class="tab-label">Capture</span></button>
+  <button class="tab-item" aria-label="Orders"><span class="tab-icon">📦</span><span class="tab-label">Orders</span></button>
+  <button class="tab-item" aria-label="More"><span class="tab-icon">⋯</span><span class="tab-label">More</span></button>
+</nav>
+
+<script>
+const REAL_CATEGORIES = [
+  { id: '2276a154-71c4-42cd-a83e-efbeaa4c428b', name: 'Vacuum-Cooked Chips' },
+  { id: '75b89d94-c388-46b5-958e-bddc78aee6e0', name: 'Fruit Powders' },
+  { id: 'e2c3e8d4-95d3-42b4-b35a-b518225db82d', name: 'Vegetable Powders' },
+  { id: '5e3c29b3-9411-4c19-9e85-60744feee9c2', name: 'Natural Sweeteners' },
+  { id: '438e57b8-11a8-4179-b252-e12d0e759122', name: 'Dehydrated Onion' },
+  { id: '9b6d6fd8-bfba-4eb3-b652-d7da334c031d', name: 'Dehydrated Garlic' },
+  { id: 'fe951e1d-28bf-4adf-b817-25c248b35552', name: 'Freeze-Dried Products' },
+];
+
+// Render one filter chip per DB category
+const catContainer = document.getElementById('cat-filter-chips');
+if (catContainer) {
+  catContainer.innerHTML = REAL_CATEGORIES.map(cat =>
+    `<button class="filter-chip" data-category-id="${cat.id}"
+             onclick="setCatFilter(this)">${cat.name}</button>`
+  ).join('');
+}
+
+function setCatFilter(btn) {
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('fc-active'));
+  btn.classList.add('fc-active');
+}
+function setSeg(btn){document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+</script>
+</body>
+</html>

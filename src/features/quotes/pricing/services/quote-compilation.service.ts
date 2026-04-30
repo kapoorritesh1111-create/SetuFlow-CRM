@@ -118,7 +118,7 @@ export class DefaultQuoteCompilationService implements QuoteCompilationService {
       compiledAt: new Date().toISOString(),
       pricingRuleCount: rules.length,
       lineCount: lines.length,
-      includedCategories: input.includeCategories ?? ['chips', 'powders'],
+      includedCategories: input.includeCategories ?? [],  // empty = include all categories
       selectedProductIds: input.selectedProductIds ?? [],
       selectedProductVariantIds: input.selectedProductVariantIds ?? [],
       powdersForcedToExFactoryInBulkMode: input.pricingBasis === 'bulk_chips',
