@@ -253,6 +253,12 @@ function decodeNotice(noticeKey: string | null) {
   if (noticeKey.startsWith('order-readonly:')) {
     return { title: 'Order execution is read-only', description: noticeKey.slice('order-readonly:'.length), tone: 'warning' as const };
   }
+  if (noticeKey === 'order-doc-uploaded') {
+    return { title: 'Document linked to order', description: 'The uploaded file is now attached to the selected order and included in readiness checks.', tone: 'success' as const };
+  }
+  if (noticeKey.startsWith('order-doc-upload-failed:')) {
+    return { title: 'Order document upload needs attention', description: noticeKey.slice('order-doc-upload-failed:'.length), tone: 'warning' as const };
+  }
   const map: Record<string, { title: string; description: string; tone: 'warning' | 'danger' }> = {
     'order-state-out-of-sequence': { title: 'Execution state is out of sequence', description: 'Refresh the order workspace and use the next allowed transition only.', tone: 'warning' },
     'order-action-invalid': { title: 'Order action is invalid', description: 'The order progression payload was incomplete.', tone: 'danger' },

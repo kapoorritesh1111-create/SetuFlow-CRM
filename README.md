@@ -294,3 +294,11 @@ Pass 14 closes live signed-contract proof for the golden journey, but does not a
 - **`docs/ORGANIZATION_SETUP_REDESIGN_PASS15.md`** — defines the SaaS onboarding/setup flow needed for first customers.
 
 Pass 15 is a review/planning pass, not an implementation pass. Buyer confidence is adjusted to ~97/100 until the premium UI and Organization Setup fixes are implemented and build-verified.
+
+### Pass 21 live SQL/UX fix boundary
+
+Pass 21 used the current live baseline ZIP and checked Supabase schema/logs before code changes. The logs confirmed the two live SQL issues reported in screenshots: the batch lead move RPC can surface `column reference "lead_id" is ambiguous`, and quote draft creation can violate `quotes_display_currency_check` when the UI passes a display currency outside the allowed set.
+
+This package patches those app surfaces without mutating live Supabase data: batch stage moves use a safe app-side path, quote display currency is normalized, Quote Preview includes a blocker guidance panel, order document upload gives visible feedback and requirement mapping, and Admin Categories now has list/add/edit UI.
+
+Build not claimed in GPT sandbox. Requires Vercel/live build proof and live QA retest before confidence can rise.

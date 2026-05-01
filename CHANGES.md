@@ -1119,3 +1119,13 @@ Changed:
 - Updated PR tracker, release readiness, investor readiness, and added the dedicated gap closure plan doc.
 
 No application runtime code was changed in this pass.
+
+## Pass 21 — Live SQL/UX fix pack
+
+- Checked Supabase schema/logs before code changes. Recent Postgres logs confirmed the live `lead_id` ambiguity during batch stage moves and `quotes_display_currency_check` failures during quote draft creation.
+- Lead batch stage moves now use the safe app-side update path instead of the failing batch RPC, with user-safe error copy.
+- Quote create/update paths normalize `display_currency` to the allowed quote display-currency set while preserving the commercial source currency field.
+- Quote Preview Review now exposes a premium blocker guidance panel for compliance/document blockers instead of leaving the operator without a fix path.
+- Orders document upload now returns visible success/failure notices and lets the operator map an upload to a specific missing requirement code.
+- Admin Categories now has a real `/admin/categories` list/add/edit workspace; the Admin Categories nav item points to that page.
+- DCC, README, release readiness, and handoff guidance updated. No `npm ci`, build, live Supabase data mutation, or remediation migration was performed in GPT sandbox.

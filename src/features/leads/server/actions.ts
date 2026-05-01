@@ -261,6 +261,15 @@ function isMissingRpcFunction(error: any) {
   return message.includes('could not find the function') || message.includes('schema cache') || message.includes('function public.');
 }
 
+function formatLeadActionError(error: any, fallback = 'The lead action could not be saved. Please retry or refresh the workspace.') {
+  const message = String(error?.message ?? error ?? '').toLowerCase();
+  if (message.includes('lead_id') && message.includes('ambiguous')) {
+    return 'The batch update could not be saved because the live database procedure needs a qualified lead reference. This build uses the safe app-side update path; refresh and retry.';
+  }
+  if (message.includes('violates') || message.includes('constraint') || message.includes('database')) return fallback;
+  return String(error?.message ?? '') || fallback;
+}
+
 async function refreshLeadRelationsDirect(db: any, params: {
   leadId: string;
   marketIds: string[];
@@ -1644,7 +1653,7 @@ const contactSourceContext = {
       .eq('id', leadId)
       .eq('organization_id', organization.id);
 
-    if (updateError) return { error: updateError.message };
+    if (updateError) return { error: formatLeadActionError(updateError, 'The selected leads could not be moved. Please refresh and retry.') };
   } else {
     const { data: createdLead, error: insertError } = await db
       .from('leads')
@@ -2438,17 +2447,9 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
   const targetStage = stageRow as { id: string; name: string };
 
   const occurredAt = new Date().toISOString();
-  const { data: moveResults, error: moveRpcError } = await db.rpc('app_batch_move_leads_stage_tx', {
-    p_organization_id: organization.id,
-    p_lead_ids: leadIds,
-    p_stage_id: stageId,
-    p_actor_user_id: currentUser.id,
-    p_occurred_at: occurredAt,
-  });
-
-  let movedRows = Array.isArray(moveResults) ? moveResults : [];
-  if (moveRpcError) {
-    if (!isMissingRpcFunction(moveRpcError)) return { error: moveRpcError.message };
+  // Live QA and Postgres logs show the batch RPC can raise `column reference "lead_id" is ambiguous`.
+  // Keep the UI reliable by using the table-qualified app-side move path for all batch moves.
+  let movedRows: Array<{ lead_id: string; stage_id: string }> = [];
 
     const { data: currentLeads, error: currentLeadsError } = await db
       .from('leads')
@@ -2456,7 +2457,7 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
       .eq('organization_id', organization.id)
       .in('id', leadIds);
 
-    if (currentLeadsError) return { error: currentLeadsError.message };
+    if (currentLeadsError) return { error: formatLeadActionError(currentLeadsError, 'The selected leads could not be loaded for batch update.') };
     const currentLeadRows = Array.isArray(currentLeads) ? currentLeads : [];
     if (currentLeadRows.length !== leadIds.length) return { error: 'One or more selected leads were not found.' };
 
@@ -2466,7 +2467,7 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
       .eq('organization_id', organization.id)
       .in('id', leadIds);
 
-    if (updateError) return { error: updateError.message };
+    if (updateError) return { error: formatLeadActionError(updateError, 'The selected leads could not be moved. Please refresh and retry.') };
 
     const historyRows = currentLeadRows
       .filter((lead: any) => lead.stage_id !== stageId)
@@ -2481,7 +2482,7 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
 
     if (historyRows.length) {
       const { error: historyError } = await db.from('lead_stage_history').insert(historyRows);
-      if (historyError) return { error: historyError.message };
+      if (historyError) return { error: formatLeadActionError(historyError, 'The lead stage history could not be recorded, so the batch move was stopped.') };
     }
 
     const activityRows = currentLeadRows.map((lead: any) => ({
@@ -2494,11 +2495,10 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
     }));
     if (activityRows.length) {
       const { error: activityError } = await db.from('lead_activities').insert(activityRows);
-      if (activityError) return { error: activityError.message };
+      if (activityError) return { error: formatLeadActionError(activityError, 'The lead activity log could not be recorded, so the batch move was stopped.') };
     }
 
     movedRows = currentLeadRows.map((lead: any) => ({ lead_id: lead.id, stage_id: stageId }));
-  }
 
   if (movedRows.length !== leadIds.length) {
     return { error: 'Batch stage move did not return the expected lead count.' };

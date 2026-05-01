@@ -859,3 +859,34 @@ export async function updateApprovalThreshold(formData: FormData): Promise<void>
   await revalidateAdminReferencePaths('/admin/security');
   redirect('/admin/security?notice=threshold-updated');
 }
+
+export async function createProductCategory(formData: FormData): Promise<void> {
+  const context = await getAdminMutationContext();
+  if (!context) return;
+  const name = normalizeText(formData.get('name'));
+  if (!name) return;
+  await context.supabase.from('product_categories').insert({
+    organization_id: context.organization.id,
+    name,
+    sort_order: normalizeNumber(formData.get('sort_order')),
+    is_active: true,
+  });
+  await revalidateAdminReferencePaths('/admin/categories');
+  redirect('/admin/categories?notice=category-created');
+}
+
+export async function updateProductCategory(formData: FormData): Promise<void> {
+  const context = await getAdminMutationContext();
+  if (!context) return;
+  const id = normalizeText(formData.get('id'));
+  const name = normalizeText(formData.get('name'));
+  if (!id || !name) return;
+  await context.supabase.from('product_categories').update({
+    name,
+    sort_order: normalizeNumber(formData.get('sort_order')),
+    is_active: checked(formData, 'is_active'),
+    updated_at: new Date().toISOString(),
+  }).eq('id', id).eq('organization_id', context.organization.id);
+  await revalidateAdminReferencePaths('/admin/categories');
+  redirect('/admin/categories?notice=category-updated');
+}

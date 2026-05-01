@@ -688,3 +688,25 @@ User-provided live validation confirms the deployed site is connected to Supabas
 ### Release decision after live baseline lock
 
 `SetuFlow-CRM-main(41).zip` / commit `89a825a` is the current baseline. SETU Flow is suitable for controlled pilot expansion using locked wording. It is not yet a 100/100 broad production launch claim until security, operations, dispatch/completion, and first-pilot evidence are complete.
+
+## Pass 21 live SQL/UX fix update
+
+Status: proof-gated. The Pass 21 package addresses screenshot-confirmed live blockers but is not release-proof until a clean Vercel or clean-local build and owner live QA retest pass.
+
+Fixed in code:
+
+- Lead batch stage move no longer depends on the failing live RPC path that produced `column reference "lead_id" is ambiguous`.
+- Quote draft create/update normalizes checked `display_currency` values to the allowed database set.
+- Quote Preview Review has a visible premium blocker panel for compliance/document blockers.
+- Order document upload has visible redirect notices and requirement-code mapping for missing blockers.
+- Admin Categories has a current list plus add/edit forms.
+- Admin Categories navigation now opens the category workspace.
+
+Still required before release confidence can rise:
+
+- Vercel or clean-local build proof for this package.
+- Live QA retest of lead batch updates, quote draft creation, Quote Preview blocker flow, order document upload, Admin Categories, and Trade Events.
+- Supabase storage bucket/RLS remediation if order uploads still fail after deployment.
+- Authorized Supabase RPC/security remediation if the database function is to be fixed instead of bypassed.
+
+Build not claimed in GPT sandbox. Requires Vercel/live build proof.

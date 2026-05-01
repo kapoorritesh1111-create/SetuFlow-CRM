@@ -2628,7 +2628,23 @@ function InlineQuoteBuilder({
                 </div>
               </div>
             ) : builderStep === 3 ? (
-              <div className="grid grid-cols-2 gap-[8px]">
+              <div className="space-y-[10px]">
+                {blockerCount > 0 ? (
+                  <details className="rounded-[16px] border border-[#fecaca] bg-[linear-gradient(135deg,#fff7f7,#fff)] p-[13px_15px] shadow-[0_18px_45px_rgba(225,29,72,.08)]">
+                    <summary className="cursor-pointer list-none text-[12px] font-extrabold text-[#9f1239] [&::-webkit-details-marker]:hidden">
+                      Resolve compliance/document blocker · open guided fix panel
+                    </summary>
+                    <div className="mt-[10px] grid gap-[8px] text-[11px] leading-[1.55] text-[#7f1d1d]">
+                      <p>This quote is blocked because compliance or required evidence is still open. Upload the matching document in the Lead or Order document area, then return here and create/open the draft preview again.</p>
+                      <div className="rounded-[12px] border border-[#fecaca] bg-white p-[10px]">Active blockers: {blockerCount}. Latest document: {documents[0]?.file_name ?? 'none linked'}.</div>
+                      <div className="flex flex-wrap gap-[8px]">
+                        <button type="button" onClick={onOpenCommandCenter} className="rounded-[8px] bg-[#0b2e4a] px-[12px] py-[7px] text-[11px] font-bold text-white">Back to Command Center</button>
+                        <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[8px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-bold text-[#334155] disabled:opacity-60">Refresh draft after fix</button>
+                      </div>
+                    </div>
+                  </details>
+                ) : null}
+                <div className="grid grid-cols-2 gap-[8px]">
                 {[
                   { label: 'Pricing check', items: [['Subtotal', `${currency} ${formatPreviewAmount(subtotal)}`], ['Line items', String(displayLines.length)], ['Status', pricingReady ? 'Ready ✓' : 'Incomplete']] },
                   { label: 'Documents check', items: [['Linked files', String(documents.length)], ['Latest', documents[0]?.file_name ?? 'None linked'], ['Status', documents.length > 0 ? 'Ready ✓' : 'Missing']] },
@@ -2648,6 +2664,7 @@ function InlineQuoteBuilder({
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
             ) : (
               // Step 4: Send gate — spec .sg

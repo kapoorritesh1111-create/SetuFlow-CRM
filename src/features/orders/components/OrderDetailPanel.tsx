@@ -267,7 +267,7 @@ export function OrderDetailPanel({
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <select
                   name="doc_type"
-                  defaultValue="compliance_doc"
+                  defaultValue={docBlockers[0]?.doc_type ?? 'compliance_doc'}
                   style={{ flex: 1, padding: '8px 10px', borderRadius: '7px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '12px', color: '#1e293b' }}
                 >
                   <option value="compliance_doc">Compliance doc</option>
@@ -278,6 +278,16 @@ export function OrderDetailPanel({
                   <option value="phytosanitary">Phytosanitary certificate</option>
                   <option value="lab_report">Lab / quality report</option>
                   <option value="other">Other</option>
+                </select>
+                <select
+                  name="requirement_code"
+                  defaultValue={docBlockers[0]?.code ?? ''}
+                  style={{ flex: 1, padding: '8px 10px', borderRadius: '7px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '12px', color: '#1e293b' }}
+                >
+                  <option value="">General order document</option>
+                  {docBlockers.map((item) => (
+                    <option key={item.code} value={item.code}>{item.title}</option>
+                  ))}
                 </select>
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -293,8 +303,7 @@ export function OrderDetailPanel({
                   textAlign: 'center',
                   fontWeight: 600,
                 }}>
-                  <input type="file" name="file" accept=".pdf,.jpg,.png,.doc,.docx,.xlsx" style={{ display: 'none' }} />
-                  📎 Choose file to upload
+                  <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xlsx" style={{ width: '100%', fontSize: '11px', color: '#334155' }} />
                 </label>
                 <button
                   type="submit"
@@ -303,7 +312,7 @@ export function OrderDetailPanel({
                   Upload
                 </button>
               </div>
-              <div style={{ fontSize: '10px', color: '#94a3b8' }}>File attaches to this contract and updates readiness.</div>
+              <div style={{ fontSize: '10px', color: '#94a3b8' }}>File attaches to this contract; choose a blocker requirement above to satisfy readiness checks.</div>
             </form>
           </div>
         )}

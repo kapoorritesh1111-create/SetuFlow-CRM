@@ -66,6 +66,10 @@ function isMissingRpcFunction(error: any) {
 
 const QUOTE_PRICING_BASIS_VALUES = PRICING_BASIS_VALUES satisfies readonly QuotePricingBasis[];
 
+function safeQuoteDisplayCurrency(value: unknown, fallback: string = 'USD') {
+  return normalizeQuoteDisplayCurrency(value) ?? normalizeQuoteDisplayCurrency(fallback) ?? 'USD';
+}
+
 function normalizeQuotePricingBasis(value: unknown, fallback: QuotePricingBasis = DEFAULT_QUOTE_PRICING_BASIS): QuotePricingBasis {
   return normalizePricingBasis(value, fallback);
 }
@@ -83,6 +87,7 @@ async function createQuoteDirect(db: any, params: {
   approvalRequired: boolean;
   approvalState: string;
 }) {
+  const safeDisplayCurrency = safeQuoteDisplayCurrency(params.currency);
   const { data: quote, error: quoteError } = await db
     .from('quotes')
     .insert({
@@ -92,7 +97,7 @@ async function createQuoteDirect(db: any, params: {
       created_by: params.createdBy,
       status: params.status,
       currency: params.currency,
-      display_currency: params.currency,
+      display_currency: safeDisplayCurrency,
       pricing_basis: params.pricingBasis,
       approval_required: params.approvalRequired,
       approved_at: params.approvalState === 'approved' ? new Date().toISOString() : null,
@@ -118,7 +123,7 @@ async function createQuoteDirect(db: any, params: {
       version_no: 1,
       status: params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalRequired ? 'approval_pending' : 'draft',
       pricing_basis: params.pricingBasis,
-      display_currency: params.currency,
+      display_currency: safeDisplayCurrency,
       internal_notes: params.notes,
       total_line_count: params.lineItems.length,
       created_by: params.createdBy,
@@ -148,7 +153,7 @@ async function createQuoteDirect(db: any, params: {
       source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null,
       freight_add_on_usd: line.freight_add_on_usd ?? null,
       final_unit_price: line.unit_price,
-      display_currency: line.currency ?? params.currency,
+      display_currency: safeQuoteDisplayCurrency(line.currency, safeDisplayCurrency),
       is_overridden: Boolean(line.is_price_overridden),
       override_reason: line.override_reason,
       overridden_by: line.overridden_by,
@@ -191,7 +196,8 @@ async function updateQuoteDirect(db: any, params: {
   approvalState: string;
 }) {
   const nowIso = new Date().toISOString();
-  const { error: quoteError } = await db.from('quotes').update({ status: params.status, currency: params.currency, display_currency: params.currency, pricing_basis: params.pricingBasis, approval_required: params.approvalRequired, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, notes: params.notes, updated_at: nowIso }).eq('organization_id', params.organizationId).eq('id', params.quoteId);
+  const safeDisplayCurrency = safeQuoteDisplayCurrency(params.currency);
+  const { error: quoteError} = await db.from('quotes').update({ status: params.status, currency: params.currency, display_currency: safeDisplayCurrency, pricing_basis: params.pricingBasis, approval_required: params.approvalRequired, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, notes: params.notes, updated_at: nowIso }).eq('organization_id', params.organizationId).eq('id', params.quoteId);
   if (quoteError) return { data: null, error: quoteError };
 
   const { error: deleteLinesError } = await db.from('quote_line_items').delete().eq('quote_id', params.quoteId);
@@ -206,7 +212,7 @@ async function updateQuoteDirect(db: any, params: {
   const nextVersionNo = Number.isFinite(Number(latestVersion?.version_no)) ? Number(latestVersion.version_no) + 1 : 1;
   const resolvedVersionStatus = params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalState === 'rejected' ? 'rejected' : params.status === 'expired' ? 'expired' : params.approvalRequired ? 'approval_pending' : 'draft';
 
-  const { data: version, error: versionError } = await db.from('quote_versions').insert({ quote_id: params.quoteId, version_no: nextVersionNo, status: resolvedVersionStatus, pricing_basis: params.pricingBasis, display_currency: params.currency, internal_notes: params.notes, total_line_count: params.lineItems.length, created_by: params.actorUserId, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, sent_at: params.status === 'sent' ? nowIso : null, sent_by: params.status === 'sent' ? params.actorUserId : null }).select('id').single();
+  const { data: version, error: versionError } = await db.from('quote_versions').insert({ quote_id: params.quoteId, version_no: nextVersionNo, status: resolvedVersionStatus, pricing_basis: params.pricingBasis, display_currency: safeDisplayCurrency, internal_notes: params.notes, total_line_count: params.lineItems.length, created_by: params.actorUserId, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, sent_at: params.status === 'sent' ? nowIso : null, sent_by: params.status === 'sent' ? params.actorUserId : null }).select('id').single();
   if (versionError) return { data: null, error: versionError };
 
   const versionId = version.id;
@@ -238,7 +244,7 @@ async function updateQuoteDirect(db: any, params: {
     }
   }
 
-  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: (line.product_id && productCategoryMap[line.product_id]) ? productCategoryMap[line.product_id] : '', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price, display_currency: line.currency ?? params.currency, is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
+  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: (line.product_id && productCategoryMap[line.product_id]) ? productCategoryMap[line.product_id] : '', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price, display_currency: safeQuoteDisplayCurrency(line.currency, safeDisplayCurrency), is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
   if (versionLines.length) {
     const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
     if (versionLineError) return { data: null, error: versionLineError };

@@ -165,19 +165,19 @@ export async function uploadOrderDocument(_: { error?: string; success?: string 
 
   const db = (await createClient()) as any;
   const { data: contract, error: contractError } = await db.from('contracts').select('id, lead_id, quote_id, execution_state').eq('organization_id', workspace.organization.id).eq('id', contractId).maybeSingle();
-  if (contractError) return { error: contractError.message };
+  if (contractError) return { error: 'Could not verify the order before upload. Please refresh and retry.' };
   if (!contract?.id) return { error: 'Order contract not found.' };
 
   const now = new Date().toISOString();
   const safeName = fileValue.name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 120) || 'order-document';
   const storagePath = `${workspace.organization.id}/orders/${contractId}/${Date.now()}-${safeName}`;
   const upload = await db.storage.from('order-documents').upload(storagePath, fileValue, { upsert: false, contentType: fileValue.type || undefined });
-  if (upload.error) return { error: upload.error.message };
+  if (upload.error) return { error: 'Document storage is not ready for order uploads. Check the order-documents bucket/RLS, then retry.' };
 
   const { data: publicUrlData } = db.storage.from('order-documents').getPublicUrl(storagePath);
   const fileUrl = publicUrlData?.publicUrl ?? `supabase://order-documents/${storagePath}`;
   const { data: documentRow, error: documentError } = await db.from('documents').insert({ organization_id: workspace.organization.id, related_entity: 'contract', related_id: contractId, file_name: safeName, file_url: fileUrl, doc_type: docType, status: 'uploaded', uploaded_by: workspace.user.id, uploaded_at: now, version: 1, ...(requirementCode ? { requirement_code: requirementCode } : {}) }).select('id').single();
-  if (documentError) return { error: documentError.message };
+  if (documentError) return { error: 'The file uploaded, but the document record could not be linked to this order.' };
 
   await writeAuditLog({ organizationId: workspace.organization.id, action: 'document_status_changed', entityType: 'contract', entityId: contractId, actorUserId: workspace.user.id, payload: { previous: { execution_state: contract.execution_state ?? null }, new: { document_id: documentRow?.id ?? null, doc_type: docType, file_name: safeName }, metadata: { source: 'uploadOrderDocument', quote_id: contract.quote_id, lead_id: contract.lead_id, storage_bucket: 'order-documents', storage_path: storagePath } } });
 
@@ -191,7 +191,9 @@ export async function uploadOrderDocument(_: { error?: string; success?: string 
 
 // 1-arg wrapper for direct form action= use in orders/page.tsx
 export async function uploadOrderDocumentAction(formData: FormData): Promise<void> {
-  await uploadOrderDocument(undefined, formData);
+  const result = await uploadOrderDocument(undefined, formData);
+  if (result?.error) redirect(buildRedirect(`order-doc-upload-failed:${result.error}`));
+  redirect(buildRedirect('order-doc-uploaded'));
 }
 
 /**
