@@ -517,3 +517,31 @@ Pass 16 implements the Pass 15 customer-facing UX fixes in code. It does not cla
 ### Verification
 
 Required commands were attempted in order. `npm run test:all` stopped at `tsx: not found`; `npm run build` stopped at `next: not found`. No live Supabase data was mutated and no remediation migrations were applied.
+
+## PR-NS-Pass17 verification update — dependency restoration follow-up
+
+Pass 17 addresses the immediate dependency declaration gap from Pass 16 by adding the missing `tsx` devDependency used by `npm run test:all`. The local sandbox still could not complete `npm install` / `npm ci`, so clean test/build proof remains open.
+
+| Area | Honest readiness after Pass 17 follow-up |
+|---|---|
+| Core CRM workflow | 91-94% unchanged |
+| Quote -> Order revenue path | 92-95% unchanged |
+| Investor demo safety | 82-87% scripted, still pending clean build/deploy proof |
+| First paying customer readiness | 89-93% pending build/deploy proof |
+| Security / RPC trust | 90-94%; cannot rise from UI/build work alone |
+| Buyer confidence | ~97.5/100 until install/test/build/deploy proof is clean |
+
+### Verification status after Pass 17
+
+- `tsx` is now declared in `package.json` devDependencies.
+- Local `npm install` / `npm ci` did not complete in the sandbox, so project-local `tsx` and `next` binaries were not restored here.
+- `npm run test:all` and `npm run build` are still not claimed clean.
+- A Node 22 smoke check of `tests/pricing/fx-resolution.helpers.test.ts` passed with 19 assertions, but this does not replace the required command-level proof.
+
+### Open release blockers after Pass 17
+
+- Run dependency install in a network-enabled clean environment.
+- Regenerate/validate `package-lock.json` if the package manager updates it after adding `tsx`.
+- Run `npm run test:all` and fix any failures.
+- Run `npm run build` and fix any failures.
+- Capture Vercel build/deploy evidence before moving buyer confidence toward 98-99/100.
