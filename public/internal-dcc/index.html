@@ -229,6 +229,8 @@
   <div class="tab" data-tab="issues">Issue Tracker</div>
   <div class="tab" data-tab="resolution">Resolution Guide</div>
   <div class="tab" data-tab="repo">Repo Status</div>
+  <div class="tab" data-tab="prbuilder">&#128736; PR Builder</div>
+  <div class="tab" data-tab="chromeguide">&#127758; Chrome Guide</div>
 </div>
 
 <!-- ==================== OVERVIEW ==================== -->
@@ -985,6 +987,214 @@
   </div>
 </div><!-- end repo panel -->
 
+<!-- ==================== PR BUILDER ==================== -->
+<div id="tab-prbuilder" class="panel">
+  <div class="section-title">PR Builder <span>Auto-generates fix prompts &amp; GitHub PR descriptions from your Issue Tracker</span></div>
+
+  <div class="alert alert-info" style="margin-bottom:20px;">
+    <span>&#9432;</span>
+    <div><strong>Workflow:</strong> Log issues in Issue Tracker → come here → click "Generate PRs" → copy each PR prompt into ChatGPT → ChatGPT returns fixed code → you create the PR in GitHub → test again in next pass.</div>
+  </div>
+
+  <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+    <button onclick="generatePRs()" style="padding:10px 22px;background:var(--brand);color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">&#9889; Generate All PRs from Issues</button>
+    <button onclick="copyMasterPrompt()" style="padding:10px 22px;background:#16a34a;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">&#128203; Copy Master Prompt (All Issues)</button>
+    <button onclick="generateTestInstructions()" style="padding:10px 22px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">&#127758; Copy Chrome Test Instructions</button>
+  </div>
+
+  <div id="pr-list" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="empty-state"><div class="icon">&#128736;</div>No issues logged yet. Go to Issue Tracker and log failing tests, then come back and click "Generate All PRs".</div>
+  </div>
+</div>
+
+<!-- ==================== CHROME GUIDE ==================== -->
+<div id="tab-chromeguide" class="panel">
+  <div class="section-title">Chrome Extension Test Guide <span>Exact prompts to give Claude in Chrome for each module</span></div>
+
+  <div class="alert alert-warn" style="margin-bottom:20px;">
+    <span>&#9888;</span>
+    <div><strong>Setup:</strong> (1) Open this DCC in Tab 1. (2) Open <strong>https://www.setuflowcrm.com/dashboard</strong> in Tab 2. (3) Activate Claude in Chrome on Tab 2. (4) Copy a prompt below and paste it to Claude. (5) Claude navigates &amp; reports — you log results in this DCC.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <div class="resolution-block">
+      <div class="resolution-block-header" style="background:#eff6ff;">
+        <span class="badge" style="background:#dbeafe;color:#1e40af;">STEP 1</span>
+        <h3>Dashboard — Buyers &amp; Suppliers</h3>
+        <button onclick="copyPrompt('prompt-dash')" style="margin-left:auto;padding:5px 12px;border:1px solid #bfdbfe;background:white;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;color:#1e40af;">Copy Prompt</button>
+      </div>
+      <div class="resolution-block-body">
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;line-height:1.7;font-family:inherit;white-space:pre-wrap;" id="prompt-dash">I am testing SETU Flow CRM at https://www.setuflowcrm.com. I am already logged in. Please test the Dashboard for me by doing the following steps one at a time and report Pass, Fail, or Blocked for each:
+
+TEST DB-1: Navigate to /dashboard/buyers. Confirm the page loads without a white screen or JS console errors. Check if KPI cards are visible.
+TEST DB-2: Check if KPI stat cards show non-zero, non-null values (Active Leads, Open Quotes, etc.).
+TEST DB-3: Check if a world map or country coverage visual is present. Click on any country/pin and report if a drawer opens.
+TEST DB-4: Check if a pipeline stage chart is visible and clickable.
+TEST DB-5: Check if a "Needs Attention" or similar card shows leads. Click one and report if a detail drawer opens.
+TEST DB-6: Look for a Customize button. If present, click it and report what options appear.
+TEST DB-7: Check if a recent activity feed shows timestamped entries.
+
+Then navigate to /dashboard/suppliers and repeat checks DB-1, DB-2, DB-3 for the supplier view.
+
+Report each test as PASS, FAIL, or BLOCKED with a one-line reason. Note any console errors you see.</div>
+      </div>
+    </div>
+
+    <div class="resolution-block">
+      <div class="resolution-block-header" style="background:#f0fdf4;">
+        <span class="badge" style="background:#dcfce7;color:#166534;">STEP 2</span>
+        <h3>Buyer Leads List</h3>
+        <button onclick="copyPrompt('prompt-leads')" style="margin-left:auto;padding:5px 12px;border:1px solid #a7f3d0;background:white;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;color:#065f46;">Copy Prompt</button>
+      </div>
+      <div class="resolution-block-body">
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;line-height:1.7;font-family:inherit;white-space:pre-wrap;" id="prompt-leads">I am testing SETU Flow CRM at https://www.setuflowcrm.com. I am already logged in. Navigate to /leads/buyers and test these items:
+
+TEST BL-1: Confirm the page loads and shows a list of buyer leads with company name, stage, and follow-up date visible.
+TEST BL-2: Type something in the search box. Confirm the list filters in real-time. Then clear the search.
+TEST BL-3: Find a Stage or Status filter dropdown. Select any stage. Confirm the list narrows. Then clear.
+TEST BL-4: Find an Owner filter if present. Select any owner. Confirm leads filter.
+TEST BL-5: Look for a "+ New Lead" or "Add Lead" button. Click it. Report what opens (form, drawer, modal, or nothing).
+TEST BL-6: Click on any lead row. Report what happens — does it navigate to a lead detail page at /leads/[some-id]?
+TEST BL-7: On a lead card, look for a "..." or ellipsis menu. Click it. Report what action items appear.
+TEST BL-8: Check if leads show health indicator badges (Hot/Warm/Cold/At Risk). Report badge colors match meaning.
+
+Report each as PASS, FAIL, or BLOCKED with a one-line reason.</div>
+      </div>
+    </div>
+
+    <div class="resolution-block">
+      <div class="resolution-block-header" style="background:#faf5ff;">
+        <span class="badge" style="background:#f3e8ff;color:#6b21a8;">STEP 3</span>
+        <h3>Lead Command Center (most important)</h3>
+        <button onclick="copyPrompt('prompt-lcc')" style="margin-left:auto;padding:5px 12px;border:1px solid #e9d5ff;background:white;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;color:#6b21a8;">Copy Prompt</button>
+      </div>
+      <div class="resolution-block-body">
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;line-height:1.7;font-family:inherit;white-space:pre-wrap;" id="prompt-lcc">I am testing SETU Flow CRM at https://www.setuflowcrm.com. I am already logged in. Navigate to /leads/buyers, then click on the FIRST lead in the list to open its Lead Command Center. Then test:
+
+TEST LCC-1: Confirm the page loads with the lead's company name, stage strip, and context bar visible. No blank screen or JS error.
+TEST LCC-2: In the pipeline stage strip at the top, click on the NEXT stage after the current one. Report if the stage updates and a success toast appears.
+TEST LCC-3: Find an Edit button (pencil icon or "Edit" label). Click it. Report if a drawer or form opens with lead profile fields.
+TEST LCC-4: Click the "Workflow" tab. Report if 4 action cards appear: Follow-up, Qualification, Coverage, and Commercial.
+TEST LCC-5: Click to open the Follow-up card. Set a follow-up date. Click Save. Report if it saves successfully and badge updates.
+TEST LCC-6: Click to open the Qualification card. Fill in any visible fields. Click Save. Report result.
+TEST LCC-7: Click to open the Coverage card. Try to add a product and a market. Click Save. Report result.
+TEST LCC-8: Click to open the Commercial card. Look for "Create quote" or "Review quote" button. Click it. Report what page it navigates to.
+TEST LCC-9: Click the "Activity" tab. Report if a timeline of past activities is visible with timestamps.
+TEST LCC-10: In the Activity tab, type a note in the composer at the top. Click Submit or Post. Report if the note appears in the timeline.
+TEST LCC-11: Click the "Quotes" tab. Report what is visible — quote cards, empty state, or error.
+TEST LCC-12: Scroll down and look for a sticky action bar with "Mark Won" or "Mark Lost". Report if visible and what happens when clicked.
+TEST LCC-13: Look for an AI assist button (sparkle ✦ icon). Click it. Report if a popover opens with suggestions.
+TEST LCC-14: Look for Previous/Next lead navigation arrows. Click Next. Report if it navigates to the next lead.
+
+Report each as PASS, FAIL, or BLOCKED with a one-line reason. Include any console errors.</div>
+      </div>
+    </div>
+
+    <div class="resolution-block">
+      <div class="resolution-block-header" style="background:#fffbeb;">
+        <span class="badge" style="background:#fef3c7;color:#92400e;">STEP 4</span>
+        <h3>Quote Builder Wizard</h3>
+        <button onclick="copyPrompt('prompt-quote')" style="margin-left:auto;padding:5px 12px;border:1px solid #fde68a;background:white;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;color:#92400e;">Copy Prompt</button>
+      </div>
+      <div class="resolution-block-body">
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;line-height:1.7;font-family:inherit;white-space:pre-wrap;" id="prompt-quote">I am testing SETU Flow CRM at https://www.setuflowcrm.com. I am already logged in. Navigate to /leads/buyers, open the first lead, go to the Workflow tab, open the Commercial card, and click "Create quote". Then test the Quote Builder:
+
+TEST QB-1 (Step 1 - Product): Confirm Step 1 loads with the buyer's name/context. Check if a pricing basis selector is visible. Select any option and click Continue or Next.
+TEST QB-2 (Step 2 - Pricing): Confirm a line item builder is visible. Try to add at least one product line item. Report if the product search/select works and quantity/price fields are editable.
+TEST QB-3 (Step 3 - Terms): Confirm currency selector, approval toggle, and notes field are present. Fill them in and click Continue.
+TEST QB-4 (Step 4 - Review): Confirm a summary/review of the quote is shown with correct totals matching what was entered. Look for a send readiness checklist.
+TEST QB-5 (Step 5 - Send): Confirm a Send gate is present. If blockers exist, report what they say. Click Send if enabled and report result.
+TEST QB-6 (Back navigation): From Step 4, click Back. Confirm Step 3 re-renders with previously entered data still intact (no data loss).
+TEST QB-7 (Draft persistence): Navigate back to the Lead Command Center. Confirm the Commercial card now shows "Review quote" instead of "Create quote".
+
+Report each as PASS, FAIL, or BLOCKED with a one-line reason.</div>
+      </div>
+    </div>
+
+    <div class="resolution-block">
+      <div class="resolution-block-header" style="background:#fef2f2;">
+        <span class="badge" style="background:#fee2e2;color:#991b1b;">STEP 5</span>
+        <h3>Admin Settings (all 12 pages)</h3>
+        <button onclick="copyPrompt('prompt-admin')" style="margin-left:auto;padding:5px 12px;border:1px solid #fecaca;background:white;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;color:#991b1b;">Copy Prompt</button>
+      </div>
+      <div class="resolution-block-body">
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;line-height:1.7;font-family:inherit;white-space:pre-wrap;" id="prompt-admin">I am testing SETU Flow CRM at https://www.setuflowcrm.com. I am already logged in as an admin. Navigate to /admin and test the following admin pages one by one:
+
+TEST AO-3 (Nav check): Click every item in the admin sidebar — Organization, Team members, Invitations, Markets, Categories, Product management, Stages, Pipelines, Trade events, Audit, AI analytics, Security. Report which ones load vs which ones show an error/blank page.
+
+TEST AO-1: On /admin/organization — confirm the org profile form loads with existing data (name, industry, etc.)
+TEST AO-2: Edit one field (e.g. change org name slightly) and click Save. Reload the page. Report if change persisted.
+
+TEST AU-1: On /admin/users — confirm team members list shows with status badges (Active/Invited).
+TEST AU-2: Use the search box and status filter. Confirm they work.
+TEST AU-3: Click a user row — confirm a drawer opens with Profile, Role, Security, Activity tabs.
+TEST AU-4: In the Role tab, try changing a non-owner user's role. Click Save. Report if it works.
+TEST AU-5: In Security tab of the user drawer, click "Send password reset". Report if a success message appears.
+TEST AU-6: Go to /admin/invitations — try sending a test invite (use a fake email). Report if the invite appears in the pending list.
+
+TEST AR-1: On /admin/markets — click Add Market, fill a name, save. Report if it appears in list.
+TEST AR-3: On /admin/categories — click Add Category, fill a name, save. Report result.
+TEST AR-4: On /admin/stages — click Add Stage, fill details, save. Report result.
+TEST AR-7: On /admin/product-management — click Add Product, fill details (name, category, price, MOQ), save. Report result.
+
+TEST AG-2: On /admin/audit — confirm audit log entries are visible with timestamps.
+TEST AG-4: On /admin/ai-analytics — confirm data or charts are visible.
+TEST AG-1: On /admin/security — confirm a role/permission matrix or security overview is visible.
+
+Report each as PASS, FAIL, or BLOCKED with a one-line reason. Flag any pages that error out completely.</div>
+      </div>
+    </div>
+
+    <div class="resolution-block">
+      <div class="resolution-block-header">
+        <span class="badge badge-skip">STEP 6</span>
+        <h3>Shared Modules (Orders, Tasks, Compliance, Integrations)</h3>
+        <button onclick="copyPrompt('prompt-shared')" style="margin-left:auto;padding:5px 12px;border:1px solid var(--border);background:white;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;">Copy Prompt</button>
+      </div>
+      <div class="resolution-block-body">
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;line-height:1.7;font-family:inherit;white-space:pre-wrap;" id="prompt-shared">I am testing SETU Flow CRM at https://www.setuflowcrm.com. I am already logged in. Test these shared modules:
+
+TEST OR-1: Navigate to /orders. Confirm orders list loads with status badges. Report column headers visible.
+TEST OR-2: Navigate to /tasks. Click "Add Task" or equivalent. Fill in title, due date, assignee. Save. Report if task appears. Mark it complete and report.
+TEST OR-3: Navigate to /contracts. Confirm contracts list loads with status and lead references.
+TEST OR-4: Navigate to /documents. Try uploading a small test file. Report if it appears in the list.
+TEST OR-5: Navigate to /compliance. Confirm checklist items are visible. Try toggling a status.
+TEST OR-6: Navigate to /trade-events. Confirm events list shows with dates and locations.
+TEST AI-1: Navigate to /reports. Confirm charts and graphs render without errors.
+TEST AI-2: Navigate to /ai-suggestions. Confirm AI suggestion cards appear or empty state is correct.
+TEST AI-3: Navigate to /integrations. Confirm integration connector cards are visible with status.
+TEST AI-4: Navigate to /contact-exchange/vcard. Confirm digital card preview renders.
+TEST AI-5: Navigate to /approval-send. Report what is visible — pending approvals or empty state.
+
+Report each as PASS, FAIL, or BLOCKED with a one-line reason.</div>
+      </div>
+    </div>
+
+    <div class="resolution-block">
+      <div class="resolution-block-header" style="background:#f0fdf4;">
+        <span class="badge" style="background:#dcfce7;color:#166534;">STEP 7</span>
+        <h3>Supplier Workflows</h3>
+        <button onclick="copyPrompt('prompt-supplier')" style="margin-left:auto;padding:5px 12px;border:1px solid #a7f3d0;background:white;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;color:#065f46;">Copy Prompt</button>
+      </div>
+      <div class="resolution-block-body">
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;line-height:1.7;font-family:inherit;white-space:pre-wrap;" id="prompt-supplier">I am testing SETU Flow CRM at https://www.setuflowcrm.com. I am already logged in. Test supplier-specific workflows:
+
+TEST SD-1: Navigate to /dashboard/suppliers. Confirm page loads with supplier KPI cards.
+TEST SD-3: Look for a Buyer/Supplier mode toggle. Click to switch views. Report if KPI cards change.
+TEST SL-1: Navigate to /leads/suppliers. Confirm supplier leads list loads with correct data.
+TEST SL-2: Open a supplier lead. Look for a "New RFQ" or "Create RFQ" button. Click it. Report what page opens.
+TEST SL-4: Navigate to /products. Confirm a spreadsheet-style product grid loads. Try editing one cell value and saving.
+TEST SL-5: Navigate to /pipeline/suppliers. Confirm kanban board loads with supplier pipeline stages.
+TEST SL-7: Navigate to /quotes. Confirm all quotes (buyer + supplier) show with status badges and amounts.
+
+Report each as PASS, FAIL, or BLOCKED.</div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- end chromeguide panel -->
+
 </div><!-- end main -->
 
 <script>
@@ -1250,6 +1460,203 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (target) target.classList.add('active');
   });
 });
+
+function generatePRs() {
+  const store = getStore();
+  const issues = (store.issues || []).filter(i => i.status !== 'resolved');
+  const list = document.getElementById('pr-list');
+  if (!issues.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#128077;</div>No open issues found. All issues resolved or none logged yet.</div>';
+    return;
+  }
+  const sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+  const sorted = [...issues].sort((a,b) => (sevOrder[a.sev]||2) - (sevOrder[b.sev]||2));
+  const grouped = {};
+  sorted.forEach(iss => { if (!grouped[iss.sev]) grouped[iss.sev] = []; grouped[iss.sev].push(iss); });
+  const sevLabel = { critical: 'P0 Critical', high: 'P1 High', medium: 'P2 Medium', low: 'P3 Low' };
+  const sevColors = { critical: '#fee2e2:#991b1b', high: '#ffedd5:#9a3412', medium: '#fef9c3:#854d0e', low: '#f0fdf4:#166534' };
+
+  let html = '';
+  let prNum = 1;
+  sorted.forEach(iss => {
+    const [bg, col] = (sevColors[iss.sev] || '#f9fafb:#374151').split(':');
+    const prTitle = `fix(${slugify(iss.page)}): ${iss.title}`;
+    const branchName = `fix/${iss.id.toLowerCase()}-${slugify(iss.title).slice(0,30)}`;
+    const gptPrompt = buildGPTPrompt(iss, branchName);
+    html += `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:4px;">
+      <div style="background:${bg};padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
+        <span class="badge" style="background:white;color:${col};border:1px solid ${col};">${sevLabel[iss.sev]||'Medium'}</span>
+        <strong style="font-size:14px;color:${col};flex:1;">${iss.id} — ${iss.title}</strong>
+        <span style="font-size:11px;color:${col};opacity:0.8;">${iss.page}</span>
+      </div>
+      <div style="padding:16px 18px;">
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:5px;">Proposed Branch Name</div>
+          <code style="display:block;background:#f1f5f9;padding:8px 12px;border-radius:6px;font-size:12px;color:#1e40af;">${branchName}</code>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:5px;">PR Title</div>
+          <code style="display:block;background:#f1f5f9;padding:8px 12px;border-radius:6px;font-size:12px;color:#1e40af;">${prTitle}</code>
+        </div>
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:5px;">ChatGPT Fix Prompt</div>
+          <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;line-height:1.7;white-space:pre-wrap;max-height:260px;overflow-y:auto;font-family:inherit;" id="gpt-prompt-${iss.id}">${gptPrompt}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="copyGPTPrompt('${iss.id}')" style="padding:7px 16px;background:var(--brand);color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">&#128203; Copy for ChatGPT</button>
+          <button onclick="copyPRDesc('${iss.id}')" style="padding:7px 16px;background:#16a34a;color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">&#128196; Copy GitHub PR Description</button>
+          <button onclick="resolveIssue('${iss.id}');generatePRs();" style="padding:7px 16px;background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">&#10003; Mark Fixed</button>
+        </div>
+      </div>
+    </div>`;
+    prNum++;
+  });
+  list.innerHTML = html;
+}
+
+function slugify(str) {
+  return (str||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+
+function buildGPTPrompt(iss, branch) {
+  return `You are working on the SETU Flow CRM — a Next.js 14 / Supabase CRM app deployed at https://www.setuflowcrm.com.
+
+ISSUE ID: ${iss.id}
+BRANCH: ${branch}
+PAGE/MODULE: ${iss.page}
+SEVERITY: ${iss.sev.toUpperCase()}
+
+PROBLEM:
+${iss.desc || 'No description provided. Investigate the module listed above.'}
+
+${iss.fix ? `SUGGESTED FIX APPROACH:
+${iss.fix}
+
+` : ''}REPOSITORY CONTEXT:
+- Framework: Next.js 14 App Router (TypeScript)
+- Database: Supabase (PostgreSQL with RLS)
+- Key source dirs: src/app/, src/features/, src/components/, src/lib/
+- Pass 21 TypeFix was the last repo pass — TypeScript type errors were the main fix target
+- Schema source of truth: Complete Schema.txt, RLS Policies.txt, Table Constraints.txt
+
+YOUR TASK:
+1. Identify which file(s) in the src/ directory are responsible for this issue
+2. Provide the complete fixed file(s) with all changes — do not give partial diffs
+3. Explain what you changed and why
+4. Provide a PR description I can paste into GitHub
+
+OUTPUT FORMAT:
+- File path (relative to repo root)
+- Full corrected file content
+- PR title: fix(${slugify(iss.page)}): ${iss.title}
+- PR body with: Problem, Root Cause, Changes Made, Testing Checklist`;
+}
+
+function copyGPTPrompt(issId) {
+  const el = document.getElementById('gpt-prompt-' + issId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent || el.innerText).then(() => {
+    showCopied('Copied for ChatGPT!');
+  });
+}
+
+function copyPRDesc(issId) {
+  const store = getStore();
+  const iss = (store.issues || []).find(i => i.id === issId);
+  if (!iss) return;
+  const branch = 'fix/' + issId.toLowerCase() + '-' + slugify(iss.title).slice(0,30);
+  const desc = `## ${issId} — ${iss.title}
+
+**Branch:** \`${branch}\`
+**Severity:** ${iss.sev.toUpperCase()}
+**Module:** ${iss.page}
+
+### Problem
+${iss.desc || 'See issue tracker for details.'}
+
+### Fix Approach
+${iss.fix || 'TBD after investigation.'}
+
+### Testing Checklist
+- [ ] Reproduce issue on /dashboard staging
+- [ ] Confirm fix resolves the specific test case
+- [ ] No regression on adjacent pages
+- [ ] TypeScript builds without errors (\`npm run build\`)
+- [ ] Supabase RLS not broken (check audit log)
+
+### Test Case Reference
+SETU Flow DCC — Issue ${issId}`;
+  navigator.clipboard.writeText(desc).then(() => { showCopied('PR description copied!'); });
+}
+
+function copyMasterPrompt() {
+  const store = getStore();
+  const issues = (store.issues || []).filter(i => i.status !== 'resolved');
+  if (!issues.length) { alert('No open issues to include.'); return; }
+  const header = `You are fixing multiple bugs in SETU Flow CRM — a Next.js 14 / Supabase CRM (Pass 21 TypeFix build).
+Live URL: https://www.setuflowcrm.com
+Source: Next.js 14 App Router + TypeScript + Supabase
+Dirs: src/app/, src/features/, src/components/, src/lib/, src/types/
+
+Fix ALL of the following issues. For each issue, provide the complete corrected file(s), explain changes, and a PR description.
+
+===== ISSUES TO FIX =====
+`;
+  const body = issues.map((iss, i) => `
+--- ISSUE ${i+1}: ${iss.id} [${iss.sev.toUpperCase()}] ---
+Page: ${iss.page}
+Problem: ${iss.desc || 'Investigate the module.'}
+${iss.fix ? 'Suggested fix: ' + iss.fix : ''}`).join('\n');
+  const footer = `
+
+===== FOR EACH ISSUE PROVIDE =====
+1. Affected file path(s)
+2. Complete corrected file content (not partial diff)
+3. Explanation of root cause and fix
+4. PR title and description
+5. Testing checklist
+
+Work through issues in order of severity (Critical first).`;
+  navigator.clipboard.writeText(header + body + footer).then(() => { showCopied('Master prompt copied — paste into ChatGPT!'); });
+}
+
+function generateTestInstructions() {
+  const rows = document.querySelectorAll('.test-row[id^="row-"]');
+  const store = getStore();
+  const pending = [];
+  rows.forEach(row => {
+    const id = row.id.replace('row-','');
+    const status = (store.statuses||{})[id]||'pending';
+    if (status === 'pending' || status === 'fail' || status === 'blocked') {
+      const name = row.querySelector('.test-name')?.textContent || id;
+      pending.push(`${id}: ${name}`);
+    }
+  });
+  if (!pending.length) { showCopied('All tests complete — nothing pending!'); return; }
+  const prompt = `I am testing SETU Flow CRM at https://www.setuflowcrm.com (already logged in).
+
+Please run the following tests in order and report PASS, FAIL, or BLOCKED with a one-line reason for each:
+
+${pending.slice(0,20).map((t,i) => `${i+1}. ${t}`).join('\n')}
+
+For any FAIL or BLOCKED: note the exact error message, which UI element failed, and any console errors.`;
+  navigator.clipboard.writeText(prompt).then(() => { showCopied('Pending tests prompt copied!'); });
+}
+
+function showCopied(msg) {
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a3c5e;color:white;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:700;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+  div.textContent = '✓ ' + msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 2500);
+}
+
+function copyPrompt(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent || el.innerText).then(() => { showCopied('Prompt copied! Paste into Claude in Chrome.'); });
+}
 
 loadStoredData();
 </script>
