@@ -1,3 +1,37 @@
+# Pass 18 Live Baseline Lock — Vercel Production Proof
+
+## Summary
+
+Locked `SetuFlow-CRM-main(41).zip` / GitHub commit `89a825a` as the current SETU Flow CRM baseline. Updated the DCC, README, and release readiness docs based on the clean live Vercel build/deploy log and connector evidence.
+
+## Evidence
+
+- Vercel project: `setu-flow-crm`.
+- Deployment: `dpl_2tMU2g417f8wDAtMJPXDHrEkxoD8`.
+- State: production `READY`.
+- Branch/commit: `main` / `89a825a`.
+- Install command: `npm ci --no-audit --no-fund`; 151 packages installed.
+- Build command: `npm run build`; Next.js 14.2.35 compiled successfully, checked types, generated 55 static pages, created serverless functions, and deployed outputs.
+- User-provided live validation confirms Supabase connection is working.
+
+## Files changed
+
+- `public/internal-dcc/index.html` — updated live baseline, readiness, buyer confidence, remaining blockers, and next schema/security action.
+- `README.md` — updated readiness snapshot, proven/non-claimed language, pass table, and live baseline section.
+- `docs/RELEASE_READINESS.md` — added PR-NS-Pass18 live baseline lock.
+- `docs/LIVE_BASELINE_LOCK_PASS18.md` — created live baseline evidence record.
+- `CHANGES.md` — this entry.
+
+## Readiness impact
+
+Buyer confidence moves from ~97.5/100 to ~98.5/100 because the premium UI / Organization Setup work is now live-build verified. Security/RPC trust remains capped at 90-94% because no Supabase remediation migration, advisor closure, or external audit proof was applied in this pass.
+
+## Still not claimed
+
+100/100 remains blocked by Supabase advisor/RPC closure, external audit, WAF/rate limiting, monitoring, backup/restore drill, live connector proof, dispatch/completion proof, production support activation, and first-customer pilot evidence.
+
+---
+
 # Pass 17 Dependency Restoration + Verification Follow-up
 
 ## Summary

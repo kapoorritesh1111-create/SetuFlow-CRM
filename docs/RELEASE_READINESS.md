@@ -545,3 +545,46 @@ Pass 17 addresses the immediate dependency declaration gap from Pass 16 by addin
 - Run `npm run test:all` and fix any failures.
 - Run `npm run build` and fix any failures.
 - Capture Vercel build/deploy evidence before moving buyer confidence toward 98-99/100.
+
+
+## PR-NS-Pass18 live baseline lock — Vercel production proof
+
+The previous Pass 17 sandbox-only dependency/build gap is now closed by live production evidence for GitHub commit `89a825a` / `89a825afa1624bba04657caca7dc0048eb14e683`.
+
+| Area | Honest readiness after live baseline lock |
+|---|---:|
+| Core CRM workflow | 91-94%; live build/deploy verified |
+| Quote -> Order revenue path | 92-95%; golden signed-contract proof remains valid |
+| Investor demo safety | 84-88% scripted with clean production build/deploy evidence |
+| First paying customer readiness | 90-94% for controlled pilot expansion |
+| Security / RPC trust | 90-94%; unchanged because no remediation migration was applied |
+| Buyer confidence | ~98.5/100 |
+
+### Vercel deployment evidence
+
+- Production project: `setu-flow-crm`.
+- Deployment: `dpl_2tMU2g417f8wDAtMJPXDHrEkxoD8`.
+- Deployment state: `READY`.
+- Branch/commit: `main` / `89a825a`.
+- Install: `npm ci --no-audit --no-fund` installed 151 packages successfully.
+- Build: `npm run build` / `next build` compiled successfully, ran lint/type validation, generated 55 static pages, created serverless functions, and deployed outputs.
+
+### Supabase connection evidence
+
+User-provided live validation confirms the deployed site is connected to Supabase. This is treated as live environment connectivity proof. It does not close Supabase advisor/RPC remediation because no live remediation migration was authorized or applied.
+
+### Remaining blockers after live baseline lock
+
+1. Supabase advisor/RPC hardening remains unapplied and unverified.
+2. External security audit remains pending.
+3. WAF/rate-limit deployment evidence remains pending.
+4. Production monitoring and alert evidence remains pending.
+5. Backup/restore drill evidence remains pending.
+6. Live connector proof remains pending.
+7. Dispatch/completion proof remains pending.
+8. First pilot evidence and customer feedback remain pending.
+9. Production support activation evidence remains pending.
+
+### Release decision after live baseline lock
+
+`SetuFlow-CRM-main(41).zip` / commit `89a825a` is the current baseline. SETU Flow is suitable for controlled pilot expansion using locked wording. It is not yet a 100/100 broad production launch claim until security, operations, dispatch/completion, and first-pilot evidence are complete.
