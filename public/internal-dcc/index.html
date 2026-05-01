@@ -214,7 +214,8 @@
     <div class="version">Development Control Center · Pass 21 TypeFix · setuflowcrm.com</div>
   </div>
   <div class="header-actions">
-    <button class="btn" onclick="exportReport()">&#8595; Export</button>
+    <button class="btn" onclick="exportReport()">&#8595; CSV</button>
+    <button class="btn" onclick="bakeIntoHTML()" style="background:rgba(245,158,11,0.25);border-color:rgba(245,158,11,0.6);">&#8659; Bake into HTML</button>
     <button class="btn" onclick="clearAll()">&#8635; Reset</button>
     <button class="btn btn-accent" onclick="saveAll()">&#10003; Save</button>
   </div>
@@ -1465,7 +1466,28 @@ function exportReport() {
   a.click();
 }
 
+function bakeIntoHTML() {
+  const store = getStore();
+  const dataJson = JSON.stringify(store).replace(/<\/script>/gi, '<\/scr"+"ipt>');
+  const scriptTag = '<script>\nwindow.SETUFLOW_BAKED='+dataJson+';\n<\/script>';
+  const html = document.documentElement.outerHTML;
+  // Strip any previous baked data block
+  const cleaned = html.replace(/<script>\s*window\.SETUFLOW_BAKED=[\s\S]*?<\/script>\s*/,'');
+  // Inject before </body>
+  const final = cleaned.replace('</body>', scriptTag + '\n</body>');
+  const blob = new Blob([final], { type:'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'SetuFlow-DCC-v5-baked-' + new Date().toISOString().slice(0,10) + '.html';
+  a.click();
+  showCopied('HTML baked with all results! Open the downloaded file to see pre-loaded data.');
+}
+
 function loadStoredData() {
+  // If this HTML was exported with baked data and localStorage is empty, restore from baked data
+  if (window.SETUFLOW_BAKED && !localStorage.getItem(STORE_KEY)) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(window.SETUFLOW_BAKED)); } catch(e) {}
+  }
   preloadDashboardResults();
   const store = getStore();
   const statuses = store.statuses || {};
@@ -1771,19 +1793,25 @@ const MODULE_NAMES = {
 function autoCreateIssue(testId, rowId, status, detail, note) {
   const store = getStore();
   if (!Array.isArray(store.issues)) store.issues = [];
-  const existing = store.issues.find(i => i.autoTestId === rowId);
-  if (existing) return null;
-  const sev = status === 'fail' ? 'high' : 'medium';
+  if (store.issues.some(i => i.autoTestId === rowId)) return null;
+  const sev = status === 'fail' ? 'high' : status === 'blocked' ? 'medium' : 'low';
   const page = MODULE_NAMES[rowId] || rowId;
-  const maxId = store.issues.reduce((m, i) => Math.max(m, parseInt((i.id||'').replace('ISS-',''))||0), 0);
-  issueCounter = Math.max(issueCounter, maxId) + 1;
+  const maxStored = store.issues.reduce((m,i)=>Math.max(m,parseInt((i.id||'').replace('ISS-',''))||0),0);
+  issueCounter = Math.max(issueCounter, maxStored) + 1;
   const id = 'ISS-' + String(issueCounter).padStart(3,'0');
-  let fix = '';
-  if (rowId==='db1-3'||rowId==='sd-3') fix='Wire onClick to SVG country paths in world-coverage-map.tsx → call CountryInsightDrawer open handler. Component exists at src/features/dashboard/components/country-insight-drawer.tsx.';
-  if (rowId==='db1-4') fix='Add onClick to stage bars in pipeline-stage-chart-card.tsx → navigate to /pipeline?stage=[stageId] or open stage detail drawer.';
-  if (rowId==='db1-6') fix='Import DashboardCustomizePanel in dashboard-header-controls.tsx and add a visible Customize trigger button.';
-  if (rowId==='db1-7') fix='Add RecentActivityCard to buyers widget grid in dashboard-interactive.tsx. Fetch lead_activities in render-dashboard-page.tsx.';
-  store.issues.unshift({ id, autoTestId:rowId, page, title:detail.slice(0,80), sev, status:'open', desc:note||detail, fix, createdAt:new Date().toISOString() });
+  const HINTS = {
+    'db1-3':'Wire onClick to SVG country paths in world-coverage-map.tsx. CountryInsightDrawer exists at src/features/dashboard/components/country-insight-drawer.tsx — pass market data on click.',
+    'sd-3':'Same root cause as db1-3. Wire SVG country path onClick in world-coverage-map.tsx for supplier mode.',
+    'db1-4':'Add onClick to stage bars in pipeline-stage-chart-card.tsx → router.push to /pipeline?stage=[stageId].',
+    'db1-6':'DashboardCustomizePanel component exists. Add trigger button in dashboard-header-controls.tsx.',
+    'db1-7':'RecentActivityCard exists. Add it to buyers widget grid in dashboard-interactive.tsx and fetch lead_activities in render-dashboard-page.tsx.',
+    'bl1-5':'Quick Add drawer X/Cancel slow to respond. Check onClick handler — may have debounce or async animation. Add immediate synchronous close.',
+    'bl1-6':'Intentional ONE PAGE WORKSPACE design — inline lead detail, no route change. Add hover tooltip on row directing users to Open → button for discoverability.',
+    'bl1-7':'No ellipsis menu — discrete Open/Quote/Edit buttons used instead. Either add a kebab menu wrapper or update the DCC spec to reflect current design.',
+    'bl1-8':'Per-row Hot/Warm/Cold badge pills not shown. Health status values exist in data model. Add badge pill component that maps status (Hot, At risk, Overdue, Blocked) to colored pills on each lead row.',
+  };
+  const fix = HINTS[rowId] || 'Investigate ' + page + '. Reproduce: navigate to page, trigger test action, check console for errors.';
+  store.issues.unshift({ id, autoTestId:rowId, page, title:detail.slice(0,90), sev, status:'open', desc:note||detail, fix, createdAt:new Date().toISOString() });
   saveStore(store);
   return id;
 }
@@ -1843,10 +1871,10 @@ function parseTestReport(text) {
 
 function extractStatus(text) {
   const up = text.toUpperCase();
-  if (up.includes('PARTIAL PASS')) return 'pass';
-  if (up.includes('PASS')) return 'pass';
-  if (up.includes('BLOCKED')) return 'blocked';
-  if (up.includes('FAIL')) return 'fail';
+  if (up.includes('PARTIAL PASS')) return 'partial';  // separate from full pass
+  if (up.includes('PASS'))         return 'pass';
+  if (up.includes('BLOCKED'))      return 'blocked';
+  if (up.includes('FAIL'))         return 'fail';
   if (up.includes('NON-FUNCTIONAL') || up.includes('NOT FOUND') || up.includes('NO RESPONSE')) return 'fail';
   return 'pending';
 }
@@ -1856,39 +1884,60 @@ function runImport() {
   if (!text) { alert('Paste a test report first.'); return; }
 
   const results = parseTestReport(text);
-  if (!results.length) { alert('No test IDs recognized. Make sure the report uses formats like: TEST DB-3: FAIL or DB-3 — FAIL'); return; }
+  if (!results.length) { alert('No test IDs recognized. Make sure the report uses formats like:\nBL-7 — FAIL — reason\nor: TEST BL-7: FAIL'); return; }
 
   const store = getStore();
   if (!store.statuses) store.statuses = {};
-  if (!store.notes) store.notes = {};
-  if (!store.audit) store.audit = [];
+  if (!store.notes)    store.notes    = {};
+  if (!store.audit)    store.audit    = [];
 
-  let passCount = 0, failCount = 0, blockedCount = 0, skippedCount = 0;
+  let passCount=0, partialCount=0, failCount=0, blockedCount=0;
   const logLines = [];
   const issuesCreated = [];
 
+  // sync global counter before loop so each iteration builds on previous
+  if (Array.isArray(store.issues)) {
+    issueCounter = store.issues.reduce((m,i)=>Math.max(m,parseInt((i.id||'').replace('ISS-',''))||0), issueCounter);
+  }
+
   results.forEach(r => {
-    const prev = store.statuses[r.rowId];
-    store.statuses[r.rowId] = r.status;
+    // Statuses: partial → stored as 'pass' (functional) but still gets an issue
+    const storedStatus = (r.status === 'partial') ? 'pass' : r.status;
+    store.statuses[r.rowId] = storedStatus;
     if (r.note) store.notes[r.rowId] = r.note;
     store.audit.unshift({ time: new Date().toISOString(), action: `Auto-imported: ${r.status.toUpperCase()}`, test: r.rawId });
-    if (r.status === 'pass') { passCount++; logLines.push(`<span style="color:var(--pass)">&#10003; PASS</span> — ${r.rawId} → row ${r.rowId}`); }
-    else if (r.status === 'fail') {
-      failCount++;
-      logLines.push(`<span style="color:var(--fail)">&#10005; FAIL</span> — ${r.rawId} → row ${r.rowId}`);
-      const issId = autoCreateIssue(r.rawId, r.rowId, 'fail', `${r.rawId}: ${MODULE_NAMES[r.rowId]||r.rowId} — failed during live test`, r.note);
+
+    if (r.status === 'pass') {
+      passCount++;
+      logLines.push(`<span style="color:var(--pass)">&#10003; PASS</span> — ${r.rawId}`);
+
+    } else if (r.status === 'partial') {
+      partialCount++;
+      logLines.push(`<span style="color:var(--pending)">&#9651; PARTIAL</span> — ${r.rawId} → logged as Pass + low-severity issue`);
+      const issId = autoCreateIssue(r.rawId, r.rowId, 'partial',
+        `${r.rawId}: ${MODULE_NAMES[r.rowId]||r.rowId} — partial pass, UX gap found`, r.note);
       if (issId) issuesCreated.push(issId);
+
+    } else if (r.status === 'fail') {
+      failCount++;
+      logLines.push(`<span style="color:var(--fail)">&#10005; FAIL</span> — ${r.rawId}`);
+      const issId = autoCreateIssue(r.rawId, r.rowId, 'fail',
+        `${r.rawId}: ${MODULE_NAMES[r.rowId]||r.rowId} — failed during live test`, r.note);
+      if (issId) issuesCreated.push(issId);
+
     } else if (r.status === 'blocked') {
       blockedCount++;
-      logLines.push(`<span style="color:var(--blocked)">&#9632; BLOCKED</span> — ${r.rawId} → row ${r.rowId}`);
-      const issId = autoCreateIssue(r.rawId, r.rowId, 'blocked', `${r.rawId}: ${MODULE_NAMES[r.rowId]||r.rowId} — blocked during live test`, r.note);
+      logLines.push(`<span style="color:var(--blocked)">&#9632; BLOCKED</span> — ${r.rawId}`);
+      const issId = autoCreateIssue(r.rawId, r.rowId, 'blocked',
+        `${r.rawId}: ${MODULE_NAMES[r.rowId]||r.rowId} — blocked during live test`, r.note);
       if (issId) issuesCreated.push(issId);
+
     } else {
-      skippedCount++;
-      logLines.push(`<span style="color:var(--muted)">&#8213; PENDING</span> — ${r.rawId} (no clear status found)`);
+      logLines.push(`<span style="color:var(--muted)">&#8213; UNMATCHED</span> — ${r.rawId} (no status detected in text)`);
     }
   });
 
+  // Save updated store (issues already saved per autoCreateIssue call, save statuses/notes)
   saveStore(store);
   loadStoredData();
   updateSummary();
@@ -1900,20 +1949,25 @@ function runImport() {
   const logBody = document.getElementById('import-log-body');
   log.style.display = 'block';
   logBody.innerHTML = `
-    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-      <span class="badge badge-pass">&#10003; ${passCount} Passed</span>
-      <span class="badge badge-fail">&#10005; ${failCount} Failed</span>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+      <span class="badge badge-pass">&#10003; ${passCount} Pass</span>
+      <span class="badge badge-pending">&#9651; ${partialCount} Partial</span>
+      <span class="badge badge-fail">&#10005; ${failCount} Fail</span>
       <span class="badge badge-blocked">&#9632; ${blockedCount} Blocked</span>
-      <span style="font-size:12px;color:var(--muted);">${issuesCreated.length} issues auto-created: ${issuesCreated.join(', ')||'none'}</span>
+      <span style="font-size:12px;color:var(--brand);font-weight:700;">${issuesCreated.length} issues created: ${issuesCreated.join(', ')||'none'}</span>
     </div>
-    <div style="font-family:monospace;font-size:12px;line-height:2.2;border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--surface);">
+    <div style="font-family:monospace;font-size:12px;line-height:2.4;border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--surface);">
       ${logLines.join('<br>')}
+    </div>
+    <div style="margin-top:12px;padding:10px 14px;background:var(--accent-light);border:1px solid #fde68a;border-radius:7px;font-size:12px;color:#78350f;">
+      &#9654; <strong>Next:</strong> Click "Bake into HTML ↓" in the header to save these results permanently into your DCC file.
     </div>`;
 
-  if (failCount + blockedCount > 0) {
+  if (failCount + blockedCount + partialCount > 0) {
     setTimeout(() => { generatePRs(); }, 300);
   }
 }
+
 
 function switchTab(tabId) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1938,7 +1992,7 @@ const DASHBOARD_RESULTS = [
   { id:'sd-3',  status:'fail',    note:'Supplier map shows 5 markets in purple (India, Vietnam, Turkey, UAE, South Africa). Clicking India path produces no response. Same non-functional click behavior as buyers map — consistent root cause.' },
 ];
 
-const DASHBOARD_ISSUES = [
+const PRELOADED_ISSUES = [
   {
     id:'ISS-001', autoTestId:'db1-3',
     page:'Dashboard / Map — Country Click Drawer (Buyers + Suppliers)',
@@ -1975,6 +2029,89 @@ const DASHBOARD_ISSUES = [
     fix:'Root cause: RecentActivityCard component is not included in the buyers dashboard widget grid.\n\nFix: In src/features/dashboard/components/dashboard-interactive.tsx (or dashboard-main-visual-row.tsx), import RecentActivityCard and add it to the buyers mode widget layout. Ensure the data loader in src/app/(app)/dashboard/_lib/render-dashboard-page.tsx fetches recent activity entries (from lead_activities table) and passes them as a prop.\n\nBranch: fix/ISS-004-recent-activity-feed-missing\nFiles: src/features/dashboard/components/dashboard-interactive.tsx, dashboard-main-visual-row.tsx, src/app/(app)/dashboard/_lib/render-dashboard-page.tsx',
     createdAt: new Date().toISOString()
   },
+,
+  {
+    id:'ISS-005', autoTestId:'bl1-5',
+    page:'Buyer Leads / Quick Add Drawer — Close Button',
+    title:'Quick Add Lead drawer X/Cancel button slow to respond',
+    sev:'low', status:'open',
+    desc:'BL-5 PARTIAL: "+ Quick Lead" opens a 4-step "Quick Add Lead" drawer with Smart Capture/OCR, Lead Type toggle, Company & Contact fields, Source & Pipeline fields. The drawer itself works correctly. However the X button and Cancel button were slow to respond during testing — the drawer did not close immediately on first click.',
+    fix:'Check the close handler in the Quick Lead drawer component. Likely cause: async animation or debounce on the close action. Fix: call drawer close synchronously on first click without waiting for animation frame. Search for the QuickAddLead or QuickLeadDrawer component in src/features/leads/ and remove any setTimeout or animation delay on the close handler.',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-006', autoTestId:'bl1-6',
+    page:'Buyer Leads / Lead Row Click Navigation',
+    title:'Lead row click does nothing — only Open → button navigates',
+    sev:'low', status:'open',
+    desc:'BL-6 PARTIAL PASS: Clicking the lead row itself does nothing. Only the explicit "Open →" action button opens the inline Command Center (URL stays at /leads?mode=buyers — labelled "ONE PAGE WORKSPACE · NO NESTED ROUTE"). Direct navigation to /leads/[uuid] works. Intentional design, but the row non-clickability is a UX discoverability issue — users expect rows to be clickable.',
+    fix:'Intentional ONE PAGE WORKSPACE design. Two options:\n(a) Add a hover pointer cursor and subtle highlight on row hover to make it clear only the "Open →" button is the action (no click = intentional)\n(b) Make the row click trigger the same action as "Open →" button for better UX consistency.\nSearch for the lead list row component in src/features/leads/components/ and add onClick to the row or add a tooltip on hover.',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-007', autoTestId:'bl1-7',
+    page:'Buyer Leads / Ellipsis Context Menu',
+    title:'No ellipsis "..." menu — discrete Open/Quote/Edit buttons used instead',
+    sev:'medium', status:'open',
+    desc:'BL-7 FAIL: No "..." or ellipsis/kebab context menu on any lead card. Instead each row has three discrete ACTION column buttons: "Open →" (inline Command Center), "Quote" (inline Quote Builder), "Edit" (multi-step Edit Lead drawer with pre-filled data). The Edit drawer is fully functional. The test expected a contextual menu but the design uses explicit buttons.',
+    fix:'Two resolution paths:\n(a) Add a "⋯" kebab menu that wraps the same three actions (Open, Quote, Edit) for a more compact/standard UI pattern — especially useful on mobile\n(b) Update the DCC test spec to reflect that discrete buttons replace the ellipsis menu (design is intentional)\nIf adding kebab: search for the lead row component in src/features/leads/components/ and add a QuickActionMenu wrapper.',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-008', autoTestId:'bl1-8',
+    page:'Buyer Leads / Per-Row Health Indicator Badges',
+    title:'No per-row Hot/Warm/Cold badge pills — group urgency headers used instead',
+    sev:'low', status:'open',
+    desc:'BL-8 PARTIAL PASS: No Hot/Warm/Cold colored badge pills on individual lead rows. Urgency is shown via: (1) Group headers — 🔴 CRITICAL NEEDS ACTION NOW (3) and 🟢 ACTIVE/UPCOMING (33). (2) Follow-up column badges — "🚫 Dispatch blocked", "1 day overdue". (3) Stage badges. The health status values (Hot, At risk, Overdue, Blocked, Active) exist in the data model and filter dropdown but are not rendered as per-row badge pills.',
+    fix:'Add a per-row health badge pill that maps the lead status field to a colored pill: Hot→red, At risk→orange, Overdue→amber, Blocked→purple, Active→green. The status values already exist in the data model (visible in filter dropdown). Add a LeadHealthBadge component (or use the existing src/components/ui/lead-health-badge.tsx if present) and render it in the lead list row, likely in the Stage or Follow-up column.',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-009', autoTestId:'lcc-5',
+    page:'Lead Command Center / Follow-up Card Badge Refresh',
+    title:'Follow-up card badge does not refresh inline after scheduling',
+    sev:'medium', status:'open',
+    desc:'LCC-5 PARTIAL PASS: Scheduling a follow-up via the inline panel triggers a success banner ("Lead action applied — Follow-up scheduled.") and persists the new date on the lead list. However the Follow-up pillar card badge does not update inline — it still shows the old date and "OVERDUE" badge without a page refresh.',
+    fix:'The follow-up card reads its badge state from a prop passed at render time. After the server action completes, the parent component state is not re-fetched. Fix: after successful scheduleFollowUp server action, call router.refresh() or invalidate the relevant React Query / SWR cache key so the card re-reads the updated follow-up date. Check LeadCommandCenterPage.tsx — find the onFollowUpSave handler and add router.refresh() after the action resolves.',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-010', autoTestId:'lcc-6',
+    page:'Lead Command Center / Qualification Card',
+    title:'Qualification card is read-only — no editable fields or Save button',
+    sev:'medium', status:'open',
+    desc:'LCC-6 PARTIAL PASS: Clicking "Inspect →" on the Qualification card opens a read-only diagnostic checklist: Lead type ✅, Country ✅, Contact name ❌ MISSING, Products mapped ✅. There are no editable fields and no Save button. Fixing qualification gaps requires navigating to the Edit Lead drawer (4-step wizard). The panel is a status viewer only.',
+    fix:'The Qualification panel in src/features/leads/command-center/workflow/panels/QualificationPanel.tsx is rendering in read-only/display mode. Either: (a) Add inline editable fields for the missing items (contact name, etc.) with a Save button that calls the appropriate server action, or (b) Add a prominent "Fix in Edit Lead →" CTA button that opens the Edit Lead drawer pre-scrolled to the relevant step. Option (b) is lower risk.',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-011', autoTestId:'lcc-7',
+    page:'Lead Command Center / Coverage Card',
+    title:'Coverage card is read-only — no Add Product or Add Market buttons',
+    sev:'medium', status:'open',
+    desc:'LCC-7 PARTIAL PASS: Clicking "Inspect →" on Coverage opens a read-only display of existing products and markets (e.g. Products: Organic Morinaga Leaf Powder, Markets: Middle East). No Add Product or Add Market buttons exist inside the panel. The only action is "Close panel." Coverage edits require using "··· Lead tools → Adjust coverage" dropdown — not discoverable from the Coverage card.',
+    fix:'The Coverage panel in src/features/leads/command-center/workflow/panels/CoveragePanel.tsx renders in display-only mode. Add product/market multi-select inputs with an "Update Coverage" save button that calls the existing coverage server action. Alternatively, add a visible "Adjust coverage →" button inside the panel that triggers the Lead tools coverage flow directly.',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-012', autoTestId:'lcc-12',
+    page:'Lead Command Center / Sticky Mark Won/Lost Bar',
+    title:'No sticky Mark Won/Lost action bar — only accessible via stage strip',
+    sev:'medium', status:'open',
+    desc:'LCC-12 FAIL: No dedicated sticky "Mark Won" or "Mark Lost" action bar at the bottom of the Lead Command Center. Won/Lost transitions are only possible by clicking the stage strip at the top. The sticky action bar that exists contains: Create quote/Continue quote, Schedule follow-up, and Quick edit — but no Won/Lost shortcuts.',
+    fix:'Add Won and Lost quick-action buttons to the LeadStickyActionBar component in src/features/leads/command-center/LeadStickyActionBar.tsx. These should call the same moveLeadToStage server action used by the stage strip, passing the won/lost stage IDs. Add a confirmation dialog before executing. This makes the terminal actions more prominent without requiring scroll-up to the stage strip.',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-013', autoTestId:'lcc-13',
+    page:'Lead Command Center / AI Assist Sparkle Button',
+    title:'AI assist sparkle button (✦) not present in Lead Command Center',
+    sev:'high', status:'open',
+    desc:'LCC-13 FAIL: No AI assist button, sparkle icon (✦), or AI suggestion feature found anywhere in the Lead Command Center, lead detail page, or Lead tools dropdown. A thorough DOM search confirmed no AI assist functionality is present. The component LeadAiAssistPopover.tsx exists in the codebase at src/features/leads/command-center/LeadAiAssistPopover.tsx but is not rendered.',
+    fix:'The LeadAiAssistPopover component exists at src/features/leads/command-center/LeadAiAssistPopover.tsx but is not included in the Command Center layout. In LeadCommandCenterPage.tsx or LeadCommandHeader.tsx, import LeadAiAssistPopover and add a trigger button (sparkle ✦ icon) in the lead header action row. Ensure the component receives the leadId and snapshot props it needs.',
+    createdAt: new Date().toISOString()
+  }
+
 ];
 
 function preloadDashboardResults() {
@@ -2001,19 +2138,57 @@ function preloadDashboardResults() {
   });
 
   // Inject pre-built issues (only if not already present)
-  DASHBOARD_ISSUES.forEach(iss => {
+  // Merge BL results into statuses/notes
+  const BL_RESULTS = [
+    { id:'bl1-1', status:'pass', note:'Loads as Follow-up/Lead Queue with 36 buyer leads. Columns: Company/Contact, Stage Progress (color-coded bars), Follow-Up dates, Deal Value, Owner, Action. All fields present and populated.' },
+    { id:'bl1-2', status:'pass', note:'Typing "NorthStar" filtered 36→1 lead instantly. Filter tag "Search: NorthStar" appeared. Tab counter updated to "Lead Queue 1". Clearing restored full 36-lead list.' },
+    { id:'bl1-3', status:'pass', note:'Selecting "Negotiation" from Stage dropdown filtered to 5 leads. Filter tag "Stage: Negotiation" appeared. Clearing restored all 36 leads.' },
+    { id:'bl1-4', status:'pass', note:'Owner dropdown present with 2 options: Ritesh Kapoor and test. Selecting Ritesh Kapoor applied filter with tag. All 36 leads shown (all owned by Ritesh Kapoor — filter correct).' },
+    { id:'bl1-5', status:'pass', note:'PARTIAL PASS: "+ Quick Lead" button present. Opens 4-step drawer with Smart Capture/OCR, Lead Type toggle (Buyer/Supplier), Company/Contact fields, Source/Pipeline. NOTE: X button and Cancel button slow to respond — drawer did not close immediately on first click.' },
+    { id:'bl1-6', status:'pass', note:'PARTIAL PASS: Row click does nothing. "Open →" button opens inline Command Center (URL stays at /leads?mode=buyers — ONE PAGE WORKSPACE). Direct /leads/[uuid] route works. Design is intentional but row non-clickability is a discoverability gap.' },
+    { id:'bl1-7', status:'fail', note:'FAIL: No ellipsis/kebab menu on any lead card. Discrete ACTION column buttons instead: Open → (inline Command Center), Quote (inline Quote Builder), Edit (multi-step Edit Lead drawer with pre-filled data). Edit drawer works correctly but is not a traditional contextual menu.' },
+    { id:'bl1-8', status:'pass', note:'PARTIAL PASS: No Hot/Warm/Cold per-row badge pills. Urgency via group headers (🔴 CRITICAL 3 leads, 🟢 ACTIVE 33 leads) and follow-up column badges (🚫 Dispatch blocked, 1 day overdue). Status values (Hot/At risk/Overdue/Blocked) exist in data model but not rendered as per-row pills.' },
+  ];
+  BL_RESULTS.forEach(r => {
+    if (!store.statuses[r.id]) store.statuses[r.id] = r.status;
+    if (!store.notes[r.id])    store.notes[r.id]    = r.note;
+  });
+
+  const LCC_RESULTS = [
+    { id:'lcc-1',  status:'pass',    note:'Loaded cleanly in ~3s. Company: Trusbrands Genraeral Trading LLC, stage strip New Lead→Qualified(active)→Contacted→Samples Sent→Negotiation→Won→Lost. Context bar: Pricing ready, 1 compliance item, Next follow-up Mar 26. No console errors.' },
+    { id:'lcc-2',  status:'pass',    note:'Clicking "Contacted" updated strip immediately. Green banner: "Lead action applied — 1 lead moved to Contacted." Stage transition confirmed.' },
+    { id:'lcc-3',  status:'pass',    note:'"✎ Quick edit" opens 4-step Edit Lead drawer with Lead Type toggle, Trade Event, Company Name (pre-filled), Contact Name, Role, Email, Phone, Country. Previous/Next lead nav at top of drawer.' },
+    { id:'lcc-4',  status:'pass',    note:'4 workflow pillar cards embedded directly in Command Center (no separate tab needed): Follow-up (OVERDUE), Qualification (qualified), Coverage (1 product · 1 market), Commercial (Quote active). All visible.' },
+    { id:'lcc-5',  status:'pass',    note:'PARTIAL PASS: Follow-up inline panel opened. Set date 05/10/2026 10:00 AM. Banner: "Lead action applied — Follow-up scheduled." Lead list confirmed "In 9 days". BUT Follow-up card badge did not refresh inline — still shows old Mar 26 date and OVERDUE badge without page refresh.' },
+    { id:'lcc-6',  status:'pass',    note:'PARTIAL PASS: Qualification card opens as read-only diagnostic checklist (Lead type ✅, Country ✅, Contact name ❌ MISSING, Products ✅). No editable fields, no Save button. Read-only display only — editing requires Edit Lead drawer.' },
+    { id:'lcc-7',  status:'pass',    note:'PARTIAL PASS: Coverage card opens as read-only display (Products: Organic Morinaga Leaf Powder, Markets: Middle East). No Add Product/Market buttons inside panel. Only "Close panel." Editing via "··· Lead tools → Adjust coverage" dropdown only.' },
+    { id:'lcc-8',  status:'pass',    note:'Clicking "Inspect →" on Commercial showed Active Quote Q-00004 (draft). "View quote" opened 5-step Quote Preview inline at Step 2 of 5 Pricing. URL unchanged (ONE PAGE WORKSPACE). Banner: "Quote draft action saved."' },
+    { id:'lcc-9',  status:'pass',    note:'"Lead log" tab on /leads/[uuid] shows Readable lead timeline with timestamped entries: COMMUNICATION and ACTIVITY tags. Entries: Follow-up scheduled (May 1), Follow-up scheduled (Apr 24). Header: 5 history items, 1 open follow-up, Next follow-up May 2.' },
+    { id:'lcc-10', status:'pass',    note:'"Quick internal note" composer visible with textarea and Save note button. After typing and saving: "Note added." appeared. Note appeared as 2 timeline entries: Lead note added (COMMUNICATION) + note added (ACTIVITY), both May 1. History count 5→7.' },
+    { id:'lcc-11', status:'pass',    note:'"Quote record" tab appears contextually when quote is linked to lead. Shows quote ID (Q-00001), Status (draft), Pricing Basis, RFQs count (0), Last Updated, Review quote button. On leads without quote, accessed via Commercial pillar.' },
+    { id:'lcc-12', status:'fail',    note:'FAIL: No sticky Mark Won/Lost action bar anywhere. Won/Lost only via stage strip at top. Sticky bar at bottom: Create quote/Continue quote, Schedule follow-up, Quick edit — no Won/Lost buttons.' },
+    { id:'lcc-13', status:'fail',    note:'FAIL: No AI assist button, sparkle icon (✦), or AI suggestion feature found anywhere in LCC, lead detail page, or Lead tools dropdown. DOM search confirmed absent. Component LeadAiAssistPopover.tsx exists in codebase but is not rendered.' },
+    { id:'lcc-14', status:'pass',    note:'Previous/Next navigation in Lead Queue sidebar on /leads/[uuid]. Clicking Next navigated to Aastha Gurung at /leads/ff3cff41-4854-4d99-8b51-e13b315bf7fc — full page load with new lead content.' },
+  ];
+  LCC_RESULTS.forEach(r => {
+    if (!store.statuses[r.id]) store.statuses[r.id] = r.status;
+    if (!store.notes[r.id])    store.notes[r.id]    = r.note;
+  });
+
+
+  PRELOADED_ISSUES.forEach(iss => {
     const already = store.issues.some(i => i.id === iss.id);
     if (!already) store.issues.unshift({ ...iss });
   });
 
   store.audit.unshift({
     time: new Date().toISOString(),
-    action: 'Auto-imported: Dashboard test results + 4 issues created (Pass 21)',
+    action: 'Auto-loaded: Dashboard + BL + LCC results + 13 issues (Pass 21)',
     test: 'SYSTEM'
   });
 
   store._dashboardPreloaded = true;
-  issueCounter = Math.max(4, issueCounter);
+  issueCounter = Math.max(13, issueCounter);
   saveStore(store);
 }
 
