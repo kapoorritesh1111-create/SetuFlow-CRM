@@ -18,19 +18,19 @@ Setu Flow CRM is a governed commercial system. Commercial truth is the center.
 
 | Area | Honest readiness |
 |---|---:|
-| Core CRM workflow | 92–95% |
-| Quote → Order revenue path | 89–93% |
+| Core CRM workflow | 91–94% |
+| Quote → Order revenue path | 92–95% |
 | Order execution (sign → dispatch) | 83–87% |
-| First paying customer | 92–95% |
+| First paying customer | 88–92% |
 | Security / RPC trust | 90–94% |
 | Mobile truth / claim safety | 70–76% |
 | Mobile-native parity | Not claimed |
 | NorthStar sprint | 100% |
-| Buyer confidence | **~98/100** (target 100) |
+| Buyer confidence | **~97.5/100** (target 100; Pass 16 UI implemented, local test/build proof blocked by missing dependencies) |
 
-**Proven:** Live golden journey Q-00025 (accepted quote), signed contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`, and 11 preserved contract lines. Sign-contract gate. FirstLoginGuide. CIF write path. Shell consolidated. 331 unit tests expected, including 46 Pass 5 security boundary tests. Live Supabase connector inspection verified the project is active/healthy and all 80 public base tables have RLS enabled. Pass 6 adds Supabase advisor/RPC review, external-audit prep, WAF/rate-limit plan, production-scale checklist, claim reconciliation, and a buyer-confidence path to 100. Pass 7 adds pilot launch, live proof planning, success metrics, support runbook, final investor/demo pack, and a live Supabase re-check. Pass 8 adds Supabase advisor remediation planning, RPC grant hardening planning, DB-level capability design, external audit remediation tracking, WAF evidence checklist, and another live read-only re-check. Pass 9 adds draft-only Supabase remediation implementation assets, rollback planning, negative RPC/design assertion tests, live proof-record checklist, and a 100/100 evidence gate. Pass 10 adds the final production launch gate, external auditor response pack, pilot evidence capture, and investor-ready 100/100 proof bundle. Pass 11 adds pilot evidence review, customer readiness decisioning, post-launch remediation backlog, production monitoring proof checklist, and final investor/customer claim lock. Pass 12 adds final remediation execution status, live negative RPC verification status, first-pilot evidence closure, monitoring/backup evidence closure, and final launch/no-launch decision. Pass 13 adds post-decision remediation status, pilot operations checklist, production support activation checklist, customer/investor evidence handoff, and final frozen launch-claim archive. Pass 14 adds actual evidence review, live Supabase proof for accepted quote/signed contract/11 preserved contract lines, production remediation closeout, pilot-to-production transition decision, final customer-facing launch packet, and an archived 100/100 evidence checklist. Advisor findings remain open and no migrations were applied.
+**Proven:** Live golden journey Q-00025 (accepted quote), signed contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`, and 11 preserved contract lines. Sign-contract gate. FirstLoginGuide. CIF write path. Shell consolidated. 331 unit tests expected, including 46 Pass 5 security boundary tests. Live Supabase connector inspection verified the project is active/healthy and all 80 public base tables have RLS enabled. Pass 6 adds Supabase advisor/RPC review, external-audit prep, WAF/rate-limit plan, production-scale checklist, claim reconciliation, and a buyer-confidence path to 100. Pass 7 adds pilot launch, live proof planning, success metrics, support runbook, final investor/demo pack, and a live Supabase re-check. Pass 8 adds Supabase advisor remediation planning, RPC grant hardening planning, DB-level capability design, external audit remediation tracking, WAF evidence checklist, and another live read-only re-check. Pass 9 adds draft-only Supabase remediation implementation assets, rollback planning, negative RPC/design assertion tests, live proof-record checklist, and a 100/100 evidence gate. Pass 10 adds the final production launch gate, external auditor response pack, pilot evidence capture, and investor-ready 100/100 proof bundle. Pass 11 adds pilot evidence review, customer readiness decisioning, post-launch remediation backlog, production monitoring proof checklist, and final investor/customer claim lock. Pass 12 adds final remediation execution status, live negative RPC verification status, first-pilot evidence closure, monitoring/backup evidence closure, and final launch/no-launch decision. Pass 13 adds post-decision remediation status, pilot operations checklist, production support activation checklist, customer/investor evidence handoff, and final frozen launch-claim archive. Pass 14 adds actual evidence review, live Supabase proof for accepted quote/signed contract/11 preserved contract lines, production remediation closeout, pilot-to-production transition decision, final customer-facing launch packet, and an archived 100/100 evidence checklist. Pass 15 adds a UX visual review and fix plan for Leads, Orders, Quotes, Trade Events, and Organization Setup. Pass 16 implements the premium UI fixes and Organization Setup SaaS onboarding redesign in code. Advisor findings remain open, no migrations were applied, and clean local test/build proof is still blocked in this extracted container because `tsx` and `next` are unavailable.
 
-**Not claimed:** Dispatch/completion proven, live Supabase RLS/RPC advisor closure, integration live connector, automated secrets rotation, deployed WAF/SIEM, mobile-native parity, completed external security audit, backup/restore drill, first-customer pilot evidence, or production-scale operating evidence.
+**Not claimed:** Dispatch/completion proven, live Supabase RLS/RPC advisor closure, integration live connector, automated secrets rotation, deployed WAF/SIEM, mobile-native parity, completed external security audit, backup/restore drill, first-customer pilot evidence, production-scale operating evidence, completed test/build/deploy proof for the Pass 16 premium UI/Organization Setup redesign.
 
 ---
 
@@ -112,7 +112,9 @@ Setu Flow CRM is a governed commercial system. Commercial truth is the center.
 | Pass 12 | Final remediation execution status + live negative RPC status + first-pilot/monitoring closure + final launch decision | ~98 → ~98 |
 | Pass 13 | Post-decision remediation status + pilot operations + support activation + final evidence handoff + frozen claim archive | ~98 → ~98 |
 | Pass 14 | Actual evidence review + live accepted quote/signed contract proof + pilot expansion decision + customer launch packet + 100/100 evidence archive | ~98 → ~98 |
-| Pass 15+ | Actual advisor closure, deployed WAF/monitoring, backup drill, live connector, dispatch proof, pilot evidence | ~98 → 100 |
+| Pass 15 | UX visual review + premium UI fix plan + Organization Setup redesign brief | ~98 → ~97 |
+| Pass 16 | Premium UI implementation + Organization Setup SaaS onboarding redesign; local verification blocked by missing deps | ~97 → ~97.5 |
+| Pass 16+ | Premium UI implementation, actual advisor closure, deployed WAF/monitoring, backup drill, live connector, dispatch proof, pilot evidence | ~97 → 100 |
 
 ---
 
@@ -194,3 +196,20 @@ Pass 13 does not apply Supabase remediation, does not mutate live data, and does
 - **`docs/ARCHIVED_100_EVIDENCE_CHECKLIST_PASS14.md`** — archived checklist of gates still required for 100/100.
 
 Pass 14 closes live signed-contract proof for the golden journey, but does not apply Supabase remediation, does not prove dispatch/completion, and does not raise buyer confidence beyond ~98/100 because production controls remain open.
+
+**Pass 16** — Premium UI implementation + Organization Setup redesign:
+
+- **`src/components/ui/premium-command-bar.tsx`** — shared premium command-bar primitives for filters, fields, inputs/selects, and active chips.
+- **Leads / Follow-up** — named active chips and clearer filtered-empty-state copy.
+- **Orders** — premium execution command bar with visible dispatch/docs chips.
+- **Quotes** — duplicate mode selector removed; shared command bar and active chips added.
+- **Trade Events** — premium event cockpit, KPI cards, proof-boundary card, and clearer CTAs.
+- **Organization Setup** — SaaS onboarding flow with setup checklist, customer setup cards, catalog readiness, team setup, and governance routing.
+- **Verification:** `npm run test:all` and `npm run build` were attempted in order but stopped because project-local binaries were unavailable (`tsx: not found`, `next: not found`).
+
+**Pass 15** — UX visual review + premium UI fix plan:
+- **`docs/UX_VISUAL_REVIEW_PASS15.md`** — records visual issues across Leads, Orders, Quotes, Trade Events, and Organization Setup.
+- **`docs/PREMIUM_UI_FIX_PLAN_PASS15.md`** — defines the shared premium filter bar, page-specific fixes, and build/type-check acceptance criteria.
+- **`docs/ORGANIZATION_SETUP_REDESIGN_PASS15.md`** — defines the SaaS onboarding/setup flow needed for first customers.
+
+Pass 15 is a review/planning pass, not an implementation pass. Buyer confidence is adjusted to ~97/100 until the premium UI and Organization Setup fixes are implemented and build-verified.

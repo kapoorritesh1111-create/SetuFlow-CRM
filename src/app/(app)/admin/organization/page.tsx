@@ -34,6 +34,20 @@ function AdminRouteCard({ title, eyebrow, description, href, stats }: { title: s
   );
 }
 
+function SetupRouteCard({ title, eyebrow, description, href, stats, primaryLabel }: { title: string; eyebrow: string; description: string; href: string; stats: Array<{ label: string; value: string | number; tone?: 'success' | 'warning' | 'info' | 'neutral' }>; primaryLabel: string }) {
+  return (
+    <Link href={href} className="group block rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_55px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_28px_70px_rgba(37,99,235,0.11)]">
+      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">{eyebrow}</p>
+      <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">{title}</h2>
+      <p className="mt-2 min-h-12 text-sm leading-6 text-slate-600">{description}</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {stats.map((stat) => <StatusBadge key={title + '-' + stat.label} label={stat.label + ': ' + stat.value} tone={stat.tone ?? 'neutral'} dot={false} />)}
+      </div>
+      <span className="mt-5 inline-flex min-h-10 items-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-slate-800">{primaryLabel}</span>
+    </Link>
+  );
+}
+
 export default async function AdminOrganizationPage() {
   if (!hasSupabaseEnv) {
     return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using the organization workspace." tone="warning" />;
@@ -49,7 +63,7 @@ export default async function AdminOrganizationPage() {
 
   const supabase = await createClient();
 
-  const [membersResult, rolesResult, invitationsResult, marketsResult, countriesResult, nextStepsResult, categoriesResult, pipelinesResult, stagesResult, tradeEventsResult, productsResult] = await Promise.all([
+  const [membersResult, rolesResult, invitationsResult, marketsResult, countriesResult, nextStepsResult, categoriesResult, pipelinesResult, stagesResult, tradeEventsResult, productsResult, leadsResult] = await Promise.all([
     supabase.from('organization_members').select('id, user_id, is_active, created_at, updated_at, profiles(id, full_name, username, email), user_roles(id, role_id, roles(id, name))').eq('organization_id', organization.id).order('created_at', { ascending: true }),
     supabase.from('roles').select('id, name, description, organization_id').or(`organization_id.eq.${organization.id},organization_id.is.null`).order('name'),
     supabase.from('organization_invitations').select('id, email, status, created_at, updated_at, expires_at, last_sent_at, accepted_at, role_id, roles(id, name)').eq('organization_id', organization.id).order('created_at', { ascending: false }),
@@ -61,9 +75,10 @@ export default async function AdminOrganizationPage() {
     supabase.from('pipeline_stages').select('id, pipelines!inner(organization_id)', { count: 'exact', head: true }).eq('pipelines.organization_id', organization.id),
     supabase.from('trade_events').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
     supabase.from('products').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
+    supabase.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
   ]);
 
-  const firstError = membersResult.error ?? rolesResult.error ?? invitationsResult.error ?? marketsResult.error ?? countriesResult.error ?? nextStepsResult.error ?? categoriesResult.error ?? pipelinesResult.error ?? stagesResult.error ?? tradeEventsResult.error ?? productsResult.error;
+  const firstError = membersResult.error ?? rolesResult.error ?? invitationsResult.error ?? marketsResult.error ?? countriesResult.error ?? nextStepsResult.error ?? categoriesResult.error ?? pipelinesResult.error ?? stagesResult.error ?? tradeEventsResult.error ?? productsResult.error ?? leadsResult.error;
   if (firstError) {
     return <StateMessage title="Failed to load admin/settings workspace" description={firstError.message} tone="danger" />;
   }
@@ -83,6 +98,7 @@ export default async function AdminOrganizationPage() {
   const stagesCount = stagesResult.count ?? 0;
   const tradeEventsCount = tradeEventsResult.count ?? 0;
   const productsCount = productsResult.count ?? 0;
+  const leadsCount = leadsResult.count ?? 0;
   const gapItems: AdminGapItem[] = [
     marketsCount === 0 ? { icon: '🌍', text: 'No markets configured', href: '/admin/markets' } : null,
     countriesCount === 0 ? { icon: '🗺️', text: 'No countries configured', href: '/admin/organization#settings-lists' } : null,
@@ -91,14 +107,26 @@ export default async function AdminOrganizationPage() {
     stagesCount === 0 ? { icon: '🧭', text: 'No stages configured', href: '/admin/stages' } : null,
   ].filter(Boolean) as AdminGapItem[];
   const myRoleLabel = toRoleLabel(currentRoles[0] ?? 'member');
+  const orgProfile = organization as any;
+  const quoteReadyProducts = productsCount;
+  const setupChecklist = [
+    { label: 'Organization profile complete', done: Boolean(organization.name), href: '/admin/organization' },
+    { label: 'Owner/admin present', done: ownerAdminMembers > 0, href: '/admin/users' },
+    { label: 'Markets configured', done: marketsCount > 0, href: '/admin/markets' },
+    { label: 'Products added', done: productsCount > 0, href: '/admin/product-management' },
+    { label: 'Quote-ready product exists', done: quoteReadyProducts > 0, href: '/admin/product-management' },
+    { label: 'Approval threshold set', done: threshold != null, href: '/admin/security' },
+    { label: 'First lead ready', done: leadsCount > 0, href: '/leads' },
+  ];
+  const setupCompleteCount = setupChecklist.filter((item) => item.done).length;
 
   return (
-    <AdminSettingsShell active="overview" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="Workspace control" gapItems={gapItems}>
+    <AdminSettingsShell active="overview" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="SaaS onboarding" gapItems={gapItems}>
       <AdminPageHero
-        title="Admin & Settings workspace"
-        description="Unified control center for users, invitations, governance, settings lists, products, trade capture, markets, countries, pipelines, stages, and roles."
+        title="Organization Setup"
+        description="Customer onboarding cockpit for company profile, commercial defaults, team access, reference data, catalog readiness, and governance. Start at the top, then use Admin overview below for deeper controls."
         badge={organization.name}
-        cta={<Link href="/admin/product-management" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Open product management</Link>}
+        cta={<Link href="/admin/product-management" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Continue setup</Link>}
         stats={[
           { label: 'My role', value: myRoleLabel, tone: 'info' },
           { label: 'Governance gaps', value: gapItems.length, tone: gapItems.length ? 'warning' : 'success' },
@@ -107,6 +135,40 @@ export default async function AdminOrganizationPage() {
       />
 
       {!rows.length ? <EmptyState title="Organization workspace will appear here" description="Once members or invitations exist, this page will summarize organization access, settings readiness, and role coverage." /> : null}
+
+      <section className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#ffffff,#f8fafc)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">Setup progress</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{setupCompleteCount}/7 onboarding steps ready</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">This flow is designed for a new SaaS customer: complete the profile, defaults, team, reference lists, catalog, and governance before the first live quote cycle.</p>
+          </div>
+          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm">
+            Approval threshold: <span className={threshold == null ? 'text-amber-700' : 'text-emerald-700'}>{threshold == null ? 'Unset' : String(threshold) + '%'}</span>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          {setupChecklist.map((item) => (
+            <Link key={item.label} href={item.href} className={'rounded-2xl border px-4 py-3 text-sm font-semibold transition hover:-translate-y-0.5 ' + (item.done ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100')}>
+              {item.done ? '✓' : '!'} {item.label}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <SetupRouteCard title="Organization profile" eyebrow="Company identity" href="/admin/organization" description="Review organization name, legal name, country, website, brand placeholder, and contact email before inviting the wider team." primaryLabel="Review profile" stats={[{ label: 'Name', value: organization.name ?? 'Unset', tone: organization.name ? 'success' : 'warning' }, { label: 'Legal', value: orgProfile.legal_name ?? 'Not stored', tone: orgProfile.legal_name ? 'success' : 'neutral' }, { label: 'Email', value: orgProfile.contact_email ?? 'Not stored', tone: orgProfile.contact_email ? 'success' : 'neutral' }]} />
+        <SetupRouteCard title="Commercial defaults" eyebrow="Quote controls" href="/admin/security" description="Set default currency, approval threshold, pricing basis, incoterm preference, and quote footer/company details as supported by current schema." primaryLabel="Set defaults" stats={[{ label: 'Currency', value: orgProfile.default_currency ?? 'USD', tone: 'info' }, { label: 'Threshold', value: threshold == null ? 'Unset' : String(threshold) + '%', tone: threshold == null ? 'warning' : 'success' }, { label: 'Incoterm', value: orgProfile.incoterm_preference ?? 'Not stored', tone: 'neutral' }]} />
+        <SetupRouteCard title="Team setup" eyebrow="Owner/admin/invites" href="/admin/users" description="Confirm owner coverage, admins, pending invitations, and role assignment before operational users enter the workspace." primaryLabel="Manage team" stats={[{ label: 'Owner/admin', value: ownerAdminMembers, tone: countTone(ownerAdminMembers) }, { label: 'Open invites', value: openInvitations, tone: openInvitations ? 'warning' : 'success' }, { label: 'Active users', value: summary.activeUsers, tone: countTone(summary.activeUsers) }]} />
+        <SetupRouteCard title="Reference data" eyebrow="Markets and workflow" href="/admin/markets" description="Configure markets, countries, categories, stages, and pipelines so leads, quotes, and catalog pricing route correctly." primaryLabel="Configure lists" stats={[{ label: 'Markets', value: marketsCount, tone: countTone(marketsCount) }, { label: 'Countries', value: countriesCount, tone: countTone(countriesCount) }, { label: 'Stages', value: stagesCount, tone: countTone(stagesCount) }]} />
+        <SetupRouteCard title="Catalog readiness" eyebrow="Products" href="/admin/product-management" description="Confirm product count, quote-ready product status, and the path to product management before first quote creation." primaryLabel="Open catalog" stats={[{ label: 'Products', value: productsCount, tone: countTone(productsCount) }, { label: 'Quote-ready', value: quoteReadyProducts, tone: countTone(quoteReadyProducts) }, { label: 'Categories', value: categoriesCount, tone: countTone(categoriesCount) }]} />
+        <SetupRouteCard title="Security and governance" eyebrow="Roles, permissions, audit" href="/admin/security" description="Review roles, permissions, audit log access, and Supabase/security notes. Governance is not marked clear while external warnings remain open." primaryLabel="Review governance" stats={[{ label: 'Roles', value: roles.length, tone: countTone(roles.length) }, { label: 'Gaps', value: gapItems.length, tone: gapItems.length ? 'warning' : 'success' }, { label: 'Audit', value: 'Available', tone: 'info' }]} />
+      </section>
+
+      <div className="pt-2">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-400">Admin overview</p>
+        <p className="mt-1 text-sm text-slate-600">Detailed admin controls remain below the SaaS setup flow.</p>
+      </div>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <AdminRouteCard title="Users" eyebrow="Workspace access" href="/admin/users" description="Manage active users, disabled memberships, and role assignment pressure in the rebuilt admin lane." stats={[{ label: 'Active', value: summary.activeUsers, tone: countTone(summary.activeUsers) }, { label: 'Disabled', value: summary.disabledUsers, tone: summary.disabledUsers ? 'warning' : 'success' }]} />

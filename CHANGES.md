@@ -1,3 +1,134 @@
+# Pass 16 Premium UI Implementation + Organization Setup Redesign
+
+## Summary
+
+Implemented the Pass 15 customer-facing UX fixes across Leads, Orders, Quotes, Trade Events, and Organization Setup. Added a shared premium command-bar component and updated docs/DCC honestly without claiming clean build proof.
+
+## Files created
+
+- `src/components/ui/premium-command-bar.tsx`
+- `docs/PREMIUM_UI_IMPLEMENTATION_PASS16.md`
+
+## Files changed
+
+- `src/features/leads/components/leads-workspace.tsx` — named active filter chips and filtered-empty-state clarity.
+- `src/app/(app)/orders/page.tsx` — premium execution command bar and visible dispatch/docs active chips.
+- `src/app/(app)/quotes/page.tsx` — shared premium command bar, active chips, no duplicate mode selector.
+- `src/app/(app)/trade-events/page.tsx` — premium event cockpit, KPI cards, proof boundary, and buyer/supplier/review CTAs.
+- `src/app/(app)/admin/organization/page.tsx` — SaaS onboarding setup flow and checklist.
+- `public/internal-dcc/index.html`, `README.md`, `docs/RELEASE_READINESS.md`, `CHANGES.md` — Pass 16 status, honest readiness, open blockers, and verification notes.
+
+## Verification
+
+Attempted in required order:
+
+```bash
+npm run test:all
+npm run build
+```
+
+Both stopped before execution because project-local dependencies are missing in this extracted container:
+
+```text
+npm run test:all -> sh: 1: tsx: not found
+npm run build    -> sh: 1: next: not found
+```
+
+No Supabase data was mutated and no live remediation migrations were applied. Buyer confidence is kept at ~97.5/100 until clean test/build/deploy evidence is captured.
+
+---
+# Pass 15 UX Review + Premium UI Fix Plan
+
+## Summary
+
+Added the May 1 visual/customer-facing UX review to the Internal DCC and supporting docs. This pass does **not** implement the visual fixes yet; it records the issues, adjusts readiness honestly, and defines the implementation/verification scope for the next pass.
+
+## Files created
+
+- `docs/UX_VISUAL_REVIEW_PASS15.md`
+- `docs/PREMIUM_UI_FIX_PLAN_PASS15.md`
+- `docs/ORGANIZATION_SETUP_REDESIGN_PASS15.md`
+
+## Files changed
+
+- `public/internal-dcc/index.html` — added Pass 15 UX review card, adjusted readiness scores, added UI blockers to the roadmap and next-action language.
+- `README.md` — updated readiness snapshot, proof/non-claim wording, Pass 15 summary, and next-pass table.
+- `docs/RELEASE_READINESS.md` — added PR-NS-Pass15 UX review update with honest readiness adjustment and open UX blockers.
+- `CHANGES.md` — prepended this section.
+
+## Readiness impact
+
+| Area | Updated status |
+|---|---:|
+| Core CRM workflow | 91–94% |
+| Quote → Order revenue path | 92–95% |
+| Investor demo safety | 80–85% scripted |
+| First paying customer readiness | 88–92% |
+| Security / RPC trust | 90–94% |
+| Buyer confidence | ~97/100 |
+
+## Open implementation scope
+
+- Standardize premium filters/command bars across Leads, Orders, Quotes, Dashboard, and Trade Events.
+- Make active filters explicit with visible chips and one-click clear.
+- Polish Leads row layout, checkbox alignment, and toolbar height.
+- Rework Orders header/filter hierarchy and order-card balance.
+- Remove duplicated mode controls and align Quotes to the shared filter pattern.
+- Redesign Trade Events into a premium event cockpit.
+- Redesign Organization Setup as true SaaS onboarding instead of an admin dashboard.
+- Keep all changes type-safe and build-verified before claiming completion.
+
+## Verification
+
+Attempted `npm run test:all` and `npm run build` in this container. Both failed before execution because project-local binaries are unavailable (`tsx: not found`, `next: not found`). Targeted `@/` import scan passed with `missing count 0`. No Supabase data was mutated and no live remediation migrations were applied.
+
+---
+# Dashboard Map Filter Fix — Pass 14 follow-up
+
+## Summary
+
+Fixed the dashboard map disappearing when no visible filters were selected. The root cause was the default `This month` time range being treated as a data filter for the map and action queue, while the UI considered it the default/no-active-filter state. KPI cards therefore showed full live pipeline counts, but the country map could collapse to `0 markets · 0 leads · 0 actions` and show “No markets match the current filters.”
+
+## Files changed
+
+- `src/features/dashboard/components/dashboard-interactive.tsx` — stopped applying the time-range filter to the market map and action queue when the time range is the default `this-month`; explicit time selections such as `this-week`, `this-quarter`, or `custom` still filter the dashboard.
+- `CHANGES.md` — prepended this dashboard map fix section.
+
+## Verification
+
+Attempted:
+
+```bash
+npm run test:all
+```
+
+Result in this extracted container:
+
+```text
+sh: 1: tsx: not found
+```
+
+Attempted:
+
+```bash
+npm run build
+```
+
+Result in this extracted container:
+
+```text
+sh: 1: next: not found
+```
+
+Targeted `@/` import scan returned:
+
+```text
+missing count 0
+```
+
+No Supabase data was mutated. The fix is UI-filter logic only.
+
+---
 # Pass 14 — Actual Evidence Review + Pilot-to-Production Decision
 
 ## Summary

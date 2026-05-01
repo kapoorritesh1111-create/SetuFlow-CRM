@@ -7,6 +7,7 @@
 
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PremiumActiveChip, PremiumCommandBar, PremiumField, PremiumSelect } from '@/components/ui/premium-command-bar';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -686,41 +687,33 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         </div>
       </header>
 
-      {/* FILTER BAR */}
-      <form action={PRODUCT_ROUTES.app.orders} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'18px 18px 0 0',padding:'14px 24px 12px',display:'grid',gridTemplateColumns:'minmax(160px,.8fr) minmax(150px,.7fr) minmax(150px,.7fr) minmax(150px,.7fr) auto auto',alignItems:'end',gap:'10px'}}>
+      {/* Shared premium execution command bar */}
+      <form action={PRODUCT_ROUTES.app.orders} style={{padding:'14px 24px 0'}}>
         <input type="hidden" name="mode" value={perspectiveMode} />
-        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
-          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Execution state</span>
-          <select name="executionState" defaultValue="all" style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
-            <option value="all">All states</option>
-          </select>
-        </label>
-        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
-          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Compliance</span>
-          <select name="compliance" defaultValue="all" style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
-            <option value="all">All</option>
-          </select>
-        </label>
-        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
-          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Owner</span>
-          <select name="owner" defaultValue="all" style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
-            <option value="all">All owners</option>
-          </select>
-        </label>
-        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
-          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Market</span>
-          <select name="market" defaultValue="all" style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
-            <option value="all">All markets</option>
-          </select>
-        </label>
-        <button type="submit" style={{padding:'0 16px',height:'36px',borderRadius:'8px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:700,border:'none',cursor:'pointer'}}>Apply</button>
-        <span style={{justifySelf:'end',alignSelf:'center',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{perspectiveAccepted.length} active orders · {execValue>0?`$${Math.round(execValue/1000)}K`:'—'} execution value</span>
-        {(blockedCount>0||docsPendingCount>0)&&(
-          <div style={{gridColumn:'1 / -1',display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap',paddingTop:'2px'}}>
-            {blockedCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#9f1239',cursor:'pointer'}}>Dispatch blocked ({blockedCount})</span>}
-            {docsPendingCount>0&&<span style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>Docs pending ({docsPendingCount})</span>}
-          </div>
-        )}
+        <PremiumCommandBar
+          label="Execution filters"
+          summary={<>{perspectiveAccepted.length} active orders · {execValue>0?`$${Math.round(execValue/1000)}K`:'—'} execution value</>}
+          activeChips={<>
+            {perspectiveMode !== 'all' ? <PremiumActiveChip label={`Mode: ${perspectiveMode}`} href={PRODUCT_ROUTES.app.orders} tone="violet" /> : null}
+            {blockedCount > 0 ? <PremiumActiveChip label={`Dispatch blocked: ${blockedCount}`} href={PRODUCT_ROUTES.app.orders} tone="rose" /> : null}
+            {docsPendingCount > 0 ? <PremiumActiveChip label={`Docs pending: ${docsPendingCount}`} href={PRODUCT_ROUTES.app.orders} tone="amber" /> : null}
+          </>}
+          reset={(perspectiveMode !== 'all' || blockedCount > 0 || docsPendingCount > 0) ? <Link href={PRODUCT_ROUTES.app.orders} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50">Reset view</Link> : null}
+        >
+          <PremiumField label="Execution state" icon="◎" className="md:min-w-[210px]">
+            <PremiumSelect name="executionState" defaultValue="all"><option value="all">All states</option></PremiumSelect>
+          </PremiumField>
+          <PremiumField label="Compliance" icon="▣" className="md:min-w-[190px]">
+            <PremiumSelect name="compliance" defaultValue="all"><option value="all">All compliance</option></PremiumSelect>
+          </PremiumField>
+          <PremiumField label="Owner" icon="👤" className="md:min-w-[180px]">
+            <PremiumSelect name="owner" defaultValue="all"><option value="all">All owners</option></PremiumSelect>
+          </PremiumField>
+          <PremiumField label="Market" icon="🌍" className="md:min-w-[180px]">
+            <PremiumSelect name="market" defaultValue="all"><option value="all">All markets</option></PremiumSelect>
+          </PremiumField>
+          <button type="submit" className="h-9 rounded-xl bg-slate-950 px-4 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(15,23,42,.14)] transition hover:bg-slate-800">Apply</button>
+        </PremiumCommandBar>
       </form>
       {/* STATS STRIP */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>
@@ -749,7 +742,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         {perspectiveAccepted.length===0?(
           <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'48px',textAlign:'center'}}>
             <p style={{fontSize:'16px',fontWeight:700,color:'#1e293b',marginBottom:'8px'}}>No active orders</p>
-            <p style={{fontSize:'13px',color:'#64748b',marginBottom:'20px'}}>Orders appear here when quotes are accepted.</p>
+            <p style={{fontSize:'13px',color:'#64748b',marginBottom:'20px'}}>Orders appear here when quotes are accepted. Current view: {perspectiveMode === 'all' ? 'all buyer and supplier orders' : perspectiveMode}. Use Reset view to remove active chips.</p>
             <Link href={PRODUCT_ROUTES.app.leads} style={{display:'inline-block',padding:'9px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>Go to Leads</Link>
           </div>
         ):perspectiveAccepted.map(order=>{

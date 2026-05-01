@@ -197,7 +197,7 @@
 
 <div class="topbar">
   <div class="topbar-brand">SETU <span>Flow</span> CRM — Internal DCC</div>
-  <div class="topbar-meta">Last updated: 2026-04-30 &nbsp;|&nbsp; Passes 1–4 complete &nbsp;|&nbsp; 213 unit tests passing</div>
+  <div class="topbar-meta">Last updated: 2026-05-01 &nbsp;|&nbsp; Pass 16 premium UI implementation logged &nbsp;|&nbsp; 331 tests expected</div>
 </div>
 
 <div class="tabnav">
@@ -224,28 +224,28 @@
     <strong>This DCC is the single source of truth.</strong> All readiness scores, module status, demo decisions, and next PR plans live here. If this DCC and any other document disagree, update the other document to match this one.
   </div>
 
-  <h2>Current state — April 30, 2026</h2>
+  <h2>Current state — May 01, 2026</h2>
 
   <div class="score-grid">
     <div class="score-tile amber">
       <div class="label">Core CRM</div>
-      <div class="score">92–95%</div>
-      <div class="note">Lead → Catalog → Quote → Order chain, plus Pass 12 final execution/verification decision docs</div>
+      <div class="score">91–94%</div>
+      <div class="note">Workflow proof remains strong; Pass 16 implements customer-facing polish; build proof still blocked locally by missing dependencies</div>
     </div>
     <div class="score-tile amber">
       <div class="label">Quote → Order Path</div>
-      <div class="score">89–93%</div>
-      <div class="note">Golden record proven, execution in draft</div>
+      <div class="score">92–95%</div>
+      <div class="note">Live Q-00025 accepted and linked contract/order is signed; dispatch still open</div>
     </div>
     <div class="score-tile amber">
       <div class="label">Investor Demo</div>
-      <div class="score">82–87%</div>
-      <div class="note">Scripted only. Unscripted is lower.</div>
+      <div class="score">80–85%</div>
+      <div class="note">Scripted demo improved by Pass 16 UI polish; unscripted proof still needs build/deploy validation</div>
     </div>
     <div class="score-tile amber">
       <div class="label">First Paying Customer</div>
-      <div class="score">92–95%</div>
-      <div class="note">Pass 12 final launch decision complete; live ops proof still pending</div>
+      <div class="score">88–92%</div>
+      <div class="note">Pilot expansion approved; Organization Setup now behaves as SaaS onboarding pending build/deploy proof</div>
     </div>
     <div class="score-tile red">
       <div class="label">Mobile Parity</div>
@@ -255,17 +255,17 @@
     <div class="score-tile amber">
       <div class="label">Security / RPC</div>
       <div class="score">90–94%</div>
-      <div class="note">Pass 12 final remediation status and launch decision complete. Advisor closure still pending.</div>
+      <div class="note">Live advisor findings remain open; no remediation migrations applied</div>
     </div>
     <div class="score-tile amber">
       <div class="label">NorthStar Sprint</div>
       <div class="score">100%</div>
-      <div class="note">Passes 1–12 documentation/proof-planning scope complete</div>
+      <div class="note">Passes 1–15 complete; Pass 16 implementation added with verification dependency gap</div>
     </div>
     <div class="score-tile amber">
-      <div class="label">Buyer Confidence (post-Pass-12)</div>
-      <div class="score">~98/100</div>
-      <div class="note">→ Target 100/100</div>
+      <div class="label">Buyer Confidence (post-Pass 16)</div>
+      <div class="score">~97.5/100</div>
+      <div class="note">UI fixes implemented in code; cannot move to 98–99 until test/build proof is clean</div>
     </div>
   </div>
 
@@ -466,8 +466,41 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="card-header">Pass 15 — UX Visual Review + Premium UI Fix Plan <span class="badge">Review logged</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Finding</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>Cross-page filter inconsistency</td><td>Leads, Orders, and Quotes use different filter/command-bar patterns; active filters are not always obvious.</td><td><span class="chip chip-red">Fix required</span></td></tr>
+        <tr><td>Leads row and toolbar polish</td><td>Lead queue header is too tall, row checkbox/content alignment is uneven, and <code>1 filter active</code> lacks visible cause.</td><td><span class="chip chip-red">Fix required</span></td></tr>
+        <tr><td>Orders execution cockpit</td><td>Orders header is sparse, filters do not match other pages, and blocker chips feel detached.</td><td><span class="chip chip-red">Fix required</span></td></tr>
+        <tr><td>Quotes workspace polish</td><td>Quote filter bar is wide, duplicates Buyers mode, and does not match Leads/Orders.</td><td><span class="chip chip-amber">Fix required</span></td></tr>
+        <tr><td>Trade Events premium redesign</td><td>Trade Events still uses older plain styles and needs event KPIs, premium cards, and customer-safe proof-boundary treatment.</td><td><span class="chip chip-red">Fix required</span></td></tr>
+        <tr><td>Organization Setup product gap</td><td><code>/admin/organization</code> behaves like an admin dashboard instead of a SaaS organization setup/onboarding flow; cards must navigate or become static.</td><td><span class="chip chip-red">Fix required</span></td></tr>
+        <tr><td>Docs added</td><td><code>docs/UX_VISUAL_REVIEW_PASS15.md</code>, <code>docs/PREMIUM_UI_FIX_PLAN_PASS15.md</code>, and <code>docs/ORGANIZATION_SETUP_REDESIGN_PASS15.md</code> define the fix scope and acceptance criteria.</td><td><span class="chip chip-green">Planned</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header">Pass 16 — Premium UI Implementation + Organization Setup Redesign <span class="badge">Implemented, verification blocked</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Area</th><th>Implementation</th><th>Status</th></tr>
+        <tr><td>Shared premium command bar</td><td>Added <code>src/components/ui/premium-command-bar.tsx</code>; applied premium active-chip behavior to Quotes and Orders, and explicit named filter chips to Leads.</td><td><span class="chip chip-green">Implemented</span></td></tr>
+        <tr><td>Leads / Follow-up</td><td>Replaced generic active-count chip with named clearable chips, compacted filter stack, and clarified filtered-empty-state copy.</td><td><span class="chip chip-green">Implemented</span></td></tr>
+        <tr><td>Orders</td><td>Replaced sparse filter form with premium execution command bar; dispatch blocked/docs pending appear as standard active chips; order cards keep execution hierarchy.</td><td><span class="chip chip-green">Implemented</span></td></tr>
+        <tr><td>Quotes</td><td>Removed duplicate page-level Buyers/Suppliers selector, standardized filter bar, added visible active chips, and improved filtered-empty-state recovery.</td><td><span class="chip chip-green">Implemented</span></td></tr>
+        <tr><td>Trade Events</td><td>Added premium event cockpit hero, KPI cards, customer-safe proof boundary, richer event card styling, and Capture buyer/supplier/Review queue/View event CTAs.</td><td><span class="chip chip-green">Implemented</span></td></tr>
+        <tr><td>Organization Setup</td><td>Redesigned <code>/admin/organization</code> as SaaS onboarding with profile, commercial defaults, team setup, reference data, catalog readiness, governance, and setup checklist sections.</td><td><span class="chip chip-green">Implemented</span></td></tr>
+        <tr><td>Verification</td><td><code>npm run test:all</code> stopped because <code>tsx</code> is missing; <code>npm run build</code> stopped because <code>next</code> is missing. No clean local build claim made.</td><td><span class="chip chip-amber">Blocked by dependencies</span></td></tr>
+      </table>
+    </div>
+  </div>
+
   <div class="callout callout-amber">
-    <strong>Buyer Confidence target: 100/100.</strong> Current score after Pass 14 remains estimated at ~98/100 (up from 38). Pass 14 closes live golden signed-contract proof: Q-00025 is accepted, contract/order d129ffe2-c913-4cf7-9a7b-86ea6c9da54e is signed, and 11 contract lines are preserved. The decision improves from conditional pilot only to pilot expansion approved, but 100/100 still requires Supabase advisor closure, external security audit completion, deployed WAF/rate-limit proof, production monitoring, backup/restore drill, live connector proof, dispatch/completion proof, production support activation, and first-customer pilot evidence.
+    <strong>Buyer Confidence target: 100/100.</strong> Current score after Pass 16 implementation is estimated at ~97.5/100 (up from 38). Pass 14 closes live golden signed-contract proof: Q-00025 is accepted, contract/order d129ffe2-c913-4cf7-9a7b-86ea6c9da54e is signed, and 11 contract lines are preserved. Pass 16 implements the planned customer-facing UX fixes, but local dependency gaps prevented clean test/build evidence. The decision remains pilot expansion approved, not broad production launch; 100/100 still requires Supabase advisor closure, external security audit completion, deployed WAF/rate-limit proof, production monitoring, backup/restore drill, live connector proof, dispatch/completion proof, production support activation, first-customer pilot evidence, and premium UI implementation.
   </div>
 
 </div>
@@ -485,19 +518,19 @@
     <div class="card-header">Readiness by Area</div>
     <div class="card-body">
       <div class="progress-row">
-        <div class="progress-label"><strong>Core CRM workflow (Lead → Pipeline → Quote)</strong><span>92–95%</span></div>
+        <div class="progress-label"><strong>Core CRM workflow (Lead → Pipeline → Quote)</strong><span>91–94%</span></div>
         <div class="progress-bar"><div class="progress-fill fill-teal" style="width:94%"></div></div>
       </div>
       <div class="progress-row">
-        <div class="progress-label"><strong>Quote → Order revenue path</strong><span>89–93%</span></div>
+        <div class="progress-label"><strong>Quote → Order revenue path</strong><span>92–95%</span></div>
         <div class="progress-bar"><div class="progress-fill fill-amber" style="width:96%"></div></div>
       </div>
       <div class="progress-row">
-        <div class="progress-label"><strong>Investor demo safety (scripted)</strong><span>82–87%</span></div>
+        <div class="progress-label"><strong>Investor demo safety (scripted)</strong><span>80–85%</span></div>
         <div class="progress-bar"><div class="progress-fill fill-amber" style="width:84%"></div></div>
       </div>
       <div class="progress-row">
-        <div class="progress-label"><strong>First paying customer readiness</strong><span>92–95%</span></div>
+        <div class="progress-label"><strong>First paying customer readiness</strong><span>88–92%</span></div>
         <div class="progress-bar"><div class="progress-fill fill-amber" style="width:84%"></div></div>
       </div>
       <div class="progress-row">
@@ -517,7 +550,7 @@
         <div class="progress-bar"><div class="progress-fill fill-teal" style="width:100%"></div></div>
       </div>
       <div class="progress-row">
-        <div class="progress-label"><strong>Buyer Confidence Score</strong><span>~98/100 (est. post-Pass 14)</span></div>
+        <div class="progress-label"><strong>Buyer Confidence Score</strong><span>~97.5/100 (Pass 16 UI implemented; test/build proof blocked locally)</span></div>
         <div class="progress-bar"><div class="progress-fill fill-teal" style="width:96%"></div></div>
       </div>
     </div>
@@ -528,10 +561,10 @@
       <div class="card-header">Remaining Blockers — Pilot</div>
       <div class="card-body">
         <ul class="plain">
-          <li>Signed contract + dispatch proof on live data remains unproven; Pass 7 defines the new-record proof plan.</li>
+          <li>Signed contract proof is live for golden Q-00025, but dispatch/completion proof on a new pilot record remains unproven.</li>
           <li>Live integration connector remains unproven; proof-mode/mocks only today.</li>
           <li>Live Supabase RLS E2E is still not claimed; Pass 5 adds boundary tests and read-only Supabase connector inspection showing all public tables have RLS enabled but advisor findings remain.</li>
-          <li>External security audit completion, deployed WAF/rate-limit enforcement, applied Supabase remediation, monitoring evidence, backup drill, live connector proof, signed/dispatch proof, and pilot evidence remain open; Pass 14 adds live signed-contract proof for the golden journey, but not deployed production-control proof.</li>
+          <li>External security audit completion, deployed WAF/rate-limit enforcement, applied Supabase remediation, monitoring evidence, backup drill, live connector proof, dispatch/completion proof, pilot evidence, and Pass 16 local test/build proof remains open; Pass 14 adds live signed-contract proof for the golden journey, but not deployed production-control proof.</li>
         </ul>
       </div>
     </div>
@@ -544,7 +577,7 @@
           <li>WAF / rate limiting at infrastructure layer.</li>
           <li>Production-scale operating evidence and monitoring.</li>
           <li>Full mobile implementation remains not claimed.</li>
-          <li>Claim reconciliation completed in Pass 6; Pass 13 frozen claim archive governs wording; Pass 14 decision permits pilot expansion but not broad production launch.</li>
+          <li>Claim reconciliation completed in Pass 6; Pass 13 frozen claim archive governs wording; Pass 14 decision permits pilot expansion but not broad production launch; Pass 16 addresses UI polish in code; clean build/deploy evidence remains required before customer-facing launch.</li>
         </ul>
       </div>
     </div>
@@ -569,7 +602,9 @@
         <tr><td>98 → 98</td><td>Pass 12: final remediation execution status, live negative RPC verification status, first-pilot evidence closure, monitoring/backup evidence closure, and final launch/no-launch decision</td><td><span class="chip chip-green">Done ✓</span></td></tr>
         <tr><td>98 → 98</td><td>Pass 13: post-decision remediation status, pilot operations checklist, support activation checklist, final evidence handoff, and frozen claim archive</td><td><span class="chip chip-green">Done ✓</span></td></tr>
         <tr><td>98 → 98</td><td>Pass 14: actual evidence review, live accepted quote/signed contract proof, production remediation closeout, pilot-to-production decision, customer packet, and archived 100/100 checklist</td><td><span class="chip chip-green">Done ✓</span></td></tr>
-        <tr><td>98 → 100</td><td>Actual advisor closure, external audit completion, deployed WAF/monitoring, backup/restore drill, live connector, dispatch/completion proof, production support activation, and first customer pilot evidence</td><td>Pass 15+</td></tr>
+        <tr><td>98 → 97</td><td>Pass 15 review: visual/customer-facing UX blockers logged for Leads, Orders, Quotes, Trade Events, and Organization Setup; confidence adjusted until fixes are implemented and build-verified</td><td><span class="chip chip-amber">Review logged</span></td></tr>
+        <tr><td>97 → 97.5</td><td>Pass 16: premium UI implementation and Organization Setup redesign completed in code; test/build evidence blocked locally because project dependencies were not installed.</td><td><span class="chip chip-amber">Implemented; verify next</span></td></tr>
+        <tr><td>97.5 → 100</td><td>Clean test/build/deploy proof, actual advisor closure, external audit completion, deployed WAF/monitoring, backup/restore drill, live connector, dispatch/completion proof, production support activation, and first customer pilot evidence</td><td>Pass 17+</td></tr>
       </table>
     </div>
   </div>
@@ -965,7 +1000,7 @@
   </div>
 
   <div class="callout callout-amber">
-    <strong>Next schema/security action (Pass 14+):</strong> Move from Pass 14 live golden signed-contract proof into actual authorized remediation, dispatch/completion proof, pilot evidence capture, monitoring/backup proof, support activation, and final production evidence closure. The schema is structurally complete; production security proof remains environment-dependent and launch is pilot expansion approved, not broad production launch, until evidence closes.
+    <strong>Next schema/security action (Pass 14+):</strong> Move from Pass 16 UI implementation into dependency-restored test/build verification, Vercel deployment proof, actual authorized remediation, dispatch/completion proof, pilot evidence capture, monitoring/backup proof, support activation, and final production evidence closure. The schema is structurally complete; production security proof remains environment-dependent and launch is pilot expansion approved, not broad production launch, until evidence closes.
   </div>
 
 </div>

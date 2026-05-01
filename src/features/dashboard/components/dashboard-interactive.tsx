@@ -203,6 +203,8 @@ export default function DashboardInteractive({
     [data.countryInsights, selectedCountryCode],
   );
 
+  const shouldApplyTimeRangeFilter = filters.timeRange !== 'this-month';
+
   const filteredAttentionItems = useMemo(() => {
     return data.attentionItems.filter((item) => {
       if (snoozedMap[item.id] && snoozedMap[item.id].until > Date.now()) return false;
@@ -212,10 +214,10 @@ export default function DashboardInteractive({
       if (!matchesStage(item.stageId)) return false;
       if (!matchesStatus(item.statusTag)) return false;
       if (!matchesProduct(item.productNames)) return false;
-      if (!isWithinTimeRange(item.dueAt, filters.timeRange, serverNowIso)) return false;
+      if (shouldApplyTimeRangeFilter && !isWithinTimeRange(item.dueAt, filters.timeRange, serverNowIso)) return false;
       return true;
     });
-  }, [data.attentionItems, filters.marketCode, filters.mode, filters.timeRange, matchesProduct, matchesStage, matchesStatus, serverNowIso, snoozedMap]);
+  }, [data.attentionItems, filters.marketCode, filters.mode, filters.timeRange, matchesProduct, matchesStage, matchesStatus, serverNowIso, shouldApplyTimeRangeFilter, snoozedMap]);
 
   const filteredCountryInsights = useMemo(() => {
     return data.countryInsights
@@ -236,12 +238,12 @@ export default function DashboardInteractive({
     () =>
       data.countryCoverage.filter((country) => {
         if (filters.marketCode && country.countryCode !== filters.marketCode) return false;
-        if (!isWithinTimeRange(country.lastActivityAt, filters.timeRange, serverNowIso)) return false;
+        if (shouldApplyTimeRangeFilter && !isWithinTimeRange(country.lastActivityAt, filters.timeRange, serverNowIso)) return false;
         const insight = filteredCountryInsights.find((item) => item.countryCode === country.countryCode);
         const hasAttention = filteredAttentionItems.some((item) => item.marketCode === country.countryCode);
         return Boolean(insight?.topCompanies.length) || hasAttention;
       }),
-    [data.countryCoverage, filteredAttentionItems, filteredCountryInsights, filters.marketCode, filters.timeRange, serverNowIso],
+    [data.countryCoverage, filteredAttentionItems, filteredCountryInsights, filters.marketCode, filters.timeRange, serverNowIso, shouldApplyTimeRangeFilter],
   );
 
   const filteredStageCounts = useMemo(

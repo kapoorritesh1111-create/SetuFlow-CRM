@@ -213,6 +213,13 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
   }
 
   const eventNameById = new Map(data.events.map((event) => [event.id, event.name]));
+  const tradeEventKpis = {
+    events: data.events.length,
+    capturedLeads: Array.from(analyticsByEventId.values()).reduce((sum, item) => sum + item.leadCount, 0),
+    convertedLeads: Array.from(convertedEntryCountByEventId.values()).reduce((sum, value) => sum + value, 0),
+    quotesCreated: Array.from(analyticsByEventId.values()).reduce((sum, item) => sum + item.quotedCount, 0),
+    followUpsDue: followUpNeededLeads.length,
+  };
 
   const previousEventPerformanceById = new Map<string, { entryDelta: number; pipelineDelta: number; previousName: string }>();
   const eventsByStartDate = [...data.events].sort((a, b) => getTradeEventSortTime(a.starts_on) - getTradeEventSortTime(b.starts_on));
@@ -230,17 +237,39 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Trade events</p>
-        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Shows and source touchpoints</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Track event-sourced leads, quote handoffs, and follow-up readiness. The mobile/tablet promise here is scoped to trade-event capture only; core CRM, quote, and order execution remain desktop-first.
-        </p>
-      </div>
+      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.14),transparent_32%),linear-gradient(135deg,#ffffff,#f8fafc)] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-700">Trade event cockpit</p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Shows, capture, and commercial handoffs</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Track event-sourced buyers and suppliers, quote handoffs, and follow-up readiness. Mobile-native scope remains limited to trade-event capture only; core CRM, quote, and order execution stay desktop-first.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/leads?quickLead=1&sourceType=trade_event" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-slate-800">Capture buyer</Link>
+            <Link href="/leads?quickLead=1&sourceType=trade_event&mode=suppliers" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">Capture supplier</Link>
+            <Link href="/leads?view=trade-event" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100">Review queue</Link>
+          </div>
+        </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {[
+            { label: 'Trade events', value: tradeEventKpis.events, sub: 'configured shows' },
+            { label: 'Captured leads', value: tradeEventKpis.capturedLeads, sub: 'event-linked CRM leads' },
+            { label: 'Converted leads', value: tradeEventKpis.convertedLeads, sub: 'intake rows converted' },
+            { label: 'Quotes created', value: tradeEventKpis.quotesCreated, sub: 'quote handoffs' },
+            { label: 'Follow-ups due', value: tradeEventKpis.followUpsDue, sub: 'needs next step' },
+          ].map((kpi) => (
+            <div key={kpi.label} className="rounded-[1.35rem] border border-slate-200 bg-white/90 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">{kpi.label}</p>
+              <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">{kpi.value}</p>
+              <p className="mt-1 text-xs font-semibold text-slate-500">{kpi.sub}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
-        <p className="font-semibold uppercase tracking-[0.16em]">PR-NS-23 proof boundary</p>
-        <p className="mt-2">Live event records currently prove event-linked leads, quote handoffs, and event analytics. Intake queue rows may still be empty for seeded events, so do not present offline queue sync as live production evidence until booth entries are captured and converted.</p>
+      <section className="rounded-[1.75rem] border border-blue-200 bg-blue-50/70 p-5 text-sm text-blue-950 shadow-[0_16px_42px_rgba(37,99,235,0.08)]">
+        <p className="font-extrabold uppercase tracking-[0.16em]">Proof boundary</p>
+        <p className="mt-2 leading-6">Live event records prove event-linked leads, quote handoffs, and event analytics. Offline queue sync is not claimed as production evidence until booth entries are captured, converted, and independently verified.</p>
       </section>
 
       <QueryIssuesAlert issues={data.queryIssues} />
@@ -325,7 +354,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
             const conversionRate = eventEntryCount > 0 ? Math.round((analytics.leadCount / eventEntryCount) * 100) : 0;
             const previousPerformance = previousEventPerformanceById.get(event.id);
             return (
-            <article key={event.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
+            <article key={event.id} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_22px_58px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_28px_70px_rgba(37,99,235,0.10)]">
               <div className="flex flex-col gap-4">
                 <span className="inline-flex w-fit rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-base font-semibold text-emerald-800">
                   {eventEntryCount} intake entr{eventEntryCount === 1 ? 'y' : 'ies'}
@@ -350,19 +379,21 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
                   href={captureHref}
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-700 px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-800 sm:flex-1"
                 >
-                  Capture lead
+                  Capture buyer
                 </a>
-                <button
-                  type="button"
-                  data-share-capture-link={captureHref}
-                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                <a
+                  href={`/admin/trade-events?eventId=${event.id}`}
+                  className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
-                  <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path d="M7 6.5h7.5v9H7z" />
-                    <path d="M5.5 13.5h-1v-9H12v1" />
-                  </svg>
-                  <span>Share capture link</span>
-                </button>
+                  View event
+                </a>
+                <a
+                  href={`/leads?quickLead=1&sourceType=trade_event&mode=suppliers&eventId=${event.id}&sourceLabel=${encodeURIComponent(quickLeadSourceLabel)}`}
+                  className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Capture supplier
+                </a>
+                <a href={`/leads?eventId=${event.id}`} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800 transition hover:bg-blue-100">Review queue</a>
               </div>
               <details className="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
                 <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">

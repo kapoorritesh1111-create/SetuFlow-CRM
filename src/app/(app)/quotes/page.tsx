@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PremiumActiveChip, PremiumCommandBar, PremiumField, PremiumInput, PremiumSelect } from '@/components/ui/premium-command-bar';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
@@ -169,33 +170,46 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const acceptedCount = viewModel.items.filter(i => i.status === 'accepted' || i.hasAcceptedContract).length;
   const totalValue = viewModel.items.reduce((s, i) => s + i.subtotal, 0);
   const firstApproval = approvalQueue[0]; const secondApproval = approvalQueue[1];
+  const filterHref = (patch: Partial<typeof filters>) => {
+    const next = { ...filters, ...patch };
+    const params = new URLSearchParams();
+    if (next.q.trim()) params.set('q', next.q.trim());
+    if (next.status !== 'all') params.set('status', next.status);
+    if (next.company.trim()) params.set('company', next.company.trim());
+    if (next.from.trim()) params.set('from', next.from.trim());
+    if (next.to.trim()) params.set('to', next.to.trim());
+    if (next.mode !== 'all') params.set('mode', next.mode);
+    return params.toString() ? `/quotes?${params.toString()}` : '/quotes';
+  };
+  const activeQuoteFilterChips = [
+    filters.q.trim() ? { key: 'q', label: `Search: ${filters.q.trim()}`, href: filterHref({ q: '' }), tone: 'blue' as const } : null,
+    filters.status !== 'all' ? { key: 'status', label: `Status: ${labelizeStatus(filters.status)}`, href: filterHref({ status: 'all' }), tone: 'amber' as const } : null,
+    filters.mode !== 'all' ? { key: 'mode', label: `Global mode: ${filters.mode}`, href: filterHref({ mode: 'all' }), tone: 'violet' as const } : null,
+  ].filter(Boolean) as Array<{ key: string; label: string; href: string; tone: 'blue' | 'amber' | 'violet' }>;
 
   return (
     <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b'}}>
 
       {/* Quotes route uses the shared AppShell header; no nested workspace topbar. */}
-      {/* ── FILTER BAR ─────────────────────────────────── */}
-      <form action="/quotes" style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'18px 18px 0 0',padding:'14px 24px 12px',display:'grid',gridTemplateColumns:'minmax(220px,1.4fr) minmax(160px,.8fr) minmax(150px,.7fr) auto auto',alignItems:'end',gap:'10px'}}>
-        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
-          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Search</span>
-          <span style={{display:'flex',alignItems:'center',gap:'8px',padding:'0 12px',border:'1px solid #e2e8f0',borderRadius:'8px',background:'white',height:'36px',boxShadow:'0 1px 2px rgba(15,23,42,.03)'}}>
-            <span style={{color:'#0c7fff'}}>🔍</span><input name="q" defaultValue={filters.q} placeholder="Search company, quote ref, product..." style={{border:'none',outline:'none',fontSize:'12px',color:'#1e293b',background:'transparent',width:'100%'}}/>
-          </span>
-        </label>
-        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
-          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Status</span>
-          <select name="status" defaultValue={filters.status} style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
-            {FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All statuses':labelizeStatus(s)}</option>)}
-          </select>
-        </label>
-        <label style={{display:'flex',flexDirection:'column',gap:'4px',minWidth:'0'}}>
-          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',paddingLeft:'8px'}}>Mode</span>
-          <select name="mode" defaultValue={filters.mode} style={{appearance:'none',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#f8fafc',padding:'0 12px',height:'36px',fontSize:'12px',fontWeight:600,color:'#1e293b',cursor:'pointer',width:'100%'}}>
-            {FILTER_MODES.map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase()+m.slice(1)}</option>)}
-          </select>
-        </label>
-        <button type="submit" style={{padding:'0 16px',height:'36px',borderRadius:'8px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:700,border:'none',cursor:'pointer'}}>Apply</button>
-        <span style={{justifySelf:'end',alignSelf:'center',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{filteredItems.length} quotes · {formatQuoteMoney(totalValue,'USD')} total value</span>
+      {/* Shared premium filter command bar */}
+      <form action="/quotes" style={{padding:'14px 24px 0'}}>
+        {filters.mode !== 'all' ? <input type="hidden" name="mode" value={filters.mode} /> : null}
+        <PremiumCommandBar
+          label="Quote filters"
+          summary={<>{filteredItems.length} quotes · {formatQuoteMoney(totalValue,'USD')} total value</>}
+          activeChips={activeQuoteFilterChips.length ? <>{activeQuoteFilterChips.map((chip) => <PremiumActiveChip key={chip.key} label={chip.label} href={chip.href} tone={chip.tone} />)}</> : null}
+          reset={activeQuoteFilterChips.length ? <Link href="/quotes" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50">Clear all</Link> : null}
+        >
+          <PremiumField label="Search" icon="🔍" className="md:min-w-[320px]">
+            <PremiumInput name="q" defaultValue={filters.q} placeholder="Search company, quote ref, product..." />
+          </PremiumField>
+          <PremiumField label="Status" icon="⚡" className="md:min-w-[210px]">
+            <PremiumSelect name="status" defaultValue={filters.status}>
+              {FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All statuses':labelizeStatus(s)}</option>)}
+            </PremiumSelect>
+          </PremiumField>
+          <button type="submit" className="h-9 rounded-xl bg-slate-950 px-4 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(15,23,42,.14)] transition hover:bg-slate-800">Apply</button>
+        </PremiumCommandBar>
       </form>
 
       {/* ── STATS STRIP ────────────────────────────────── */}
@@ -244,7 +258,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
           </div>
           {/* Rows */}
           {filteredItems.length===0 ? (
-            <div style={{padding:'32px',textAlign:'center',fontSize:'13px',color:'#64748b'}}>No quotes match these filters.</div>
+            <div style={{padding:'32px',textAlign:'center',fontSize:'13px',color:'#64748b'}}><strong>No quotes match the active filters.</strong><br/>{activeQuoteFilterChips.length ? activeQuoteFilterChips.map((chip) => chip.label).join(' · ') : 'No active filters'}<br/><Link href="/quotes" style={{display:'inline-block',marginTop:'12px',padding:'7px 14px',borderRadius:'999px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:800,textDecoration:'none'}}>Clear filters</Link></div>
           ) : filteredItems.map(item => {
             const validity = getValidityLabel(item);
             const isPending = item.status==='pending_approval';

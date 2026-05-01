@@ -450,3 +450,70 @@ Pass 14 imports live read-only Supabase evidence. Q-00025 is accepted, contract/
 ### Release decision after Pass 14
 
 SETU Flow is suitable for controlled pilot expansion using locked wording. It is not ready for an unconditional production-readiness or 100/100 buyer-confidence claim.
+
+## PR-NS-Pass15 UX review update — Premium UI alignment and Organization Setup gap
+
+Pass 15 is a review/planning update, not an implementation pass. It records customer-facing visual issues found on Leads, Orders, Quotes, Trade Events, and Organization Setup. The underlying live proof from Pass 14 remains valid, but buyer/customer readiness is adjusted downward until the premium UI cleanup and Organization Setup redesign are implemented and build-verified.
+
+| Area | Honest readiness after Pass 15 UX review |
+|---|---:|
+| Core CRM workflow | 91-94% |
+| Quote -> Order revenue path | 92-95% |
+| Investor demo safety | 80-85% scripted; lower if unscripted |
+| First paying customer readiness | 88-92% pilot expansion approved, UX cleanup required |
+| Security / RPC trust | 90-94% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~97/100 |
+
+### Pass 15 UX review documents added
+
+- `docs/UX_VISUAL_REVIEW_PASS15.md` — records the visual/product issues observed in the screenshots, including inconsistent filters, old Trade Events styling, and the Organization Setup purpose gap.
+- `docs/PREMIUM_UI_FIX_PLAN_PASS15.md` — defines the implementation plan for a shared premium filter command bar, Leads/Orders/Quotes polish, Trade Events redesign, and verification requirements.
+- `docs/ORGANIZATION_SETUP_REDESIGN_PASS15.md` — defines the SaaS organization onboarding/setup flow needed before broad customer rollout.
+
+### Open customer-facing UX blockers
+
+1. Leads filter/header area is too tall and active filter state is not explicit.
+2. Leads row selection and row content alignment feel disconnected.
+3. Orders filter/header styling does not match Leads or Quotes.
+4. Orders blocker chips and value/status hierarchy need better execution-cockpit treatment.
+5. Quotes filter bar duplicates Buyers mode and does not match the shared command pattern.
+6. Trade Events still uses older, plain styling and needs a premium event cockpit.
+7. Organization Setup behaves like an admin dashboard and does not yet provide a true SaaS customer setup form/workflow.
+8. Admin/Organization cards must navigate to real sections or be restyled as static status cards.
+
+### Release decision after Pass 15 UX review
+
+SETU Flow remains suitable for controlled pilot expansion using locked wording, but broad customer-facing launch should wait for the premium UI implementation pass. The product should not claim 100/100 buyer confidence until visual consistency, Organization Setup onboarding, Supabase advisor closure, WAF/monitoring/backups, dispatch/completion proof, and pilot evidence are all complete.
+
+## PR-NS-Pass16 Premium UI implementation update
+
+Pass 16 implements the Pass 15 customer-facing UX fixes in code. It does not claim clean local build proof because this extracted container is missing project-local dependencies.
+
+| Area | Honest readiness after Pass 16 implementation |
+|---|---:|
+| Core CRM workflow | 91-94% |
+| Quote -> Order revenue path | 92-95% |
+| First paying customer readiness | 89-93% pending build/deploy proof |
+| Security / RPC trust | 90-94% unchanged; UI work only |
+| Buyer confidence | ~97.5/100 until test/build/deploy proof is clean |
+
+### UI blockers fixed in code
+
+- Leads / Follow-up now shows named active filter chips and clearer no-results recovery.
+- Orders uses a premium execution command bar with visible dispatch/docs chips.
+- Quotes uses the shared command-bar pattern and no longer duplicates the Buyers/Suppliers/All selector inside its page filter bar.
+- Trade Events now has a premium event cockpit, KPI cards, customer-safe proof boundary, and clearer buyer/supplier capture CTAs.
+- Organization Setup now reads as SaaS customer onboarding with setup checklist, commercial defaults, team setup, reference data, catalog readiness, and security/governance sections.
+
+### Open customer-facing UX / release blockers after Pass 16
+
+- Restore dependencies and rerun `npm run test:all` and `npm run build`.
+- Capture Vercel deployment/build proof before moving buyer confidence to 98-99/100.
+- Perform browser screenshot review of Leads, Orders, Quotes, Trade Events, and Organization Setup.
+- Supabase advisor closure, WAF/monitoring/backups, external audit, dispatch/completion proof, and first pilot evidence remain open.
+
+### Verification
+
+Required commands were attempted in order. `npm run test:all` stopped at `tsx: not found`; `npm run build` stopped at `next: not found`. No live Supabase data was mutated and no remediation migrations were applied.

@@ -1149,6 +1149,18 @@ export function LeadsWorkspace({
     tradeEventFilter,
   ].filter(Boolean).length;
 
+
+  const activeFilterChips = [
+    search ? { key: 'search', label: `Search: ${search}`, clear: () => setSearch('') } : null,
+    leadTypeFilter ? { key: 'type', label: `Mode: ${leadTypeFilter === 'buyer' ? 'Buyers' : 'Suppliers'}`, clear: () => { setLeadTypeFilter(''); setSavedView('all'); } } : null,
+    ownerId ? { key: 'owner', label: `Owner: ${ownerMap.get(ownerId) ?? 'Selected owner'}`, clear: () => setOwnerId('') } : null,
+    stageIdFilter ? { key: 'stage', label: `Stage: ${stageMap.get(stageIdFilter) ?? 'Selected stage'}`, clear: () => setStageIdFilter('') } : null,
+    countryIdFilter ? { key: 'country', label: `Country: ${countries.find((country) => country.id === countryIdFilter)?.name ?? 'Selected country'}`, clear: () => setCountryIdFilter('') } : null,
+    marketIdFilter ? { key: 'market', label: `Market: ${markets.find((market) => market.id === marketIdFilter)?.name ?? 'Selected market'}`, clear: () => setMarketIdFilter('') } : null,
+    productIdFilter ? { key: 'product', label: `Product: ${products.find((product) => product.id === productIdFilter)?.name ?? 'Selected product'}`, clear: () => setProductIdFilter('') } : null,
+    tradeEventFilter ? { key: 'event', label: `Source event: ${tradeEventMap.get(tradeEventFilter) ?? 'Selected event'}`, clear: () => handleTradeEventFilterChange('') } : null,
+  ].filter(Boolean) as Array<{ key: string; label: string; clear: () => void }>;
+
   return (
     <div className="mobile-premium-leads flex flex-col">
 
@@ -1172,7 +1184,7 @@ export function LeadsWorkspace({
       </div>
 
       {/* ═══ FILTER BAR — matches spec .filter-bar ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
 
         {/* Search box inline */}
         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '200px' }}>
@@ -1269,21 +1281,22 @@ export function LeadsWorkspace({
           </div>
         </div>
 
-        {tradeEventFilter ? (
-          <button type="button" onClick={() => handleTradeEventFilterChange('')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '999px', fontSize: '10px', fontWeight: 700, border: '1px solid #a7f3d0', background: '#ecfdf5', color: '#047857', cursor: 'pointer' }}
-          >
-            Source event: {tradeEventMap.get(tradeEventFilter) ?? 'Selected event'} <span style={{ opacity: .65 }}>×</span>
-          </button>
-        ) : null}
-
-        {/* Active filter chips */}
-        {activeFilterCount > 0 ? (
-          <button type="button" onClick={clearFilters}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '999px', fontSize: '10px', fontWeight: 700, border: '1px solid #fecaca', background: '#fff1f2', color: '#991b1b', cursor: 'pointer' }}
-          >
-            {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active <span style={{ opacity: .6 }}>×</span>
-          </button>
+        {/* Active filter chips: every active filter is named and individually clearable. */}
+        {activeFilterChips.length > 0 ? (
+          <div style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}>
+            {activeFilterChips.map((chip) => (
+              <button key={chip.key} type="button" onClick={chip.clear}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '999px', fontSize: '10px', fontWeight: 800, border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', boxShadow:'0 1px 3px rgba(15,23,42,.04)' }}
+              >
+                {chip.label} <span style={{ opacity: .65 }}>x</span>
+              </button>
+            ))}
+            <button type="button" onClick={clearFilters}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '999px', fontSize: '10px', fontWeight: 800, border: '1px solid #e2e8f0', background: 'white', color: '#475569', cursor: 'pointer' }}
+            >
+              Clear all
+            </button>
+          </div>
         ) : null}
 
         {/* Summary count */}
@@ -1485,7 +1498,7 @@ export function LeadsWorkspace({
                     ? canManageLeads
                       ? 'Create a lead now: Quick Lead for speed, New Lead for full capture.'
                       : 'No leads yet. Ask an admin to add the first lead or grant edit access.'
-                    : 'Reset filters or search, then open a lead.'
+                    : activeFilterChips.length ? `No leads match: ${activeFilterChips.map((chip) => chip.label).join(', ')}. Clear one chip or reset all filters.` : 'Reset filters or search, then open a lead.'
                 }
                 primaryActionHref={isWorkspaceEmpty && !search && activeFilterCount === 0 && canManageLeads ? PRODUCT_ROUTES.app.leads : undefined}
                 primaryActionLabel={isWorkspaceEmpty && !search && activeFilterCount === 0 && canManageLeads ? 'Stay on leads' : undefined}
