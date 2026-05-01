@@ -1,3 +1,22 @@
+# Build Fix — RFQ form import
+
+## Summary
+
+Fixed the Vercel compile error caused by the standalone lead RFQ page importing `@/features/rfqs/components/rfq-form` when that compatibility component was missing from the repo.
+
+## Files created
+
+- `src/features/rfqs/components/rfq-form.tsx` — compatibility wrapper around the existing `RfqCreateWizardForm` for the inline RFQ creation page.
+
+## Files changed
+
+- `CHANGES.md` — prepended this build-fix section.
+
+## Verification
+
+- Targeted impacted-file scan confirmed the only unresolved import was from `src/app/(app)/leads/[leadId]/rfq/new/page.tsx` to the missing RFQ form wrapper.
+- Production build re-check should now resolve the missing module; full result is documented in the response.
+
 # Pass 13 — Post-Decision Remediation + Pilot Operations + Final Evidence Handoff
 
 ## Summary
