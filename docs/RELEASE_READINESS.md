@@ -1,3 +1,19 @@
+# Pass 21 TypeScript Build Hotfix — Release Readiness Update
+
+## Summary
+
+Vercel build for commit `9dcacd9` failed during type checking after successful compilation. The failure was in `src/features/quotes/server/actions.ts`: `safeQuoteDisplayCurrency` accepted `unknown` but forwarded it directly to `normalizeQuoteDisplayCurrency`, which requires `string | null | undefined`.
+
+## Fix
+
+The hotfix adds a narrow `toOptionalCurrencyString` guard and keeps `safeQuoteDisplayCurrency` returning a supported display currency string. This preserves the Pass 21 protection against `quotes_display_currency_check` failures while satisfying the TypeScript contract.
+
+## Verification note
+
+Build not claimed in GPT sandbox. Requires Vercel/live build proof. No `npm ci` was run. No Supabase data was mutated and no remediation migration was applied.
+
+---
+
 # Pass 20 Proof-Gated Pilot Hardening — Release Readiness Update
 
 ## Summary

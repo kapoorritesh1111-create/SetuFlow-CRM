@@ -66,8 +66,12 @@ function isMissingRpcFunction(error: any) {
 
 const QUOTE_PRICING_BASIS_VALUES = PRICING_BASIS_VALUES satisfies readonly QuotePricingBasis[];
 
-function safeQuoteDisplayCurrency(value: unknown, fallback: string = 'USD') {
-  return normalizeQuoteDisplayCurrency(value) ?? normalizeQuoteDisplayCurrency(fallback) ?? 'USD';
+function toOptionalCurrencyString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function safeQuoteDisplayCurrency(value: unknown, fallback: string = 'USD'): string {
+  return normalizeQuoteDisplayCurrency(toOptionalCurrencyString(value), fallback);
 }
 
 function normalizeQuotePricingBasis(value: unknown, fallback: QuotePricingBasis = DEFAULT_QUOTE_PRICING_BASIS): QuotePricingBasis {

@@ -1,7 +1,14 @@
 # Setu Flow CRM
 
+## Pass 21 TypeScript build hotfix — 2026-05-01
+
+Vercel build for commit `9dcacd9` compiled successfully but failed TypeScript on `src/features/quotes/server/actions.ts` because `safeQuoteDisplayCurrency` passed an `unknown` value directly into `normalizeQuoteDisplayCurrency`, whose contract accepts `string | null | undefined`. This hotfix narrows the unknown value to an optional string before normalization, preserving the Pass 21 quote display-currency constraint fix without relaxing TypeScript safety.
+
+Verification boundary remains unchanged: no `npm ci` was run in GPT sandbox, and a fresh Vercel build is required to prove the hotfix.
+
+
 > **Single source of truth:** `public/internal-dcc/index.html`  
-> **Current working baseline after this pass:** `SetuFlow-CRM-Pass20-ProofGated-PilotHardening` from `SetuFlow-CRM-Pass19-ActionHardening`  
+> **Current working baseline after this pass:** `SetuFlow-CRM-Pass21-TypeFix` from `SetuFlow-CRM-Pass21-LiveSQL-UXFixes`  
 > **Verification boundary:** Build not claimed in GPT sandbox. Requires Vercel/live build proof and live QA retest proof.
 
 ## Pass 20 proof-gated pilot hardening update — 2026-05-01

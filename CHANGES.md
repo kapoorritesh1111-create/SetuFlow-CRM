@@ -1,3 +1,23 @@
+# 2026-05-01 — Pass 21 TypeScript Build Hotfix
+
+## Summary
+
+Fixed the Vercel TypeScript build failure reported for commit `9dcacd9`. `safeQuoteDisplayCurrency` now narrows unknown input before calling `normalizeQuoteDisplayCurrency`, matching the helper signature and preserving the Pass 21 quote display-currency constraint guard.
+
+## Files changed
+
+- `src/features/quotes/server/actions.ts` — added a narrow optional-string coercion helper and typed `safeQuoteDisplayCurrency` as returning `string`.
+- `public/internal-dcc/index.html` — recorded the Vercel type-check failure and hotfix proof boundary.
+- `README.md` — added this hotfix summary.
+- `docs/RELEASE_READINESS.md` — added this hotfix release-readiness note.
+- `CHANGES.md` — this entry.
+
+## Verification
+
+Build not claimed in GPT sandbox. Requires Vercel/live build proof. No `npm ci` was run. No Supabase data was mutated and no remediation migration was applied.
+
+---
+
 # 2026-05-01 — Pass 20 Proof-Gated Pilot Hardening
 
 ## Summary
