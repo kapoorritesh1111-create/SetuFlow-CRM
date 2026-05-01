@@ -1,3 +1,27 @@
+# Release Readiness — Live QA Hardening Update (2026-05-01)
+
+**Baseline remains locked:** `SetuFlow-CRM-main(41)` / commit `89a825a` / Vercel production `READY`.
+
+**Build status:** Clean production build/deploy proof remains trusted. Vercel ran install/build successfully for the locked baseline. Do not rerun `npm ci` inside GPT sandbox; use Vercel/user logs for future proof.
+
+**Readiness correction:** The clean build does not close live UX/action risk. Two live reviews now feed the DCC hardening plan. The latest live QA reproduced these P0/P1 issues:
+
+| Priority | Issue | Release impact |
+|---|---|---|
+| P0 | Share my vCard header button is dead | Blocks uncontrolled demo trust |
+| P0 | Quote Continue appends quoteId but opens no workspace | Blocks buyer quote journey |
+| P0 | Open order does nothing | Blocks order execution journey |
+| P0 | Raw SQL error `lead_id is ambiguous` exposed in Lead Command Center | Security/trust issue |
+| P0/P1 | Lead/quote rows are not clickable | Core SaaS UX gap |
+| P1 | Leads Buyers subfilter and top tabs are inconsistent | Pilot workflow confusion |
+| P1 | Quote Preview Continue Terms step fails silently | Buyer journey interruption |
+| P1 | Products Pricing View tab does not change layout | Misleading feature surface |
+| P1 | Tasks disconnected from overdue follow-ups and missing desktop nav | Operator workflow gap |
+
+**Current buyer confidence:** Hold at **~96–97/100** until P0/P1 live action hardening is fixed and verified. Return toward **98.5–99/100** only after live retest plus clean Vercel build proof. 100/100 remains blocked by Supabase advisor/RPC closure, WAF/rate-limit/monitoring/backup proof, external audit, dispatch/completion proof, and first-pilot evidence.
+
+---
+
 # SETU Flow Release Readiness
 
 Updated: 2026-04-30  

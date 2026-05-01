@@ -1,3 +1,15 @@
+# 2026-05-01 — Live QA Hardening Plan DCC Update
+
+- Updated `public/internal-dcc/index.html` as the active operating board for the merged live UX/CTO review findings.
+- Preserved the locked live baseline: `SetuFlow-CRM-main(41)` / commit `89a825a` / Vercel production `READY`.
+- Corrected readiness posture: build/deploy confidence remains high, but buyer confidence is held around `~96–97/100` until P0/P1 live action defects are fixed and retested.
+- Added the 100% evidence path directly inside the DCC: P0/P1 live action hardening, Vercel/user build proof, Supabase security/RPC closure, WAF/monitoring/backup proof, dispatch/completion proof, and first-pilot evidence.
+- Recorded next pass sequence: Pass 19 P0 Action Hardening, Pass 20 P1 Pilot Hardening, Pass 21 Data/Governance Verification, Pass 22 Live Retest + Build Proof, Pass 23 Security/Ops Closure, Pass 24 Pilot Evidence.
+- Added explicit build rule: GPT sandbox should not attempt `npm ci`; future verification must use user/Vercel logs.
+- No code workflow fixes, Supabase mutations, or new docs were created in this update.
+
+---
+
 # Pass 18 Live Baseline Lock — Vercel Production Proof
 
 ## Summary

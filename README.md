@@ -1,5 +1,29 @@
 # Setu Flow CRM
 
+> **Single source of truth:** `public/internal-dcc/index.html`  
+> **Current locked baseline:** `SetuFlow-CRM-main(41)` / commit `89a825a` / Vercel production `READY`  
+> **Current operating mode:** Live QA hardening plan active. Do not claim 100/100 until P0/P1 live action defects, build proof, security/ops proof, dispatch/completion proof, and pilot evidence are all closed.
+
+## Current readiness snapshot after merged live QA reviews
+
+| Area | Honest readiness |
+|---|---:|
+| Build / deploy confidence | **9.5/10** |
+| UX / action confidence | **4.5/10** |
+| Buyer journey confidence | **4.5/10** |
+| Supplier journey confidence | **6.0/10** |
+| Admin / setup confidence | **7.5/10** |
+| Security / RPC trust | **90–94% cap** |
+| Buyer confidence | **~96–97/100 hold** |
+| 100/100 | **Not claimable** |
+
+**Why confidence is held:** Vercel production build/deploy proof remains clean for commit `89a825a`, and the live app is connected to Supabase. However, two live UX/CTO reviews identify and reproduce P0/P1 live action defects: global Share my vCard dead action, quote Continue failing to open a workspace, Open order dead action, raw `lead_id is ambiguous` SQL error exposure, lead/quote row-click no-ops, lead tab/filter issues, Quote Preview terms-step failure, and Products Pricing View partial behavior.
+
+**Next path:** Pass 19 fixes P0 action hardening. Pass 20 fixes P1 pilot hardening. Pass 21 verifies data/governance issues read-only before any live cleanup. Pass 22 performs live retest and Vercel/user build proof. Pass 23 closes security/ops. Pass 24 captures pilot and dispatch/completion proof. GPT must not run `npm ci` in sandbox; use Vercel or user logs for install/test/build proof.
+
+---
+
+
 Setu Flow CRM is a governed commercial system. Commercial truth is the center.
 
 > **Single source of truth:** `public/internal-dcc/index.html`
