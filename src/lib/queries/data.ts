@@ -1054,7 +1054,11 @@ function rows<T>(data: T[] | null | undefined): T[] {
 function addIssue(issues: string[], scope: string, error: { message?: string } | null | undefined) {
   if (!error?.message) return;
   console.error(`[data:${scope}]`, error.message);
-  issues.push(`${scope}: ${error.message}`);
+  const normalized = error.message.toLowerCase();
+  const safeDetail = normalized.includes("lead_id") && normalized.includes("ambiguous")
+    ? "The lead relationship query needs a qualified field. The user-facing workspace stayed safe; retry after the action-hardening patch is deployed."
+    : "A live data query could not complete. Retry, then use the detail route if this workspace remains unavailable.";
+  issues.push(`${scope}: ${safeDetail}`);
 }
 
 function limitItemsPerKey<T>(items: T[], keyOf: (item: T) => string | null | undefined, limit: number): T[] {

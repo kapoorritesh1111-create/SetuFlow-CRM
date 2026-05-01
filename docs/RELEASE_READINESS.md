@@ -1,3 +1,79 @@
+# Pass 20 Proof-Gated Pilot Hardening — Release Readiness Update
+
+## Summary
+
+Pass 20 started with the required verification boundary: this GPT sandbox could not provide clean install/build/test proof because `node_modules` is absent and `npm ci` was not authorized. Therefore, this pass does **not** claim `npm run build`, `npm run test:all`, clean deployment, or live QA closure.
+
+The pass applied only low-risk pilot-hardening follow-ups after preserving the Pass 19 action-hardening posture.
+
+## What changed
+
+- **Navigation:** Tasks is now available in the primary desktop operating shell navigation.
+- **Pipeline:** the Kanban board now shows a visible horizontal-scroll cue above desktop lanes.
+- **Dashboard:** the unsupported Custom time range option is hidden until a real date picker exists.
+- **DCC/docs:** the DCC, README, RELEASE_READINESS, CHANGES, and the restored minimal RELEASE_PROOF placeholder now record that Pass 20 remains proof-gated.
+
+## Current readiness posture
+
+| Dimension | Status after Pass 20 |
+|---|---|
+| Build/deploy confidence | High from prior Vercel baseline only. This Pass 20 ZIP still requires fresh Vercel or clean local proof. |
+| UX/action confidence | Improved in code from Pass 19 plus low-risk Pass 20 hardening, but provisional until live retest. |
+| Security/RPC trust | Still capped at 90–94%; UI/build work alone cannot raise this. |
+| Buyer confidence | Held around ~96–97/100 until build proof, live QA proof, security/ops proof, dispatch/completion proof, and first-pilot evidence close. |
+
+## Verification note
+
+Build not claimed in GPT sandbox. Requires Vercel/live build proof.
+
+No `npm ci` was run. No Supabase data was mutated. No remediation migrations were applied. Protected records `Q-00025` and `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` were not intentionally changed.
+
+## Required next proof
+
+1. Vercel or clean local install/build for the Pass 20 package.
+2. Live QA retest of vCard, quotes Continue/row/company click, accepted quote Create order confirmation behavior, orders Open, lead filters/top tabs, active filter chips, Quote Preview terms step, Products Pricing View, Tasks navigation, Pipeline scroll cue, and absence of raw SQL/database errors.
+3. If proof passes, proceed to read-only data/governance verification. If proof fails, keep the next pass focused on action hardening.
+4. Separate authorized data/governance cleanup only after read-only verification and explicit owner approval.
+
+---
+
+# Pass 19 Action Hardening — Release Readiness Update
+
+## Summary
+
+Pass 19 is a code-and-documentation hardening pass for the verified live QA P0/P1 action failures. It does not claim final release readiness, clean build proof, or live QA closure.
+
+## What changed
+
+- **Global shell:** vCard header/avatar action path is aligned to the same working modal behavior.
+- **Leads:** saved-view filters now apply real buyer/supplier/my/overdue/today/trade-event predicates; lead workspace fallback selection reduces dead top-tab behavior; Quote Preview Continue validates required product/pricing/terms fields and shows feedback; backend query issue details are converted to safer user-facing text.
+- **Orders:** active-order grammar, execution-value placeholder, and blocked-doc explanation were hardened.
+- **Products:** Pricing View now displays a distinct pricing-focused table layout.
+- **DCC/docs:** release posture now clearly separates code-patched items from items that still require Vercel and live QA proof.
+
+## Current readiness posture
+
+| Dimension | Status after Pass 19 |
+|---|---|
+| Build/deploy confidence | High from prior Vercel baseline, but this Pass 19 ZIP still needs fresh Vercel/user proof. |
+| UX/action confidence | Improved in code, provisional only until live retest. |
+| Security/RPC trust | Still capped at 90–94%; UI/build work alone cannot raise this. |
+| Buyer confidence | Held around ~96–97/100 until build proof, live QA proof, security/ops proof, dispatch/completion proof, and first-pilot evidence close. |
+
+## Verification note
+
+Build not claimed in GPT sandbox. Requires Vercel/live build proof.
+
+No `npm ci` was run. No Supabase data was mutated. No remediation migrations were applied. Protected records `Q-00025` and `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` were not intentionally changed.
+
+## Required next proof
+
+1. Vercel or clean local build for the Pass 19 package.
+2. Live QA retest of vCard, quotes Continue/row/company click, orders Open, lead filters/top tabs, Quote Preview terms step, Products Pricing View, and absence of raw SQL/database errors.
+3. Separate authorized data/governance cleanup only after read-only verification.
+
+---
+
 # Release Readiness — Live QA Hardening Update (2026-05-01)
 
 **Baseline remains locked:** `SetuFlow-CRM-main(41)` / commit `89a825a` / Vercel production `READY`.

@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import type { WorkspaceMode } from '@/features/workspace/types';
 
-export type DashboardTimeRange = 'this-week' | 'this-month' | 'this-quarter' | 'custom';
+export type DashboardTimeRange = 'this-week' | 'this-month' | 'this-quarter';
 
 export type DashboardFilters = {
   mode: WorkspaceMode;
@@ -37,7 +37,6 @@ const TIME_RANGE_OPTIONS: Array<{ value: DashboardTimeRange; label: string }> = 
   { value: 'this-week', label: 'This week' },
   { value: 'this-month', label: 'This month' },
   { value: 'this-quarter', label: 'This quarter' },
-  { value: 'custom', label: 'Custom' },
 ];
 
 function FilterSelect({ icon, label, value, onChange, children, minWidthClassName = 'min-w-0 md:min-w-[188px]' }: FilterSelectProps) {

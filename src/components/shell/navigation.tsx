@@ -18,6 +18,7 @@ const PRIMARY_LABELS: Record<string, string> = {
   '/leads': 'Leads',
   '/quotes': 'Quotes',
   '/orders': 'Orders',
+  '/tasks': 'Tasks',
   '/pipeline': 'Pipeline',
   '/products': 'Catalog',
   '/trade-events': 'Events',

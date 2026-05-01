@@ -644,6 +644,8 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   const docsPendingCount = perspectiveAccepted.filter(o => o.operationalControls.documentRequirementSummary.blockerCount > 0).length;
   const inExecutionCount = perspectiveAccepted.filter(o => o.executionBlockers.length === 0 && !['completed'].includes(o.executionState)).length;
   const execValue = perspectiveAccepted.reduce((s, o) => s + (o.dealValue ?? 0), 0);
+  const executionValueLabel = execValue > 0 ? `$${Math.round(execValue / 1000)}K` : 'Value pending';
+  const activeOrdersLabel = `${perspectiveAccepted.length} active order${perspectiveAccepted.length === 1 ? '' : 's'}`;
   const avgCycle = null;
 
   const EXECUTION_STAGES_NS = [
@@ -692,7 +694,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
         <input type="hidden" name="mode" value={perspectiveMode} />
         <PremiumCommandBar
           label="Execution filters"
-          summary={<>{perspectiveAccepted.length} active orders · {execValue>0?`$${Math.round(execValue/1000)}K`:'—'} execution value</>}
+          summary={<>{activeOrdersLabel} · {executionValueLabel} execution value</>}
           activeChips={<>
             {perspectiveMode !== 'all' ? <PremiumActiveChip label={`Mode: ${perspectiveMode}`} href={PRODUCT_ROUTES.app.orders} tone="violet" /> : null}
             {blockedCount > 0 ? <PremiumActiveChip label={`Dispatch blocked: ${blockedCount}`} href={PRODUCT_ROUTES.app.orders} tone="rose" /> : null}
@@ -722,7 +724,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
           {label:'Docs pending',value:docsPendingCount,meta:'Upload required',accent:'#d97706'},
           {label:'In execution',value:inExecutionCount,meta:'Docs complete, dispatching',accent:'#0c7fff'},
           {label:'Delivered',value:dispatchedCount,meta:'Awaiting payment confirmation',accent:'#059669'},
-          {label:'Execution value',value:execValue>0?`$${Math.round(execValue/1000)}K`:'—',meta:'All active orders',accent:'#7c3aed'},
+          {label:'Execution value',value:executionValueLabel,meta:execValue>0?'All active orders':'Accepted quotes missing deal value',accent:'#7c3aed'},
           {label:'Avg cycle time',value:avgCycle ? `${avgCycle}d` : '—',meta:'Accepted to delivered',accent:'#cbd5e1'},
         ].map(sc=>(
           <div key={sc.label} style={{position:'relative',overflow:'hidden',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white',padding:'13px 15px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer'}}>
@@ -903,10 +905,10 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                   {order.executionBlockers.length>0&&<button style={{padding:'6px 14px',borderRadius:'6px',fontSize:'12px',fontWeight:700,border:'1px solid #fecaca',background:'#fff1f2',color:'#dc2626',cursor:'pointer'}}>Mark on hold</button>}
                   <button
                     disabled={isBlocked}
-                    title={isBlocked ? `${order.operationalControls.documentRequirementSummary.blockerCount} document(s) required before dispatch` : undefined}
+                    title={isBlocked ? 'Disabled until required documents/compliance evidence are resolved. Open order to review the exact blocker list.' : undefined}
                     style={{padding:'6px 14px',borderRadius:'6px',fontSize:'12px',fontWeight:700,background:isBlocked?'#e2e8f0':'#0b2e4a',color:isBlocked?'#94a3b8':'white',border:'none',cursor:isBlocked?'not-allowed':'pointer',opacity:isBlocked?0.7:1}}
                   >
-                    {order.executionBlockers.length>0?'Blocked — resolve docs':'Mark delivered'}
+                    {isBlocked ? 'Blocked — resolve docs' : 'Mark delivered'}
                   </button>
                 </div>
               </div>

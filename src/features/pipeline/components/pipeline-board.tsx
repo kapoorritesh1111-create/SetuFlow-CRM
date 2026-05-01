@@ -776,7 +776,11 @@ export function PipelineBoard({
           <div style={{display:'none'}} className="md:hidden">
             {filteredStageGroups.map(group=>renderLane(group,true))}
           </div>
-          <div style={{padding:'14px 24px 24px',overflowX:'auto',display:'flex',gap:'12px',minHeight:0,WebkitOverflowScrolling:'touch'} as React.CSSProperties}>
+          <div style={{margin:'12px 24px 0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',border:'1px solid #dbeafe',background:'linear-gradient(90deg,#eff6ff,#f8fafc)',borderRadius:'14px',padding:'10px 12px',fontSize:'11px',fontWeight:700,color:'#1e40af'}}>
+            <span>Pipeline lanes scroll horizontally on desktop. Drag, shift-scroll, or swipe to review every stage.</span>
+            <span aria-hidden="true" style={{letterSpacing:'.18em',whiteSpace:'nowrap'}}>SCROLL →</span>
+          </div>
+          <div style={{padding:'14px 24px 24px',overflowX:'auto',display:'flex',gap:'12px',minHeight:0,WebkitOverflowScrolling:'touch',scrollbarGutter:'stable'} as React.CSSProperties}>
             {visualStageGroups.map(group=>(
               <div
                 key={group.stage.id}

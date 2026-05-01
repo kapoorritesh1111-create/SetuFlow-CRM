@@ -20,7 +20,8 @@
     "catalog": "Catalog",
     "settings": "Admin & Settings",
     "admin": "Admin / Organization",
-    "myCard": "My Card"
+    "myCard": "My Card",
+    "tasks": "Tasks"
   },
   "routes": {
     "app": {
@@ -34,7 +35,8 @@
       "settings": "/admin/organization#settings-lists",
       "admin": "/admin/organization",
       "capture": "/contact-exchange/scan",
-      "myCard": "/contact-exchange/vcard"
+      "myCard": "/contact-exchange/vcard",
+      "tasks": "/tasks"
     },
     "internal": {
       "dcc": "/internal-dcc/"
@@ -86,20 +88,6 @@
       "navKey": "q"
     },
     {
-      "href": "/trade-events",
-      "label": "Trade events",
-      "exact": true,
-      "description": "Manage trade shows and events. Capture leads on the show floor and track conversion.",
-      "aliases": [
-        "events",
-        "trade show",
-        "trade events",
-        "show floor",
-        "primary trade events"
-      ],
-      "navKey": "t"
-    },
-    {
       "href": "/approval-send",
       "label": "Approvals & Sending",
       "exact": true,
@@ -138,6 +126,33 @@
         "kanban"
       ],
       "navKey": "x"
+    },
+    {
+      "href": "/trade-events",
+      "label": "Trade events",
+      "exact": true,
+      "description": "Manage trade shows and events. Capture leads on the show floor and track conversion.",
+      "aliases": [
+        "events",
+        "trade show",
+        "trade events",
+        "show floor",
+        "primary trade events"
+      ],
+      "navKey": "t"
+    },
+    {
+      "href": "/tasks",
+      "label": "Tasks",
+      "exact": true,
+      "description": "Track overdue follow-ups and supporting work without leaving the operating shell.",
+      "aliases": [
+        "tasks",
+        "to do",
+        "follow up tasks",
+        "overdue tasks"
+      ],
+      "navKey": "u"
     },
     {
       "href": "/products",
@@ -340,6 +355,19 @@
             "handoff"
           ],
           "navKey": "o"
+        },
+        {
+          "href": "/tasks",
+          "label": "Tasks",
+          "exact": true,
+          "description": "Track overdue follow-ups and supporting work without leaving the operating shell.",
+          "aliases": [
+            "tasks",
+            "to do",
+            "follow up tasks",
+            "overdue tasks"
+          ],
+          "navKey": "u"
         }
       ]
     },
@@ -385,16 +413,6 @@
       "tone": "utility",
       "items": [
         {
-          "href": "/tasks",
-          "label": "Tasks",
-          "exact": true,
-          "description": "Track supporting work that does not deserve a top-level lane yet.",
-          "aliases": [
-            "tasks",
-            "to do"
-          ]
-        },
-        {
           "href": "/ai-suggestions",
           "label": "AI assist",
           "exact": true,
@@ -423,7 +441,6 @@
     "Documents",
     "Compliance",
     "Contracts",
-    "Tasks",
     "AI assist",
     "My Card"
   ],

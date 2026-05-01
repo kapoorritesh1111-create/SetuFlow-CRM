@@ -256,9 +256,15 @@ export function AppShell({
                   >
                     📇
                   </button>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-xs font-bold text-white ring-1 ring-white/20">
+                  <button
+                    type="button"
+                    onClick={() => setVcardModalOpen(true)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-xs font-bold text-white ring-1 ring-white/20"
+                    aria-label="Open my vCard"
+                    title="Open my vCard"
+                  >
                     {getInitials(profile?.full_name ?? profile?.username)}
-                  </div>
+                  </button>
                 </div>
               </div>
 
@@ -325,9 +331,15 @@ export function AppShell({
                         <span>Trade Show</span>
                       </a>
 
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-sm font-semibold text-white shadow-soft ring-1 ring-white/20">
+                      <button
+                        type="button"
+                        onClick={() => setVcardModalOpen(true)}
+                        className="flex h-11 w-11 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-sm font-semibold text-white shadow-soft ring-1 ring-white/20 transition hover:scale-[1.02]"
+                        aria-label="Open my vCard"
+                        title="Open my vCard"
+                      >
                         {getInitials(profile?.full_name ?? profile?.username)}
-                      </div>
+                      </button>
                     </div>
                   </div>
                 </div>

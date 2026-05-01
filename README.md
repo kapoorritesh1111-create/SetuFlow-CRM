@@ -1,6 +1,47 @@
 # Setu Flow CRM
 
 > **Single source of truth:** `public/internal-dcc/index.html`  
+> **Current working baseline after this pass:** `SetuFlow-CRM-Pass20-ProofGated-PilotHardening` from `SetuFlow-CRM-Pass19-ActionHardening`  
+> **Verification boundary:** Build not claimed in GPT sandbox. Requires Vercel/live build proof and live QA retest proof.
+
+## Pass 20 proof-gated pilot hardening update — 2026-05-01
+
+Pass 20 began with the required verification review. This sandbox does not include `node_modules`, and `npm ci` was not authorized, so clean install/build/test proof is **not** claimed. Live QA proof is also **not** claimed from inside GPT. The package remains proof-gated until Vercel or a clean local environment builds it and the owner retests the live P0/P1 action checklist.
+
+| Area | Pass 20 status |
+|---|---|
+| Verification | No `npm ci`, `npm run build`, or `npm run test:all` was run. `node_modules` is absent. Build remains unclaimed for this ZIP. |
+| Navigation | Tasks was promoted into the primary operating shell / desktop navigation so operators can find supporting work from the main app shell. |
+| Pipeline | Added a visible horizontal-scroll cue above the Kanban lanes so desktop users know more stages may be off-screen. |
+| Dashboard | Hid the unsupported Custom time range option until a date picker exists, avoiding a misleading filter state. |
+| DCC/docs | Updated `public/internal-dcc/index.html`, `README.md`, `docs/RELEASE_READINESS.md`, `CHANGES.md`, and restored the minimal `docs/RELEASE_PROOF.md` evidence placeholder required by checked-in alignment tests. |
+
+No live Supabase data was mutated. No remediation migrations were applied. Frozen records remain protected: `Q-00025` and `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`.
+
+**Buyer confidence remains held around ~96–97/100** until Vercel/build proof and live QA retest prove there are no visible P0 dead actions and no raw SQL/database errors shown to users. Security/RPC trust remains capped at 90–94% unless separate authorized security remediation evidence exists.
+
+---
+
+## Pass 19 action hardening update — 2026-05-01
+
+Pass 19 focused on visible P0/P1 action reliability, not new feature expansion. The goal was to make primary buttons, tabs, rows, and CTAs either work, navigate to a meaningful place, or explain why they are unavailable.
+
+| Area | Pass 19 status |
+|---|---|
+| Global vCard | Header and avatar actions now share the same vCard modal path. |
+| Leads | Saved-view filters now apply real predicates; lead workspace receives a fallback selected lead; Quote Preview Continue now validates and advances with visible feedback; raw query issues are converted to customer-safe messages. |
+| Orders | Active-order grammar, execution-value wording, and blocked-doc explanation were hardened. |
+| Products | Pricing View now renders a distinct pricing-focused layout instead of only highlighting the tab. |
+| DCC/docs | `public/internal-dcc/index.html`, `README.md`, `docs/RELEASE_READINESS.md`, and `CHANGES.md` were updated with honest proof boundaries. |
+
+No live Supabase data was mutated. No remediation migrations were applied. Frozen records remain protected: `Q-00025` and `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`.
+
+**Buyer confidence remains held around ~96–97/100** until Vercel/build proof and live QA retest prove there are no visible P0 dead actions and no raw SQL/database errors shown to users.
+
+---
+
+
+> **Single source of truth:** `public/internal-dcc/index.html`  
 > **Current locked baseline:** `SetuFlow-CRM-main(41)` / commit `89a825a` / Vercel production `READY`  
 > **Current operating mode:** Live QA hardening plan active. Do not claim 100/100 until P0/P1 live action defects, build proof, security/ops proof, dispatch/completion proof, and pilot evidence are all closed.
 

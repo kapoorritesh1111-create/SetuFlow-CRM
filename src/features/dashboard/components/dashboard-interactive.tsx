@@ -29,7 +29,7 @@ type DashboardInteractiveProps = {
 };
 
 function resolveTimeRange(value: string | null): DashboardTimeRange {
-  return value === 'this-week' || value === 'this-month' || value === 'this-quarter' || value === 'custom' ? value : 'this-month';
+  return value === 'this-week' || value === 'this-month' || value === 'this-quarter' ? value : 'this-month';
 }
 
 
@@ -43,7 +43,7 @@ function formatCompactCurrency(value: number) {
 }
 
 function isWithinTimeRange(value: string | null | undefined, range: DashboardTimeRange, nowIso?: string) {
-  if (!value || range === 'custom') return true;
+  if (!value) return true;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return true;
 

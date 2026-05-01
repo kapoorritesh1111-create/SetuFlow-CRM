@@ -339,6 +339,13 @@ export function LeadsWorkspace({
   }, [initialTodayState]);
 
   useEffect(() => {
+    if (activeLeadId && workspaceLeads.some((lead) => lead.id === activeLeadId)) return;
+    const fallbackLead = workspaceLeads[0] ?? null;
+    setActiveLeadId(fallbackLead?.id ?? null);
+    setSpotlightLeadId(fallbackLead?.id ?? null);
+  }, [activeLeadId, workspaceLeads]);
+
+  useEffect(() => {
     setTradeEventFilter(initialEventId ?? '');
   }, [initialEventId]);
 
@@ -613,7 +620,17 @@ export function LeadsWorkspace({
 
     return workspaceLeads.filter((lead) => {
       const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso);
-      const matchesSavedView = true;
+      const savedViewMatches = () => {
+        if (savedView === 'all') return true;
+        if (savedView === 'mine') return lead.owner_user_id === currentUserId;
+        if (savedView === 'overdue') return followUpState === 'overdue';
+        if (savedView === 'today') return followUpState === 'today';
+        if (savedView === 'trade-event') return Boolean(lead.trade_event_id);
+        if (savedView === 'buyers') return lead.lead_type === 'buyer';
+        if (savedView === 'suppliers') return lead.lead_type === 'supplier';
+        return true;
+      };
+      const matchesSavedView = savedViewMatches();
 
       const matchesSearch =
         !needle ||
@@ -2356,6 +2373,7 @@ function InlineQuoteBuilder({
 
   const [editableLines, setEditableLines] = React.useState<DisplayLine[]>(baseDisplayLines);
   const [termsCurrency, setTermsCurrency] = React.useState(latestQuote?.currency ?? baseDisplayLines.find((item) => item.currency)?.currency ?? lead.deal_currency ?? 'USD');
+  const [stepValidationMessage, setStepValidationMessage] = React.useState<string | null>(null);
   const [termsIncoterm, setTermsIncoterm] = React.useState('FOB');
   const [paymentTerms, setPaymentTerms] = React.useState('30% advance, 70% on BL');
   const [quoteValidityDays, setQuoteValidityDays] = React.useState('30');
@@ -2406,6 +2424,34 @@ function InlineQuoteBuilder({
   const saveQuotePreview = React.useCallback(() => {
     onOpenOrCreateQuote(lead.id, buildQuotePreviewSavePayload());
   }, [buildQuotePreviewSavePayload, lead.id, onOpenOrCreateQuote]);
+
+  const validateStepAdvance = React.useCallback(() => {
+    if (builderStep === 0 && !selectedProductIds.length && !displayLines.length) return 'Select at least one product before pricing.';
+    if (builderStep === 1) {
+      if (!displayLines.length) return 'Add at least one priced line before continuing to terms.';
+      if (displayLines.some((line) => !line.productId)) return 'Every quote line needs a mapped product before continuing.';
+      if (displayLines.some((line) => !line.quantity || line.quantity <= 0)) return 'Every quote line needs a quantity above zero.';
+      if (displayLines.some((line) => line.unitPrice == null || line.unitPrice <= 0)) return 'Every quote line needs a unit price above zero.';
+    }
+    if (builderStep === 2) {
+      if (!termsCurrency.trim()) return 'Select a quote currency before review.';
+      if (!termsIncoterm.trim()) return 'Select an incoterm before review.';
+      if (!paymentTerms.trim()) return 'Add payment terms before review.';
+      if (!quoteValidityDays.trim()) return 'Add quote validity before review.';
+    }
+    return null;
+  }, [builderStep, displayLines, paymentTerms, quoteValidityDays, selectedProductIds.length, termsCurrency, termsIncoterm]);
+
+  const continueQuotePreviewStep = React.useCallback(() => {
+    const validationIssue = validateStepAdvance();
+    if (validationIssue) {
+      setStepValidationMessage(validationIssue);
+      return;
+    }
+    setStepValidationMessage(null);
+    saveQuotePreview();
+    setBuilderStep((current) => Math.min(current + 1, steps.length - 1));
+  }, [saveQuotePreview, steps.length, validateStepAdvance]);
 
   return (
     <div className="flex flex-col gap-3 px-6 py-4 pb-20" style={{ background: '#f0f4f8' }}>
@@ -2680,10 +2726,16 @@ function InlineQuoteBuilder({
         </aside>
       </div>
 
+      {stepValidationMessage ? (
+        <div role="alert" className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] font-semibold text-amber-800">
+          {stepValidationMessage}
+        </div>
+      ) : null}
+
       {/* Sticky bottom bar */}
       <div className="sticky bottom-3 z-10 rounded-[24px] border border-[#e2e8f0] bg-white/95 p-3 shadow-xl backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => { saveQuotePreview(); setBuilderStep((s) => Math.min(s + 1, steps.length - 1)); }} disabled={builderStep >= steps.length - 1}
+          <button type="button" onClick={continueQuotePreviewStep} disabled={builderStep >= steps.length - 1}
             className="rounded-[22px] bg-[#0b2e4a] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" title={builderStep >= steps.length - 1 ? 'Send is disabled in the inline builder until the governed quote send workflow is connected.' : undefined}>
             {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : canSendQuote ? 'Send ready in quote workflow' : 'Review blockers'}
           </button>

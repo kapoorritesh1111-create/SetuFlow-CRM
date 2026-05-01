@@ -131,6 +131,14 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
   const pricingCoverage = formatPercent(summary?.priced_variants ?? 0, summary?.visible_variants ?? 0);
   const quoteReadyCoverage = formatPercent(summary?.quote_ready_variants ?? 0, summary?.visible_variants ?? 0);
   const viewMode = catalogMode === 'spreadsheet' ? 'case' : 'unit';
+  const pricingViewRows = useMemo(
+    () => [...filteredRows].sort((left, right) => {
+      const leftGap = getProductGapState(left) === 'complete' ? 1 : 0;
+      const rightGap = getProductGapState(right) === 'complete' ? 1 : 0;
+      return leftGap - rightGap || String(left.product_name ?? '').localeCompare(String(right.product_name ?? ''));
+    }),
+    [filteredRows],
+  );
   const filtersApplied = Boolean(search || category || pricingMode || gapFilter !== 'all' || activeFilter !== 'all' || quoteableFilter !== 'all');
   const isEmptyWorkspace = !loading && rows.length === 0 && !filtersApplied;
   const isFilteredEmpty = !loading && !isEmptyWorkspace && filteredRows.length === 0;
@@ -261,7 +269,56 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         </div>
       ) : null}
 
-      {!isEmptyWorkspace && !isFilteredEmpty ? (
+      {!isEmptyWorkspace && !isFilteredEmpty && catalogMode === 'pricing' ? (
+        <section className={cn('overflow-hidden', workspacePanelClass)}>
+          <div className="flex flex-col gap-2 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-800">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600 dark:text-sky-300">Pricing view</div>
+              <h2 className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">Market pricing coverage and quote readiness</h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Distinct from the product grid: this view prioritizes missing prices, active rule-set coverage, MOQ, and quick quote readiness.</p>
+            </div>
+            <button type="button" onClick={() => setGapFilter('has_gap')} className={workspaceSecondaryButtonClass + ' rounded-2xl px-4 py-2 text-sm font-semibold'}>Show gaps first</button>
+          </div>
+          <div className="overflow-auto">
+            <table className="w-full min-w-[920px] text-left text-sm">
+              <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:bg-slate-900/70">
+                <tr>
+                  <th className="px-4 py-3">Product / variant</th>
+                  <th className="px-4 py-3">Rule set</th>
+                  <th className="px-4 py-3 text-right">Ex-factory</th>
+                  <th className="px-4 py-3 text-right">FOB</th>
+                  <th className="px-4 py-3 text-right">Bulk/CIF</th>
+                  <th className="px-4 py-3">MOQ</th>
+                  <th className="px-4 py-3">Coverage</th>
+                  <th className="px-4 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {pricingViewRows.map((row) => {
+                  const gapState = getProductGapState(row);
+                  return (
+                    <tr key={row.product_variant_id} className={gapState === 'complete' ? 'bg-white dark:bg-slate-950/20' : 'bg-amber-50/45 dark:bg-amber-950/20'}>
+                      <td className="px-4 py-3">
+                        <div className="font-black text-slate-950 dark:text-slate-50">{row.product_name ?? 'Untitled product'}</div>
+                        <div className="font-mono text-[11px] text-slate-400">{row.sku_code ?? 'No SKU'} · {row.pack_label ?? 'Pack not set'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{row.pricing_rule_set_name ?? 'No rule set'}</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-800 dark:text-slate-100">{row.ex_factory_display ?? row.ex_factory_per_unit_display ?? <span className="text-slate-300">Missing</span>}</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-800 dark:text-slate-100">{row.fob_display ?? row.fob_per_unit_display ?? <span className="text-slate-300">Missing</span>}</td>
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">{row.bulk_display ?? row.cif_display ?? '—'}</td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{row.moq_display ?? 'Not set'}</td>
+                      <td className="px-4 py-3"><span className={gapState === 'complete' ? 'rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700' : 'rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700'}>{gapState === 'complete' ? 'Quote-ready' : 'Pricing gap'}</span></td>
+                      <td className="px-4 py-3 text-right"><button type="button" onClick={() => openProduct(row.product_id)} className={workspaceSecondaryButtonClass + ' rounded-xl px-3 py-2 text-xs font-semibold'}>Open pricing</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {!isEmptyWorkspace && !isFilteredEmpty && catalogMode !== 'pricing' ? (
         <ProductsTable
           rows={filteredRows}
           loading={loading}

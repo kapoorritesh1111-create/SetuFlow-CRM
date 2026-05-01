@@ -1,3 +1,74 @@
+# 2026-05-01 — Pass 20 Proof-Gated Pilot Hardening
+
+## Summary
+
+Implemented the Pass 20 proof-gated pilot-hardening follow-up against the Pass 19 Action Hardening ZIP. This pass does not claim clean sandbox build, `npm run test:all`, deployment, or live QA closure. The required Vercel/live QA proof remains open.
+
+## Files changed
+
+- `src/lib/routes/manifest.json` — promoted Tasks into the primary operating flow and desktop shell route manifest without breaking the canonical first-six operator path, removed Tasks from hidden primary-nav labeling, and added `/tasks` to app routes.
+- `src/components/shell/navigation.tsx` — added the Tasks compact desktop-nav label.
+- `src/features/pipeline/components/pipeline-board.tsx` — added a visible horizontal-scroll cue above desktop Kanban lanes.
+- `src/features/dashboard/components/dashboard-control-bar.tsx` — removed the unsupported Custom time range option until date picker support exists.
+- `src/features/dashboard/components/dashboard-interactive.tsx` — treats unsupported `range=custom` as the default month view instead of a misleading all-time pass-through.
+- `public/internal-dcc/index.html` — added the Pass 20 verification/pilot-hardening card and updated readiness, modules, next-pass, schema, and build rules.
+- `README.md` — added Pass 20 summary and verification boundary.
+- `docs/RELEASE_READINESS.md` — added Pass 20 release-readiness update.
+- `docs/RELEASE_PROOF.md` — restored the minimal release-proof evidence placeholder required by checked-in repo-alignment tests; it does not claim Pass 20 build proof.
+- `CHANGES.md` — this entry.
+
+## Verification
+
+Build not claimed in GPT sandbox. Requires Vercel/live build proof.
+
+No `npm ci` was run. `node_modules` was absent. No Supabase data was mutated. No Supabase remediation migrations were applied. Frozen records remain protected: `Q-00025` and `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`.
+
+## Remaining blockers
+
+- Fresh Vercel or clean local build proof for this Pass 20 package.
+- Live QA retest proving all Pass 19 P0/P1 action fixes still work after deployment.
+- Live QA retest proving Tasks navigation, Pipeline scroll cue, and Dashboard time-range behavior are not misleading.
+- Live QA retest proving no raw SQL/database errors are visible to users.
+- Security/RPC advisor closure, WAF/monitoring/backup evidence, dispatch/completion proof, and first-pilot evidence.
+- Authorized read-only verification and separate approval before any data cleanup.
+
+---
+
+# 2026-05-01 — Pass 19 Action Hardening Code + DCC Update
+
+## Summary
+
+Implemented the Pass 19 action-hardening patch set against `SetuFlow-CRM-main(41)` / commit `89a825a` baseline. This pass focused on P0/P1 visible action reliability and documentation honesty. It does not claim a clean sandbox build, live QA closure, or 100/100 buyer readiness.
+
+## Files changed
+
+- `src/components/layout/app-shell.tsx` — aligned the header/avatar vCard action path with the working vCard modal behavior.
+- `src/features/leads/components/leads-workspace.tsx` — fixed saved-view filter predicates, fallback lead selection, and Quote Preview Continue validation/advance feedback.
+- `src/lib/queries/data.ts` — converted backend query issue details into customer-safe user-facing messages instead of surfacing raw database text.
+- `src/app/(app)/orders/page.tsx` — fixed active-order grammar, execution-value wording, and disabled blocked-doc explanation.
+- `src/features/products/components/products-spreadsheet-page.tsx` — added a distinct pricing-focused table layout for Pricing View.
+- `public/internal-dcc/index.html` — updated Pass 19 completion status, readiness posture, module map, demo guidance, next-pass plan, schema rules, and build rules.
+- `README.md` — added Pass 19 summary and verification boundary.
+- `docs/RELEASE_READINESS.md` — added Pass 19 release-readiness update.
+- `CHANGES.md` — this entry.
+
+## Verification
+
+Build not claimed in GPT sandbox. Requires Vercel/live build proof.
+
+No `npm ci` was run. No Supabase data was mutated. No Supabase remediation migrations were applied. Frozen records remain protected: `Q-00025` and `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`.
+
+## Remaining blockers
+
+- Fresh Vercel/user build proof for this Pass 19 package.
+- Live QA retest proving no visible P0 dead actions remain.
+- Live QA retest proving no raw SQL/database errors are visible to users.
+- Quote/order detail/workspace runtime proof after deployment.
+- Security/RPC advisor closure, WAF/monitoring/backup evidence, dispatch/completion proof, and first-pilot evidence.
+- Authorized read-only verification and separate approval before any data cleanup.
+
+---
+
 # 2026-05-01 — Live QA Hardening Plan DCC Update
 
 - Updated `public/internal-dcc/index.html` as the active operating board for the merged live UX/CTO review findings.
