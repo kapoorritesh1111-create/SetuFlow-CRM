@@ -231,6 +231,7 @@
   <div class="tab" data-tab="repo">Repo Status</div>
   <div class="tab" data-tab="prbuilder">&#128736; PR Builder</div>
   <div class="tab" data-tab="chromeguide">&#127758; Chrome Guide</div>
+  <div class="tab" data-tab="import" style="background:#fef3c7;color:#92400e;border-bottom:2.5px solid #f59e0b;font-weight:800;">&#8659; Import Results</div>
 </div>
 
 <!-- ==================== OVERVIEW ==================== -->
@@ -1195,13 +1196,52 @@ Report each as PASS, FAIL, or BLOCKED.</div>
   </div>
 </div><!-- end chromeguide panel -->
 
+<!-- ==================== IMPORT RESULTS ==================== -->
+<div id="tab-import" class="panel">
+  <div class="section-title">Import Test Results <span>Paste Claude's test report — DCC auto-fills statuses, notes, issues &amp; PRs</span></div>
+
+  <div class="alert alert-warn" style="margin-bottom:16px;">
+    <span>&#9889;</span>
+    <div><strong>Paste any Claude test report below.</strong> The parser reads PASS / FAIL / PARTIAL PASS / BLOCKED and maps them to the correct test rows automatically. Issues are auto-created for every FAIL/BLOCKED. PRs are queued in PR Builder.</div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+    <div class="form-field" style="margin-bottom:14px;">
+      <label>Paste Claude's Full Test Report Here</label>
+      <textarea id="import-textarea" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;min-height:280px;font-family:inherit;line-height:1.6;" placeholder="Paste the full test output from Claude in Chrome here...
+
+Example format Claude uses:
+TEST DB-1: PASS — Page loads correctly...
+TEST DB-3: FAIL — Map click does not open drawer...
+TEST LCC-4: BLOCKED — Page did not load..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button onclick="runImport()" style="padding:10px 24px;background:var(--brand);color:white;border:none;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer;">&#9889; Auto-Fill DCC + Create Issues</button>
+      <button onclick="document.getElementById('import-textarea').value=''" style="padding:10px 16px;background:white;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Clear</button>
+    </div>
+  </div>
+
+  <div id="import-log" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px;">Import Results</div>
+    <div id="import-log-body" style="font-size:13px;line-height:2;"></div>
+    <div style="margin-top:14px;display:flex;gap:10px;">
+      <button onclick="switchTab('prbuilder');generatePRs();" style="padding:9px 20px;background:var(--brand);color:white;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">&#128736; View &amp; Copy PRs</button>
+      <button onclick="switchTab('issues')" style="padding:9px 20px;background:#16a34a;color:white;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">&#128202; View Issues</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- end main -->
 
 <script>
 const STORE_KEY = 'setuflow_dcc_v1';
 
 function getStore() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch { return {}; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    if (!Array.isArray(raw.issues)) raw.issues = [];
+    return raw;
+  } catch { return { issues: [] }; }
 }
 function saveStore(data) {
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
@@ -1296,47 +1336,48 @@ function addIssue() {
   const fix = document.getElementById('iss-fix').value.trim();
   if (!title) { alert('Please enter an issue title.'); return; }
   const store = getStore();
-  if (!store.issues) store.issues = [];
-  issueCounter = Math.max(issueCounter, ...store.issues.map(i => parseInt(i.id.replace('ISS-','')) || 0));
-  issueCounter++;
-  const issue = { id: 'ISS-' + String(issueCounter).padStart(3,'0'), page, title, sev, status, desc, fix, createdAt: new Date().toISOString() };
+  if (!Array.isArray(store.issues)) store.issues = [];
+  const maxId = store.issues.reduce((m,i) => Math.max(m, parseInt((i.id||'').replace('ISS-',''))||0), 0);
+  issueCounter = Math.max(issueCounter, maxId) + 1;
+  const issue = { id:'ISS-'+String(issueCounter).padStart(3,'0'), page, title, sev, status, desc, fix, createdAt:new Date().toISOString() };
   store.issues.unshift(issue);
   saveStore(store);
   renderIssues();
   updateSummary();
-  ['iss-page','iss-title','iss-desc','iss-fix'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('iss-severity').value = 'high';
-  document.getElementById('iss-status').value = 'open';
+  ['iss-page','iss-title','iss-desc','iss-fix'].forEach(id => { document.getElementById(id).value=''; });
+  document.getElementById('iss-severity').value='high';
+  document.getElementById('iss-status').value='open';
 }
 
 function renderIssues() {
   const store = getStore();
-  const issues = store.issues || [];
+  const issues = Array.isArray(store.issues) ? store.issues : [];
+  // Sync counter
+  issueCounter = issues.reduce((m,i) => Math.max(m, parseInt((i.id||'').replace('ISS-',''))||0), issueCounter);
   const list = document.getElementById('issue-list');
   const countLabel = document.getElementById('issue-count-label');
-  const noMsg = document.getElementById('no-issues-msg');
-  countLabel.textContent = issues.length + ' issue' + (issues.length !== 1 ? 's' : '');
-  if (!issues.length) { list.innerHTML = '<div class="empty-state" id="no-issues-msg"><div class="icon">&#128077;</div>No issues logged yet. Great start — or start testing!</div>'; return; }
-  const sevMap = { critical: 'badge-crit', high: 'badge-high', medium: 'badge-med', low: 'badge-low' };
-  const sevLabel = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
-  const stMap = { open: 'badge-fail', 'in-progress': 'badge-pending', resolved: 'badge-pass' };
+  if (countLabel) countLabel.textContent = issues.length + ' issue' + (issues.length !== 1 ? 's' : '');
+  if (!issues.length) { list.innerHTML = '<div class="empty-state" id="no-issues-msg"><div class="icon">&#128077;</div>No issues logged yet.</div>'; return; }
+  const sevMap = { critical:'badge-crit', high:'badge-high', medium:'badge-med', low:'badge-low' };
+  const sevLabel = { critical:'Critical', high:'High', medium:'Medium', low:'Low' };
+  const stMap = { open:'badge-fail', 'in-progress':'badge-pending', resolved:'badge-pass' };
   list.innerHTML = issues.map(iss => `
-    <div class="issue-card ${iss.status === 'resolved' ? 'resolved' : ''}">
+    <div class="issue-card ${iss.status==='resolved'?'resolved':''}">
       <div class="issue-card-header">
         <div class="issue-id">${iss.id}</div>
         <div class="issue-title-row">
           <div class="issue-name">${iss.title}</div>
-          <div class="issue-page">${iss.page || 'Page not specified'} · ${new Date(iss.createdAt).toLocaleDateString()}</div>
+          <div class="issue-page">${iss.page||'—'} · ${new Date(iss.createdAt).toLocaleDateString()}</div>
         </div>
         <div class="issue-badges">
-          <span class="badge ${sevMap[iss.sev] || 'badge-med'}">${sevLabel[iss.sev] || iss.sev}</span>
-          <span class="badge ${stMap[iss.status] || 'badge-pending'}">${iss.status}</span>
+          <span class="badge ${sevMap[iss.sev]||'badge-med'}">${sevLabel[iss.sev]||iss.sev}</span>
+          <span class="badge ${stMap[iss.status]||'badge-pending'}">${iss.status}</span>
         </div>
       </div>
-      ${iss.desc ? `<div class="issue-body">${iss.desc.replace(/\n/g,'<br>')}</div>` : ''}
-      ${iss.fix ? `<div class="issue-resolution"><strong>Dev Resolution Guide</strong>${iss.fix.replace(/\n/g,'<br>')}</div>` : ''}
+      ${iss.desc?`<div class="issue-body">${iss.desc.replace(/\n/g,'<br>')}</div>`:''}
+      ${iss.fix?`<div class="issue-resolution"><strong>Dev Resolution Guide</strong>${iss.fix.replace(/\n/g,'<br>')}</div>`:''}
       <div class="issue-actions">
-        ${iss.status !== 'resolved' ? `<button class="resolve-btn" onclick="resolveIssue('${iss.id}')">&#10003; Mark Resolved</button>` : '<span style="font-size:11px;color:var(--pass);font-weight:700;">&#10003; Resolved</span>'}
+        ${iss.status!=='resolved'?`<button class="resolve-btn" onclick="resolveIssue('${iss.id}')">&#10003; Mark Resolved</button>`:'<span style="font-size:11px;color:var(--pass);font-weight:700;">&#10003; Resolved</span>'}
         <button class="delete-btn" onclick="deleteIssue('${iss.id}')">&#10005; Delete</button>
       </div>
     </div>`).join('');
@@ -1425,6 +1466,7 @@ function exportReport() {
 }
 
 function loadStoredData() {
+  preloadDashboardResults();
   const store = getStore();
   const statuses = store.statuses || {};
   const notes = store.notes || {};
@@ -1656,6 +1698,323 @@ function copyPrompt(id) {
   const el = document.getElementById(id);
   if (!el) return;
   navigator.clipboard.writeText(el.textContent || el.innerText).then(() => { showCopied('Prompt copied! Paste into Claude in Chrome.'); });
+}
+
+// ========== TEST ID MAPPING ==========
+const TEST_ID_MAP = {
+  // Dashboard Buyers
+  'DB-1':'db1-1','DB-2':'db1-2','DB-3':'db1-3','DB-4':'db1-4',
+  'DB-5':'db1-5','DB-6':'db1-6','DB-7':'db1-7',
+  // Buyer Leads
+  'BL-1':'bl1-1','BL-2':'bl1-2','BL-3':'bl1-3','BL-4':'bl1-4',
+  'BL-5':'bl1-5','BL-6':'bl1-6','BL-7':'bl1-7','BL-8':'bl1-8',
+  // Lead Command Center
+  'LCC-1':'lcc-1','LCC-2':'lcc-2','LCC-3':'lcc-3','LCC-4':'lcc-4',
+  'LCC-5':'lcc-5','LCC-6':'lcc-6','LCC-7':'lcc-7','LCC-8':'lcc-8',
+  'LCC-9':'lcc-9','LCC-10':'lcc-10','LCC-11':'lcc-11','LCC-12':'lcc-12',
+  'LCC-13':'lcc-13','LCC-14':'lcc-14',
+  // Quote Builder
+  'QB-1':'qb-1','QB-2':'qb-2','QB-3':'qb-3','QB-4':'qb-4',
+  'QB-5':'qb-5','QB-6':'qb-6','QB-7':'qb-7',
+  // Buyer Pipeline
+  'BP-1':'bp-1','BP-2':'bp-2','BP-3':'bp-3','BP-4':'bp-4','BP-5':'bp-5',
+  // Supplier Dashboard
+  'SD-1':'sd-1','SD-2':'sd-2','SD-3':'sd-3','SD-4':'sd-4',
+  // Supplier Dashboard aliases used in reports
+  'SUPPLIERS DB-1':'sd-1','SUPPLIERS DB-2':'sd-2','SUPPLIERS DB-3':'sd-3',
+  'SUPPLIER DB-1':'sd-1','SUPPLIER DB-2':'sd-2','SUPPLIER DB-3':'sd-3',
+  // Supplier Leads / RFQ
+  'SL-1':'sl-1','SL-2':'sl-2','SL-3':'sl-3','SL-4':'sl-4',
+  'SL-5':'sl-5','SL-6':'sl-6','SL-7':'sl-7',
+  // Admin Org
+  'AO-1':'ao-1','AO-2':'ao-2','AO-3':'ao-3',
+  // Admin Users
+  'AU-1':'au-1','AU-2':'au-2','AU-3':'au-3',
+  'AU-4':'au-4','AU-5':'au-5','AU-6':'au-6',
+  // Admin Reference
+  'AR-1':'ar-1','AR-2':'ar-2','AR-3':'ar-3','AR-4':'ar-4',
+  'AR-5':'ar-5','AR-6':'ar-6','AR-7':'ar-7','AR-8':'ar-8',
+  // Admin Governance
+  'AG-1':'ag-1','AG-2':'ag-2','AG-3':'ag-3','AG-4':'ag-4','AG-5':'ag-5',
+  // Orders/Shared
+  'OR-1':'or-1','OR-2':'or-2','OR-3':'or-3','OR-4':'or-4',
+  'OR-5':'or-5','OR-6':'or-6',
+  // AI/Integrations
+  'AI-1':'ai-1','AI-2':'ai-2','AI-3':'ai-3','AI-4':'ai-4','AI-5':'ai-5',
+};
+
+const MODULE_NAMES = {
+  'db1-1':'Dashboard / Buyers View','db1-2':'Dashboard / Buyers View',
+  'db1-3':'Dashboard / Map — Country Click Drawer','db1-4':'Dashboard / Pipeline Stage Chart',
+  'db1-5':'Dashboard / Needs Attention Card','db1-6':'Dashboard / Customize Panel',
+  'db1-7':'Dashboard / Recent Activity Feed',
+  'sd-1':'Dashboard / Suppliers View','sd-2':'Dashboard / Suppliers KPI Cards',
+  'sd-3':'Dashboard / Suppliers Map Click','sd-4':'Dashboard / Action Priority Panel',
+  'bl1-1':'Buyer Leads List','bl1-2':'Buyer Leads / Search Filter',
+  'bl1-3':'Buyer Leads / Stage Filter','bl1-4':'Buyer Leads / Owner Filter',
+  'bl1-5':'Buyer Leads / Add New Lead CTA','bl1-6':'Buyer Leads / Row Click Nav',
+  'bl1-7':'Buyer Leads / Quick Action Menu','bl1-8':'Buyer Leads / Health Badges',
+  'lcc-1':'Lead Command Center / Page Load','lcc-2':'Lead Command Center / Stage Strip',
+  'lcc-3':'Lead Command Center / Quick Edit Drawer','lcc-4':'Lead Command Center / Workflow Tab',
+  'lcc-5':'Lead Command Center / Follow-up Pillar','lcc-6':'Lead Command Center / Qualification Pillar',
+  'lcc-7':'Lead Command Center / Coverage Pillar','lcc-8':'Lead Command Center / Commercial Pillar',
+  'lcc-9':'Lead Command Center / Activity Tab','lcc-10':'Lead Command Center / Activity Composer',
+  'lcc-11':'Lead Command Center / Quotes Tab','lcc-12':'Lead Command Center / Sticky Action Bar',
+  'lcc-13':'Lead Command Center / AI Assist','lcc-14':'Lead Command Center / Lead Queue Nav',
+  'qb-1':'Quote Builder / Step 1 Product','qb-2':'Quote Builder / Step 2 Pricing',
+  'qb-3':'Quote Builder / Step 3 Terms','qb-4':'Quote Builder / Step 4 Review',
+  'qb-5':'Quote Builder / Step 5 Send Gate','qb-6':'Quote Builder / Back Navigation',
+  'qb-7':'Quote Builder / Draft Persistence',
+};
+
+// ========== ISSUE AUTO-CREATOR ==========
+function autoCreateIssue(testId, rowId, status, detail, note) {
+  const store = getStore();
+  if (!Array.isArray(store.issues)) store.issues = [];
+  const existing = store.issues.find(i => i.autoTestId === rowId);
+  if (existing) return null;
+  const sev = status === 'fail' ? 'high' : 'medium';
+  const page = MODULE_NAMES[rowId] || rowId;
+  const maxId = store.issues.reduce((m, i) => Math.max(m, parseInt((i.id||'').replace('ISS-',''))||0), 0);
+  issueCounter = Math.max(issueCounter, maxId) + 1;
+  const id = 'ISS-' + String(issueCounter).padStart(3,'0');
+  let fix = '';
+  if (rowId==='db1-3'||rowId==='sd-3') fix='Wire onClick to SVG country paths in world-coverage-map.tsx → call CountryInsightDrawer open handler. Component exists at src/features/dashboard/components/country-insight-drawer.tsx.';
+  if (rowId==='db1-4') fix='Add onClick to stage bars in pipeline-stage-chart-card.tsx → navigate to /pipeline?stage=[stageId] or open stage detail drawer.';
+  if (rowId==='db1-6') fix='Import DashboardCustomizePanel in dashboard-header-controls.tsx and add a visible Customize trigger button.';
+  if (rowId==='db1-7') fix='Add RecentActivityCard to buyers widget grid in dashboard-interactive.tsx. Fetch lead_activities in render-dashboard-page.tsx.';
+  store.issues.unshift({ id, autoTestId:rowId, page, title:detail.slice(0,80), sev, status:'open', desc:note||detail, fix, createdAt:new Date().toISOString() });
+  saveStore(store);
+  return id;
+}
+
+// ========== RESULT PARSER ==========
+function parseTestReport(text) {
+  const results = [];
+  const lines = text.split('\n');
+  let currentId = null, currentStatus = null, currentLines = [];
+
+  function flush() {
+    if (!currentId || !currentStatus) return;
+    const rawId = currentId.trim().toUpperCase();
+    const rowId = TEST_ID_MAP[rawId];
+    if (rowId) {
+      results.push({ rawId, rowId, status: currentStatus, note: currentLines.join(' ').replace(/\s+/g,' ').trim() });
+    }
+    currentId = null; currentStatus = null; currentLines = [];
+  }
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    // Match: "TEST DB-3:", "DB-3:", "**DB-3", "DB-3 —", "TEST LCC-4:"
+    const idMatch = trimmed.match(/(?:test\s+)?([A-Z\s]*?(?:DB|BL|LCC|QB|BP|SD|SL|AO|AU|AR|AG|OR|AI|SUPPLIERS?\s+DB)-\d+)[\s:—*|]+(.+)?/i);
+    if (idMatch) {
+      flush();
+      currentId = idMatch[1].trim().toUpperCase();
+      const rest = (idMatch[2] || '').trim();
+      // Determine status from rest of line or the line itself
+      currentStatus = extractStatus(trimmed + ' ' + rest);
+      currentLines = rest ? [rest] : [];
+    } else if (currentId) {
+      currentLines.push(trimmed);
+      // If status not yet found, try to find it in continuation
+      if (!currentStatus || currentStatus === 'pending') {
+        const s = extractStatus(trimmed);
+        if (s !== 'pending') currentStatus = s;
+      }
+    }
+  }
+  flush();
+
+  // Also try simple table pattern: | DB-3 | FAIL | ...
+  const tablePattern = /\|\s*([A-Z\s]+(?:DB|BL|LCC|QB)-\d+)\s*\|\s*(PASS|FAIL|PARTIAL|BLOCKED)/gi;
+  let m;
+  while ((m = tablePattern.exec(text)) !== null) {
+    const rawId = m[1].trim().toUpperCase();
+    const rowId = TEST_ID_MAP[rawId];
+    const status = m[2].toUpperCase() === 'PASS' ? 'pass' : m[2].toUpperCase() === 'BLOCKED' ? 'blocked' : 'fail';
+    if (rowId && !results.find(r => r.rowId === rowId)) {
+      results.push({ rawId, rowId, status, note: '' });
+    }
+  }
+
+  return results;
+}
+
+function extractStatus(text) {
+  const up = text.toUpperCase();
+  if (up.includes('PARTIAL PASS')) return 'pass';
+  if (up.includes('PASS')) return 'pass';
+  if (up.includes('BLOCKED')) return 'blocked';
+  if (up.includes('FAIL')) return 'fail';
+  if (up.includes('NON-FUNCTIONAL') || up.includes('NOT FOUND') || up.includes('NO RESPONSE')) return 'fail';
+  return 'pending';
+}
+
+function runImport() {
+  const text = document.getElementById('import-textarea').value.trim();
+  if (!text) { alert('Paste a test report first.'); return; }
+
+  const results = parseTestReport(text);
+  if (!results.length) { alert('No test IDs recognized. Make sure the report uses formats like: TEST DB-3: FAIL or DB-3 — FAIL'); return; }
+
+  const store = getStore();
+  if (!store.statuses) store.statuses = {};
+  if (!store.notes) store.notes = {};
+  if (!store.audit) store.audit = [];
+
+  let passCount = 0, failCount = 0, blockedCount = 0, skippedCount = 0;
+  const logLines = [];
+  const issuesCreated = [];
+
+  results.forEach(r => {
+    const prev = store.statuses[r.rowId];
+    store.statuses[r.rowId] = r.status;
+    if (r.note) store.notes[r.rowId] = r.note;
+    store.audit.unshift({ time: new Date().toISOString(), action: `Auto-imported: ${r.status.toUpperCase()}`, test: r.rawId });
+    if (r.status === 'pass') { passCount++; logLines.push(`<span style="color:var(--pass)">&#10003; PASS</span> — ${r.rawId} → row ${r.rowId}`); }
+    else if (r.status === 'fail') {
+      failCount++;
+      logLines.push(`<span style="color:var(--fail)">&#10005; FAIL</span> — ${r.rawId} → row ${r.rowId}`);
+      const issId = autoCreateIssue(r.rawId, r.rowId, 'fail', `${r.rawId}: ${MODULE_NAMES[r.rowId]||r.rowId} — failed during live test`, r.note);
+      if (issId) issuesCreated.push(issId);
+    } else if (r.status === 'blocked') {
+      blockedCount++;
+      logLines.push(`<span style="color:var(--blocked)">&#9632; BLOCKED</span> — ${r.rawId} → row ${r.rowId}`);
+      const issId = autoCreateIssue(r.rawId, r.rowId, 'blocked', `${r.rawId}: ${MODULE_NAMES[r.rowId]||r.rowId} — blocked during live test`, r.note);
+      if (issId) issuesCreated.push(issId);
+    } else {
+      skippedCount++;
+      logLines.push(`<span style="color:var(--muted)">&#8213; PENDING</span> — ${r.rawId} (no clear status found)`);
+    }
+  });
+
+  saveStore(store);
+  loadStoredData();
+  updateSummary();
+  updateModuleProgress();
+  renderIssues();
+  renderAudit();
+
+  const log = document.getElementById('import-log');
+  const logBody = document.getElementById('import-log-body');
+  log.style.display = 'block';
+  logBody.innerHTML = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+      <span class="badge badge-pass">&#10003; ${passCount} Passed</span>
+      <span class="badge badge-fail">&#10005; ${failCount} Failed</span>
+      <span class="badge badge-blocked">&#9632; ${blockedCount} Blocked</span>
+      <span style="font-size:12px;color:var(--muted);">${issuesCreated.length} issues auto-created: ${issuesCreated.join(', ')||'none'}</span>
+    </div>
+    <div style="font-family:monospace;font-size:12px;line-height:2.2;border:1px solid var(--border);border-radius:6px;padding:12px;background:var(--surface);">
+      ${logLines.join('<br>')}
+    </div>`;
+
+  if (failCount + blockedCount > 0) {
+    setTimeout(() => { generatePRs(); }, 300);
+  }
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const tab = document.querySelector(`.tab[data-tab="${tabId}"]`);
+  const panel = document.getElementById('tab-' + tabId);
+  if (tab) tab.classList.add('active');
+  if (panel) panel.classList.add('active');
+}
+
+// ========== DASHBOARD PRE-LOAD — Pass 21 May 2026 ==========
+const DASHBOARD_RESULTS = [
+  { id:'db1-1', status:'pass',    note:'Redirects to /dashboard?mode=buyers. Loads in ~3s. No JS errors. KPI cards, map, Needs Attention all render.' },
+  { id:'db1-2', status:'pass',    note:'PARTIAL PASS: Open Opportunities=36, Follow-ups Due Now=0 (genuine "Queue clear"), Quotes in Market=21, Pipeline Value=$884K. No null/undefined values.' },
+  { id:'db1-3', status:'fail',    note:'Map renders with 16 active markets (US, UAE, Germany, Netherlands in teal/orange). Tooltip says "Click any market to open its command lane" but clicking active country paths — mouse and programmatic dispatch — produces NO response. Country insight drawer never opens.' },
+  { id:'db1-4', status:'fail',    note:'PARTIAL PASS: Pipeline Stage Distribution renders correctly (6 stages, 36 open deals, $884K). Stage bar clicks produce no interaction — no drill-down, no filter, no drawer. Links on card navigate to /pipeline only.' },
+  { id:'db1-5', status:'pass',    note:'PASS: Needs Attention shows 6 at-risk buyers. Review button on NorthStar Ingredients opened inline detail panel: Company, Market, Stage, Value Impact $41K, Recommended Move, Next Actions, Open lead/Mark reviewed/Snooze 24h/Close buttons. Fully functional.' },
+  { id:'db1-6', status:'fail',    note:'No Customize button found. A "COMMAND ROW" badge near map header is not interactive. No layout customization or widget toggle found anywhere on the page.' },
+  { id:'db1-7', status:'fail',    note:'No dedicated Recent Activity Feed widget. "Recent activity" text only appears inside individual Needs Attention lead cards as staleness labels (e.g. "No recent activity since Mar 31, 2026"). No standalone timestamped activity stream exists.' },
+  { id:'sd-1',  status:'pass',    note:'PASS: /dashboard?mode=suppliers loads fully. No JS errors. KPI cards, map (5 supplier markets), Needs Attention Suppliers (6 items), Pipeline Stage Distribution, Country Performance all render.' },
+  { id:'sd-2',  status:'pass',    note:'PARTIAL PASS: 3 KPI cards shown (vs 4 in buyers): Follow-ups Due Now=9, Blocked Revenue=0 ("Clear to progress"), Pipeline Value=$168,500. Missing Open Opportunities and Quotes in Market. May be intentional.' },
+  { id:'sd-3',  status:'fail',    note:'Supplier map shows 5 markets in purple (India, Vietnam, Turkey, UAE, South Africa). Clicking India path produces no response. Same non-functional click behavior as buyers map — consistent root cause.' },
+];
+
+const DASHBOARD_ISSUES = [
+  {
+    id:'ISS-001', autoTestId:'db1-3',
+    page:'Dashboard / Map — Country Click Drawer (Buyers + Suppliers)',
+    title:'Map country click does not open country insight drawer',
+    sev:'high', status:'open',
+    desc:'Both Buyers and Suppliers dashboard maps render correctly with active country paths highlighted. However clicking any active country path (mouse click and programmatic dispatchEvent) produces no response. Tooltip reads "Click any market to open its command lane" but the drawer never opens.\n\nAffects: db1-3 (16 buyers markets) and sd-3 (5 supplier markets).',
+    fix:'Root cause: onClick handler is not wired to the SVG country paths in src/features/dashboard/components/world-coverage-map.tsx (or market-command-panel.tsx).\n\nFix: Find the <path> elements for active countries. Add onClick={() => onCountryClick(countryCode)} prop. The CountryInsightDrawer component exists at src/features/dashboard/components/country-insight-drawer.tsx — verify it receives the correct market data object when called. Check that the parent component passes the onCountryClick callback down through the component tree from dashboard-interactive.tsx.\n\nBranch: fix/ISS-001-map-country-click-drawer\nFiles: src/features/dashboard/components/world-coverage-map.tsx, market-command-panel.tsx, country-insight-drawer.tsx',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-002', autoTestId:'db1-4',
+    page:'Dashboard / Pipeline Stage Chart — Click Interaction',
+    title:'Pipeline stage chart bars are not clickable — no drill-down or filter',
+    sev:'medium', status:'open',
+    desc:'The Pipeline Stage Distribution chart renders with correct stage data (6 stages, 36 open deals, $884K). Chart bars are visible but clicking any stage bar produces no response. No drill-down, no filter applied to leads, no drawer opens. Card-level links navigate to /pipeline (correct) but individual stage bars have no interaction.',
+    fix:'Root cause: No onClick handler on individual bar elements in src/features/dashboard/components/pipeline-stage-chart-card.tsx.\n\nFix: Add onClick handler to each stage bar that either:\n(a) Navigates to /pipeline/buyers?stage=[stageId] to show filtered pipeline\n(b) Opens a drawer with stage-level detail\nRecommend option (a) as the simpler fix. Use router.push() with the stageId as a query param.\n\nBranch: fix/ISS-002-pipeline-chart-clickable\nFiles: src/features/dashboard/components/pipeline-stage-chart-card.tsx',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-003', autoTestId:'db1-6',
+    page:'Dashboard / Customize Panel',
+    title:'Customize button missing from dashboard — widget toggle not accessible',
+    sev:'medium', status:'open',
+    desc:'No Customize button was found anywhere on the buyers or suppliers dashboard. The component src/features/dashboard/components/dashboard-customize-panel.tsx exists in the codebase but is not being rendered. A "COMMAND ROW" badge near the map header is not an interactive button.',
+    fix:'Root cause: The Customize trigger button is not included in the dashboard layout render.\n\nFix: Check src/features/dashboard/components/dashboard-header-controls.tsx and dashboard-interactive.tsx. Add a Customize button that opens <DashboardCustomizePanel> as a slide-over or modal. The panel component already exists — it just needs to be imported and wired to a visible trigger in the header control row.\n\nBranch: fix/ISS-003-customize-button-missing\nFiles: src/features/dashboard/components/dashboard-header-controls.tsx, dashboard-interactive.tsx, dashboard-customize-panel.tsx',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id:'ISS-004', autoTestId:'db1-7',
+    page:'Dashboard / Recent Activity Feed',
+    title:'Recent Activity Feed widget not present on buyers dashboard',
+    sev:'medium', status:'open',
+    desc:'No dedicated Recent Activity Feed widget exists on the buyers dashboard. The component src/features/dashboard/components/recent-activity-card.tsx exists in the codebase. "Recent activity" text appears only inside Needs Attention lead cards as a staleness label — not as a proper activity stream. No timestamped activity log is present.',
+    fix:'Root cause: RecentActivityCard component is not included in the buyers dashboard widget grid.\n\nFix: In src/features/dashboard/components/dashboard-interactive.tsx (or dashboard-main-visual-row.tsx), import RecentActivityCard and add it to the buyers mode widget layout. Ensure the data loader in src/app/(app)/dashboard/_lib/render-dashboard-page.tsx fetches recent activity entries (from lead_activities table) and passes them as a prop.\n\nBranch: fix/ISS-004-recent-activity-feed-missing\nFiles: src/features/dashboard/components/dashboard-interactive.tsx, dashboard-main-visual-row.tsx, src/app/(app)/dashboard/_lib/render-dashboard-page.tsx',
+    createdAt: new Date().toISOString()
+  },
+];
+
+function preloadDashboardResults() {
+  const store = getStore();
+
+  // MIGRATION: fix any v3 corruption where issues was stored as {} instead of []
+  if (store.issues && !Array.isArray(store.issues)) {
+    store.issues = [];
+    delete store._dashboardPreloaded;
+    saveStore(store);
+  }
+
+  if (store._dashboardPreloaded) return;
+
+  if (!store.statuses) store.statuses = {};
+  if (!store.notes)    store.notes    = {};
+  if (!Array.isArray(store.issues)) store.issues = [];
+  if (!store.audit)   store.audit    = [];
+
+  // Apply statuses + notes
+  DASHBOARD_RESULTS.forEach(r => {
+    store.statuses[r.id] = r.status;
+    store.notes[r.id]    = r.note;
+  });
+
+  // Inject pre-built issues (only if not already present)
+  DASHBOARD_ISSUES.forEach(iss => {
+    const already = store.issues.some(i => i.id === iss.id);
+    if (!already) store.issues.unshift({ ...iss });
+  });
+
+  store.audit.unshift({
+    time: new Date().toISOString(),
+    action: 'Auto-imported: Dashboard test results + 4 issues created (Pass 21)',
+    test: 'SYSTEM'
+  });
+
+  store._dashboardPreloaded = true;
+  issueCounter = Math.max(4, issueCounter);
+  saveStore(store);
 }
 
 loadStoredData();
