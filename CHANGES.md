@@ -1,3 +1,28 @@
+# Pass 17 Dependency Restoration + Verification Follow-up
+
+## Summary
+
+Followed the Pass 17 handoff from the Pass 16 premium UI baseline. The DCC was read first and the verification gap was kept honest: dependency restoration is still blocked in this sandbox, so no clean test/build/deploy claim is made.
+
+## Files created
+
+- `docs/PASS17_VERIFICATION.md`
+
+## Files changed
+
+- `package.json` — added missing `tsx` devDependency used by `npm run test:all`.
+- `package-lock.json` — added the root devDependency declaration for `tsx`; a full network-enabled install should regenerate/validate the complete lock entry set.
+- `public/internal-dcc/index.html`, `README.md`, `docs/RELEASE_READINESS.md`, `CHANGES.md` — Pass 17 status, honest readiness, open blockers, and next-pass target.
+
+## Verification
+
+Attempted dependency restoration and the required verification path. In this sandbox, `npm install` / `npm ci` did not complete and did not create `node_modules`, so `npm run test:all` and `npm run build` remain blocked locally.
+
+Partial smoke signal only: `node --experimental-strip-types --test tests/pricing/fx-resolution.helpers.test.ts` completed with 19 passing assertions. This is not a substitute for `npm run test:all`.
+
+No Supabase data was mutated and no remediation migrations were applied. Buyer confidence remains held at ~97.5/100.
+
+---
 # Pass 16 Premium UI Implementation + Organization Setup Redesign
 
 ## Summary
