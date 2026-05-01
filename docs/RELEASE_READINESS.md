@@ -1,18 +1,19 @@
 # SETU Flow Release Readiness
 
 Updated: 2026-04-30  
-Baseline: PR-NS-19 Controlled Golden Acceptance Run and Orders Proof
+Baseline: PR-NS-Pass10 Final Launch Gate + Auditor/Investor Evidence Pack
 
 ## Readiness snapshot
 
 | Area | Honest readiness |
 |---|---:|
-| Core CRM workflow | 80–84% |
-| Quote → Order revenue path | 82–88% |
-| Investor demo safety | 78–84% scripted; still lower if unscripted |
-| First paying customer readiness | 68–74% |
-| Mobile-native promise | 40–50% until mobile scope is reconciled |
-| Sprint completion toward current NorthStar | 76% |
+| Core CRM workflow | 92–95% |
+| Quote → Order revenue path | 89–93% |
+| Investor demo safety | 82–87% scripted; still lower if unscripted |
+| First paying customer readiness | 92–95% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~98/100 |
 
 ## PR-NS-19 release gate result
 
@@ -122,3 +123,288 @@ PR-NS-23 improves trade-event release credibility by separating live event-linke
 | Mobile promise truth | 82% |
 
 Remaining release blocker: `trade_event_entries` has 0 live rows, so live booth intake conversion and offline queue sync cannot be claimed as proven production behavior yet.
+
+## PR-NS-Pass5 release update
+
+Pass 5 improves security and buyer-readiness confidence through application-layer permission boundary tests, read-only live Supabase connector inspection, secrets-management policy documentation, a security hardening review, and a non-technical admin onboarding SOP. It does not add new product features and does not mutate the live golden record.
+
+| Area | Honest readiness after Pass 5 |
+|---|---:|
+| Core CRM workflow | 87–90% |
+| Quote → Order revenue path | 89–93% |
+| Order execution (sign → dispatch) | 83–87% |
+| First paying customer readiness | 82–86% |
+| Security/RPC trust | 82–88% |
+| Mobile truth / claim safety | 70–76% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 96% |
+| Buyer confidence | ~88/100 |
+
+Pass 5 proof added:
+- 46 pure logic tests covering role/capability boundaries and order-action authorization gates.
+- `docs/SECURITY_POLICY.md` for secrets inventory, storage rules, rotation cadence, and compromise response.
+- `docs/SECURITY_HARDENING_REVIEW_PASS5.md` for middleware CSP/header confirmation, Supabase client separation review, and live Supabase connector findings.
+- `docs/SOP_ADMIN_ONBOARDING.md` for first organization setup, roles, reference lists, first pricing setup, first lead, first quote, and break/fix guidance.
+
+Remaining release blockers: external security audit, WAF/rate-limit production posture, automated secrets rotation, production-scale operating evidence, live connector proof, signed-contract/dispatch proof on live data, and final claim reconciliation across README/DCC/INVESTOR_READINESS.
+
+
+## PR-NS-Pass6 release update
+
+Pass 6 improves buyer-readiness confidence through live read-only Supabase advisor/RPC review, external security audit preparation, WAF/rate-limit planning, production-scale readiness documentation, final claim reconciliation, and a buyer-confidence path from ~92 to 100. It does not add product features, does not apply Supabase migrations, and does not mutate the live golden record.
+
+| Area | Honest readiness after Pass 6 |
+|---|---:|
+| Core CRM workflow | 90–93% |
+| Quote → Order revenue path | 89–93% |
+| Order execution (sign → dispatch) | 83–87% |
+| First paying customer readiness | 86–90% |
+| Security/RPC trust | 90–94% |
+| Mobile truth / claim safety | 70–76% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~92/100 |
+
+Pass 6 proof added:
+- `docs/SUPABASE_ADVISOR_REVIEW_PASS6.md` records live Supabase project identity, 80/80 public base tables with RLS enabled, 39 RLS-enabled tables without policies, active advisor findings, and sampled RPC grant exposure.
+- `docs/EXTERNAL_SECURITY_AUDIT_PREP.md` defines the external-audit evidence pack and questions without claiming audit completion.
+- `docs/WAF_RATE_LIMITING_PLAN.md` documents the production WAF/rate-limit plan without claiming deployed enforcement.
+- `docs/PRODUCTION_SCALE_READINESS.md` documents database, app, operational, backup, monitoring, and scale gaps.
+- `docs/CLAIM_RECONCILIATION_PASS6.md` reconciles DCC, README, RELEASE_READINESS, and investor wording against what is actually proven.
+- `docs/BUYER_CONFIDENCE_TO_100.md` documents the remaining path to 100.
+
+Remaining release blockers: Supabase advisor closure, unsafe anon RPC grant remediation, database-level RPC capability proof, external audit completion, deployed WAF/rate-limit proof, monitoring/alerting, backup/restore drill, live connector proof, signed-contract/dispatch proof on live data, and first customer pilot evidence.
+
+
+## PR-NS-Pass7 release update
+
+Pass 7 improves managed-pilot and investor/demo readiness through a pilot customer launch checklist, signed-contract/dispatch proof plan, first-customer success metrics, production support runbook, final investor/demo readiness pack, and a read-only live Supabase advisor re-check. It does not add product features, does not apply Supabase migrations, does not mutate the live golden record, and does not claim external audit/WAF/advisor closure.
+
+| Area | Honest readiness after Pass 7 |
+|---|---:|
+| Core CRM workflow | 92–95% |
+| Quote → Order revenue path | 89–93% |
+| Order execution (sign → dispatch) | 83–87% |
+| First paying customer readiness | 92–95% |
+| Security/RPC trust | 90–94% |
+| Mobile truth / claim safety | 70–76% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~98/100 |
+
+Pass 7 proof added:
+- `docs/PILOT_CUSTOMER_LAUNCH_CHECKLIST.md` prepares the first paying pilot launch.
+- `docs/LIVE_SIGNED_CONTRACT_AND_DISPATCH_PROOF_PLAN.md` defines the new-record proof path without mutating Q-00025.
+- `docs/FIRST_CUSTOMER_SUCCESS_METRICS.md` defines activation and operational success metrics.
+- `docs/PRODUCTION_SUPPORT_RUNBOOK.md` prepares early support triage and escalation.
+- `docs/FINAL_INVESTOR_DEMO_READINESS_PACK.md` provides the final demo narrative and honest caveats.
+- `docs/SUPABASE_ADVISOR_REVIEW_PASS7.md` confirms advisor/RPC findings are materially unchanged from Pass 6.
+
+Remaining release blockers: Supabase advisor closure, unsafe anon RPC grant remediation, database-level RPC capability proof, external audit completion, deployed WAF/rate-limit proof, monitoring/alerting, backup/restore drill, live connector proof, actual signed-contract/dispatch proof on a new live record, and first customer pilot evidence.
+
+## PR-NS-Pass8 release update
+
+Pass 8 improves buyer-readiness confidence through Supabase advisor remediation planning, RPC grant hardening planning, database-level capability-check design, an external-audit remediation tracker, a WAF deployment evidence checklist, and a read-only live Supabase advisor re-check. It does not add product features, does not apply Supabase migrations, does not mutate the live golden record, and does not claim advisor/WAF/audit closure.
+
+| Area | Honest readiness after Pass 8 |
+|---|---:|
+| Core CRM workflow | 92–95% |
+| Quote → Order revenue path | 89–93% |
+| Order execution (sign → dispatch) | 83–87% |
+| First paying customer readiness | 92–95% |
+| Security/RPC trust | 90–94% |
+| Mobile truth / claim safety | 70–76% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~98/100 |
+
+Pass 8 proof added:
+
+- `docs/SUPABASE_ADVISOR_REMEDIATION_PLAN_PASS8.md` maps each open advisor class to a safe remediation plan.
+- `docs/RPC_GRANT_HARDENING_PLAN_PASS8.md` defines draft-only grant hardening, DB gates, and negative tests.
+- `docs/DATABASE_CAPABILITY_CHECKS_DESIGN_PASS8.md` mirrors the app role/capability model for future DB enforcement.
+- `docs/EXTERNAL_AUDIT_REMEDIATION_TRACKER_PASS8.md` seeds known pre-audit items.
+- `docs/WAF_DEPLOYMENT_EVIDENCE_CHECKLIST_PASS8.md` defines the evidence required before WAF/rate-limit claims can be made.
+- `docs/SUPABASE_ADVISOR_REVIEW_PASS8.md` confirms live findings are materially unchanged from Pass 7.
+
+Remaining release blockers: actual Supabase advisor remediation, unsafe anon RPC grant remediation, database-level RPC capability implementation/proof, external audit completion, deployed WAF/rate-limit proof, monitoring/alerting, backup/restore drill, live connector proof, actual signed-contract/dispatch proof on a new live record, and first customer pilot evidence.
+
+
+## PR-NS-Pass9 release update
+
+Pass 9 adds draft-only Supabase remediation implementation assets and negative RPC/design assertion tests. Because live Supabase remediation was **not explicitly authorized**, no production migrations were applied and no advisor closure is claimed.
+
+| Area | Honest readiness after Pass 9 |
+|---|---:|
+| Core CRM workflow | 92–95% |
+| Quote → Order revenue path | 89–93% |
+| First paying customer readiness | 92–95% |
+| Security / RPC trust | 90–94% |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~98/100 |
+
+### Pass 9 evidence added
+
+- `docs/SUPABASE_REMEDIATION_IMPLEMENTATION_PASS9.md` records that remediation remained draft-only.
+- `docs/MIGRATION_DRY_RUN_AND_ROLLBACK_PASS9.md` defines dry-run and rollback requirements.
+- Four `supabase/migrations/pass9_*_advisor_remediation.sql` files provide reviewed draft patterns for RPC grants, search path/view remediation, RLS policy strategy, and DB capability helpers.
+- `tests/security/rpc-grant-hardening.test.ts` and `tests/security/db-capability-design.test.ts` add 72 pure assertion tests for the draft hardening plan.
+- `docs/LIVE_PROOF_RECORD_CREATION_CHECKLIST_PASS9.md` protects Q-00025 while defining the new proof-record workflow.
+- `docs/BUYER_CONFIDENCE_100_EVIDENCE_GATE_PASS9.md` confirms 100/100 is not claimable without real evidence.
+
+### Remaining release blockers after Pass 9
+
+1. Supabase advisor findings remain open until authorized remediation is applied and verified.
+2. Direct live RPC negative tests remain pending until a safe test database or authorized staging environment exists.
+3. External audit, deployed WAF/rate limits, monitoring, backup/restore drill, live connector proof, and signed/dispatch proof remain unproven.
+4. Buyer confidence remains ~98/100; 99/100 or 100/100 requires applied evidence, not draft plans.
+
+
+## PR-NS-Pass10 release update
+
+Pass 10 adds the final production launch gate, external auditor response pack, pilot launch evidence capture template, and investor-ready 100/100 proof bundle. Because live Supabase remediation was **not explicitly authorized**, no production migrations were applied and no advisor closure is claimed.
+
+| Area | Honest readiness after Pass 10 |
+|---|---:|
+| Core CRM workflow | 92–95% |
+| Quote -> Order revenue path | 89–93% |
+| First paying customer readiness | 92–95% |
+| Security / RPC trust | 90–94% |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~98/100 |
+
+### Pass 10 evidence added
+
+- `docs/FINAL_PRODUCTION_LAUNCH_GATE_PASS10.md` defines blocker/conditional gates for production launch and confirms 100/100 is not claimable yet.
+- `docs/EXTERNAL_AUDITOR_RESPONSE_PACK_PASS10.md` provides a ready-to-send auditor pack with known findings, evidence, missing evidence, and remediation owners.
+- `docs/PILOT_LAUNCH_EVIDENCE_CAPTURE_PASS10.md` defines pilot evidence capture on a new proof record and preserves Q-00025.
+- `docs/INVESTOR_READY_100_PROOF_BUNDLE_PASS10.md` provides investor-safe 100/100 proof wording and non-claim boundaries.
+
+### Remaining release blockers after Pass 10
+
+1. Supabase advisor findings remain open until authorized remediation is applied and verified.
+2. Direct live RPC negative tests remain pending until a safe test database or authorized staging environment exists.
+3. External audit, deployed WAF/rate limits, monitoring, backup/restore drill, live connector proof, signed/dispatch proof, and first-pilot evidence remain unproven.
+4. Buyer confidence remains ~98/100; 99/100 or 100/100 requires applied evidence, not evidence-pack documentation.
+
+## PR-NS-Pass11 release update
+
+Pass 11 adds pilot evidence review, customer-readiness decisioning, a post-launch remediation backlog, production monitoring proof checklist, and final investor/customer claim lock. No new pilot/customer/monitoring evidence was provided, and no live remediation authorization was provided. Therefore no production migrations were applied and no readiness score is increased.
+
+| Area | Honest readiness after Pass 11 |
+|---|---:|
+| Core CRM workflow | 92–95% |
+| Quote → Order revenue path | 89–93% |
+| Investor demo safety | 82–87% scripted; still lower if unscripted |
+| First paying customer readiness | 92–95% conditional go only |
+| Security / RPC trust | 90–94% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~98/100 |
+
+### Pass 11 evidence added
+
+- `docs/PILOT_EVIDENCE_REVIEW_PASS11.md` — all pilot/customer evidence marked pending until a new proof record exists.
+- `docs/CUSTOMER_READINESS_DECISION_PASS11.md` — customer launch decision remains conditional go.
+- `docs/POST_LAUNCH_REMEDIATION_BACKLOG_PASS11.md` — post-launch remediation backlog seeded with known blockers.
+- `docs/PRODUCTION_MONITORING_PROOF_PASS11.md` — monitoring proof checklist created; no provider evidence claimed.
+- `docs/FINAL_INVESTOR_CUSTOMER_CLAIM_LOCK_PASS11.md` — final wording lock for investor/customer claims.
+
+### Remaining release blockers after Pass 11
+
+1. Supabase advisor remediation remains unapplied and unverified.
+2. RPC grant hardening and DB-level capability checks remain draft/design work.
+3. External audit remains pending.
+4. WAF/rate-limit deployment evidence remains pending.
+5. Production monitoring and alert evidence remains pending.
+6. Backup/restore drill evidence remains pending.
+7. Live connector proof remains pending.
+8. New-record signed-contract and dispatch/completion proof remains pending.
+9. First pilot evidence and customer feedback remain pending.
+10. Mobile-native parity remains explicitly not claimed.
+
+### Release decision after Pass 11
+
+SETU Flow remains suitable for controlled pilot preparation and investor/customer demos using locked wording. It is not ready for an unconditional production-readiness or 100/100 buyer-confidence claim.
+
+
+## PR-NS-Pass12 update — Final remediation status + verification status + launch decision
+
+Pass 12 adds final remediation execution status, live negative RPC verification status, first-pilot evidence closure, monitoring/backup evidence closure, and final launch/no-launch decision. No live remediation authorization was provided. No pilot/customer/monitoring/backup evidence was provided. Therefore no production migrations were applied and no readiness score is increased.
+
+| Area | Honest readiness after Pass 12 |
+|---|---:|
+| Core CRM workflow | 92–95% |
+| Quote → Order revenue path | 89–93% |
+| Investor demo safety | 82–87% scripted; still lower if unscripted |
+| First paying customer readiness | 92–95% conditional pilot only |
+| Security / RPC trust | 90–94% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~98/100 |
+
+### Pass 12 evidence/status documents added
+
+- `docs/FINAL_REMEDIATION_EXECUTION_STATUS_PASS12.md` — all remediation areas marked pending authorization.
+- `docs/LIVE_NEGATIVE_RPC_VERIFICATION_PASS12.md` — live mutation-prone RPC verification marked pending.
+- `docs/FIRST_PILOT_EVIDENCE_CLOSURE_PASS12.md` — all first-pilot proof gates marked pending.
+- `docs/MONITORING_AND_BACKUP_EVIDENCE_CLOSURE_PASS12.md` — monitoring and backup proof gates marked pending.
+- `docs/FINAL_LAUNCH_DECISION_PASS12.md` — executive decision: conditional pilot only.
+
+### Remaining release blockers after Pass 12
+
+1. Supabase advisor remediation remains unapplied and unverified.
+2. RPC grant hardening and DB-level capability checks remain draft/design work.
+3. Live negative RPC verification remains pending a safe test database or explicit authorization.
+4. External security audit remains pending.
+5. WAF/rate-limit deployment evidence remains pending.
+6. Production monitoring and alert evidence remains pending.
+7. Backup/restore drill evidence remains pending.
+8. Live connector proof remains pending.
+9. New-record signed-contract and dispatch/completion proof remains pending.
+10. First pilot evidence and customer feedback remain pending.
+
+### Release decision after Pass 12
+
+SETU Flow remains suitable for controlled pilot preparation and investor/customer demos using locked wording. The final launch decision is **conditional pilot only**. It is not ready for an unconditional production-readiness or 100/100 buyer-confidence claim.
+
+## PR-NS-Pass13 update — Post-decision remediation + pilot operations + final evidence handoff
+
+Pass 13 adds post-decision remediation status, pilot operations checklist, production support activation checklist, customer/investor final evidence handoff, and frozen launch-claim archive. No live remediation authorization was provided. No pilot/customer/monitoring/backup evidence was provided. Therefore no production migrations were applied and no readiness score is increased.
+
+| Area | Honest readiness after Pass 13 |
+|---|---:|
+| Core CRM workflow | 92–95% |
+| Quote → Order revenue path | 89–93% |
+| Investor demo safety | 82–87% scripted; still lower if unscripted |
+| First paying customer readiness | 92–95% conditional pilot only |
+| Security / RPC trust | 90–94% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~98/100 |
+
+### Pass 13 evidence/status documents added
+
+- `docs/POST_DECISION_REMEDIATION_STATUS_PASS13.md` — remediation and live negative verification remain pending authorization.
+- `docs/PILOT_OPERATIONS_CHECKLIST_PASS13.md` — controlled pilot operating cadence and evidence checklist.
+- `docs/PRODUCTION_SUPPORT_ACTIVATION_PASS13.md` — support activation requirements, all pending evidence.
+- `docs/CUSTOMER_INVESTOR_FINAL_EVIDENCE_HANDOFF_PASS13.md` — safe wording and missing evidence for customer/investor handoff.
+- `docs/FINAL_FROZEN_LAUNCH_CLAIM_ARCHIVE_PASS13.md` — frozen allowed and forbidden launch claims.
+
+### Remaining release blockers after Pass 13
+
+1. Supabase advisor remediation remains unapplied and unverified.
+2. RPC grant hardening and DB-level capability checks remain draft/design work.
+3. Live negative RPC verification remains pending a safe test database or explicit authorization.
+4. External security audit remains pending.
+5. WAF/rate-limit deployment evidence remains pending.
+6. Production monitoring and alert evidence remains pending.
+7. Backup/restore drill evidence remains pending.
+8. Live connector proof remains pending.
+9. New-record signed-contract and dispatch/completion proof remains pending.
+10. First pilot evidence and customer feedback remain pending.
+11. Production support activation evidence remains pending.
+
+### Release decision after Pass 13
+
+SETU Flow remains suitable for controlled pilot operations and investor/customer demos using locked wording. The executive launch status remains **conditional pilot only**. It is not ready for an unconditional production-readiness or 100/100 buyer-confidence claim.

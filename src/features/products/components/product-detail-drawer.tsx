@@ -30,6 +30,9 @@ type VariantDraft = {
   fob_value: string;
   fob_unit: 'unit' | 'case' | 'kg' | '';
   bulk_value: string;
+  /** Direct CIF reference — stored in source_payload, display only. */
+  cif_value: string;
+  cif_unit: 'unit' | 'case' | '';
 };
 
 const tabs: Array<{ key: DrawerTab; label: string }> = [
@@ -48,6 +51,9 @@ function toDraft(detail: ProductDetailResponse | null): Record<string, VariantDr
     fob_value: variant.fob_value == null ? '' : String(variant.fob_value),
     fob_unit: variant.fob_unit ?? '',
     bulk_value: variant.bulk_value == null ? '' : String(variant.bulk_value),
+    // CIF reference from source_payload if populated
+    cif_value: (variant as any).cif_reference_usd_per_unit == null ? '' : String((variant as any).cif_reference_usd_per_unit),
+    cif_unit: (variant as any).cif_reference_unit ?? '',
   }]));
 }
 
@@ -81,15 +87,18 @@ export function ProductDetailDrawer({ open, detail, loading, error, onClose, onS
       const exFactoryValue = toNumber(draft.ex_factory_value);
       const fobValue = toNumber(draft.fob_value);
       const bulkValue = toNumber(draft.bulk_value);
+      const cifValue = toNumber(draft.cif_value);
       const exFactoryUnit = draft.ex_factory_unit || null;
       const fobUnit = draft.fob_unit || null;
+      const cifUnit = (draft.cif_unit || null) as 'unit' | 'case' | null;
       const changed =
         draft.is_quoteable !== Boolean(variant.is_quoteable) ||
         exFactoryValue !== variant.ex_factory_value ||
         exFactoryUnit !== (variant.ex_factory_unit ?? null) ||
         fobValue !== variant.fob_value ||
         fobUnit !== (variant.fob_unit ?? null) ||
-        bulkValue !== variant.bulk_value;
+        bulkValue !== variant.bulk_value ||
+        cifValue !== ((variant as any).cif_reference_usd_per_unit ?? null);
       if (!changed) return [];
       return [{
         product_variant_id: variant.product_variant_id,
@@ -99,6 +108,8 @@ export function ProductDetailDrawer({ open, detail, loading, error, onClose, onS
         fob_value: Number.isFinite(fobValue as number) ? fobValue : null,
         fob_unit: fobUnit,
         bulk_value: Number.isFinite(bulkValue as number) ? bulkValue : null,
+        cif_value: Number.isFinite(cifValue as number) ? cifValue : null,
+        cif_unit: cifUnit,
       }];
     });
   }, [detail, variantDrafts]);
@@ -263,6 +274,31 @@ export function ProductDetailDrawer({ open, detail, loading, error, onClose, onS
                           </div>
                         </label>
                       ))}
+                      {/* CIF reference — stored in source_payload, display only in catalog */}
+                      <label className="rounded-xl border border-dashed border-sky-200 bg-sky-50/40 p-3 shadow-sm">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-600">CIF Reference</div>
+                        <div className="mt-1 text-[9px] text-slate-400">Display only · Quote CIF uses freight profile</div>
+                        <div className="mt-2 flex gap-2">
+                          <input
+                            inputMode="decimal"
+                            disabled={!canManageCatalog}
+                            value={draft?.cif_value ?? ''}
+                            onChange={(e) => updateVariant(variant.product_variant_id, { cif_value: e.target.value })}
+                            className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-sky-400"
+                            placeholder="— add"
+                          />
+                          <select
+                            disabled={!canManageCatalog}
+                            value={draft?.cif_unit ?? ''}
+                            onChange={(e) => updateVariant(variant.product_variant_id, { cif_unit: e.target.value as VariantDraft['cif_unit'] })}
+                            className="rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs"
+                          >
+                            <option value="">Unit</option>
+                            <option value="unit">unit</option>
+                            <option value="case">case</option>
+                          </select>
+                        </div>
+                      </label>
                     </div>
                   </div>
                 );

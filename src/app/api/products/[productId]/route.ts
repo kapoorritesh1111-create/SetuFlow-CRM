@@ -359,7 +359,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { produc
         variant.ex_factory_unit !== undefined ||
         variant.fob_value !== undefined ||
         variant.fob_unit !== undefined ||
-        variant.bulk_value !== undefined;
+        variant.bulk_value !== undefined ||
+        variant.cif_value !== undefined;
 
       if (!hasPricingChange) continue;
 
@@ -390,6 +391,40 @@ export async function PATCH(request: NextRequest, { params }: { params: { produc
       if (pricingResult.error) {
         const status = pricingResult.issue ? 400 : 500;
         return NextResponse.json({ error: pricingResult.error, importIssue: pricingResult.issue }, { status });
+      }
+
+      // CIF reference price — stored in product_variants.source_payload (JSONB) for catalog
+      // display only. Actual quote CIF is always computed from FOB + freight profile.
+      // This write path unblocks the "— add" display in the catalog table.
+      if (variant.cif_value !== undefined) {
+        const { data: currentVariant } = await admin
+          .from('product_variants')
+          .select('source_payload')
+          .eq('organization_id', organizationId)
+          .eq('id', variant.product_variant_id)
+          .maybeSingle();
+
+        const existingPayload = (typeof currentVariant?.source_payload === 'object' && currentVariant.source_payload !== null)
+          ? currentVariant.source_payload as Record<string, unknown>
+          : {};
+
+        const updatedPayload: Record<string, unknown> = {
+          ...existingPayload,
+          cif_reference_usd_per_unit: variant.cif_value ?? null,
+          cif_reference_unit: variant.cif_unit ?? (variant.cif_value != null ? 'unit' : null),
+          cif_reference_updated_at: now,
+          cif_reference_source: 'manual_edit',
+        };
+
+        const { error: cifUpdateError } = await admin
+          .from('product_variants')
+          .update({ source_payload: updatedPayload, updated_at: now })
+          .eq('organization_id', organizationId)
+          .eq('id', variant.product_variant_id);
+
+        if (cifUpdateError) {
+          return NextResponse.json({ error: `CIF reference update failed: ${cifUpdateError.message}` }, { status: 500 });
+        }
       }
     }
   }

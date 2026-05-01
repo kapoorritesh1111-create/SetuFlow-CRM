@@ -111,6 +111,11 @@ export type UpdateProductVariantPayload = {
   fob_value?: number | null;
   fob_unit?: 'unit' | 'case' | 'kg' | null;
   bulk_value?: number | null;
+  /** Direct CIF reference price — stored in source_payload for catalog display.
+   *  Actual quote CIF is computed from FOB + freight profile. This field is for
+   *  reference/display only and does not gate quote compilation. */
+  cif_value?: number | null;
+  cif_unit?: 'unit' | 'case' | null;
 };
 
 export type UpdateProductPayload = {

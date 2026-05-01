@@ -943,6 +943,8 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                   currency={order.currency}
                   dealValue={order.dealValue}
                   updatedAt={order.updatedAt}
+                  contractSignedAt={order.contract?.signed_at ?? null}
+                  commercialLockState={order.contract?.commercial_lock_state ?? null}
                 />
               )}
             </div>

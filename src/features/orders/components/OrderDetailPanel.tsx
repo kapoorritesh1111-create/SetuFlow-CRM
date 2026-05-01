@@ -8,7 +8,7 @@
  */
 
 import Link from 'next/link';
-import { progressOrderExecution, uploadOrderDocumentAction } from '@/features/orders/server/actions';
+import { progressOrderExecution, signContractAction, uploadOrderDocumentAction } from '@/features/orders/server/actions';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 type DocRow = {
@@ -59,6 +59,8 @@ export function OrderDetailPanel({
   currency,
   dealValue,
   updatedAt,
+  contractSignedAt,
+  commercialLockState,
 }: {
   quoteId: string;
   leadId: string;
@@ -75,11 +77,15 @@ export function OrderDetailPanel({
   currency: string | null;
   dealValue: number | null;
   updatedAt: string;
+  contractSignedAt?: string | null;
+  commercialLockState?: string | null;
 }) {
   const currentIdx = STAGE_ORDER.indexOf(executionState as StageKey);
   const isComplete = executionState === 'completed';
   const currentMeta = STAGE_META[executionState as StageKey] ?? STAGE_META['draft'];
   const isBlocked = executionBlockers.length > 0 || !canAdvance;
+  const isSigned = Boolean(contractSignedAt) || ['signed', 'active', 'completed'].includes(String(executionState).toLowerCase());
+  const isLocked = ['accepted_locked', 'contract_locked', 'locked'].includes(String(commercialLockState ?? '').toLowerCase());
 
   return (
     <div style={{
@@ -134,6 +140,60 @@ export function OrderDetailPanel({
           })}
         </div>
       </div>
+
+      {/* ── CONTRACT SIGNING GATE ─────────────────────────────────────────── */}
+      {contractId && !isComplete && (
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '260px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Contract signing</div>
+            {isSigned ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '10px', background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+                <span style={{ fontSize: '16px' }}>✅</span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#059669' }}>Contract signed</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>
+                    {contractSignedAt ? `Signed ${fmt(contractSignedAt)} · ` : ''}
+                    Commercial lock: {isLocked ? 'locked' : 'pending'}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: '10px', padding: '10px 14px', borderRadius: '8px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#92400e', marginBottom: '4px' }}>Signed contract required before dispatch</div>
+                  <div style={{ fontSize: '11px', color: '#92400e' }}>
+                    Marking the contract as signed locks the commercial snapshot and enables order progression to Ready state.
+                  </div>
+                </div>
+                <form action={signContractAction}>
+                  <input type="hidden" name="contract_id" value={contractId} />
+                  <button
+                    type="submit"
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '8px',
+                      background: '#0b2e4a',
+                      color: 'white',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <span>✍️</span> Mark Contract Signed
+                  </button>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '6px' }}>
+                    Sets signed_at timestamp, locks commercial snapshot, and writes audit event.
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── DISPATCH CONTROLS ────────────────────────────────────────────────── */}
       <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>

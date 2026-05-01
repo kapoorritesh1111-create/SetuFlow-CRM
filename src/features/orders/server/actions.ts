@@ -193,3 +193,95 @@ export async function uploadOrderDocument(_: { error?: string; success?: string 
 export async function uploadOrderDocumentAction(formData: FormData): Promise<void> {
   await uploadOrderDocument(undefined, formData);
 }
+
+/**
+ * signContractAction
+ *
+ * Marks a contract as signed, locks commercial state, and records the audit event.
+ * This unblocks order execution from draft → ready state.
+ *
+ * Requires: lead.manage capability (manager, owner, admin, sales) or
+ *           compliance.review capability (manager, owner, admin, operations).
+ *
+ * Gate: contract must exist, belong to the org, and not already be signed.
+ */
+export async function signContractAction(formData: FormData) {
+  if (!hasSupabaseEnv) redirect(buildRedirect('order-config-error'));
+
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) redirect(buildRedirect('order-auth-error'));
+
+  const canManage = hasWorkspaceCapability(workspace.currentRoles, 'lead.manage');
+  const canReviewCompliance = hasWorkspaceCapability(workspace.currentRoles, 'compliance.review');
+  if (!canManage && !canReviewCompliance) {
+    const message =
+      getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage') ??
+      'Your role cannot sign contracts.';
+    redirect(buildRedirect(`order-readonly:${message}`));
+  }
+
+  const contractId = String(formData.get('contract_id') ?? '').trim();
+  if (!contractId) redirect(buildRedirect('order-action-invalid'));
+
+  const db = (await createClient()) as any;
+
+  const { data: contract, error: contractError } = await db
+    .from('contracts')
+    .select('id, quote_id, lead_id, status, signed_at, commercial_lock_state, execution_state')
+    .eq('organization_id', workspace.organization.id)
+    .eq('id', contractId)
+    .maybeSingle();
+
+  if (contractError || !contract?.id) redirect(buildRedirect('order-contract-missing'));
+
+  // Idempotent — if already signed, redirect cleanly without error
+  if (contract.signed_at || ['signed', 'active', 'completed'].includes(String(contract.status ?? '').toLowerCase())) {
+    redirect(buildRedirect('order-state-progressed:ready'));
+  }
+
+  const now = new Date().toISOString();
+  const { error: updateError } = await db
+    .from('contracts')
+    .update({
+      signed_at: now,
+      status: 'signed',
+      commercial_lock_state: 'locked',
+      updated_at: now,
+    })
+    .eq('organization_id', workspace.organization.id)
+    .eq('id', contractId);
+
+  if (updateError) redirect(buildRedirect('order-update-failed'));
+
+  await writeAuditLog({
+    organizationId: workspace.organization.id,
+    action: 'contract_updated',
+    entityType: 'contract',
+    entityId: contractId,
+    actorUserId: workspace.user.id,
+    payload: {
+      previous: {
+        status: contract.status ?? 'draft',
+        signed_at: null,
+        commercial_lock_state: contract.commercial_lock_state ?? null,
+      },
+      new: {
+        status: 'signed',
+        signed_at: now,
+        commercial_lock_state: 'locked',
+      },
+      metadata: {
+        source: 'signContractAction',
+        quote_id: contract.quote_id,
+        lead_id: contract.lead_id,
+      },
+    },
+  });
+
+  revalidatePath('/orders');
+  revalidatePath('/contracts');
+  revalidatePath('/quotes');
+  if (contract.lead_id) revalidatePath(`/leads/${contract.lead_id}`);
+
+  redirect(buildRedirect('order-state-progressed:ready'));
+}

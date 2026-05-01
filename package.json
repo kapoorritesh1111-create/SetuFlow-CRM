@@ -14,7 +14,13 @@
     "verify": "npm run clean:verification && npm run typecheck && npm run check:contracts && npm run check:dashboard && npm test && npm run build",
     "release:proof": "npm run verify",
     "clean:verification": "node scripts/clean-verification.mjs",
-    "check:contracts": "node scripts/check-contract-boundaries.mjs"
+    "check:contracts": "node scripts/check-contract-boundaries.mjs",
+    "test:pricing": "tsx --test tests/pricing/fx-resolution.helpers.test.ts tests/pricing/freight-calculation.helpers.test.ts tests/pricing/quote-compilation.helpers.test.ts tests/pricing/fx-resolution.service.test.ts tests/pricing/quote-compilation.service.test.ts",
+    "test:workspace": "tsx --test tests/workspace/rls-permissions.test.ts",
+    "test:orders": "tsx --test tests/orders/order-execution.test.ts",
+    "test:all": "tsx --test tests/pricing/fx-resolution.helpers.test.ts tests/pricing/freight-calculation.helpers.test.ts tests/pricing/quote-compilation.helpers.test.ts tests/pricing/fx-resolution.service.test.ts tests/pricing/quote-compilation.service.test.ts tests/workspace/rls-permissions.test.ts tests/orders/order-execution.test.ts tests/integrations/governance.test.ts tests/security/rls-boundaries.test.ts tests/security/order-auth-boundaries.test.ts tests/security/rpc-grant-hardening.test.ts tests/security/db-capability-design.test.ts",
+    "test:integrations": "tsx --test tests/integrations/governance.test.ts",
+    "test:security": "tsx --test tests/security/rls-boundaries.test.ts tests/security/order-auth-boundaries.test.ts tests/security/rpc-grant-hardening.test.ts tests/security/db-capability-design.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

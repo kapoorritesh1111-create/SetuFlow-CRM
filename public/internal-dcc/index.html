@@ -1,34 +1,1051 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SETU Flow DCC — PR-NS-23</title><style>
-:root{--bg:#f4f7fb;--ink:#10233f;--muted:#5d708a;--line:#dbe5ef;--good:#059669;--warn:#d97706;--bad:#dc2626;--info:#2563eb}*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}.wrap{max-width:1400px;margin:36px auto;padding:0 18px}.hero{background:linear-gradient(120deg,#123a5a,#0f9b8e);color:white;border-radius:24px;padding:32px}.eyebrow{text-transform:uppercase;letter-spacing:.16em;font-weight:800;font-size:12px;opacity:.8}.hero h1{font-size:30px;margin:12px 0 8px}.hero p{max-width:1120px;line-height:1.55}.pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.pill{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;text-transform:uppercase;background:rgba(255,255,255,.12)}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.tabbtn{border:1px solid var(--line);background:white;color:var(--ink);border-radius:999px;padding:10px 14px;font-weight:800;cursor:pointer}.tabbtn.active{background:#10233f;color:white}.tab{display:none}.tab.active{display:block}.card,.metric{background:white;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 1px 2px rgba(16,35,63,.05);margin-bottom:14px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:18px 0}.metric b{font-size:22px}.metric span{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:800}.table{width:100%;border-collapse:collapse;background:white;border:1px solid var(--line);border-radius:18px;overflow:hidden}.table th,.table td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.table th{background:#eef5fb;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#435670}.status{border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800}.good{background:#e7f8ef;color:var(--good)}.warn{background:#fff7ed;color:var(--warn)}.bad{background:#fee2e2;color:var(--bad)}.info{background:#eaf2ff;color:var(--info)}.callout{border-radius:18px;padding:16px;margin-bottom:14px}.green{background:#e7f8ef;color:#065f46}.amber{background:#fff7ed;color:#92400e}.blue{background:#eaf2ff;color:#1e40af}.prompt{white-space:pre-wrap;background:#0f172a;color:#e2e8f0;border-radius:18px;padding:18px;line-height:1.5}code{background:#f1f5f9;padding:2px 5px;border-radius:6px}@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.hero h1{font-size:24px}}@media(max-width:640px){.grid{grid-template-columns:1fr}}
-</style></head><body><div class="wrap"><section class="hero"><div class="eyebrow">SETU Flow Internal DCC · PR-NS-23 · Apr 30 2026</div><h1>Trade-show wedge proven honestly: event-linked leads, quote handoffs, and contract handoffs visible</h1><p>PR-NS-23 used live Supabase and Vercel verification first, preserved the PR-NS-21 mobile promise truth, and aligned the trade-event workspace so seeded event-linked leads are not mislabeled as intake queue rows. The wedge proves event-sourced CRM/quote follow-through; live intake queue rows are still zero.</p><div class="pills"><span class="pill">PR-NS-23 complete</span><span class="pill">Supabase verified</span><span class="pill">Vercel ready</span><span class="pill">Q-00025 accepted</span><span class="pill">11 lines preserved</span><span class="pill">Trade events proven</span><span class="pill">0 intake entries</span><span class="pill">Next: PR-NS-24</span><span class="pill">Do not run npm ci</span></div></section>
-<div class="grid"><div class="metric"><span>Vercel</span><b>READY</b></div><div class="metric"><span>Golden quote</span><b>Accepted</b></div><div class="metric"><span>Contract lines</span><b>11</b></div><div class="metric"><span>Event leads</span><b>41</b></div><div class="metric"><span>Quote handoffs</span><b>21</b></div></div>
-<div class="tabs"><button class="tabbtn active" data-tab="status">Status</button><button class="tabbtn" data-tab="live">Live Connectors</button><button class="tabbtn" data-tab="gaps">Gap Analysis</button><button class="tabbtn" data-tab="ladder">100% Build Ladder</button><button class="tabbtn" data-tab="scores">Page Scores</button><button class="tabbtn" data-tab="prs">PR Queue</button><button class="tabbtn" data-tab="dccrules">DCC Rules</button><button class="tabbtn" data-tab="next">Next Prompts</button></div>
-<section id="tab-status" class="tab active"><div class="card"><h2>Status</h2><div class="callout green"><b>PR-NS-23 complete.</b> Trade-event data now supports an honest wedge demo: event-linked leads, quote handoffs, and contract handoffs are visible, while live intake queue entries remain zero.</div><table class="table"><tbody><tr><td>Golden quote</td><td><code>b6f8111a-3b32-456d-92f0-412c898bf13b</code> / Q-00025 remains <code>accepted</code>.</td></tr><tr><td>Contract/order</td><td><code>d129ffe2-c913-4cf7-9a7b-86ea6c9da54e</code>, execution state <code>draft</code>, 11 lines.</td></tr><tr><td>Trade-event proof</td><td>Anuga 14 leads / 6 quotes; Gulfood 13 leads / 6 quotes / 1 contract; IndusFood 14 leads / 9 quotes / 3 contracts.</td></tr><tr><td>Intake queue truth</td><td><code>trade_event_entries</code> has 0 rows. Do not claim live offline queue sync volume yet.</td></tr><tr><td>Mobile truth</td><td>Desktop-first CRM/quote/order execution preserved; mobile remains trade-event capture wedge only.</td></tr></tbody></table></div></section>
-<section id="tab-live" class="tab"><table class="table"><thead><tr><th>System</th><th>Live result</th></tr></thead><tbody><tr><td>Supabase</td><td>Project <code>sjzfzloggabsmcuxktnl</code> ACTIVE_HEALTHY.</td></tr><tr><td>Vercel</td><td>Latest production deployment <code>dpl_4YXrY6K72P51b19qTVNZi5CR65N7</code> READY.</td></tr><tr><td>Golden order proof</td><td>Q-00025 accepted, contract <code>d129ffe2-c913-4cf7-9a7b-86ea6c9da54e</code>, 11 lines.</td></tr><tr><td>Trade event stats</td><td>Live aggregate query checked trade_events, leads, quotes, and contracts.</td></tr><tr><td>Trade intake rows</td><td>0 total rows, 0 converted rows, 0 entries with converted leads.</td></tr></tbody></table></section>
-<section id="tab-gaps" class="tab"><table class="table"><thead><tr><th>Gap</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>Named golden record</td><td><span class="status good">Complete</span></td><td>Use Q-00025 as controlled investor path.</td></tr><tr><td>Orders line continuity</td><td><span class="status good">Proven</span></td><td>11 contract lines remain visible.</td></tr><tr><td>Trade-event lead/quote handoff</td><td><span class="status good">Proven</span></td><td>3 events show linked leads and quotes.</td></tr><tr><td>Trade-event intake queue live conversion</td><td><span class="status warn">Not yet</span></td><td>Need captured rows in <code>trade_event_entries</code> before claiming live intake conversion.</td></tr><tr><td>Full offline CRM</td><td><span class="status bad">Do not claim</span></td><td>Only scoped trade-event capture queue language is allowed.</td></tr></tbody></table></section>
-<section id="tab-ladder" class="tab"><table class="table"><thead><tr><th>#</th><th>Build</th><th>Priority</th><th>Must prove</th><th>Target readiness after merge</th></tr></thead><tbody><tr><td>1</td><td>PR-NS-23 — Trade show wedge proof</td><td><span class="status good">Complete</span></td><td>Event-linked leads, quote handoffs, event analytics; intake queue truth separated.</td><td>Trade Show 88%</td></tr><tr><td>2</td><td>PR-NS-24 — Integration proof mode</td><td><span class="status warn">High</span></td><td>WhatsApp/email proof is not just architecture or mocked text.</td><td>Integrations 80%</td></tr><tr><td>3</td><td>PR-NS-25 — First-login and empty-state hardening</td><td><span class="status info">Medium</span></td><td>New users understand what to do with no data.</td><td>Buyer MVP 90%</td></tr><tr><td>4</td><td>PR-NS-26 — Claim reconciliation and investor script lock</td><td><span class="status info">Medium</span></td><td>All docs/HTML claims match proven behavior.</td><td>Investor demo 95%</td></tr><tr><td>5</td><td>PR-NS-27 — Final 100% verification pass</td><td><span class="status info">Low</span></td><td>Regression checklist, manual verification, DCC final lock.</td><td>100% confidence</td></tr><tr><td>6</td><td>PR-NS-28 — Post-lock launch rehearsal</td><td><span class="status info">Buffer</span></td><td>Dry-run launch script and last-mile regression buffer.</td><td>Launch rehearsal</td></tr><tr><td>7</td><td>Post-PR security backlog</td><td><span class="status info">Backlog</span></td><td>Non-quote/order advisor cleanup after demo-critical PRs.</td><td>Security continuation</td></tr><tr><td>8</td><td>Post-PR mobile parity backlog</td><td><span class="status info">Backlog</span></td><td>Only claim full mobile parity after route-level runtime proof exists.</td><td>Mobile continuation</td></tr><tr><td>9</td><td>Post-PR live intake queue proof</td><td><span class="status info">Backlog</span></td><td>Capture/convert real trade_event_entries rows and verify offline sync boundary.</td><td>Capture proof continuation</td></tr></tbody></table></section>
-<section id="tab-scores" class="tab"><table class="table"><thead><tr><th>Page / area</th><th>Score</th><th>PR-NS-23 note</th></tr></thead><tbody><tr><td>Quotes</td><td><span class="status good">89%</span></td><td>Accepted golden quote remains proven.</td></tr><tr><td>Orders</td><td><span class="status good">86%</span></td><td>Accepted order, 11 lines, blocker snapshot, next action remain demonstrable.</td></tr><tr><td>Trade-event source analytics</td><td><span class="status good">88%</span></td><td>Event-linked leads/quotes/contracts are visible.</td></tr><tr><td>Trade-event intake queue</td><td><span class="status warn">55%</span></td><td>UI path exists; live entry rows are currently zero.</td></tr><tr><td>Mobile capture wedge</td><td><span class="status good">78%</span></td><td>Mobile claim remains capture wedge only; no full parity claim.</td></tr><tr><td>Investor demo</td><td><span class="status good">91%</span></td><td>Demo can show Q-00025 plus trade-event handoff proof without overclaiming offline/mobile.</td></tr></tbody></table></section>
-<section id="tab-prs" class="tab"><table class="table"><thead><tr><th>PR</th><th>Title</th><th>Status</th><th>Verification</th></tr></thead><tbody><tr><td><code>PR-NS-23</code></td><td>Trade show wedge proof</td><td><span class="status good">Complete</span></td><td>Live event stats verified; UI/docs aligned with proof boundary.</td></tr><tr><td><code>PR-NS-24</code></td><td>Integration proof mode</td><td><span class="status bad">Next</span></td><td>WhatsApp/email proof mode.</td></tr><tr><td><code>PR-NS-25</code></td><td>First-login and empty-state hardening</td><td><span class="status info">Queued</span></td><td>New user and empty-state readiness.</td></tr><tr><td><code>PR-NS-26</code></td><td>Claim reconciliation and investor script lock</td><td><span class="status info">Queued</span></td><td>All claims match live proof.</td></tr><tr><td><code>PR-NS-27</code></td><td>Final 100% verification pass</td><td><span class="status info">Queued</span></td><td>Final regression lock.</td></tr><tr><td><code>PR-NS-28</code></td><td>Post-lock launch rehearsal</td><td><span class="status info">Buffer</span></td><td>Launch script and last-mile buffer.</td></tr><tr><td><code>Post-PR Security</code></td><td>Security advisor backlog</td><td><span class="status info">Backlog</span></td><td>Non-demo-critical advisor continuation.</td></tr><tr><td><code>Post-PR Mobile</code></td><td>Mobile parity backlog</td><td><span class="status info">Backlog</span></td><td>Full parity only after route-level runtime proof.</td></tr><tr><td><code>Post-PR Intake</code></td><td>Live intake queue proof</td><td><span class="status info">Backlog</span></td><td>Capture/convert trade_event_entries before claiming queue sync volume.</td></tr></tbody></table></section>
-<section id="tab-dccrules" class="tab"><div class="card"><h2>DCC rules</h2><table class="table"><tbody><tr><td>Live verification</td><td>Check Supabase and Vercel whenever relevant and record exact IDs/statuses.</td></tr><tr><td>Golden path</td><td>Q-00025 accepted-to-draft-order path may be claimed using exact live IDs.</td></tr><tr><td>Trade-event claims</td><td>Say event-linked leads/quotes/contracts are proven; do not claim live intake queue conversion until entries exist.</td></tr><tr><td>Mobile claims</td><td>Say desktop-first CRM/quote/order execution plus mobile-friendly trade-event capture wedge only.</td></tr><tr><td>Offline claims</td><td>Say scoped offline trade-event lead capture queue only; do not claim full offline CRM.</td></tr><tr><td>PR queue</td><td>Always keep the full 9-item queue visible in DCC ladder and PR Queue tabs.</td></tr><tr><td>NPM</td><td>Do not run npm ci unless explicitly requested.</td></tr></tbody></table></div></section>
-<section id="tab-next" class="tab"><div class="callout blue"><b>Use PR-NS-24 next.</b> The golden accepted-order handoff is proven and trade-event wedge proof is now honest. Next: prove integration mode without pretending mocked connector text is live delivery.</div><div class="prompt">PR-NS-24 — Integration proof mode
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SETU Flow — Internal DCC</title>
+<style>
+  :root {
+    --navy:   #1B2A4A;
+    --teal:   #0D7C8C;
+    --teal2:  #0A6270;
+    --red:    #C0392B;
+    --amber:  #E67E22;
+    --green:  #27AE60;
+    --lgrey:  #F2F4F6;
+    --mgrey:  #D5D8DC;
+    --dgrey:  #5D6D7E;
+    --white:  #FFFFFF;
+    --lteal:  #E8F4F5;
+    --lred:   #FDECEA;
+    --lamber: #FEF5E7;
+    --lgreen: #EAFAF1;
+    --text:   #1A1A2E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--lgrey); color: var(--text); font-size: 14px; }
 
-SCOPE:
-Continue from PR-NS-23. Use live Supabase and Vercel verification first. Prove WhatsApp/email/integration proof mode honestly: distinguish real sends, draft-only proof, simulated connector proof, and not-configured states. Preserve Q-00025 accepted quote -> draft order proof and the PR-NS-21 mobile promise truth.
+  /* ── Top bar ── */
+  .topbar {
+    background: var(--navy); color: #fff;
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  }
+  .topbar-brand { font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+  .topbar-brand span { color: var(--teal); }
+  .topbar-meta { font-size: 12px; color: var(--mgrey); }
 
-REQUIRED CHECKS:
-- Confirm latest Vercel deployment state.
-- Re-verify Q-00025 remains accepted and contract d129ffe2-c913-4cf7-9a7b-86ea6c9da54e remains visible with 11 lines.
-- Inspect communications, integrations, integration_events, email/WhatsApp UI copy, and proof-mode records.
-- Patch only safe code/docs/data needed to make integration proof honest and demonstrable.
-- Do not claim real WhatsApp/email send unless live evidence exists.
-- Update all Internal DCC tabs and keep the full 9-item PR queue visible.
+  /* ── Tab nav ── */
+  .tabnav {
+    background: var(--navy); border-top: 1px solid rgba(255,255,255,.08);
+    display: flex; padding: 0 32px; gap: 2px;
+  }
+  .tab {
+    padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--mgrey);
+    cursor: pointer; border-bottom: 3px solid transparent;
+    transition: all .15s; white-space: nowrap;
+  }
+  .tab:hover { color: #fff; }
+  .tab.active { color: #fff; border-bottom-color: var(--teal); }
 
-RETURN:
-- Full updated repo zip.
-- Changed-file list.
-- What changed and why.
-- Buyer impact and investor demo impact.
-- Verification performed/not performed.
-- Next prompt summary.
-- Do not run npm ci.</div></section>
-<script>document.querySelectorAll('.tabbtn').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('.tabbtn').forEach(function(b){b.classList.remove('active')});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});btn.classList.add('active');document.getElementById('tab-'+btn.dataset.tab).classList.add('active')})});</script></div></body></html>
+  /* ── Layout ── */
+  .content { max-width: 1200px; margin: 0 auto; padding: 28px 32px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: #fff; border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 20px; background: var(--navy); color: #fff;
+    font-size: 13px; font-weight: 600; display: flex;
+    align-items: center; justify-content: space-between;
+  }
+  .card-header .badge {
+    font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 12px; background: var(--teal); color: #fff;
+  }
+  .card-body { padding: 20px; }
+
+  /* ── Score grid ── */
+  .score-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px; margin-bottom: 20px;
+  }
+  .score-tile {
+    background: #fff; border-radius: 8px; padding: 16px 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    border-left: 4px solid var(--mgrey);
+  }
+  .score-tile.green  { border-left-color: var(--green); }
+  .score-tile.amber  { border-left-color: var(--amber); }
+  .score-tile.red    { border-left-color: var(--red); }
+  .score-tile .label { font-size: 11px; color: var(--dgrey); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+  .score-tile .score { font-size: 26px; font-weight: 700; color: var(--navy); line-height: 1; }
+  .score-tile .note  { font-size: 11px; color: var(--dgrey); margin-top: 4px; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--navy); color: #fff; padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 600; }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--mgrey); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: var(--lgrey); }
+  tr:hover td { background: var(--lteal); }
+
+  /* ── Severity / status chips ── */
+  .chip {
+    display: inline-block; padding: 2px 9px; border-radius: 10px;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+  .chip-red    { background: var(--lred);    color: var(--red); }
+  .chip-amber  { background: var(--lamber);  color: #a05f00; }
+  .chip-green  { background: var(--lgreen);  color: #1a7a40; }
+  .chip-teal   { background: var(--lteal);   color: var(--teal2); }
+  .chip-grey   { background: var(--lgrey);   color: var(--dgrey); }
+  .chip-navy   { background: var(--navy);    color: #fff; }
+
+  /* ── Progress bar ── */
+  .progress-row { margin-bottom: 12px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--dgrey); margin-bottom: 4px; }
+  .progress-label strong { color: var(--navy); }
+  .progress-bar { height: 8px; background: var(--mgrey); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width .3s; }
+  .fill-green  { background: var(--green); }
+  .fill-amber  { background: var(--amber); }
+  .fill-red    { background: var(--red); }
+  .fill-teal   { background: var(--teal); }
+
+  /* ── Callout boxes ── */
+  .callout { border-radius: 6px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; line-height: 1.6; }
+  .callout-red    { background: var(--lred);    border-left: 4px solid var(--red); }
+  .callout-amber  { background: var(--lamber);  border-left: 4px solid var(--amber); }
+  .callout-green  { background: var(--lgreen);  border-left: 4px solid var(--green); }
+  .callout-teal   { background: var(--lteal);   border-left: 4px solid var(--teal); }
+  .callout-navy   { background: var(--navy);    border-left: 4px solid var(--teal); color: #fff; }
+  .callout strong { font-weight: 700; }
+
+  /* ── Journey strip ── */
+  .journey {
+    display: flex; align-items: center; gap: 0;
+    background: #fff; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 20px;
+  }
+  .journey-step {
+    flex: 1; padding: 12px 16px; text-align: center;
+    font-size: 12px; font-weight: 600; position: relative;
+    border-right: 1px solid var(--mgrey);
+  }
+  .journey-step:last-child { border-right: none; }
+  .journey-step .step-num { font-size: 10px; color: var(--dgrey); margin-bottom: 2px; }
+  .journey-step .step-name { color: var(--navy); }
+  .journey-step.proven { background: var(--lgreen); }
+  .journey-step.proven .step-name { color: #1a7a40; }
+  .journey-step.partial { background: var(--lamber); }
+  .journey-step.partial .step-name { color: #a05f00; }
+  .journey-step.blocked { background: var(--lred); }
+  .journey-step.blocked .step-name { color: var(--red); }
+
+  /* ── North Star ── */
+  .northstar-box {
+    background: var(--navy); color: #fff; border-radius: 8px;
+    padding: 24px 28px; margin-bottom: 20px;
+  }
+  .northstar-box h3 { font-size: 13px; color: var(--teal); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .northstar-box p  { font-size: 16px; font-weight: 600; line-height: 1.5; }
+
+  /* ── Pass cards ── */
+  .pass-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .pass-card { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .pass-card-head { padding: 12px 16px; color: #fff; font-weight: 700; font-size: 13px; }
+  .pass-card-head.p2 { background: var(--teal); }
+  .pass-card-head.p3 { background: var(--amber); }
+  .pass-card-head.p4 { background: var(--navy); }
+  .pass-card-body { padding: 14px 16px; font-size: 12px; line-height: 1.7; }
+  .pass-card-body li { margin-left: 16px; margin-bottom: 4px; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* ── List ── */
+  ul.plain { list-style: none; padding: 0; }
+  ul.plain li { padding: 6px 0; border-bottom: 1px solid var(--mgrey); font-size: 13px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li::before { content: '→ '; color: var(--teal); font-weight: 700; }
+
+  /* ── Code ── */
+  code { background: var(--lgrey); padding: 1px 6px; border-radius: 3px; font-size: 12px; font-family: 'Consolas', monospace; }
+
+  h2 { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 14px; }
+  h3 { font-size: 13px; font-weight: 700; color: var(--teal2); margin-bottom: 10px; margin-top: 18px; }
+  p  { font-size: 13px; line-height: 1.6; margin-bottom: 10px; color: var(--text); }
+
+  @media (max-width: 900px) {
+    .pass-grid { grid-template-columns: 1fr; }
+    .two-col   { grid-template-columns: 1fr; }
+    .journey   { flex-wrap: wrap; }
+    .content   { padding: 16px; }
+    .tabnav    { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">SETU <span>Flow</span> CRM — Internal DCC</div>
+  <div class="topbar-meta">Last updated: 2026-04-30 &nbsp;|&nbsp; Passes 1–4 complete &nbsp;|&nbsp; 213 unit tests passing</div>
+</div>
+
+<div class="tabnav">
+  <div class="tab active" onclick="showTab('overview')">Overview</div>
+  <div class="tab" onclick="showTab('readiness')">Readiness</div>
+  <div class="tab" onclick="showTab('modules')">Modules</div>
+  <div class="tab" onclick="showTab('journey')">Golden Journey</div>
+  <div class="tab" onclick="showTab('demo')">Demo Guide</div>
+  <div class="tab" onclick="showTab('passes')">Next Passes</div>
+  <div class="tab" onclick="showTab('schema')">Schema</div>
+  <div class="tab" onclick="showTab('rules')">Build Rules</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ OVERVIEW -->
+<div class="content">
+<div id="tab-overview" class="panel active">
+
+  <div class="northstar-box">
+    <h3>North Star</h3>
+    <p>"SETU Flow treats governed commercial truth as the system center, then makes communication, integration, AI, and hardening follow that truth."</p>
+  </div>
+
+  <div class="callout callout-teal">
+    <strong>This DCC is the single source of truth.</strong> All readiness scores, module status, demo decisions, and next PR plans live here. If this DCC and any other document disagree, update the other document to match this one.
+  </div>
+
+  <h2>Current state — April 30, 2026</h2>
+
+  <div class="score-grid">
+    <div class="score-tile amber">
+      <div class="label">Core CRM</div>
+      <div class="score">92–95%</div>
+      <div class="note">Lead → Catalog → Quote → Order chain, plus Pass 12 final execution/verification decision docs</div>
+    </div>
+    <div class="score-tile amber">
+      <div class="label">Quote → Order Path</div>
+      <div class="score">89–93%</div>
+      <div class="note">Golden record proven, execution in draft</div>
+    </div>
+    <div class="score-tile amber">
+      <div class="label">Investor Demo</div>
+      <div class="score">82–87%</div>
+      <div class="note">Scripted only. Unscripted is lower.</div>
+    </div>
+    <div class="score-tile amber">
+      <div class="label">First Paying Customer</div>
+      <div class="score">92–95%</div>
+      <div class="note">Pass 12 final launch decision complete; live ops proof still pending</div>
+    </div>
+    <div class="score-tile red">
+      <div class="label">Mobile Parity</div>
+      <div class="score">Not claimed</div>
+      <div class="note">Trade-event capture only</div>
+    </div>
+    <div class="score-tile amber">
+      <div class="label">Security / RPC</div>
+      <div class="score">90–94%</div>
+      <div class="note">Pass 12 final remediation status and launch decision complete. Advisor closure still pending.</div>
+    </div>
+    <div class="score-tile amber">
+      <div class="label">NorthStar Sprint</div>
+      <div class="score">100%</div>
+      <div class="note">Passes 1–12 documentation/proof-planning scope complete</div>
+    </div>
+    <div class="score-tile amber">
+      <div class="label">Buyer Confidence (post-Pass-12)</div>
+      <div class="score">~98/100</div>
+      <div class="note">→ Target 100/100</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Cleanup Pass 1 — Completed <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>File / Path</th><th>Status</th></tr>
+        <tr><td>Deleted .orig backup file</td><td><code>src/features/quotes/components/quote-workspace.tsx.orig</code></td><td><span class="chip chip-green">Deleted</span></td></tr>
+        <tr><td>Deleted raw patch diffs</td><td><code>TRADE_SHOW_PR1.diff</code>, <code>TRADE_SHOW_PR2.diff</code>, <code>TRADE_SHOW_PR2_VERIFY.txt</code></td><td><span class="chip chip-green">Deleted</span></td></tr>
+        <tr><td>Deleted orphan root HTML</td><td><code>SetuFlow-Dashboard-Redesign_1.html</code></td><td><span class="chip chip-green">Deleted</span></td></tr>
+        <tr><td>Deleted Java manifest</td><td><code>META-INF/MANIFEST.MF</code></td><td><span class="chip chip-green">Deleted</span></td></tr>
+        <tr><td>Removed duplicate JSON</td><td><code>public/world-map-data.json</code> (canonical: src/features/dashboard/data/)</td><td><span class="chip chip-green">Removed</span></td></tr>
+        <tr><td>Removed .ts stub</td><td><code>src/features/products/lib/products-table-columns.ts</code></td><td><span class="chip chip-green">Removed</span></td></tr>
+        <tr><td>Removed RFQ stub</td><td><code>src/features/rfqs/components/rfq-form.tsx</code></td><td><span class="chip chip-green">Removed</span></td></tr>
+        <tr><td>Archived 7 TYPEFIX docs</td><td><code>docs/archive/TYPEFIX_V6–V12</code></td><td><span class="chip chip-green">Archived</span></td></tr>
+        <tr><td>Archived internal audit docs</td><td><code>docs/archive/DCC_REGRESSION_AUDIT_V14, REPO_CLEANUP, RELEASE_PROOF, internal audit 2026-04-27</code></td><td><span class="chip chip-green">Archived</span></td></tr>
+        <tr><td>Stripped DCC folder</td><td><code>public/internal-dcc/</code> — 11 PR notes archived. Now contains only <code>index.html</code></td><td><span class="chip chip-green">Clean</span></td></tr>
+        <tr><td>Updated README</td><td>Scores now match RELEASE_READINESS.md. DCC declared single source of truth.</td><td><span class="chip chip-green">Updated</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header">Pass 2 — Technical Credibility <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>102 unit tests written and passing</td><td>5 test files: fx-resolution.helpers, freight-calculation.helpers, quote-compilation.helpers, fx-resolution.service, quote-compilation.service</td><td><span class="chip chip-green">102/102 pass</span></td></tr>
+        <tr><td>Pricing test suite added to package.json</td><td><code>npm run test:pricing</code> runs all 102 tests via tsx --test</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>CSP unsafe-eval removed</td><td><code>middleware.ts</code> script-src no longer includes unsafe-eval</td><td><span class="chip chip-green">Fixed</span></td></tr>
+        <tr><td>Dual lead command center resolved</td><td>Live route: <code>features/leads/command-center/LeadCommandCenterPage.tsx</code> (563 lines, imported by <code>app/(app)/leads/[leadId]/page.tsx</code>). Deleted unused: <code>features/leads/components/lead-command-center.tsx</code> (424 lines, no route or component imported it).</td><td><span class="chip chip-green">Resolved</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header">Pass 3 — Revenue Path + Foundations <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>signContractAction added</td><td>Sets <code>signed_at</code>, locks commercial state, writes audit log. Unblocks draft→ready execution gate. Wired into OrderDetailPanel with "Mark Contract Signed" UI.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>First-login guide</td><td><code>src/features/dashboard/components/first-login-guide.tsx</code> — 3-step onboarding card on dashboard for orgs with no leads or products. Self-hides once data exists.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>CIF write path opened</td><td>CIF reference input added to product detail drawer pricing tab. Stored in <code>product_variants.source_payload</code> JSONB. No schema migration needed. Catalog "— add" is now writable.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>54 RLS / permission tests</td><td><code>tests/workspace/rls-permissions.test.ts</code> — all 6 capabilities × 9 roles, multi-role combos, alias resolution, message generation.</td><td><span class="chip chip-green">54/54 pass</span></td></tr>
+        <tr><td>25 order execution tests</td><td><code>tests/orders/order-execution.test.ts</code> — draft→ready gate, signed contract requirement, lock state, document/compliance blockers, dispatch, completion, deduplication.</td><td><span class="chip chip-green">25/25 pass</span></td></tr>
+        <tr><td>Total test count</td><td>181 unit tests passing across pricing, workspace permissions, and order execution</td><td><span class="chip chip-green">181/181</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header">Pass 4 — Code Clarity + Integration Proof + Operator Docs <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>Shell consolidated 3→1</td><td><code>src/components/shell/</code> now contains all 8 shell files. <code>components/layout/shell/</code> merged in. Dead <code>components/setu-shell/</code> deleted. <code>SHELL_ARCHITECTURE.md</code> documents every file's responsibility and rules.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>contact-exchange classified</td><td><code>/contact-exchange/scan</code> = Supporting (trade-event capture wedge, wired via middleware /workspace/capture). <code>/contact-exchange/vcard</code> + preview = Experimental-Frozen. No expansion without explicit Pass 6 decision.</td><td><span class="chip chip-teal">Classified</span></td></tr>
+        <tr><td>32 integration proof tests</td><td><code>tests/integrations/governance.test.ts</code> — governed contract sync states, ERP/freight candidates (ready vs blocked), governance alerts, connector definitions for all 4 providers, event reader helpers (attempt count, continuity key, impact summary, validation label).</td><td><span class="chip chip-green">32/32 pass</span></td></tr>
+        <tr><td>Operator pricing guide</td><td><code>docs/OPERATOR_PRICING_GUIDE.md</code> — pricing bases (Ex-Factory, FOB, CIF, Bulk), rule set setup (import + manual), quote readiness gating, CIF two-path explanation, override/approval flow, audit trail, common issues table, role/permission matrix.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Total test count</td><td>213 unit tests passing: 102 pricing + 54 workspace + 25 orders + 32 integrations</td><td><span class="chip chip-green">213/213</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header">Pass 5 — Security Hardening + Admin Onboarding <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>46 security boundary tests</td><td><code>tests/security/rls-boundaries.test.ts</code> and <code>tests/security/order-auth-boundaries.test.ts</code> cover role/capability gates, read-only messaging, role normalization, empty/undefined roles, multi-role combinations, and order/contract/document action gates.</td><td><span class="chip chip-green">46/46 pass</span></td></tr>
+        <tr><td>Secrets policy</td><td><code>docs/SECURITY_POLICY.md</code> documents Supabase public values, service-role key handling, AI provider keys, WhatsApp/communication posture, storage locations, rotation cadence, compromise response, and non-claims.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Security hardening review</td><td><code>docs/SECURITY_HARDENING_REVIEW_PASS5.md</code> reviews existing findings, confirms middleware headers/CSP posture, documents Supabase admin/server client separation, and records read-only live Supabase connector checks.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Admin onboarding SOP</td><td><code>docs/SOP_ADMIN_ONBOARDING.md</code> gives non-technical admins a first-login → org setup → invites → reference lists → pricing → lead → quote → break/fix path.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Total test count</td><td>259 unit tests expected: 213 existing + 46 Pass 5 security tests; security suite previously verified via local tsx-compatible shim; direct npm script requires project-local tsx</td><td><span class="chip chip-amber">46/46 verified; 259 expected</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Pass 6 — External Audit Prep + Production Readiness <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>Supabase advisor review</td><td><code>docs/SUPABASE_ADVISOR_REVIEW_PASS6.md</code> records live project identity, RLS counts, advisor findings, RPC grant exposure, and hardening recommendations.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>External audit preparation</td><td><code>docs/EXTERNAL_SECURITY_AUDIT_PREP.md</code> defines audit scope, evidence pack, auditor questions, and pre-audit checklist without claiming audit completion.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>WAF / rate-limit plan</td><td><code>docs/WAF_RATE_LIMITING_PLAN.md</code> documents route risks, recommended controls, owners, and non-claims for production enforcement.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Production readiness checklist</td><td><code>docs/PRODUCTION_SCALE_READINESS.md</code> documents database, app, operational, scale-risk, backup, monitoring, and support gaps.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Claim reconciliation</td><td><code>docs/CLAIM_RECONCILIATION_PASS6.md</code> reconciles README, DCC, RELEASE_READINESS, and investor wording against proven evidence.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Buyer confidence path</td><td><code>docs/BUYER_CONFIDENCE_TO_100.md</code> maps remaining proof from ~92 to 100.</td><td><span class="chip chip-green">Done</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+
+
+  <div class="card">
+    <div class="card-header">Pass 7 — Pilot Customer Launch + Live Proof Pack <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>Pilot launch checklist</td><td><code>docs/PILOT_CUSTOMER_LAUNCH_CHECKLIST.md</code> defines pre-launch, launch-day, go/no-go, owner, and non-claim checks.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Live proof plan</td><td><code>docs/LIVE_SIGNED_CONTRACT_AND_DISPATCH_PROOF_PLAN.md</code> describes proving signed contract and dispatch on a new pilot record without mutating Q-00025.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>First customer metrics</td><td><code>docs/FIRST_CUSTOMER_SUCCESS_METRICS.md</code> defines activation, operational, and buyer-confidence metrics.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Support runbook</td><td><code>docs/PRODUCTION_SUPPORT_RUNBOOK.md</code> documents support roles, incidents, triage, severity, placeholder targets, and non-claims.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Investor/demo pack</td><td><code>docs/FINAL_INVESTOR_DEMO_READINESS_PACK.md</code> gives demo narrative, proven path, caveats, checklist, and Q&amp;A.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Supabase re-check</td><td><code>docs/SUPABASE_ADVISOR_REVIEW_PASS7.md</code> confirms live advisor/RPC posture is materially unchanged from Pass 6.</td><td><span class="chip chip-amber">Open findings unchanged</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header">Pass 9 — Draft Remediation + Negative RPC Test Design <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>No live Supabase changes</td><td>No explicit authorization was provided, so remediation stayed draft-only and production remained untouched.</td><td><span class="chip chip-green">Safe</span></td></tr>
+        <tr><td>Draft remediation assets</td><td><code>docs/SUPABASE_REMEDIATION_IMPLEMENTATION_PASS9.md</code> plus four <code>supabase/migrations/pass9_*_advisor_remediation.sql</code> files.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Rollback plan</td><td><code>docs/MIGRATION_DRY_RUN_AND_ROLLBACK_PASS9.md</code> documents dry-run, evidence, and rollback requirements.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Negative RPC/design tests</td><td><code>tests/security/rpc-grant-hardening.test.ts</code> and <code>tests/security/db-capability-design.test.ts</code> add 72 pure assertion tests. Expected total suite: 331 tests.</td><td><span class="chip chip-green">Added</span></td></tr>
+        <tr><td>100/100 evidence gate</td><td><code>docs/BUYER_CONFIDENCE_100_EVIDENCE_GATE_PASS9.md</code> confirms 100/100 is not claimable without real production evidence.</td><td><span class="chip chip-green">Done</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header">Pass 10 — Final Launch Gate + Auditor/Investor Evidence Pack <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>No live Supabase changes</td><td>No explicit authorization was provided, so remediation stayed unapplied and production remained untouched.</td><td><span class="chip chip-green">Safe</span></td></tr>
+        <tr><td>Final production launch gate</td><td><code>docs/FINAL_PRODUCTION_LAUNCH_GATE_PASS10.md</code> defines launch blockers, conditional pilot readiness, and 100/100 gating.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Auditor response pack</td><td><code>docs/EXTERNAL_AUDITOR_RESPONSE_PACK_PASS10.md</code> summarizes scope, architecture, known findings, evidence provided, missing evidence, and remediation owners.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Pilot evidence capture</td><td><code>docs/PILOT_LAUNCH_EVIDENCE_CAPTURE_PASS10.md</code> defines first-pilot evidence capture on a new record, preserving Q-00025.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Investor proof bundle</td><td><code>docs/INVESTOR_READY_100_PROOF_BUNDLE_PASS10.md</code> provides investor-safe wording and confirms 100/100 is not claimable yet.</td><td><span class="chip chip-green">Done</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout callout-amber">
+
+  <div class="card">
+    <div class="card-header">Pass 11 — Pilot Evidence Review + Customer Readiness + Monitoring Proof <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>No live remediation or data mutation</td><td>No explicit authorization or new evidence was provided, so Supabase remained untouched and frozen proof records were preserved.</td><td><span class="chip chip-green">Safe</span></td></tr>
+        <tr><td>Pilot evidence review</td><td><code>docs/PILOT_EVIDENCE_REVIEW_PASS11.md</code> records all pilot/customer evidence as pending until a new proof record is captured.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Customer readiness decision</td><td><code>docs/CUSTOMER_READINESS_DECISION_PASS11.md</code> keeps first-customer launch as conditional go, not unconditional.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Monitoring proof checklist</td><td><code>docs/PRODUCTION_MONITORING_PROOF_PASS11.md</code> defines required provider evidence and marks it pending.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Post-launch backlog and claim lock</td><td><code>docs/POST_LAUNCH_REMEDIATION_BACKLOG_PASS11.md</code> and <code>docs/FINAL_INVESTOR_CUSTOMER_CLAIM_LOCK_PASS11.md</code> lock remaining blockers and allowed wording.</td><td><span class="chip chip-green">Done</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Pass 12 — Final Remediation Status + Verification + Launch Decision <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>No live remediation or data mutation</td><td>No explicit authorization or new evidence was provided, so Supabase remained untouched and frozen proof records were preserved.</td><td><span class="chip chip-green">Safe</span></td></tr>
+        <tr><td>Final remediation execution status</td><td><code>docs/FINAL_REMEDIATION_EXECUTION_STATUS_PASS12.md</code> marks all remediation areas pending authorization.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Live negative RPC verification status</td><td><code>docs/LIVE_NEGATIVE_RPC_VERIFICATION_PASS12.md</code> keeps live mutation-prone verification pending until a safe test database or authorization exists.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Pilot and monitoring evidence closure</td><td><code>docs/FIRST_PILOT_EVIDENCE_CLOSURE_PASS12.md</code> and <code>docs/MONITORING_AND_BACKUP_EVIDENCE_CLOSURE_PASS12.md</code> mark all proof gates pending because no new evidence was supplied.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Final launch decision</td><td><code>docs/FINAL_LAUNCH_DECISION_PASS12.md</code> sets the executive decision to conditional pilot only, not broad production launch.</td><td><span class="chip chip-green">Done</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Pass 13 — Post-Decision Remediation + Pilot Operations + Final Evidence Handoff <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>No live remediation or data mutation</td><td>No explicit authorization or new evidence was provided, so Supabase remained untouched and frozen proof records were preserved.</td><td><span class="chip chip-green">Safe</span></td></tr>
+        <tr><td>Post-decision remediation status</td><td><code>docs/POST_DECISION_REMEDIATION_STATUS_PASS13.md</code> keeps advisor/RPC remediation pending authorization.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Pilot operations checklist</td><td><code>docs/PILOT_OPERATIONS_CHECKLIST_PASS13.md</code> defines pre-pilot, pilot-day, daily, weekly, escalation, and evidence-capture operations.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Support activation checklist</td><td><code>docs/PRODUCTION_SUPPORT_ACTIVATION_PASS13.md</code> records support activation requirements and marks tooling/SLA/alert evidence pending.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Final evidence handoff and claim archive</td><td><code>docs/CUSTOMER_INVESTOR_FINAL_EVIDENCE_HANDOFF_PASS13.md</code> and <code>docs/FINAL_FROZEN_LAUNCH_CLAIM_ARCHIVE_PASS13.md</code> lock safe wording and forbidden claims.</td><td><span class="chip chip-green">Done</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout callout-amber">
+    <strong>Buyer Confidence target: 100/100.</strong> Current score after Pass 13 remains estimated at ~98/100 (up from 38). Pass 13 adds post-decision remediation status, pilot operations readiness, support activation requirements, customer/investor evidence handoff, and frozen launch-claim archive, but the path to 100 still requires Supabase advisor closure, external security audit completion, deployed WAF/rate-limit proof, production monitoring, backup/restore drill, live connector proof, signed-contract/dispatch proof, production support activation, and first-customer pilot evidence.
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ READINESS -->
+<div id="tab-readiness" class="panel">
+
+  <h2>Readiness — Honest State</h2>
+
+  <div class="callout callout-navy">
+    These are honest scores. They do not inflate. When a gap closes, update this table and update README to match.
+  </div>
+
+  <div class="card">
+    <div class="card-header">Readiness by Area</div>
+    <div class="card-body">
+      <div class="progress-row">
+        <div class="progress-label"><strong>Core CRM workflow (Lead → Pipeline → Quote)</strong><span>92–95%</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-teal" style="width:94%"></div></div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-label"><strong>Quote → Order revenue path</strong><span>89–93%</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-amber" style="width:96%"></div></div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-label"><strong>Investor demo safety (scripted)</strong><span>82–87%</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-amber" style="width:84%"></div></div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-label"><strong>First paying customer readiness</strong><span>92–95%</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-amber" style="width:84%"></div></div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-label"><strong>Security / RPC trust</strong><span>90–94%</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-amber" style="width:86%"></div></div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-label"><strong>Mobile truth / claim safety</strong><span>70–76%</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-amber" style="width:73%"></div></div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-label"><strong>Mobile-native parity</strong><span>Not claimed</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-red" style="width:40%"></div></div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-label"><strong>NorthStar sprint completion</strong><span>100%</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-teal" style="width:100%"></div></div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-label"><strong>Buyer Confidence Score</strong><span>~98/100 (est. post-Pass 13)</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-teal" style="width:96%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">Remaining Blockers — Pilot</div>
+      <div class="card-body">
+        <ul class="plain">
+          <li>Signed contract + dispatch proof on live data remains unproven; Pass 7 defines the new-record proof plan.</li>
+          <li>Live integration connector remains unproven; proof-mode/mocks only today.</li>
+          <li>Live Supabase RLS E2E is still not claimed; Pass 5 adds boundary tests and read-only Supabase connector inspection showing all public tables have RLS enabled but advisor findings remain.</li>
+          <li>External security audit completion, deployed WAF/rate-limit enforcement, applied Supabase remediation, monitoring evidence, backup drill, live connector proof, signed/dispatch proof, and pilot evidence remain open; Pass 13 adds final evidence-handoff and claim-archive docs only, not deployed proof.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Remaining Blockers — Production</div>
+      <div class="card-body">
+        <ul class="plain">
+          <li>External security audit and remediation tracking.</li>
+          <li>Automated secrets rotation or secrets manager remains deferred.</li>
+          <li>WAF / rate limiting at infrastructure layer.</li>
+          <li>Production-scale operating evidence and monitoring.</li>
+          <li>Full mobile implementation remains not claimed.</li>
+          <li>Claim reconciliation completed in Pass 6; Pass 13 frozen claim archive governs investor/customer wording; Pass 12 launch decision keeps the status conditional pilot only.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Buyer Confidence Roadmap — Path to 100/100</div>
+    <div class="card-body">
+      <table>
+        <tr><th>Score Range</th><th>What Gets You There</th><th>Est. After</th></tr>
+        <tr><td>38 → 50</td><td>Cleanup Pass 1 (completed — deleted junk, fixed README, stripped DCC)</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>50 → 65</td><td>Pass 2: 30+ pricing unit tests + CSP fix + dual command center resolved</td><td>Pass 2</td></tr>
+        <tr><td>65 → 78</td><td>Pass 3: signContractAction, FirstLoginGuide, CIF write path, 79 new tests (54 RLS + 25 order execution)</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>78 → 87</td><td>Pass 4: Shell consolidated (3→1 dir), setu-shell dead code deleted, contact-exchange classified, 32 integration proof tests, OPERATOR_PRICING_GUIDE.md written</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>87 → 90</td><td>Pass 5: RLS boundary tests, live Supabase connector inspection, secrets policy, security hardening review, and admin onboarding SOP</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>90 → 92</td><td>Pass 6: Supabase advisor review, audit prep, WAF/rate-limit plan, production readiness checklist, and claim reconciliation</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>92 → 96</td><td>Pass 7: pilot customer launch checklist, signed-contract/dispatch proof plan, first-customer success metrics, production support runbook, investor/demo pack, and live Supabase re-check</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>96 → 98</td><td>Pass 8: Supabase advisor remediation plan, RPC hardening plan, database capability design, audit remediation tracker, WAF evidence checklist, and live Supabase re-check</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>98 → 98</td><td>Pass 9: draft Supabase remediation implementation, migration dry-run/rollback plan, RPC negative/design assertion tests, live proof-record checklist, and 100/100 evidence gate</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>98 → 98</td><td>Pass 10: final production launch gate, auditor response pack, pilot evidence capture, and investor-ready 100/100 proof bundle</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>98 → 98</td><td>Pass 11: pilot evidence review, customer readiness decision, post-launch remediation backlog, production monitoring proof checklist, and investor/customer claim lock</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>98 → 98</td><td>Pass 12: final remediation execution status, live negative RPC verification status, first-pilot evidence closure, monitoring/backup evidence closure, and final launch/no-launch decision</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>98 → 98</td><td>Pass 13: post-decision remediation status, pilot operations checklist, support activation checklist, final evidence handoff, and frozen claim archive</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>98 → 100</td><td>Actual advisor closure, external audit completion, deployed WAF/monitoring, backup/restore drill, live connector, signed/dispatch proof, production support activation, and first customer pilot evidence</td><td>Pass 14+</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ MODULES -->
+<div id="tab-modules" class="panel">
+
+  <h2>Module Classification</h2>
+
+  <div class="callout callout-teal">
+    Every module is classified. If a module is Experimental, it must not be expanded. If it is Drift, it must be resolved before any new features touch that area. Core North Star modules are the product.
+  </div>
+
+  <div class="card">
+    <div class="card-header">Module Status Table</div>
+    <div class="card-body">
+      <table>
+        <tr><th style="width:200px">Module</th><th>Classification</th><th>Status</th><th>Action Required</th></tr>
+        <tr>
+          <td><code>features/quotes/pricing/</code></td>
+          <td><span class="chip chip-navy">Core North Star</span></td>
+          <td>30+ files. Pricing compilation, FX, freight, approval, override, versioning. Real depth.</td>
+          <td>Protect. Pricing tests and operator pricing guide are in place; keep commercial truth guarded.</td>
+        </tr>
+        <tr>
+          <td><code>features/leads/</code></td>
+          <td><span class="chip chip-navy">Core North Star</span></td>
+          <td>Command center, qualification, product linkage, activity timeline, quote initiation. <strong>Dual implementation — resolve in Pass 4.</strong></td>
+          <td>Resolved in Pass 2. Keep command-center path canonical and avoid reintroducing duplicate lead workspaces.</td>
+        </tr>
+        <tr>
+          <td><code>features/pipeline/</code></td>
+          <td><span class="chip chip-navy">Core North Star</span></td>
+          <td>Kanban board, stage gating, drag-drop, AI strip, lane filters.</td>
+          <td>Maintain. Duplicate lead-card resolved when shell consolidation runs (Pass 4).</td>
+        </tr>
+        <tr>
+          <td><code>features/orders/</code></td>
+          <td><span class="chip chip-teal">Core — Incomplete</span></td>
+          <td>Architecture correct. Golden record in draft. Dispatch/signed contract not proven.</td>
+          <td>Keep improving proof. Signed-contract and dispatch remain unproven on live golden data.</td>
+        </tr>
+        <tr>
+          <td><code>features/products/ (catalog)</code></td>
+          <td><span class="chip chip-navy">Core North Star</span></td>
+          <td>Product catalog, pricing gaps, quote readiness, spreadsheet ingestion. CIF write path not yet exposed.</td>
+          <td>CIF write path and operator pricing guide are done; keep quote-ready gating strict.</td>
+        </tr>
+        <tr>
+          <td><code>features/contracts/</code></td>
+          <td><span class="chip chip-navy">Core North Star</span></td>
+          <td>Contract workspace, contract progression SOP. Tied to accepted-quote admission.</td>
+          <td>Prove signed contract state before claiming beyond draft.</td>
+        </tr>
+        <tr>
+          <td><code>features/admin/</code></td>
+          <td><span class="chip chip-teal">Supporting</span></td>
+          <td>User management, org settings, audit log, AI analytics, markets, stages, pipelines, security.</td>
+          <td>Keep. Verify admin roles gate actions via RLS.</td>
+        </tr>
+        <tr>
+          <td><code>features/integrations/</code></td>
+          <td><span class="chip chip-teal">Supporting</span></td>
+          <td>Webhook ingestion, governed sync, retry queue, replay posture. Architecture present; live connector not proven.</td>
+          <td>32 integration proof tests exist; live external connector remains not claimed.</td>
+        </tr>
+        <tr>
+          <td><code>features/ai/</code></td>
+          <td><span class="chip chip-teal">Supporting</span></td>
+          <td>Contextual suggestions, draft controls, intelligence panels, order delay prediction. Correctly bounded — assistive only.</td>
+          <td>Do not demo autonomous actions. Verify AI guardrails doc matches actual behavior.</td>
+        </tr>
+        <tr>
+          <td><code>features/trade-events/</code></td>
+          <td><span class="chip chip-teal">Supporting</span></td>
+          <td>Trade show lead capture, event entry, mobile capture. The proven mobile wedge.</td>
+          <td>Keep. Document clearly as the mobile entry point.</td>
+        </tr>
+        <tr>
+          <td><code>features/compliance/</code></td>
+          <td><span class="chip chip-teal">Supporting</span></td>
+          <td>Document compliance workspace. Relevant in regulated markets.</td>
+          <td>Document compliance rules and integration with order execution path.</td>
+        </tr>
+        <tr>
+          <td><code>features/reports/</code></td>
+          <td><span class="chip chip-teal">Supporting — Thin</span></td>
+          <td>Summary metrics, stat cards, audit event rendering. Depth is shallow currently.</td>
+          <td>Define what reports actually show. If stat card aggregator only, scope accurately.</td>
+        </tr>
+        <tr>
+          <td><code>features/contact-exchange/</code></td>
+          <td><span class="chip chip-teal">Split: Scan=Supporting / vCard=Experimental-Frozen</span></td>
+          <td><strong>/scan</strong> = trade-event lead capture wedge (middleware /workspace/capture). Core to mobile strategy. <strong>/vcard + preview</strong> = digital card sharing. Not in North Star chain.</td>
+          <td>Scan: maintain as part of trade-event mobile wedge. vCard: Experimental-Frozen — no expansion without Pass 6 mobile decision.</td>
+        </tr>
+        <tr>
+          <td><code>features/rfqs/</code></td>
+          <td><span class="chip chip-amber">Experimental</span></td>
+          <td>RFQ wizard form, workspace, server actions. Not in golden demo path or architecture docs.</td>
+          <td>Still experimental. Do not demo or expand without explicit scope decision.</td>
+        </tr>
+        <tr>
+          <td><code>features/trade-workflow/</code></td>
+          <td><span class="chip chip-red">Unclear — Resolve</span></td>
+          <td>logic.ts, types.ts, ui.tsx. Standalone module. No DCC entry. No documentation. Unknown ownership.</td>
+          <td>Still needs ownership/classification before expansion.</td>
+        </tr>
+        <tr>
+          <td>Shell (3 directories)</td>
+          <td><span class="chip chip-amber">Needs Consolidation</span></td>
+          <td><code>components/shell/</code>, <code>components/layout/shell/</code>, <code>components/setu-shell/</code> — fragmented.</td>
+          <td>Resolved in Pass 4: shell consolidated under src/components/shell/.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ GOLDEN JOURNEY -->
+<div id="tab-journey" class="panel">
+
+  <h2>Golden Journey — Live Proof</h2>
+
+  <div class="callout callout-green">
+    <strong>This is the only proven, demoable end-to-end path.</strong> Use only this journey in investor and buyer demos until further proof passes complete.
+  </div>
+
+  <div class="journey">
+    <div class="journey-step proven"><div class="step-num">1</div><div class="step-name">Lead Created</div></div>
+    <div class="journey-step proven"><div class="step-num">2</div><div class="step-name">Quote Built</div></div>
+    <div class="journey-step proven"><div class="step-num">3</div><div class="step-name">Approval</div></div>
+    <div class="journey-step proven"><div class="step-num">4</div><div class="step-name">Sent</div></div>
+    <div class="journey-step proven"><div class="step-num">5</div><div class="step-name">Accepted</div></div>
+    <div class="journey-step proven"><div class="step-num">6</div><div class="step-name">Draft Order</div></div>
+    <div class="journey-step partial"><div class="step-num">7</div><div class="step-name">Doc Review</div></div>
+    <div class="journey-step blocked"><div class="step-num">8</div><div class="step-name">Signed Contract</div></div>
+    <div class="journey-step blocked"><div class="step-num">9</div><div class="step-name">Dispatch</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Live Golden Record — Setu Groups / Q-00025</div>
+    <div class="card-body">
+      <table>
+        <tr><th>Field</th><th>Live Value</th><th>Status</th></tr>
+        <tr><td>Buyer</td><td>Setu Groups</td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Contact</td><td>Ritesh Kapoor</td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Lead ID</td><td><code>262ddf46-ecfe-4385-aaf5-18387d2a79f9</code></td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Quote</td><td>Q-00025</td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Quote ID</td><td><code>b6f8111a-3b32-456d-92f0-412c898bf13b</code></td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Quote status</td><td>accepted</td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Accepted version ID</td><td><code>7f8efd6b-6e19-4941-b974-a5fc61738b0f</code></td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Contract / order execution ID</td><td><code>d129ffe2-c913-4cf7-9a7b-86ea6c9da54e</code></td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Contract line count</td><td>11 (matches quote lines)</td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Execution state</td><td>draft</td><td><span class="chip chip-amber">Partial — Pass 3</span></td></tr>
+        <tr><td>Communication proof</td><td><code>5d2395f6-3a88-4399-b578-2142ac767f8a</code></td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Negotiation event</td><td><code>5bbc4b7b-a6f7-4db6-99f2-d987da5f7260</code></td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Audit log entry</td><td><code>a4ac95ed-bf28-4853-aff8-f40678d4e9a8</code></td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Signed contract</td><td>Not yet proven on live golden data</td><td><span class="chip chip-red">Remaining blocker</span></td></tr>
+        <tr><td>Dispatch / release</td><td>Not yet proven on live golden data</td><td><span class="chip chip-red">Remaining blocker</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Honest Investor Script</div>
+    <div class="card-body">
+      <div class="callout callout-teal" style="margin-bottom:12px">
+        <strong>Use this wording:</strong><br><br>
+        "This is the live golden buyer journey. Setu Groups' quote Q-00025 was sent, accepted, and handed off into Orders as contract d129ffe2-c913-4cf7-9a7b-86ea6c9da54e with all 11 commercial lines preserved. The next proof layer is operational execution: document blockers, release readiness, dispatch evidence, and RPC permission hardening."
+      </div>
+      <div class="callout callout-red">
+        <strong>Never say:</strong> "The order has shipped." &nbsp;|&nbsp; "The contract is signed and active." &nbsp;|&nbsp; "All RLS findings are closed." &nbsp;|&nbsp; "The mobile-native promise is fully proven."
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ DEMO GUIDE -->
+<div id="tab-demo" class="panel">
+
+  <h2>Demo Guide</h2>
+
+  <div class="two-col" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-header" style="background:var(--green)">✓ Safe to Demo</div>
+      <div class="card-body">
+        <ul class="plain">
+          <li>Setu Groups / Q-00025 golden journey (scripted only)</li>
+          <li>Lead creation and qualification workflow</li>
+          <li>Catalog: product setup, pricing rules, quote readiness gating</li>
+          <li>Quote builder with pricing breakdown and approval gate</li>
+          <li>Pipeline board — stage view with lead cards</li>
+          <li>Admin: user management, approval threshold config, audit log</li>
+          <li>Dashboard: KPI cards, needs-attention panel, pipeline stage chart</li>
+          <li>Trade-event lead capture (mobile wedge — phone/tablet)</li>
+          <li>AI suggestions panel (assistive framing only)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" style="background:var(--red)">✗ Do Not Demo (until proven)</div>
+      <div class="card-body">
+        <ul class="plain">
+          <li>Any unscripted navigation</li>
+          <li>Mobile beyond trade-event capture</li>
+          <li>WhatsApp delivery end-to-end</li>
+          <li>Orders dispatch, signed contracts, or completed execution</li>
+          <li>Integrations — live connector flow</li>
+          <li>Contact exchange / digital card feature</li>
+          <li>RFQ module (undocumented)</li>
+          <li>AI as autonomous decision-maker</li>
+          <li>First-login / empty-state flow for a new organization</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Demo Script — Scripted Golden Path</div>
+    <div class="card-body">
+      <table>
+        <tr><th>#</th><th>Step</th><th>What to Show</th><th>What to Say</th></tr>
+        <tr><td>1</td><td>Dashboard</td><td>KPI cards, needs-attention panel, pipeline stage chart</td><td>"This is the operational view — leadership sees the revenue state at a glance. Stalled leads surface automatically."</td></tr>
+        <tr><td>2</td><td>Leads → Setu Groups</td><td>Open lead, show qualification state, product markets, contact</td><td>"Every commercial journey starts with a qualified lead. Product coverage and market readiness must be confirmed before a quote can progress."</td></tr>
+        <tr><td>3</td><td>Quote Q-00025</td><td>Quote detail — line items, FX, freight, pricing basis, version history</td><td>"The quote starts from the catalog price. Any override requires a reason. If it crosses the approval threshold, it goes through governance before it can be sent."</td></tr>
+        <tr><td>4</td><td>Quote status — Accepted</td><td>Show accepted state, accepted version, line count</td><td>"The buyer accepted. All 11 commercial lines are locked."</td></tr>
+        <tr><td>5</td><td>Orders</td><td>Show contract d129ffe2, execution state: draft, 11 line items</td><td>"The moment a quote is accepted, an order execution record is created automatically with the same commercial lines. No manual re-entry."</td></tr>
+        <tr><td>6</td><td>Admin — Audit log</td><td>Show audit entries for Q-00025 journey</td><td>"Every action is logged — quote creation, approval, send, acceptance, and order admission. Full audit trail."</td></tr>
+        <tr><td>7</td><td>Trade-event capture (mobile)</td><td>Show capture screen on mobile/tablet</td><td>"Reps at trade shows capture leads on phone with or without connectivity. They sync when back online."</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ NEXT PASSES -->
+<div id="tab-passes" class="panel">
+
+  <h2>Next Three Passes — Roadmap to 100/100</h2>
+
+  <div class="callout callout-navy">
+    Each pass has a defined scope, a buyer confidence impact, and a completion gate. No new features until each pass gate is met.
+  </div>
+
+  <div class="pass-grid">
+    <div class="pass-card">
+      <div class="pass-card-head p2">Pass 2 — Technical Credibility</div>
+      <div class="pass-card-body">
+        <strong>Target buyer confidence: ~50 → 65</strong><br><br>
+        <strong>Scope:</strong>
+        <ul>
+          <li>Write 30+ unit tests for pricing compilation, FX resolution, and freight calculation services</li>
+          <li>Write 10+ approval routing / quote workflow tests</li>
+          <li>Fix CSP: remove <code>unsafe-eval</code></li>
+          <li>Resolve dual lead command center — keep one, delete the other, document which path is canonical</li>
+          <li>Verify <code>npm ci && next build</code> completes locally without errors</li>
+          <li>Update DCC readiness scores after pass</li>
+        </ul>
+        <br><strong>Gate:</strong> All tests pass. Build verified. DCC updated.
+      </div>
+    </div>
+    <div class="pass-card">
+      <div class="pass-card-head p3">Pass 3 — Revenue Path Completion</div>
+      <div class="pass-card-body">
+        <strong>Target buyer confidence: ~65 → 78</strong><br><br>
+        <strong>Scope:</strong>
+        <ul>
+          <li>Complete order execution: document upload blocker → approval → signed contract state → dispatch trigger</li>
+          <li>Prove first-login / empty-state for a new organization</li>
+          <li>CIF write path in catalog</li>
+          <li>RPC/RLS regression testing across all roles</li>
+          <li>Update golden journey status in DCC (steps 7–9 from partial/blocked to proven)</li>
+          <li>Update INVESTOR_READINESS.md with new safe demo line</li>
+        </ul>
+        <br><strong>Gate:</strong> Orders shows signed contract + dispatch blocker cleared. New org onboarding works.
+      </div>
+    </div>
+    <div class="pass-card">
+      <div class="pass-card-head p4">Pass 4 — Code Clarity + Integration</div>
+      <div class="pass-card-body">
+        <strong>Target buyer confidence: ~78 → 87</strong><br><br>
+        <strong>Scope:</strong>
+        <ul>
+          <li>Consolidate shell into one directory</li>
+          <li>Classify contact-exchange as Core or remove it</li>
+          <li>Document trade-workflow module or merge it</li>
+          <li>Integration proof mode — one live connector demonstrated</li>
+          <li>Document rfqs module in architecture or remove it</li>
+          <li>Operator pricing rule setup guide</li>
+          <li>Admin onboarding guide (org → users → roles → approval thresholds)</li>
+        </ul>
+        <br><strong>Gate:</strong> One live integration proven. All modules classified. Docs count reduced to &lt;20 active files.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Pass 5 + 6 + 7 — Security, Production, and Pilot Readiness</div>
+    <div class="card-body">
+      <div class="two-col">
+        <div>
+          <h3>Pass 5 — Security Hardening + Admin Onboarding + Live Supabase Inspection (80 → 88) ✓ Done</h3>
+          <ul class="plain">
+            <li>46 pure security boundary tests added</li>
+            <li>Secrets management policy documented</li>
+            <li>Security hardening review completed</li>
+            <li>Admin onboarding SOP completed</li>
+            <li>Live RLS E2E, WAF, and external audit remain Pass 6 / production concerns</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Pass 6 — Production Proof Prep (88 → 92) ✓ Done</h3>
+          <ul class="plain">
+            <li>External security audit preparation checklist</li>
+            <li>WAF / rate-limiting documentation and owner map</li>
+            <li>Production scale readiness checklist</li>
+            <li>Final claim reconciliation across DCC, README, and INVESTOR_READINESS</li>
+            <li>Buyer confidence path from ~88 to 100 documented</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Build Rules for Every Future PR</div>
+    <div class="card-body">
+      <table>
+        <tr><th>Rule</th><th>Required</th></tr>
+        <tr><td>Update this DCC (index.html) with changed readiness scores, module status, and any new proven facts</td><td><span class="chip chip-red">Mandatory every PR</span></td></tr>
+        <tr><td>Update README if readiness scores change</td><td><span class="chip chip-red">Mandatory</span></td></tr>
+        <tr><td>List all files changed in CHANGES.md</td><td><span class="chip chip-red">Mandatory</span></td></tr>
+        <tr><td>Return updated repo zip to Ritesh after every implementation cycle</td><td><span class="chip chip-red">Mandatory</span></td></tr>
+        <tr><td>Include next prompt with every handoff</td><td><span class="chip chip-red">Mandatory</span></td></tr>
+        <tr><td>Do not run npm ci in Claude container (document why if skipped)</td><td><span class="chip chip-amber">Standard</span></td></tr>
+        <tr><td>Verify Supabase project ACTIVE_HEALTHY before any data mutation</td><td><span class="chip chip-amber">Standard</span></td></tr>
+        <tr><td>Do not build new features while a pass is in progress</td><td><span class="chip chip-amber">Standard</span></td></tr>
+        <tr><td>Do not add to docs/ without classifying the file as active or archive</td><td><span class="chip chip-amber">Standard</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ SCHEMA -->
+<div id="tab-schema" class="panel">
+
+  <h2>Schema Status</h2>
+
+  <div class="callout callout-green">
+    No Supabase schema changes required as of Cleanup Pass 1. The current schema supports all reviewed workflows.
+  </div>
+
+  <div class="card">
+    <div class="card-header">Schema Coverage</div>
+    <div class="card-body">
+      <table>
+        <tr><th>Area</th><th>Tables</th><th>Status</th></tr>
+        <tr><td>Organizations + approval</td><td>organizations (with approval_threshold_pct), invitations, roles, user_roles</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Leads + markets</td><td>leads, markets, countries, categories, stages, pipelines</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Products + pricing</td><td>products, product_variants, pricing_rules, pricing_rule_conditions, freight_profiles</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Quotes + versions</td><td>quotes, quote_versions, quote_version_line_items, exchange_rates, quote_templates</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Approvals + overrides</td><td>approval fields on quotes, quote_negotiations</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Communications</td><td>communications</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Contracts + orders</td><td>contracts, contract_line_items (with organization_id — patched in PR-NS-19)</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Documents + compliance</td><td>documents (with requirement_code, status, version)</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Audit log</td><td>audit_logs</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Trade events</td><td>trade_events</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Tasks</td><td>tasks</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>Reference lists</td><td>Settings lists (markets, countries, categories, stages, pipelines)</td><td><span class="chip chip-green">Complete</span></td></tr>
+        <tr><td>RPC functions</td><td>app_ensure_contract_for_accepted_quote_tx (patched in PR-NS-19 to include organization_id)</td><td><span class="chip chip-amber">Pure boundary tests added; live RLS E2E still pending</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header">Pass 2 — Technical Credibility <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>102 unit tests written and passing</td><td>5 test files: fx-resolution.helpers, freight-calculation.helpers, quote-compilation.helpers, fx-resolution.service, quote-compilation.service</td><td><span class="chip chip-green">102/102 pass</span></td></tr>
+        <tr><td>Pricing test suite added to package.json</td><td><code>npm run test:pricing</code> runs all 102 tests via tsx --test</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>CSP unsafe-eval removed</td><td><code>middleware.ts</code> script-src no longer includes unsafe-eval</td><td><span class="chip chip-green">Fixed</span></td></tr>
+        <tr><td>Dual lead command center resolved</td><td>Live route: <code>features/leads/command-center/LeadCommandCenterPage.tsx</code> (563 lines, imported by <code>app/(app)/leads/[leadId]/page.tsx</code>). Deleted unused: <code>features/leads/components/lead-command-center.tsx</code> (424 lines, no route or component imported it).</td><td><span class="chip chip-green">Resolved</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout callout-amber">
+    <strong>Next schema/security action (Pass 14+):</strong> Move from Pass 13 frozen claim archive into actual authorized remediation, live verification, pilot evidence capture, monitoring/backup proof, support activation, and final production evidence closure. The schema is structurally complete; production security proof remains environment-dependent and launch remains conditional pilot only until evidence closes.
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ BUILD RULES -->
+<div id="tab-rules" class="panel">
+
+  <h2>Build Rules — Permanent</h2>
+
+  <div class="callout callout-navy">
+    These rules apply to every future PR without exception. If a rule is violated, the PR must be rolled back.
+  </div>
+
+  <div class="card">
+    <div class="card-header">Architecture Rules</div>
+    <div class="card-body">
+      <ul class="plain">
+        <li>Commercial truth is the center. AI, communication, integration, and hardening are subordinate.</li>
+        <li>Catalog/base price is always the default. Override requires a reason. Approval gates communication when threshold is crossed.</li>
+        <li>Orders admit only from accepted quotes. Contract continuity must preserve quote_id.</li>
+        <li>AI does not approve, dispatch, mutate record state, or invent commercial terms — ever.</li>
+        <li>Integrations mirror governed state. They do not create it.</li>
+        <li>Mobile = trade-event capture wedge only, until Pass 6 explicitly extends this.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Repo Rules</div>
+    <div class="card-body">
+      <ul class="plain">
+        <li>Never commit .orig, .bak, .diff, or patch files to the repo.</li>
+        <li>Never add files to META-INF or any Java-originated directory structure.</li>
+        <li>Never duplicate a data file — canonical location is src/features/{module}/data/. Import it; do not copy it.</li>
+        <li>Every new module added to src/features/ must have a DCC entry on the day it is created.</li>
+        <li>Every file in docs/ must be either active (current, buyer/operator relevant) or archived (moved to docs/archive/). No uncategorized files.</li>
+        <li>public/internal-dcc/ contains only index.html and the archive/ subfolder. Nothing else.</li>
+        <li>Reference HTMLs stay in public/reference-html/ — these are design references and are intentionally kept.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Security Rules</div>
+    <div class="card-body">
+      <ul class="plain">
+        <li>CSP unsafe-eval must stay absent from middleware; Pass 5 review confirms it is absent today.</li>
+        <li>Never expose service role key in client-side code.</li>
+        <li>All new RPC functions must be scoped to authenticated app users — no PUBLIC execution on workflow RPCs.</li>
+        <li>Add pin search_path=public to all new SECURITY DEFINER functions.</li>
+        <li>Rate limiting applies to all public API routes.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Design System Rules</div>
+    <div class="card-body">
+      <ul class="plain">
+        <li>Shell: 68px sidebar, 56px topbar, 24px route gutter.</li>
+        <li>No duplicate route hero panels or topbars that shift the shell grid.</li>
+        <li>Dashboard: route nav → filters → six stats → visual/kanban rhythm.</li>
+        <li>Mobile: MobileTabBar renders only on verified mobile-supported routes.</li>
+        <li>Shared components in src/components/ui/ — never duplicate them into a feature folder.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">What This Repo Does Not Claim</div>
+    <div class="card-body">
+      <ul class="plain">
+        <li>External security audit</li>
+        <li>Automated production secrets rotation</li>
+        <li>WAF/rate limiting/SIEM at infrastructure layer</li>
+        <li>Fully mature communication-provider operations across all live vendors</li>
+        <li>Mobile-native parity</li>
+        <li>Large-scale production operating evidence</li>
+        <li>Signed contract readiness, dispatch, or completed order execution on live golden data</li>
+        <li>Live integration connector proof beyond mocks/proof-mode</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>

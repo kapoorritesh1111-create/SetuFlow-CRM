@@ -2,6 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import type { DashboardScope } from '@/features/dashboard/types';
 import type { WorkspaceMode } from '@/features/workspace/types';
 import DashboardInteractive from '@/features/dashboard/components/dashboard-interactive';
+import { FirstLoginGuide } from '@/features/dashboard/components/first-login-guide';
 import { getDashboardData } from '@/lib/queries/dashboard';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -122,6 +123,19 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
     : getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage') ?? 'Dashboard drill-through is available, but commercial record updates stay read-only for this role.';
   const data = await getDashboardData(workspace.organization.id, resolvedScope);
   const activeTradeEvent = await getActiveTradeEventStripData(workspace.organization.id);
+
+  // ── First-login detection: check if org has any leads or products ──────────
+  const supabaseForCounts = await createClient();
+  const db = supabaseForCounts as any;
+  const [leadsCountResult, productsCountResult, quotesCountResult] = await Promise.all([
+    db.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).limit(1),
+    db.from('products').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).limit(1),
+    db.from('quotes').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).limit(1),
+  ]);
+  const hasLeads = (leadsCountResult.count ?? 0) > 0;
+  const hasProducts = (productsCountResult.count ?? 0) > 0;
+  const hasQuotes = (quotesCountResult.count ?? 0) > 0;
+  const isFirstLogin = !hasLeads && !hasProducts;
   if (!data) {
     const emptyStateTitle =
       resolvedScope === 'buyer'
@@ -142,6 +156,14 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
 
   return (
     <>
+      {isFirstLogin && (
+        <FirstLoginGuide
+          hasLeads={hasLeads}
+          hasProducts={hasProducts}
+          hasQuotes={hasQuotes}
+          orgName={workspace.organization.name ?? 'your workspace'}
+        />
+      )}
       {activeTradeEvent ? (
         <section className="mb-5 rounded-[2rem] border border-emerald-200 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(16,185,129,0.18),rgba(255,255,255,0.96))] p-5 shadow-[0_20px_52px_rgba(15,118,110,0.12)] sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
