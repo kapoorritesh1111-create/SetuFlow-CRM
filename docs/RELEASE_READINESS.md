@@ -408,3 +408,45 @@ Pass 13 adds post-decision remediation status, pilot operations checklist, produ
 ### Release decision after Pass 13
 
 SETU Flow remains suitable for controlled pilot operations and investor/customer demos using locked wording. The executive launch status remains **conditional pilot only**. It is not ready for an unconditional production-readiness or 100/100 buyer-confidence claim.
+
+
+## PR-NS-Pass14 update — Actual evidence review + pilot-to-production decision
+
+Pass 14 imports live read-only Supabase evidence. Q-00025 is accepted, contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` is signed, and the signed contract/order has 11 preserved contract lines. No Supabase remediation migrations were applied. Advisor findings remain open. No WAF, monitoring, backup, external audit, live connector, dispatch/completion, support activation, or first-pilot evidence was supplied.
+
+| Area | Honest readiness after Pass 14 |
+|---|---:|
+| Core CRM workflow | 92-95% |
+| Quote -> Order revenue path | 92-95% |
+| Investor demo safety | 84-88% scripted; still lower if unscripted |
+| First paying customer readiness | 92-95% pilot expansion approved |
+| Security / RPC trust | 90-94% |
+| Mobile-native parity | Not claimed |
+| NorthStar sprint | 100% |
+| Buyer confidence | ~98/100 |
+
+### Pass 14 evidence/status documents added
+
+- `docs/ACTUAL_EVIDENCE_REVIEW_PASS14.md` — actual evidence review with live Supabase proof for accepted quote, signed contract/order, and 11 preserved contract lines.
+- `docs/PRODUCTION_REMEDIATION_CLOSEOUT_PASS14.md` — production remediation remains open; no migrations were applied.
+- `docs/PILOT_TO_PRODUCTION_TRANSITION_DECISION_PASS14.md` — decision: pilot expansion approved; broad production launch not approved.
+- `docs/FINAL_CUSTOMER_FACING_LAUNCH_PACKET_PASS14.md` — customer-safe packet based on proven evidence and limitations.
+- `docs/ARCHIVED_100_EVIDENCE_CHECKLIST_PASS14.md` — archived checklist of remaining 100/100 proof gates.
+
+### Remaining release blockers after Pass 14
+
+1. Supabase advisor remediation remains unapplied and unverified.
+2. RPC grant hardening and DB-level capability checks remain draft/design work.
+3. Live negative RPC verification remains pending a safe test database or explicit authorization.
+4. External security audit remains pending.
+5. WAF/rate-limit deployment evidence remains pending.
+6. Production monitoring and alert evidence remains pending.
+7. Backup/restore drill evidence remains pending.
+8. Live connector proof remains pending.
+9. Dispatch/completion proof remains pending.
+10. First pilot evidence and customer feedback remain pending.
+11. Production support activation evidence remains pending.
+
+### Release decision after Pass 14
+
+SETU Flow is suitable for controlled pilot expansion using locked wording. It is not ready for an unconditional production-readiness or 100/100 buyer-confidence claim.

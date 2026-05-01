@@ -1,3 +1,68 @@
+# Pass 14 — Actual Evidence Review + Pilot-to-Production Decision
+
+## Summary
+
+Pass 14 imports live read-only Supabase evidence and updates the launch decision. Q-00025 is live `accepted`; contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` is live `signed`; and the signed contract/order preserves 11 contract line items. No Supabase migrations were applied, no live remediation was performed, and frozen proof records were not mutated.
+
+## Files created
+
+- `docs/ACTUAL_EVIDENCE_REVIEW_PASS14.md`
+- `docs/PRODUCTION_REMEDIATION_CLOSEOUT_PASS14.md`
+- `docs/PILOT_TO_PRODUCTION_TRANSITION_DECISION_PASS14.md`
+- `docs/FINAL_CUSTOMER_FACING_LAUNCH_PACKET_PASS14.md`
+- `docs/ARCHIVED_100_EVIDENCE_CHECKLIST_PASS14.md`
+
+## Files changed
+
+- `public/internal-dcc/index.html` — added Pass 14 card, live golden signed-contract proof, pilot expansion decision, updated roadmap and next-action language.
+- `README.md` — updated proven/not-claimed wording, Pass 14 summary, and next-pass table.
+- `docs/RELEASE_READINESS.md` — added PR-NS-Pass14 update, evidence status, blockers, and pilot expansion decision.
+- `CHANGES.md` — prepended this Pass 14 section.
+
+## Live Supabase proof captured
+
+- Project `SETU Flow CRM` / `sjzfzloggabsmcuxktnl` is active/healthy.
+- Public table inventory returned 80 public tables with RLS enabled.
+- Advisor findings remain open.
+- Q-00025 is live `accepted`, sent at `2026-04-30 13:46:13.848+00`.
+- Contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` is live `signed`, linked to Q-00025's quote ID.
+- Contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` has 11 contract line items.
+
+## Test results
+
+Attempted:
+
+```bash
+npm run test:all
+```
+
+Result in this extracted container:
+
+```text
+sh: 1: tsx: not found
+```
+
+Per project rule, `npm ci` was not run. Expected full suite remains 331 tests when dependencies are available.
+
+Attempted:
+
+```bash
+npm run build
+```
+
+Result in this extracted container:
+
+```text
+sh: 1: next: not found
+```
+
+Targeted `@/` import scan returned `missing count 0`, including the prior RFQ form path.
+
+## Buyer confidence impact
+
+Estimated: ~98/100 -> ~98/100. Pass 14 closes live signed-contract proof for the golden journey and upgrades the decision to pilot expansion approved, but does not raise to 99 or 100 because Supabase remediation, external audit, WAF, monitoring, backups, live connectors, dispatch/completion, support activation, and first-pilot evidence remain open.
+
+---
 # Build Fix — RFQ form import
 
 ## Summary

@@ -453,8 +453,21 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="card-header">Pass 14 - Actual Evidence Review + Pilot-to-Production Decision <span class="badge">✓ Done</span></div>
+    <div class="card-body">
+      <table>
+        <tr><th>Action</th><th>Detail</th><th>Status</th></tr>
+        <tr><td>Live Supabase proof imported</td><td><code>docs/ACTUAL_EVIDENCE_REVIEW_PASS14.md</code> records live read-only proof: Q-00025 is accepted, contract/order <code>d129ffe2-c913-4cf7-9a7b-86ea6c9da54e</code> is signed, and 11 contract lines are preserved.</td><td><span class="chip chip-green">Proven</span></td></tr>
+        <tr><td>Production remediation closeout</td><td><code>docs/PRODUCTION_REMEDIATION_CLOSEOUT_PASS14.md</code> keeps Supabase advisor/RPC remediation open because no migrations were applied and advisor findings remain.</td><td><span class="chip chip-amber">Open</span></td></tr>
+        <tr><td>Pilot-to-production decision</td><td><code>docs/PILOT_TO_PRODUCTION_TRANSITION_DECISION_PASS14.md</code> upgrades the decision to pilot expansion approved, not broad production launch.</td><td><span class="chip chip-green">Done</span></td></tr>
+        <tr><td>Customer packet + 100/100 archive</td><td><code>docs/FINAL_CUSTOMER_FACING_LAUNCH_PACKET_PASS14.md</code> and <code>docs/ARCHIVED_100_EVIDENCE_CHECKLIST_PASS14.md</code> lock customer-safe wording and remaining proof gates.</td><td><span class="chip chip-green">Done</span></td></tr>
+      </table>
+    </div>
+  </div>
+
   <div class="callout callout-amber">
-    <strong>Buyer Confidence target: 100/100.</strong> Current score after Pass 13 remains estimated at ~98/100 (up from 38). Pass 13 adds post-decision remediation status, pilot operations readiness, support activation requirements, customer/investor evidence handoff, and frozen launch-claim archive, but the path to 100 still requires Supabase advisor closure, external security audit completion, deployed WAF/rate-limit proof, production monitoring, backup/restore drill, live connector proof, signed-contract/dispatch proof, production support activation, and first-customer pilot evidence.
+    <strong>Buyer Confidence target: 100/100.</strong> Current score after Pass 14 remains estimated at ~98/100 (up from 38). Pass 14 closes live golden signed-contract proof: Q-00025 is accepted, contract/order d129ffe2-c913-4cf7-9a7b-86ea6c9da54e is signed, and 11 contract lines are preserved. The decision improves from conditional pilot only to pilot expansion approved, but 100/100 still requires Supabase advisor closure, external security audit completion, deployed WAF/rate-limit proof, production monitoring, backup/restore drill, live connector proof, dispatch/completion proof, production support activation, and first-customer pilot evidence.
   </div>
 
 </div>
@@ -504,7 +517,7 @@
         <div class="progress-bar"><div class="progress-fill fill-teal" style="width:100%"></div></div>
       </div>
       <div class="progress-row">
-        <div class="progress-label"><strong>Buyer Confidence Score</strong><span>~98/100 (est. post-Pass 13)</span></div>
+        <div class="progress-label"><strong>Buyer Confidence Score</strong><span>~98/100 (est. post-Pass 14)</span></div>
         <div class="progress-bar"><div class="progress-fill fill-teal" style="width:96%"></div></div>
       </div>
     </div>
@@ -518,7 +531,7 @@
           <li>Signed contract + dispatch proof on live data remains unproven; Pass 7 defines the new-record proof plan.</li>
           <li>Live integration connector remains unproven; proof-mode/mocks only today.</li>
           <li>Live Supabase RLS E2E is still not claimed; Pass 5 adds boundary tests and read-only Supabase connector inspection showing all public tables have RLS enabled but advisor findings remain.</li>
-          <li>External security audit completion, deployed WAF/rate-limit enforcement, applied Supabase remediation, monitoring evidence, backup drill, live connector proof, signed/dispatch proof, and pilot evidence remain open; Pass 13 adds final evidence-handoff and claim-archive docs only, not deployed proof.</li>
+          <li>External security audit completion, deployed WAF/rate-limit enforcement, applied Supabase remediation, monitoring evidence, backup drill, live connector proof, signed/dispatch proof, and pilot evidence remain open; Pass 14 adds live signed-contract proof for the golden journey, but not deployed production-control proof.</li>
         </ul>
       </div>
     </div>
@@ -531,7 +544,7 @@
           <li>WAF / rate limiting at infrastructure layer.</li>
           <li>Production-scale operating evidence and monitoring.</li>
           <li>Full mobile implementation remains not claimed.</li>
-          <li>Claim reconciliation completed in Pass 6; Pass 13 frozen claim archive governs investor/customer wording; Pass 12 launch decision keeps the status conditional pilot only.</li>
+          <li>Claim reconciliation completed in Pass 6; Pass 13 frozen claim archive governs wording; Pass 14 decision permits pilot expansion but not broad production launch.</li>
         </ul>
       </div>
     </div>
@@ -555,7 +568,8 @@
         <tr><td>98 → 98</td><td>Pass 11: pilot evidence review, customer readiness decision, post-launch remediation backlog, production monitoring proof checklist, and investor/customer claim lock</td><td><span class="chip chip-green">Done ✓</span></td></tr>
         <tr><td>98 → 98</td><td>Pass 12: final remediation execution status, live negative RPC verification status, first-pilot evidence closure, monitoring/backup evidence closure, and final launch/no-launch decision</td><td><span class="chip chip-green">Done ✓</span></td></tr>
         <tr><td>98 → 98</td><td>Pass 13: post-decision remediation status, pilot operations checklist, support activation checklist, final evidence handoff, and frozen claim archive</td><td><span class="chip chip-green">Done ✓</span></td></tr>
-        <tr><td>98 → 100</td><td>Actual advisor closure, external audit completion, deployed WAF/monitoring, backup/restore drill, live connector, signed/dispatch proof, production support activation, and first customer pilot evidence</td><td>Pass 14+</td></tr>
+        <tr><td>98 → 98</td><td>Pass 14: actual evidence review, live accepted quote/signed contract proof, production remediation closeout, pilot-to-production decision, customer packet, and archived 100/100 checklist</td><td><span class="chip chip-green">Done ✓</span></td></tr>
+        <tr><td>98 → 100</td><td>Actual advisor closure, external audit completion, deployed WAF/monitoring, backup/restore drill, live connector, dispatch/completion proof, production support activation, and first customer pilot evidence</td><td>Pass 15+</td></tr>
       </table>
     </div>
   </div>
@@ -951,7 +965,7 @@
   </div>
 
   <div class="callout callout-amber">
-    <strong>Next schema/security action (Pass 14+):</strong> Move from Pass 13 frozen claim archive into actual authorized remediation, live verification, pilot evidence capture, monitoring/backup proof, support activation, and final production evidence closure. The schema is structurally complete; production security proof remains environment-dependent and launch remains conditional pilot only until evidence closes.
+    <strong>Next schema/security action (Pass 14+):</strong> Move from Pass 14 live golden signed-contract proof into actual authorized remediation, dispatch/completion proof, pilot evidence capture, monitoring/backup proof, support activation, and final production evidence closure. The schema is structurally complete; production security proof remains environment-dependent and launch is pilot expansion approved, not broad production launch, until evidence closes.
   </div>
 
 </div>
