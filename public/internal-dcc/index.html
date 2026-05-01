@@ -3,32 +3,1255 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SETU Flow — Internal DCC</title>
+<title>SETU Flow CRM — Internal DCC</title>
 <style>
-  :root { --navy:#1B2A4A; --teal:#0D7C8C; --teal2:#0A6270; --red:#C0392B; --amber:#E67E22; --green:#27AE60; --lgrey:#F2F4F6; --mgrey:#D5D8DC; --dgrey:#5D6D7E; --white:#FFF; --lteal:#E8F4F5; --lred:#FDECEA; --lamber:#FEF5E7; --lgreen:#EAFAF1; --text:#1A1A2E; }
-  *{box-sizing:border-box;margin:0;padding:0} body{font-family:'Segoe UI',Arial,sans-serif;background:var(--lgrey);color:var(--text);font-size:14px}.topbar{background:var(--navy);color:#fff;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}.topbar-brand{font-size:18px;font-weight:700;letter-spacing:.5px}.topbar-brand span{color:var(--teal)}.topbar-meta{font-size:12px;color:var(--mgrey)}.tabnav{background:var(--navy);border-top:1px solid rgba(255,255,255,.08);display:flex;padding:0 32px;gap:2px}.tab{padding:12px 18px;font-size:13px;font-weight:500;color:var(--mgrey);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap}.tab:hover{color:#fff}.tab.active{color:#fff;border-bottom-color:var(--teal)}.content{max-width:1200px;margin:0 auto;padding:28px 32px}.panel{display:none}.panel.active{display:block}.card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden}.card-header{padding:14px 20px;background:var(--navy);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between}.card-header .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:var(--teal);color:#fff}.card-body{padding:20px}.score-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}.score-tile{background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid var(--mgrey)}.score-tile.green{border-left-color:var(--green)}.score-tile.amber{border-left-color:var(--amber)}.score-tile.red{border-left-color:var(--red)}.score-tile .label{font-size:11px;color:var(--dgrey);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}.score-tile .score{font-size:26px;font-weight:700;color:var(--navy);line-height:1}.score-tile .note{font-size:11px;color:var(--dgrey);margin-top:4px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-size:12px;font-weight:600}td{padding:9px 12px;border-bottom:1px solid var(--mgrey);vertical-align:top}tr:last-child td{border-bottom:none}tr:nth-child(even) td{background:var(--lgrey)}tr:hover td{background:var(--lteal)}.chip{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap}.chip-red{background:var(--lred);color:var(--red)}.chip-amber{background:var(--lamber);color:#a05f00}.chip-green{background:var(--lgreen);color:#1a7a40}.chip-teal{background:var(--lteal);color:var(--teal2)}.chip-grey{background:var(--lgrey);color:var(--dgrey)}.chip-navy{background:var(--navy);color:#fff}.callout{border-radius:6px;padding:14px 18px;margin-bottom:16px;font-size:13px;line-height:1.6}.callout-red{background:var(--lred);border-left:4px solid var(--red)}.callout-amber{background:var(--lamber);border-left:4px solid var(--amber)}.callout-green{background:var(--lgreen);border-left:4px solid var(--green)}.callout-teal{background:var(--lteal);border-left:4px solid var(--teal)}.callout-navy{background:var(--navy);border-left:4px solid var(--teal);color:#fff}.callout strong{font-weight:700}.journey{display:flex;align-items:center;gap:0;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}.journey-step{flex:1;padding:12px 16px;text-align:center;font-size:12px;font-weight:600;position:relative;border-right:1px solid var(--mgrey)}.journey-step:last-child{border-right:none}.journey-step .step-num{font-size:10px;color:var(--dgrey);margin-bottom:2px}.journey-step .step-name{color:var(--navy)}.journey-step.proven{background:var(--lgreen)}.journey-step.proven .step-name{color:#1a7a40}.journey-step.partial{background:var(--lamber)}.journey-step.partial .step-name{color:#a05f00}.journey-step.blocked{background:var(--lred)}.journey-step.blocked .step-name{color:var(--red)}.northstar-box{background:var(--navy);color:#fff;border-radius:8px;padding:24px 28px;margin-bottom:20px}.northstar-box h3{font-size:13px;color:var(--teal);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}.northstar-box p{font-size:16px;font-weight:600;line-height:1.5}.pass-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}.pass-card{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}.pass-card-head{padding:12px 16px;color:#fff;font-weight:700;font-size:13px}.pass-card-head.p2{background:var(--teal)}.pass-card-head.p3{background:var(--amber)}.pass-card-head.p4{background:var(--navy)}.pass-card-body{padding:14px 16px;font-size:12px;line-height:1.7}.pass-card-body li{margin-left:16px;margin-bottom:4px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}ul.plain{list-style:none;padding:0}ul.plain li{padding:6px 0;border-bottom:1px solid var(--mgrey);font-size:13px}ul.plain li:last-child{border-bottom:none}ul.plain li::before{content:'→ ';color:var(--teal);font-weight:700}code{background:var(--lgrey);padding:1px 6px;border-radius:3px;font-size:12px;font-family:Consolas,monospace}h2{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:14px}h3{font-size:13px;font-weight:700;color:var(--teal2);margin-bottom:10px;margin-top:18px}p{font-size:13px;line-height:1.6;margin-bottom:10px;color:var(--text)}@media(max-width:900px){.pass-grid{grid-template-columns:1fr}.two-col{grid-template-columns:1fr}.journey{flex-wrap:wrap}.content{padding:16px}.tabnav{overflow-x:auto}.topbar{height:auto;gap:8px;align-items:flex-start;flex-direction:column;padding:12px 16px}}
+  :root {
+    --brand: #1a3c5e;
+    --brand-mid: #2563a8;
+    --brand-light: #e8f1fb;
+    --accent: #f59e0b;
+    --accent-light: #fef3c7;
+    --pass: #16a34a;
+    --pass-bg: #dcfce7;
+    --fail: #dc2626;
+    --fail-bg: #fee2e2;
+    --blocked: #9333ea;
+    --blocked-bg: #f3e8ff;
+    --skip: #6b7280;
+    --skip-bg: #f3f4f6;
+    --pending: #d97706;
+    --pending-bg: #fef3c7;
+    --border: #e5e7eb;
+    --surface: #f9fafb;
+    --text: #111827;
+    --muted: #6b7280;
+    --card: #ffffff;
+    --danger: #dc2626;
+    --warning-bg: #fffbeb;
+    --info-bg: #eff6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: var(--text); background: var(--surface); }
+
+  /* HEADER */
+  .dcc-header { background: var(--brand); color: white; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .dcc-header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .dcc-header .version { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.12); color: white; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .btn:hover { background: rgba(255,255,255,0.22); }
+  .btn-accent { background: var(--accent); border-color: var(--accent); color: #1a1a00; }
+  .btn-accent:hover { background: #d97706; }
+
+  /* TABS */
+  .tab-bar { background: white; border-bottom: 1px solid var(--border); display: flex; gap: 0; padding: 0 32px; position: sticky; top: 61px; z-index: 90; overflow-x: auto; }
+  .tab { padding: 14px 18px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2.5px solid transparent; white-space: nowrap; transition: all 0.15s; }
+  .tab:hover { color: var(--brand-mid); }
+  .tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+  /* LAYOUT */
+  .main { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* SUMMARY GRID */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .summary-card .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+  .summary-card .value { font-size: 28px; font-weight: 700; }
+  .summary-card.c-pass .value { color: var(--pass); }
+  .summary-card.c-fail .value { color: var(--fail); }
+  .summary-card.c-blocked .value { color: var(--blocked); }
+  .summary-card.c-pending .value { color: var(--pending); }
+  .summary-card.c-total .value { color: var(--brand); }
+
+  /* STATUS BADGE */
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .badge-pass { background: var(--pass-bg); color: var(--pass); }
+  .badge-fail { background: var(--fail-bg); color: var(--fail); }
+  .badge-blocked { background: var(--blocked-bg); color: var(--blocked); }
+  .badge-pending { background: var(--pending-bg); color: var(--pending); }
+  .badge-skip { background: var(--skip-bg); color: var(--skip); }
+  .badge-crit { background: #fee2e2; color: #991b1b; }
+  .badge-high { background: #ffedd5; color: #9a3412; }
+  .badge-med { background: #fef9c3; color: #854d0e; }
+  .badge-low { background: #f0fdf4; color: #166534; }
+
+  /* MODULE SECTIONS */
+  .module { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .module-header { padding: 14px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; background: white; user-select: none; transition: background 0.1s; }
+  .module-header:hover { background: var(--surface); }
+  .module-icon { font-size: 18px; width: 28px; text-align: center; }
+  .module-title { font-weight: 700; font-size: 14px; flex: 1; }
+  .module-url { font-size: 11px; color: var(--brand-mid); font-family: 'SF Mono', monospace; background: var(--brand-light); padding: 2px 8px; border-radius: 4px; }
+  .module-progress { font-size: 12px; color: var(--muted); min-width: 70px; text-align: right; }
+  .chevron { font-size: 12px; color: var(--muted); transition: transform 0.2s; }
+  .module.collapsed .chevron { transform: rotate(-90deg); }
+  .module.collapsed .module-body { display: none; }
+
+  /* TEST ROWS */
+  .module-body { border-top: 1px solid var(--border); }
+  .test-row { display: grid; grid-template-columns: 28px 1fr auto 140px 32px; gap: 0; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 42px; }
+  .test-row:last-child { border-bottom: none; }
+  .test-row:hover { background: #fafafa; }
+  .test-num { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--muted); border-right: 1px solid var(--border); font-family: monospace; }
+  .test-desc { padding: 10px 16px; display: flex; flex-direction: column; gap: 3px; }
+  .test-name { font-weight: 600; font-size: 13px; }
+  .test-steps { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .test-ctas { font-size: 11px; color: var(--brand-mid); margin-top: 2px; }
+  .test-status { display: flex; align-items: center; justify-content: center; border-left: 1px solid var(--border); }
+  .test-status select { border: none; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; padding: 8px; width: 130px; color: inherit; }
+  .test-note-toggle { display: flex; align-items: center; justify-content: center; border-left: 1px solid var(--border); cursor: pointer; color: var(--muted); font-size: 16px; transition: color 0.1s; }
+  .test-note-toggle:hover { color: var(--brand); }
+  .note-row { padding: 0 16px 10px 46px; display: none; }
+  .note-row.open { display: block; }
+  .note-row textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; color: var(--text); resize: vertical; min-height: 56px; font-family: inherit; outline: none; }
+  .note-row textarea:focus { border-color: var(--brand-mid); }
+
+  /* STATUS COLORS on rows */
+  .test-row.status-pass { border-left: 3px solid var(--pass); }
+  .test-row.status-fail { border-left: 3px solid var(--fail); }
+  .test-row.status-blocked { border-left: 3px solid var(--blocked); }
+  .test-row.status-pending { border-left: 3px solid var(--pending); }
+
+  /* ISSUE TRACKER */
+  .issue-form { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .issue-form h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .form-field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 5px; }
+  .form-field input, .form-field select, .form-field textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none; background: white; }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--brand-mid); }
+  .form-field textarea { min-height: 80px; resize: vertical; }
+  .issue-add-btn { margin-top: 12px; padding: 9px 20px; background: var(--brand); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .issue-add-btn:hover { background: #14305a; }
+
+  .issue-list { display: flex; flex-direction: column; gap: 12px; }
+  .issue-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .issue-card-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .issue-id { font-size: 11px; font-weight: 800; color: var(--brand-mid); font-family: monospace; min-width: 48px; }
+  .issue-title-row { flex: 1; }
+  .issue-name { font-weight: 700; font-size: 13px; }
+  .issue-page { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .issue-badges { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+  .issue-body { font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 10px; padding-left: 58px; }
+  .issue-resolution { background: var(--info-bg); border: 1px solid #bfdbfe; border-radius: 7px; padding: 10px 12px; margin-left: 58px; font-size: 12px; color: #1e3a8a; }
+  .issue-resolution strong { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; color: #1e40af; }
+  .issue-actions { display: flex; gap: 8px; margin-top: 10px; padding-left: 58px; }
+  .issue-actions button { padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border); background: white; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text); }
+  .issue-actions button:hover { background: var(--surface); }
+  .issue-actions .resolve-btn { color: var(--pass); border-color: var(--pass-bg); background: var(--pass-bg); }
+  .issue-actions .delete-btn { color: var(--fail); border-color: var(--fail-bg); }
+  .issue-card.resolved { opacity: 0.6; }
+  .issue-card.resolved .issue-name { text-decoration: line-through; }
+
+  /* REPO STATUS */
+  .repo-status { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+  .repo-status-header { background: var(--brand); color: white; padding: 16px 20px; }
+  .repo-status-header h2 { font-size: 16px; font-weight: 700; }
+  .repo-status-body { padding: 20px; }
+  .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .status-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .status-item .label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.07em; }
+  .status-item select, .status-item input { width: 100%; border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--text); outline: none; padding: 0; cursor: pointer; }
+  .known-issues-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .known-issues-list li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 7px; font-size: 13px; }
+  .known-issues-list li.issue-crit { background: var(--fail-bg); color: #7f1d1d; }
+  .known-issues-list li.issue-high { background: #ffedd5; color: #7c2d12; }
+  .known-issues-list li.issue-med { background: var(--pending-bg); color: #78350f; }
+  .known-issues-list li.issue-low { background: #f0fdf4; color: #14532d; }
+  .issue-icon { font-size: 14px; }
+
+  /* RESOLUTION GUIDE */
+  .resolution-block { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .resolution-block-header { padding: 13px 18px; background: #f8fafc; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .resolution-block-header h3 { font-size: 13px; font-weight: 700; flex: 1; }
+  .resolution-block-body { padding: 16px 18px; }
+  .resolution-step { display: flex; gap: 12px; margin-bottom: 12px; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: white; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-content { flex: 1; font-size: 12px; line-height: 1.6; padding-top: 2px; }
+  .step-content code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-family: 'SF Mono', monospace; font-size: 11px; color: #1e40af; }
+  .step-content strong { font-weight: 700; }
+
+  /* AUDIT LOG */
+  .audit-entry { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .audit-entry:last-child { border-bottom: none; }
+  .audit-time { font-size: 11px; color: var(--muted); min-width: 140px; font-family: monospace; }
+  .audit-action { font-size: 12px; color: var(--text); flex: 1; }
+  .audit-action strong { color: var(--brand); }
+
+  /* UTILITY */
+  .section-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title span { font-size: 12px; font-weight: 400; color: var(--muted); }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+  .tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-right: 4px; }
+  .tag-buyer { background: #dbeafe; color: #1e40af; }
+  .tag-supplier { background: #d1fae5; color: #065f46; }
+  .tag-admin { background: #f3e8ff; color: #6b21a8; }
+  .tag-shared { background: #fef3c7; color: #92400e; }
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; display: flex; gap: 10px; }
+  .alert-info { background: var(--info-bg); color: #1e3a8a; border: 1px solid #bfdbfe; }
+  .alert-warn { background: var(--warning-bg); color: #78350f; border: 1px solid #fde68a; }
+  .alert-success { background: var(--pass-bg); color: #14532d; border: 1px solid #a7f3d0; }
+  .test-section-label { padding: 8px 16px; background: var(--surface); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border-bottom: 1px solid var(--border); }
+
+  @media (max-width: 768px) {
+    .main { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .test-row { grid-template-columns: 24px 1fr auto 100px 28px; }
+  }
+  .print-only { display: none; }
+  @media print { .tab-bar, .dcc-header .header-actions, .print-only { display: block; } .tab-bar, .dcc-header { position: static; } .panel { display: block !important; } }
 </style>
 </head>
 <body>
-<div class="topbar"><div class="topbar-brand">SETU <span>Flow</span> CRM — Internal DCC</div><div class="topbar-meta">Last updated: 2026-05-01 | Baseline: Pass 21 TypeScript build hotfix from Pass 21 live SQL/UX fix pack | Prior commit 89a825a | Vercel proof still required | Live QA retest not claimed | 331 tests expected</div></div>
-<div class="tabnav"><div class="tab active" onclick="showTab(event,'overview')">Overview</div><div class="tab" onclick="showTab(event,'readiness')">Readiness</div><div class="tab" onclick="showTab(event,'modules')">Modules</div><div class="tab" onclick="showTab(event,'journey')">Golden Journey</div><div class="tab" onclick="showTab(event,'demo')">Demo Guide</div><div class="tab" onclick="showTab(event,'passes')">Next Passes</div><div class="tab" onclick="showTab(event,'schema')">Schema</div><div class="tab" onclick="showTab(event,'rules')">Build Rules</div></div>
-<div class="content">
-<!-- Alignment anchors: Release truth + UX 99 system tracker | UX 99 tracker | UX audit | Archive | UX 99 program active | Reset history archived | All tracked modules are at or above 96% | PR-UX-01 | PR-UX-05 -->
-<div id="tab-overview" class="panel active">
-<div class="northstar-box"><h3>North Star</h3><p>SETU Flow reaches 100% only when the live buyer, supplier, quote, order, and governance journeys work end-to-end without dead CTAs, raw backend errors, unsupported claims, or unproven operational controls.</p></div>
-<div class="callout callout-teal"><strong>DCC rule:</strong> This HTML is the operating board. It now reconciles the clean live build/deploy baseline with two external live UX/CTO reviews. All future passes must update this DCC, README, RELEASE_READINESS, and CHANGES after every proof cycle.</div>
-<div class="callout callout-amber"><strong>Score correction after live QA:</strong> Build/deploy remains clean and production is live, but uncontrolled sales-demo readiness is held until P0 action defects are fixed and live-tested. Do not claim 100/100 until live QA + build proof + security/ops/pilot evidence are all closed.</div>
-<h2>Current state — locked baseline plus live QA findings</h2><div class="score-grid"><div class="score-tile green"><div class="label">Build / Deploy</div><div class="score">9.5/10</div><div class="note">Vercel production READY for commit 89a825a; npm ci and next build were clean in Vercel.</div></div><div class="score-tile red"><div class="label">UX / Action Confidence</div><div class="score">7.0/10*</div><div class="note">Pass 19 wired P0/P1 action fixes; Pass 20 added low-risk pilot hardening. Score remains provisional until Vercel build and live QA retest.</div></div><div class="score-tile amber"><div class="label">Buyer Journey</div><div class="score">6.5/10*</div><div class="note">Quote continuation, lead filters, clickable lead actions, Quote Preview blocker guidance, and quote currency constraint handling are patched but not live-verified.</div></div><div class="score-tile amber"><div class="label">Supplier Journey</div><div class="score">6.5/10*</div><div class="note">Supplier filters, safe batch move path, and Admin category CRUD are patched; catalog/setup data caveats remain read-only.</div></div><div class="score-tile amber"><div class="label">Admin / Setup</div><div class="score">7.5/10</div><div class="note">Organization setup is strong; governance contradictions and user/invite cleanup remain open.</div></div><div class="score-tile red"><div class="label">Pilot Readiness</div><div class="score">Hold</div><div class="note">Not pilot-ready until P0/P1 action hardening and live retest are closed.</div></div><div class="score-tile amber"><div class="label">Buyer Confidence</div><div class="score">~96–97/100</div><div class="note">Held until the Pass 20 package is built on Vercel and live QA proves no visible P0 dead actions or raw DB errors remain.</div></div><div class="score-tile red"><div class="label">100/100 Status</div><div class="score">Not claimable</div><div class="note">Requires P0/P1 live QA closure, security/ops closure, dispatch/completion proof, and pilot evidence.</div></div></div>
-<div class="card"><div class="card-header">Merged live review signal — what changed <span class="badge">Pass 19 source</span></div><div class="card-body"><table><tr><th>Evidence source</th><th>Key signal</th><th>DCC decision</th></tr><tr><td>Clean Vercel build log</td><td><code>npm ci --no-audit --no-fund</code> installed 151 packages; <code>next build</code> compiled; 55 pages generated; deployment completed.</td><td><span class="chip chip-green">Build remains trusted</span></td></tr><tr><td>First CTO/UX review</td><td>Flagged dead vCard, missing quote/order destinations, row-click expectations, setup/data gaps, and inconsistent buyer/supplier behavior.</td><td><span class="chip chip-amber">Directionally useful</span></td></tr><tr><td>Second live QA report</td><td>Reproduced P0/P1 issues with live steps: global vCard dead, quote Continue dead, Open order dead, raw SQL error, lead/quote row clicks dead, terms step stuck, pricing tab partial.</td><td><span class="chip chip-red">Action backlog accepted</span></td></tr><tr><td>Contradictions between reviews</td><td>Pipeline Follow-up Queue/Dashboard and dashboard buyer/supplier mode were reported broken in one review but working in latest live QA.</td><td><span class="chip chip-teal">Use latest live QA as source</span></td></tr></table></div></div>
-<div class="card"><div class="card-header">Pass 21 live SQL/UX fix card <span class="badge">Current fix pack</span></div><div class="card-body"><table><tr><th>Supabase evidence checked</th><th>Fixed in code</th><th>Still requires proof</th><th>Needs authorization</th></tr><tr><td>Postgres logs confirmed <code>column reference &quot;lead_id&quot; is ambiguous</code> during batch move and <code>quotes_display_currency_check</code> failures during quote draft creation. Table schema confirmed quote display currencies are limited to USD/INR/EUR/GBP/AED and product categories exist in <code>product_categories</code>.</td><td>Batch stage move now uses safe app-side updates instead of the failing RPC path; quote display currency is normalized to an allowed value; Quote Preview has a premium blocker fix panel; order document upload returns visible success/failure notices and supports blocker requirement mapping; Admin Categories now has list/add/edit UI; category nav points to the real page; Trade Events remains consolidated in a premium card layout.</td><td>Build not claimed in GPT sandbox. Requires Vercel/clean-local build, live retest of lead batch updates, quote draft creation, order document upload, admin categories, and trade-event visual consistency.</td><td>No live data was changed. Supabase remediation migration for the ambiguous RPC, storage bucket/RLS repair if needed, product typo cleanup, category/data cleanup, and governance/security closure require owner approval.</td></tr></table></div></div><div class="card"><div class="card-header">Pass 20 verification + pilot hardening card <span class="badge">Proof-gated</span></div><div class="card-body"><table><tr><th>Build proof status</th><th>Live QA retest status</th><th>Low-risk hardening added</th><th>Still blocked / needs authorization</th></tr><tr><td>Not claimed in GPT sandbox. No <code>npm ci</code>, <code>npm run build</code>, or <code>npm run test:all</code> was run because <code>node_modules</code> is absent and dependency install was not authorized.</td><td>Not claimed. The package still requires Vercel/owner build proof and live retest for vCard, quote, order, lead filter/tab, Quote Preview, Products Pricing View, and raw DB error surfaces.</td><td>Tasks added to desktop operating navigation; Pipeline now shows a visible horizontal-scroll cue; Dashboard Custom time range was hidden until a date picker exists; docs/DCC updated to keep proof boundaries clear.</td><td>Supabase/data cleanup remains read-only only: Bannana Powder typo, duplicate New Lead stages, unnamed admin, expired invitation, legal/email/incoterm storage, Active Markets = 0, AI Apply Rate 0.0%, and compliance rules.</td></tr></table></div></div>
-<div class="card"><div class="card-header">Pass 19 completion card <span class="badge">Action hardening</span></div><div class="card-body"><table><tr><th>Fixed in this ZIP</th><th>Still open</th><th>Requires live QA</th><th>Requires Supabase/data authorization</th></tr><tr><td>Header vCard modal path; lead saved-view filters; fallback lead selection; Quote Preview validation/advance feedback; safe query issue copy; Orders active-order grammar, execution-value wording, and blocked-doc explanation; Products Pricing View distinct layout.</td><td>Fresh Vercel build proof, live QA proof, quote/order route runtime proof, desktop Tasks nav, pipeline scroll cue, Custom date picker behavior, and data/governance cleanup.</td><td>Retest global vCard, quotes Continue/row/company clicks, orders Open, lead top tabs and filters, Quote Preview Terms Continue, Products Pricing View, and absence of raw SQL/database messages.</td><td>No live mutation was performed. Product typo, duplicate New Lead stages, unnamed admin, expired invite, legal/email/incoterm storage, Active Markets 0, AI Apply Rate 0.0%, and compliance evidence rules require read-only verification plus explicit owner approval before cleanup.</td></tr></table></div></div>
-<div class="card"><div class="card-header">Definition of 100% — no inflation <span class="badge">Evidence-gated</span></div><div class="card-body"><table><tr><th>Gate</th><th>Required proof</th><th>Status</th></tr><tr><td>Live action hardening</td><td>All P0/P1 visible CTAs, row/card clicks, tabs, and route destinations verified in live browser.</td><td><span class="chip chip-red">Open</span></td></tr><tr><td>Build/type proof</td><td>Clean Vercel build after fixes. GPT sandbox must not attempt <code>npm ci</code>; use user/Vercel proof.</td><td><span class="chip chip-green">Baseline clean; retest after fixes</span></td></tr><tr><td>Supabase security/RPC</td><td>Advisor/RPC remediation applied or accepted risk documented with external security review.</td><td><span class="chip chip-red">Open</span></td></tr><tr><td>Operational hardening</td><td>WAF/rate-limit, monitoring, alerting, backups, restore drill, support operations evidence.</td><td><span class="chip chip-red">Open</span></td></tr><tr><td>Revenue proof</td><td>Dispatch/completion proof beyond signed contract/order; no mutation of frozen Q-00025 or order <code>d129ffe2-c913-4cf7-9a7b-86ea6c9da54e</code>.</td><td><span class="chip chip-amber">Signed proof exists; dispatch open</span></td></tr><tr><td>Pilot proof</td><td>First live pilot success evidence, user feedback, error-free runbook, and adoption metrics.</td><td><span class="chip chip-red">Open</span></td></tr></table></div></div>
+
+<div class="dcc-header">
+  <div>
+    <h1>&#9670; SETU Flow CRM — Internal DCC</h1>
+    <div class="version">Development Control Center · Pass 21 TypeFix · setuflowcrm.com</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="exportReport()">&#8595; Export</button>
+    <button class="btn" onclick="clearAll()">&#8635; Reset</button>
+    <button class="btn btn-accent" onclick="saveAll()">&#10003; Save</button>
+  </div>
 </div>
-<div id="tab-readiness" class="panel"><h2>Readiness board after Pass 21 live SQL/UX fixes</h2><div class="callout callout-red"><strong>Demo decision:</strong> uncontrolled buyer/supplier demo is paused until P0 hardening is merged and live-tested. Controlled demo may be possible only if scripted away from known broken actions.</div><div class="card"><div class="card-header">Readiness dimensions <span class="badge">Current</span></div><div class="card-body"><table><tr><th>Dimension</th><th>Current score</th><th>Reason</th><th>Next lift</th></tr><tr><td>Build/deploy confidence</td><td><span class="chip chip-green">9.5/10</span></td><td>Production READY and clean build proof exists.</td><td>Repeat Vercel proof after P0/P1 fixes.</td></tr><tr><td>UX/action confidence</td><td><span class="chip chip-amber">6.5/10*</span></td><td>Pass 19 patches remain un-live-verified; Pass 20 adds low-risk pilot hardening but does not raise proof confidence without Vercel/live QA evidence.</td><td>Run Vercel build and repeat live action retest.</td></tr><tr><td>Buyer journey confidence</td><td><span class="chip chip-amber">6.5/10*</span></td><td>Quote Preview step validation and several action paths are patched; buyer confidence stays held until live retest.</td><td>Verify quote Continue, row/company click, and accepted quote Create order behavior.</td></tr><tr><td>Supplier journey confidence</td><td><span class="chip chip-amber">6.5/10*</span></td><td>Supplier filtering and safe query messaging are patched; catalog/setup gaps remain.</td><td>Retest supplier lead filters, catalog pricing view, and setup messaging.</td></tr><tr><td>Admin/setup confidence</td><td><span class="chip chip-amber">7.5/10</span></td><td>Setup design is good; governance/user/invite contradictions remain.</td><td>Correct messaging and require legal/email/incoterm completion.</td></tr><tr><td>Security/RPC trust</td><td><span class="chip chip-amber">90–94%</span></td><td>UI work cannot raise this. Advisor/RPC closure still open.</td><td>Separate authorized Supabase remediation pass.</td></tr><tr><td>Overall buyer confidence</td><td><span class="chip chip-amber">~96–97/100</span></td><td>Live build is strong, but live action failures block further confidence.</td><td>Only after Pass 20 Vercel build proof and P0/P1 live retest can confidence return toward 98.5–99.</td></tr></table></div></div><div class="card"><div class="card-header">P0 blockers accepted for immediate hardening <span class="badge">Code patched; live proof needed</span></div><div class="card-body"><table><tr><th>ID</th><th>Issue</th><th>Where</th><th>Pass 19 status</th><th>Acceptance</th></tr><tr><td>P0-1</td><td>Share my vCard header button dead</td><td>Global shell</td><td>Header and avatar now use the same vCard modal action in code.</td><td>Pill and avatar both open same working vCard action.</td></tr><tr><td>P0-2</td><td>Quote Continue changes URL but no workspace opens</td><td><code>/quotes</code></td><td>Quote and row actions remain a live QA focus; verify detail/workspace fallback after deployment.</td><td>Draft quote opens editable workspace from list and row click.</td></tr><tr><td>P0-3</td><td>Open order dead</td><td><code>/orders</code></td><td>Order copy, row affordance, blocked explanation, grammar, and execution value wording are hardened; verify Open order route after deployment.</td><td>Open order always opens a meaningful order view.</td></tr><tr><td>P0-4</td><td>Raw SQL error <code>lead_id is ambiguous</code></td><td>Lead Command Center / pillar body click</td><td>Raw database details are converted to customer-safe query messages; verify no raw Postgres text is visible.</td><td>No raw DB error visible; pillar body and inspect button work.</td></tr><tr><td>P0-5</td><td>Lead/quote row click dead</td><td><code>/leads</code>, <code>/quotes</code></td><td>Lead row/fallback behavior and filters are hardened; quote row/company actions still require live route verification.</td><td>Rows open correct record; keyboard accessible.</td></tr></table></div></div><div class="card"><div class="card-header">P1 pilot blockers <span class="badge">Pass 20 low-risk items patched where possible</span></div><div class="card-body"><table><tr><th>ID</th><th>Issue</th><th>Fix</th></tr><tr><td>P1-1</td><td>Leads Buyers subfilter selects but does not filter.</td><td>Bind tab state to buyer/supplier predicate and active chips.</td></tr><tr><td>P1-2</td><td>Leads top Command Center / Quote Preview tabs do not switch.</td><td>Wire tab row to view state or convert to clearly labeled actions.</td></tr><tr><td>P1-3</td><td>Quote Preview Continue Terms step fails silently.</td><td>Add validation and advance logic; surface missing-field feedback.</td></tr><tr><td>P1-4</td><td>Products Pricing View tab highlights but table does not change.</td><td>Implement distinct pricing layout or hide tab until shipped.</td></tr><tr><td>P1-5</td><td>Tasks show 0 despite overdue follow-ups.</td><td>Connect follow-up records to Tasks or rename Tasks as standalone until sync exists.</td></tr><tr><td>P1-6</td><td>Tasks absent from desktop nav.</td><td>Patched in Pass 20: Tasks is now promoted into the primary operating shell navigation.</td></tr><tr><td>P1-7</td><td>Unnamed admin user / expired invite visible.</td><td>Read-only verify source, then request explicit authorization for live cleanup.</td></tr><tr><td>P1-8</td><td>Intermittent RSC 503 on route prefetch.</td><td>Add safe error handling and inspect server component/data fetch path; avoid assuming build issue.</td></tr></table></div></div></div>
-<div id="tab-modules" class="panel"><h2>Module-by-module hardening map</h2><div class="card"><div class="card-header">Module status after latest live QA <span class="badge">Evidence-led</span></div><div class="card-body"><table><tr><th>Module</th><th>What works</th><th>Open hardening</th><th>Priority</th></tr><tr><td>Global shell</td><td>Navigation, RK avatar vCard modal, buyer/supplier toggle on core pages.</td><td>Header Share my vCard/Avatar modal path patched; page titles/focus states later.</td><td><span class="chip chip-red">P0</span></td></tr><tr><td>Dashboard</td><td>KPI CTAs, map, filters, buyer/supplier dashboard segmentation per latest live QA.</td><td>Pass 20 hides Custom range until a date picker exists; duplicate New Lead stage and map fallback remain read-only/setup items.</td><td><span class="chip chip-amber">P2</span></td></tr><tr><td>Leads / Follow-up</td><td>Lead list, filters, Open → inline Command Center, Quote Preview content, standalone lead detail.</td><td>Buyers/Suppliers/My/Today/Overdue/Trade Event filters patched; safe SQL messaging and Quote Preview validation patched; live tab retest required.</td><td><span class="chip chip-red">P0/P1</span></td></tr><tr><td>Quotes</td><td>KPI cards, search/status filter, quote rows render, accepted quotes show Create order.</td><td>Continue/row/company route behavior requires live verification; accepted quote Create order remains non-auto-destructive.</td><td><span class="chip chip-red">P0</span></td></tr><tr><td>Orders</td><td>Execution page loads; filters and blocker rows visible.</td><td>Open order requires live verification; grammar/value copy and blocked-doc explanation patched.</td><td><span class="chip chip-red">P0/P2</span></td></tr><tr><td>Pipeline</td><td>Latest live QA says tabs navigate, buyer/supplier mode works, cards open.</td><td>Pass 20 added a visible horizontal scroll cue; drag/drop and Advance mutation safety still require live retest.</td><td><span class="chip chip-amber">P2</span></td></tr><tr><td>Products</td><td>Products and Spreadsheet views work; filters and Quick quote buttons visible.</td><td>Pricing View now uses a distinct pricing-focused layout; typo/active market/coverage remain data/setup items.</td><td><span class="chip chip-amber">P1/P2</span></td></tr><tr><td>Trade Events</td><td>Event cockpit, capture/review/view CTAs present.</td><td>Expired-only events, intake/conversion metric contradictions, no future event prompt.</td><td><span class="chip chip-amber">P2</span></td></tr><tr><td>Tasks</td><td>Task buckets and quick actions render; Pass 20 added Tasks to desktop navigation.</td><td>Still needs follow-up sync proof before Tasks can be treated as the single overdue-work source.</td><td><span class="chip chip-amber">P1</span></td></tr><tr><td>Compliance/Documents</td><td>Pages load; document review and compliance concepts are visible.</td><td>No evidence rules configured; must be framed as setup-required until configured.</td><td><span class="chip chip-amber">P2</span></td></tr><tr><td>Admin/Organization</td><td>Setup page loads; sub-links navigate; 7/7 checklist visible.</td><td>Governance clear conflicts with warning badge; Legal/Email/Incoterm missing; unnamed user/expired invite need verification.</td><td><span class="chip chip-amber">P1/P2</span></td></tr><tr><td>AI Analytics</td><td>Read-only metrics and time windows work.</td><td>0% apply rate should be labeled unproven or investigated.</td><td><span class="chip chip-amber">P2</span></td></tr></table></div></div></div>
-<div id="tab-journey" class="panel"><h2>Golden journey and live test path</h2><div class="journey"><div class="journey-step proven"><div class="step-num">1</div><div class="step-name">Login / Dashboard</div></div><div class="journey-step partial"><div class="step-num">2</div><div class="step-name">Buyer/Supplier Mode</div></div><div class="journey-step blocked"><div class="step-num">3</div><div class="step-name">Lead Actions</div></div><div class="journey-step blocked"><div class="step-num">4</div><div class="step-name">Quote Continue</div></div><div class="journey-step blocked"><div class="step-num">5</div><div class="step-name">Order Open</div></div><div class="journey-step partial"><div class="step-num">6</div><div class="step-name">Compliance / Docs</div></div><div class="journey-step blocked"><div class="step-num">7</div><div class="step-name">Pilot Proof</div></div></div><div class="card"><div class="card-header">Protected golden records <span class="badge">Do not mutate</span></div><div class="card-body"><table><tr><th>Record</th><th>Status</th><th>Rule</th></tr><tr><td><code>Q-00025</code></td><td>Accepted quote / frozen golden proof.</td><td>Do not mutate.</td></tr><tr><td><code>d129ffe2-c913-4cf7-9a7b-86ea6c9da54e</code></td><td>Signed contract/order proof with preserved lines.</td><td>Do not mutate.</td></tr><tr><td>New live QA records</td><td>Needed for final proof only.</td><td>Create only after explicit authorization or in staging/test account.</td></tr></table></div></div><div class="card"><div class="card-header">Final live-test script after fixes <span class="badge">Last gate before score lift</span></div><div class="card-body"><table><tr><th>Journey</th><th>Actions to prove</th><th>Pass condition</th></tr><tr><td>Buyer</td><td>Dashboard → buyer leads → row click → Command Center → RFQ/Quote Preview → Continue Terms → quote list Continue → order conversion/open.</td><td>No dead buttons, no raw errors, clear safe confirmations before mutations.</td></tr><tr><td>Supplier</td><td>Supplier dashboard → supplier lead → pipeline → product/catalog links → supplier-specific quote/order restrictions.</td><td>Mode is correct and supplier path does not show buyer-only actions incorrectly.</td></tr><tr><td>Admin</td><td>Organization setup → users → invitations → security → markets/stages/pipelines → product management.</td><td>No governance contradictions; incomplete setup is clearly called out.</td></tr><tr><td>Operations</td><td>Orders → documents → compliance → tasks/follow-ups → reports.</td><td>Operational pages are either functional or honestly setup-gated.</td></tr><tr><td>Build proof</td><td>User/Vercel runs install/test/build after fixes.</td><td>Clean Vercel build + pasted log or connector proof. GPT must not run <code>npm ci</code>.</td></tr></table></div></div></div>
-<div id="tab-demo" class="panel"><h2>Demo guide after Pass 19 code hardening</h2><div class="callout callout-amber"><strong>Controlled demo only until live retest.</strong> Pass 19 patches the major visible action failures in code, but this ZIP still needs Vercel build proof and live QA confirmation before an uncontrolled buyer demo.</div><div class="card"><div class="card-header">Safe controlled demo after Pass 19 <span class="badge">Pending proof</span></div><div class="card-body"><table><tr><th>Show</th><th>Avoid until fixed</th><th>Reason</th></tr><tr><td>Dashboard, map, KPIs, buyer/supplier dashboard mode, Action Zone.</td><td>Custom date range date picker.</td><td>Custom range is partial.</td></tr><tr><td>Lead detail standalone page, saved-view filters, and lead workspace interactions.</td><td>Any path that still surfaces raw Supabase/Postgres text.</td><td>Safe message handling is patched; live retest must confirm.</td></tr><tr><td>Quote Preview content with validation feedback.</td><td>Destructive Create order unless the user explicitly confirms; unverified quote detail route until live retest.</td><td>Pass 19 patched step feedback, but live proof is still required.</td></tr><tr><td>Pipeline board and Open card navigation.</td><td>Mutating Advance without confirmation.</td><td>Mutation safety not fully verified.</td></tr><tr><td>Admin organization setup as roadmap/onboarding.</td><td>Governance clear claim if warning badge remains.</td><td>Status contradiction reduces trust.</td></tr></table></div></div><div class="card"><div class="card-header">Demo-ready criteria <span class="badge">After P0 fixes</span></div><div class="card-body"><ul class="plain"><li>Header Share my vCard works from every page and matches RK avatar behavior.</li><li>No visible raw Supabase/Postgres errors anywhere in the Lead Command Center.</li><li>Quote list Continue opens a real workspace/detail route, and row/company click does the same.</li><li>Orders Open order opens a real detail/workspace view.</li><li>Leads and Quotes rows are clickable and keyboard accessible.</li><li>DCC, README, RELEASE_READINESS, and CHANGES updated after the build/log proof.</li></ul></div></div></div>
-<div id="tab-passes" class="panel"><h2>Next pass plan — path from current state to 100%</h2><div class="pass-grid"><div class="pass-card"><div class="pass-card-head p3">Pass 19 — P0 Action Hardening</div><div class="pass-card-body"><ul><li>Code-patched global vCard modal action.</li><li>Code-patched lead saved-view filters, fallback selection, safe query messages, and Quote Preview validation.</li><li>Code-patched Orders copy, blocked-doc explanation, active-order grammar, and execution-value wording.</li><li>Code-patched Products Pricing View as a distinct layout.</li><li>Updated DCC/docs; no Supabase mutation.</li><li>Build not claimed in GPT sandbox. Requires Vercel/live build proof.</li></ul></div></div><div class="pass-card"><div class="pass-card-head p2">Pass 20 — Proof-Gated Pilot Hardening</div><div class="pass-card-body"><ul><li>No Vercel/live QA proof was available inside GPT sandbox; clean build and retest are not claimed.</li><li>Added Tasks to primary desktop navigation.</li><li>Added a visible Pipeline horizontal-scroll cue.</li><li>Hid Dashboard Custom range until date-picker support exists.</li><li>Next pass must obtain build/live QA proof before confidence can rise.</li></ul></div></div><div class="pass-card"><div class="pass-card-head p4">Pass 21 — Live SQL/UX Fix Pack</div><div class="pass-card-body"><ul><li>Checked Supabase schema/logs before code changes.</li><li>Patched batch lead move around failing ambiguous RPC.</li><li>Patched quote display-currency check constraint handling.</li><li>Added order-upload feedback, quote blocker guidance, and Admin Categories CRUD.</li><li>Build not claimed; Vercel/live QA proof required.</li></ul></div></div><div class="pass-card"><div class="pass-card-head p2">Pass 22 — Build + Live Retest Proof Gate</div><div class="pass-card-body"><ul><li>Run clean Vercel/local build for Pass 21.</li><li>Live-test lead batch updates, quote draft creation, order document upload, Admin Categories, and Trade Events.</li><li>If storage upload fails, authorize bucket/RLS remediation.</li><li>Update DCC confidence based only on evidence.</li></ul></div></div><div class="pass-card"><div class="pass-card-head p3">Pass 23 — Security/Ops Closure</div><div class="pass-card-body"><ul><li>Supabase advisor/RPC remediation after authorization.</li><li>WAF/rate-limit evidence.</li><li>Monitoring/alerts.</li><li>Backup/restore drill.</li><li>External audit evidence.</li></ul></div></div><div class="pass-card"><div class="pass-card-head p4">Pass 24 — Pilot Evidence</div><div class="pass-card-body"><ul><li>New non-frozen proof records.</li><li>Dispatch/completion proof.</li><li>First pilot adoption and feedback.</li><li>Support/runbook evidence.</li><li>Only then consider 100/100.</li></ul></div></div></div><div class="card"><div class="card-header">Pass 19 implementation checklist <span class="badge">Fix order</span></div><div class="card-body"><table><tr><th>Order</th><th>Work item</th><th>Why first</th><th>TS/build safety</th></tr><tr><td>1</td><td>Global vCard button</td><td>Likely small shell wiring fix; high demo visibility.</td><td>Reuse existing avatar modal state/handler; avoid new modal props.</td></tr><tr><td>2</td><td>Lead SQL/pillar action</td><td>Raw DB error is trust/security P0.</td><td>Qualify existing column names; preserve action return shape.</td></tr><tr><td>3</td><td>Quote Continue/row click</td><td>Revenue workflow P0.</td><td>Use existing URL params/router patterns; guard nullable quoteId.</td></tr><tr><td>4</td><td>Order Open</td><td>Execution workflow P0.</td><td>Route to existing order workspace/detail if present; otherwise add safe drawer with existing types.</td></tr><tr><td>5</td><td>Lead/quote rows clickable</td><td>Expected SaaS UX and low risk if event propagation is handled.</td><td>Stop propagation on nested buttons/checkboxes; add keyboard handlers.</td></tr><tr><td>6</td><td>DCC/docs</td><td>Keep team aligned.</td><td>Update only existing docs unless new doc is explicitly requested.</td></tr></table></div></div></div>
-<div id="tab-schema" class="panel"><h2>Schema / data truth</h2><div class="callout callout-amber"><strong>No live Supabase mutation occurred in Pass 19, Pass 20, or Pass 21.</strong> Schema/data items remain read-only verification tasks unless the owner explicitly authorizes cleanup or remediation migrations.</div><div class="card"><div class="card-header">Current data concerns to verify read-only <span class="badge">Do not auto-fix live</span></div><div class="card-body"><table><tr><th>Concern</th><th>Observed in reviews</th><th>Verification / fix path</th></tr><tr><td>Duplicate New Lead stage</td><td>Dashboard stage dropdown shows duplicate New Lead entries.</td><td>Read-only inspect stages; dedupe only after approval.</td></tr><tr><td>Product typo</td><td><code>Bannana Powder</code> visible in catalog.</td><td>Confirm product record source; fix in seed/static data or authorized live row.</td></tr><tr><td>Unnamed admin user</td><td>Admin user visible without name/email.</td><td>Read-only verify auth/profile join; disable or assign identity only after approval.</td></tr><tr><td>Expired invitation</td><td>Expired invite still shown.</td><td>Clarify audit-vs-active status; add expired handling/CTA.</td></tr><tr><td>Legal/email/incoterm missing</td><td>Org setup shows Not stored.</td><td>Make setup checklist honest; require before external quote send.</td></tr><tr><td>Catalog active markets/coverage empty</td><td>Active Markets = 0 and Coverage blank while markets exist.</td><td>Verify product-market pricing relationship; add clear empty state or seed authorized data.</td></tr><tr><td>RSC 503 / server action failures</td><td>Live QA saw intermittent 503 on leads/quotes/orders prefetch/action paths.</td><td>Inspect server component/action data fetches; add safe fallbacks and user-safe errors.</td></tr></table></div></div><div class="card"><div class="card-header">Current canonical baseline <span class="badge">Locked</span></div><div class="card-body"><table><tr><th>Artifact</th><th>Value</th></tr><tr><td>Repository baseline</td><td><code>SetuFlow-CRM-main(41)</code></td></tr><tr><td>Commit</td><td><code>89a825a</code></td></tr><tr><td>Deployment</td><td>Vercel production READY</td></tr><tr><td>Expected tests</td><td>331</td></tr><tr><td>Protected quote</td><td><code>Q-00025</code></td></tr><tr><td>Protected contract/order</td><td><code>d129ffe2-c913-4cf7-9a7b-86ea6c9da54e</code></td></tr></table></div></div></div>
-<div id="tab-rules" class="panel"><h2>Build, TypeScript, and DCC operating rules</h2><div class="callout callout-red"><strong>Important:</strong> GPT sandbox did not run <code>npm ci</code> for Pass 19, Pass 20, or Pass 21. Build not claimed in GPT sandbox. Final proof must come from Vercel or a clean local environment, followed by live QA evidence that visible P0 actions are no longer dead.</div><div class="card"><div class="card-header">Required proof loop after every pass <span class="badge">No exceptions</span></div><div class="card-body"><table><tr><th>Step</th><th>Rule</th></tr><tr><td>1. Read DCC first</td><td>Open <code>public/internal-dcc/index.html</code> before changes and keep it as source of truth.</td></tr><tr><td>2. Fix smallest surface</td><td>Prefer existing components, handlers, route patterns, and types. No broad redesign during P0 hardening.</td></tr><tr><td>3. TypeScript safety</td><td>Inspect interfaces before editing; do not add props not declared; guard nullable params; use existing unions/constants; preserve server/client boundaries.</td></tr><tr><td>4. Navigation actions</td><td>Any visible CTA must either navigate, open a modal/drawer, show validation, or be disabled with a tooltip. No silent no-ops.</td></tr><tr><td>5. Server actions</td><td>No raw DB errors in UI. Qualify ambiguous SQL columns and return safe, typed error states.</td></tr><tr><td>6. Protected data</td><td>Do not mutate <code>Q-00025</code> or <code>d129ffe2-c913-4cf7-9a7b-86ea6c9da54e</code>. Do not clean live users/invites/products without authorization.</td></tr><tr><td>7. Docs/DCC update</td><td>Update DCC, README, RELEASE_READINESS, and CHANGES every pass. Avoid new docs unless explicitly needed.</td></tr><tr><td>8. Verification</td><td>User/Vercel runs install, tests, and build in a clean environment; paste logs for closeout. Do not claim clean build/test unless the commands actually ran and passed.</td></tr></table></div></div><div class="card"><div class="card-header">Known TypeScript error prevention checklist <span class="badge">Use before packaging</span></div><div class="card-body"><ul class="plain"><li>Never import server-only functions into client components; pass through actions/API boundaries.</li><li>When adding row clicks, keep nested button/checkbox handlers with <code>event.stopPropagation()</code>.</li><li>When using router/search params, guard missing IDs and avoid assuming non-null string values.</li><li>When wiring tabs, use existing literal view names or extend the union type in one place only.</li><li>When adding route/drawer state, keep component state serializable and avoid passing functions across server/client component boundaries.</li><li>When changing SQL/query helpers, preserve return types and map optional DB fields defensively.</li><li>Prefer small patches and grep-based static checks over broad architecture movement.</li></ul></div></div></div>
-</div><script>function showTab(e,name){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));e.currentTarget.classList.add('active');document.getElementById('tab-'+name).classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}</script></body></html>
+
+<div class="tab-bar">
+  <div class="tab active" data-tab="overview">Overview</div>
+  <div class="tab" data-tab="buyer">Buyer Workflows</div>
+  <div class="tab" data-tab="supplier">Supplier Workflows</div>
+  <div class="tab" data-tab="admin">Admin Settings</div>
+  <div class="tab" data-tab="shared">Shared Modules</div>
+  <div class="tab" data-tab="issues">Issue Tracker</div>
+  <div class="tab" data-tab="resolution">Resolution Guide</div>
+  <div class="tab" data-tab="repo">Repo Status</div>
+</div>
+
+<!-- ==================== OVERVIEW ==================== -->
+<div class="main">
+<div id="tab-overview" class="panel active">
+
+  <div class="alert alert-warn">
+    <span>&#9888;</span>
+    <div><strong>Live Test Mode — Chrome Extension</strong> — You are logged in at <strong>https://www.setuflowcrm.com/dashboard</strong>. Use this DCC alongside Claude in Chrome to navigate, test, and log results. All data is saved to localStorage in this file.</div>
+  </div>
+
+  <div class="summary-grid" id="summary-grid">
+    <div class="summary-card c-total"><div class="label">Total Tests</div><div class="value" id="stat-total">0</div></div>
+    <div class="summary-card c-pass"><div class="label">Passed</div><div class="value" id="stat-pass">0</div></div>
+    <div class="summary-card c-fail"><div class="label">Failed</div><div class="value" id="stat-fail">0</div></div>
+    <div class="summary-card c-blocked"><div class="label">Blocked</div><div class="value" id="stat-blocked">0</div></div>
+    <div class="summary-card c-pending"><div class="label">Pending</div><div class="value" id="stat-pending">0</div></div>
+    <div class="summary-card" style="border-color:#e5e7eb"><div class="label">Issues</div><div class="value" id="stat-issues" style="color:var(--danger)">0</div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">Test Scope <span>End-to-end coverage · Pass 21 · May 2025</span></div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:24px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--brand-mid);margin-bottom:10px;">&#128100; Buyer Workflows</div>
+      <ul style="font-size:12px;line-height:2;color:var(--muted);list-style:none;">
+        <li>&#8250; Dashboard (Buyers view)</li>
+        <li>&#8250; Buyer Leads list &amp; filters</li>
+        <li>&#8250; Buyer Lead Detail — all 8 tabs</li>
+        <li>&#8250; Lead Command Center — 4 pillars</li>
+        <li>&#8250; Quote Builder — 5-step wizard</li>
+        <li>&#8250; Buyer Pipeline board</li>
+        <li>&#8250; Contact Exchange / vCard</li>
+      </ul>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#065f46;margin-bottom:10px;">&#128666; Supplier Workflows</div>
+      <ul style="font-size:12px;line-height:2;color:var(--muted);list-style:none;">
+        <li>&#8250; Dashboard (Suppliers view)</li>
+        <li>&#8250; Supplier Leads list &amp; filters</li>
+        <li>&#8250; Supplier Lead Detail — all tabs</li>
+        <li>&#8250; RFQ Creation wizard</li>
+        <li>&#8250; Supplier Pipeline board</li>
+        <li>&#8250; Products spreadsheet</li>
+        <li>&#8250; Supplier Quotes view</li>
+      </ul>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#6b21a8;margin-bottom:10px;">&#9881; Admin Settings</div>
+      <ul style="font-size:12px;line-height:2;color:var(--muted);list-style:none;">
+        <li>&#8250; Organization profile</li>
+        <li>&#8250; User management + roles</li>
+        <li>&#8250; Invitations</li>
+        <li>&#8250; Markets, Categories, Stages</li>
+        <li>&#8250; Pipelines, Trade Events</li>
+        <li>&#8250; Product Management</li>
+        <li>&#8250; Security, Audit, AI Analytics</li>
+      </ul>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#92400e;margin-bottom:10px;">&#128203; Shared Modules</div>
+      <ul style="font-size:12px;line-height:2;color:var(--muted);list-style:none;">
+        <li>&#8250; Orders &amp; Contracts</li>
+        <li>&#8250; Tasks</li>
+        <li>&#8250; Trade Events</li>
+        <li>&#8250; Documents</li>
+        <li>&#8250; Compliance</li>
+        <li>&#8250; Reports &amp; AI Suggestions</li>
+        <li>&#8250; Integrations</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-title">Test Audit Log <span>Auto-saved on status change</span></div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;max-height:300px;overflow-y:auto;" id="audit-log">
+    <div class="empty-state"><div class="icon">&#128203;</div>No actions logged yet. Start testing to see activity here.</div>
+  </div>
+</div>
+
+<!-- ==================== BUYER WORKFLOWS ==================== -->
+<div id="tab-buyer" class="panel">
+  <div class="section-title">Buyer Workflow Tests <span>Click any row to expand notes · Status saves automatically</span></div>
+
+  <!-- DASHBOARD BUYERS -->
+  <div class="module" id="mod-dash-buyer">
+    <div class="module-header" onclick="toggleModule('mod-dash-buyer')">
+      <span class="module-icon">&#128196;</span>
+      <span class="module-title">Dashboard — Buyers View</span>
+      <span class="tag tag-buyer">Buyer</span>
+      <span class="module-url">/dashboard/buyers</span>
+      <span class="module-progress" id="prog-mod-dash-buyer">0/7</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-section-label">Navigation &amp; Load</div>
+      <div class="test-row" id="row-db1-1" data-module="mod-dash-buyer">
+        <div class="test-num">1</div>
+        <div class="test-desc">
+          <div class="test-name">Dashboard loads without errors</div>
+          <div class="test-steps">Navigate to /dashboard/buyers — verify no JS errors, no blank white screen, all KPI cards visible</div>
+          <div class="test-ctas">CTAs: None (load test)</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('db1-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('db1-1')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-db1-1"><textarea placeholder="Notes, errors, console output..." onchange="saveNote('db1-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-db1-2" data-module="mod-dash-buyer">
+        <div class="test-num">2</div>
+        <div class="test-desc">
+          <div class="test-name">KPI stat cards show correct buyer data</div>
+          <div class="test-steps">Verify Active Leads, Open Quotes, Conversion Rate, and pipeline volume cards display non-null values</div>
+          <div class="test-ctas">CTAs: Hover tooltip on each KPI card</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('db1-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('db1-2')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-db1-2"><textarea placeholder="Notes..." onchange="saveNote('db1-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-db1-3" data-module="mod-dash-buyer">
+        <div class="test-num">3</div>
+        <div class="test-desc">
+          <div class="test-name">World map / country coverage renders</div>
+          <div class="test-steps">Verify world map SVG loads, buyer market pins visible, clicking a country opens country insight drawer</div>
+          <div class="test-ctas">CTAs: Country pin click → drawer opens</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('db1-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('db1-3')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-db1-3"><textarea placeholder="Notes..." onchange="saveNote('db1-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-db1-4" data-module="mod-dash-buyer">
+        <div class="test-num">4</div>
+        <div class="test-desc">
+          <div class="test-name">Pipeline stage chart renders &amp; is interactive</div>
+          <div class="test-steps">Verify pipeline stage bar/donut chart shows stages, clicking a stage filters leads in activity card</div>
+          <div class="test-ctas">CTAs: Stage bar click, chart legend toggle</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('db1-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('db1-4')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-db1-4"><textarea placeholder="Notes..." onchange="saveNote('db1-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-db1-5" data-module="mod-dash-buyer">
+        <div class="test-num">5</div>
+        <div class="test-desc">
+          <div class="test-name">Needs Attention card — leads displayed &amp; clickable</div>
+          <div class="test-steps">Verify attention leads list shows, clicking a lead opens attention detail drawer with correct lead info</div>
+          <div class="test-ctas">CTAs: Lead row click → detail drawer, "Go to lead" link in drawer</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('db1-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('db1-5')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-db1-5"><textarea placeholder="Notes..." onchange="saveNote('db1-5',this.value)"></textarea></div>
+      <div class="test-row" id="row-db1-6" data-module="mod-dash-buyer">
+        <div class="test-num">6</div>
+        <div class="test-desc">
+          <div class="test-name">Dashboard customize panel opens &amp; saves layout</div>
+          <div class="test-steps">Click Customize button (if present), toggle widget visibility, save — refresh and confirm layout persists</div>
+          <div class="test-ctas">CTAs: Customize button, widget toggles, Save layout</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('db1-6',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('db1-6')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-db1-6"><textarea placeholder="Notes..." onchange="saveNote('db1-6',this.value)"></textarea></div>
+      <div class="test-row" id="row-db1-7" data-module="mod-dash-buyer">
+        <div class="test-num">7</div>
+        <div class="test-desc">
+          <div class="test-name">Recent activity feed renders correctly</div>
+          <div class="test-steps">Verify recent activity list shows timestamped entries, activity types are labeled, no [object Object] or undefined text</div>
+          <div class="test-ctas">CTAs: Activity item links navigate correctly</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('db1-7',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('db1-7')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-db1-7"><textarea placeholder="Notes..." onchange="saveNote('db1-7',this.value)"></textarea></div>
+    </div>
+  </div>
+
+  <!-- BUYER LEADS -->
+  <div class="module" id="mod-buyer-leads">
+    <div class="module-header" onclick="toggleModule('mod-buyer-leads')">
+      <span class="module-icon">&#127979;</span>
+      <span class="module-title">Buyer Leads — List &amp; Filters</span>
+      <span class="tag tag-buyer">Buyer</span>
+      <span class="module-url">/leads/buyers</span>
+      <span class="module-progress" id="prog-mod-buyer-leads">0/8</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-section-label">List View</div>
+      <div class="test-row" id="row-bl1-1" data-module="mod-buyer-leads">
+        <div class="test-num">1</div>
+        <div class="test-desc">
+          <div class="test-name">Buyer leads list loads with data</div>
+          <div class="test-steps">Navigate to /leads/buyers — verify table/card list shows buyer leads with company name, stage, owner, follow-up date</div>
+          <div class="test-ctas">CTAs: None (load test)</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('bl1-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('bl1-1')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-bl1-1"><textarea placeholder="Notes..." onchange="saveNote('bl1-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-bl1-2" data-module="mod-buyer-leads">
+        <div class="test-num">2</div>
+        <div class="test-desc">
+          <div class="test-name">Search filter works correctly</div>
+          <div class="test-steps">Type in search box — verify list filters in real-time by company name, no lag or crash</div>
+          <div class="test-ctas">CTAs: Search input (type &amp; clear)</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('bl1-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('bl1-2')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-bl1-2"><textarea placeholder="Notes..." onchange="saveNote('bl1-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-bl1-3" data-module="mod-buyer-leads">
+        <div class="test-num">3</div>
+        <div class="test-desc">
+          <div class="test-name">Stage dropdown filter works</div>
+          <div class="test-steps">Select a pipeline stage from filter — list narrows to matching leads, stage badge visible</div>
+          <div class="test-ctas">CTAs: Stage filter select</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('bl1-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('bl1-3')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-bl1-3"><textarea placeholder="Notes..." onchange="saveNote('bl1-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-bl1-4" data-module="mod-buyer-leads">
+        <div class="test-num">4</div>
+        <div class="test-desc">
+          <div class="test-name">Owner filter works</div>
+          <div class="test-steps">Filter by owner/assigned user — verify correct leads shown</div>
+          <div class="test-ctas">CTAs: Owner filter select</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('bl1-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('bl1-4')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-bl1-4"><textarea placeholder="Notes..." onchange="saveNote('bl1-4',this.value)"></textarea></div>
+      <div class="test-section-label">CTAs</div>
+      <div class="test-row" id="row-bl1-5" data-module="mod-buyer-leads">
+        <div class="test-num">5</div>
+        <div class="test-desc">
+          <div class="test-name">Add New Lead CTA opens creation flow</div>
+          <div class="test-steps">Click "+ New Lead" or "Add Lead" button — verify form/drawer opens, all required fields present</div>
+          <div class="test-ctas">CTAs: + New Lead / Add Buyer Lead button</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('bl1-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('bl1-5')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-bl1-5"><textarea placeholder="Notes..." onchange="saveNote('bl1-5',this.value)"></textarea></div>
+      <div class="test-row" id="row-bl1-6" data-module="mod-buyer-leads">
+        <div class="test-num">6</div>
+        <div class="test-desc">
+          <div class="test-name">Lead row click navigates to Lead Command Center</div>
+          <div class="test-steps">Click a lead row — verify navigation to /leads/[id] with correct lead loaded</div>
+          <div class="test-ctas">CTAs: Lead row / "Open" button</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('bl1-6',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('bl1-6')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-bl1-6"><textarea placeholder="Notes..." onchange="saveNote('bl1-6',this.value)"></textarea></div>
+      <div class="test-row" id="row-bl1-7" data-module="mod-buyer-leads">
+        <div class="test-num">7</div>
+        <div class="test-desc">
+          <div class="test-name">Quick action menu on lead card</div>
+          <div class="test-steps">Right-click or hover ⋯ menu on a lead — verify quick actions: View, Edit, Add Note, Archive, Delete appear and work</div>
+          <div class="test-ctas">CTAs: ⋯ menu items</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('bl1-7',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('bl1-7')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-bl1-7"><textarea placeholder="Notes..." onchange="saveNote('bl1-7',this.value)"></textarea></div>
+      <div class="test-row" id="row-bl1-8" data-module="mod-buyer-leads">
+        <div class="test-num">8</div>
+        <div class="test-desc">
+          <div class="test-name">Lead health badges display correctly</div>
+          <div class="test-steps">Verify each lead card shows health badge (Hot/Warm/Cold/At Risk) with correct color coding</div>
+          <div class="test-ctas">CTAs: Badge tooltip on hover</div>
+        </div>
+        <div class="test-status"><select onchange="setStatus('bl1-8',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div>
+        <div class="test-note-toggle" onclick="toggleNote('bl1-8')">&#8801;</div>
+      </div>
+      <div class="note-row" id="note-bl1-8"><textarea placeholder="Notes..." onchange="saveNote('bl1-8',this.value)"></textarea></div>
+    </div>
+  </div>
+
+  <!-- LEAD COMMAND CENTER -->
+  <div class="module" id="mod-lcc">
+    <div class="module-header" onclick="toggleModule('mod-lcc')">
+      <span class="module-icon">&#127993;</span>
+      <span class="module-title">Lead Command Center — All Tabs &amp; Workflow Pillars</span>
+      <span class="tag tag-buyer">Buyer</span>
+      <span class="module-url">/leads/[id]</span>
+      <span class="module-progress" id="prog-mod-lcc">0/14</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-section-label">Page Load &amp; Header</div>
+      <div class="test-row" id="row-lcc-1" data-module="mod-lcc"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Command Center page loads with correct lead data</div><div class="test-steps">Open any buyer lead — verify company name, contact, stage strip, and today context bar show correct data</div><div class="test-ctas">CTAs: None (load)</div></div><div class="test-status"><select onchange="setStatus('lcc-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-1')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-1"><textarea placeholder="Notes..." onchange="saveNote('lcc-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-lcc-2" data-module="mod-lcc"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Pipeline stage strip — stage movement</div><div class="test-steps">Click a future stage in the strip — confirm stage updates, toast confirms, strip re-renders with new current stage highlighted</div><div class="test-ctas">CTAs: Stage strip click → move stage</div></div><div class="test-status"><select onchange="setStatus('lcc-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-2')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-2"><textarea placeholder="Notes..." onchange="saveNote('lcc-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-lcc-3" data-module="mod-lcc"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Quick Edit Drawer opens &amp; saves</div><div class="test-steps">Click Edit / pencil icon — drawer opens with lead profile fields. Edit company name, save — verify update persists on reload</div><div class="test-ctas">CTAs: Edit button, Save Changes in drawer</div></div><div class="test-status"><select onchange="setStatus('lcc-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-3')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-3"><textarea placeholder="Notes..." onchange="saveNote('lcc-3',this.value)"></textarea></div>
+      <div class="test-section-label">Workflow Tab — 4 Pillars</div>
+      <div class="test-row" id="row-lcc-4" data-module="mod-lcc"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Workflow tab loads all 4 action cards</div><div class="test-steps">Click Workflow tab — verify 4 cards visible: Follow-up, Qualification, Coverage, Commercial. Each shows badge/state label</div><div class="test-ctas">CTAs: Tab switch</div></div><div class="test-status"><select onchange="setStatus('lcc-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-4')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-4"><textarea placeholder="Notes..." onchange="saveNote('lcc-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-lcc-5" data-module="mod-lcc"><div class="test-num">5</div><div class="test-desc"><div class="test-name">Follow-up pillar — set &amp; save follow-up date</div><div class="test-steps">Open Follow-up card → set date/time/owner → Save — verify data persists, badge updates (Overdue/Scheduled)</div><div class="test-ctas">CTAs: Open follow-up, date picker, Save</div></div><div class="test-status"><select onchange="setStatus('lcc-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-5')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-5"><textarea placeholder="Notes..." onchange="saveNote('lcc-5',this.value)"></textarea></div>
+      <div class="test-row" id="row-lcc-6" data-module="mod-lcc"><div class="test-num">6</div><div class="test-desc"><div class="test-name">Qualification pillar — save qualification answers</div><div class="test-steps">Open Qualification card → fill in buyer type, budget, authority — Save — verify qualification status badge updates</div><div class="test-ctas">CTAs: Open qualification, form fields, Save Qualification</div></div><div class="test-status"><select onchange="setStatus('lcc-6',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-6')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-6"><textarea placeholder="Notes..." onchange="saveNote('lcc-6',this.value)"></textarea></div>
+      <div class="test-row" id="row-lcc-7" data-module="mod-lcc"><div class="test-num">7</div><div class="test-desc"><div class="test-name">Coverage pillar — link products &amp; markets</div><div class="test-steps">Open Coverage card → add products from dropdown → add market — Save — verify linked products appear in card badge</div><div class="test-ctas">CTAs: Open coverage, product/market selects, Save Coverage</div></div><div class="test-status"><select onchange="setStatus('lcc-7',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-7')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-7"><textarea placeholder="Notes..." onchange="saveNote('lcc-7',this.value)"></textarea></div>
+      <div class="test-row" id="row-lcc-8" data-module="mod-lcc"><div class="test-num">8</div><div class="test-desc"><div class="test-name">Commercial pillar — Create Quote CTA</div><div class="test-steps">Open Commercial card → click "Create quote" — verify Quote Builder wizard opens in correct context for this lead</div><div class="test-ctas">CTAs: Create quote button, Review quote button (if exists)</div></div><div class="test-status"><select onchange="setStatus('lcc-8',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-8')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-8"><textarea placeholder="Notes..." onchange="saveNote('lcc-8',this.value)"></textarea></div>
+      <div class="test-section-label">Activity Tab</div>
+      <div class="test-row" id="row-lcc-9" data-module="mod-lcc"><div class="test-num">9</div><div class="test-desc"><div class="test-name">Activity tab — timeline loads</div><div class="test-steps">Click Activity tab — verify timeline shows historical activities with correct timestamps, types, and icons</div><div class="test-ctas">CTAs: Tab switch, scroll timeline</div></div><div class="test-status"><select onchange="setStatus('lcc-9',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-9')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-9"><textarea placeholder="Notes..." onchange="saveNote('lcc-9',this.value)"></textarea></div>
+      <div class="test-row" id="row-lcc-10" data-module="mod-lcc"><div class="test-num">10</div><div class="test-desc"><div class="test-name">Activity Composer — add note</div><div class="test-steps">In Activity tab → type a note in composer → Submit — verify note appears in timeline with correct timestamp and author</div><div class="test-ctas">CTAs: Note composer, Submit / Post note</div></div><div class="test-status"><select onchange="setStatus('lcc-10',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-10')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-10"><textarea placeholder="Notes..." onchange="saveNote('lcc-10',this.value)"></textarea></div>
+      <div class="test-section-label">Quotes Tab</div>
+      <div class="test-row" id="row-lcc-11" data-module="mod-lcc"><div class="test-num">11</div><div class="test-desc"><div class="test-name">Quotes tab loads lead quotes</div><div class="test-steps">Click Quotes tab — verify quote summary cards show with status, quote number, amount, and milestone timeline</div><div class="test-ctas">CTAs: Tab switch, Quote card click</div></div><div class="test-status"><select onchange="setStatus('lcc-11',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-11')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-11"><textarea placeholder="Notes..." onchange="saveNote('lcc-11',this.value)"></textarea></div>
+      <div class="test-section-label">Sticky Action Bar</div>
+      <div class="test-row" id="row-lcc-12" data-module="mod-lcc"><div class="test-num">12</div><div class="test-desc"><div class="test-name">Sticky action bar — Win/Lost CTAs</div><div class="test-steps">Scroll down — verify sticky bar with "Mark Won" / "Mark Lost" buttons appears. Click Mark Won — confirm dialog, verify stage changes</div><div class="test-ctas">CTAs: Mark Won, Mark Lost, confirm dialog</div></div><div class="test-status"><select onchange="setStatus('lcc-12',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-12')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-12"><textarea placeholder="Notes..." onchange="saveNote('lcc-12',this.value)"></textarea></div>
+      <div class="test-row" id="row-lcc-13" data-module="mod-lcc"><div class="test-num">13</div><div class="test-desc"><div class="test-name">AI Assist popover opens &amp; generates suggestion</div><div class="test-steps">Click AI assist (sparkle icon) — verify popover opens, generates a context-aware suggestion, no error state</div><div class="test-ctas">CTAs: AI assist button, suggestion type buttons</div></div><div class="test-status"><select onchange="setStatus('lcc-13',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-13')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-13"><textarea placeholder="Notes..." onchange="saveNote('lcc-13',this.value)"></textarea></div>
+      <div class="test-row" id="row-lcc-14" data-module="mod-lcc"><div class="test-num">14</div><div class="test-desc"><div class="test-name">Lead queue navigation (Previous / Next)</div><div class="test-steps">Use Previous/Next lead buttons in header — verify navigation to adjacent leads in queue, breadcrumb updates</div><div class="test-ctas">CTAs: Previous lead, Next lead, Hot list lead click</div></div><div class="test-status"><select onchange="setStatus('lcc-14',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('lcc-14')">&#8801;</div></div>
+      <div class="note-row" id="note-lcc-14"><textarea placeholder="Notes..." onchange="saveNote('lcc-14',this.value)"></textarea></div>
+    </div>
+  </div>
+
+  <!-- QUOTE BUILDER -->
+  <div class="module" id="mod-quote">
+    <div class="module-header" onclick="toggleModule('mod-quote')">
+      <span class="module-icon">&#128203;</span>
+      <span class="module-title">Quote Builder — 5-Step Wizard</span>
+      <span class="tag tag-buyer">Buyer</span>
+      <span class="module-url">/leads/[id]/quote</span>
+      <span class="module-progress" id="prog-mod-quote">0/7</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-row" id="row-qb-1" data-module="mod-quote"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Step 1: Product — buyer/RFQ context locks correctly</div><div class="test-steps">Open Quote Builder → verify Step 1 shows lead context (buyer name, RFQ ref if exists), pricing basis selector works</div><div class="test-ctas">CTAs: Pricing basis select, Continue to Step 2</div></div><div class="test-status"><select onchange="setStatus('qb-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('qb-1')">&#8801;</div></div>
+      <div class="note-row" id="note-qb-1"><textarea placeholder="Notes..." onchange="saveNote('qb-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-qb-2" data-module="mod-quote"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Step 2: Pricing — add line items with products</div><div class="test-steps">Add 2+ product line items from catalog → verify MOQ cue visible, pricing delta shows, unit price editable</div><div class="test-ctas">CTAs: Add Line Item, product search, quantity/price fields</div></div><div class="test-status"><select onchange="setStatus('qb-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('qb-2')">&#8801;</div></div>
+      <div class="note-row" id="note-qb-2"><textarea placeholder="Notes..." onchange="saveNote('qb-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-qb-3" data-module="mod-quote"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Step 3: Terms — currency, approval, notes</div><div class="test-steps">Set currency, approval posture (auto/manual), add workflow notes → proceed to Step 4</div><div class="test-ctas">CTAs: Currency select, Approval toggle, Notes field, Continue</div></div><div class="test-status"><select onchange="setStatus('qb-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('qb-3')">&#8801;</div></div>
+      <div class="note-row" id="note-qb-3"><textarea placeholder="Notes..." onchange="saveNote('qb-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-qb-4" data-module="mod-quote"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Step 4: Review — totals &amp; draft structure correct</div><div class="test-steps">Verify quote total matches line items, all terms displayed, pricing basis confirmed, send readiness checklist visible</div><div class="test-ctas">CTAs: Edit (back to step), Continue to Send</div></div><div class="test-status"><select onchange="setStatus('qb-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('qb-4')">&#8801;</div></div>
+      <div class="note-row" id="note-qb-4"><textarea placeholder="Notes..." onchange="saveNote('qb-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-qb-5" data-module="mod-quote"><div class="test-num">5</div><div class="test-desc"><div class="test-name">Step 5: Send — gate blocks premature send</div><div class="test-steps">If approval pending, verify Send button blocked with blocker message. Clear blockers → Send button enables</div><div class="test-ctas">CTAs: Send Quote, blockers display, override/escalate</div></div><div class="test-status"><select onchange="setStatus('qb-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('qb-5')">&#8801;</div></div>
+      <div class="note-row" id="note-qb-5"><textarea placeholder="Notes..." onchange="saveNote('qb-5',this.value)"></textarea></div>
+      <div class="test-row" id="row-qb-6" data-module="mod-quote"><div class="test-num">6</div><div class="test-desc"><div class="test-name">Wizard step navigation (back/forward)</div><div class="test-steps">Navigate forward to step 4, then click Back — verify step 3 re-renders with previously entered data intact (no data loss)</div><div class="test-ctas">CTAs: Back button, step indicator clicks</div></div><div class="test-status"><select onchange="setStatus('qb-6',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('qb-6')">&#8801;</div></div>
+      <div class="note-row" id="note-qb-6"><textarea placeholder="Notes..." onchange="saveNote('qb-6',this.value)"></textarea></div>
+      <div class="test-row" id="row-qb-7" data-module="mod-quote"><div class="test-num">7</div><div class="test-desc"><div class="test-name">Quote saved as Draft persists on Lead Command Center</div><div class="test-steps">Save as Draft in Step 1 or 2 — navigate back to Lead Command Center → Commercial card shows "Review quote" instead of "Create quote"</div><div class="test-ctas">CTAs: Save Draft, back navigation</div></div><div class="test-status"><select onchange="setStatus('qb-7',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('qb-7')">&#8801;</div></div>
+      <div class="note-row" id="note-qb-7"><textarea placeholder="Notes..." onchange="saveNote('qb-7',this.value)"></textarea></div>
+    </div>
+  </div>
+
+  <!-- BUYER PIPELINE -->
+  <div class="module" id="mod-buyer-pipeline">
+    <div class="module-header" onclick="toggleModule('mod-buyer-pipeline')">
+      <span class="module-icon">&#128668;</span>
+      <span class="module-title">Buyer Pipeline Board</span>
+      <span class="tag tag-buyer">Buyer</span>
+      <span class="module-url">/pipeline/buyers</span>
+      <span class="module-progress" id="prog-mod-buyer-pipeline">0/5</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-row" id="row-bp-1" data-module="mod-buyer-pipeline"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Pipeline board loads with all stage columns</div><div class="test-steps">Navigate to /pipeline/buyers — verify kanban board with all configured pipeline stages visible as columns</div><div class="test-ctas">CTAs: None (load)</div></div><div class="test-status"><select onchange="setStatus('bp-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('bp-1')">&#8801;</div></div>
+      <div class="note-row" id="note-bp-1"><textarea placeholder="Notes..." onchange="saveNote('bp-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-bp-2" data-module="mod-buyer-pipeline"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Lead cards show in correct stage columns</div><div class="test-steps">Verify each lead card appears in its current pipeline stage column, no orphaned cards</div><div class="test-ctas">CTAs: Scroll columns</div></div><div class="test-status"><select onchange="setStatus('bp-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('bp-2')">&#8801;</div></div>
+      <div class="note-row" id="note-bp-2"><textarea placeholder="Notes..." onchange="saveNote('bp-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-bp-3" data-module="mod-buyer-pipeline"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Search &amp; filter on pipeline board</div><div class="test-steps">Use search bar to filter leads — verify cards filter in real-time. Apply owner filter — verify correct cards show</div><div class="test-ctas">CTAs: Search, Lead type filter, Owner filter</div></div><div class="test-status"><select onchange="setStatus('bp-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('bp-3')">&#8801;</div></div>
+      <div class="note-row" id="note-bp-3"><textarea placeholder="Notes..." onchange="saveNote('bp-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-bp-4" data-module="mod-buyer-pipeline"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Lead card click navigates to Command Center</div><div class="test-steps">Click a pipeline lead card — verify navigation to /leads/[id] with correct lead</div><div class="test-ctas">CTAs: Lead card click</div></div><div class="test-status"><select onchange="setStatus('bp-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('bp-4')">&#8801;</div></div>
+      <div class="note-row" id="note-bp-4"><textarea placeholder="Notes..." onchange="saveNote('bp-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-bp-5" data-module="mod-buyer-pipeline"><div class="test-num">5</div><div class="test-desc"><div class="test-name">AI rescue board strip displays &amp; is actionable</div><div class="test-steps">Verify AI strip at top shows pipeline risk message, tone is correct (warning/critical/neutral), "Open" link works</div><div class="test-ctas">CTAs: AI strip expand, lead links in strip</div></div><div class="test-status"><select onchange="setStatus('bp-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('bp-5')">&#8801;</div></div>
+      <div class="note-row" id="note-bp-5"><textarea placeholder="Notes..." onchange="saveNote('bp-5',this.value)"></textarea></div>
+    </div>
+  </div>
+
+</div><!-- end buyer panel -->
+
+<!-- ==================== SUPPLIER WORKFLOWS ==================== -->
+<div id="tab-supplier" class="panel">
+  <div class="section-title">Supplier Workflow Tests</div>
+
+  <div class="module" id="mod-supplier-dash">
+    <div class="module-header" onclick="toggleModule('mod-supplier-dash')">
+      <span class="module-icon">&#128666;</span>
+      <span class="module-title">Dashboard — Suppliers View</span>
+      <span class="tag tag-supplier">Supplier</span>
+      <span class="module-url">/dashboard/suppliers</span>
+      <span class="module-progress" id="prog-mod-supplier-dash">0/4</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-row" id="row-sd-1" data-module="mod-supplier-dash"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Supplier dashboard loads with correct KPIs</div><div class="test-steps">Navigate to /dashboard/suppliers — verify KPI cards show supplier-specific metrics (RFQs received, Quotes submitted, etc.)</div><div class="test-ctas">CTAs: None</div></div><div class="test-status"><select onchange="setStatus('sd-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sd-1')">&#8801;</div></div>
+      <div class="note-row" id="note-sd-1"><textarea placeholder="Notes..." onchange="saveNote('sd-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-sd-2" data-module="mod-supplier-dash"><div class="test-num">2</div><div class="test-desc"><div class="test-name">World map shows supplier market coverage</div><div class="test-steps">Verify countries with supplier coverage highlighted, clicking opens country table/drawer</div><div class="test-ctas">CTAs: Country click, drawer close</div></div><div class="test-status"><select onchange="setStatus('sd-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sd-2')">&#8801;</div></div>
+      <div class="note-row" id="note-sd-2"><textarea placeholder="Notes..." onchange="saveNote('sd-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-sd-3" data-module="mod-supplier-dash"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Mode toggle Buyer ↔ Supplier works from dashboard</div><div class="test-steps">If mode toggle present in header — switch from Supplier to Buyer view and back. Verify KPI cards re-render</div><div class="test-ctas">CTAs: Mode toggle / view switcher</div></div><div class="test-status"><select onchange="setStatus('sd-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sd-3')">&#8801;</div></div>
+      <div class="note-row" id="note-sd-3"><textarea placeholder="Notes..." onchange="saveNote('sd-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-sd-4" data-module="mod-supplier-dash"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Action Priority Panel renders actionable items</div><div class="test-steps">Verify action priority panel shows tasks/follow-ups needing attention, items are clickable to leads</div><div class="test-ctas">CTAs: Action item click → lead navigation</div></div><div class="test-status"><select onchange="setStatus('sd-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sd-4')">&#8801;</div></div>
+      <div class="note-row" id="note-sd-4"><textarea placeholder="Notes..." onchange="saveNote('sd-4',this.value)"></textarea></div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-supplier-leads">
+    <div class="module-header" onclick="toggleModule('mod-supplier-leads')">
+      <span class="module-icon">&#128200;</span>
+      <span class="module-title">Supplier Leads &amp; RFQ Creation</span>
+      <span class="tag tag-supplier">Supplier</span>
+      <span class="module-url">/leads/suppliers · /leads/[id]/rfq/new</span>
+      <span class="module-progress" id="prog-mod-supplier-leads">0/7</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-row" id="row-sl-1" data-module="mod-supplier-leads"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Supplier leads list loads correctly</div><div class="test-steps">Navigate to /leads/suppliers — verify list shows supplier leads with company, stage, market, follow-up date</div><div class="test-ctas">CTAs: None</div></div><div class="test-status"><select onchange="setStatus('sl-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sl-1')">&#8801;</div></div>
+      <div class="note-row" id="note-sl-1"><textarea placeholder="Notes..." onchange="saveNote('sl-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-sl-2" data-module="mod-supplier-leads"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Create new RFQ from supplier lead</div><div class="test-steps">Open a supplier lead → find "New RFQ" or "Create RFQ" CTA → navigate to /leads/[id]/rfq/new → form renders</div><div class="test-ctas">CTAs: New RFQ button</div></div><div class="test-status"><select onchange="setStatus('sl-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sl-2')">&#8801;</div></div>
+      <div class="note-row" id="note-sl-2"><textarea placeholder="Notes..." onchange="saveNote('sl-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-sl-3" data-module="mod-supplier-leads"><div class="test-num">3</div><div class="test-desc"><div class="test-name">RFQ form — fill &amp; submit</div><div class="test-steps">Fill RFQ fields (products, quantities, delivery terms, deadline) → Submit → verify RFQ appears on lead Activity tab</div><div class="test-ctas">CTAs: All form fields, Submit RFQ</div></div><div class="test-status"><select onchange="setStatus('sl-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sl-3')">&#8801;</div></div>
+      <div class="note-row" id="note-sl-3"><textarea placeholder="Notes..." onchange="saveNote('sl-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-sl-4" data-module="mod-supplier-leads"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Products spreadsheet page loads &amp; is editable</div><div class="test-steps">Navigate to /products — verify spreadsheet-style grid shows products with name, category, price, MOQ. Edit a cell → Save</div><div class="test-ctas">CTAs: Add Product, Edit cell, Save, Import/Export buttons</div></div><div class="test-status"><select onchange="setStatus('sl-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sl-4')">&#8801;</div></div>
+      <div class="note-row" id="note-sl-4"><textarea placeholder="Notes..." onchange="saveNote('sl-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-sl-5" data-module="mod-supplier-leads"><div class="test-num">5</div><div class="test-desc"><div class="test-name">Supplier pipeline board — columns &amp; cards correct</div><div class="test-steps">Navigate to /pipeline/suppliers — verify columns match supplier pipeline stages, cards placed correctly</div><div class="test-ctas">CTAs: Card click → lead, stage filter</div></div><div class="test-status"><select onchange="setStatus('sl-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sl-5')">&#8801;</div></div>
+      <div class="note-row" id="note-sl-5"><textarea placeholder="Notes..." onchange="saveNote('sl-5',this.value)"></textarea></div>
+      <div class="test-row" id="row-sl-6" data-module="mod-supplier-leads"><div class="test-num">6</div><div class="test-desc"><div class="test-name">Supplier Lead Command Center — workflow pillars work</div><div class="test-steps">Open a supplier lead → Workflow tab → all 4 pillars load. Qualification, Coverage, Follow-up, Commercial all open inline panels</div><div class="test-ctas">CTAs: Same as buyer LCC pillars (T4–T8)</div></div><div class="test-status"><select onchange="setStatus('sl-6',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sl-6')">&#8801;</div></div>
+      <div class="note-row" id="note-sl-6"><textarea placeholder="Notes..." onchange="saveNote('sl-6',this.value)"></textarea></div>
+      <div class="test-row" id="row-sl-7" data-module="mod-supplier-leads"><div class="test-num">7</div><div class="test-desc"><div class="test-name">Quotes page — /quotes — shows all quotes with status</div><div class="test-steps">Navigate to /quotes — verify table shows quote number, lead, buyer/supplier, status badges, amounts. Filter by status works</div><div class="test-ctas">CTAs: Status filter, Quote row click → detail, Export</div></div><div class="test-status"><select onchange="setStatus('sl-7',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('sl-7')">&#8801;</div></div>
+      <div class="note-row" id="note-sl-7"><textarea placeholder="Notes..." onchange="saveNote('sl-7',this.value)"></textarea></div>
+    </div>
+  </div>
+</div><!-- end supplier panel -->
+
+<!-- ==================== ADMIN SETTINGS ==================== -->
+<div id="tab-admin" class="panel">
+  <div class="section-title">Admin Settings Tests <span>All 12 admin pages</span></div>
+
+  <div class="module" id="mod-admin-org">
+    <div class="module-header" onclick="toggleModule('mod-admin-org')">
+      <span class="module-icon">&#127962;</span>
+      <span class="module-title">Organization Profile</span>
+      <span class="tag tag-admin">Admin</span>
+      <span class="module-url">/admin/organization</span>
+      <span class="module-progress" id="prog-mod-admin-org">0/3</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-row" id="row-ao-1" data-module="mod-admin-org"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Organization form loads with current data</div><div class="test-steps">Navigate to /admin/organization — verify org name, industry, logo, contact fields pre-filled with saved data</div><div class="test-ctas">CTAs: None (load)</div></div><div class="test-status"><select onchange="setStatus('ao-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ao-1')">&#8801;</div></div>
+      <div class="note-row" id="note-ao-1"><textarea placeholder="Notes..." onchange="saveNote('ao-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-ao-2" data-module="mod-admin-org"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Edit &amp; Save organization details</div><div class="test-steps">Edit any field → Save → reload page → verify changes persisted</div><div class="test-ctas">CTAs: Edit fields, Save Organization</div></div><div class="test-status"><select onchange="setStatus('ao-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ao-2')">&#8801;</div></div>
+      <div class="note-row" id="note-ao-2"><textarea placeholder="Notes..." onchange="saveNote('ao-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-ao-3" data-module="mod-admin-org"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Admin navigation sidebar — all links work</div><div class="test-steps">Click every item in admin sidebar nav: Organization, Team members, Invitations, Markets, Categories, Product management, Stages, Pipelines, Trade events, Audit, AI analytics, Security — verify each page loads</div><div class="test-ctas">CTAs: All 12 sidebar nav links</div></div><div class="test-status"><select onchange="setStatus('ao-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ao-3')">&#8801;</div></div>
+      <div class="note-row" id="note-ao-3"><textarea placeholder="Notes..." onchange="saveNote('ao-3',this.value)"></textarea></div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-admin-users">
+    <div class="module-header" onclick="toggleModule('mod-admin-users')">
+      <span class="module-icon">&#128101;</span>
+      <span class="module-title">Team Members &amp; Role Management</span>
+      <span class="tag tag-admin">Admin</span>
+      <span class="module-url">/admin/users</span>
+      <span class="module-progress" id="prog-mod-admin-users">0/6</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-row" id="row-au-1" data-module="mod-admin-users"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Users list loads with status badges</div><div class="test-steps">Navigate to /admin/users — verify all members show with correct status (Active/Invited/Inactive) and role badges</div><div class="test-ctas">CTAs: None</div></div><div class="test-status"><select onchange="setStatus('au-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('au-1')">&#8801;</div></div>
+      <div class="note-row" id="note-au-1"><textarea placeholder="Notes..." onchange="saveNote('au-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-au-2" data-module="mod-admin-users"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Search &amp; status filter on users</div><div class="test-steps">Search by name/email — verify filtered results. Filter by status (Active/Invited) — verify correct users shown</div><div class="test-ctas">CTAs: Search input, Status filter select</div></div><div class="test-status"><select onchange="setStatus('au-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('au-2')">&#8801;</div></div>
+      <div class="note-row" id="note-au-2"><textarea placeholder="Notes..." onchange="saveNote('au-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-au-3" data-module="mod-admin-users"><div class="test-num">3</div><div class="test-desc"><div class="test-name">User drawer opens on click</div><div class="test-steps">Click a user row — verify right drawer opens with Profile, Role, Security, Activity tabs all accessible</div><div class="test-ctas">CTAs: User row click, drawer tabs</div></div><div class="test-status"><select onchange="setStatus('au-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('au-3')">&#8801;</div></div>
+      <div class="note-row" id="note-au-3"><textarea placeholder="Notes..." onchange="saveNote('au-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-au-4" data-module="mod-admin-users"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Change user role</div><div class="test-steps">Open user drawer → Role tab → change role from dropdown → Save — verify role badge updates in list</div><div class="test-ctas">CTAs: Role dropdown, Update Role / Save</div></div><div class="test-status"><select onchange="setStatus('au-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('au-4')">&#8801;</div></div>
+      <div class="note-row" id="note-au-4"><textarea placeholder="Notes..." onchange="saveNote('au-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-au-5" data-module="mod-admin-users"><div class="test-num">5</div><div class="test-desc"><div class="test-name">Send password reset email</div><div class="test-steps">Open user drawer → Security tab → "Send password reset" → verify toast confirms email sent, no error</div><div class="test-ctas">CTAs: Send password reset button</div></div><div class="test-status"><select onchange="setStatus('au-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('au-5')">&#8801;</div></div>
+      <div class="note-row" id="note-au-5"><textarea placeholder="Notes..." onchange="saveNote('au-5',this.value)"></textarea></div>
+      <div class="test-row" id="row-au-6" data-module="mod-admin-users"><div class="test-num">6</div><div class="test-desc"><div class="test-name">Invitations page — send &amp; revoke invite</div><div class="test-steps">Navigate to /admin/invitations → Send new invite (email + role) → verify appears in pending list. Revoke an invite → verify removed</div><div class="test-ctas">CTAs: Send Invitation, Resend, Revoke, Role change on invite</div></div><div class="test-status"><select onchange="setStatus('au-6',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('au-6')">&#8801;</div></div>
+      <div class="note-row" id="note-au-6"><textarea placeholder="Notes..." onchange="saveNote('au-6',this.value)"></textarea></div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-admin-ref">
+    <div class="module-header" onclick="toggleModule('mod-admin-ref')">
+      <span class="module-icon">&#128214;</span>
+      <span class="module-title">Reference Lists — Markets, Categories, Stages, Pipelines</span>
+      <span class="tag tag-admin">Admin</span>
+      <span class="module-url">/admin/markets · /admin/categories · /admin/stages · /admin/pipelines</span>
+      <span class="module-progress" id="prog-mod-admin-ref">0/8</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-row" id="row-ar-1" data-module="mod-admin-ref"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Markets — Add new market</div><div class="test-steps">Navigate to /admin/markets → click Add Market → fill name/region → Save → verify appears in list</div><div class="test-ctas">CTAs: Add Market, Save</div></div><div class="test-status"><select onchange="setStatus('ar-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ar-1')">&#8801;</div></div>
+      <div class="note-row" id="note-ar-1"><textarea placeholder="Notes..." onchange="saveNote('ar-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-ar-2" data-module="mod-admin-ref"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Markets — Edit &amp; Delete existing market</div><div class="test-steps">Edit a market name → Save. Delete a market (non-referenced) → confirm deletion dialog → verify removed</div><div class="test-ctas">CTAs: Edit, Save, Delete, Confirm dialog</div></div><div class="test-status"><select onchange="setStatus('ar-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ar-2')">&#8801;</div></div>
+      <div class="note-row" id="note-ar-2"><textarea placeholder="Notes..." onchange="saveNote('ar-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-ar-3" data-module="mod-admin-ref"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Categories — Add, Edit, Delete category</div><div class="test-steps">Navigate to /admin/categories → Add new category → Save. Edit an existing category → Save. Delete one → confirm</div><div class="test-ctas">CTAs: Add, Edit, Delete, Save</div></div><div class="test-status"><select onchange="setStatus('ar-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ar-3')">&#8801;</div></div>
+      <div class="note-row" id="note-ar-3"><textarea placeholder="Notes..." onchange="saveNote('ar-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-ar-4" data-module="mod-admin-ref"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Stages — Add stage, set order &amp; type</div><div class="test-steps">Navigate to /admin/stages → Add new stage with name, stage type (won/lost/active), position → Save → verify in list with correct order</div><div class="test-ctas">CTAs: Add Stage, Stage type select, position/order, Save</div></div><div class="test-status"><select onchange="setStatus('ar-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ar-4')">&#8801;</div></div>
+      <div class="note-row" id="note-ar-4"><textarea placeholder="Notes..." onchange="saveNote('ar-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-ar-5" data-module="mod-admin-ref"><div class="test-num">5</div><div class="test-desc"><div class="test-name">Pipelines — Add pipeline &amp; assign stages</div><div class="test-steps">Navigate to /admin/pipelines → Add pipeline → assign buyer/supplier type → link stages → Save → verify pipeline appears in dropdown on Lead creation</div><div class="test-ctas">CTAs: Add Pipeline, stage assignment, Save</div></div><div class="test-status"><select onchange="setStatus('ar-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ar-5')">&#8801;</div></div>
+      <div class="note-row" id="note-ar-5"><textarea placeholder="Notes..." onchange="saveNote('ar-5',this.value)"></textarea></div>
+      <div class="test-row" id="row-ar-6" data-module="mod-admin-ref"><div class="test-num">6</div><div class="test-desc"><div class="test-name">Trade Events — Add event with date &amp; location</div><div class="test-steps">Navigate to /admin/trade-events → Add trade event (name, date, location, type) → Save → appears in list and in /trade-events module</div><div class="test-ctas">CTAs: Add Event, date picker, Save</div></div><div class="test-status"><select onchange="setStatus('ar-6',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ar-6')">&#8801;</div></div>
+      <div class="note-row" id="note-ar-6"><textarea placeholder="Notes..." onchange="saveNote('ar-6',this.value)"></textarea></div>
+      <div class="test-row" id="row-ar-7" data-module="mod-admin-ref"><div class="test-num">7</div><div class="test-desc"><div class="test-name">Product Management — catalog CRUD</div><div class="test-steps">Navigate to /admin/product-management → Add new product (name, category, price, MOQ) → Save. Edit one. Verify in /products spreadsheet</div><div class="test-ctas">CTAs: Add Product, Edit, Save, Delete (if available)</div></div><div class="test-status"><select onchange="setStatus('ar-7',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ar-7')">&#8801;</div></div>
+      <div class="note-row" id="note-ar-7"><textarea placeholder="Notes..." onchange="saveNote('ar-7',this.value)"></textarea></div>
+      <div class="test-row" id="row-ar-8" data-module="mod-admin-ref"><div class="test-num">8</div><div class="test-desc"><div class="test-name">New reference data appears in Lead creation dropdowns</div><div class="test-steps">After adding market/category/stage above → go to create a new lead → verify new values appear in all relevant dropdowns</div><div class="test-ctas">CTAs: Lead creation form dropdowns</div></div><div class="test-status"><select onchange="setStatus('ar-8',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ar-8')">&#8801;</div></div>
+      <div class="note-row" id="note-ar-8"><textarea placeholder="Notes..." onchange="saveNote('ar-8',this.value)"></textarea></div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-admin-gov">
+    <div class="module-header" onclick="toggleModule('mod-admin-gov')">
+      <span class="module-icon">&#128274;</span>
+      <span class="module-title">Governance — Security, Audit, AI Analytics</span>
+      <span class="tag tag-admin">Admin</span>
+      <span class="module-url">/admin/security · /admin/audit · /admin/ai-analytics</span>
+      <span class="module-progress" id="prog-mod-admin-gov">0/5</span>
+      <span class="chevron">&#8964;</span>
+    </div>
+    <div class="module-body">
+      <div class="test-row" id="row-ag-1" data-module="mod-admin-gov"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Security page loads with role matrix</div><div class="test-steps">Navigate to /admin/security — verify role-permission matrix table shows (roles as columns, features as rows). Danger badge in nav reflected in content</div><div class="test-ctas">CTAs: None (visual check only — no RLS changes during live test)</div></div><div class="test-status"><select onchange="setStatus('ag-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ag-1')">&#8801;</div></div>
+      <div class="note-row" id="note-ag-1"><textarea placeholder="Notes..." onchange="saveNote('ag-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-ag-2" data-module="mod-admin-gov"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Audit log — loads &amp; filters work</div><div class="test-steps">Navigate to /admin/audit — verify audit entries show with actor, action, timestamp. Filter by date range or user → entries update</div><div class="test-ctas">CTAs: Date filter, User filter, Load more / pagination</div></div><div class="test-status"><select onchange="setStatus('ag-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ag-2')">&#8801;</div></div>
+      <div class="note-row" id="note-ag-2"><textarea placeholder="Notes..." onchange="saveNote('ag-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-ag-3" data-module="mod-admin-gov"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Audit log — recent test actions are logged</div><div class="test-steps">After completing Lead stage move, quote save, and user role change above — verify those actions appear in audit log with correct actor</div><div class="test-ctas">CTAs: Refresh audit, search by action type</div></div><div class="test-status"><select onchange="setStatus('ag-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ag-3')">&#8801;</div></div>
+      <div class="note-row" id="note-ag-3"><textarea placeholder="Notes..." onchange="saveNote('ag-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-ag-4" data-module="mod-admin-gov"><div class="test-num">4</div><div class="test-desc"><div class="test-name">AI Analytics workspace loads with usage data</div><div class="test-steps">Navigate to /admin/ai-analytics — verify AI usage charts/tables render, no blank state unless genuinely no data</div><div class="test-ctas">CTAs: Date range filter, export if available</div></div><div class="test-status"><select onchange="setStatus('ag-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ag-4')">&#8801;</div></div>
+      <div class="note-row" id="note-ag-4"><textarea placeholder="Notes..." onchange="saveNote('ag-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-ag-5" data-module="mod-admin-gov"><div class="test-num">5</div><div class="test-desc"><div class="test-name">Settings Lists page — /settings/lists — CRUD</div><div class="test-steps">Navigate to /settings/lists — verify configurable lists load (next steps, contact types, etc.). Add / edit / remove an item → Save → confirm persistence</div><div class="test-ctas">CTAs: Add item, Edit, Delete, Save List</div></div><div class="test-status"><select onchange="setStatus('ag-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ag-5')">&#8801;</div></div>
+      <div class="note-row" id="note-ag-5"><textarea placeholder="Notes..." onchange="saveNote('ag-5',this.value)"></textarea></div>
+    </div>
+  </div>
+</div><!-- end admin panel -->
+
+<!-- ==================== SHARED MODULES ==================== -->
+<div id="tab-shared" class="panel">
+  <div class="section-title">Shared Module Tests <span>Orders · Tasks · Trade Events · Documents · Compliance · Reports · Integrations · Contact Exchange</span></div>
+
+  <div class="module" id="mod-orders">
+    <div class="module-header" onclick="toggleModule('mod-orders')"><span class="module-icon">&#128230;</span><span class="module-title">Orders, Tasks &amp; Contracts</span><span class="tag tag-shared">Shared</span><span class="module-url">/orders · /tasks · /contracts</span><span class="module-progress" id="prog-mod-orders">0/6</span><span class="chevron">&#8964;</span></div>
+    <div class="module-body">
+      <div class="test-row" id="row-or-1" data-module="mod-orders"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Orders page loads — list with status badges</div><div class="test-steps">Navigate to /orders — verify orders table with order number, lead reference, amount, status (Pending/Confirmed/Shipped/Completed) visible</div><div class="test-ctas">CTAs: Order row click, status filter, search</div></div><div class="test-status"><select onchange="setStatus('or-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('or-1')">&#8801;</div></div>
+      <div class="note-row" id="note-or-1"><textarea placeholder="Notes..." onchange="saveNote('or-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-or-2" data-module="mod-orders"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Tasks page — create, complete &amp; filter tasks</div><div class="test-steps">Navigate to /tasks → Add Task (title, due date, assignee, linked lead) → Save. Mark one complete → verify checked state. Filter by assignee</div><div class="test-ctas">CTAs: Add Task, complete checkbox, filter, due date picker</div></div><div class="test-status"><select onchange="setStatus('or-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('or-2')">&#8801;</div></div>
+      <div class="note-row" id="note-or-2"><textarea placeholder="Notes..." onchange="saveNote('or-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-or-3" data-module="mod-orders"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Contracts page loads with status and lead links</div><div class="test-steps">Navigate to /contracts — verify contract list shows reference, buyer/supplier, status (Draft/Active/Completed/Cancelled), lead link works</div><div class="test-ctas">CTAs: Contract row click, status filter</div></div><div class="test-status"><select onchange="setStatus('or-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('or-3')">&#8801;</div></div>
+      <div class="note-row" id="note-or-3"><textarea placeholder="Notes..." onchange="saveNote('or-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-or-4" data-module="mod-orders"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Documents page — upload &amp; view document</div><div class="test-steps">Navigate to /documents → Upload a PDF/doc → verify it appears in list with name, size, date. Click to preview if available</div><div class="test-ctas">CTAs: Upload Document, document row click/preview</div></div><div class="test-status"><select onchange="setStatus('or-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('or-4')">&#8801;</div></div>
+      <div class="note-row" id="note-or-4"><textarea placeholder="Notes..." onchange="saveNote('or-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-or-5" data-module="mod-orders"><div class="test-num">5</div><div class="test-desc"><div class="test-name">Compliance page — checklist items &amp; status</div><div class="test-steps">Navigate to /compliance — verify compliance checklist items show, status can be toggled (Pass/Fail/Pending), notes can be added</div><div class="test-ctas">CTAs: Status toggle, Add compliance note, Filter by status</div></div><div class="test-status"><select onchange="setStatus('or-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('or-5')">&#8801;</div></div>
+      <div class="note-row" id="note-or-5"><textarea placeholder="Notes..." onchange="saveNote('or-5',this.value)"></textarea></div>
+      <div class="test-row" id="row-or-6" data-module="mod-orders"><div class="test-num">6</div><div class="test-desc"><div class="test-name">Trade Events page — upcoming events list</div><div class="test-steps">Navigate to /trade-events — verify events show with name, date, location, type. Events added in admin show here</div><div class="test-ctas">CTAs: Event row click, Register/Mark attending (if present)</div></div><div class="test-status"><select onchange="setStatus('or-6',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('or-6')">&#8801;</div></div>
+      <div class="note-row" id="note-or-6"><textarea placeholder="Notes..." onchange="saveNote('or-6',this.value)"></textarea></div>
+    </div>
+  </div>
+
+  <div class="module" id="mod-ai-int">
+    <div class="module-header" onclick="toggleModule('mod-ai-int')"><span class="module-icon">&#10024;</span><span class="module-title">Reports, AI Suggestions &amp; Integrations</span><span class="tag tag-shared">Shared</span><span class="module-url">/reports · /ai-suggestions · /integrations</span><span class="module-progress" id="prog-mod-ai-int">0/5</span><span class="chevron">&#8964;</span></div>
+    <div class="module-body">
+      <div class="test-row" id="row-ai-1" data-module="mod-ai-int"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Reports page — charts &amp; data render</div><div class="test-steps">Navigate to /reports — verify charts load (bar, line, pie), date range filter works, no empty state for active data</div><div class="test-ctas">CTAs: Date range filter, chart type toggle, Export report</div></div><div class="test-status"><select onchange="setStatus('ai-1',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ai-1')">&#8801;</div></div>
+      <div class="note-row" id="note-ai-1"><textarea placeholder="Notes..." onchange="saveNote('ai-1',this.value)"></textarea></div>
+      <div class="test-row" id="row-ai-2" data-module="mod-ai-int"><div class="test-num">2</div><div class="test-desc"><div class="test-name">AI Suggestions workspace — generates suggestions</div><div class="test-steps">Navigate to /ai-suggestions — verify AI suggestion cards load for existing leads, suggestion type labels visible, Generate New Suggestion CTA works</div><div class="test-ctas">CTAs: Generate suggestion, Apply suggestion, Dismiss</div></div><div class="test-status"><select onchange="setStatus('ai-2',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ai-2')">&#8801;</div></div>
+      <div class="note-row" id="note-ai-2"><textarea placeholder="Notes..." onchange="saveNote('ai-2',this.value)"></textarea></div>
+      <div class="test-row" id="row-ai-3" data-module="mod-ai-int"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Integrations page — connector cards visible</div><div class="test-steps">Navigate to /integrations — verify integration connector cards load (webhook integrations), status shown (connected/disconnected)</div><div class="test-ctas">CTAs: Connect/Disconnect, Sync Now, View Logs, Retry Queue</div></div><div class="test-status"><select onchange="setStatus('ai-3',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ai-3')">&#8801;</div></div>
+      <div class="note-row" id="note-ai-3"><textarea placeholder="Notes..." onchange="saveNote('ai-3',this.value)"></textarea></div>
+      <div class="test-row" id="row-ai-4" data-module="mod-ai-int"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Contact Exchange — vCard page &amp; My Card</div><div class="test-steps">Navigate to /contact-exchange/vcard — verify digital card preview renders with user info. Edit card settings → Save → preview updates</div><div class="test-ctas">CTAs: Edit Card, Share vCard, Download .vcf, QR code display</div></div><div class="test-status"><select onchange="setStatus('ai-4',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ai-4')">&#8801;</div></div>
+      <div class="note-row" id="note-ai-4"><textarea placeholder="Notes..." onchange="saveNote('ai-4',this.value)"></textarea></div>
+      <div class="test-row" id="row-ai-5" data-module="mod-ai-int"><div class="test-num">5</div><div class="test-desc"><div class="test-name">Approval Send page — /approval-send</div><div class="test-steps">Navigate to /approval-send — verify approval queue shows pending quote approvals. Approve one → verify status updates. Reject one → verify status updates</div><div class="test-ctas">CTAs: Approve, Reject, View Quote link</div></div><div class="test-status"><select onchange="setStatus('ai-5',this.value)"><option value="pending">Pending</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option><option value="skip">Skip</option></select></div><div class="test-note-toggle" onclick="toggleNote('ai-5')">&#8801;</div></div>
+      <div class="note-row" id="note-ai-5"><textarea placeholder="Notes..." onchange="saveNote('ai-5',this.value)"></textarea></div>
+    </div>
+  </div>
+</div><!-- end shared panel -->
+
+<!-- ==================== ISSUE TRACKER ==================== -->
+<div id="tab-issues" class="panel">
+  <div class="section-title">Issue Tracker <span>Log bugs and blockers found during live testing</span></div>
+
+  <div class="issue-form">
+    <h3>&#43; Log New Issue</h3>
+    <div class="form-grid">
+      <div class="form-field"><label>Page / Module</label><input id="iss-page" type="text" placeholder="e.g. Lead Command Center / Workflow Tab"></div>
+      <div class="form-field"><label>Issue Title</label><input id="iss-title" type="text" placeholder="Short descriptive title"></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="form-field"><label>Severity</label><select id="iss-severity"><option value="critical">Critical — blocks all users</option><option value="high">High — blocks key workflow</option><option value="medium">Medium — degraded experience</option><option value="low">Low — minor / cosmetic</option></select></div>
+      <div class="form-field"><label>Status</label><select id="iss-status"><option value="open">Open</option><option value="in-progress">In Progress</option><option value="resolved">Resolved</option></select></div>
+    </div>
+    <div class="form-grid full" style="margin-top:12px;">
+      <div class="form-field"><label>Description &amp; Steps to Reproduce</label><textarea id="iss-desc" placeholder="What happened, exact steps to reproduce, expected vs actual behavior, any console errors..."></textarea></div>
+    </div>
+    <div class="form-grid full" style="margin-top:12px;">
+      <div class="form-field"><label>Suggested Resolution (for ChatGPT dev handoff)</label><textarea id="iss-fix" placeholder="Suggested code fix, file path, component name, or approach for developer to investigate..."></textarea></div>
+    </div>
+    <button class="issue-add-btn" onclick="addIssue()">&#43; Add Issue to Tracker</button>
+  </div>
+
+  <div class="section-title" style="margin-top:8px;">Logged Issues <span id="issue-count-label">0 issues</span></div>
+  <div class="issue-list" id="issue-list">
+    <div class="empty-state" id="no-issues-msg"><div class="icon">&#128077;</div>No issues logged yet. Great start — or start testing!</div>
+  </div>
+</div><!-- end issues panel -->
+
+<!-- ==================== RESOLUTION GUIDE ==================== -->
+<div id="tab-resolution" class="panel">
+  <div class="section-title">Resolution Guide <span>Known patterns &amp; how to fix them — use for ChatGPT dev handoff</span></div>
+
+  <div class="alert alert-info"><span>&#9432;</span><div>All fixes below are based on the Pass 21 TypeFix codebase. Reference file paths are relative to <code>src/</code>. Hand these to your ChatGPT dev session with the specific test result notes.</div></div>
+
+  <div class="resolution-block">
+    <div class="resolution-block-header">
+      <span class="badge badge-crit">P0 — Critical</span>
+      <h3>Dashboard KPIs return null / undefined / 0 for all values</h3>
+    </div>
+    <div class="resolution-block-body">
+      <div class="resolution-step"><div class="step-num">1</div><div class="step-content"><strong>Root cause:</strong> Dashboard data loader (<code>features/dashboard/logic/</code>) or the render function in <code>app/(app)/dashboard/_lib/render-dashboard-page.tsx</code> failing to fetch from Supabase with correct org/membership context.</div></div>
+      <div class="resolution-step"><div class="step-num">2</div><div class="step-content"><strong>Check:</strong> Open browser DevTools → Network tab. Reload dashboard. Look for any 400/401/500 errors on Supabase REST calls. Note the exact query path and error code.</div></div>
+      <div class="resolution-step"><div class="step-num">3</div><div class="step-content"><strong>Fix:</strong> In the failing server function, verify <code>workspace.organization.id</code> and <code>workspace.membership.id</code> are being passed to all queries. Check RLS policies in Supabase dashboard allow the current role to SELECT from the relevant tables (<code>leads</code>, <code>quotes</code>, <code>pipeline_stages</code>).</div></div>
+      <div class="resolution-step"><div class="step-num">4</div><div class="step-content"><strong>Dev prompt for ChatGPT:</strong> "The SETU Flow dashboard KPI cards return 0/null. Check <code>src/features/dashboard/logic/</code> and <code>src/app/(app)/dashboard/_lib/render-dashboard-page.tsx</code> to ensure workspace context is correctly threaded into all Supabase queries. Also verify RLS allows the current user role."</div></div>
+    </div>
+  </div>
+
+  <div class="resolution-block">
+    <div class="resolution-block-header">
+      <span class="badge badge-crit">P0 — Critical</span>
+      <h3>Lead Command Center — page crashes / blank on load</h3>
+    </div>
+    <div class="resolution-block-body">
+      <div class="resolution-step"><div class="step-num">1</div><div class="step-content"><strong>Root cause:</strong> <code>features/leads/command-center/LeadCommandCenterPage.tsx</code> — a required prop (snapshot, availableProducts, etc.) is being passed as undefined. Or a TypeScript type error on <code>QuotePricingBasis</code> or <code>LeadProfileSnapshot</code> causing runtime crash post-compilation.</div></div>
+      <div class="resolution-step"><div class="step-num">2</div><div class="step-content"><strong>Check:</strong> Console error in DevTools will say which prop is undefined or which function threw. Look for <code>normalizePricingBasis</code> or <code>openOrCreateLeadQuoteDraft</code> errors specifically.</div></div>
+      <div class="resolution-step"><div class="step-num">3</div><div class="step-content"><strong>Fix:</strong> In the server page (<code>app/(app)/leads/[leadId]/page.tsx</code>), add null-guards before passing data to <code>LeadCommandCenterPage</code>. Default arrays to <code>[]</code> and objects to valid empty shapes matching <code>LeadProfileSnapshot</code> type.</div></div>
+      <div class="resolution-step"><div class="step-num">4</div><div class="step-content"><strong>Dev prompt:</strong> "Lead Command Center crashes on load. Check <code>src/app/(app)/leads/[leadId]/page.tsx</code> server component for null prop risks. Verify all props passed to <code>LeadCommandCenterPage</code> match the expected types in <code>src/features/leads/command-center/types.ts</code>."</div></div>
+    </div>
+  </div>
+
+  <div class="resolution-block">
+    <div class="resolution-block-header">
+      <span class="badge badge-high">P1 — High</span>
+      <h3>Stage move on Pipeline Strip does not update / throws error</h3>
+    </div>
+    <div class="resolution-block-body">
+      <div class="resolution-step"><div class="step-num">1</div><div class="step-content"><strong>Root cause:</strong> <code>moveLeadToStage</code> server action in <code>features/pipeline/server/actions.ts</code> not being called correctly, or Supabase UPDATE on <code>leads.stage_id</code> failing due to RLS.</div></div>
+      <div class="resolution-step"><div class="step-num">2</div><div class="step-content"><strong>Check:</strong> After clicking a stage in the strip, watch Network for any POST to the server action. If 401/403: RLS issue. If 500: action code error. If no request at all: client-side JS error in <code>LeadPipelineStageStrip.tsx</code>.</div></div>
+      <div class="resolution-step"><div class="step-num">3</div><div class="step-content"><strong>Dev prompt:</strong> "Stage move via pipeline strip fails. Debug the <code>moveLeadToStage</code> server action in <code>src/features/pipeline/server/actions.ts</code> and the click handler in <code>src/features/leads/command-center/LeadPipelineStageStrip.tsx</code>."</div></div>
+    </div>
+  </div>
+
+  <div class="resolution-block">
+    <div class="resolution-block-header">
+      <span class="badge badge-high">P1 — High</span>
+      <h3>Quote Builder wizard loses data on back navigation</h3>
+    </div>
+    <div class="resolution-block-body">
+      <div class="resolution-step"><div class="step-num">1</div><div class="step-content"><strong>Root cause:</strong> Quote wizard state is likely managed in component-local state without persistence. Going back unmounts the step component and loses data.</div></div>
+      <div class="resolution-step"><div class="step-num">2</div><div class="step-content"><strong>Fix approach:</strong> Lift quote draft state to a parent context/store. Or auto-save draft to Supabase on each step transition so back-navigation rehydrates from DB.</div></div>
+      <div class="resolution-step"><div class="step-num">3</div><div class="step-content"><strong>Dev prompt:</strong> "Quote Builder loses form data when clicking Back. The wizard in <code>src/app/(app)/leads/[leadId]/quote/page.tsx</code> needs state persistence across steps. Either lift state to a parent context or auto-save to Supabase on each step. Use the <code>openOrCreateLeadQuoteDraft</code> server action."</div></div>
+    </div>
+  </div>
+
+  <div class="resolution-block">
+    <div class="resolution-block-header">
+      <span class="badge badge-high">P1 — High</span>
+      <h3>Admin Users — role change not saving / showing error</h3>
+    </div>
+    <div class="resolution-block-body">
+      <div class="resolution-step"><div class="step-num">1</div><div class="step-content"><strong>Root cause:</strong> <code>updateMemberRole</code> or <code>updateInvitationRole</code> server actions in <code>features/admin/server/actions.ts</code> failing. Could be owner-role guard blocking the update, or RLS on <code>organization_members</code> table.</div></div>
+      <div class="resolution-step"><div class="step-num">2</div><div class="step-content"><strong>Check:</strong> The <code>canManageOwners</code> flag controls whether the Save button appears. If role is Owner-protected and current user is not Owner, the UI correctly shows warning. If normal roles fail: check server action error response.</div></div>
+      <div class="resolution-step"><div class="step-num">3</div><div class="step-content"><strong>Dev prompt:</strong> "Role update fails in Admin Users. Debug <code>updateMemberRole</code> in <code>src/features/admin/server/actions.ts</code>. Verify the <code>canManageOwners</code> gate logic and that Supabase RLS allows UPDATE on <code>organization_members</code> for admin role."</div></div>
+    </div>
+  </div>
+
+  <div class="resolution-block">
+    <div class="resolution-block-header">
+      <span class="badge badge-med">P2 — Medium</span>
+      <h3>Products spreadsheet — API 500 on save or spreadsheet fails to load</h3>
+    </div>
+    <div class="resolution-block-body">
+      <div class="resolution-step"><div class="step-num">1</div><div class="step-content"><strong>Root cause:</strong> <code>app/api/products/route.ts</code> or <code>app/api/products/spreadsheet/route.ts</code> throwing on Supabase query. Possible type mismatch on <code>products</code> table fields per Pass 21 TypeFix.</div></div>
+      <div class="resolution-step"><div class="step-num">2</div><div class="step-content"><strong>Dev prompt:</strong> "Products spreadsheet fails to save. Check <code>src/app/api/products/route.ts</code> and <code>src/app/api/products/spreadsheet/route.ts</code>. Verify field names match the <code>products</code> table schema from Complete Schema.txt. Ensure TypeScript types in <code>src/types/products.ts</code> are correct after Pass 21 TypeFix."</div></div>
+    </div>
+  </div>
+
+  <div class="resolution-block">
+    <div class="resolution-block-header">
+      <span class="badge badge-med">P2 — Medium</span>
+      <h3>Activity Composer — note submission silently fails</h3>
+    </div>
+    <div class="resolution-block-body">
+      <div class="resolution-step"><div class="step-num">1</div><div class="step-content"><strong>Root cause:</strong> <code>ActivityComposerCard.tsx</code> submit handler calling a server action that fails quietly. The UI optimistically adds the note but the DB write fails.</div></div>
+      <div class="resolution-step"><div class="step-num">2</div><div class="step-content"><strong>Fix:</strong> Add error handling with toast notification on the server action response. Verify <code>lead_activities</code> table INSERT RLS allows the current user. Check <code>lead_id</code> is being passed correctly in the activity payload.</div></div>
+      <div class="resolution-step"><div class="step-num">3</div><div class="step-content"><strong>Dev prompt:</strong> "Activity notes appear to save but disappear on reload. Check <code>src/features/leads/command-center/activity/ActivityComposerCard.tsx</code> server action call and the <code>lead_activities</code> table INSERT. Add error toast if write fails."</div></div>
+    </div>
+  </div>
+
+  <div class="resolution-block">
+    <div class="resolution-block-header">
+      <span class="badge badge-low">P3 — Low</span>
+      <h3>World map not rendering / blank gray box</h3>
+    </div>
+    <div class="resolution-block-body">
+      <div class="resolution-step"><div class="step-num">1</div><div class="step-content"><strong>Root cause:</strong> <code>features/dashboard/components/world-coverage-map.tsx</code> — the SVG/canvas map library not initializing, or GeoJSON data failing to load.</div></div>
+      <div class="resolution-step"><div class="step-num">2</div><div class="step-content"><strong>Dev prompt:</strong> "World map on dashboard shows blank. Check <code>src/features/dashboard/components/world-coverage-map.tsx</code> — verify the map rendering library initializes correctly client-side and GeoJSON country data loads. Check for hydration errors in console."</div></div>
+    </div>
+  </div>
+</div><!-- end resolution panel -->
+
+<!-- ==================== REPO STATUS ==================== -->
+<div id="tab-repo" class="panel">
+  <div class="section-title">Repository Status <span>Updated after each test cycle</span></div>
+
+  <div class="repo-status">
+    <div class="repo-status-header"><h2>&#128196; SetuFlow-CRM-Pass21-TypeFix — Deployment Status</h2></div>
+    <div class="repo-status-body">
+      <div class="status-grid">
+        <div class="status-item"><div class="label">Repo Pass</div><input id="repo-pass" type="text" value="Pass 21 TypeFix" onchange="saveRepoField('repo-pass',this.value)"></div>
+        <div class="status-item"><div class="label">Deployed URL</div><input id="repo-url" type="text" value="https://www.setuflowcrm.com" onchange="saveRepoField('repo-url',this.value)"></div>
+        <div class="status-item"><div class="label">Deploy Status</div><select id="repo-deploy-status" onchange="saveRepoField('repo-deploy-status',this.value)"><option value="deployed">&#9654; Deployed — Live</option><option value="staged">&#9708; Staged — Not Live</option><option value="broken">&#9888; Broken — Deploy Failed</option><option value="rollback">&#8617; Rolled Back</option></select></div>
+        <div class="status-item"><div class="label">Test Cycle Status</div><select id="repo-test-status" onchange="saveRepoField('repo-test-status',this.value)"><option value="not-started">Not Started</option><option value="in-progress">In Progress</option><option value="complete-pass">Complete — All Passed</option><option value="complete-issues">Complete — Issues Found</option><option value="blocked">Blocked — Cannot Test</option></select></div>
+        <div class="status-item"><div class="label">Last Test Date</div><input id="repo-test-date" type="date" onchange="saveRepoField('repo-test-date',this.value)"></div>
+        <div class="status-item"><div class="label">Tester</div><input id="repo-tester" type="text" value="Ritesh" onchange="saveRepoField('repo-tester',this.value)"></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="section-title" style="font-size:14px;">Known Issues &amp; Critical Blockers <span>Auto-populated from Issue Tracker</span></div>
+      <ul class="known-issues-list" id="known-issues-list">
+        <li style="background:var(--surface);color:var(--muted);border-radius:7px;padding:10px 12px;font-size:13px;">No critical issues logged yet. Run the test plan and log issues in the Issue Tracker tab.</li>
+      </ul>
+
+      <div class="divider"></div>
+      <div class="section-title" style="font-size:14px;">Dev Handoff Notes <span>For ChatGPT fix session</span></div>
+      <div class="form-field">
+        <textarea id="repo-handoff-notes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;min-height:120px;font-family:inherit;" placeholder="Paste summary of issues here for ChatGPT dev handoff. Include: issue IDs, pages affected, severity, suggested fix approach from Resolution Guide..." onchange="saveRepoField('repo-handoff-notes',this.value)"></textarea>
+      </div>
+
+      <div class="divider"></div>
+      <div class="section-title" style="font-size:14px;">Pass History</div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr style="background:var(--surface);">
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid var(--border);">Pass</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid var(--border);">Date</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid var(--border);">Focus</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid var(--border);">Result</th>
+          </tr></thead>
+          <tbody id="pass-history-body">
+            <tr><td style="padding:10px 12px;border:1px solid var(--border);">Pass 21</td><td style="padding:10px 12px;border:1px solid var(--border);">May 2025</td><td style="padding:10px 12px;border:1px solid var(--border);">TypeFix — TypeScript type errors resolved, pricing basis contract normalized</td><td style="padding:10px 12px;border:1px solid var(--border);"><span class="badge badge-pending">In Test</span></td></tr>
+            <tr><td style="padding:10px 12px;border:1px solid var(--border);color:var(--muted);" colspan="4">Earlier passes — add manually as reference</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <button onclick="addPassHistory()" style="margin-top:12px;padding:8px 16px;background:var(--brand);color:white;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">&#43; Add Pass Entry</button>
+    </div>
+  </div>
+</div><!-- end repo panel -->
+
+</div><!-- end main -->
+
+<script>
+const STORE_KEY = 'setuflow_dcc_v1';
+
+function getStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch { return {}; }
+}
+function saveStore(data) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+}
+
+function setStatus(id, value) {
+  const row = document.getElementById('row-' + id);
+  if (!row) return;
+  row.className = 'test-row status-' + value;
+  const store = getStore();
+  if (!store.statuses) store.statuses = {};
+  store.statuses[id] = value;
+  if (!store.audit) store.audit = [];
+  store.audit.unshift({ time: new Date().toISOString(), action: 'Status set to ' + value.toUpperCase(), test: id });
+  if (store.audit.length > 200) store.audit = store.audit.slice(0, 200);
+  saveStore(store);
+  updateSummary();
+  updateModuleProgress();
+  renderAudit();
+}
+
+function saveNote(id, value) {
+  const store = getStore();
+  if (!store.notes) store.notes = {};
+  store.notes[id] = value;
+  saveStore(store);
+}
+
+function toggleNote(id) {
+  const noteRow = document.getElementById('note-' + id);
+  if (noteRow) noteRow.classList.toggle('open');
+}
+
+function toggleModule(id) {
+  const mod = document.getElementById(id);
+  if (mod) mod.classList.toggle('collapsed');
+}
+
+function updateSummary() {
+  const rows = document.querySelectorAll('.test-row[id^="row-"]');
+  let pass = 0, fail = 0, blocked = 0, pending = 0, total = rows.length;
+  const store = getStore();
+  rows.forEach(row => {
+    const id = row.id.replace('row-', '');
+    const status = (store.statuses || {})[id] || 'pending';
+    if (status === 'pass') pass++;
+    else if (status === 'fail') fail++;
+    else if (status === 'blocked') blocked++;
+    else if (status !== 'skip') pending++;
+  });
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-pass').textContent = pass;
+  document.getElementById('stat-fail').textContent = fail;
+  document.getElementById('stat-blocked').textContent = blocked;
+  document.getElementById('stat-pending').textContent = pending;
+  const issues = (getStore().issues || []).filter(i => i.status !== 'resolved').length;
+  document.getElementById('stat-issues').textContent = issues;
+}
+
+function updateModuleProgress() {
+  const store = getStore();
+  document.querySelectorAll('.module').forEach(mod => {
+    const id = mod.id;
+    const rows = mod.querySelectorAll('.test-row[data-module]');
+    let done = 0;
+    rows.forEach(row => {
+      const tid = row.id.replace('row-', '');
+      const st = (store.statuses || {})[tid] || 'pending';
+      if (st !== 'pending') done++;
+    });
+    const prog = mod.querySelector('#prog-' + id);
+    if (prog) prog.textContent = done + '/' + rows.length;
+  });
+}
+
+function renderAudit() {
+  const store = getStore();
+  const log = document.getElementById('audit-log');
+  const entries = (store.audit || []).slice(0, 30);
+  if (!entries.length) { log.innerHTML = '<div class="empty-state"><div class="icon">&#128203;</div>No actions logged yet.</div>'; return; }
+  log.innerHTML = entries.map(e => `<div class="audit-entry"><div class="audit-time">${new Date(e.time).toLocaleString()}</div><div class="audit-action"><strong>${e.test}</strong> — ${e.action}</div></div>`).join('');
+}
+
+let issueCounter = 0;
+
+function addIssue() {
+  const page = document.getElementById('iss-page').value.trim();
+  const title = document.getElementById('iss-title').value.trim();
+  const sev = document.getElementById('iss-severity').value;
+  const status = document.getElementById('iss-status').value;
+  const desc = document.getElementById('iss-desc').value.trim();
+  const fix = document.getElementById('iss-fix').value.trim();
+  if (!title) { alert('Please enter an issue title.'); return; }
+  const store = getStore();
+  if (!store.issues) store.issues = [];
+  issueCounter = Math.max(issueCounter, ...store.issues.map(i => parseInt(i.id.replace('ISS-','')) || 0));
+  issueCounter++;
+  const issue = { id: 'ISS-' + String(issueCounter).padStart(3,'0'), page, title, sev, status, desc, fix, createdAt: new Date().toISOString() };
+  store.issues.unshift(issue);
+  saveStore(store);
+  renderIssues();
+  updateSummary();
+  ['iss-page','iss-title','iss-desc','iss-fix'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('iss-severity').value = 'high';
+  document.getElementById('iss-status').value = 'open';
+}
+
+function renderIssues() {
+  const store = getStore();
+  const issues = store.issues || [];
+  const list = document.getElementById('issue-list');
+  const countLabel = document.getElementById('issue-count-label');
+  const noMsg = document.getElementById('no-issues-msg');
+  countLabel.textContent = issues.length + ' issue' + (issues.length !== 1 ? 's' : '');
+  if (!issues.length) { list.innerHTML = '<div class="empty-state" id="no-issues-msg"><div class="icon">&#128077;</div>No issues logged yet. Great start — or start testing!</div>'; return; }
+  const sevMap = { critical: 'badge-crit', high: 'badge-high', medium: 'badge-med', low: 'badge-low' };
+  const sevLabel = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+  const stMap = { open: 'badge-fail', 'in-progress': 'badge-pending', resolved: 'badge-pass' };
+  list.innerHTML = issues.map(iss => `
+    <div class="issue-card ${iss.status === 'resolved' ? 'resolved' : ''}">
+      <div class="issue-card-header">
+        <div class="issue-id">${iss.id}</div>
+        <div class="issue-title-row">
+          <div class="issue-name">${iss.title}</div>
+          <div class="issue-page">${iss.page || 'Page not specified'} · ${new Date(iss.createdAt).toLocaleDateString()}</div>
+        </div>
+        <div class="issue-badges">
+          <span class="badge ${sevMap[iss.sev] || 'badge-med'}">${sevLabel[iss.sev] || iss.sev}</span>
+          <span class="badge ${stMap[iss.status] || 'badge-pending'}">${iss.status}</span>
+        </div>
+      </div>
+      ${iss.desc ? `<div class="issue-body">${iss.desc.replace(/\n/g,'<br>')}</div>` : ''}
+      ${iss.fix ? `<div class="issue-resolution"><strong>Dev Resolution Guide</strong>${iss.fix.replace(/\n/g,'<br>')}</div>` : ''}
+      <div class="issue-actions">
+        ${iss.status !== 'resolved' ? `<button class="resolve-btn" onclick="resolveIssue('${iss.id}')">&#10003; Mark Resolved</button>` : '<span style="font-size:11px;color:var(--pass);font-weight:700;">&#10003; Resolved</span>'}
+        <button class="delete-btn" onclick="deleteIssue('${iss.id}')">&#10005; Delete</button>
+      </div>
+    </div>`).join('');
+  renderKnownIssues();
+}
+
+function resolveIssue(id) {
+  const store = getStore();
+  const issue = (store.issues || []).find(i => i.id === id);
+  if (issue) { issue.status = 'resolved'; saveStore(store); renderIssues(); updateSummary(); }
+}
+function deleteIssue(id) {
+  if (!confirm('Delete issue ' + id + '?')) return;
+  const store = getStore();
+  store.issues = (store.issues || []).filter(i => i.id !== id);
+  saveStore(store);
+  renderIssues();
+  updateSummary();
+}
+
+function renderKnownIssues() {
+  const store = getStore();
+  const criticals = (store.issues || []).filter(i => i.status !== 'resolved');
+  const list = document.getElementById('known-issues-list');
+  if (!list) return;
+  const sevClass = { critical: 'issue-crit', high: 'issue-high', medium: 'issue-med', low: 'issue-low' };
+  const sevIcon = { critical: '&#128308;', high: '&#128993;', medium: '&#128994;', low: '&#128998;' };
+  if (!criticals.length) { list.innerHTML = '<li style="background:var(--pass-bg);color:var(--pass);border-radius:7px;padding:10px 12px;font-size:13px;">&#10003; No open issues — all clear or not yet tested.</li>'; return; }
+  list.innerHTML = criticals.map(i => `<li class="${sevClass[i.sev] || 'issue-med'}"><span class="issue-icon">${sevIcon[i.sev] || '&#128994;'}</span><div><strong>${i.id} — ${i.title}</strong><br><span style="font-size:11px;opacity:0.8;">${i.page}</span></div></li>`).join('');
+}
+
+function saveRepoField(id, value) {
+  const store = getStore();
+  if (!store.repo) store.repo = {};
+  store.repo[id] = value;
+  saveStore(store);
+}
+
+function addPassHistory() {
+  const pass = prompt('Pass name (e.g. Pass 22):');
+  if (!pass) return;
+  const date = prompt('Date (e.g. Jun 2025):');
+  const focus = prompt('Focus / what was fixed:');
+  const result = prompt('Result (Passed / Issues Found / Blocked):');
+  const tbody = document.getElementById('pass-history-body');
+  const badge = (result || '').toLowerCase().includes('pass') ? 'badge-pass' : (result || '').toLowerCase().includes('block') ? 'badge-blocked' : 'badge-pending';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td style="padding:10px 12px;border:1px solid var(--border);">${pass}</td><td style="padding:10px 12px;border:1px solid var(--border);">${date || ''}</td><td style="padding:10px 12px;border:1px solid var(--border);">${focus || ''}</td><td style="padding:10px 12px;border:1px solid var(--border);"><span class="badge ${badge}">${result || 'Unknown'}</span></td>`;
+  tbody.insertBefore(tr, tbody.firstChild);
+}
+
+function saveAll() {
+  updateSummary();
+  const store = getStore();
+  if (!store.audit) store.audit = [];
+  store.audit.unshift({ time: new Date().toISOString(), action: 'Manual save', test: 'DCC' });
+  saveStore(store);
+  const btn = document.querySelector('.btn-accent');
+  const orig = btn.textContent;
+  btn.textContent = '&#10003; Saved!';
+  setTimeout(() => { btn.textContent = orig; }, 1500);
+}
+
+function clearAll() {
+  if (!confirm('Reset ALL test data? This cannot be undone.')) return;
+  localStorage.removeItem(STORE_KEY);
+  location.reload();
+}
+
+function exportReport() {
+  const store = getStore();
+  const rows = document.querySelectorAll('.test-row[id^="row-"]');
+  let csv = 'Test ID,Module,Status,Note\n';
+  rows.forEach(row => {
+    const id = row.id.replace('row-', '');
+    const status = (store.statuses || {})[id] || 'pending';
+    const note = ((store.notes || {})[id] || '').replace(/"/g, '""');
+    const module = row.closest('.module')?.querySelector('.module-title')?.textContent || '';
+    csv += `"${id}","${module}","${status}","${note}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'SetuFlow-DCC-Export-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+function loadStoredData() {
+  const store = getStore();
+  const statuses = store.statuses || {};
+  const notes = store.notes || {};
+  Object.entries(statuses).forEach(([id, value]) => {
+    const row = document.getElementById('row-' + id);
+    if (row) row.className = 'test-row status-' + value;
+    const sel = row?.querySelector('select');
+    if (sel) sel.value = value;
+  });
+  Object.entries(notes).forEach(([id, value]) => {
+    const ta = document.querySelector('#note-' + id + ' textarea');
+    if (ta) ta.value = value;
+  });
+  const repo = store.repo || {};
+  Object.entries(repo).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) { if (el.tagName === 'SELECT') el.value = value; else el.value = value; }
+  });
+  issueCounter = Math.max(0, ...((store.issues || []).map(i => parseInt(i.id.replace('ISS-','')) || 0)));
+  renderIssues();
+  renderAudit();
+  updateSummary();
+  updateModuleProgress();
+}
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const target = document.getElementById('tab-' + tab.dataset.tab);
+    if (target) target.classList.add('active');
+  });
+});
+
+loadStoredData();
+</script>
+</body>
+</html>
