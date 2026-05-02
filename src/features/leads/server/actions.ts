@@ -18,6 +18,7 @@ import { normalizeQuoteDisplayCurrency } from '@/lib/catalog-pricing-model';
 type ExistingLeadSnapshot = {
   id: string;
   company_name: string;
+  lead_type?: string | null;
   stage_id: string | null;
   trade_event_id: string | null;
   next_follow_up_at: string | null;
@@ -77,6 +78,50 @@ async function getLeadQuoteGate(db: any, organizationId: string, leadId: string)
   if (workflow.qualificationStatus === 'disqualified') return { ok: false as const, error: 'Lead is disqualified. Reopen qualification before quote drafting can start.' };
   if (!Array.isArray(linkedProducts) || linkedProducts.length === 0) return { ok: false as const, error: 'Link at least one product before opening the quote workspace.' };
   return { ok: true as const, workflow };
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuidLike(value: string | null | undefined) {
+  return UUID_RE.test(String(value ?? '').trim());
+}
+
+async function resolveSubmittedCountry(
+  db: any,
+  organizationId: string,
+  submittedCountryId: string | null | undefined,
+  submittedCountryName: string | null | undefined,
+) {
+  const countryId = normalizeLeadInputText(submittedCountryId);
+  const countryName = normalizeLeadInputText(submittedCountryName);
+
+  if (countryId && isUuidLike(countryId)) {
+    const { data, error } = await db
+      .from('countries')
+      .select('id, name, phone_code, market_id')
+      .eq('organization_id', organizationId)
+      .eq('id', countryId)
+      .maybeSingle();
+
+    if (error) return { countryId: null as string | null, countryName: null as string | null, phoneCode: null as string | null, marketId: null as string | null, error: error.message };
+    if (!data?.id) return { countryId: null as string | null, countryName: null as string | null, phoneCode: null as string | null, marketId: null as string | null, error: 'Selected country is not available in the active organization.' };
+    return { countryId: data.id as string, countryName: data.name as string, phoneCode: data.phone_code as string | null, marketId: data.market_id as string | null, error: null as string | null };
+  }
+
+  const fallbackName = countryName || countryId;
+  if (fallbackName) {
+    const { data, error } = await db
+      .from('countries')
+      .select('id, name, phone_code, market_id')
+      .eq('organization_id', organizationId)
+      .ilike('name', fallbackName)
+      .maybeSingle();
+
+    if (error) return { countryId: null as string | null, countryName: fallbackName, phoneCode: null as string | null, marketId: null as string | null, error: error.message };
+    if (data?.id) return { countryId: data.id as string, countryName: data.name as string, phoneCode: data.phone_code as string | null, marketId: data.market_id as string | null, error: null as string | null };
+  }
+
+  return { countryId: null as string | null, countryName: fallbackName || null, phoneCode: null as string | null, marketId: null as string | null, error: null as string | null };
 }
 
 async function validateOrganizationRecordIds(
@@ -620,7 +665,7 @@ function formatCommunicationDate(value?: string | null) {
 async function writeLeadAuditLog(input: {
   organizationId: string;
   actorUserId: string;
-  action: 'lead_created' | 'lead_updated' | 'lead_stage_changed' | 'lead_follow_up_scheduled' | 'lead_follow_up_completed' | 'lead_qualification_updated' | 'lead_note_added' | 'quote_created';
+  action: 'lead_created' | 'lead_updated' | 'lead_stage_changed' | 'lead_follow_up_scheduled' | 'lead_follow_up_completed' | 'lead_qualification_updated' | 'lead_qualification_auto_completed' | 'lead_note_added' | 'quote_created';
   entityType: string;
   entityId?: string | null;
   previous?: Record<string, unknown> | null;
@@ -650,17 +695,27 @@ async function appendLeadWorkflowState(db: any, params: {
   productIds?: string[];
   marketIds?: string[];
   coverageSelections?: LeadCoverageSelection[];
+  autoQualifyBuyer?: boolean;
+  actorUserId?: string | null;
 }) {
   const nextProductIds = Array.from(new Set((params.productIds ?? []).filter(Boolean)));
   const nextMarketIds = Array.from(new Set((params.marketIds ?? []).filter(Boolean)));
   const nextCoverageSelections = Array.isArray(params.coverageSelections) ? params.coverageSelections : params.workflowSnapshot.workflow.coverageSelections ?? [];
+  const nowIso = new Date().toISOString();
+  const shouldAutoQualify = Boolean(params.autoQualifyBuyer && nextProductIds.length > 0 && params.workflowSnapshot.workflow.qualificationStatus !== 'disqualified');
   const nextWorkflow = {
     ...params.workflowSnapshot.workflow,
+    qualificationStatus: shouldAutoQualify ? 'qualified' as const : params.workflowSnapshot.workflow.qualificationStatus,
+    qualificationNotes: shouldAutoQualify
+      ? params.workflowSnapshot.workflow.qualificationNotes || 'Auto-qualified after confirmed product coverage was mapped.'
+      : params.workflowSnapshot.workflow.qualificationNotes,
+    qualificationUpdatedAt: shouldAutoQualify ? nowIso : params.workflowSnapshot.workflow.qualificationUpdatedAt,
+    qualificationUpdatedBy: shouldAutoQualify ? params.actorUserId ?? params.workflowSnapshot.workflow.qualificationUpdatedBy : params.workflowSnapshot.workflow.qualificationUpdatedBy,
     mappedProductIds: nextProductIds,
     mappedMarketIds: nextMarketIds,
     coverageSelections: nextCoverageSelections,
     productMappingStatus: deriveProductMappingStatus(nextProductIds, nextMarketIds, nextCoverageSelections),
-    productMappingUpdatedAt: new Date().toISOString(),
+    productMappingUpdatedAt: nowIso,
   };
 
   const serializedNotes = serializeLeadWorkflow(params.plainNotes, nextWorkflow);
@@ -1397,6 +1452,11 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
   const rawPhoneValue = normalizeLeadInputText(formData.get('phone'));
   const rawWhatsappValue = normalizeLeadInputText(formData.get('whatsapp_number'));
 
+  const submittedCountryId = normalizeLeadInputText(formData.get('country_id'));
+  const submittedCountryName = normalizeLeadInputText(formData.get('country'));
+  const rawCountryId = isUuidLike(submittedCountryId) ? submittedCountryId : '';
+  const rawCountryName = submittedCountryName || (!isUuidLike(submittedCountryId) ? submittedCountryId : '');
+
   const raw = {
     lead_id: normalizeLeadInputText(formData.get('lead_id')) || undefined,
     lead_type: normalizeLeadInputText(formData.get('lead_type') ?? 'buyer'),
@@ -1411,8 +1471,8 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     phone_secondary_country_code: normalizeLeadInputText(formData.get('phone_secondary_country_code')),
     website: normalizeLeadInputText(formData.get('website')),
     social_handle: normalizeLeadInputText(formData.get('social_handle')),
-    country: normalizeLeadInputText(formData.get('country')),
-    country_id: normalizeLeadInputText(formData.get('country_id')),
+    country: rawCountryName,
+    country_id: rawCountryId,
     source_type: normalizeLeadInputText(formData.get('source_type')),
     source_label: normalizeLeadInputText(formData.get('source_label')),
     stage_id: normalizeLeadInputText(formData.get('stage_id')),
@@ -1484,11 +1544,24 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     };
   }
 
+  const countryMapping = await resolveSubmittedCountry(db, organization.id, parsed.data.country_id || null, parsed.data.country || null);
+  if (countryMapping.error) {
+    return {
+      error: countryMapping.error,
+      importIssue: createImportIssuePayload(
+        'mapping_failure',
+        'lead.country_mapping_invalid',
+        'Lead mapping failure',
+        countryMapping.error,
+      ),
+    };
+  }
+
   const [ownerMapping, countriesResult, tradeEventsResult, marketMapping, productInterestMapping] = await Promise.all([
     resolveLeadOwnerMapping(db, organization.id, parsed.data.owner_user_id || null, currentUser.id),
-    validateOrganizationRecordIds(db, 'countries', organization.id, parsed.data.country_id ? [parsed.data.country_id] : []),
+    validateOrganizationRecordIds(db, 'countries', organization.id, countryMapping.countryId ? [countryMapping.countryId] : []),
     validateOrganizationRecordIds(db, 'trade_events', organization.id, parsed.data.trade_event_id ? [parsed.data.trade_event_id] : []),
-    resolveLeadMarketMapping(db, organization.id, parsed.data.country_id || null, requestedMarketIds),
+    resolveLeadMarketMapping(db, organization.id, countryMapping.countryId || null, requestedMarketIds),
     resolveLeadProductInterestMapping(db, organization.id, requestedProductIds, requestedCategoryIds),
   ]);
 
@@ -1530,7 +1603,7 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     };
   }
 
-  if (parsed.data.country_id && countriesResult.validIds.length !== 1) {
+  if (countryMapping.countryId && countriesResult.validIds.length !== 1) {
     return {
       error: 'Selected country is not available in the active organization.',
       importIssue: createImportIssuePayload(
@@ -1572,7 +1645,7 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     const [{ data: leadRow, error: leadError }, { data: productRows, error: productError }, { data: marketRows, error: marketError }] = await Promise.all([
       db
         .from('leads')
-        .select('id, company_name, stage_id, trade_event_id, next_follow_up_at, notes, source_label, country_id')
+        .select('id, company_name, lead_type, stage_id, trade_event_id, next_follow_up_at, notes, source_label, country_id')
         .eq('id', parsed.data.lead_id)
         .eq('organization_id', organization.id)
         .maybeSingle(),
@@ -1631,15 +1704,15 @@ const contactSourceContext = {
     contact_name: normalizeLeadOptionalText(parsed.data.contact_name),
     job_title: normalizeLeadOptionalText(parsed.data.job_title),
     email: normalizeLeadEmail(parsed.data.email),
-    phone: normalizeLeadOptionalText(parsed.data.phone),
-    whatsapp_number: normalizeLeadOptionalText(parsed.data.whatsapp_number),
+    phone: normalizeLeadOptionalText(parsed.data.phone || countryMapping.phoneCode || ''),
+    whatsapp_number: normalizeLeadOptionalText(parsed.data.whatsapp_number || parsed.data.phone || countryMapping.phoneCode || ''),
     phone_secondary: normalizeLeadOptionalText(parsed.data.phone_secondary),
-    phone_country_code: normalizeLeadOptionalText(parsed.data.phone_country_code),
+    phone_country_code: normalizeLeadOptionalText(parsed.data.phone_country_code || countryMapping.phoneCode || ''),
     phone_secondary_country_code: normalizeLeadOptionalText(parsed.data.phone_secondary_country_code),
     website: normalizeLeadOptionalText(parsed.data.website),
     social_handle: normalizeLeadOptionalText(parsed.data.social_handle),
-    country: normalizeLeadOptionalText(parsed.data.country),
-    country_id: normalizeLeadOptionalText(parsed.data.country_id),
+    country: normalizeLeadOptionalText(countryMapping.countryName ?? parsed.data.country),
+    country_id: normalizeLeadOptionalText(countryMapping.countryId),
     source_type: normalizeLeadOptionalText(parsed.data.source_type),
     source_label: normalizeLeadOptionalText(parsed.data.source_label),
     stage_id: stageId,
@@ -1703,6 +1776,8 @@ const contactSourceContext = {
     productIds,
     marketIds,
     coverageSelections,
+    autoQualifyBuyer: (existingLead?.lead_type ?? parsed.data.lead_type) !== 'supplier' && productIds.length > 0,
+    actorUserId: currentUser.id,
   });
   if (workflowWrite.error?.message) return { error: workflowWrite.error.message };
   payload.notes = workflowWrite.notes;
@@ -2030,7 +2105,7 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
   const [{ data: leadRow, error: leadError }, { data: productRows, error: productError }, { data: marketRows, error: marketError }] = await Promise.all([
     db
       .from('leads')
-      .select('id, company_name, country_id, notes')
+      .select('id, company_name, lead_type, country_id, notes')
       .eq('id', leadId)
       .eq('organization_id', organization.id)
       .maybeSingle(),
@@ -2095,7 +2170,7 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
   if (deleteProductsError) return { error: deleteProductsError.message };
 
   if (productIds.length > 0) {
-    const productInsertRows = productIds.map((productId) => ({ lead_id: leadId, product_id: productId, interest_type: 'confirmed_product', source_context: contactSourceContext, label: JSON.stringify({ categoryId: categoryByProductId.get(productId) ?? null, interestType: 'confirmed_product', sourceContext: contactSourceContext }) }));
+    const productInsertRows = productIds.map((productId) => ({ organization_id: organization.id, lead_id: leadId, product_id: productId, interest_type: 'confirmed_product', source_context: contactSourceContext, label: JSON.stringify({ categoryId: categoryByProductId.get(productId) ?? null, interestType: 'confirmed_product', sourceContext: contactSourceContext }) }));
     const { error: insertProductsError } = await db.from('lead_product_interests').insert(productInsertRows);
     if (insertProductsError) return { error: insertProductsError.message };
   }
@@ -2109,9 +2184,17 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
     productIds,
     marketIds,
     coverageSelections,
+    autoQualifyBuyer: existingLead.lead_type !== 'supplier' && productIds.length > 0,
+    actorUserId: currentUser.id,
   });
 
   if (workflowWrite.error?.message) return { error: workflowWrite.error.message };
+
+  const autoQualifiedBuyer = existingLead.lead_type !== 'supplier'
+    && productIds.length > 0
+    && existingWorkflow.workflow.qualificationStatus !== 'qualified'
+    && existingWorkflow.workflow.qualificationStatus !== 'disqualified'
+    && workflowWrite.workflow.qualificationStatus === 'qualified';
 
   const nextProductIds = [...productIds].sort();
   const nextMarketIds = [...marketIds].sort();
@@ -2173,6 +2256,32 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
     );
   }
 
+  if (autoQualifiedBuyer) {
+    activityJobs.push(
+      insertActivity(db, {
+        organization_id: organization.id,
+        lead_id: leadId,
+        actor_user_id: currentUser.id,
+        kind: 'qualification_auto_completed',
+        message: `${existingLead.company_name} was auto-qualified after confirmed product coverage was mapped.`,
+      }),
+    );
+    communicationJobs.push(
+      insertCommunication(db, {
+        organization_id: organization.id,
+        lead_id: leadId,
+        related_entity: 'lead',
+        related_id: leadId,
+        communication_type: 'system_note',
+        subject: 'Buyer auto-qualified from coverage',
+        body: `Buyer qualification was completed automatically after ${nextProductIds.length} confirmed product${nextProductIds.length === 1 ? '' : 's'} were mapped for ${existingLead.company_name}.`,
+        summary: 'Buyer auto-qualified after product coverage mapping',
+        created_by: currentUser.id,
+        metadata: { source: 'saveLeadCoverage', auto_qualified: true, mapped_product_count: nextProductIds.length },
+      }),
+    );
+  }
+
   if (!activityJobs.length) {
     activityJobs.push(
       insertActivity(db, {
@@ -2211,12 +2320,13 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
       source: 'saveLeadCoverage',
       product_changed: productChanged,
       market_changed: marketChanged,
+      auto_qualified: autoQualifiedBuyer,
     },
   });
 
   revalidateLeadSurfaces(leadId);
   return {
-    success: 'Coverage saved.',
+    success: autoQualifiedBuyer ? 'Coverage saved and buyer auto-qualified.' : 'Coverage saved.',
     selectedMarketIds: [...marketIds],
     selectedProductIds: [...productIds],
   };

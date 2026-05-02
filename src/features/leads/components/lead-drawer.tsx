@@ -840,6 +840,10 @@ export function LeadDrawer({
     formData.set('phone_secondary', phoneSecondary);
     formData.set('website', website);
     formData.set('trade_event_id', tradeEventId);
+    const selectedCountryForSave = countries.find((item) => item.id === countryId) ?? null;
+    formData.set('country_id', selectedCountryForSave?.id ?? '');
+    formData.set('country', selectedCountryForSave?.name ?? lead?.country ?? '');
+    formData.set('phone_country_code', selectedCountryForSave?.phone_code ?? selectedPhoneCode ?? '');
     formData.set('next_follow_up_at', followUpAt);
     formData.set('next_step_id', nextStepId);
     formData.set('owner_user_id', ownerUserId);
@@ -1463,7 +1467,7 @@ export function LeadDrawer({
                 </div>
                 <div>
                   <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Country *</label>
-                  <select name="country_id" value={countryId} onChange={(e) => {
+                  <select value={countryId} onChange={(e) => {
                     const nextCountryId = e.target.value;
                     setCountryId(nextCountryId);
                     const nextCountry = countries.find((item) => item.id === nextCountryId);

@@ -173,6 +173,36 @@ function buildNextActionSummary(data: LeadProfileData): NextActionSummary {
     }
   }
 
+  if (!mapping.hasConfirmedProductInterest || !mapping.hasMarketCoverage) {
+    return {
+      id: 'next-action-coverage',
+      kind: 'reengage_lead',
+      title: 'Map coverage before quote',
+      summary: !mapping.hasConfirmedProductInterest
+        ? 'Map at least one confirmed product first. Once product coverage is saved, buyer qualification can be completed automatically for quote prep.'
+        : 'Market coverage is still missing. The selected country should auto-populate the market; review coverage if it did not.',
+      urgency: tasks.urgency,
+      primaryLabel: 'Open coverage first',
+      secondaryLabels: ['Map product', 'Auto-qualify buyer after mapping'],
+      aiDraftAvailable: false,
+      workflowPanel: 'coverage',
+    }
+  }
+
+  if (qualification.status !== 'qualified') {
+    return {
+      id: 'next-action-qualification',
+      kind: 'reengage_lead',
+      title: 'Confirm buyer qualification',
+      summary: 'Coverage is mapped. Confirm the buyer fit, or let the coverage save action auto-qualify buyers when products are mapped.',
+      urgency: tasks.urgency,
+      primaryLabel: 'Open qualification',
+      secondaryLabels: ['Review buyer fit'],
+      aiDraftAvailable: false,
+      workflowPanel: 'qualification',
+    }
+  }
+
   if (tasks.overdueCount > 0 || followUp?.scheduled_at) {
     const dueAt = followUp?.scheduled_at ?? tasks.nextFollowUpAt ?? null
     return {
@@ -189,36 +219,6 @@ function buildNextActionSummary(data: LeadProfileData): NextActionSummary {
       followUpId: followUp?.id ?? null,
       aiDraftAvailable: ai.readyDraftCount > 0 || ai.pendingReviewCount > 0,
       workflowPanel: 'follow_up',
-    }
-  }
-
-  if (qualification.status !== 'qualified') {
-    return {
-      id: 'next-action-qualification',
-      kind: 'reengage_lead',
-      title: 'Finish qualification',
-      summary: 'This lead still needs qualification review before downstream commercial work becomes trustworthy.',
-      urgency: tasks.urgency,
-      primaryLabel: 'Open qualification',
-      secondaryLabels: ['Review buyer fit'],
-      aiDraftAvailable: false,
-      workflowPanel: 'qualification',
-    }
-  }
-
-  if (!mapping.hasConfirmedProductInterest || !mapping.hasMarketCoverage) {
-    return {
-      id: 'next-action-coverage',
-      kind: 'reengage_lead',
-      title: 'Resolve pipeline coverage blockers',
-      summary: !mapping.hasConfirmedProductInterest
-        ? 'Forward movement is blocked until category interest becomes confirmed product linkage.'
-        : 'Forward movement is blocked until market coverage is explicitly mapped.',
-      urgency: tasks.urgency,
-      primaryLabel: 'Open coverage',
-      secondaryLabels: ['Confirm product linkage', 'Map market coverage'],
-      aiDraftAvailable: false,
-      workflowPanel: 'coverage',
     }
   }
 
@@ -264,20 +264,20 @@ function buildWorkflowActionCards(data: LeadProfileData): WorkflowActionCardStat
       label: 'Qualification',
       stateLabel: qualification.status.replace(/_/g, ' '),
       helperText: qualification.missingFields.length
-        ? `${qualification.missingFields.length} inputs still need attention before stage movement can continue`
+        ? `${qualification.missingFields.length} inputs still need attention. Product coverage should be mapped before qualification is finalized.`
         : 'Buyer fit and operator readiness look current',
-      badge: qualification.missingFields.length ? `${qualification.missingFields.length} missing` : 'Ready',
+      badge: qualification.status === 'qualified' ? 'Ready' : qualification.missingFields.length ? `${qualification.missingFields.length} missing` : 'Auto-ready after coverage',
       blocked: qualification.status !== 'qualified',
-      blockedReason: qualification.status !== 'qualified' ? 'Qualification still needs an explicit approved decision for forward stage movement.' : null,
+      blockedReason: qualification.status !== 'qualified' ? 'Map coverage first; buyer qualification can then be auto-completed when products are saved.' : null,
     },
     {
       key: 'coverage',
       label: 'Coverage',
       stateLabel: `${mapping.productCount} products · ${mapping.marketCount} markets`,
       helperText: mapping.isComplete
-        ? 'Confirmed product linkage and market coverage are ready for governed stage movement'
+        ? 'Confirmed product linkage and market coverage are ready; buyer qualification can auto-complete from this coverage state'
         : !mapping.hasConfirmedProductInterest
-          ? 'Convert category-only interest into confirmed product linkage before pushing the lead forward'
+          ? 'Map confirmed product coverage before qualifying the buyer or opening quote work'
           : 'Map at least one active market before pushing the lead forward',
       badge: mapping.isComplete ? 'Mapped' : !mapping.hasConfirmedProductInterest ? 'Confirm product' : 'Add market',
       blocked: !mapping.isComplete,

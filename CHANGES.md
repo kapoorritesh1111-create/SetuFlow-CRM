@@ -1168,3 +1168,20 @@ No application runtime code was changed in this pass.
 - WhatsApp now mirrors phone by default until the WhatsApp field is manually edited.
 - Save action now defaults WhatsApp to phone when WhatsApp is left blank.
 - Added Supabase mitigation `121_pass22_lead_geo_phone_market_sync.sql` to keep country, market, phone code, phone, WhatsApp, and lead-market relations synchronized.
+
+## Pass 22.2 - Quick Lead country UUID hotfix
+
+- Fixed Quick Lead final save payload so `country_id` is always posted as the selected country UUID.
+- Removed the duplicate visible `country_id` field name in the quick form; the hidden field remains the canonical submit value.
+- Added server-side country reconciliation so accidental country text such as `United States` is resolved to the matching `countries.id` before UUID validation and database writes.
+- Hardened phone/WhatsApp save defaults from resolved country phone code.
+- No new Supabase mitigation is required for this specific UUID/text error; the live schema already has `countries.id`, `countries.phone_code`, `countries.market_id`, `leads.country_id`, `leads.market_id`, and `lead_markets.organization_id`.
+
+## Pass 22 coverage-first workflow hotfix
+
+- Prioritized Coverage before Qualification in the lead command center.
+- Auto-qualifies buyer leads when confirmed product coverage is saved.
+- Preserves disqualified buyer state and does not auto-override disqualification.
+- Adds audit/activity/communication context for auto-qualification.
+- Fixes coverage save direct inserts to include `organization_id` for `lead_product_interests`.
+- Adds safe Supabase SQL to remove accidental `TestStage` after moving affected leads to `New Lead`.
