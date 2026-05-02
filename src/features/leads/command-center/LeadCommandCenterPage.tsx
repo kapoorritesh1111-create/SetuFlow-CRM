@@ -299,6 +299,8 @@ export default function LeadCommandCenterPage({
   }), [commercialState, leadState, mappingState, snapshot, workflowState])
 
   const hasActiveQuoteRecord = liveSnapshot.quoteFocus.hasActiveQuote
+  const wonStageId = liveSnapshot.pipeline.stages.find((stage) => stage.state === 'won' || stage.label.toLowerCase().includes('won'))?.id ?? null
+  const lostStageId = liveSnapshot.pipeline.stages.find((stage) => stage.state === 'lost' || stage.label.toLowerCase().includes('lost'))?.id ?? null
 
   useEffect(() => {
     if (activeTab === 'quotes' && !hasActiveQuoteRecord) {
@@ -439,6 +441,16 @@ export default function LeadCommandCenterPage({
                 onPanelChange={setActiveWorkflowPanel}
                 onEditCoverage={() => openDrawer('coverage')}
                 onOpenQuote={() => void handleOpenQuoteWorkspace()}
+                onFollowUpSaved={(payload) => {
+                  setWorkflowState((current) => ({
+                    ...current,
+                    nextFollowUpAt: payload?.nextFollowUpAt !== undefined ? payload.nextFollowUpAt : current.nextFollowUpAt,
+                    pendingFollowUpId: payload?.followUpId !== undefined ? payload.followUpId : current.pendingFollowUpId,
+                    overdueCount: 0,
+                    dueSoonCount: payload?.nextFollowUpAt ? 1 : current.dueSoonCount,
+                    openFollowUpCount: Math.max(1, current.openFollowUpCount),
+                  }))
+                }}
               />
             ) : activeTab === 'quotes' ? (
               <QuotesTab
@@ -482,6 +494,9 @@ export default function LeadCommandCenterPage({
           setActiveWorkflowPanel('follow_up')
         }}
         onQuickEdit={() => openDrawer('details')}
+        wonStageId={wonStageId}
+        lostStageId={lostStageId}
+        onMarkTerminalStage={(stageId) => void handleConfirmStageChange(stageId)}
       />
 
       <LeadQuickEditDrawer

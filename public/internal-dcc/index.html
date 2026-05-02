@@ -233,6 +233,7 @@
   <div class="tab" data-tab="repo">Repo Status</div>
   <div class="tab" data-tab="prbuilder">&#128736; PR Builder</div>
   <div class="tab" data-tab="chromeguide">&#127758; Chrome Guide</div>
+  <div class="tab" data-tab="pass21fixes">Pass 21 TypeFix QA</div>
   <div class="tab" data-tab="import" style="background:#fef3c7;color:#92400e;border-bottom:2.5px solid #f59e0b;font-weight:800;">&#8659; Import Results</div>
 </div>
 
@@ -1206,6 +1207,75 @@ Report each as PASS, FAIL, or BLOCKED.</div>
 </div><!-- end chromeguide panel -->
 
 <!-- ==================== IMPORT RESULTS ==================== -->
+
+<!-- ==================== PASS 21 TYPEFIX QA ==================== -->
+<div id="tab-pass21fixes" class="panel">
+  <div class="section-title">Pass 21 TypeFix Bug Closure <span>15 issue fixes · retest guide · added without changing existing DCC tab content</span></div>
+
+  <div class="alert alert-info">
+    <span>&#128736;</span>
+    <div><strong>Patch summary:</strong> This tab tracks the May 1, 2026 TypeFix bug pass. Retest Dashboard, Buyer Leads, Lead Command Center, and Quote Builder on <strong>https://www.setuflowcrm.com</strong> after deployment.</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:18px 0 24px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--brand-mid);">Dashboard fixes</div>
+      <ul style="margin-top:10px;font-size:12px;line-height:1.9;color:var(--muted);">
+        <li>ISS-001: active map countries now open the market command lane on click/keyboard.</li>
+        <li>ISS-002: pipeline stage bars now drill into <code>/pipeline/buyers?stage=...</code>.</li>
+        <li>ISS-003: Customize button is visible and opens the existing dashboard customization panel.</li>
+        <li>ISS-004: Recent Activity feed renders in the dashboard widget grid using loaded activity data.</li>
+      </ul>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#065f46;">Lead Command Center fixes</div>
+      <ul style="margin-top:10px;font-size:12px;line-height:1.9;color:var(--muted);">
+        <li>ISS-012: sticky bottom bar now includes Mark Won and Mark Lost with confirmation.</li>
+        <li>ISS-011: follow-up scheduling updates local workflow card state and still refreshes the route.</li>
+        <li>ISS-010: Qualification panel provides editable status/notes and save path.</li>
+        <li>ISS-009: Coverage panel exposes the coverage manager CTA from inside the panel.</li>
+      </ul>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#92400e;">Buyer Leads and Quote Builder fixes</div>
+      <ul style="margin-top:10px;font-size:12px;line-height:1.9;color:var(--muted);">
+        <li>ISS-008: each lead row now renders a health badge from the existing health model.</li>
+        <li>ISS-007/006: row click already opens Command Center; explicit action buttons remain discoverable.</li>
+        <li>ISS-005: Quick Lead drawer close remains synchronous and clears transient inline state.</li>
+        <li>ISS-016/015/014: Quote Builder keeps pricing basis on Step 1, approval toggle on Terms, and no longer duplicates blocker detail.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-title">Retest checklist <span>Run in this order after deployment</span></div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+    <ol style="font-size:13px;line-height:2;color:var(--text);padding-left:20px;">
+      <li><strong>/dashboard/buyers:</strong> click India/UAE or any active country; verify market lane opens and Clear market works.</li>
+      <li><strong>/dashboard/buyers:</strong> click every Pipeline Stage Distribution bar; verify route changes to <code>/pipeline/buyers?stage=[stageId]</code>.</li>
+      <li><strong>/dashboard/buyers:</strong> click the round Customize button; verify the customization panel opens and saved view controls are visible.</li>
+      <li><strong>/dashboard/buyers:</strong> confirm Commercial feed / Recent Activity shows timestamped activity rows or a clear empty state.</li>
+      <li><strong>/leads/buyers:</strong> verify each row shows a health badge plus existing buyer/stage pills; click the row and the Open button.</li>
+      <li><strong>Quick Lead drawer:</strong> open with + Quick Lead, then close with X and Cancel; drawer should close on first click.</li>
+      <li><strong>LCC:</strong> schedule a follow-up; the Follow-up card should update immediately without waiting for manual refresh.</li>
+      <li><strong>LCC:</strong> use sticky Mark Won / Mark Lost; confirm dialog appears before stage move.</li>
+      <li><strong>Quote Builder:</strong> Step 1 pricing basis is visible, Step 3 approval toggle is visible, Step 5 blockers are actionable and not duplicated.</li>
+    </ol>
+  </div>
+
+  <div class="section-title">Issue closure matrix <span>Manual QA status should be updated after live deployment</span></div>
+  <table style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:12px;">
+    <thead><tr style="background:var(--soft);text-align:left;"><th style="padding:10px;">Issue</th><th style="padding:10px;">Area</th><th style="padding:10px;">Fix path</th><th style="padding:10px;">Expected result</th></tr></thead>
+    <tbody>
+      <tr><td style="padding:10px;">ISS-001</td><td>Dashboard map</td><td>world-coverage-map</td><td>Country click opens market lane.</td></tr>
+      <tr><td style="padding:10px;">ISS-002</td><td>Pipeline chart</td><td>pipeline-stage-chart-card</td><td>Stage click filters pipeline.</td></tr>
+      <tr><td style="padding:10px;">ISS-003/004</td><td>Dashboard widgets</td><td>dashboard-interactive</td><td>Customize and Recent Activity visible.</td></tr>
+      <tr><td style="padding:10px;">ISS-005 to ISS-008</td><td>Buyer leads</td><td>lead row / drawer close</td><td>Rows are clickable, health badge visible, drawer closes immediately.</td></tr>
+      <tr><td style="padding:10px;">ISS-009 to ISS-012</td><td>LCC</td><td>workflow panels / sticky bar</td><td>Follow-up refreshes, panels expose edits, Won/Lost shortcuts visible.</td></tr>
+      <tr><td style="padding:10px;">ISS-014 to ISS-016</td><td>Quote Builder</td><td>quote wizard</td><td>Pricing basis, approval toggle, and send checkpoint read correctly.</td></tr>
+    </tbody>
+  </table>
+</div>
+
 <div id="tab-import" class="panel">
   <div class="section-title">Import Test Results <span>Paste Claude's test report — DCC auto-fills statuses, notes, issues &amp; PRs</span></div>
 

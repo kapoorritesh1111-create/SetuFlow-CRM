@@ -16,6 +16,9 @@ import { NeedsAttentionCard } from './needs-attention-card';
 import type { WorkspaceMode } from '@/features/workspace/types';
 import { PipelineStageChartCard } from './pipeline-stage-chart-card';
 import { CountryTableCard } from './country-table-card';
+import { RecentActivityCard } from './recent-activity-card';
+import { DashboardHeaderControls } from './dashboard-header-controls';
+import { DashboardCustomizePanel } from './dashboard-customize-panel';
 
 type DashboardInteractiveProps = {
   data: DashboardData;
@@ -348,6 +351,27 @@ export default function DashboardInteractive({
 
   return (
     <div className="flex w-full flex-col gap-5 pb-10 pt-2 xl:gap-6">
+      <div className="flex justify-end">
+        <DashboardHeaderControls
+          customizeOpen={layout.customizeOpen}
+          onToggleCustomize={layout.onToggleCustomize}
+        />
+      </div>
+
+      <DashboardCustomizePanel
+        open={layout.customizeOpen}
+        hiddenSections={layout.hiddenSections}
+        widgetLayout={layout.widgetLayout}
+        activeWidgetIds={layout.activeWidgetIds}
+        savedViews={layout.savedViews}
+        onToggleSection={layout.onToggleSection}
+        onMoveWidget={layout.onMoveWidget}
+        onSaveView={layout.onSaveView}
+        onApplySavedView={layout.onApplySavedView}
+        onDeleteSavedView={layout.onDeleteSavedView}
+        onReset={layout.onResetLayout}
+      />
+
       <DashboardControlBar
         filters={filters}
         onFiltersChange={handleFiltersChange}
@@ -448,7 +472,7 @@ export default function DashboardInteractive({
         </DashboardWidgetErrorBoundary>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-4">
         <DashboardWidgetErrorBoundary
           title="Pipeline stage distribution"
           description="Stage mix and visible value for the current dashboard view."
@@ -467,6 +491,16 @@ export default function DashboardInteractive({
           fallbackDescription="Country performance card hit a runtime issue."
         >
           <CountryTableCard items={filteredCountries} />
+        </DashboardWidgetErrorBoundary>
+
+        <DashboardWidgetErrorBoundary
+          title="Recent activity"
+          description="Timestamped commercial events for the active dashboard view."
+          eyebrow="Feed"
+          fallbackTitle="Recent activity unavailable"
+          fallbackDescription="Recent activity card hit a runtime issue."
+        >
+          <RecentActivityCard items={data.recentActivity} mode={filters.mode} marketCode={filters.marketCode} />
         </DashboardWidgetErrorBoundary>
 
         <DashboardWidgetErrorBoundary

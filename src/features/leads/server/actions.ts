@@ -2301,7 +2301,7 @@ export async function scheduleLeadFollowUp(_: ActionState | undefined, formData:
   });
 
   revalidateLeadSurfaces(leadId);
-  return { success: 'Follow-up scheduled.', followUpId: insertedFollowUp?.id ?? undefined };
+  return { success: 'Follow-up scheduled.', followUpId: insertedFollowUp?.id ?? undefined, nextFollowUpAt: scheduledAt };
 }
 
 export async function batchScheduleLeadFollowUps(_: ActionState | undefined, formData: FormData): Promise<ActionState> {

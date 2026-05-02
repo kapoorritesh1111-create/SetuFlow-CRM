@@ -1,3 +1,5 @@
+'use client';
+
 import type { LeadCommandCenterTabKey } from './types'
 import { ICON_CONTAINER_CLASS, getActionIcon } from './ui-system'
 
@@ -15,6 +17,9 @@ export function LeadStickyActionBar({
   onOpenQuote,
   onScheduleFollowUp,
   onQuickEdit,
+  wonStageId,
+  lostStageId,
+  onMarkTerminalStage,
 }: {
   activeTab: LeadCommandCenterTabKey
   currentStageLabel?: string
@@ -23,6 +28,9 @@ export function LeadStickyActionBar({
   onOpenQuote: () => void
   onScheduleFollowUp: () => void
   onQuickEdit: () => void
+  wonStageId?: string | null
+  lostStageId?: string | null
+  onMarkTerminalStage?: (stageId: string, outcome: 'won' | 'lost') => void
 }) {
   const QuoteIcon = getActionIcon('open')
   const NoteIcon = getActionIcon('add_note')
@@ -41,6 +49,22 @@ export function LeadStickyActionBar({
           <button type="button" onClick={onQuickEdit} className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700">
             <span className={ICON_CONTAINER_CLASS}><NoteIcon className="h-4 w-4 text-slate-600" /></span>
             Quick edit
+          </button>
+          <button
+            type="button"
+            disabled={!wonStageId || !onMarkTerminalStage}
+            onClick={() => { if (wonStageId && window.confirm('Mark this lead as Won?')) onMarkTerminalStage?.(wonStageId, 'won') }}
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            ✓ Mark Won
+          </button>
+          <button
+            type="button"
+            disabled={!lostStageId || !onMarkTerminalStage}
+            onClick={() => { if (lostStageId && window.confirm('Mark this lead as Lost?')) onMarkTerminalStage?.(lostStageId, 'lost') }}
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            ✕ Mark Lost
           </button>
         </div>
         <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">

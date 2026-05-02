@@ -114,6 +114,7 @@ export function WorkflowTab({
   onPanelChange,
   onEditCoverage,
   onOpenQuote,
+  onFollowUpSaved,
 }: {
   snapshot: LeadProfileSnapshot
   leadId: string
@@ -122,6 +123,7 @@ export function WorkflowTab({
   onPanelChange: (key: WorkflowActionKey | null) => void
   onEditCoverage: () => void
   onOpenQuote: () => void
+  onFollowUpSaved?: (payload?: { nextFollowUpAt?: string | null; followUpId?: string | null }) => void
 }) {
   const allCards = snapshot.workflowCards
   const supportCards = snapshot.workflowCards.filter((card) => card.key !== 'commercial')
@@ -165,6 +167,7 @@ export function WorkflowTab({
             pendingFollowUpId={pendingFollowUpId}
             onOpenQuote={onOpenQuote}
             onEditCoverage={onEditCoverage}
+            onFollowUpSaved={onFollowUpSaved}
           />
         </SupportDetailShell>
       ) : (

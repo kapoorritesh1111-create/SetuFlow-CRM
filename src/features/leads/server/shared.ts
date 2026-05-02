@@ -40,6 +40,7 @@ export type ActionState = {
   selectedMarketIds?: string[];
   selectedProductIds?: string[];
   followUpId?: string;
+  nextFollowUpAt?: string;
   importIssue?: import('@/lib/import-issues').ImportIssuePayload;
 };
 

@@ -15,7 +15,7 @@ export function FollowUpPanel({
   leadId: string
   nextAction: NextActionSummary
   pendingFollowUpId?: string | null
-  onSaved?: () => void
+  onSaved?: (payload?: { nextFollowUpAt?: string | null; followUpId?: string | null }) => void
 }) {
   const router = useRouter()
   const [scheduledAt, setScheduledAt] = useState('')
@@ -51,7 +51,7 @@ export function FollowUpPanel({
                 setMessage(result?.error || result?.success || null)
                 if (!result?.error) {
                   setScheduledAt('')
-                  onSaved?.()
+                  onSaved?.({ nextFollowUpAt: result?.nextFollowUpAt ?? scheduledAt, followUpId: result?.followUpId ?? null })
                   router.refresh()
                 }
               }}

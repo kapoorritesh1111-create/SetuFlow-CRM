@@ -11,6 +11,7 @@ export function WorkflowInlinePanelHost({
   pendingFollowUpId,
   onOpenQuote,
   onEditCoverage,
+  onFollowUpSaved,
 }: {
   activeKey: WorkflowActionKey | null
   snapshot: LeadProfileSnapshot
@@ -18,6 +19,7 @@ export function WorkflowInlinePanelHost({
   pendingFollowUpId?: string | null
   onOpenQuote: () => void
   onEditCoverage: () => void
+  onFollowUpSaved?: (payload?: { nextFollowUpAt?: string | null; followUpId?: string | null }) => void
 }) {
   if (!activeKey) return null
   if (activeKey === 'qualification') return <QualificationPanel leadId={leadId} qualification={snapshot.qualification} />
@@ -25,5 +27,5 @@ export function WorkflowInlinePanelHost({
   if (activeKey === 'commercial') {
     return <CommercialPanel commercial={snapshot.commercial} quoteFocus={snapshot.quoteFocus} onOpenQuote={onOpenQuote} />
   }
-  return <FollowUpPanel leadId={leadId} nextAction={snapshot.nextAction} pendingFollowUpId={pendingFollowUpId} />
+  return <FollowUpPanel leadId={leadId} nextAction={snapshot.nextAction} pendingFollowUpId={pendingFollowUpId} onSaved={onFollowUpSaved} />
 }

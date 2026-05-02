@@ -1042,7 +1042,10 @@ export function LeadsWorkspace({
     if (!canManageLeads) return;
     setDrawerState({ open: true, mode: 'full', leadId: null, initialStepId: 'basics' });
   };
-  const closeDrawer = () => setDrawerState((current) => ({ ...current, open: false }));
+  const closeDrawer = () => {
+    setDrawerState((current) => ({ ...current, open: false }));
+    setInlineActionState({});
+  };
 
   // ---------------------------------------------------------------------------
   // PR03 realignment: leads topbar mode switch and vCard button helpers
@@ -2682,7 +2685,7 @@ function InlineQuoteBuilder({
                 </div>
                 <div className="flex flex-col gap-[4px] px-[18px] pb-[12px]">
                   {[
-                    { label: 'No active blockers', ok: blockerCount === 0 },
+                    { label: blockerCount === 0 ? 'No active blockers' : 'Resolve active blockers', ok: blockerCount === 0 },
                     { label: 'Pricing complete', ok: pricingReady },
                     { label: 'Compliance clear', ok: complianceItems.length === 0 },
                     { label: 'Quote draft exists', ok: hasQuoteDraft },

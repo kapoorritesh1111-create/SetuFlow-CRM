@@ -200,10 +200,10 @@ export function WorldCoverageMap({
               const style = countryStyles.get(code);
 
               if (isSelected) {
-                return <path key={code} d={item.path} data-country-code={code} fill="#f8fafc" stroke="#e2e8f0" strokeWidth={1.5} className="transition" />;
+                return <path key={code} d={item.path} data-country-code={code} fill="#f8fafc" stroke="#e2e8f0" strokeWidth={1.5} className="cursor-pointer transition" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
               }
               if (style) {
-                return <path key={code} d={item.path} data-country-code={code} fill={style.fill} stroke={style.stroke} strokeWidth={0.9} className="cursor-pointer transition hover:brightness-110" />;
+                return <path key={code} d={item.path} data-country-code={code} fill={style.fill} stroke={style.stroke} strokeWidth={0.9} className="cursor-pointer transition hover:brightness-110" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
               }
               return <path key={code} d={item.path} data-country-code={code} fill="#1a2744" stroke="#243152" strokeWidth={0.4} />;
             })}

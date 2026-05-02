@@ -1,3 +1,6 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { WidgetEmptyState, WidgetShell } from '@/components/ui/widget-shell';
 import type { DashboardStageCount } from '@/features/dashboard/types';
 
@@ -8,6 +11,7 @@ function formatCompactCurrency(value: number) {
 }
 
 export function PipelineStageChartCard({ items }: { items: DashboardStageCount[] }) {
+  const router = useRouter();
   const visible = items.filter((item) => item.count > 0 || (item.valueImpact ?? 0) > 0);
   const max = Math.max(...visible.map((item) => item.count), 1);
   const totalValue = visible.reduce((sum, item) => sum + Number(item.valueImpact ?? 0), 0);
@@ -18,7 +22,7 @@ export function PipelineStageChartCard({ items }: { items: DashboardStageCount[]
   return (
     <WidgetShell
       title="Pipeline Stage Distribution"
-      description="Read count and value together so each stage shows commercial weight, not just traffic."
+      description="Read count and value together so each stage shows commercial weight, not just traffic. Click any stage to drill into the buyer pipeline."
       eyebrow="Pipeline"
       className="h-full border border-slate-200/85 bg-white/96 shadow-[0_18px_44px_rgba(15,23,42,0.06)]"
     >
@@ -43,7 +47,13 @@ export function PipelineStageChartCard({ items }: { items: DashboardStageCount[]
             {visible.map((item) => {
               const width = Math.max((item.count / max) * 100, item.count ? 10 : 0);
               return (
-                <div key={item.stageId} className="space-y-2.5">
+                <button
+                  key={item.stageId}
+                  type="button"
+                  onClick={() => router.push(`/pipeline/buyers?stage=${encodeURIComponent(item.stageId)}`)}
+                  className="block w-full space-y-2.5 rounded-2xl px-2 py-2 text-left transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                  title={`Open buyer pipeline filtered to ${item.stageName}`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900">{item.stageName}</p>
@@ -57,7 +67,7 @@ export function PipelineStageChartCard({ items }: { items: DashboardStageCount[]
                   <div className="relative h-2.5 overflow-hidden rounded-full bg-slate-100">
                     <div className="absolute inset-y-0 left-0 rounded-full transition-all" style={{ width: `${width}%`, backgroundColor: item.colorToken ?? '#2563eb' }} />
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

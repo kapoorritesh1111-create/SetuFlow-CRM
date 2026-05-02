@@ -4,6 +4,8 @@ import { type KeyboardEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { LeadCommercialReadiness } from '@/lib/catalog-pricing-model';
+import { computeLeadHealth } from '@/lib/lead-health';
+import { LeadHealthBadge } from '@/components/ui/lead-health-badge';
 import type { LeadRow } from '@/features/leads/types/workspace';
 
 export interface LeadTableRowProps {
@@ -105,6 +107,8 @@ export function LeadTableRow({
   nextStepMap,
   ownerMap,
   safeFormatDateTime,
+  activityMap,
+  stageHistoryMap,
   stageMetaMap,
   readinessMap,
   getLeadCommandCenterHref,
@@ -115,6 +119,7 @@ export function LeadTableRow({
   openQuickEdit,
 }: LeadTableRowProps) {
   const [hydratedNowIso, setHydratedNowIso] = useState<string | null>(null);
+  const [actionsOpen, setActionsOpen] = useState(false);
 
   useEffect(() => {
     setHydratedNowIso(new Date().toISOString());
@@ -128,6 +133,17 @@ export function LeadTableRow({
   const nextStepName = nextStepMap.get(lead.next_step_id ?? '') ?? 'Review next step';
   const ownerLabel = ownerMap.get(lead.owner_user_id ?? '') ?? 'Unassigned';
   const blockerCount = readiness?.blockerCount ?? 0;
+  const leadHealth = computeLeadHealth({
+    created_at: lead.created_at,
+    updated_at: lead.updated_at,
+    last_contacted_at: lead.last_contacted_at,
+    next_follow_up_at: lead.next_follow_up_at,
+    lastActivityAt: activityMap.get(lead.id),
+    lastStageChangeAt: stageHistoryMap.get(lead.id),
+    stageSortOrder: lead.stage_id ? stageMetaMap.get(lead.stage_id)?.sortOrder ?? null : null,
+    stageCount: lead.stage_id ? stageMetaMap.get(lead.stage_id)?.stageCount ?? null : null,
+    isClosedStage: lead.stage_id ? stageMetaMap.get(lead.stage_id)?.isClosed ?? null : null,
+  });
 
   // ── Severity left border (spec: .lead-row.critical / .warning / .ok) ──────
   const diffDays = getStableDayDiff(lead.next_follow_up_at, hydratedNowIso);
@@ -248,6 +264,7 @@ export function LeadTableRow({
             {[lead.contact_name, lead.job_title].filter(Boolean).join(' · ') || 'No primary contact'}
           </div>
           <div className="mt-1 flex flex-wrap gap-1">
+            <LeadHealthBadge health={leadHealth} />
             {signalPills.map((pill) => (
               <span
                 key={pill.label}
@@ -344,6 +361,59 @@ export function LeadTableRow({
         >
           Edit
         </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setActionsOpen((current) => !current);
+            }}
+            className="inline-flex items-center rounded-md border border-slate-200 bg-white px-[8px] py-[4px] text-[12px] font-bold text-slate-600 transition hover:bg-slate-50"
+            aria-label={`Open quick actions for ${lead.company_name}`}
+            aria-expanded={actionsOpen}
+          >
+            ⋯
+          </button>
+          {actionsOpen ? (
+            <div
+              className="absolute right-0 top-full z-20 mt-2 w-32 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setActionsOpen(false);
+                  openLeadCommandCenter(router, commandCenterHref);
+                }}
+                className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Open
+              </button>
+              <button
+                type="button"
+                disabled={!openQuoteBuilder}
+                onClick={() => {
+                  setActionsOpen(false);
+                  openQuoteBuilder?.(lead.id);
+                }}
+                className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Quote
+              </button>
+              <button
+                type="button"
+                disabled={!openQuickEdit}
+                onClick={() => {
+                  setActionsOpen(false);
+                  openQuickEdit?.(lead.id);
+                }}
+                className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Edit
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
     </article>
   );
