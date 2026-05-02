@@ -1,3 +1,8 @@
+## Pass 23 Lead Delete Null Guard Build Hotfix
+
+- Fixed Vercel typecheck failure in lead delete actions by guarding nullable workspace user/organization before reading IDs.
+- Rechecked Supabase lead delete FK behavior; live schema supports cascade delete for lead child tables, with trade event converted lead references set to null.
+
 # 2026-05-02 — Pass 23 Lead Delete Action
 
 ## Summary

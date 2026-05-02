@@ -2361,15 +2361,18 @@ export async function deleteLead(_: ActionState | undefined, formData: FormData)
   if (!hasSupabaseEnv) return { error: 'Supabase environment variables are not configured.' };
 
   const workspace = await requireWorkspace();
-  if (!workspace) return { error: 'Sign in and select a workspace before deleting leads.' };
+  const currentUser = workspace.user;
+  const organization = workspace.organization;
+
+  if (!currentUser || !organization) return { error: 'Sign in and select a workspace before deleting leads.' };
 
   const leadId = normalizeLeadInputText(formData.get('lead_id'));
   if (!leadId) return { error: 'Select a lead to delete.' };
 
   const supabase = await createClient();
   const db = supabase as any;
-  const organizationId = workspace.organization.id;
-  const actorUserId = workspace.user.id;
+  const organizationId = organization.id;
+  const actorUserId = currentUser.id;
 
   const { data: lead, error: leadError } = await db
     .from('leads')
@@ -2419,15 +2422,18 @@ export async function batchDeleteLeads(_: ActionState | undefined, formData: For
   if (!hasSupabaseEnv) return { error: 'Supabase environment variables are not configured.' };
 
   const workspace = await requireWorkspace();
-  if (!workspace) return { error: 'Sign in and select a workspace before deleting leads.' };
+  const currentUser = workspace.user;
+  const organization = workspace.organization;
+
+  if (!currentUser || !organization) return { error: 'Sign in and select a workspace before deleting leads.' };
 
   const leadIds = uniqueTrimmed(formData.getAll('lead_ids').map((value) => String(value ?? '')));
   if (!leadIds.length) return { error: 'Select at least one lead to delete.' };
 
   const supabase = await createClient();
   const db = supabase as any;
-  const organizationId = workspace.organization.id;
-  const actorUserId = workspace.user.id;
+  const organizationId = organization.id;
+  const actorUserId = currentUser.id;
 
   const { data: leads, error: leadsError } = await db
     .from('leads')
