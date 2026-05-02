@@ -1149,3 +1149,14 @@ No application runtime code was changed in this pass.
 - Orders document upload now returns visible success/failure notices and lets the operator map an upload to a specific missing requirement code.
 - Admin Categories now has a real `/admin/categories` list/add/edit workspace; the Admin Categories nav item points to that page.
 - DCC, README, release readiness, and handoff guidance updated. No `npm ci`, build, live Supabase data mutation, or remediation migration was performed in GPT sandbox.
+
+## Pass 22 Buyer Workflow / Shared Module Fixes
+
+- Fixed Quick Add Lead relation fallback by writing `organization_id` into `lead_markets` rows.
+- Patched trade-event lead conversion relation insert to include `organization_id`.
+- Added `/integrations` connector card route instead of redirecting to `/approval-send`.
+- Added global lead-linked document upload/register card in `/documents`.
+- Added Pass 22 mitigation SQL for `documents.updated_at`, lead market backfill, and scheduled task RLS repair.
+- Hardened scheduled task mutations after workspace validation with privileged mutation client fallback when service role is configured.
+- Added editable organization profile form for organization name/default currency.
+- Added Pass 22 Buyer Workflow QA tab to Internal DCC without changing prior result tabs.

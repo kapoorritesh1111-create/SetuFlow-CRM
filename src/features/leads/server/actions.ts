@@ -261,6 +261,12 @@ function isMissingRpcFunction(error: any) {
   return message.includes('could not find the function') || message.includes('schema cache') || message.includes('function public.');
 }
 
+
+function isLeadRelationOrganizationIdError(error: any) {
+  const message = String(error?.message ?? '').toLowerCase();
+  return message.includes('lead_markets') && message.includes('organization_id');
+}
+
 function formatLeadActionError(error: any, fallback = 'The lead action could not be saved. Please retry or refresh the workspace.') {
   const message = String(error?.message ?? error ?? '').toLowerCase();
   if (message.includes('lead_id') && message.includes('ambiguous')) {
@@ -271,6 +277,7 @@ function formatLeadActionError(error: any, fallback = 'The lead action could not
 }
 
 async function refreshLeadRelationsDirect(db: any, params: {
+  organizationId: string;
   leadId: string;
   marketIds: string[];
   productIds: string[];
@@ -283,7 +290,7 @@ async function refreshLeadRelationsDirect(db: any, params: {
   if (deleteProductsError) return { error: deleteProductsError };
 
   if (params.marketIds.length) {
-    const { error } = await db.from('lead_markets').insert(params.marketIds.map((marketId) => ({ lead_id: params.leadId, market_id: marketId })));
+    const { error } = await db.from('lead_markets').insert(params.marketIds.map((marketId) => ({ organization_id: params.organizationId, lead_id: params.leadId, market_id: marketId })));
     if (error) return { error };
   }
 
@@ -1678,8 +1685,8 @@ const contactSourceContext = {
   });
 
   if (relationRpcError) {
-    if (!isMissingRpcFunction(relationRpcError)) return { error: relationRpcError.message };
-    const relationFallback = await refreshLeadRelationsDirect(db, { leadId, marketIds, productIds });
+    if (!isMissingRpcFunction(relationRpcError) && !isLeadRelationOrganizationIdError(relationRpcError)) return { error: relationRpcError.message };
+    const relationFallback = await refreshLeadRelationsDirect(db, { organizationId: organization.id, leadId, marketIds, productIds });
     if (relationFallback.error) return { error: relationFallback.error.message };
   }
 
@@ -2074,7 +2081,7 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
   if (deleteMarketsError) return { error: deleteMarketsError.message };
 
   if (marketIds.length > 0) {
-    const marketInsertRows = marketIds.map((marketId) => ({ lead_id: leadId, market_id: marketId }));
+    const marketInsertRows = marketIds.map((marketId) => ({ organization_id: organization.id, lead_id: leadId, market_id: marketId }));
     const { error: insertMarketsError } = await db.from('lead_markets').insert(marketInsertRows);
     if (insertMarketsError) return { error: insertMarketsError.message };
   }

@@ -833,6 +833,23 @@ function checked(formData: FormData, key: string) { return formData.get(key) ===
 async function getAdminMutationContext() { return getAdminContext(); }
 async function revalidateAdminReferencePaths(extraPath?: string) { ['/admin/organization','/admin/markets','/admin/stages','/admin/pipelines','/admin/trade-events','/admin/security'].forEach((path) => revalidatePath(path)); if (extraPath) revalidatePath(extraPath); }
 
+
+export async function updateOrganizationProfile(formData: FormData): Promise<void> {
+  const context = await getAdminMutationContext();
+  if (!context) return;
+  const name = normalizeText(formData.get('name'));
+  if (!name) return;
+  const payload: Record<string, unknown> = {
+    name,
+    default_currency: (normalizeText(formData.get('default_currency')) ?? 'USD').toUpperCase(),
+    logo_url: normalizeText(formData.get('logo_url')),
+    updated_at: new Date().toISOString(),
+  };
+  await context.supabase.from('organizations').update(payload).eq('id', context.organization.id);
+  await revalidateAdminReferencePaths('/admin/organization');
+  redirect('/admin/organization?notice=organization-updated');
+}
+
 export async function createMarket(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const name = normalizeText(formData.get('name')); if (!name) return; await context.supabase.from('markets').insert({ organization_id: context.organization.id, name, market_code: normalizeText(formData.get('market_code')), sort_order: normalizeNumber(formData.get('sort_order')), is_active: true }); await revalidateAdminReferencePaths('/admin/markets'); redirect('/admin/markets?notice=market-created'); }
 export async function updateMarket(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const id = normalizeText(formData.get('id')); const name = normalizeText(formData.get('name')); if (!id || !name) return; await context.supabase.from('markets').update({ name, market_code: normalizeText(formData.get('market_code')), sort_order: normalizeNumber(formData.get('sort_order')), is_active: checked(formData, 'is_active'), updated_at: new Date().toISOString() }).eq('id', id).eq('organization_id', context.organization.id); await revalidateAdminReferencePaths('/admin/markets'); redirect('/admin/markets?notice=market-updated'); }
 export async function createNextStep(formData: FormData): Promise<void> { const context = await getAdminMutationContext(); if (!context) return; const name = normalizeText(formData.get('name')); if (!name) return; await context.supabase.from('next_steps').insert({ organization_id: context.organization.id, name, sort_order: normalizeNumber(formData.get('sort_order')), is_active: true }); await revalidateAdminReferencePaths('/admin/stages'); redirect('/admin/stages?notice=next-step-created'); }

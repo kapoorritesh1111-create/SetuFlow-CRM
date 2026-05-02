@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { hasSupabaseEnv } from '@/lib/env';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
@@ -13,6 +14,77 @@ const COMPLIANCE_STATUSES = new Set(['pending', 'submitted', 'approved', 'revisi
 
 function normalizeStatus(value: FormDataEntryValue | null) {
   return String(value ?? '').trim().toLowerCase();
+}
+
+
+export async function uploadWorkspaceDocument(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
+
+  const leadId = String(formData.get('lead_id') ?? '').trim();
+  const docType = String(formData.get('doc_type') ?? '').trim() || 'general';
+  const requirementCode = String(formData.get('requirement_code') ?? '').trim() || null;
+  const reviewNotes = String(formData.get('review_notes') ?? '').trim() || null;
+  const expiresAt = String(formData.get('expires_at') ?? '').trim() || null;
+  const fileEntry = formData.get('file');
+  const typedName = String(formData.get('file_name') ?? '').trim();
+  const fileName = fileEntry instanceof File && fileEntry.name ? fileEntry.name : typedName;
+
+  if (!leadId) return { error: 'Choose a lead before uploading a document.' };
+  if (!fileName) return { error: 'Choose a file or enter a document name.' };
+
+  const supabase = await createClient();
+  const admin = createAdminSupabaseClient();
+  const db = supabase as any;
+  const mutationDb = (admin ?? supabase) as any;
+
+  const { data: lead, error: leadError } = await db
+    .from('leads')
+    .select('id, company_name')
+    .eq('organization_id', workspace.organization.id)
+    .eq('id', leadId)
+    .maybeSingle();
+  if (leadError) return { error: leadError.message };
+  if (!lead?.id) return { error: 'Selected lead is not available in the active organization.' };
+
+  const now = new Date().toISOString();
+  const { data: document, error } = await mutationDb
+    .from('documents')
+    .insert({
+      organization_id: workspace.organization.id,
+      related_entity: 'lead',
+      related_id: leadId,
+      file_name: fileName,
+      file_url: `workspace-upload://${leadId}/${Date.now()}/${encodeURIComponent(fileName)}`,
+      doc_type: docType,
+      uploaded_by: workspace.user.id,
+      uploaded_at: now,
+      version: 1,
+      status: 'submitted',
+      owner_user_id: workspace.user.id,
+      requirement_code: requirementCode,
+      review_notes: reviewNotes,
+      expires_at: expiresAt,
+      version_label: 'global-upload',
+    })
+    .select('id')
+    .single();
+  if (error) return { error: error.message };
+
+  await mutationDb.from('audit_logs').insert({
+    organization_id: workspace.organization.id,
+    actor_user_id: workspace.user.id,
+    action: 'document_uploaded',
+    entity_type: 'document',
+    entity_id: document?.id ?? null,
+    payload: { previous: null, new: { lead_id: leadId, file_name: fileName, status: 'submitted' }, metadata: { source: 'documents_workspace' } },
+  });
+
+  revalidatePath('/documents');
+  revalidatePath('/compliance');
+  revalidatePath(`/leads/${leadId}`);
+  return { success: `Document uploaded for ${lead.company_name ?? 'lead'}.` };
 }
 
 export async function updateDocumentWorkflow(_: ActionState | undefined, formData: FormData): Promise<ActionState> {

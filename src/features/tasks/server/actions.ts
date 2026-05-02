@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { writeAuditLog } from '@/lib/auditLog';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
@@ -82,7 +83,9 @@ export async function saveScheduledTask(_: TaskActionState | undefined, formData
   if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
 
   const supabase = await createClient();
+  const admin = createAdminSupabaseClient();
   const db = supabase as any;
+  const mutationDb = (admin ?? supabase) as any;
 
   const id = String(formData.get('id') ?? '').trim() || null;
   const leadId = String(formData.get('lead_id') ?? '').trim() || null;
@@ -111,16 +114,16 @@ export async function saveScheduledTask(_: TaskActionState | undefined, formData
   if (!leadCheck.ok) return { error: leadCheck.error };
 
   const previousTask = id
-    ? ((await db.from('scheduled_tasks').select('id, lead_id, scheduled_for, status, task_type').eq('id', id).eq('organization_id', workspace.organization.id).maybeSingle()).data ?? null) as Record<string, unknown> | null
+    ? ((await mutationDb.from('scheduled_tasks').select('id, lead_id, scheduled_for, status, task_type').eq('id', id).eq('organization_id', workspace.organization.id).maybeSingle()).data ?? null) as Record<string, unknown> | null
     : null;
 
   let task: TaskRow | null = null;
   if (id) {
-    const { data, error } = await db.from('scheduled_tasks').update(payload).eq('id', id).eq('organization_id', workspace.organization.id).select('id, lead_id, scheduled_for, status, task_type, payload, completed_at, created_at, created_by').single();
+    const { data, error } = await mutationDb.from('scheduled_tasks').update(payload).eq('id', id).eq('organization_id', workspace.organization.id).select('id, lead_id, scheduled_for, status, task_type, payload, completed_at, created_at, created_by').single();
     if (error) return { error: error.message };
     task = data as TaskRow;
   } else {
-    const { data, error } = await db.from('scheduled_tasks').insert(payload).select('id, lead_id, scheduled_for, status, task_type, payload, completed_at, created_at, created_by').single();
+    const { data, error } = await mutationDb.from('scheduled_tasks').insert(payload).select('id, lead_id, scheduled_for, status, task_type, payload, completed_at, created_at, created_by').single();
     if (error) return { error: error.message };
     task = data as TaskRow;
   }
@@ -157,9 +160,11 @@ export async function completeScheduledTask(_: TaskActionState | undefined, form
   const id = String(formData.get('id') ?? '').trim();
   if (!id) return { error: 'Task ID is required.' };
   const supabase = await createClient();
+  const admin = createAdminSupabaseClient();
   const db = supabase as any;
-  const { data: existingTask } = await db.from('scheduled_tasks').select('id, lead_id, scheduled_for, status, task_type').eq('id', id).eq('organization_id', workspace.organization.id).maybeSingle();
-  const { data, error } = await db.from('scheduled_tasks').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id).eq('organization_id', workspace.organization.id).select('id, lead_id, scheduled_for, status, task_type, payload, completed_at, created_at, created_by').single();
+  const mutationDb = (admin ?? supabase) as any;
+  const { data: existingTask } = await mutationDb.from('scheduled_tasks').select('id, lead_id, scheduled_for, status, task_type').eq('id', id).eq('organization_id', workspace.organization.id).maybeSingle();
+  const { data, error } = await mutationDb.from('scheduled_tasks').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id).eq('organization_id', workspace.organization.id).select('id, lead_id, scheduled_for, status, task_type, payload, completed_at, created_at, created_by').single();
   if (error) return { error: error.message };
   await writeTaskAuditLog({
     organizationId: workspace.organization.id,
@@ -181,9 +186,11 @@ export async function reopenScheduledTask(_: TaskActionState | undefined, formDa
   const id = String(formData.get('id') ?? '').trim();
   if (!id) return { error: 'Task ID is required.' };
   const supabase = await createClient();
+  const admin = createAdminSupabaseClient();
   const db = supabase as any;
-  const { data: existingTask } = await db.from('scheduled_tasks').select('id, lead_id, scheduled_for, status, task_type').eq('id', id).eq('organization_id', workspace.organization.id).maybeSingle();
-  const { data, error } = await db.from('scheduled_tasks').update({ status: 'pending', completed_at: null }).eq('id', id).eq('organization_id', workspace.organization.id).select('id, lead_id, scheduled_for, status, task_type, payload, completed_at, created_at, created_by').single();
+  const mutationDb = (admin ?? supabase) as any;
+  const { data: existingTask } = await mutationDb.from('scheduled_tasks').select('id, lead_id, scheduled_for, status, task_type').eq('id', id).eq('organization_id', workspace.organization.id).maybeSingle();
+  const { data, error } = await mutationDb.from('scheduled_tasks').update({ status: 'pending', completed_at: null }).eq('id', id).eq('organization_id', workspace.organization.id).select('id, lead_id, scheduled_for, status, task_type, payload, completed_at, created_at, created_by').single();
   if (error) return { error: error.message };
   await writeTaskAuditLog({
     organizationId: workspace.organization.id,

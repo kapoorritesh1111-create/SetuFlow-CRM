@@ -234,6 +234,7 @@
   <div class="tab" data-tab="prbuilder">&#128736; PR Builder</div>
   <div class="tab" data-tab="chromeguide">&#127758; Chrome Guide</div>
   <div class="tab" data-tab="pass21fixes">Pass 21 TypeFix QA</div>
+  <div class="tab" data-tab="pass22buyer">Pass 22 Buyer Workflow QA</div>
   <div class="tab" data-tab="import" style="background:#fef3c7;color:#92400e;border-bottom:2.5px solid #f59e0b;font-weight:800;">&#8659; Import Results</div>
 </div>
 
@@ -1275,6 +1276,45 @@ Report each as PASS, FAIL, or BLOCKED.</div>
     </tbody>
   </table>
 </div>
+
+
+<div id="tab-pass22buyer" class="panel">
+  <h2 class="section-title">Pass 22 Buyer Workflow QA <span>Added from latest screenshots and buyer capture-to-order test trace; previous results preserved unchanged.</span></h2>
+  <div class="summary-grid">
+    <div class="summary-card c-total"><div class="label">New tests logged</div><div class="value">10</div></div>
+    <div class="summary-card c-pass"><div class="label">Passed / restored</div><div class="value">7</div></div>
+    <div class="summary-card c-fail"><div class="label">Failed before fix</div><div class="value">3</div></div>
+    <div class="summary-card c-pending"><div class="label">Needs retest</div><div class="value">10</div></div>
+  </div>
+  <div class="alert alert-info"><span>ℹ</span><div><strong>Scope:</strong> This tab only records the latest buyer workflow and shared-module evidence. It does not rewrite the older Admin, Shared Modules, Pass 21, or imported result sections.</div></div>
+  <div class="module">
+    <div class="module-header"><div class="module-icon">🛒</div><div class="module-title">Buyer workflow — capture to order retest lane</div><div class="module-url">/leads → /quotes → /approval-send → /orders</div><div class="module-progress">Retest</div><div class="chevron">▼</div></div>
+    <div class="module-body">
+      <div class="test-section-label">Latest failed evidence now fixed in repo</div>
+      <div class="test-row status-fail"><div class="test-num">B22-1</div><div class="test-desc"><div class="test-name">Quick Add Lead save reaches DB but fails on lead_markets.organization_id</div><div class="test-steps">Evidence screenshot shows: null value in column "organization_id" of relation "lead_markets" violates not-null constraint.</div><div class="test-ctas">Fix: direct lead relation fallback now inserts organization_id for lead_markets; trade-event conversion path also patched.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+      <div class="test-row status-fail"><div class="test-num">B22-2</div><div class="test-desc"><div class="test-name">Full buyer capture journey blocked at first lead creation</div><div class="test-steps">Original trace blocked Phase 2 onward because Quick Add Lead could not produce a saved buyer.</div><div class="test-ctas">Retest: create buyer with company, country, contact, email, phone, WhatsApp, deal value, then verify it appears in lead list.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+      <div class="test-row status-pass"><div class="test-num">B22-3</div><div class="test-desc"><div class="test-name">Quick Add form UI remains visible and usable</div><div class="test-steps">Buyer/Supplier toggle, country dropdown, lead source dropdown, After Save dropdown, Cancel, and Previous step were already clickable.</div><div class="test-ctas">Retest to confirm no regression after lead relation fix.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+      <div class="test-row status-pass"><div class="test-num">B22-4</div><div class="test-desc"><div class="test-name">After Save: Open Quote Builder after save</div><div class="test-steps">Screenshot tested both Open Quote Builder after save and Stay in Follow-up paths while save failed at DB relation insert.</div><div class="test-ctas">Retest both options after B22-1.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+      <div class="test-row status-pass"><div class="test-num">B22-5</div><div class="test-desc"><div class="test-name">Continue buyer-to-order journey after lead creation</div><div class="test-steps">Attach Mango Powder 10 cases, Jackfruit Chips 10 cases, Okra Chips 20 units; create RFQ/Quote; approve; send; convert to order/contract; process order.</div><div class="test-ctas">Retest once Quick Add Lead saves.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+    </div>
+  </div>
+  <div class="module">
+    <div class="module-header"><div class="module-icon">🧩</div><div class="module-title">Shared/Admin fixes from latest test file</div><div class="module-url">/admin /documents /compliance /integrations /tasks</div><div class="module-progress">Retest</div><div class="chevron">▼</div></div>
+    <div class="module-body">
+      <div class="test-row status-pass"><div class="test-num">B22-6</div><div class="test-desc"><div class="test-name">Organization profile editable</div><div class="test-steps">AO-2 was blocked because the organization page was read-only.</div><div class="test-ctas">Fix: added editable organization profile form for org name and default currency; verify name persists.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+      <div class="test-row status-fail"><div class="test-num">B22-7</div><div class="test-desc"><div class="test-name">Scheduled task create no longer blocked by RLS</div><div class="test-steps">OR-2 failed with "New row violates row level security policy for table scheduled_tasks".</div><div class="test-ctas">Fix: action validates workspace then writes through privileged mutation client when configured; SQL policy repair included.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+      <div class="test-row status-pass"><div class="test-num">B22-8</div><div class="test-desc"><div class="test-name">Global document upload surface exists</div><div class="test-steps">OR-4 was blocked because /documents had no upload button.</div><div class="test-ctas">Fix: /documents includes lead-linked Global upload card; submit a file and verify it appears as Submitted.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+      <div class="test-row status-fail"><div class="test-num">B22-9</div><div class="test-desc"><div class="test-name">Compliance document status save</div><div class="test-steps">OR-5 failed with "record new has no field updated_at".</div><div class="test-ctas">Fix: DB mitigation adds documents.updated_at and a safe trigger; retest Submitted → Approved.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+      <div class="test-row status-pass"><div class="test-num">B22-10</div><div class="test-desc"><div class="test-name">Integrations route renders connector cards</div><div class="test-steps">AI-3 failed because /integrations redirected to /approval-send.</div><div class="test-ctas">Fix: /integrations now renders dedicated connector cards for Email, Documents, AI, vCard, Trade Events, and Tasks.</div></div><div class="test-status"><span class="badge badge-pending">Retest</span></div><div class="test-note-toggle">≡</div></div>
+    </div>
+  </div>
+  <div class="resolution-block"><div class="resolution-block-header"><h3>Retest checklist</h3></div><div class="resolution-block-body">
+    <div class="resolution-step"><div class="step-num">1</div><div class="step-content">Deploy repo and apply <code>mitigation/supabase/sql/120_pass22_buyer_capture_documents_tasks.sql</code> in Supabase before testing compliance document status.</div></div>
+    <div class="resolution-step"><div class="step-num">2</div><div class="step-content">Create Quick Add buyer with same screenshot fields, select a market/country, save, and verify no <code>lead_markets.organization_id</code> error.</div></div>
+    <div class="resolution-step"><div class="step-num">3</div><div class="step-content">Run buyer-to-order path: qualify/open lead, add products, create RFQ/quote, approve, send, convert to order/contract, and process order.</div></div>
+    <div class="resolution-step"><div class="step-num">4</div><div class="step-content">Retest /tasks Add task, /documents Global upload, /compliance status save, /integrations connector cards, and /admin/organization profile save.</div></div>
+  </div></div>
+</div><!-- end pass22 buyer panel -->
 
 <div id="tab-import" class="panel">
   <div class="section-title">Import Test Results <span>Paste Claude's test report — DCC auto-fills statuses, notes, issues &amp; PRs</span></div>

@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { StateMessage } from '@/components/ui/state-message';
 import type { ComplianceWorkspaceData } from '@/lib/queries/data';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { updateComplianceWorkflow, updateDocumentWorkflow } from '@/features/compliance/server/actions';
+import { updateComplianceWorkflow, updateDocumentWorkflow, uploadWorkspaceDocument } from '@/features/compliance/server/actions';
 import { buildLeadDocumentRequirementState } from '@/lib/document-requirements';
 
 type ComplianceWorkspaceProps = {
@@ -46,6 +46,44 @@ function SubmitButton({ disabled, pendingLabel = 'Saving...', label = 'Save' }: 
     <button type="submit" disabled={disabled || pending} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
       {pending ? pendingLabel : label}
     </button>
+  );
+}
+
+
+function WorkspaceDocumentUploadCard({ data }: { data: ComplianceWorkspaceData }) {
+  const [state, formAction] = useFormState(uploadWorkspaceDocument, INITIAL_ACTION_STATE);
+  return (
+    <section className="rounded-3xl border border-dashed border-slate-300 bg-white p-5 shadow-soft">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Global upload</p>
+          <h3 className="mt-2 text-lg font-semibold text-slate-900">Upload or register a document from the documents desk</h3>
+          <p className="mt-1 text-sm text-slate-600">Attach evidence to a lead without leaving <code>/documents</code>. The record enters review as Submitted.</p>
+        </div>
+        <Link href="/leads" className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:border-brand-200 hover:text-brand-700">Open leads</Link>
+      </div>
+      {state?.error ? <StateMessage className="mt-3" tone="danger" title="Document upload failed" description={state.error} /> : null}
+      {state?.success ? <StateMessage className="mt-3" tone="success" title="Document upload saved" description={state.success} /> : null}
+      <form action={formAction} className="mt-4 grid gap-3 lg:grid-cols-[minmax(180px,1.1fr)_minmax(160px,0.8fr)_minmax(160px,0.8fr)_auto] lg:items-end">
+        <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Lead
+          <select name="lead_id" required className="mt-2 min-h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-700">
+            <option value="">Choose lead</option>
+            {data.leads.map((lead) => <option key={lead.id} value={lead.id}>{lead.company_name}</option>)}
+          </select>
+        </label>
+        <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">File
+          <input name="file" type="file" className="mt-2 min-h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-700" />
+        </label>
+        <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Document type
+          <input name="doc_type" defaultValue="packing_list" className="mt-2 min-h-11 w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-700" />
+        </label>
+        <SubmitButton pendingLabel="Uploading..." label="Upload document" />
+        <input name="file_name" placeholder="Optional manual file name" className="min-h-11 rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 lg:col-span-2" />
+        <input name="requirement_code" placeholder="Requirement code (optional)" className="min-h-11 rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
+        <input name="expires_at" type="date" className="min-h-11 rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
+        <input name="review_notes" placeholder="Review notes" className="min-h-11 rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 lg:col-span-4" />
+      </form>
+    </section>
   );
 }
 
@@ -527,6 +565,8 @@ export function ComplianceWorkspace({ mode = 'compliance', data, canReview = tru
           </section>
         </div>
       </section>
+
+      {isDocumentsMode ? <WorkspaceDocumentUploadCard data={data} /> : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
         <section className="space-y-6">

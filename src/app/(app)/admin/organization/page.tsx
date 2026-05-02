@@ -4,7 +4,7 @@ import { SectionCard } from '@/components/ui/section-card';
 import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';
-import { updateApprovalThreshold } from '@/features/admin/server/actions';
+import { updateApprovalThreshold, updateOrganizationProfile } from '@/features/admin/server/actions';
 import { buildAdminUsersViewModel } from '@/features/admin/view-model';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
@@ -135,6 +135,24 @@ export default async function AdminOrganizationPage() {
       />
 
       {!rows.length ? <EmptyState title="Organization workspace will appear here" description="Once members or invitations exist, this page will summarize organization access, settings readiness, and role coverage." /> : null}
+
+
+      <SectionCard eyebrow="Company profile" title="Editable organization profile" description="Update the company identity fields currently supported by the live organization schema.">
+        <form action={updateOrganizationProfile} className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_180px]">
+          <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Organization name
+            <input name="name" required defaultValue={organization.name ?? ''} className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+          </label>
+          <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Default currency
+            <input name="default_currency" maxLength={3} defaultValue={orgProfile.default_currency ?? 'USD'} className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+          </label>
+          <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 md:col-span-2">Logo URL
+            <input name="logo_url" defaultValue={orgProfile.logo_url ?? ''} placeholder="https://..." className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+          </label>
+          <div className="flex items-end justify-end md:col-span-2">
+            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Save organization profile</button>
+          </div>
+        </form>
+      </SectionCard>
 
       <section className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#ffffff,#f8fafc)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
