@@ -1278,3 +1278,9 @@ This pass resolves all actionable bugs surfaced by the live QA execution of Test
 - Pruned stale/zero-price auto-seeded quote rows from refreshed quote drafts.
 - Added Direct Order panel/action to the inline quote Send Gate.
 - Confirmed Supabase direct-order RPC exists; no SQL mitigation required.
+
+## Pass 23 Lead Delete Build Hotfix
+
+- Fixed Vercel TypeScript build failure in lead delete actions by replacing `workspace.supabase` with the project standard `await createClient()` pattern.
+- Rechecked live Supabase lead foreign keys: `scheduled_tasks.lead_id` now cascades, and lead deletion remains app-safe with compatibility cleanup before deleting the lead.
+

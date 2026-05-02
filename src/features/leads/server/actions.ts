@@ -2366,7 +2366,8 @@ export async function deleteLead(_: ActionState | undefined, formData: FormData)
   const leadId = normalizeLeadInputText(formData.get('lead_id'));
   if (!leadId) return { error: 'Select a lead to delete.' };
 
-  const db = workspace.supabase;
+  const supabase = await createClient();
+  const db = supabase as any;
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
 
@@ -2380,8 +2381,8 @@ export async function deleteLead(_: ActionState | undefined, formData: FormData)
   if (leadError) return { error: leadError.message };
   if (!lead?.id) return { error: 'Lead not found in the active workspace.' };
 
-  // scheduled_tasks.lead_id does not currently cascade in production, so remove
-  // lead-linked scheduled tasks first. Other lead children already cascade from Supabase.
+  // Keep this compatibility cleanup even though production now cascades scheduled_tasks.
+  // It keeps the action safe if a branch/database is behind the latest migration.
   const { error: taskDeleteError } = await db
     .from('scheduled_tasks')
     .delete()
@@ -2423,7 +2424,8 @@ export async function batchDeleteLeads(_: ActionState | undefined, formData: For
   const leadIds = uniqueTrimmed(formData.getAll('lead_ids').map((value) => String(value ?? '')));
   if (!leadIds.length) return { error: 'Select at least one lead to delete.' };
 
-  const db = workspace.supabase;
+  const supabase = await createClient();
+  const db = supabase as any;
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
 
