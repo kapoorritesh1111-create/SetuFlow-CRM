@@ -156,7 +156,7 @@ async function createQuoteDirect(db: any, params: {
       source_fob_usd: line.source_fob_usd ?? null,
       source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null,
       freight_add_on_usd: line.freight_add_on_usd ?? null,
-      final_unit_price: line.unit_price,
+      final_unit_price: line.unit_price ?? 0,
       display_currency: safeQuoteDisplayCurrency(line.currency, safeDisplayCurrency),
       is_overridden: Boolean(line.is_price_overridden),
       override_reason: line.override_reason,
@@ -169,8 +169,6 @@ async function createQuoteDirect(db: any, params: {
       const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
       if (versionLineError) return { data: null, error: versionLineError };
     }
-    const { error: quoteVersionUpdateError } = await db.from('quotes').update({ current_version_id: version.id }).eq('id', quoteId);
-    if (quoteVersionUpdateError) return { data: null, error: quoteVersionUpdateError };
   }
 
   const activity = await db.from('lead_activities').insert({
@@ -248,7 +246,7 @@ async function updateQuoteDirect(db: any, params: {
     }
   }
 
-  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: (line.product_id && productCategoryMap[line.product_id]) ? productCategoryMap[line.product_id] : '', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price, display_currency: safeQuoteDisplayCurrency(line.currency, safeDisplayCurrency), is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
+  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: (line.product_id && productCategoryMap[line.product_id]) ? productCategoryMap[line.product_id] : '', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price ?? 0, display_currency: safeQuoteDisplayCurrency(line.currency, safeDisplayCurrency), is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
   if (versionLines.length) {
     const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
     if (versionLineError) return { data: null, error: versionLineError };
@@ -1566,3 +1564,51 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     mode: 'update',
   };
 }
+
+/**
+ * markQuoteAsDirectOrder — B6 fix
+ * Bypasses external send/accept for direct sales (trade show, phone, WhatsApp).
+ */
+export async function markQuoteAsDirectOrder(_: QuoteActionState | undefined, formData: FormData): Promise<QuoteActionState> {
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
+  const currentUser = workspace.user;
+  const organization = workspace.organization;
+  if (!hasWorkspaceCapability(workspace.currentRoles, 'quote.send')) {
+    return { error: getReadOnlyWorkspaceMessage(workspace.currentRoles, 'quote.send') ?? 'You do not have permission to close orders directly.' };
+  }
+  const quoteId = String(formData.get('quote_id') ?? '').trim();
+  const plainNotes = String(formData.get('notes') ?? '').trim() || 'Marked as direct order — deal closed outside the system.';
+  if (!quoteId) return { error: 'Quote ID is required.' };
+  const supabase = await createClient();
+  const db = supabase as any;
+  const { data: existing, error: existingError } = await db
+    .from('quotes')
+    .select('id, lead_id, organization_id, status, current_version_id, accepted_version_id')
+    .eq('organization_id', organization.id)
+    .eq('id', quoteId)
+    .maybeSingle();
+  if (existingError) return { error: existingError.message };
+  if (!existing) return { error: 'Quote not found.' };
+  const currentStatus = String(existing.status ?? '').trim().toLowerCase();
+  if (currentStatus === 'accepted') return { success: 'Order already exists for this quote.', mode: 'update' };
+  const nowIso = new Date().toISOString();
+  const versionId = existing.accepted_version_id ?? existing.current_version_id ?? null;
+  if (currentStatus !== 'sent') {
+    const { error: sentError } = await db.from('quotes').update({ status: 'sent', accepted_version_id: versionId, updated_at: nowIso }).eq('organization_id', organization.id).eq('id', quoteId);
+    if (sentError) return { error: `Could not mark quote as sent: ${sentError.message}` };
+    if (versionId) { await db.from('quote_versions').update({ status: 'sent', updated_at: nowIso }).eq('id', versionId).eq('quote_id', quoteId); }
+  }
+  const { error: acceptError } = await db.from('quotes').update({ status: 'accepted', accepted_version_id: versionId, updated_at: nowIso }).eq('organization_id', organization.id).eq('id', quoteId);
+  if (acceptError) return { error: `Could not mark quote as accepted: ${acceptError.message}` };
+  if (versionId) { await db.from('quote_versions').update({ status: 'accepted', updated_at: nowIso }).eq('id', versionId).eq('quote_id', quoteId); }
+  const { error: contractError } = await db.rpc('app_ensure_contract_for_accepted_quote_tx', { p_organization_id: organization.id, p_quote_id: quoteId, p_lead_id: existing.lead_id, p_notes: plainNotes });
+  if (contractError) return { error: `Order creation failed: ${contractError.message}` };
+  await writeAuditLog({ organizationId: organization.id, actorUserId: currentUser.id, action: 'quote_accepted', entityType: 'quote', entityId: quoteId, payload: { source: 'markQuoteAsDirectOrder', notes: plainNotes } });
+  revalidateCommercialViews(existing.lead_id);
+  revalidatePath('/orders');
+  revalidatePath('/contracts');
+  return { success: 'Order created. Track it under Orders / Execution.', mode: 'update' };
+}
+
+

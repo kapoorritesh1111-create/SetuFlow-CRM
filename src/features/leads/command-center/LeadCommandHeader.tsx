@@ -113,11 +113,18 @@ export function LeadCommandHeader({
             </div>
             <div>
               <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', letterSpacing: '-.5px' }}>{lead.companyName}</div>
+              {(lead.contactName || (lead as any).jobTitle) ? (
+                <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginTop: '2px' }}>
+                  {lead.contactName ?? ''}
+                  {(lead as any).jobTitle ? <span style={{ fontWeight: 400, color: '#64748b' }}>{lead.contactName ? ' · ' : ''}{(lead as any).jobTitle}</span> : null}
+                </div>
+              ) : null}
               <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>
                 {lead.leadType}
                 {lead.ownerName ? ` · Owner: ${lead.ownerName}` : ''}
                 {lead.sourceLabel ? ` · Source: ${lead.sourceLabel}` : ''}
                 {lead.country ? ` · ${lead.country}` : ''}
+                {lead.email ? ` · ${lead.email}` : ''}
               </div>
             </div>
           </div>

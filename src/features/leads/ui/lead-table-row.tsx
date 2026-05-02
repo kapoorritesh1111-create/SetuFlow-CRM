@@ -28,7 +28,9 @@ export interface LeadTableRowProps {
   handleLeadCommandCenterKeyDown: (event: KeyboardEvent<HTMLElement>, router: ReturnType<typeof useRouter>, href: string) => void;
   openQuoteBuilder?: (leadId: string) => void;
   openQuickEdit?: (leadId: string) => void;
+  onDeleteLead?: (leadId: string, companyName: string) => void;
 }
+
 
 function getLeadInitials(companyName: string) {
   return companyName
@@ -117,6 +119,7 @@ export function LeadTableRow({
   handleLeadCommandCenterKeyDown,
   openQuoteBuilder,
   openQuickEdit,
+  onDeleteLead,
 }: LeadTableRowProps) {
   const [hydratedNowIso, setHydratedNowIso] = useState<string | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -228,7 +231,7 @@ export function LeadTableRow({
         severityBorderClass,
         selected || isSpotlight ? 'bg-blue-50/40' : '',
       ].join(' ')}
-      style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 100px' }}
+      style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 190px' }}
       onClick={(event) => {
         if (shouldIgnoreLeadNavigationTarget(event.target)) return;
         openLeadCommandCenter(router, commandCenterHref);
@@ -361,6 +364,18 @@ export function LeadTableRow({
         >
           Edit
         </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDeleteLead?.(lead.id, lead.company_name);
+          }}
+          className="inline-flex items-center rounded-md border border-rose-200 bg-white px-[8px] py-[4px] text-[10px] font-bold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={!onDeleteLead}
+          title={onDeleteLead ? 'Delete this lead' : 'Lead deletion unavailable'}
+        >
+          Delete
+        </button>
         <div className="relative">
           <button
             type="button"
@@ -411,6 +426,17 @@ export function LeadTableRow({
               >
                 Edit
               </button>
+              <button
+                type="button"
+                disabled={!onDeleteLead}
+                onClick={() => {
+                  setActionsOpen(false);
+                  onDeleteLead?.(lead.id, lead.company_name);
+                }}
+                className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Delete lead
+              </button>
             </div>
           ) : null}
         </div>
@@ -433,7 +459,7 @@ export function LeadTableHeader({
   return (
     <div
       className="grid items-center gap-x-4 border-b border-slate-200 bg-white px-4 py-2"
-      style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 100px' }}
+      style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 190px' }}
     >
       <div className="flex justify-center">
         <input

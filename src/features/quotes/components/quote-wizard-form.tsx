@@ -16,6 +16,7 @@ import { QuoteTrustContractPreview } from "@/features/quotes/components/quote-tr
 import {
   createQuote,
   updateQuoteWorkflow,
+  markQuoteAsDirectOrder,
   type QuoteActionState,
 } from "@/features/quotes/server/actions";
 import {
@@ -4483,6 +4484,39 @@ export function QuoteEditWizardForm({
                   quoteVersions={quoteVersions}
                   mode="send"
                 />
+              </div>
+
+              {/* B6 fix — Direct Order shortcut for deals closed outside the system */}
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Deal closed directly?</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  If this order was agreed at a trade show, by phone, or over WhatsApp without going through the formal send step, use this to create the order record immediately without sending externally.
+                </p>
+                <form
+                  action={async (fd: FormData) => {
+                    fd.set('quote_id', quote.id);
+                    const result = await markQuoteAsDirectOrder(undefined, fd);
+                    if (result?.error) setState((c) => ({ ...c, error: result.error }));
+                    else setState((c) => ({ ...c, success: result?.success ?? 'Order created.' }));
+                  }}
+                  className="mt-3 flex flex-wrap items-center gap-3"
+                >
+                  <input type="hidden" name="quote_id" value={quote.id} />
+                  <input
+                    name="notes"
+                    placeholder="Optional note (e.g. agreed at FoodEx Japan)"
+                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+                  >
+                    ✓ Mark as direct order
+                  </button>
+                </form>
+                {state.success?.includes('Order created') || state.success?.includes('Order already') ? (
+                  <p className="mt-2 text-xs font-semibold text-emerald-700">✅ {state.success} → <a href="/orders" className="underline">Go to Orders</a></p>
+                ) : null}
               </div>
             </SectionCard>
           </WizardStepBody>

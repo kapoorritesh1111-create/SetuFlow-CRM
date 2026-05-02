@@ -214,42 +214,19 @@ async function resolveLeadProductInterestMapping(
     return { productIds: [] as string[], error: 'One or more selected products are not available in the active organization.' };
   }
 
-  if (!categoryIds.length) {
-    return { productIds, error: null as string | null };
+  if (categoryIds.length) {
+    const categoriesResult = await validateOrganizationRecordIds(db, 'product_categories', organizationId, categoryIds);
+    if (categoriesResult.error) {
+      return { productIds: [] as string[], error: categoriesResult.error };
+    }
+    if (categoriesResult.validIds.length !== categoryIds.length) {
+      return { productIds: [] as string[], error: 'One or more selected categories are not available in the active organization.' };
+    }
   }
 
-  const categoriesResult = await validateOrganizationRecordIds(db, 'product_categories', organizationId, categoryIds);
-  if (categoriesResult.error) {
-    return { productIds: [] as string[], error: categoriesResult.error };
-  }
-  if (categoriesResult.validIds.length !== categoryIds.length) {
-    return { productIds: [] as string[], error: 'One or more selected categories are not available in the active organization.' };
-  }
-
-  const { data: categoryProducts, error: categoryProductsError } = await db
-    .from('products')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .in('category_id', categoryIds);
-
-  if (categoryProductsError) {
-    return { productIds: [] as string[], error: categoryProductsError.message };
-  }
-
-  const resolvedProductIds = uniqueTrimmed([
-    ...productIds,
-    ...(categoryProducts ?? []).map((row: { id: string }) => row.id),
-  ]);
-
-  const finalProductsResult = await validateOrganizationRecordIds(db, 'products', organizationId, resolvedProductIds);
-  if (finalProductsResult.error) {
-    return { productIds: [] as string[], error: finalProductsResult.error };
-  }
-  if (finalProductsResult.validIds.length !== resolvedProductIds.length) {
-    return { productIds: [] as string[], error: 'One or more selected products are not available in the active organization.' };
-  }
-
-  return { productIds: resolvedProductIds, error: null as string | null };
+  // Coverage is now product-specific. Category ids are kept only as UI grouping metadata;
+  // they must never expand into every product in the category during lead save or quote seeding.
+  return { productIds, error: null as string | null };
 }
 
 function normalizeIsoDateTime(value: string) {
@@ -1042,11 +1019,38 @@ async function ensureQuoteLineItemsFromLeadCoverage(
       .eq('id', quote.id);
   }
 
-  const existingRowsList = existingRows ?? [];
-  const existingProductIds = new Set(existingRowsList.map((row: { product_id?: string | null }) => row.product_id).filter(Boolean));
-  const missingProductIds = productIds.filter((productId) => !existingProductIds.has(productId));
+  const explicitProductIdSet = new Set(productIds);
+  const isPositivePrice = (value: unknown) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0;
+  };
+  const priceableProductIds = productIds.filter((productId) => isPositivePrice(convertedUnitPrice(baselineByProductId.get(productId))));
 
-  const rowsNeedingHydration = existingRowsList.filter((row: any) => row?.product_id && (Number(row.catalog_price_amount ?? 0) <= 0 || Number(row.unit_price ?? 0) <= 0 || !row.catalog_price_currency));
+  let existingRowsList = existingRows ?? [];
+  const staleSeededRows = existingRowsList.filter((row: any) => row?.product_id && !explicitProductIdSet.has(String(row.product_id)) && String(row.notes ?? '').toLowerCase().includes('seeded from lead coverage'));
+  if (staleSeededRows.length) {
+    await db
+      .from('quote_line_items')
+      .delete()
+      .eq('quote_id', quote.id)
+      .in('id', staleSeededRows.map((row: any) => row.id));
+    existingRowsList = existingRowsList.filter((row: any) => !staleSeededRows.some((stale: any) => stale.id === row.id));
+  }
+
+  const zeroPriceSeededRows = existingRowsList.filter((row: any) => row?.product_id && explicitProductIdSet.has(String(row.product_id)) && String(row.notes ?? '').toLowerCase().includes('seeded from lead coverage') && !isPositivePrice(row.unit_price));
+  if (zeroPriceSeededRows.length) {
+    await db
+      .from('quote_line_items')
+      .delete()
+      .eq('quote_id', quote.id)
+      .in('id', zeroPriceSeededRows.map((row: any) => row.id));
+    existingRowsList = existingRowsList.filter((row: any) => !zeroPriceSeededRows.some((stale: any) => stale.id === row.id));
+  }
+
+  const existingProductIds = new Set(existingRowsList.map((row: { product_id?: string | null }) => row.product_id).filter(Boolean));
+  const missingProductIds = priceableProductIds.filter((productId) => !existingProductIds.has(productId));
+
+  const rowsNeedingHydration = existingRowsList.filter((row: any) => row?.product_id && explicitProductIdSet.has(String(row.product_id)) && (Number(row.catalog_price_amount ?? 0) <= 0 || Number(row.unit_price ?? 0) <= 0 || !row.catalog_price_currency));
   for (const row of rowsNeedingHydration) {
     const baseline = baselineByProductId.get(String(row.product_id));
     if (!baseline) continue;
@@ -1089,12 +1093,32 @@ async function ensureQuoteLineItemsFromLeadCoverage(
   if (currentVersionId) {
     const { data: existingVersionRows, error: existingVersionError } = await db
       .from('quote_version_line_items')
-      .select('id, product_id, product_variant_id, moq, final_unit_price, display_currency')
+      .select('id, product_id, product_variant_id, moq, final_unit_price, display_currency, line_notes')
       .eq('quote_version_id', currentVersionId);
 
     if (!existingVersionError) {
-      const existingVersionRowsList = existingVersionRows ?? [];
-      const versionRowsNeedingHydration = existingVersionRowsList.filter((row: any) => row?.product_id && (Number(row.final_unit_price ?? 0) <= 0 || !row.display_currency || !row.product_variant_id));
+      let existingVersionRowsList = existingVersionRows ?? [];
+      const staleSeededVersionRows = existingVersionRowsList.filter((row: any) => row?.product_id && !explicitProductIdSet.has(String(row.product_id)) && String(row.line_notes ?? '').toLowerCase().includes('seeded from lead coverage'));
+      if (staleSeededVersionRows.length) {
+        await db
+          .from('quote_version_line_items')
+          .delete()
+          .eq('quote_version_id', currentVersionId)
+          .in('id', staleSeededVersionRows.map((row: any) => row.id));
+        existingVersionRowsList = existingVersionRowsList.filter((row: any) => !staleSeededVersionRows.some((stale: any) => stale.id === row.id));
+      }
+
+      const zeroPriceSeededVersionRows = existingVersionRowsList.filter((row: any) => row?.product_id && explicitProductIdSet.has(String(row.product_id)) && String(row.line_notes ?? '').toLowerCase().includes('seeded from lead coverage') && !isPositivePrice(row.final_unit_price));
+      if (zeroPriceSeededVersionRows.length) {
+        await db
+          .from('quote_version_line_items')
+          .delete()
+          .eq('quote_version_id', currentVersionId)
+          .in('id', zeroPriceSeededVersionRows.map((row: any) => row.id));
+        existingVersionRowsList = existingVersionRowsList.filter((row: any) => !zeroPriceSeededVersionRows.some((stale: any) => stale.id === row.id));
+      }
+
+      const versionRowsNeedingHydration = existingVersionRowsList.filter((row: any) => row?.product_id && explicitProductIdSet.has(String(row.product_id)) && (Number(row.final_unit_price ?? 0) <= 0 || !row.display_currency || !row.product_variant_id));
       for (const row of versionRowsNeedingHydration) {
         const baseline = baselineByProductId.get(String(row.product_id));
         if (!baseline) continue;
@@ -2330,6 +2354,121 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
     selectedMarketIds: [...marketIds],
     selectedProductIds: [...productIds],
   };
+}
+
+
+export async function deleteLead(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  if (!hasSupabaseEnv) return { error: 'Supabase environment variables are not configured.' };
+
+  const workspace = await requireWorkspace();
+  if (!workspace) return { error: 'Sign in and select a workspace before deleting leads.' };
+
+  const leadId = normalizeLeadInputText(formData.get('lead_id'));
+  if (!leadId) return { error: 'Select a lead to delete.' };
+
+  const db = workspace.supabase;
+  const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
+
+  const { data: lead, error: leadError } = await db
+    .from('leads')
+    .select('id, company_name, contact_name, lead_type, owner_user_id, stage_id, country, source_label')
+    .eq('organization_id', organizationId)
+    .eq('id', leadId)
+    .maybeSingle();
+
+  if (leadError) return { error: leadError.message };
+  if (!lead?.id) return { error: 'Lead not found in the active workspace.' };
+
+  // scheduled_tasks.lead_id does not currently cascade in production, so remove
+  // lead-linked scheduled tasks first. Other lead children already cascade from Supabase.
+  const { error: taskDeleteError } = await db
+    .from('scheduled_tasks')
+    .delete()
+    .eq('organization_id', organizationId)
+    .eq('lead_id', leadId);
+  if (taskDeleteError) return { error: taskDeleteError.message };
+
+  await writeAuditLog({
+    organizationId,
+    actorUserId,
+    action: 'lead_deleted',
+    entityType: 'lead',
+    entityId: leadId,
+    payload: {
+      previous: lead,
+      new: null,
+      metadata: { source: 'deleteLead', deletion_mode: 'hard_delete_with_cascade' },
+    },
+  });
+
+  const { error: deleteError } = await db
+    .from('leads')
+    .delete()
+    .eq('organization_id', organizationId)
+    .eq('id', leadId);
+
+  if (deleteError) return { error: deleteError.message };
+
+  revalidateLeadSurfaces(leadId);
+  return { success: `${lead.company_name} was deleted.` };
+}
+
+export async function batchDeleteLeads(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  if (!hasSupabaseEnv) return { error: 'Supabase environment variables are not configured.' };
+
+  const workspace = await requireWorkspace();
+  if (!workspace) return { error: 'Sign in and select a workspace before deleting leads.' };
+
+  const leadIds = uniqueTrimmed(formData.getAll('lead_ids').map((value) => String(value ?? '')));
+  if (!leadIds.length) return { error: 'Select at least one lead to delete.' };
+
+  const db = workspace.supabase;
+  const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
+
+  const { data: leads, error: leadsError } = await db
+    .from('leads')
+    .select('id, company_name, contact_name, lead_type, owner_user_id, stage_id, country, source_label')
+    .eq('organization_id', organizationId)
+    .in('id', leadIds);
+
+  if (leadsError) return { error: leadsError.message };
+  const foundLeads = Array.isArray(leads) ? leads : [];
+  if (foundLeads.length !== leadIds.length) {
+    return { error: 'One or more selected leads are not available in the active workspace.' };
+  }
+
+  const { error: taskDeleteError } = await db
+    .from('scheduled_tasks')
+    .delete()
+    .eq('organization_id', organizationId)
+    .in('lead_id', leadIds);
+  if (taskDeleteError) return { error: taskDeleteError.message };
+
+  await Promise.all(foundLeads.map((lead: any) => writeAuditLog({
+    organizationId,
+    actorUserId,
+    action: 'lead_deleted',
+    entityType: 'lead',
+    entityId: lead.id,
+    payload: {
+      previous: lead,
+      new: null,
+      metadata: { source: 'batchDeleteLeads', deletion_mode: 'hard_delete_with_cascade' },
+    },
+  })));
+
+  const { error: deleteError } = await db
+    .from('leads')
+    .delete()
+    .eq('organization_id', organizationId)
+    .in('id', leadIds);
+
+  if (deleteError) return { error: deleteError.message };
+
+  revalidateLeadSurfaces();
+  return { success: `${foundLeads.length} lead${foundLeads.length === 1 ? '' : 's'} deleted.` };
 }
 
 export async function scheduleLeadFollowUp(_: ActionState | undefined, formData: FormData): Promise<ActionState> {

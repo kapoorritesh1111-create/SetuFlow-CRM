@@ -255,6 +255,7 @@ export function LeadDrawer({
   const [sourceLabel, setSourceLabel] = useState<string>(lead?.source_label ?? prefill?.sourceLabel ?? '');
   const [postApplyAssist, setPostApplyAssist] = useState<ContactPostApplyAssistResult | null>(null);
   const [afterSaveGuidance, setAfterSaveGuidance] = useState<ContactAfterSaveGuidanceResult | null>(null);
+  const [lastSavedCompany, setLastSavedCompany] = useState<string | null>(null);
   const [defaultFollowUpLocal, setDefaultFollowUpLocal] = useState('');
   const [quoteActionError, setQuoteActionError] = useState<string | null>(null);
   const [quoteEditorOpen, setQuoteEditorOpen] = useState(false);
@@ -899,6 +900,9 @@ export function LeadDrawer({
         }
 
         if (resetForNextLead) {
+          const savedName = nextState.lead?.company_name ?? companyName;
+          setLastSavedCompany(savedName);
+          setTimeout(() => setLastSavedCompany(null), 5000);
           formElement.reset();
           setLeadType('buyer');
           setCompanyName('');
@@ -1563,6 +1567,62 @@ export function LeadDrawer({
               </div>
             </div>
 
+            {/* Product interest — mapped BEFORE save so qualification can auto-trigger */}
+            <div>
+              <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Product interest</p>
+              <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px' }}>Map at least one product so the lead can auto-qualify after save.</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                {selectedProductIdSet.map((pid) => {
+                  const prod = products.find((p) => p.id === pid);
+                  return prod ? (
+                    <span key={pid} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '999px', background: '#f0f9ff', border: '1px solid #7dd3fc', fontSize: '12px', fontWeight: 600, color: '#0369a1' }}>
+                      {prod.name}
+                      <button type="button" onClick={() => {
+                        setCoverageSelections((current) =>
+                          current.map((sel) => ({ ...sel, productIds: sel.productIds.filter((id) => id !== pid) })).filter((sel) => sel.productIds.length > 0).concat(coverageSelections.every((s) => !s.productIds.includes(pid)) ? [] : [])
+                        );
+                        // Remove cleanly via toggle handler
+                        const sel = coverageSelections.find((s) => s.productIds.includes(pid));
+                        if (sel) handleToggleCoverageProduct(sel.key, pid, false);
+                      }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0369a1', padding: 0, fontSize: '14px', lineHeight: 1 }}>×</button>
+                    </span>
+                  ) : null;
+                })}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const productId = e.target.value;
+                    if (!productId || selectedProductIdSet.includes(productId)) return;
+                    const product = products.find((item) => item.id === productId);
+                    if (coverageSelections.length === 0 || coverageSelections.every((s) => s.productIds.length === 0)) {
+                      setCoverageSelections([createCoverageSelection(product?.category_id ?? '', [productId], 0)]);
+                    } else {
+                      setCoverageSelections((current) => {
+                        const first = current[0];
+                        return [{ ...first, productIds: Array.from(new Set([...first.productIds, productId])) }, ...current.slice(1)];
+                      });
+                    }
+                    e.target.value = '';
+                  }}
+                  style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', background: '#f8fafc', color: selectedProductIdSet.length === 0 ? '#ef4444' : '#1e293b', appearance: 'none', outline: selectedProductIdSet.length === 0 ? '1px solid #fca5a5' : 'none' }}
+                >
+                  <option value="">+ Select product interest…</option>
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id} disabled={selectedProductIdSet.includes(product.id)}>
+                      {product.name}{product.sku ? ` · ${product.sku}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedProductIdSet.length === 0 ? (
+                <p style={{ fontSize: '11px', color: '#ef4444', marginTop: '4px', fontWeight: 600 }}>⚠ No product selected — lead will not auto-qualify</p>
+              ) : (
+                <p style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px', fontWeight: 600 }}>✓ {selectedProductIdSet.length} product{selectedProductIdSet.length > 1 ? 's' : ''} selected</p>
+              )}
+            </div>
+
             {/* Next follow-up */}
             <div>
               <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Next action</p>
@@ -1587,6 +1647,17 @@ export function LeadDrawer({
             </div>
 
               </>
+            ) : null}
+
+            {/* Save confirmation — prevents duplicate submissions */}
+            {lastSavedCompany ? (
+              <div style={{ padding: '12px 16px', borderRadius: '10px', background: '#f0fdf4', border: '1px solid #86efac', fontSize: '13px', color: '#15803d', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>✅</span>
+                <div>
+                  <div>Saved: {lastSavedCompany}</div>
+                  <div style={{ fontSize: '11px', fontWeight: 500, color: '#16a34a', marginTop: '2px' }}>Lead is in your list. Form is ready for the next entry.</div>
+                </div>
+              </div>
             ) : null}
 
             {/* Validation */}

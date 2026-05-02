@@ -364,6 +364,7 @@ export function toLeadProfileSnapshot(data: LeadProfileData): LeadProfileSnapsho
       currentStage: getCurrentStageName(data) ?? undefined,
       sourceLabel: data.lead?.source_label ?? undefined,
       contactName: data.lead?.contact_name ?? null,
+      jobTitle: (data.lead as any)?.job_title ?? null,
       email: data.lead?.email ?? null,
       phone: data.lead?.phone ?? null,
       whatsappNumber: (data.lead as any)?.whatsapp_number ?? null,

@@ -9,7 +9,8 @@ import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
 import { SavedViewsBar, ToolbarActionButton, ToolbarSearchInput, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, saveLeadQuoteDraftPreview, recordLeadQuoteApprovalRequest } from '@/features/leads/server/actions';
+import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, batchDeleteLeads, deleteLead, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, saveLeadQuoteDraftPreview, recordLeadQuoteApprovalRequest } from '@/features/leads/server/actions';
+import { markQuoteAsDirectOrder } from '@/features/quotes/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
 import { JOURNEY_COPY, isPipelineInJourney, type LeadJourney } from '@/lib/journey';
@@ -312,6 +313,8 @@ export function LeadsWorkspace({
   const [batchStageId, setBatchStageId] = useState('');
   const [batchStageState, setBatchStageState] = useState<FormState>({});
   const [isBatchStagePending, startBatchStageTransition] = useTransition();
+  const [deleteState, setDeleteState] = useState<FormState>({});
+  const [isDeletePending, startDeleteTransition] = useTransition();
   const [drawerState, setDrawerState] = useState<DrawerState>({ open: Boolean(initialFastField && initialEventId), mode: 'quick', leadId: null, initialStepId: 'basics' });
   const [spotlightLeadId, setSpotlightLeadId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(50);
@@ -933,6 +936,62 @@ export function LeadsWorkspace({
       });
     });
   };
+
+
+  const handleDeleteLead = (leadId: string, companyName: string) => {
+    if (!canManageLeads) return;
+    const confirmed = window.confirm(`Delete lead "${companyName}"? This removes the lead and related CRM history from the workspace.`);
+    if (!confirmed) return;
+    const formData = new FormData();
+    formData.set('lead_id', leadId);
+    setDeleteState({});
+    startDeleteTransition(() => {
+      void deleteLead(undefined, formData).then((result) => {
+        setDeleteState(result ?? {});
+        if (result?.success) {
+          setWorkspaceLeads((current) => current.filter((lead) => lead.id !== leadId));
+          setWorkspaceLeadMarkets((current) => current.filter((item) => item.lead_id !== leadId));
+          setWorkspaceLeadProductInterests((current) => current.filter((item) => item.lead_id !== leadId));
+          setWorkspaceFollowUps((current) => current.filter((item) => item.lead_id !== leadId));
+          setSelectedLeadIds((current) => current.filter((id) => id !== leadId));
+          if (activeLeadId === leadId) {
+            setActiveView('list');
+            setActiveLeadId(null);
+          }
+          setSpotlightLeadId((current) => current === leadId ? null : current);
+          router.refresh();
+        }
+      });
+    });
+  };
+
+  const handleBatchDeleteLeads = () => {
+    if (!canManageLeads || selectedLeadIds.length === 0) return;
+    const confirmed = window.confirm(`Delete ${selectedLeadIds.length} selected lead${selectedLeadIds.length === 1 ? '' : 's'}? This removes their related CRM history from the workspace.`);
+    if (!confirmed) return;
+    const formData = new FormData();
+    selectedLeadIds.forEach((leadId) => formData.append('lead_ids', leadId));
+    const idsToDelete = new Set(selectedLeadIds);
+    setDeleteState({});
+    startDeleteTransition(() => {
+      void batchDeleteLeads(undefined, formData).then((result) => {
+        setDeleteState(result ?? {});
+        if (result?.success) {
+          setWorkspaceLeads((current) => current.filter((lead) => !idsToDelete.has(lead.id)));
+          setWorkspaceLeadMarkets((current) => current.filter((item) => !idsToDelete.has(item.lead_id)));
+          setWorkspaceLeadProductInterests((current) => current.filter((item) => !idsToDelete.has(item.lead_id)));
+          setWorkspaceFollowUps((current) => current.filter((item) => !idsToDelete.has(item.lead_id ?? '')));
+          setSelectedLeadIds([]);
+          if (activeLeadId && idsToDelete.has(activeLeadId)) {
+            setActiveView('list');
+            setActiveLeadId(null);
+          }
+          setSpotlightLeadId((current) => current && idsToDelete.has(current) ? null : current);
+          router.refresh();
+        }
+      });
+    });
+  };
  
   const openLeadInlineCommandCenter = (leadId: string) => {
     setActiveLeadId(leadId);
@@ -1020,6 +1079,23 @@ export function LeadsWorkspace({
         quoteId: quoteId ?? null,
         note: 'Owner approval requested from the inline Leads Quote Preview.',
       }).then((result) => {
+        setInlineActionState(result ?? {});
+        if (result?.success) router.refresh();
+      });
+    });
+  };
+
+  const handleInlineMarkDirectOrder = (leadId: string, quoteId?: string | null, notes?: string | null) => {
+    if (!quoteId) {
+      setInlineActionState({ error: 'Create or open a quote draft before marking a direct order.' });
+      return;
+    }
+    const formData = new FormData();
+    formData.set('quote_id', quoteId);
+    formData.set('notes', notes?.trim() || 'Marked as direct order from inline quote send gate.');
+    setInlineActionState({});
+    startInlineActionTransition(() => {
+      void markQuoteAsDirectOrder(undefined, formData).then((result) => {
         setInlineActionState(result ?? {});
         if (result?.success) router.refresh();
       });
@@ -1385,6 +1461,7 @@ export function LeadsWorkspace({
           onMoveToStage={handleInlineMoveLeadToStage}
           onOpenOrCreateQuote={handleInlineOpenOrCreateQuote}
           onRequestQuoteApproval={handleInlineRequestQuoteApproval}
+          onMarkDirectOrder={handleInlineMarkDirectOrder}
           onBackToList={() => setActiveView('list')}
           onOpenCommandCenter={() => setActiveView('cc')}
           onOpenQuoteBuilder={() => setActiveView('quote')}
@@ -1424,6 +1501,9 @@ export function LeadsWorkspace({
               style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600, background: 'white', color: '#334155', cursor: 'pointer' }}
             >Apply</button>
             <div style={{ flex: 1 }}></div>
+            <button type="button" onClick={handleBatchDeleteLeads} disabled={isDeletePending || !canManageLeads}
+              style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #fecaca', fontSize: '11px', fontWeight: 700, background: '#fff1f2', color: '#be123c', cursor: isDeletePending ? 'wait' : 'pointer' }}
+            >Delete selected</button>
             <button type="button" onClick={() => setSelectedLeadIds([])}
               style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600, background: 'white', color: '#334155', cursor: 'pointer' }}
             >Clear selection</button>
@@ -1435,6 +1515,8 @@ export function LeadsWorkspace({
         {batchState.success ? <StateMessage title="Bulk follow-up update applied" tone="success" description={batchState.success} /> : null}
         {batchStageState.error ? <StateMessage title="Batch stage move failed" tone="danger" description={batchStageState.error} /> : null}
         {batchStageState.success ? <StateMessage title="Batch stage move applied" tone="success" description={batchStageState.success} /> : null}
+        {deleteState.error ? <StateMessage title="Lead deletion failed" tone="danger" description={deleteState.error} /> : null}
+        {deleteState.success ? <StateMessage title="Lead deleted" tone="success" description={deleteState.success} /> : null}
 
         {/* Lead Table */}
         <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15,23,42,.06)' }}>
@@ -1493,6 +1575,7 @@ export function LeadsWorkspace({
                         }}
                         openQuoteBuilder={openLeadInlineQuoteBuilder}
                         openQuickEdit={(leadId) => openLeadEditDrawer(leadId, 'basics')}
+                        onDeleteLead={canManageLeads ? handleDeleteLead : undefined}
                         shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
                         handleLeadCommandCenterKeyDown={(_event, _router, href) => {
                           const match = /\/leads\/([^/?#]+)/.exec(href);
@@ -1628,6 +1711,7 @@ type InlineLeadWorkspaceProps = {
   onMoveToStage: (leadId: string, stageId: string) => void;
   onOpenOrCreateQuote: (leadId: string, preview?: QuotePreviewSavePayload) => void;
   onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
+  onMarkDirectOrder: (leadId: string, quoteId?: string | null, notes?: string | null) => void;
   onBackToList: () => void;
   onOpenCommandCenter: () => void;
   onOpenQuoteBuilder: () => void;
@@ -1670,6 +1754,7 @@ function InlineLeadWorkspace({
   onMoveToStage,
   onOpenOrCreateQuote,
   onRequestQuoteApproval,
+  onMarkDirectOrder,
   onBackToList,
   onOpenCommandCenter,
   onOpenQuoteBuilder,
@@ -1718,6 +1803,7 @@ function InlineLeadWorkspace({
           isInlineActionPending={isInlineActionPending}
           onOpenOrCreateQuote={onOpenOrCreateQuote}
           onRequestQuoteApproval={onRequestQuoteApproval}
+          onMarkDirectOrder={onMarkDirectOrder}
           onOpenCommandCenter={onOpenCommandCenter}
         />
       ) : (
@@ -2238,6 +2324,7 @@ function InlineQuoteBuilder({
   isInlineActionPending,
   onOpenOrCreateQuote,
   onRequestQuoteApproval,
+  onMarkDirectOrder,
   onOpenCommandCenter,
 }: {
   lead: LeadRow;
@@ -2265,9 +2352,11 @@ function InlineQuoteBuilder({
   isInlineActionPending: boolean;
   onOpenOrCreateQuote: (leadId: string, preview?: QuotePreviewSavePayload) => void;
   onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
+  onMarkDirectOrder: (leadId: string, quoteId?: string | null, notes?: string | null) => void;
   onOpenCommandCenter: () => void;
 }) {
   const [builderStep, setBuilderStep] = React.useState(1);
+  const [directOrderNote, setDirectOrderNote] = React.useState('');
   const steps = ['Product', 'Pricing', 'Terms', 'Review', 'Send gate'];
   const latestQuote = [...quotes].sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
   const latestVersion = latestQuote ? quoteVersions.filter((v) => v.quote_id === latestQuote.id).sort((a, b) => Number(b.version_no ?? 0) - Number(a.version_no ?? 0))[0] : null;
@@ -2705,6 +2794,27 @@ function InlineQuoteBuilder({
                   <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569] disabled:opacity-60">
                     Create/open draft preview
                   </button>
+                </div>
+                <div className="border-t border-[#fecaca] bg-white/70 p-[14px_18px]">
+                  <div className="mb-[8px] text-[13px] font-extrabold text-[#0f172a]">Deal closed directly?</div>
+                  <div className="mb-[10px] text-[11px] leading-[1.6] text-[#64748b]">Use this when the buyer agreed by trade show, phone, or WhatsApp and you need an order record without sending the external quote email.</div>
+                  <div className="flex flex-col gap-[8px] sm:flex-row">
+                    <input
+                      value={directOrderNote}
+                      onChange={(event) => setDirectOrderNote(event.target.value)}
+                      placeholder="Optional note, e.g. agreed at trade show"
+                      className="min-w-0 flex-1 rounded-[8px] border border-[#e2e8f0] bg-white px-[12px] py-[9px] text-[12px] font-semibold text-[#334155] outline-none focus:border-[#0c7fff]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onMarkDirectOrder(lead.id, latestQuote?.id ?? null, directOrderNote)}
+                      disabled={!latestQuote?.id || !pricingReady || isInlineActionPending}
+                      title={!latestQuote?.id ? 'Create or open a quote draft first.' : !pricingReady ? 'Fix missing prices before creating an order.' : 'Create the order directly from this quote.'}
+                      className="rounded-[8px] bg-[#0b2e4a] px-[14px] py-[9px] text-[12px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-[#cbd5e1]"
+                    >
+                      ✓ Mark as direct order
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

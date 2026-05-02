@@ -1,3 +1,24 @@
+# 2026-05-02 — Pass 23 Lead Delete Action
+
+## Summary
+
+Added lead deletion from the Leads workspace so unwanted test leads can be removed safely by operators.
+
+## Files changed
+
+- `src/features/leads/server/actions.ts` — added `deleteLead` and `batchDeleteLeads`, including workspace validation, scheduled task cleanup, audit logging, and revalidation.
+- `src/features/leads/components/leads-workspace.tsx` — wired single-lead and batch delete handlers, confirmation prompts, state messages, and local workspace updates.
+- `src/features/leads/ui/lead-table-row.tsx` — added visible row Delete action and overflow-menu Delete lead action.
+- `mitigation/supabase/sql/125_pass23_lead_delete_cascade.sql` — optional FK hardening for scheduled task cascade behavior.
+- `docs/PASS23_LEAD_DELETE.md` — implementation and testing notes.
+- `CHANGES.md` — this entry.
+
+## Verification
+
+Checked live Supabase lead child constraints before implementation. `scheduled_tasks.lead_id` is the only lead child FK without cascade, so app deletion removes scheduled tasks first. Build not claimed in GPT sandbox. `npm ci` was not run; local `npm run build` could not start because `node_modules` is absent.
+
+---
+
 # 2026-05-01 — Pass 21 TypeScript Build Hotfix
 
 ## Summary
@@ -1185,3 +1206,75 @@ No application runtime code was changed in this pass.
 - Adds audit/activity/communication context for auto-qualification.
 - Fixes coverage save direct inserts to include `organization_id` for `lead_product_interests`.
 - Adds safe Supabase SQL to remove accidental `TestStage` after moving affected leads to `New Lead`.
+
+---
+
+## Pass 23 — UX Fixes: Buyer-to-Order Workflow (QA Test Case 1 Remediation)
+
+**Date:** 2026-05-02
+
+This pass resolves all actionable bugs surfaced by the live QA execution of Test Case 1 (Buyer → Order Processing).
+
+### B7 — Contact name missing from Lead Command Center header ✅ FIXED
+- **Files:** `src/features/leads/command-center/LeadCommandHeader.tsx`, `types.ts`, `adapters.ts`
+- Added `contactName` as a visible name line below the company name (bold, 14px)
+- Added `jobTitle` inline (greyed) next to contact name
+- Added `email` to the metadata strip below
+- Extended `LeadIdentity` type with `jobTitle` field
+- Extended `toLeadProfileSnapshot` adapter to map `job_title` from DB lead row
+
+### B1 — Quick Add drawer had no product interest field ✅ FIXED
+- **File:** `src/features/leads/components/lead-drawer.tsx`
+- Added a full product multi-select section to the quick-mode form
+- Products render as removable chip tags once selected
+- Red warning if no product is selected: "⚠ No product selected — lead will not auto-qualify"
+- Green confirmation once product(s) chosen: "✓ N products selected"
+- Selection feeds directly into `coverageSelections` state so products are persisted on save without requiring the edit wizard
+
+### B2 — Duplicate leads created due to silent form reset after save ✅ FIXED
+- **File:** `src/features/leads/components/lead-drawer.tsx`
+- Added `lastSavedCompany` state (clears after 5 seconds via `setTimeout`)
+- After each quick-mode save, a green "✅ Saved: [Company Name]" confirmation banner appears at the bottom of the form
+- Subtitle: "Lead is in your list. Form is ready for the next entry."
+- Prevents users from re-submitting the same lead thinking the first save failed
+
+### B3 — Quote save crash: `chk_quote_vli_final_price_present` constraint violation ✅ FIXED
+- **File:** `src/features/quotes/server/actions.ts`
+- Changed `final_unit_price: line.unit_price` → `final_unit_price: line.unit_price ?? 0` in both `createQuoteDirect` and `updateQuoteDirect` version line builders
+- Products from coverage with no catalog pricing (e.g. TestProduct, TestProduct2) now default to 0 instead of null, satisfying the DB constraint
+- Saves now succeed; quantity edits persist (resolves B4 as a side-effect)
+
+### B4 — Quantity edits revert to QTY=1 after failed save ✅ FIXED (via B3)
+- Root cause was the constraint error blocking the DB write
+- No separate code change required; fixed as part of B3
+
+### B6 — No "Convert to Order" path when quote cannot be sent ✅ FIXED
+- **Files:** `src/features/quotes/server/actions.ts`, `src/features/quotes/components/quote-wizard-form.tsx`
+- New server action: `markQuoteAsDirectOrder` — marks quote as sent (internally), then accepted, then calls `app_ensure_contract_for_accepted_quote_tx` to create the order record
+- New UI panel on the Send Gate step: "Deal closed directly?" — dark button "✓ Mark as direct order" with optional note field (e.g. "agreed at FoodEx Japan")
+- On success: green inline message with a direct link to `/orders`
+- Fully audited via `writeAuditLog` with `source: 'markQuoteAsDirectOrder'`
+
+### B5 — "Mango Powder" product not found in catalog ⚠ DATA FIX REQUIRED
+- Not a code fix — requires admin action in the live Supabase catalog
+- Go to `/admin/product-management` → rename "Mango Kesar Powder" to "Mango Powder" or add a new "Mango Powder" product entry
+- All test cases using "Mango Powder" will then resolve correctly
+
+### Verification
+- `npm run typecheck` passes with zero errors (one pre-existing `baseUrl` deprecation warning from TS7 preview is suppressed)
+- No schema migrations required — all changes are application-layer only
+- Frozen records Q-00025 and d129ffe2 remain untouched
+
+**Baseline:** `SetuFlow-CRM-Pass22-coverage-first-workflow-hotfix.zip`
+**Next baseline:** `SetuFlow-CRM-Pass23-ux-workflow-fixes.zip`
+
+## Pass 23 Buyer-to-Order workflow stabilization
+
+- Added product interest selection to the Quick Add lead path so coverage can be captured before first save.
+- Added inline saved confirmation for Quick Add captures.
+- Displayed contact name, role, and email in the Lead Command Center header.
+- Changed lead product-interest resolution to keep coverage product-specific and stop category expansion.
+- Updated quote draft seeding to seed only explicit, positively priced products.
+- Pruned stale/zero-price auto-seeded quote rows from refreshed quote drafts.
+- Added Direct Order panel/action to the inline quote Send Gate.
+- Confirmed Supabase direct-order RPC exists; no SQL mitigation required.

@@ -85,6 +85,7 @@ export type LeadIdentity = {
   currentStage?: string
   sourceLabel?: string
   contactName?: string | null
+  jobTitle?: string | null
   email?: string | null
   phone?: string | null
   whatsappNumber?: string | null
