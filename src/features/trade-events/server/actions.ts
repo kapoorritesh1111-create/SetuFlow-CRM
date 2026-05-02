@@ -461,7 +461,7 @@ export async function convertTradeEventEntryToLead(formData: FormData): Promise<
   if (marketId) {
     const { validIds } = await validateOrganizationRecordIds(db, 'markets', workspace.organization.id, [marketId]);
     if (validIds.length === 1) {
-      await db.from('lead_markets').insert({ organization_id: organization.id, lead_id: createdLead.id, market_id: marketId });
+      await db.from('lead_markets').insert({ organization_id: workspace.organization.id, lead_id: createdLead.id, market_id: marketId });
     }
   }
 

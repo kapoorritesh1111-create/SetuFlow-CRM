@@ -296,6 +296,7 @@ async function refreshLeadRelationsDirect(db: any, params: {
 
   if (params.productIds.length) {
     const { error } = await db.from('lead_product_interests').insert(params.productIds.map((productId) => ({
+      organization_id: params.organizationId,
       lead_id: params.leadId,
       product_id: productId,
       interest_type: 'confirmed_product',
@@ -1392,6 +1393,10 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
 
   if (!currentUser || !organization) return { error: 'Not authenticated.' };
 
+  const submittedPhoneCode = normalizeLeadInputText(formData.get('phone_country_code'));
+  const rawPhoneValue = normalizeLeadInputText(formData.get('phone'));
+  const rawWhatsappValue = normalizeLeadInputText(formData.get('whatsapp_number'));
+
   const raw = {
     lead_id: normalizeLeadInputText(formData.get('lead_id')) || undefined,
     lead_type: normalizeLeadInputText(formData.get('lead_type') ?? 'buyer'),
@@ -1399,10 +1404,10 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     contact_name: normalizeLeadInputText(formData.get('contact_name')),
     job_title: normalizeLeadInputText(formData.get('job_title')),
     email: normalizeLeadEmail(formData.get('email')) ?? '',
-    phone: normalizeLeadInputText(formData.get('phone')),
-    whatsapp_number: normalizeLeadInputText(formData.get('whatsapp_number')),
+    phone: rawPhoneValue || submittedPhoneCode,
+    whatsapp_number: rawWhatsappValue || rawPhoneValue || submittedPhoneCode,
     phone_secondary: normalizeLeadInputText(formData.get('phone_secondary')),
-    phone_country_code: normalizeLeadInputText(formData.get('phone_country_code')),
+    phone_country_code: submittedPhoneCode,
     phone_secondary_country_code: normalizeLeadInputText(formData.get('phone_secondary_country_code')),
     website: normalizeLeadInputText(formData.get('website')),
     social_handle: normalizeLeadInputText(formData.get('social_handle')),

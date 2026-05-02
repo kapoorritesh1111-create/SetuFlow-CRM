@@ -1160,3 +1160,11 @@ No application runtime code was changed in this pass.
 - Hardened scheduled task mutations after workspace validation with privileged mutation client fallback when service role is configured.
 - Added editable organization profile form for organization name/default currency.
 - Added Pass 22 Buyer Workflow QA tab to Internal DCC without changing prior result tabs.
+
+## Pass 22 Lead Entry Acceleration Hotfix
+
+- Fixed Vercel build error in trade-event lead conversion by using `workspace.organization.id` for `lead_markets.organization_id`.
+- Quick Lead now auto-prefills phone with the selected country's phone code when the phone field is blank.
+- WhatsApp now mirrors phone by default until the WhatsApp field is manually edited.
+- Save action now defaults WhatsApp to phone when WhatsApp is left blank.
+- Added Supabase mitigation `121_pass22_lead_geo_phone_market_sync.sql` to keep country, market, phone code, phone, WhatsApp, and lead-market relations synchronized.

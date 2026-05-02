@@ -237,6 +237,8 @@ export function LeadDrawer({
   const [email, setEmail] = useState<string>(lead?.email ?? '');
   const [phone, setPhone] = useState<string>(lead?.phone ?? '');
   const [whatsappNumber, setWhatsappNumber] = useState<string>((lead as any)?.whatsapp_number ?? '');
+  const phoneManuallyEditedRef = useRef(Boolean(lead?.phone));
+  const whatsappManuallyEditedRef = useRef(Boolean((lead as any)?.whatsapp_number));
   const [phoneSecondary, setPhoneSecondary] = useState<string>(lead?.phone_secondary ?? '');
   const [website, setWebsite] = useState<string>(lead?.website ?? '');
   const [tradeEventId, setTradeEventId] = useState<string>(lead?.trade_event_id ?? '');
@@ -381,6 +383,8 @@ export function LeadDrawer({
     setEmail(lead?.email ?? '');
     setPhone(lead?.phone ?? '');
     setWhatsappNumber((lead as any)?.whatsapp_number ?? '');
+    phoneManuallyEditedRef.current = Boolean(lead?.phone);
+    whatsappManuallyEditedRef.current = Boolean((lead as any)?.whatsapp_number);
     setTradeEventId(lead?.trade_event_id ?? '');
     setPipelineId(lead?.pipeline_id ?? '');
     setStageId(lead?.stage_id ?? '');
@@ -502,6 +506,20 @@ export function LeadDrawer({
 
   const selectedPhoneCode = selectedCountry?.phone_code ?? lead?.phone_country_code ?? '';
   const autoMarketId = selectedCountry?.market_id ?? null;
+
+  useEffect(() => {
+    if (!open || !selectedPhoneCode || isEditingExistingLead) return;
+    if (!phoneManuallyEditedRef.current && !phone.trim()) {
+      setPhone(selectedPhoneCode);
+    }
+  }, [isEditingExistingLead, open, phone, selectedPhoneCode]);
+
+  useEffect(() => {
+    if (!open || isEditingExistingLead) return;
+    if (!whatsappManuallyEditedRef.current && phone.trim()) {
+      setWhatsappNumber(phone);
+    }
+  }, [isEditingExistingLead, open, phone]);
 
   const selectedCategoryIds = useMemo(
     () => coverageSelections.map((selection) => selection.categoryId).filter(Boolean),
@@ -815,8 +833,10 @@ export function LeadDrawer({
     formData.set('contact_name', contactName);
     formData.set('job_title', jobTitle);
     formData.set('email', email);
-    formData.set('phone', phone);
-    formData.set('whatsapp_number', whatsappNumber);
+    const phoneForSave = phone.trim() || selectedPhoneCode;
+    const whatsappForSave = whatsappNumber.trim() || phoneForSave;
+    formData.set('phone', phoneForSave);
+    formData.set('whatsapp_number', whatsappForSave);
     formData.set('phone_secondary', phoneSecondary);
     formData.set('website', website);
     formData.set('trade_event_id', tradeEventId);
@@ -1443,7 +1463,16 @@ export function LeadDrawer({
                 </div>
                 <div>
                   <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Country *</label>
-                  <select name="country_id" value={countryId} onChange={(e) => setCountryId(e.target.value)} required
+                  <select name="country_id" value={countryId} onChange={(e) => {
+                    const nextCountryId = e.target.value;
+                    setCountryId(nextCountryId);
+                    const nextCountry = countries.find((item) => item.id === nextCountryId);
+                    const nextPhoneCode = nextCountry?.phone_code ?? '';
+                    if (nextPhoneCode && !isEditingExistingLead && !phoneManuallyEditedRef.current) {
+                      setPhone(nextPhoneCode);
+                      if (!whatsappManuallyEditedRef.current) setWhatsappNumber(nextPhoneCode);
+                    }
+                  }} required
                     style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', background: '#f8fafc', color: '#1e293b', appearance: 'none' }}
                   >
                     <option value="">Select country…</option>
@@ -1472,13 +1501,13 @@ export function LeadDrawer({
                     style={{ width: '100%', minHeight: '44px', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
                   />
                   <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginTop: '8px', marginBottom: '4px' }}>📱 WhatsApp</label>
-                  <input name="whatsapp_number" inputMode="tel" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} placeholder="+91 98765 43210"
+                  <input name="whatsapp_number" inputMode="tel" value={whatsappNumber} onChange={(e) => { whatsappManuallyEditedRef.current = true; setWhatsappNumber(e.target.value); }} placeholder={selectedPhoneCode ? `${selectedPhoneCode} WhatsApp number` : '+91 98765 43210'}
                     style={{ width: '100%', minHeight: '44px', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Phone</label>
-                  <input name="phone" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+49 151…"
+                  <input name="phone" inputMode="tel" value={phone} onChange={(e) => { phoneManuallyEditedRef.current = true; setPhone(e.target.value); if (!whatsappManuallyEditedRef.current) setWhatsappNumber(e.target.value); }} placeholder={selectedPhoneCode ? `${selectedPhoneCode} phone number` : '+49 151…'}
                     style={{ width: '100%', minHeight: '44px', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
                   />
                 </div>
