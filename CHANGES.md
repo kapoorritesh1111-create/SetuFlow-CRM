@@ -1,3 +1,44 @@
+# 2026-05-02 - Premium Mobile Role-Aware Leads and Branding Pass
+
+## Summary
+
+Expanded the premium mobile prototype with on-the-go existing lead management, role-aware lead visibility, real SETU Flow branding, and light/dark mobile appearance previews. The customer-facing HTML prototype no longer shows engineering/dev language and now demonstrates how owner/admin, manager, and member lead views should behave on mobile.
+
+## Files changed
+
+- `public/internal-dcc/mobile-blueprint.html` - added real logo branding, Current Leads screen, role switcher, searchable lead status cards, light/dark settings previews, and cleaned customer-facing copy.
+- `public/internal-dcc/index.html` - updated Mobile App v1 DCC tab with role visibility rules, lead-management mapping, and acceptance criteria.
+- `public/internal-dcc/mobile-patterns.md` - added role-aware lead management, branded shell, appearance, and navigation guidance.
+- `public/internal-dcc/mobile-tokens.json` - expanded mobile tokens and metadata for role visibility, lead statuses, and appearance modes.
+- `public/setuflow-architecture.html` - updated root architecture HTML with the premium mobile direction.
+- `MOBILE_README.md` - added QA plan and next handoff prompt for route implementation.
+
+## Verification
+
+Static mobile/DCC/root HTML updates only. Desktop routes and desktop UI files were not modified. Existing checked-in test suite should remain green.
+
+---
+
+# 2026-05-02 - Premium Mobile Prototype Refinement
+
+## Summary
+
+Refined the mobile prototype and DCC into a more premium 2026 direction. This pass makes the mobile experience feel more differentiated by elevating the visual language, making buyer and supplier capture first-class flows, and introducing modern 3D-style icon guidance while preserving the additive, desktop-safe architecture.
+
+## Files changed
+
+- `public/internal-dcc/mobile-blueprint.html` - upgraded the prototype with a premium shell, buyer/supplier quick actions, modern 3D-style icon treatment, improved home dashboard, and separate buyer/supplier save flows.
+- `public/internal-dcc/index.html` - refreshed the Mobile App v1 DCC tab to reflect the premium direction, buyer/supplier workflow mapping, and updated implementation guidance.
+- `public/internal-dcc/mobile-patterns.md` - expanded mobile patterns, premium principles, components, and Northstar alignment.
+- `public/internal-dcc/mobile-tokens.json` - added premium color, gradient, shadow, and workflow metadata for the mobile token set.
+- `MOBILE_README.md` - updated rollout, test plan, and demo guidance for the premium mobile pass.
+
+## Verification
+
+Static DCC/mobile updates only. Desktop routes were not modified. Existing repo tests should continue to pass because no production desktop route or app-shell contract was changed in this refinement pass.
+
+---
+
 ## Pass 23 Lead Delete Null Guard Build Hotfix
 
 - Fixed Vercel typecheck failure in lead delete actions by guarding nullable workspace user/organization before reading IDs.
@@ -1289,3 +1330,46 @@ This pass resolves all actionable bugs surfaced by the live QA execution of Test
 - Fixed Vercel TypeScript build failure in lead delete actions by replacing `workspace.supabase` with the project standard `await createClient()` pattern.
 - Rechecked live Supabase lead foreign keys: `scheduled_tasks.lead_id` now cascades, and lead deletion remains app-safe with compatibility cleanup before deleting the lead.
 
+
+
+## Mobile App v1 Prototype / DCC Update
+
+- Added `public/internal-dcc/mobile-blueprint.html` as an isolated, interactive mobile-safe app blueprint.
+- Added DCC mobile documentation in `public/internal-dcc/mobile-patterns.md` and machine-readable tokens in `public/internal-dcc/mobile-tokens.json`.
+- Updated `public/internal-dcc/index.html` with the Mobile App v1 tab covering Mobile Patterns, Mobile Tokens, Mobile Components, Mobile Navigation, Mobile Workflows, Northstar mapping, rollout, and QA checklist.
+- Added `MOBILE_README.md` with feature flag guidance (`feature/mobile_app_v1`), migration plan, PWA/offline strategy, acceptance criteria, and QA demo script.
+- Desktop routes and core desktop UI files intentionally unchanged; mobile prototype is additive and isolated.
+
+# 2026-05-02 - Mobile App v1 Real Routes and Role-Aware Leads
+
+## Summary
+
+Converted the approved premium mobile blueprint into isolated real Next.js mobile routes behind `feature/mobile_app_v1`. Added reusable mobile components, role-aware lead visibility, mobile search/filter coverage, light/dark appearance preview, DCC updates, and regression tests while keeping desktop routes and desktop UI unchanged.
+
+## Files added
+
+- `src/app/(mobile)/mobile/layout.tsx`
+- `src/app/(mobile)/mobile/page.tsx`
+- `src/app/(mobile)/mobile/leads/page.tsx`
+- `src/app/(mobile)/mobile/quote/page.tsx`
+- `src/app/(mobile)/mobile/capture/page.tsx`
+- `src/app/(mobile)/mobile/notifications/page.tsx`
+- `src/app/(mobile)/mobile/settings/page.tsx`
+- `src/features/mobile/components/*`
+- `src/features/mobile/lib/mobile-feature-flag.ts`
+- `src/features/mobile/lib/role-aware-leads.ts`
+- `tests/mobile-route-contract.test.mjs`
+- `tests/mobile-role-aware-leads.test.mjs`
+
+## Files updated
+
+- `package.json`
+- `MOBILE_README.md`
+- `public/internal-dcc/mobile-patterns.md`
+- `CHANGES.md`
+
+## Verification
+
+`npm test` includes the new mobile route and role visibility checks.
+
+---

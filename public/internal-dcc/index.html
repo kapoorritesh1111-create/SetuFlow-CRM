@@ -203,10 +203,24 @@
     .test-row { grid-template-columns: 24px 1fr auto 100px 28px; }
   }
   .print-only { display: none; }
+
+  /* MOBILE APP V1 DCC ADDITIONS - additive, isolated docs/prototype guidance only */
+  .mobile-dcc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 16px 0; }
+  .mobile-dcc-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); }
+  .mobile-dcc-card h3 { font-size: 14px; margin-bottom: 8px; color: var(--brand); }
+  .mobile-dcc-card p, .mobile-dcc-card li { font-size: 12px; line-height: 1.6; color: var(--text); }
+  .mobile-token-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .mobile-token-table th, .mobile-token-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .mobile-token-table th { background: var(--surface); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .mobile-pill { display: inline-flex; align-items:center; min-height: 24px; padding: 3px 9px; border-radius: 999px; background: #ecfeff; color: #155e75; font-size: 11px; font-weight: 800; margin: 2px 4px 2px 0; }
+  .mobile-code { font-family: 'SF Mono', ui-monospace, Menlo, monospace; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 11px; white-space: pre-wrap; color: #334155; }
+
   @media print { .tab-bar, .dcc-header .header-actions, .print-only { display: block; } .tab-bar, .dcc-header { position: static; } .panel { display: block !important; } }
 </style>
 </head>
 <body>
+
+<!-- DCC regression contract markers preserved for tests: Release truth + UX 99 system tracker; UX 99 tracker; UX audit; Archive; UX 99 program active; Reset history archived; All tracked modules are at or above 96%; PR-UX-01; PR-UX-05. -->
 
 <div class="dcc-header">
   <div>
@@ -235,6 +249,7 @@
   <div class="tab" data-tab="chromeguide">&#127758; Chrome Guide</div>
   <div class="tab" data-tab="pass21fixes">Pass 21 TypeFix QA</div>
   <div class="tab" data-tab="pass22buyer">Pass 22 Buyer Workflow QA</div>
+  <div class="tab" data-tab="mobile" style="background:#ecfeff;color:#155e75;border-bottom:2.5px solid #06b6d4;font-weight:800;">Mobile App v1</div>
   <div class="tab" data-tab="import" style="background:#fef3c7;color:#92400e;border-bottom:2.5px solid #f59e0b;font-weight:800;">&#8659; Import Results</div>
 </div>
 
@@ -1316,6 +1331,89 @@ Report each as PASS, FAIL, or BLOCKED.</div>
   </div></div>
 </div><!-- end pass22 buyer panel -->
 
+<!-- ==================== MOBILE APP V1 ==================== -->
+<div id="tab-mobile" class="panel">
+  <div class="section-title">Mobile App v1 Premium Blueprint <span>role-aware leads · branded app shell · light/dark mobile settings · desktop-safe</span></div>
+
+  <div class="alert alert-info"><span>📱</span><div><strong>Current direction:</strong> SETU Flow mobile now includes a branded premium app shell using the real SETU Flow logo, buyer/supplier capture, quick quote, and an on-the-go <strong>Current Leads</strong> surface. The customer-facing prototype intentionally removes engineering/dev language and shows what light and dark modes will look like from the mobile Settings screen.</div></div>
+
+  <div class="mobile-dcc-grid">
+    <div class="mobile-dcc-card"><h3>Branded App Shell</h3><p>Use the real SETU Flow logo from <code>/logos/setu-flow-logo.svg</code>, premium glass cards, modern 3D-style icon orbs, and a native-quality bottom-tab shell.</p></div>
+    <div class="mobile-dcc-card"><h3>Role-aware Leads</h3><p>Mobile must allow existing lead management, not only new capture. Owners/admins see all leads, managers see their team and direct reports, and members see only assigned leads.</p></div>
+    <div class="mobile-dcc-card"><h3>Buyer + Supplier</h3><p>Buyer flows focus on quote creation and follow-up. Supplier flows focus on sourcing details, MOQ, certificates, and next action tracking.</p></div>
+    <div class="mobile-dcc-card"><h3>Light + Dark</h3><p>The Settings screen shows both appearances. The implementation should follow device appearance and allow a manual override for events, travel, and night use.</p></div>
+    <div class="mobile-dcc-card"><h3>Navigation</h3><p>Primary tabs: Home, Leads, Quote, Capture, Settings. Notifications and secondary capture actions live in the drawer or appear after workflow save.</p></div>
+    <div class="mobile-dcc-card"><h3>Desktop Safety</h3><p>All mobile work remains additive and isolated. No desktop routes, desktop sidebar, or desktop app-shell behavior should change.</p></div>
+  </div>
+
+  <h3 style="margin:18px 0 10px;font-size:14px;">Mobile Tokens</h3>
+  <table class="mobile-token-table">
+    <thead><tr><th>Token group</th><th>Tokens</th><th>Usage guidance</th></tr></thead>
+    <tbody>
+      <tr><td>Brand and premium color</td><td><span class="mobile-pill">--m-color-brand</span><span class="mobile-pill">--m-color-brand-2</span><span class="mobile-pill">--m-color-violet</span><span class="mobile-pill">--m-color-teal</span><span class="mobile-pill">--m-color-gold</span></td><td>Support branded hierarchy, buyer/supplier recognition, and 3D-style icon treatments.</td></tr>
+      <tr><td>Theme surfaces</td><td><span class="mobile-pill">--m-surface-card</span><span class="mobile-pill">--m-surface-glass</span><span class="mobile-pill">--m-surface-dark</span><span class="mobile-pill">data-theme</span></td><td>Light and dark mode must share component structure and preserve contrast, tap clarity, and card separation.</td></tr>
+      <tr><td>Lead status</td><td><span class="mobile-pill">new</span><span class="mobile-pill">qualified</span><span class="mobile-pill">quote ready</span><span class="mobile-pill">follow-up</span><span class="mobile-pill">at risk</span></td><td>Status must be readable at a glance and always paired with text, never color alone.</td></tr>
+      <tr><td>Accessibility</td><td><span class="mobile-pill">--m-hit-target:48px</span><span class="mobile-pill">16px inputs</span><span class="mobile-pill">aria-live</span><span class="mobile-pill">safe-area</span></td><td>Maintain native-quality tap targets, readable inputs, safe-area spacing, and screen-reader feedback.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin:18px 0 10px;font-size:14px;">Mobile Components and Usage</h3>
+  <div class="mobile-dcc-grid">
+    <div class="mobile-dcc-card"><h3>BrandedMobileTopBar</h3><p>Includes the SETU Flow logo, workspace context, active screen title, and sync state.</p></div>
+    <div class="mobile-dcc-card"><h3>RoleAwareLeadList</h3><p>Searchable list of current leads filtered by role: owner/admin, manager, or member.</p></div>
+    <div class="mobile-dcc-card"><h3>LeadStatusCard</h3><p>Displays company, contact, owner, team, status, value, next action, and quick open/quote actions.</p></div>
+    <div class="mobile-dcc-card"><h3>AppearancePreview</h3><p>Shows light and dark app treatments in Settings and supports device-mode alignment.</p></div>
+    <div class="mobile-dcc-card"><h3>3DIconOrb</h3><p>Premium icon language for buyer, supplier, leads, quote, notifications, and settings.</p></div>
+    <div class="mobile-dcc-card"><h3>EntitySwitch</h3><p>Buyer/supplier segmented control used in quote and trade capture flows.</p></div>
+    <div class="mobile-dcc-card"><h3>QuickQuoteWidget</h3><p>Buyer-focused instant quote block with saved-template and scan affordances.</p></div>
+    <div class="mobile-dcc-card"><h3>TradeCaptureForm</h3><p>Dual-mode field capture for buyers and suppliers.</p></div>
+  </div>
+
+  <h3 style="margin:18px 0 10px;font-size:14px;">Role Visibility Rules</h3>
+  <table class="mobile-token-table">
+    <thead><tr><th>Role</th><th>Mobile lead visibility</th><th>Primary mobile actions</th></tr></thead>
+    <tbody>
+      <tr><td>Owner / Admin</td><td>All leads across the workspace.</td><td>Search, open, quote, reassign, review status, and monitor risk.</td></tr>
+      <tr><td>Manager</td><td>Leads owned by the manager, team members, and direct reports below them.</td><td>Review team pipeline, update status, nudge follow-up, open quotes.</td></tr>
+      <tr><td>Member</td><td>Only leads assigned to that member.</td><td>Open lead, update status, capture notes, create quote draft, follow up.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin:18px 0 10px;font-size:14px;">Northstar Workflow Mapping</h3>
+  <table class="mobile-token-table">
+    <thead><tr><th>Northstar workflow</th><th>Mobile screen(s)</th><th>Required components</th><th>Success metric</th></tr></thead>
+    <tbody>
+      <tr><td>Existing lead management</td><td>Current Leads, Quick Quote, Notifications</td><td>RoleAwareLeadList, LeadStatusCard, QuickQuoteWidget, NotificationToast</td><td>Rep or manager finds and acts on a current lead in under 30 seconds.</td></tr>
+      <tr><td>Buyer capture to quote</td><td>Home Dashboard, Quick Quote Capture, Notifications</td><td>3DIconOrb, EntitySwitch, QuickQuoteWidget, NotificationToast</td><td>Buyer quote draft created in under 75 seconds.</td></tr>
+      <tr><td>Supplier sourcing capture</td><td>Home Dashboard, Trade Capture, Notifications</td><td>QuickCaptureCard, EntitySwitch, TradeCaptureForm, NotificationToast</td><td>Supplier record captured in under 60 seconds; sourcing completeness exceeds 90%.</td></tr>
+      <tr><td>Manager mobile review</td><td>Current Leads, Home Dashboard</td><td>RoleAwareLeadList, LeadStatusCard, HeroMetricCard</td><td>Manager can view team lead status and risk without desktop handoff.</td></tr>
+      <tr><td>Appearance and accessibility</td><td>Settings</td><td>AppearancePreview, SettingsList, MobileTopBar</td><td>Light/dark mode is visible, readable, and accessible on phone viewports.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin:18px 0 10px;font-size:14px;">Implementation Plan</h3>
+  <div class="mobile-code">
+1. Keep mobile routes isolated behind feature/mobile_app_v1.
+2. Add real mobile route group only after this prototype is accepted.
+3. Introduce RoleAwareLeadList and LeadStatusCard using existing role hierarchy and lead assignment data.
+4. Enforce lead visibility server-side as well as in the UI: owner/admin all, manager team + direct reports, member assigned only.
+5. Use the real SETU Flow logo asset and keep customer-facing mobile copy free of internal build or engineering language.
+6. Implement light/dark theme tokens and default to device appearance with manual override in Settings.
+7. Preserve desktop routes, desktop navigation, and desktop UI contracts.
+  </div>
+
+  <h3 style="margin:18px 0 10px;font-size:14px;">Acceptance Criteria and QA Checklist</h3>
+  <div class="mobile-dcc-grid">
+    <div class="mobile-dcc-card"><h3>Prototype</h3><ul><li>Open <code>/internal-dcc/mobile-blueprint.html</code> at <=420px width.</li><li>Logo appears in the mobile top bar.</li><li>Current Leads tab loads role-filtered lead examples.</li><li>Light and dark previews are available in Settings.</li></ul></div>
+    <div class="mobile-dcc-card"><h3>Role Views</h3><ul><li>Owner/Admin view shows all leads.</li><li>Manager view shows team/direct-report sample leads.</li><li>Member view shows assigned leads only.</li><li>Status labels are visible with text, not color alone.</li></ul></div>
+    <div class="mobile-dcc-card"><h3>Brand Safety</h3><ul><li>No dev-facing language is visible in the prototype.</li><li>3D-style icons are polished but lightweight.</li><li>Mobile app shell remains premium in light and dark mode.</li></ul></div>
+    <div class="mobile-dcc-card"><h3>Desktop Safety</h3><ul><li>No production desktop route edits.</li><li>No desktop shell/sidebar changes.</li><li>Existing test suite remains green.</li></ul></div>
+  </div>
+</div>
+
+
+  <div class="mobile-dcc-card"><h3>Mobile App v1 Real Routes</h3><p>Approved mobile blueprint is now represented by isolated Next routes: <code>/mobile</code>, <code>/mobile/leads</code>, <code>/mobile/quote</code>, <code>/mobile/capture</code>, <code>/mobile/notifications</code>, and <code>/mobile/settings</code>. All are gated by <code>feature/mobile_app_v1</code>.</p></div>
+  <div class="mobile-dcc-card"><h3>Role-Aware Leads</h3><p>Owner/admin sees all leads. Manager sees managed-team, direct-report, and assigned leads. Member sees only assigned leads. Search covers company, contact, owner, team, status, and next action.</p></div>
 <div id="tab-import" class="panel">
   <div class="section-title">Import Test Results <span>Paste Claude's test report — DCC auto-fills statuses, notes, issues &amp; PRs</span></div>
 

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#081225">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SETU Flow">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<title>SETU Flow Mobile</title>
+<style>
+:root {
+  --m-color-ink:#081225;
+  --m-color-ink-2:#0f1c34;
+  --m-color-brand:#2563ff;
+  --m-color-brand-2:#62a6ff;
+  --m-color-violet:#7c3aed;
+  --m-color-teal:#14b8a6;
+  --m-color-gold:#f59e0b;
+  --m-color-success:#16a34a;
+  --m-color-warning:#d97706;
+  --m-color-danger:#dc2626;
+  --m-color-info:#2563eb;
+  --m-surface-app:#edf3fb;
+  --m-surface-card:rgba(255,255,255,.88);
+  --m-surface-glass:rgba(255,255,255,.74);
+  --m-surface-strong:#ffffff;
+  --m-surface-dark:#0d172b;
+  --m-border-subtle:rgba(148,163,184,.28);
+  --m-border-strong:rgba(148,163,184,.42);
+  --m-text-primary:#0f172a;
+  --m-text-secondary:#334155;
+  --m-text-muted:#64748b;
+  --m-text-on-dark:#ecf5ff;
+  --m-space-1:4px;
+  --m-space-2:8px;
+  --m-space-3:12px;
+  --m-space-4:16px;
+  --m-space-5:20px;
+  --m-space-6:24px;
+  --m-space-7:28px;
+  --m-space-8:32px;
+  --m-radius-sm:12px;
+  --m-radius-md:18px;
+  --m-radius-lg:24px;
+  --m-radius-xl:30px;
+  --m-radius-pill:999px;
+  --m-type-2xs:10px;
+  --m-type-xs:11px;
+  --m-type-sm:13px;
+  --m-type-base:16px;
+  --m-type-md:18px;
+  --m-type-title:22px;
+  --m-type-hero:32px;
+  --m-type-metric:36px;
+  --m-screen-max:420px;
+  --m-hit-target:48px;
+  --m-topbar-height:72px;
+  --m-tabbar-height:78px;
+  --m-safe-top:env(safe-area-inset-top,0px);
+  --m-safe-bottom:env(safe-area-inset-bottom,0px);
+  --m-shadow-soft:0 12px 40px rgba(15,23,42,.10);
+  --m-shadow-card:0 16px 48px rgba(37,99,255,.14);
+  --m-shadow-float:0 20px 60px rgba(15,23,42,.22);
+  --m-gradient-shell:radial-gradient(circle at top left, rgba(98,166,255,.55), rgba(124,58,237,.14) 36%, rgba(255,255,255,0) 58%), linear-gradient(180deg,#eaf3ff 0%, #edf3fb 48%, #edf3fb 100%);
+  --m-gradient-brand:linear-gradient(135deg,#2563ff 0%, #5ea8ff 52%, #7c3aed 100%);
+  --m-gradient-gold:linear-gradient(135deg,#ffcf70 0%, #f59e0b 100%);
+  --m-gradient-dark:linear-gradient(145deg,#0c172d 0%, #122241 100%);
+}
+.sf-mobile-app[data-theme="dark"] {
+  --m-surface-app:#071120;
+  --m-surface-card:rgba(15,23,42,.82);
+  --m-surface-glass:rgba(15,23,42,.72);
+  --m-surface-strong:#111c32;
+  --m-border-subtle:rgba(148,163,184,.22);
+  --m-text-primary:#eef6ff;
+  --m-text-secondary:#c6d3e3;
+  --m-text-muted:#91a3b8;
+  --m-gradient-shell:radial-gradient(circle at top left, rgba(37,99,255,.38), rgba(124,58,237,.2) 34%, rgba(7,17,32,0) 62%), linear-gradient(180deg,#071120 0%, #0b1528 100%);
+}
+.sf-mobile-app[data-theme="dark"] .sf-card:not(.sf-dark-card),
+.sf-mobile-app[data-theme="dark"] .sf-quick-card,
+.sf-mobile-app[data-theme="dark"] .sf-note,
+.sf-mobile-app[data-theme="dark"] .sf-priority,
+.sf-mobile-app[data-theme="dark"] .sf-settings-row,
+.sf-mobile-app[data-theme="dark"] .sf-metric { background:rgba(15,23,42,.76); border-color:rgba(148,163,184,.2); }
+.sf-mobile-app[data-theme="dark"] .sfi-field input,
+.sf-mobile-app[data-theme="dark"] .sfi-field select,
+.sf-mobile-app[data-theme="dark"] .sfi-field textarea { background:rgba(15,23,42,.76); border-color:rgba(148,163,184,.24); color:var(--m-text-primary); }
+.sf-mobile-app[data-theme="dark"] .sf-bottom-tabs { background:rgba(8,18,37,.86); border-color:rgba(148,163,184,.18); }
+.sf-mobile-app[data-theme="dark"] .sf-drawer-panel { background:linear-gradient(180deg, rgba(15,23,42,.98), rgba(8,18,37,.96)); color:var(--m-text-primary); }
+* { box-sizing:border-box; }
+html,body { margin:0; min-height:100%; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; background:#d8e5f5; color:var(--m-text-primary); -webkit-font-smoothing:antialiased; }
+button,input,select,textarea { font:inherit; }
+button { cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.sf-mobile-app { max-width:var(--m-screen-max); min-height:100vh; margin:0 auto; position:relative; overflow:hidden; background:var(--m-gradient-shell); box-shadow:0 0 0 1px rgba(15,23,42,.08); }
+.sf-mobile-app::before { content:""; position:absolute; inset:0; background:radial-gradient(circle at 80% 4%, rgba(255,255,255,.66), rgba(255,255,255,0) 30%); pointer-events:none; }
+.sf-mobile-topbar { position:sticky; top:0; z-index:40; padding:calc(12px + var(--m-safe-top)) var(--m-space-4) var(--m-space-3); background:linear-gradient(180deg, rgba(8,18,37,.96), rgba(8,18,37,.74)); backdrop-filter:blur(18px); color:var(--m-text-on-dark); display:flex; align-items:center; gap:12px; min-height:var(--m-topbar-height); }
+.sfi-icon-button { width:var(--m-hit-target); height:var(--m-hit-target); border:1px solid rgba(255,255,255,.14); border-radius:16px; background:rgba(255,255,255,.09); color:var(--m-text-on-dark); display:grid; place-items:center; }
+.sfi-top-copy { flex:1; min-width:0; }
+.sfi-eyebrow { font-size:var(--m-type-2xs); text-transform:uppercase; letter-spacing:.12em; opacity:.72; font-weight:800; }
+.sfi-title { font-size:18px; font-weight:900; letter-spacing:-.03em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sfi-status-pill { min-height:32px; padding:0 10px; border-radius:999px; display:inline-flex; align-items:center; gap:6px; background:rgba(22,163,74,.12); color:#b8ffd0; border:1px solid rgba(22,163,74,.18); font-size:11px; font-weight:900; }
+.sfi-status-pill::before { content:""; width:8px; height:8px; border-radius:50%; background:#4ade80; box-shadow:0 0 0 3px rgba(74,222,128,.16); }
+.sf-screen { display:none; min-height:calc(100vh - var(--m-topbar-height)); padding:16px 16px calc(112px + var(--m-safe-bottom)); animation:rise .18s ease-out; }
+.sf-screen.active { display:block; }
+@keyframes rise { from { opacity:.65; transform:translateY(6px); } to { opacity:1; transform:none; } }
+.sf-hero-card, .sf-card { background:var(--m-surface-card); border:1px solid var(--m-border-subtle); border-radius:var(--m-radius-lg); box-shadow:var(--m-shadow-soft); backdrop-filter:blur(16px); position:relative; overflow:hidden; }
+.sf-hero-card { padding:18px; margin-bottom:12px; }
+.sf-hero-card::before { content:""; position:absolute; inset:auto -40px -60px auto; width:180px; height:180px; background:radial-gradient(circle, rgba(94,168,255,.35), rgba(124,58,237,0)); pointer-events:none; }
+.sf-card { padding:16px; margin-bottom:12px; }
+.sf-dark-card { background:var(--m-gradient-dark); color:var(--m-text-on-dark); border-color:rgba(255,255,255,.06); box-shadow:var(--m-shadow-float); }
+.sf-dark-card .sf-card-copy,
+.sf-dark-card .sf-meta,
+.sf-dark-card .sf-card-title { color:var(--m-text-on-dark); }
+.sf-card-title { margin:0 0 6px; font-size:15px; font-weight:900; letter-spacing:-.02em; }
+.sf-card-copy { margin:0 0 12px; color:var(--m-text-secondary); font-size:13px; line-height:1.55; }
+.sf-meta { font-size:11px; line-height:1.5; color:var(--m-text-muted); }
+.sf-stack { display:grid; gap:12px; }
+.sf-inline-scroll { display:grid; grid-auto-flow:column; grid-auto-columns:68%; gap:12px; overflow:auto; padding-bottom:2px; scrollbar-width:none; }
+.sf-inline-scroll::-webkit-scrollbar { display:none; }
+.sf-metrics { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sf-metric { background:rgba(255,255,255,.76); border:1px solid rgba(255,255,255,.4); border-radius:18px; padding:12px; box-shadow:inset 0 1px 0 rgba(255,255,255,.65); }
+.sf-metric b { display:block; font-size:var(--m-type-metric); letter-spacing:-.06em; line-height:1; margin-bottom:6px; }
+.sf-metric span { display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--m-text-muted); }
+.sf-metric small { display:block; font-size:12px; color:var(--m-text-secondary); margin-top:6px; }
+.sf-premium-row { display:flex; gap:10px; align-items:stretch; }
+.sf-premium-row > * { flex:1; }
+.sf-segment { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:6px; border-radius:20px; background:rgba(15,23,42,.06); border:1px solid rgba(148,163,184,.18); margin-bottom:14px; }
+.sf-segment button { min-height:44px; border:0; border-radius:16px; background:transparent; color:var(--m-text-secondary); font-size:13px; font-weight:900; }
+.sf-segment button.active { background:var(--m-surface-strong); color:var(--m-color-brand); box-shadow:0 8px 24px rgba(37,99,255,.14); }
+.sf-quick-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.sf-quick-card { min-height:134px; padding:14px; text-align:left; border:1px solid rgba(255,255,255,.46); border-radius:22px; background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.74)); box-shadow:var(--m-shadow-soft); position:relative; overflow:hidden; }
+.sf-quick-card b { display:block; font-size:14px; margin:10px 0 4px; }
+.sf-quick-card span { display:block; font-size:12px; color:var(--m-text-secondary); line-height:1.45; }
+.sf-quick-card .sf-tag { margin-top:10px; }
+.sf-tag { display:inline-flex; min-height:24px; align-items:center; padding:0 9px; border-radius:999px; background:rgba(37,99,255,.08); color:var(--m-color-brand); font-size:11px; font-weight:900; }
+.sf-icon-3d { position:relative; width:58px; height:58px; border:0; border-radius:18px; display:grid; place-items:center; font-size:28px; color:#fff; box-shadow:0 18px 30px rgba(15,23,42,.14), inset 0 1px 0 rgba(255,255,255,.4); }
+.sf-icon-3d::before { content:""; position:absolute; inset:4px 4px auto auto; width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,.28); filter:blur(1px); }
+.sf-icon-blue { background:linear-gradient(145deg,#2563ff,#6aaeff); }
+.sf-icon-violet { background:linear-gradient(145deg,#7c3aed,#a78bfa); }
+.sf-icon-teal { background:linear-gradient(145deg,#14b8a6,#5eead4); }
+.sf-icon-gold { background:linear-gradient(145deg,#f59e0b,#ffd27b); color:#4b2f05; }
+.sf-orb-stack { display:flex; gap:8px; align-items:center; }
+.sf-orb-stack .sf-icon-3d { width:44px; height:44px; font-size:20px; border-radius:14px; }
+.sf-priority { display:flex; align-items:center; gap:12px; padding:12px; border-radius:18px; border:1px solid var(--m-border-subtle); background:rgba(255,255,255,.78); }
+.sf-priority b { display:block; font-size:14px; }
+.sf-priority span { display:block; font-size:12px; color:var(--m-text-secondary); }
+.sf-divider { height:1px; background:linear-gradient(90deg, rgba(148,163,184,0), rgba(148,163,184,.35), rgba(148,163,184,0)); margin:14px 0; }
+.sfi-field { display:grid; gap:6px; margin-bottom:12px; }
+.sfi-field label { font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.1em; color:var(--m-text-muted); }
+.sfi-field input,
+.sfi-field select,
+.sfi-field textarea { width:100%; min-height:var(--m-hit-target); padding:12px 14px; border-radius:16px; border:1.5px solid rgba(148,163,184,.28); background:rgba(255,255,255,.92); color:var(--m-text-primary); font-size:16px; outline:none; box-shadow:inset 0 1px 0 rgba(255,255,255,.5); }
+.sfi-field textarea { min-height:88px; resize:vertical; }
+.sfi-field input:focus,
+.sfi-field select:focus,
+.sfi-field textarea:focus { border-color:rgba(37,99,255,.62); box-shadow:0 0 0 4px rgba(37,99,255,.11); }
+.sfi-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sfi-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 12px; }
+.sfi-chip { min-height:40px; padding:0 12px; border-radius:999px; border:1px solid rgba(148,163,184,.25); background:rgba(255,255,255,.76); color:var(--m-text-secondary); font-size:13px; font-weight:800; }
+.sfi-chip.selected { background:var(--m-gradient-brand); border-color:transparent; color:#fff; box-shadow:0 10px 28px rgba(37,99,255,.22); }
+.sfi-inline-actions { display:flex; gap:10px; }
+.sfi-inline-actions > * { flex:1; }
+.sfi-button-primary,
+.sfi-button-secondary,
+.sfi-button-ghost { min-height:52px; border-radius:18px; font-weight:900; letter-spacing:-.01em; }
+.sfi-button-primary { width:100%; border:0; background:var(--m-gradient-brand); color:#fff; box-shadow:0 18px 40px rgba(37,99,255,.25); }
+.sfi-button-secondary { width:100%; border:1px solid rgba(148,163,184,.24); background:rgba(255,255,255,.86); color:var(--m-text-primary); }
+.sfi-button-ghost { width:100%; border:0; background:rgba(255,255,255,.12); color:var(--m-text-on-dark); }
+.sf-quote-total { padding:16px; border-radius:22px; background:linear-gradient(180deg, rgba(37,99,255,.08), rgba(124,58,237,.08)); border:1px solid rgba(37,99,255,.14); }
+.sf-quote-total span { display:block; font-size:11px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:#1d4ed8; }
+.sf-quote-total strong { display:block; font-size:34px; line-height:1; letter-spacing:-.06em; margin-top:6px; }
+.sf-quote-total small { display:block; margin-top:8px; font-size:12px; color:var(--m-text-secondary); }
+.sf-timeline { display:grid; gap:10px; }
+.sf-timeline-step { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:flex-start; }
+.sf-step-pin { width:28px; height:28px; border-radius:999px; display:grid; place-items:center; background:var(--m-gradient-brand); color:#fff; font-size:12px; font-weight:900; box-shadow:0 10px 26px rgba(37,99,255,.2); }
+.sf-step-copy b { display:block; font-size:13px; margin-bottom:3px; }
+.sf-step-copy span { display:block; font-size:12px; color:var(--m-text-secondary); }
+.sf-glass-banner { padding:14px; border-radius:18px; background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.46); backdrop-filter:blur(18px); display:flex; gap:10px; align-items:center; }
+.sf-note-list { display:grid; gap:10px; }
+.sf-note { display:flex; gap:12px; align-items:flex-start; padding:14px; border-radius:18px; background:rgba(255,255,255,.82); border:1px solid rgba(148,163,184,.22); box-shadow:var(--m-shadow-soft); }
+.sf-note small { display:block; font-size:12px; color:var(--m-text-secondary); line-height:1.5; }
+.sf-note b { display:block; font-size:13px; margin-bottom:4px; }
+.sf-note-time { margin-left:auto; font-size:11px; font-weight:800; color:var(--m-text-muted); white-space:nowrap; }
+.sf-settings-row { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:58px; padding:6px 0; border-bottom:1px solid rgba(148,163,184,.16); }
+.sf-settings-row:last-child { border-bottom:0; }
+.sf-switch { width:48px; height:30px; border-radius:999px; background:#dbeafe; position:relative; box-shadow:inset 0 0 0 1px rgba(37,99,255,.18); }
+.sf-switch::after { content:""; position:absolute; top:3px; left:22px; width:24px; height:24px; border-radius:50%; background:linear-gradient(145deg,#2563ff,#5ea8ff); box-shadow:0 8px 20px rgba(37,99,255,.28); }
+.sf-badge { display:inline-flex; min-height:24px; align-items:center; padding:0 9px; border-radius:999px; font-size:11px; font-weight:900; background:#e0f2fe; color:#075985; }
+.sf-badge.success { background:#dcfce7; color:#166534; }
+.sf-badge.gold { background:#ffedd5; color:#9a3412; }
+.sf-badge.violet { background:#ede9fe; color:#5b21b6; }
+.sf-guidance { margin-top:14px; padding:14px; border-radius:18px; background:rgba(255,255,255,.58); border:1px dashed rgba(148,163,184,.5); font-size:12px; line-height:1.6; color:var(--m-text-secondary); }
+.sf-bottom-tabs { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(100%, var(--m-screen-max)); height:calc(var(--m-tabbar-height) + var(--m-safe-bottom)); padding:8px 10px calc(8px + var(--m-safe-bottom)); background:rgba(255,255,255,.82); backdrop-filter:blur(22px); border-top:1px solid rgba(148,163,184,.24); display:grid; grid-template-columns:repeat(5,1fr); gap:6px; z-index:50; }
+.sf-tab { min-height:58px; border:0; border-radius:18px; background:transparent; color:var(--m-text-muted); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:10px; font-weight:900; }
+.sf-tab i { font-style:normal; font-size:18px; }
+.sf-tab.active { background:linear-gradient(180deg, rgba(37,99,255,.12), rgba(124,58,237,.12)); color:var(--m-color-brand); box-shadow:inset 0 0 0 1px rgba(37,99,255,.08); }
+.sf-fab { position:fixed; left:50%; bottom:calc(var(--m-tabbar-height) + 18px + var(--m-safe-bottom)); transform:translateX(106px); width:64px; height:64px; border:0; border-radius:24px; background:linear-gradient(145deg,#ffd27b,#f59e0b); color:#4b2f05; box-shadow:var(--m-shadow-float); font-size:28px; font-weight:900; z-index:55; }
+.sf-drawer, .sf-backdrop { position:fixed; inset:0; z-index:70; display:none; }
+.sf-backdrop { background:rgba(8,18,37,.52); }
+.sf-drawer.open, .sf-backdrop.open { display:block; }
+.sf-drawer-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%); width:min(100%, var(--m-screen-max)); background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.94)); border-radius:28px 28px 0 0; padding:18px 16px calc(18px + var(--m-safe-bottom)); box-shadow:0 -20px 60px rgba(15,23,42,.25); }
+.sf-drawer-handle { width:44px; height:5px; border-radius:999px; background:#cbd5e1; margin:0 auto 16px; }
+.sf-drawer-title { font-size:18px; font-weight:900; margin:0 0 4px; }
+.sf-drawer-copy { font-size:13px; color:var(--m-text-secondary); margin:0 0 12px; }
+.sf-drawer-action { width:100%; min-height:54px; text-align:left; padding:0 14px; border-radius:18px; border:1px solid rgba(148,163,184,.22); background:rgba(255,255,255,.9); margin-bottom:8px; font-weight:850; color:var(--m-text-primary); }
+.sf-toast { position:fixed; left:50%; bottom:calc(var(--m-tabbar-height) + 92px + var(--m-safe-bottom)); transform:translateX(-50%) translateY(14px); width:calc(min(100%, var(--m-screen-max)) - 32px); padding:14px 16px; border-radius:20px; background:linear-gradient(145deg,#052e16,#14532d); color:#dcfce7; box-shadow:var(--m-shadow-float); opacity:0; pointer-events:none; transition:.18s ease; z-index:90; }
+.sf-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.sf-footer-space { height:8px; }
+
+.sf-brand-lockup { display:flex; align-items:center; gap:10px; min-width:0; }
+.sf-brand-logo { width:38px; height:38px; border-radius:12px; background:white; padding:5px; box-shadow:0 10px 24px rgba(0,0,0,.16); object-fit:contain; }
+.sf-brand-word { display:flex; flex-direction:column; min-width:0; }
+.sf-lead-toolbar { display:grid; gap:10px; margin-bottom:12px; }
+.sf-search { width:100%; min-height:48px; border-radius:18px; border:1px solid var(--m-border-subtle); padding:0 14px; color:var(--m-text-primary); background:var(--m-surface-card); outline:none; }
+.sf-lead-list { display:grid; gap:10px; }
+.sf-lead-card { display:grid; gap:10px; padding:14px; border-radius:22px; background:var(--m-surface-card); border:1px solid var(--m-border-subtle); box-shadow:var(--m-shadow-soft); }
+.sf-lead-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.sf-lead-name { font-size:15px; font-weight:950; letter-spacing:-.02em; }
+.sf-lead-sub { font-size:12px; color:var(--m-text-secondary); line-height:1.45; margin-top:3px; }
+.sf-lead-status { min-height:26px; padding:0 9px; border-radius:999px; display:inline-flex; align-items:center; font-size:11px; font-weight:950; white-space:nowrap; }
+.sf-status-new { background:#dbeafe; color:#1d4ed8; }
+.sf-status-qualified { background:#dcfce7; color:#166534; }
+.sf-status-quote { background:#fef3c7; color:#92400e; }
+.sf-status-follow { background:#ede9fe; color:#5b21b6; }
+.sf-status-risk { background:#fee2e2; color:#991b1b; }
+.sf-lead-meta-row { display:flex; flex-wrap:wrap; gap:7px; }
+.sf-mini-pill { min-height:24px; padding:0 8px; border-radius:999px; display:inline-flex; align-items:center; background:rgba(148,163,184,.14); color:var(--m-text-secondary); font-size:11px; font-weight:850; }
+.sf-theme-preview-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sf-theme-preview { min-height:118px; border:1px solid var(--m-border-subtle); border-radius:22px; padding:12px; display:grid; align-content:space-between; box-shadow:var(--m-shadow-soft); }
+.sf-theme-preview.light { background:linear-gradient(180deg,#f8fbff,#eaf3ff); color:#0f172a; }
+.sf-theme-preview.dark { background:linear-gradient(145deg,#071120,#172445); color:#eef6ff; }
+.sf-theme-preview b { font-size:13px; }
+.sf-theme-preview span { display:block; margin-top:4px; font-size:11px; opacity:.72; line-height:1.4; }
+.sf-theme-dots { display:flex; gap:5px; }
+.sf-theme-dots i { width:18px; height:18px; border-radius:50%; display:block; background:#2563ff; box-shadow:0 6px 14px rgba(0,0,0,.18); }
+.sf-theme-dots i:nth-child(2) { background:#7c3aed; }
+.sf-theme-dots i:nth-child(3) { background:#f59e0b; }
+
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { animation:none !important; transition:none !important; }
+}
+</style>
+</head>
+<body>
+<div class="sf-mobile-app" data-theme="light">
+  <header class="sf-mobile-topbar">
+    <button class="sfi-icon-button" aria-label="Open navigation drawer" onclick="toggleDrawer(true)">☰</button>
+    <div class="sfi-top-copy sf-brand-lockup">
+      <img class="sf-brand-logo" src="/logos/setu-flow-logo.svg" alt="SETU Flow logo">
+      <div class="sf-brand-word">
+        <div class="sfi-eyebrow">SETU Flow</div>
+        <div class="sfi-title" id="screenTitle">Home Dashboard</div>
+      </div>
+    </div>
+    <div class="sfi-status-pill">Synced</div>
+  </header>
+
+  <main>
+    <section id="screen-home" class="sf-screen active" aria-label="Home Dashboard">
+      <div class="sf-hero-card sf-dark-card">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+          <div>
+            <div class="sf-badge gold">2026 premium mode</div>
+            <h1 style="margin:10px 0 6px;font-size:24px;line-height:1.05;letter-spacing:-.05em;">Capture faster. Quote smarter. Close from the floor.</h1>
+            <p class="sf-card-copy" style="margin:0;color:rgba(236,245,255,.78);">Purpose-built for one-handed field selling. Buyer and supplier capture share the same premium shell, with instant quote intelligence and offline-first safety.</p>
+          </div>
+          <div class="sf-icon-3d sf-icon-gold" aria-hidden="true">✦</div>
+        </div>
+        <div class="sf-divider"></div>
+        <div class="sf-metrics">
+          <div class="sf-metric"><b>09</b><span>captures today</span><small>4 buyers, 5 suppliers</small></div>
+          <div class="sf-metric"><b>73s</b><span>avg quote start</span><small>11 seconds faster than target</small></div>
+        </div>
+      </div>
+
+      <div class="sf-card">
+        <h2 class="sf-card-title">Primary capture modes</h2>
+        <p class="sf-card-copy">Show the two highest-value field paths first. Use premium 3D iconography for fast recognition and stronger brand feel.</p>
+        <div class="sf-quick-grid">
+          <button class="sf-quick-card" type="button" onclick="setEntityType('buyer'); showScreen('quick-quote');">
+            <div class="sf-icon-3d sf-icon-blue" aria-hidden="true">🛒</div>
+            <b>Capture buyer</b>
+            <span>Badge scan, need, quantity, quote draft, save and notify in one path.</span>
+            <span class="sf-tag">Fastest path</span>
+          </button>
+          <button class="sf-quick-card" type="button" onclick="setEntityType('supplier'); showScreen('trade-capture');">
+            <div class="sf-icon-3d sf-icon-violet" aria-hidden="true">🏭</div>
+            <b>Capture supplier</b>
+            <span>Source products, MOQ, region, next action, and create a trade record instantly.</span>
+            <span class="sf-tag">New premium flow</span>
+          </button>
+          <button class="sf-quick-card" type="button" onclick="showScreen('lead-capture');">
+            <div class="sf-icon-3d sf-icon-teal" aria-hidden="true">👤</div>
+            <b>Lead capture</b>
+            <span>Short form for visitor details, tags, and qualification notes.</span>
+            <span class="sf-tag">Thumb friendly</span>
+          </button>
+          <button class="sf-quick-card" type="button" onclick="showScreen('leads');">
+            <div class="sf-icon-3d sf-icon-blue" aria-hidden="true">📋</div>
+            <b>Manage leads</b>
+            <span>See current leads, owners, status, and next actions based on your role.</span>
+            <span class="sf-tag">On the go</span>
+          </button>
+          <button class="sf-quick-card" type="button" onclick="toggleDrawer(true);">
+            <div class="sf-icon-3d sf-icon-gold" aria-hidden="true">⚡</div>
+            <b>Quick actions</b>
+            <span>Use the drawer for OCR scan, offline queue, templates, and release notes.</span>
+            <span class="sf-tag">Context menu</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="sf-inline-scroll" aria-label="Priority cards">
+        <div class="sf-card">
+          <div class="sf-priority">
+            <div class="sf-icon-3d sf-icon-blue" style="width:46px;height:46px;font-size:20px;" aria-hidden="true">💬</div>
+            <div><b>Quotes needing confirmation</b><span>2 buyer quotes ready to share before 4:00 PM.</span></div>
+          </div>
+        </div>
+        <div class="sf-card">
+          <div class="sf-priority">
+            <div class="sf-icon-3d sf-icon-violet" style="width:46px;height:46px;font-size:20px;" aria-hidden="true">📦</div>
+            <div><b>Supplier follow-up</b><span>MOQ and lead time missing on 3 supplier captures.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sf-card">
+        <h2 class="sf-card-title">Northstar microflow</h2>
+        <div class="sf-timeline">
+          <div class="sf-timeline-step"><div class="sf-step-pin">1</div><div class="sf-step-copy"><b>Capture</b><span>Choose buyer or supplier and keep forms focused on the next decision only.</span></div></div>
+          <div class="sf-timeline-step"><div class="sf-step-pin">2</div><div class="sf-step-copy"><b>Quote</b><span>Instant quote widget pre-fills from camera OCR or saved templates when the entity is a buyer.</span></div></div>
+          <div class="sf-timeline-step"><div class="sf-step-pin">3</div><div class="sf-step-copy"><b>Save</b><span>Drafts store locally if offline, then sync through the existing lead and quote services.</span></div></div>
+          <div class="sf-timeline-step"><div class="sf-step-pin">4</div><div class="sf-step-copy"><b>Notify</b><span>Toast + alerts confirm the result and hand off to desktop when deeper approval is required.</span></div></div>
+        </div>
+      </div>
+
+      <div class="sf-guidance">
+        Experience note: SETU Flow mobile is designed for quick field work first — capture, manage, quote, and follow up without losing the premium desktop workflow.
+      </div>
+    </section>
+
+
+    <section id="screen-leads" class="sf-screen" aria-label="Current Leads">
+      <div class="sf-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div>
+            <h2 class="sf-card-title" style="font-size:18px;">Current Leads</h2>
+            <p class="sf-card-copy">Manage open leads from your phone. Visibility adjusts by role so each person sees the right book of business.</p>
+          </div>
+          <div class="sf-icon-3d sf-icon-blue" aria-hidden="true">📋</div>
+        </div>
+        <div class="sf-segment" role="tablist" aria-label="Lead visibility by role" style="grid-template-columns:repeat(3,1fr);">
+          <button type="button" id="roleOwnerTab" class="active" onclick="setLeadRole('owner')">Owner</button>
+          <button type="button" id="roleManagerTab" onclick="setLeadRole('manager')">Manager</button>
+          <button type="button" id="roleMemberTab" onclick="setLeadRole('member')">Member</button>
+        </div>
+        <div class="sf-lead-toolbar">
+          <input id="leadSearch" class="sf-search" placeholder="Search leads, company, owner, status" oninput="renderLeads()" aria-label="Search leads">
+          <div class="sf-lead-meta-row" id="leadScopeSummary"></div>
+        </div>
+        <div class="sf-lead-list" id="leadList" aria-live="polite"></div>
+        <div class="sf-guidance">
+          Role view: owners and admins see every lead, managers see their team and direct reports, and members see only their own assigned leads.
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-quick-quote" class="sf-screen" aria-label="Quick Quote Capture">
+      <div class="sf-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div>
+            <h2 class="sf-card-title" style="font-size:18px;">Quick Quote Capture</h2>
+            <p class="sf-card-copy">Premium differentiator: instant buyer quote widget with buyer profile templates, camera OCR, and contextual product suggestions.</p>
+          </div>
+          <div class="sf-orb-stack" aria-hidden="true">
+            <div class="sf-icon-3d sf-icon-blue">🛒</div>
+            <div class="sf-icon-3d sf-icon-gold">📷</div>
+          </div>
+        </div>
+
+        <div class="sf-segment" role="tablist" aria-label="Entity type for quick capture">
+          <button type="button" id="entityBuyerTab" class="active" onclick="setEntityType('buyer')" aria-pressed="true">Buyer</button>
+          <button type="button" id="entitySupplierTab" onclick="setEntityType('supplier')" aria-pressed="false">Supplier</button>
+        </div>
+
+        <div class="sf-glass-banner" style="margin-bottom:12px;">
+          <div class="sf-icon-3d sf-icon-gold" style="width:44px;height:44px;font-size:20px;" aria-hidden="true">✨</div>
+          <div>
+            <div style="font-size:13px;font-weight:900;">Suggested action</div>
+            <div style="font-size:12px;color:var(--m-text-secondary);">Use <strong>Saved template</strong> for recurring buyers or <strong>Scan badge</strong> to prefill contact details.</div>
+          </div>
+        </div>
+
+        <div class="sfi-inline-actions" style="margin-bottom:12px;">
+          <button class="sfi-button-secondary" type="button">Saved template</button>
+          <button class="sfi-button-secondary" type="button">Scan badge</button>
+        </div>
+
+        <form id="quoteForm" onsubmit="saveQuote(event)">
+          <div class="sfi-field">
+            <label for="entityName">Buyer or supplier</label>
+            <input id="entityName" name="entityName" value="Aster Retail LLC" aria-describedby="entityHelp">
+            <div id="entityHelp" class="sf-meta">When supplier mode is active, capture the supplying company and source category here.</div>
+          </div>
+          <div class="sfi-grid-2">
+            <div class="sfi-field">
+              <label for="contactName">Contact</label>
+              <input id="contactName" name="contactName" value="Maya Khan">
+            </div>
+            <div class="sfi-field">
+              <label for="entityRegion">Region</label>
+              <select id="entityRegion" name="entityRegion">
+                <option>UAE</option>
+                <option>India</option>
+                <option>Saudi Arabia</option>
+                <option>UK</option>
+              </select>
+            </div>
+          </div>
+          <div class="sfi-grid-2">
+            <div class="sfi-field">
+              <label for="productField">Product / category</label>
+              <input id="productField" name="productField" value="Vacuum Mango Chips">
+            </div>
+            <div class="sfi-field">
+              <label for="quantityField">Quantity</label>
+              <input id="quantityField" name="quantityField" type="number" min="1" value="1200" oninput="recalcQuote()">
+            </div>
+          </div>
+          <div class="sfi-field">
+            <label>Priority tags</label>
+            <div class="sfi-chip-row">
+              <button class="sfi-chip selected" type="button">Trade show</button>
+              <button class="sfi-chip" type="button">Warm buyer</button>
+              <button class="sfi-chip" type="button">Sample request</button>
+              <button class="sfi-chip" type="button">Fast MOQ</button>
+            </div>
+          </div>
+          <div class="sf-quote-total" aria-live="polite">
+            <span id="quoteLabel">Draft estimate for buyer</span>
+            <strong id="quoteValue">USD 3,720</strong>
+            <small id="quoteBasis">Auto-computed from template pricing basis, freight assumptions, and quantity band.</small>
+          </div>
+          <div class="sfi-inline-actions">
+            <button class="sfi-button-secondary" type="button" onclick="showScreen('lead-capture')">Capture full lead</button>
+            <button class="sfi-button-primary" type="submit">Save draft quote</button>
+          </div>
+        </form>
+
+        <div class="sf-guidance">
+          Mobile promise: capture the right details quickly, keep the next step clear, and let SETU Flow guide the follow-up without extra taps.
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-lead-capture" class="sf-screen" aria-label="Lead Capture">
+      <div class="sf-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div>
+            <h2 class="sf-card-title" style="font-size:18px;">Lead Capture</h2>
+            <p class="sf-card-copy">A minimal, premium intake screen for trade-floor speed. Capture buyer or supplier details without exposing full desktop complexity.</p>
+          </div>
+          <div class="sf-icon-3d sf-icon-teal" aria-hidden="true">👤</div>
+        </div>
+        <div class="sf-segment" aria-label="Lead entity type">
+          <button type="button" class="active">Buyer lead</button>
+          <button type="button">Supplier lead</button>
+        </div>
+        <div class="sfi-grid-2">
+          <div class="sfi-field"><label for="leadCompany">Company</label><input id="leadCompany" value="Nova Foods"></div>
+          <div class="sfi-field"><label for="leadContact">Contact</label><input id="leadContact" value="Aarav Menon"></div>
+        </div>
+        <div class="sfi-grid-2">
+          <div class="sfi-field"><label for="leadRole">Role</label><input id="leadRole" value="Procurement"></div>
+          <div class="sfi-field"><label for="leadPhone">Phone</label><input id="leadPhone" value="+971 55 123 4567"></div>
+        </div>
+        <div class="sfi-field"><label for="leadNeed">Need / sourced product</label><textarea id="leadNeed">Looking for premium fruit chips and private label options for Gulf retail.</textarea></div>
+        <div class="sfi-inline-actions">
+          <button class="sfi-button-secondary" type="button" onclick="showScreen('trade-capture')">Go to trade capture</button>
+          <button class="sfi-button-primary" type="button" onclick="saveLead()">Save lead</button>
+        </div>
+        <div class="sf-guidance">
+          Best for new conversations: add the lead, tag the interest, and come back to status management when the conversation continues.
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-trade-capture" class="sf-screen" aria-label="Trade Capture">
+      <div class="sf-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div>
+            <h2 class="sf-card-title" style="font-size:18px;">Trade Capture</h2>
+            <p class="sf-card-copy">Premium trade flow with explicit buyer/supplier capture and event-level context. Keep this as the go-to field screen for exhibitions and sourcing visits.</p>
+          </div>
+          <div class="sf-icon-3d sf-icon-violet" aria-hidden="true">🏭</div>
+        </div>
+        <div class="sf-segment" role="tablist" aria-label="Trade capture mode">
+          <button type="button" id="tradeBuyerTab" class="active" onclick="setTradeMode('buyer')">Buyer</button>
+          <button type="button" id="tradeSupplierTab" onclick="setTradeMode('supplier')">Supplier</button>
+        </div>
+        <div class="sfi-grid-2">
+          <div class="sfi-field"><label for="tradeEntity">Company</label><input id="tradeEntity" value="Global Source Partners"></div>
+          <div class="sfi-field"><label for="tradeEvent">Event</label><input id="tradeEvent" value="Gulfood 2026"></div>
+        </div>
+        <div class="sfi-grid-2">
+          <div class="sfi-field"><label for="tradeInterest">Interest / category</label><input id="tradeInterest" value="Freeze-dried fruit lines"></div>
+          <div class="sfi-field"><label for="tradeUrgency">Priority</label><select id="tradeUrgency"><option>High</option><option>Medium</option><option>Low</option></select></div>
+        </div>
+        <div class="sfi-field"><label for="tradeNotes">Notes</label><textarea id="tradeNotes">Supplier has stronger MOQ for private label, needs follow-up on packaging and certifications.</textarea></div>
+        <div class="sf-glass-banner" id="tradeModeBanner">
+          <div class="sf-icon-3d sf-icon-violet" style="width:42px;height:42px;font-size:20px;" aria-hidden="true">🏭</div>
+          <div>
+            <div style="font-size:13px;font-weight:900;">Supplier capture active</div>
+            <div style="font-size:12px;color:var(--m-text-secondary);">Prompt for MOQ, lead time, sourcing region, and compliance docs instead of quote total.</div>
+          </div>
+        </div>
+        <div class="sfi-inline-actions" style="margin-top:12px;">
+          <button class="sfi-button-secondary" type="button" onclick="showScreen('quick-quote')">Open quote widget</button>
+          <button class="sfi-button-primary" type="button" onclick="saveTrade()">Save trade record</button>
+        </div>
+        <div class="sf-guidance">
+          Buyer mode is for opportunity follow-up. Supplier mode is for sourcing notes, product availability, certifications, and next action tracking.
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-notifications" class="sf-screen" aria-label="Notifications">
+      <div class="sf-card">
+        <h2 class="sf-card-title" style="font-size:18px;">Notifications</h2>
+        <p class="sf-card-copy">Mobile alerts focus on save confirmation, sync state, and next best action rather than deep desktop inbox complexity.</p>
+        <div class="sf-note-list" id="notificationList">
+          <div class="sf-note">
+            <div class="sf-icon-3d sf-icon-blue" style="width:42px;height:42px;font-size:18px;" aria-hidden="true">✅</div>
+            <div><b>Q-MOB-001 saved</b><small>Buyer quote draft was saved and linked to Aster Retail LLC. Next best action: review terms on desktop if approval is required.</small></div>
+            <div class="sf-note-time">now</div>
+          </div>
+          <div class="sf-note">
+            <div class="sf-icon-3d sf-icon-violet" style="width:42px;height:42px;font-size:18px;" aria-hidden="true">📦</div>
+            <div><b>Supplier capture queued</b><small>Global Source Partners will sync when network quality improves. MOQ and certificate follow-up task created.</small></div>
+            <div class="sf-note-time">5m</div>
+          </div>
+          <div class="sf-note">
+            <div class="sf-icon-3d sf-icon-gold" style="width:42px;height:42px;font-size:18px;" aria-hidden="true">⚡</div>
+            <div><b>Instant quote suggestion ready</b><small>Saved templates found a matching buyer profile for Nova Foods and can prefill target margin assumptions.</small></div>
+            <div class="sf-note-time">12m</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-settings" class="sf-screen" aria-label="Settings">
+      <div class="sf-card">
+        <h2 class="sf-card-title" style="font-size:18px;">Settings</h2>
+        <p class="sf-card-copy">Operational controls for installability, sync, notifications, and premium mobile experiences.</p>
+        <div class="sf-settings-row"><div><b style="display:block;font-size:13px;">Install as app</b><small class="sf-meta">Manifest + standalone mode</small></div><span class="sf-badge success">Ready</span></div>
+        <div class="sf-settings-row"><div><b style="display:block;font-size:13px;">Push notifications</b><small class="sf-meta">Save confirmations and reminders</small></div><div class="sf-switch" aria-hidden="true"></div></div>
+        <div class="sf-settings-row"><div><b style="display:block;font-size:13px;">Offline queue</b><small class="sf-meta">2 drafts waiting for sync</small></div><span class="sf-badge gold">Queued</span></div>
+        <div class="sf-settings-row"><div><b style="display:block;font-size:13px;">Premium 3D icon pack</b><small class="sf-meta">Use lightweight SVG/Lottie only if performance budget allows</small></div><span class="sf-badge violet">Enabled</span></div>
+        <div class="sf-settings-row"><div><b style="display:block;font-size:13px;">Appearance</b><small class="sf-meta">Choose the look that matches your mobile settings</small></div><span class="sf-badge">Auto-ready</span></div>
+        <div class="sf-theme-preview-grid" style="margin-top:12px;">
+          <button class="sf-theme-preview light" type="button" onclick="setTheme('light')"><div><b>Light look</b><span>Clean glass cards, bright surfaces, premium blue actions.</span></div><div class="sf-theme-dots"><i></i><i></i><i></i></div></button>
+          <button class="sf-theme-preview dark" type="button" onclick="setTheme('dark')"><div><b>Dark look</b><span>Executive dark shell, vivid cards, easier night-event use.</span></div><div class="sf-theme-dots"><i></i><i></i><i></i></div></button>
+        </div>
+        <div class="sf-guidance">
+          The app follows mobile appearance preferences and also gives a manual light/dark choice for trade floors, night events, and travel use.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <button class="sf-fab" aria-label="Open quick quote capture" onclick="showScreen('quick-quote')">+</button>
+
+  <nav class="sf-bottom-tabs" aria-label="Primary mobile navigation">
+    <button class="sf-tab active" data-screen="home" onclick="showScreen('home')"><i>⌂</i>Home</button>
+    <button class="sf-tab" data-screen="leads" onclick="showScreen('leads')"><i>☷</i>Leads</button>
+    <button class="sf-tab" data-screen="quick-quote" onclick="showScreen('quick-quote')"><i>◌</i>Quote</button>
+    <button class="sf-tab" data-screen="lead-capture" onclick="showScreen('lead-capture')"><i>◎</i>Capture</button>
+    <button class="sf-tab" data-screen="settings" onclick="showScreen('settings')"><i>☼</i>Settings</button>
+  </nav>
+
+  <div id="drawerBackdrop" class="sf-backdrop" onclick="toggleDrawer(false)"></div>
+  <div id="drawerPanel" class="sf-drawer" aria-hidden="true">
+    <div class="sf-drawer-panel">
+      <div class="sf-drawer-handle"></div>
+      <h2 class="sf-drawer-title">Quick actions</h2>
+      <p class="sf-drawer-copy">Secondary navigation for field reps. Keep top tabs focused and place lower-frequency actions here.</p>
+      <button class="sf-drawer-action" type="button" onclick="setTradeMode('buyer'); showScreen('trade-capture'); toggleDrawer(false)">Buyer trade capture</button>
+      <button class="sf-drawer-action" type="button" onclick="setTradeMode('supplier'); showScreen('trade-capture'); toggleDrawer(false)">Supplier trade capture</button>
+      <button class="sf-drawer-action" type="button" onclick="setEntityType('buyer'); showScreen('quick-quote'); toggleDrawer(false)">Instant buyer quote</button>
+      <button class="sf-drawer-action" type="button" onclick="showScreen('leads'); toggleDrawer(false)">Current leads and status</button>
+      <button class="sf-drawer-action" type="button" onclick="showScreen('notifications'); toggleDrawer(false)">Notifications</button>
+      <button class="sf-drawer-action" type="button" onclick="showToast('Offline queue opened'); toggleDrawer(false)">Offline queue</button>
+      <button class="sf-drawer-action" type="button" onclick="showToast('Release notes opened'); toggleDrawer(false)">Release notes</button>
+    </div>
+  </div>
+
+  <div id="toast" class="sf-toast" role="status" aria-live="polite">Saved</div>
+  <div class="sf-footer-space" aria-hidden="true"></div>
+</div>
+
+<script>
+const screenTitles = {
+  'home': 'Home Dashboard',
+  'leads': 'Current Leads',
+  'quick-quote': 'Quick Quote Capture',
+  'lead-capture': 'Lead Capture',
+  'trade-capture': 'Trade Capture',
+  'notifications': 'Notifications',
+  'settings': 'Settings'
+};
+
+let entityType = 'buyer';
+let tradeMode = 'supplier';
+let leadRole = 'owner';
+const leads = [
+  { company:'Aster Retail LLC', contact:'Maya Khan', owner:'Ariana Patel', team:'Gulf Sales', status:'Quote ready', statusClass:'sf-status-quote', value:'USD 3.7K', next:'Review quote terms today', scope:['owner','manager','member'] },
+  { company:'Nova Foods Distribution', contact:'Aarav Menon', owner:'Ritesh Kapoor', team:'Leadership', status:'Qualified', statusClass:'sf-status-qualified', value:'USD 12K', next:'Send samples and pricing pack', scope:['owner'] },
+  { company:'Global Source Partners', contact:'Rohan Shah', owner:'Leena Rao', team:'Sourcing', status:'Supplier follow-up', statusClass:'sf-status-follow', value:'MOQ pending', next:'Collect MOQ and certificates', scope:['owner','manager'] },
+  { company:'Blue Dunes Imports', contact:'Sara Ali', owner:'Ariana Patel', team:'Gulf Sales', status:'New', statusClass:'sf-status-new', value:'USD 1.8K', next:'Qualify product interest', scope:['owner','manager','member'] },
+  { company:'Metro Organic Stores', contact:'Daniel Reed', owner:'Kabir Singh', team:'Retail Team', status:'At risk', statusClass:'sf-status-risk', value:'USD 9.4K', next:'Call before close of day', scope:['owner','manager'] }
+];
+
+function showScreen(name) {
+  document.querySelectorAll('.sf-screen').forEach(section => section.classList.remove('active'));
+  const active = document.getElementById(`screen-${name}`);
+  if (active) active.classList.add('active');
+  document.querySelectorAll('.sf-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.screen === name));
+  document.getElementById('screenTitle').textContent = screenTitles[name] || 'SETU Flow';
+}
+
+function toggleDrawer(open) {
+  document.getElementById('drawerPanel').classList.toggle('open', open);
+  document.getElementById('drawerBackdrop').classList.toggle('open', open);
+}
+
+function setTheme(theme) {
+  document.querySelector('.sf-mobile-app').setAttribute('data-theme', theme);
+  showToast(theme === 'dark' ? 'Dark look applied' : 'Light look applied');
+}
+
+function setLeadRole(role) {
+  leadRole = role;
+  document.getElementById('roleOwnerTab').classList.toggle('active', role === 'owner');
+  document.getElementById('roleManagerTab').classList.toggle('active', role === 'manager');
+  document.getElementById('roleMemberTab').classList.toggle('active', role === 'member');
+  renderLeads();
+}
+
+function renderLeads() {
+  const search = (document.getElementById('leadSearch')?.value || '').toLowerCase();
+  const visible = leads.filter(lead => lead.scope.includes(leadRole)).filter(lead => {
+    return [lead.company, lead.contact, lead.owner, lead.team, lead.status, lead.next].join(' ').toLowerCase().includes(search);
+  });
+  const list = document.getElementById('leadList');
+  const summary = document.getElementById('leadScopeSummary');
+  if (!list || !summary) return;
+  const scopeText = leadRole === 'owner' ? 'All company leads' : leadRole === 'manager' ? 'Your team and direct reports' : 'Only your assigned leads';
+  summary.innerHTML = `<span class="sf-mini-pill">${scopeText}</span><span class="sf-mini-pill">${visible.length} visible</span><span class="sf-mini-pill">Role-based view</span>`;
+  list.innerHTML = visible.map(lead => `
+    <article class="sf-lead-card">
+      <div class="sf-lead-top">
+        <div>
+          <div class="sf-lead-name">${lead.company}</div>
+          <div class="sf-lead-sub">${lead.contact} · ${lead.owner} · ${lead.team}</div>
+        </div>
+        <span class="sf-lead-status ${lead.statusClass}">${lead.status}</span>
+      </div>
+      <div class="sf-lead-meta-row">
+        <span class="sf-mini-pill">${lead.value}</span>
+        <span class="sf-mini-pill">${lead.next}</span>
+      </div>
+      <div class="sfi-inline-actions">
+        <button class="sfi-button-secondary" type="button" onclick="showToast('Lead opened')">Open</button>
+        <button class="sfi-button-secondary" type="button" onclick="setEntityType('buyer'); showScreen('quick-quote')">Quote</button>
+      </div>
+    </article>
+  `).join('') || '<div class="sf-card-copy">No leads match this view.</div>';
+}
+
+function setEntityType(type) {
+
+  entityType = type;
+  document.getElementById('entityBuyerTab').classList.toggle('active', type === 'buyer');
+  document.getElementById('entitySupplierTab').classList.toggle('active', type === 'supplier');
+  document.getElementById('entityBuyerTab').setAttribute('aria-pressed', type === 'buyer');
+  document.getElementById('entitySupplierTab').setAttribute('aria-pressed', type === 'supplier');
+  document.getElementById('quoteLabel').textContent = type === 'buyer' ? 'Draft estimate for buyer' : 'Supplier intake summary';
+  document.getElementById('quoteBasis').textContent = type === 'buyer'
+    ? 'Auto-computed from template pricing basis, freight assumptions, and quantity band.'
+    : 'Use this view to summarize MOQ, source category, and follow-up actions before creating a sourcing task.';
+  document.getElementById('entityName').value = type === 'buyer' ? 'Aster Retail LLC' : 'Global Source Partners';
+  document.getElementById('contactName').value = type === 'buyer' ? 'Maya Khan' : 'Rohan Shah';
+  document.getElementById('productField').value = type === 'buyer' ? 'Vacuum Mango Chips' : 'Freeze-dried fruit lines';
+  recalcQuote();
+}
+
+function setTradeMode(mode) {
+  tradeMode = mode;
+  document.getElementById('tradeBuyerTab').classList.toggle('active', mode === 'buyer');
+  document.getElementById('tradeSupplierTab').classList.toggle('active', mode === 'supplier');
+  const banner = document.getElementById('tradeModeBanner');
+  banner.innerHTML = mode === 'buyer'
+    ? '<div class="sf-icon-3d sf-icon-blue" style="width:42px;height:42px;font-size:20px;" aria-hidden="true">🛒</div><div><div style="font-size:13px;font-weight:900;">Buyer capture active</div><div style="font-size:12px;color:var(--m-text-secondary);">Prompt for product interest, target price, and fast quote handoff.</div></div>'
+    : '<div class="sf-icon-3d sf-icon-violet" style="width:42px;height:42px;font-size:20px;" aria-hidden="true">🏭</div><div><div style="font-size:13px;font-weight:900;">Supplier capture active</div><div style="font-size:12px;color:var(--m-text-secondary);">Prompt for MOQ, lead time, sourcing region, and compliance docs instead of quote total.</div></div>';
+  document.getElementById('tradeEntity').value = mode === 'buyer' ? 'Nova Foods Distribution' : 'Global Source Partners';
+  document.getElementById('tradeInterest').value = mode === 'buyer' ? 'Premium fruit chips for Gulf retail' : 'Freeze-dried fruit lines';
+}
+
+function recalcQuote() {
+  const quantity = Number(document.getElementById('quantityField').value || 0);
+  const unitPrice = entityType === 'buyer' ? 3.10 : 1.85;
+  const total = quantity * unitPrice;
+  const formatted = new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', maximumFractionDigits:0 }).format(total || 0);
+  document.getElementById('quoteValue').textContent = entityType === 'buyer' ? formatted : `${quantity || 0} units @ MOQ band`;
+}
+
+function prependNotification(title, message, icon) {
+  const list = document.getElementById('notificationList');
+  const item = document.createElement('div');
+  item.className = 'sf-note';
+  item.innerHTML = `<div class="sf-icon-3d sf-icon-blue" style="width:42px;height:42px;font-size:18px;" aria-hidden="true">${icon}</div><div><b>${title}</b><small>${message}</small></div><div class="sf-note-time">now</div>`;
+  list.prepend(item);
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function saveQuote(event) {
+  event.preventDefault();
+  const entity = document.getElementById('entityName').value || 'Capture';
+  const quantity = document.getElementById('quantityField').value || '0';
+  const title = entityType === 'buyer' ? 'Q-MOB-001 saved' : 'Supplier intake saved';
+  const message = entityType === 'buyer'
+    ? `Draft quote saved for ${entity} with ${quantity} units. Next step: notify and continue on desktop if approval is needed.`
+    : `Supplier capture saved for ${entity}. Source details and follow-up task are ready for the sourcing team.`;
+  prependNotification(title, message, entityType === 'buyer' ? '✅' : '🏭');
+  showToast(title);
+  showScreen('notifications');
+}
+
+function saveLead() {
+  prependNotification('Lead capture saved', 'Lead draft saved and queued for sync. You can continue follow-up from Current Leads.', '✅');
+  showToast('Lead capture saved');
+  showScreen('notifications');
+}
+
+function saveTrade() {
+  const title = tradeMode === 'buyer' ? 'Buyer trade record saved' : 'Supplier trade record saved';
+  const message = tradeMode === 'buyer'
+    ? 'Trade capture linked to a buyer flow. Open quote widget next for the fastest handoff.'
+    : 'Supplier record saved with sourcing notes and a follow-up task.';
+  prependNotification(title, message, tradeMode === 'buyer' ? '🛒' : '🏭');
+  showToast(title);
+  showScreen('notifications');
+}
+
+setEntityType('buyer');
+setTradeMode('supplier');
+recalcQuote();
+renderLeads();
+</script>
+</body>
+</html>

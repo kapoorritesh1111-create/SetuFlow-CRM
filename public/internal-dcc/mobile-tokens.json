@@ -1,0 +1,223 @@
+{
+  "name": "SETU Flow Mobile App v1 Premium Role-Aware Tokens",
+  "flag": "feature/mobile_app_v1",
+  "namespace": "--m-",
+  "principles": [
+    "Additive mobile-only tokens; do not overwrite desktop design tokens.",
+    "The premium mobile shell should use real SETU Flow branding and remain customer-facing.",
+    "Mobile must support both new capture and existing lead management on the go.",
+    "Lead visibility must respect role scope: owner/admin all, manager team plus direct reports, member assigned only.",
+    "Light and dark appearances must share accessible component structure."
+  ],
+  "tokens": {
+    "color": {
+      "--m-color-ink": "#081225",
+      "--m-color-ink-2": "#0f1c34",
+      "--m-color-brand": "#2563ff",
+      "--m-color-brand-2": "#62a6ff",
+      "--m-color-violet": "#7c3aed",
+      "--m-color-teal": "#14b8a6",
+      "--m-color-gold": "#f59e0b",
+      "--m-color-success": "#16a34a",
+      "--m-color-warning": "#d97706",
+      "--m-color-danger": "#dc2626",
+      "--m-color-info": "#2563eb",
+      "--m-surface-app": "#edf3fb",
+      "--m-surface-card": "rgba(255,255,255,.88)",
+      "--m-surface-glass": "rgba(255,255,255,.74)",
+      "--m-surface-strong": "#ffffff",
+      "--m-surface-dark": "#0d172b",
+      "--m-border-subtle": "rgba(148,163,184,.28)",
+      "--m-border-strong": "rgba(148,163,184,.42)",
+      "--m-text-primary": "#0f172a",
+      "--m-text-secondary": "#334155",
+      "--m-text-muted": "#64748b",
+      "--m-text-on-dark": "#ecf5ff"
+    },
+    "spacing": {
+      "--m-space-1": "4px",
+      "--m-space-2": "8px",
+      "--m-space-3": "12px",
+      "--m-space-4": "16px",
+      "--m-space-5": "20px",
+      "--m-space-6": "24px",
+      "--m-space-7": "28px",
+      "--m-space-8": "32px"
+    },
+    "radius": {
+      "--m-radius-sm": "12px",
+      "--m-radius-md": "18px",
+      "--m-radius-lg": "24px",
+      "--m-radius-xl": "30px",
+      "--m-radius-pill": "999px"
+    },
+    "typography": {
+      "--m-type-2xs": "10px",
+      "--m-type-xs": "11px",
+      "--m-type-sm": "13px",
+      "--m-type-base": "16px",
+      "--m-type-md": "18px",
+      "--m-type-title": "22px",
+      "--m-type-hero": "32px",
+      "--m-type-metric": "36px"
+    },
+    "layout": {
+      "--m-screen-max": "420px",
+      "--m-hit-target": "48px",
+      "--m-topbar-height": "72px",
+      "--m-tabbar-height": "78px",
+      "--m-safe-top": "env(safe-area-inset-top, 0px)",
+      "--m-safe-bottom": "env(safe-area-inset-bottom, 0px)"
+    },
+    "motion": {
+      "--m-motion-fast": "120ms",
+      "--m-motion-normal": "180ms",
+      "--m-ease-standard": "cubic-bezier(.2, .8, .2, 1)"
+    },
+    "effects": {
+      "--m-shadow-soft": "0 12px 40px rgba(15,23,42,.10)",
+      "--m-shadow-card": "0 16px 48px rgba(37,99,255,.14)",
+      "--m-shadow-float": "0 20px 60px rgba(15,23,42,.22)",
+      "--m-gradient-shell": "radial-gradient(circle at top left, rgba(98,166,255,.55), rgba(124,58,237,.14) 36%, rgba(255,255,255,0) 58%), linear-gradient(180deg,#eaf3ff 0%, #edf3fb 48%, #edf3fb 100%)",
+      "--m-gradient-brand": "linear-gradient(135deg,#2563ff 0%, #5ea8ff 52%, #7c3aed 100%)",
+      "--m-gradient-gold": "linear-gradient(135deg,#ffcf70 0%, #f59e0b 100%)",
+      "--m-gradient-dark": "linear-gradient(145deg,#0c172d 0%, #122241 100%)"
+    }
+  },
+  "components": [
+    "BrandedMobileTopBar",
+    "RoleAwareLeadList",
+    "LeadStatusCard",
+    "AppearancePreview",
+    "MobileAppShell",
+    "MobileBottomTabs",
+    "MobileActionDrawer",
+    "HeroMetricCard",
+    "3DIconOrb",
+    "EntitySwitch",
+    "QuickCaptureCard",
+    "QuickQuoteWidget",
+    "TradeCaptureForm",
+    "NotificationToast",
+    "SettingsList",
+    "OfflineQueueBadge"
+  ],
+  "northstarMapping": [
+    {
+      "workflow": "Existing lead management",
+      "screens": [
+        "Current Leads",
+        "Quick Quote",
+        "Notifications"
+      ],
+      "components": [
+        "RoleAwareLeadList",
+        "LeadStatusCard",
+        "QuickQuoteWidget",
+        "NotificationToast"
+      ],
+      "successMetric": "Rep or manager finds and acts on a current lead in under 30 seconds."
+    },
+    {
+      "workflow": "Buyer capture to quote",
+      "screens": [
+        "Home Dashboard",
+        "Quick Quote Capture",
+        "Notifications"
+      ],
+      "components": [
+        "HeroMetricCard",
+        "3DIconOrb",
+        "EntitySwitch",
+        "QuickQuoteWidget",
+        "NotificationToast"
+      ],
+      "successMetric": "Buyer quote draft created in under 75 seconds; quote-start conversion rate improves."
+    },
+    {
+      "workflow": "Supplier sourcing capture",
+      "screens": [
+        "Home Dashboard",
+        "Trade Capture",
+        "Notifications"
+      ],
+      "components": [
+        "QuickCaptureCard",
+        "EntitySwitch",
+        "TradeCaptureForm",
+        "NotificationToast"
+      ],
+      "successMetric": "Supplier record captured in under 60 seconds; sourcing completeness exceeds 90%."
+    },
+    {
+      "workflow": "Manager mobile review",
+      "screens": [
+        "Current Leads",
+        "Home Dashboard"
+      ],
+      "components": [
+        "RoleAwareLeadList",
+        "LeadStatusCard",
+        "HeroMetricCard"
+      ],
+      "successMetric": "Manager can view team lead status and risk without desktop handoff."
+    },
+    {
+      "workflow": "Appearance and accessibility",
+      "screens": [
+        "Settings"
+      ],
+      "components": [
+        "AppearancePreview",
+        "SettingsList",
+        "MobileTopBar"
+      ],
+      "successMetric": "Light/dark mode is visible, readable, and accessible on phone viewports."
+    }
+  ],
+  "roles": {
+    "owner_admin": {
+      "visibility": "all workspace leads",
+      "actions": [
+        "search",
+        "open",
+        "quote",
+        "review risk",
+        "monitor status"
+      ]
+    },
+    "manager": {
+      "visibility": "manager owned leads, team leads, direct-report leads",
+      "actions": [
+        "review team status",
+        "open",
+        "quote",
+        "nudge follow-up"
+      ]
+    },
+    "member": {
+      "visibility": "assigned leads only",
+      "actions": [
+        "open",
+        "quote",
+        "follow up",
+        "capture notes"
+      ]
+    }
+  },
+  "leadStatuses": [
+    "New",
+    "Qualified",
+    "Quote ready",
+    "Supplier follow-up",
+    "At risk"
+  ],
+  "appearance": {
+    "default": "system",
+    "modes": [
+      "light",
+      "dark"
+    ],
+    "manualOverride": true
+  }
+}
