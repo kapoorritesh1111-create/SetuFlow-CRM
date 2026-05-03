@@ -61,10 +61,10 @@ export function AppShell({
 
   const shareLink = useMemo(() => {
     const params = new URLSearchParams();
-    params.set('fullName', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
+    params.set('name', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
     if (profile?.email) params.set('email', profile.email);
-    params.set('organizationName', organization?.name ?? 'SETU Flow');
-    params.set('roleLabel', getWorkspaceRoleDisplayName(currentRole));
+    params.set('org', organization?.name ?? 'SETU Flow');
+    params.set('role', getWorkspaceRoleDisplayName(currentRole));
     if (cardSettings?.primaryPhone) params.set('phone', cardSettings.primaryPhone);
     if (cardSettings?.secondaryPhone) params.set('phone2', cardSettings.secondaryPhone);
     if (cardSettings?.website) params.set('web', cardSettings.website);
@@ -75,10 +75,10 @@ export function AppShell({
 
   const downloadVcfHref = useMemo(() => {
     const params = new URLSearchParams();
-    params.set('fullName', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
+    params.set('name', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
     if (profile?.email) params.set('email', profile.email);
-    params.set('organizationName', organization?.name ?? 'SETU Flow');
-    params.set('roleLabel', getWorkspaceRoleDisplayName(currentRole));
+    params.set('org', organization?.name ?? 'SETU Flow');
+    params.set('role', getWorkspaceRoleDisplayName(currentRole));
     if (cardSettings?.primaryPhone) params.set('phone', cardSettings.primaryPhone);
     if (cardSettings?.secondaryPhone) params.set('phone2', cardSettings.secondaryPhone);
     if (cardSettings?.website) params.set('web', cardSettings.website);

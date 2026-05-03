@@ -25,6 +25,85 @@ function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
 
+function MobileSafeLeadQuoteSurface({
+  lead,
+  linkedProducts,
+  linkedMarkets,
+  quoteCount,
+  blockerCount,
+  leadId,
+}: {
+  lead: any;
+  linkedProducts: any[];
+  linkedMarkets: any[];
+  quoteCount: number;
+  blockerCount: number;
+  leadId: string;
+}) {
+  const productLabel = linkedProducts?.[0]?.name ?? 'Select product';
+  const marketLabel = linkedMarkets?.[0]?.name ?? lead.country ?? 'Select market';
+  const currency = lead.deal_currency ?? 'USD';
+  const amount = typeof lead.deal_value === 'number' && lead.deal_value > 0 ? lead.deal_value : 0;
+  const estimate = amount > 0 ? `${currency} ${amount.toLocaleString()}` : `${currency} draft`;
+
+  return (
+    <section className="min-h-screen bg-[#071327] px-4 pb-32 pt-5 text-white md:hidden">
+      <div className="rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,.35),rgba(15,23,42,0)_38%),linear-gradient(145deg,#0c172d,#10284c)] p-5 shadow-[0_24px_80px_rgba(0,0,0,.28)]">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Mobile quote</p>
+        <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight">{lead.company_name}</h1>
+        <p className="mt-2 text-sm font-semibold text-white/70">{lead.lead_type === 'supplier' ? 'Supplier' : 'Buyer'} · {marketLabel}</p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="rounded-3xl bg-white/10 p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55">Quotes</p>
+            <b className="mt-1 block text-3xl font-black">{quoteCount}</b>
+          </div>
+          <div className="rounded-3xl bg-white/10 p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55">Readiness</p>
+            <b className="mt-1 block text-xl font-black">{blockerCount > 0 ? `${blockerCount} blockers` : 'Ready'}</b>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-[2rem] border border-white/10 bg-white p-5 text-slate-950 shadow-xl shadow-black/15">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">Fast quote editor</p>
+        <h2 className="mt-1 text-2xl font-black tracking-tight">Build quote on the go</h2>
+        <div className="mt-5 grid gap-3">
+          <label className="grid gap-2">
+            <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Product</span>
+            <div className="min-h-14 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold">{productLabel}</div>
+          </label>
+          <label className="grid gap-2">
+            <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Market</span>
+            <div className="min-h-14 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold">{marketLabel}</div>
+          </label>
+          <label className="grid gap-2">
+            <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Quantity</span>
+            <input inputMode="numeric" placeholder="Enter quantity" className="min-h-14 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold outline-none focus:border-blue-500" />
+          </label>
+          <div className="rounded-3xl bg-blue-50 p-4">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-blue-700">Current estimate</p>
+            <b className="mt-1 block text-3xl font-black text-slate-950">{estimate}</b>
+            <p className="mt-2 text-sm text-slate-500">Use this mobile view for quick quote checks. Full advanced controls remain available on desktop.</p>
+          </div>
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <Link href={`/leads/${leadId}`} className="flex min-h-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-900">Open lead</Link>
+          <Link href="/orders" className="flex min-h-14 items-center justify-center rounded-2xl bg-blue-600 text-sm font-black text-white">View orders</Link>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-[2rem] border border-white/10 bg-white/8 p-5 text-white">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Next steps</p>
+        <ul className="mt-3 space-y-3 text-sm text-white/75">
+          <li>• Confirm product and quantity.</li>
+          <li>• Check readiness blockers before sending.</li>
+          <li>• Continue on desktop only for advanced approval and send controls.</li>
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 export default async function QuotePage({ params, searchParams }: { params: { leadId: string }, searchParams?: { quoteId?: string | string[] } }) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>> | null = null;
 
@@ -233,7 +312,9 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   const openQuoteCount = data.quotes.filter((quote) => !['accepted', 'rejected', 'expired', 'cancelled'].includes(String(quote.status ?? '').toLowerCase())).length;
 
   return (
-    <div style={{ background: '#f0f4f8', minHeight: '100vh' }}>
+    <>
+      <MobileSafeLeadQuoteSurface lead={lead} linkedProducts={data.linkedProducts as any[]} linkedMarkets={data.linkedMarkets as any[]} quoteCount={quoteCount} blockerCount={quoteSendGuard.blockerCount} leadId={leadId} />
+      <div className="hidden md:block" style={{ background: '#f0f4f8', minHeight: '100vh' }}>
       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
         {missingMarketCoverage ? (
@@ -373,6 +454,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
 
       </div>
     </div>
+    </>
   );
 
 }

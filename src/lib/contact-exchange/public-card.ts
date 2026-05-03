@@ -65,9 +65,9 @@ export function parsePublicCardSearchParams(searchParams: Record<string, string 
   };
 
   return {
-    fullName: get('name') || 'SETU Flow contact',
-    roleLabel: get('role') || 'Global trade contact',
-    organizationName: get('org') || 'SETU Flow',
+    fullName: get('name') || get('fullName') || 'SETU Flow contact',
+    roleLabel: get('role') || get('roleLabel') || 'Global trade contact',
+    organizationName: get('org') || get('organizationName') || 'SETU Flow',
     email: get('email') || 'hello@setuflow.com',
     primaryPhone: get('phone') || 'Phone shared after save',
     secondaryPhone: get('phone2') || null,

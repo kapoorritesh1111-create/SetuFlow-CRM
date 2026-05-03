@@ -107,3 +107,12 @@ The production readiness endpoint only verifies environment and service configur
 - scrolls the drawer to the Company field after the form is populated.
 
 If a business card still does not prefill, the status banner should show a specific error instead of a false success message.
+
+
+## PASS28 production notes
+
+The mobile card scanner now treats a live OCR result as mandatory for camera/image scans. If OCR fails or the model cannot read the photo, the app shows a clear retake/upload message instead of filling the company field with a generic filename such as `Image`. This keeps field data clean for trade-show use.
+
+For best camera results, capture the full card in focus, avoid glare, keep the card flat, and use Upload file for screenshots or images already saved in the photo library. The scanner follows a modern OCR pipeline: image preparation, live vision OCR, structured field mapping, deterministic fallback from raw text, and explicit user review before save.
+
+The vCard share/download flow now uses the public-card URL contract (`name`, `org`, `role`, `email`, `phone`) so downloaded contacts preserve the user's real name and saved My Card phone settings.

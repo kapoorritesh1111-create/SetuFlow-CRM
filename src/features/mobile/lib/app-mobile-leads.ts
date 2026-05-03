@@ -107,10 +107,10 @@ export function buildMobileSignedInSummary(workspace: {
   const roles = normalizeWorkspaceRoles(workspace.currentRoles ?? []);
   const primaryRole = getPrimaryWorkspaceRole(roles) ?? 'member';
   const params = new URLSearchParams();
-  params.set('fullName', workspace.profile?.full_name ?? workspace.profile?.username ?? 'SETU Flow user');
+  params.set('name', workspace.profile?.full_name ?? workspace.profile?.username ?? 'SETU Flow user');
   if (workspace.profile?.email) params.set('email', workspace.profile.email);
-  params.set('organizationName', workspace.organization?.name ?? 'SETU Flow');
-  params.set('roleLabel', getWorkspaceRoleDisplayName(primaryRole));
+  params.set('org', workspace.organization?.name ?? 'SETU Flow');
+  params.set('role', getWorkspaceRoleDisplayName(primaryRole));
   return {
     name: workspace.profile?.full_name ?? workspace.profile?.username ?? 'SETU Flow user',
     email: workspace.profile?.email ?? null,

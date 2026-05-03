@@ -102,6 +102,19 @@ function looksLikeAddress(line: string) {
   return ADDRESS_PATTERNS.test(line) || /\d{5,}/.test(line);
 }
 
+
+function isGenericScanFilename(filename: string) {
+  const normalized = filename
+    .replace(/\.[^.]+$/, '')
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .toLowerCase();
+  return !normalized
+    || /^(image|img|photo|picture|camera|business card|contact source|mobile scan|scan|screenshot)(\s*\d+)?$/.test(normalized)
+    || /^img\s*\d{3,}$/i.test(normalized)
+    || /^image\s*\d{3,}$/i.test(normalized);
+}
+
 function humanizeFilename(filename: string) {
   const base = filename.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
   if (!base) return '';
@@ -226,7 +239,7 @@ export function parseContactText(input: string, options?: { filename?: string | 
   const fileHint = options?.filename ? humanizeFilename(options.filename) : '';
   const sourceType = deriveSourceType(options?.fileType ?? undefined, options?.sourceMode);
   const sourceLabel = options?.filename?.trim() || 'Quick entry contact scan';
-  const fallbackCompany = company || (fileHint && !looksLikePersonName(fileHint) ? fileHint : '');
+  const fallbackCompany = company || (fileHint && !isGenericScanFilename(options?.filename ?? '') && !looksLikePersonName(fileHint) ? fileHint : '');
   const draft: ParsedContactDraft = {
     contactName: name,
     companyName: fallbackCompany,

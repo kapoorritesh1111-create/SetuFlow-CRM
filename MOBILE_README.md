@@ -447,3 +447,12 @@ If OCR reads raw text but the structured AI response is sparse, the server now p
 - Quick Add Lead is a single-screen quick-save drawer on mobile; the first view shows **Save lead**, not a disabled **Previous step**.
 - The drawer footer must layer above the mobile bottom navigation so Cancel and Save remain visible on iPhone/Android.
 - The PASS26 fixes remain required: business-card scan prefill, mobile vCard parity, and blueprint-grade Orders mobile surface.
+
+
+## PASS28 production notes
+
+The mobile card scanner now treats a live OCR result as mandatory for camera/image scans. If OCR fails or the model cannot read the photo, the app shows a clear retake/upload message instead of filling the company field with a generic filename such as `Image`. This keeps field data clean for trade-show use.
+
+For best camera results, capture the full card in focus, avoid glare, keep the card flat, and use Upload file for screenshots or images already saved in the photo library. The scanner follows a modern OCR pipeline: image preparation, live vision OCR, structured field mapping, deterministic fallback from raw text, and explicit user review before save.
+
+The vCard share/download flow now uses the public-card URL contract (`name`, `org`, `role`, `email`, `phone`) so downloaded contacts preserve the user's real name and saved My Card phone settings.

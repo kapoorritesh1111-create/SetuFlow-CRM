@@ -1,3 +1,32 @@
+# 2026-05-03 - PASS28 mobile OCR accuracy, vCard identity, and quote mobile handoff
+
+## Summary
+
+Fixed the remaining mobile issues observed in the latest field screenshots: camera scan no longer treats generic image filenames as lead data, image scans now require live OCR before filling the Quick Add Lead drawer, vCard share/download URLs now use the correct public-card query contract so the downloaded contact keeps the user's real name, and the lead quote route now provides a mobile-safe quote surface instead of showing the compressed desktop quote workspace on phones.
+
+## What was broken
+
+- Camera capture could fall back to the uploaded filename (`image.jpg`) and treat `Image` as the company name when live OCR did not return useful fields.
+- The scan route allowed an image scan to look successful even if the live OCR boundary was not reached.
+- Mobile vCard share links used `fullName`, `organizationName`, and `roleLabel`, while the public-card parser expected `name`, `org`, and `role`; downloaded `.vcf` files could therefore fall back to `SETU Flow contact`.
+- The canonical lead quote route showed the desktop quote workspace on phone viewports.
+- Some quote copy still exposed internal/developer phrasing.
+
+## Fixes
+
+- Added `require_ocr=true` for mobile camera/image scans and rejected image scans unless `/api/mobile/contact-scan` reaches `server_image_ocr_live`.
+- Added generic filename protection so `image`, `photo`, `scan`, `IMG_####`, and similar filenames cannot become company names.
+- Kept the existing OpenAI OCR path but made failure visible and review-safe rather than silently filling bad data.
+- Corrected mobile vCard query parameters to `name`, `org`, and `role`, with backwards-compatible parser support for old links.
+- Added a mobile-safe lead quote surface to `/leads/[leadId]/quote` and hid the desktop quote workspace below the `md` breakpoint.
+- Removed customer-facing `repo surface` copy from quote screens.
+
+## Validation
+
+- `npm test` passed: 37/37.
+- Added `tests/mobile-pass28-scan-vcard-quote.test.mjs` covering OCR boundary enforcement, generic filename rejection, vCard query contract, mobile-safe quote route behavior, and removal of internal quote copy.
+
+
 # 2026-05-03 - PASS27 Mobile Lead Action and Quick Add Footer Fix
 
 ## Summary

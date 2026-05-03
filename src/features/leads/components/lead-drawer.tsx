@@ -624,13 +624,14 @@ export function LeadDrawer({
       formData.set('source_mode', sourceMode);
       formData.set('source', uploadFile);
       if (browserText) formData.set('assist_text', browserText);
+      if (sourceMode === 'camera' || uploadFile.type.startsWith('image/')) formData.set('require_ocr', 'true');
 
       // Keep extractContactScan available for server-action parity, but use the explicit
       // route in the Quick Add drawer so iOS camera/file-picker returns reliably update
       // the same visible form after the picker closes.
       void extractContactScan;
       const response = await fetch('/api/mobile/contact-scan', { method: 'POST', body: formData });
-      const result = await response.json() as { error?: string; extraction?: any };
+      const result = await response.json() as { ok?: boolean; error?: string; extraction?: any };
       if (!response.ok || result.error || !result.extraction) {
         setQuickScanStatus({ tone: 'error', message: result.error ?? 'Scan finished without usable contact fields. Try retaking the photo with the card flatter and brighter.' });
         return;
@@ -638,6 +639,8 @@ export function LeadDrawer({
 
       const extraction = result.extraction;
       const draft = extraction.draft;
+      const genericOnlyCompany = String(draft.companyName ?? '').trim().toLowerCase() === 'image' || String(draft.companyName ?? '').trim().toLowerCase() === 'photo' || String(draft.companyName ?? '').trim().toLowerCase() === 'scan';
+      if (genericOnlyCompany) draft.companyName = '';
       if (!hasQuickScanSignal(draft)) {
         const guidance = extraction.boundary === 'server_image_ocr_live' || extraction.boundary === 'server_pdf_ocr_live'
           ? 'The card was scanned, but no company, contact, email, phone, role, or website could be read. Retake the photo closer to the card with less glare, or use Upload file.'
@@ -680,7 +683,7 @@ export function LeadDrawer({
         return [existing, ...additions].filter(Boolean).join('\n\n');
       });
       setSourceType(extraction.sourceType || (sourceMode === 'camera' ? 'contact_scan_camera' : 'contact_scan_upload'));
-      setSourceLabel(extraction.sourceLabel || uploadFile.name || file.name || 'Quick entry contact scan');
+      setSourceLabel(extraction.sourceProfile === 'business_card' ? 'Business card camera scan' : (extraction.sourceLabel && !/^image\.?/i.test(extraction.sourceLabel) ? extraction.sourceLabel : 'Mobile contact scan'));
       if (matchedCountry?.id) setCountryId(matchedCountry.id);
       setLeadType((current) => current || 'buyer');
       setActiveStepId('basics');

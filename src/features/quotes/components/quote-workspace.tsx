@@ -995,11 +995,11 @@ function buildQuoteVersionSendReadiness(input: {
   const marginExposed = false;
   const thresholdNarrative = thresholdPercent != null
     ? governedMetricPercent != null
-      ? `Required threshold ${formatPercent(thresholdPercent)} · governed approval metric ${formatPercent(governedMetricPercent)} from override delta · ${deltaToThresholdPercent != null ? `${deltaToThresholdPercent >= 0 ? '+' : ''}${formatPercent(deltaToThresholdPercent)} vs threshold` : 'threshold comparison unavailable'}. True commercial margin is not exposed in this repo surface, so approval proof stays tied to governed override delta and approval state.`
-      : `Required threshold ${formatPercent(thresholdPercent)} is configured. This version does not expose a governed override delta right now, and true commercial margin is not exposed in this repo surface.`
+      ? `Required threshold ${formatPercent(thresholdPercent)} · governed approval metric ${formatPercent(governedMetricPercent)} from override delta · ${deltaToThresholdPercent != null ? `${deltaToThresholdPercent >= 0 ? '+' : ''}${formatPercent(deltaToThresholdPercent)} vs threshold` : 'threshold comparison unavailable'}. True commercial margin is not shown on this mobile view, so approval proof stays tied to governed override delta and approval state.`
+      : `Required threshold ${formatPercent(thresholdPercent)} is configured. This version does not expose a governed override delta right now, and true commercial margin is not shown on this mobile view.`
     : governedMetricPercent != null
       ? `Threshold enforced, value not configured. Governed approval metric currently visible: override delta ${formatPercent(governedMetricPercent)}. True commercial margin is still not exposed here.`
-      : 'Threshold enforced, value not configured. This repo surface can prove approval state, but it cannot honestly display the configured numeric threshold or true commercial margin here.';
+      : 'Threshold enforced, value not configured. This quote view can prove approval state, but it cannot honestly display the configured numeric threshold or true commercial margin here.';
 
   let evaluationState: QuoteSendReadinessRecord['evaluationState'] = "approved";
   if (!lineItems.length) evaluationState = "empty";
@@ -1148,7 +1148,7 @@ function getQuoteSendDecision(input: {
       ? `${readiness.threshold.governedMetricLabel} is ${formatPercent(readiness.threshold.governedMetricPercent)}${readiness.threshold.configuredPercent != null && readiness.threshold.deltaToThresholdPercent != null ? ` against a ${formatPercent(readiness.threshold.configuredPercent)} threshold (${readiness.threshold.deltaToThresholdPercent >= 0 ? '+' : ''}${formatPercent(readiness.threshold.deltaToThresholdPercent)} vs threshold).` : '.'}`
       : readiness.threshold.narrative,
     !readiness.threshold.marginExposed
-      ? "True commercial margin is not exposed in this repo surface, so AI is explaining the governed approval metric rather than inventing margin proof."
+      ? "True commercial margin is not shown on this mobile view, so AI is explaining the governed approval metric rather than inventing margin proof."
       : "Commercial margin proof is visible in the governed send object.",
     readiness.blockers.length
       ? `${readiness.blockers.length} explicit blocker${readiness.blockers.length === 1 ? '' : 's'} are recorded in the send-readiness object.`
@@ -2349,7 +2349,7 @@ export function QuoteWorkspace({
                                         : snapshotForVersion
                                           ? `Send snapshot recorded ${formatDateTime(snapshotForVersion.recordedAt)}.`
                                           : isSentVersion
-                                            ? "This version was sent before send-decision snapshots were recorded in the repo."
+                                            ? "This version was sent before send-decision snapshots were recorded in this workspace."
                                             : "This version remains internal until a deliberate send occurs."}
                                 </p>
                               </div>
@@ -2466,7 +2466,7 @@ export function QuoteWorkspace({
                           <div className="rounded-[1rem] border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
                             <p className="font-semibold">Legacy sent versions without snapshot proof</p>
                             <p className="mt-1 text-xs text-amber-800">
-                              {legacySentFocusedVersions.map((version) => `v${version.version_no ?? "—"}`).join(", ")} were sent before send-decision snapshots were recorded in the repo. They remain historically visible, but not equally auditable.
+                              {legacySentFocusedVersions.map((version) => `v${version.version_no ?? "—"}`).join(", ")} were sent before send-decision snapshots were recorded in this workspace. They remain historically visible, but not equally auditable.
                             </p>
                           </div>
                         ) : null}

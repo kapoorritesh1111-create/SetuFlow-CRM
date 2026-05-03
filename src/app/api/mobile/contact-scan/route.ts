@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     const sourceModeValue = String(formData.get('source_mode') ?? 'upload').trim();
     const sourceMode = sourceModeValue === 'camera' ? 'camera' : sourceModeValue === 'manual' ? 'manual' : 'upload';
     const source = formData.get('source');
+    const requireOcr = String(formData.get('require_ocr') ?? '').trim() === 'true';
 
     if (!(source instanceof File) && !assistText) {
       return NextResponse.json({ error: 'Attach a business card photo or file before scanning.' }, { status: 400 });
@@ -41,10 +42,19 @@ export async function POST(request: NextRequest) {
       sourceMode,
       filename,
       fileType,
-      fileText,
       pdfText,
+      fileText,
       source: source instanceof File ? source : null,
     });
+
+    const isImageSource = source instanceof File && String(fileType).startsWith('image/');
+    if (requireOcr && isImageSource && extraction.boundary !== 'server_image_ocr_live') {
+      return NextResponse.json({
+        ok: false,
+        error: 'The photo reached SETU Flow, but live card reading did not complete. Retake the card closer and flatter, or try Upload file. If this repeats, check the OCR model logs.',
+        extraction,
+      }, { status: 422 });
+    }
 
     return NextResponse.json({ ok: true, extraction });
   } catch (error) {
