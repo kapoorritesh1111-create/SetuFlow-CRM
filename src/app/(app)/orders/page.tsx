@@ -674,7 +674,79 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   }
 
   return (
-    <div className="mobile-premium-orders" style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
+    <>
+      <section className="space-y-4 md:hidden" data-mobile-orders-blueprint="true">
+        <div className="rounded-[2rem] bg-[linear-gradient(145deg,#0c172d_0%,#122241_100%)] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,.22)]">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Orders</p>
+          <h1 className="mt-2 text-3xl font-black leading-none tracking-tight">Execution desk</h1>
+          <p className="mt-3 text-sm text-white/70">Track accepted orders, blockers, documents, and dispatch readiness from the floor.</p>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-3xl bg-white/10 p-4"><b className="text-3xl">{perspectiveAccepted.length}</b><p className="text-xs text-slate-300">active orders</p></div>
+            <div className="rounded-3xl bg-white/10 p-4"><b className="text-3xl">{blockedCount}</b><p className="text-xs text-slate-300">blocked</p></div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-[1.5rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">Docs pending</p>
+            <b className="mt-2 block text-3xl font-black text-slate-950">{docsPendingCount}</b>
+            <span className="text-xs text-slate-500">upload required</span>
+          </div>
+          <div className="rounded-[1.5rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Execution value</p>
+            <b className="mt-2 block text-2xl font-black text-slate-950">{executionValueLabel}</b>
+            <span className="text-xs text-slate-500">active orders</span>
+          </div>
+        </div>
+
+        <div className="rounded-[1.75rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Order queue</p>
+          <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Dispatch movement</h2>
+          <p className="mt-1 text-sm text-slate-500">{activeOrdersLabel} · {executionValueLabel} execution value</p>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {(['all','buyers','suppliers'] as const).map((m) => (
+              <Link key={m} href={m === 'all' ? PRODUCT_ROUTES.app.orders : `${PRODUCT_ROUTES.app.orders}?mode=${m}`} className={`min-h-11 rounded-2xl px-2 text-center text-xs font-black capitalize leading-[44px] ${perspectiveMode === m ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{m}</Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          {perspectiveAccepted.length === 0 ? (
+            <div className="rounded-[1.75rem] border border-white/70 bg-white/95 p-6 text-center shadow-xl shadow-blue-950/5">
+              <h2 className="text-xl font-black text-slate-950">No active orders</h2>
+              <p className="mt-2 text-sm text-slate-500">Accepted quotes will appear here for execution.</p>
+              <Link href={PRODUCT_ROUTES.app.leads} className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black text-white">Go to Leads</Link>
+            </div>
+          ) : perspectiveAccepted.map((order) => {
+            const gate = dispatchGate(order.operationalControls);
+            const isBlocked = gate.tone === 'danger' || gate.tone === 'warning';
+            return (
+              <article key={order.quoteId} className="rounded-[1.75rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-950">{order.companyName}</h3>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">{order.contactName ?? 'Contact pending'} · {order.country ?? 'Market pending'}</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.1em] ${isBlocked ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>{gate.label}</span>
+                </div>
+                <div className="mt-4 rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-700">
+                  {order.executionBlockers[0] ?? `State: ${getOrderExecutionStateLabel(order.executionState)}`}
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-2xl bg-slate-50 p-3"><b className="block text-slate-950">{formatMoneyValue(order.dealValue, order.currency)}</b><span className="text-slate-500">value</span></div>
+                  <div className="rounded-2xl bg-slate-50 p-3"><b className="block text-slate-950">{order.documents.length}</b><span className="text-slate-500">documents</span></div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Link href={`${PRODUCT_ROUTES.app.orders}?mode=${perspectiveMode}&openOrderId=${order.quoteId}`} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black text-white">Open</Link>
+                  <Link href={`${PRODUCT_ROUTES.app.leads}/${order.leadId}`} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-blue-600 text-sm font-black text-white">Lead</Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="hidden md:block mobile-premium-orders" style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b',background:'#f0f4f8',minHeight:'100vh'}}>
 
       {/* TOPBAR */}
       <header style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
@@ -954,6 +1026,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
         {perspectiveAccepted.length>0&&<div style={{textAlign:'center',padding:'14px',color:'#94a3b8',fontSize:'12px',fontWeight:600}}>+ {Math.max(0,orders.length-perspectiveAccepted.length)} more orders (delivered, closed) · <span style={{color:'#0c7fff',cursor:'pointer'}}>Load all</span></div>}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

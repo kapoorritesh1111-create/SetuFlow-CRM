@@ -2,6 +2,8 @@ import { AppShell } from '@/components/layout/app-shell';
 import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
+import { EMPTY_CARD_SETTINGS, toCardSettingsInput } from '@/lib/contact-exchange/my-card-settings-shared';
 
 import { unstable_noStore as noStore } from 'next/cache'; // ✅ ADD THIS
 
@@ -42,12 +44,17 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     );
   }
 
+  const myCardSettings = workspace.user
+    ? toCardSettingsInput(await getMyCardSettingsForUser(workspace.user.id), EMPTY_CARD_SETTINGS)
+    : EMPTY_CARD_SETTINGS;
+
   return (
     <AppShell
       profile={workspace.profile}
       organization={workspace.organization}
       membership={workspace.membership}
       currentRoles={workspace.currentRoles}
+      cardSettings={myCardSettings}
     >
       {children}
     </AppShell>

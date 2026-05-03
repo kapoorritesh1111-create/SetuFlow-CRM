@@ -1,3 +1,35 @@
+# 2026-05-03 - PASS27 Mobile Lead Action and Quick Add Footer Fix
+
+## Summary
+
+Fixed the remaining mobile interaction issues found after PASS26: lead cards now use real navigation for Open and Quote, and the Quick Add Lead drawer footer now sits above the mobile tab bar with the correct quick-save action instead of exposing a disabled Previous step. The previous PASS26 scan/vCard/orders fixes remain in place.
+
+## Files changed
+
+- `src/features/mobile/components/lead-status-card.tsx` - converted Open and Quote controls from inert buttons to real links.
+- `src/components/RightDrawer.tsx` - raised drawer z-index so footer actions render above the mobile bottom navigation.
+- `src/features/leads/components/LeadDrawerFooter.tsx` - hides Previous step until there is actually a previous step.
+- `src/features/leads/components/lead-drawer.tsx` - treats Quick Add Lead as a single-screen quick-save flow, so Save Lead is visible instead of an unnecessary wizard Continue/Previous path.
+- `tests/mobile-pass27-actions-footer.test.mjs` - added regression coverage for lead actions and drawer footer behavior.
+
+## Validation
+
+- Lead Open and Quote controls now navigate to `/leads/[id]` and `/leads/[id]/quote`.
+- Quick Add Lead shows Save Lead on the first screen and does not show a disabled Previous step.
+- The drawer footer is layered above the mobile bottom navigation.
+
+---
+
+## Pass 26 Mobile Video QA Fix
+
+- Quick Add Lead camera/file scan now posts to `/api/mobile/contact-scan` so iOS camera returns reliably run OCR and prefill the same visible drawer fields.
+- Share vCard now uses the saved My Card settings phone number, secondary phone, website, and address in public-card links and `.vcf` downloads.
+- Current Leads no longer repeats the signed-in/share-vCard card below the header; vCard sharing stays in the mobile top bar and drawer.
+- Orders now has a blueprint-grade phone surface while preserving the existing desktop Orders workspace at `md` and above.
+- Home mobile copy was cleaned to remove prototype/dev language.
+
+---
+
 # 2026-05-03 - Mobile Business Card Scan Production Payload Fix
 
 ## Summary

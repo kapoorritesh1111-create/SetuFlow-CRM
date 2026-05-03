@@ -157,7 +157,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   if (!open) return null;
 
   const drawer = (
-    <div className="fixed inset-0 z-50 flex justify-end" role="presentation">
+    <div className="fixed inset-0 z-[120] flex justify-end" role="presentation">
       <button
         type="button"
         className="flex-1 bg-slate-950/55 backdrop-blur-[2px] transition-opacity duration-200"

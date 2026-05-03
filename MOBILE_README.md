@@ -431,3 +431,19 @@ Expected live behavior:
 6. The form scrolls to the Company field and the visible Quick Add Lead fields are populated.
 
 If OCR reads raw text but the structured AI response is sparse, the server now parses the raw OCR text as a fallback before returning the scan result.
+
+
+## Pass 26 Mobile Video QA Fix
+
+- Quick Add Lead camera/file scan now posts to `/api/mobile/contact-scan` so iOS camera returns reliably run OCR and prefill the same visible drawer fields.
+- Share vCard now uses the saved My Card settings phone number, secondary phone, website, and address in public-card links and `.vcf` downloads.
+- Current Leads no longer repeats the signed-in/share-vCard card below the header; vCard sharing stays in the mobile top bar and drawer.
+- Orders now has a blueprint-grade phone surface while preserving the existing desktop Orders workspace at `md` and above.
+- Home mobile copy was cleaned to remove prototype/dev language.
+
+## PASS27 mobile action validation
+
+- Lead cards must use real links for **Open** and **Quote** rather than inert buttons.
+- Quick Add Lead is a single-screen quick-save drawer on mobile; the first view shows **Save lead**, not a disabled **Previous step**.
+- The drawer footer must layer above the mobile bottom navigation so Cancel and Save remain visible on iPhone/Android.
+- The PASS26 fixes remain required: business-card scan prefill, mobile vCard parity, and blueprint-grade Orders mobile surface.

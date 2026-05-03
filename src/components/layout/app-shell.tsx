@@ -15,6 +15,7 @@ import { MobileShell } from '@/features/mobile/components/mobile-shell';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 import type { Database } from '@/types/database';
+import type { MyCardSettingsInput } from '@/lib/contact-exchange/my-card-settings-shared';
 
 type Profile = Database['public']['Tables']['profiles']['Row'] | null;
 type Organization = Database['public']['Tables']['organizations']['Row'] | null;
@@ -26,12 +27,14 @@ export function AppShell({
   organization,
   membership,
   currentRoles = [],
+  cardSettings,
 }: {
   children: ReactNode;
   profile: Profile;
   organization: Organization;
   membership: Membership;
   currentRoles?: string[];
+  cardSettings?: MyCardSettingsInput | null;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -62,8 +65,12 @@ export function AppShell({
     if (profile?.email) params.set('email', profile.email);
     params.set('organizationName', organization?.name ?? 'SETU Flow');
     params.set('roleLabel', getWorkspaceRoleDisplayName(currentRole));
+    if (cardSettings?.primaryPhone) params.set('phone', cardSettings.primaryPhone);
+    if (cardSettings?.secondaryPhone) params.set('phone2', cardSettings.secondaryPhone);
+    if (cardSettings?.website) params.set('web', cardSettings.website);
+    if (cardSettings?.address) params.set('addr', cardSettings.address);
     return `/card?${params.toString()}`;
-  }, [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
+  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
 
 
   const downloadVcfHref = useMemo(() => {
@@ -72,8 +79,12 @@ export function AppShell({
     if (profile?.email) params.set('email', profile.email);
     params.set('organizationName', organization?.name ?? 'SETU Flow');
     params.set('roleLabel', getWorkspaceRoleDisplayName(currentRole));
+    if (cardSettings?.primaryPhone) params.set('phone', cardSettings.primaryPhone);
+    if (cardSettings?.secondaryPhone) params.set('phone2', cardSettings.secondaryPhone);
+    if (cardSettings?.website) params.set('web', cardSettings.website);
+    if (cardSettings?.address) params.set('addr', cardSettings.address);
     return `/api/public/card-vcf?${params.toString()}`;
-  }, [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
+  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
 
   const signedInForMobile = useMemo(() => ({
     name: profile?.full_name ?? profile?.username ?? 'SETU Flow user',
@@ -81,9 +92,13 @@ export function AppShell({
     email: profile?.email,
     organizationName: organization?.name ?? 'SETU Flow',
     roleLabel: getWorkspaceRoleDisplayName(currentRole),
+    primaryPhone: cardSettings?.primaryPhone ?? null,
+    secondaryPhone: cardSettings?.secondaryPhone ?? null,
+    website: cardSettings?.website ?? null,
+    address: cardSettings?.address ?? null,
     shareHref: shareLink,
     downloadVcfHref,
-  }), [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username, shareLink, downloadVcfHref]);
+  }), [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username, shareLink, downloadVcfHref]);
 
   const canonicalMobileRoutes = ['/dashboard', '/leads', '/orders'];
   const shouldUseCanonicalMobileShell = canonicalMobileRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));

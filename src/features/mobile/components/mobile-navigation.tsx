@@ -61,7 +61,7 @@ export function BrandedMobileTopBar({ signedIn, canonical = false }: { signedIn?
           <button onClick={() => setOpen(true)} className="grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-white/10 text-xl" aria-label="Open mobile menu">☰</button>
           <img src="/logos/setu-flow-logo.svg" alt="SETU Flow" className="h-10 w-10 rounded-2xl bg-white p-1 shadow-lg" />
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-200">SETU Flow Mobile</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-200">SETU Flow</p>
             <p className="truncate text-base font-black tracking-tight">{title}</p>
             <p className="truncate text-[10px] text-white/55">{dateLabel || 'Today'} · {displayName}</p>
           </div>
@@ -86,7 +86,7 @@ export function MobileActionDrawer({ open, onClose, canonical = false, signedIn,
           <ThreeDIconOrb icon="✦" tone="blue" />
           <div>
             <h2 className="text-lg font-black text-slate-950 dark:text-white">Quick actions</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Fast field workflows for {signedIn?.name ?? 'your workspace'}.</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Fast actions for your workspace.</p>
           </div>
         </div>
         <div className="mt-4 grid gap-2">
@@ -114,7 +114,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
 
 export function MobileHomeHero() {
   return <section className="rounded-[2rem] bg-[linear-gradient(145deg,#0c172d_0%,#122241_100%)] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,.22)]">
-    <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Premium mobile</p><h1 className="mt-2 text-3xl font-black leading-none tracking-tight">Capture faster. Quote smarter. Close from the floor.</h1><p className="mt-3 text-sm text-white/68">One-handed access to leads, capture, quote movement, and trade execution.</p></div><ThreeDIconOrb icon="✦" tone="gold" /></div>
+    <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Trade command</p><h1 className="mt-2 text-3xl font-black leading-none tracking-tight">Capture faster. Quote smarter. Close from the floor.</h1><p className="mt-3 text-sm text-white/68">Your fastest path to leads, capture, quotes, and order movement.</p></div><ThreeDIconOrb icon="✦" tone="gold" /></div>
     <div className="mt-5 grid grid-cols-2 gap-3"><div className="rounded-3xl bg-white/10 p-4"><b className="text-3xl">46</b><p className="text-xs text-slate-300">open leads</p></div><div className="rounded-3xl bg-white/10 p-4"><b className="text-3xl">34</b><p className="text-xs text-slate-300">due now</p></div></div>
   </section>;
 }

@@ -7,6 +7,10 @@ export type MobileSignedInIdentity = {
   email?: string | null;
   organizationName?: string | null;
   roleLabel?: string;
+  primaryPhone?: string | null;
+  secondaryPhone?: string | null;
+  website?: string | null;
+  address?: string | null;
   shareHref?: string;
   downloadVcfHref?: string;
 };

@@ -81,7 +81,6 @@ export function RoleAwareLeadList({
 
   return (
     <section className="space-y-4">
-      <SignedInCard signedIn={signedIn} />
       <div className="rounded-[1.75rem] bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90">
         <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Role-aware leads</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">Lead queue</h1>

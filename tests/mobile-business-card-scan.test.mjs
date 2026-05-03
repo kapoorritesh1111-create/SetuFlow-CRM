@@ -60,6 +60,36 @@ test('mobile Share vCard uses desktop-grade share system actions', () => {
   assert.match(nav, /onShareVCard/);
 });
 
+
+test('quick add lead uses explicit mobile contact-scan API and visible status path', () => {
+  const drawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
+  const route = readFileSync('src/app/api/mobile/contact-scan/route.ts', 'utf8');
+  assert.match(drawer, /fetch\('\/api\/mobile\/contact-scan'/);
+  assert.match(drawer, /Photo ready\. Reading the business card now/);
+  assert.match(drawer, /Lead details filled from scan/);
+  assert.match(route, /extractContactSource/);
+  assert.match(route, /server_image_ocr|sourceMode/);
+});
+
+test('mobile vCard uses saved card phone settings and does not duplicate lead-page signed-in card', () => {
+  const appShell = readFileSync('src/components/layout/app-shell.tsx', 'utf8');
+  const layout = readFileSync('src/app/(app)/layout.tsx', 'utf8');
+  const vcardRoute = readFileSync('src/app/api/contact-exchange/vcard/route.ts', 'utf8');
+  const roleList = readFileSync('src/features/mobile/components/role-aware-lead-list.tsx', 'utf8');
+  assert.match(layout, /getMyCardSettingsForUser/);
+  assert.match(appShell, /primaryPhone: cardSettings\?\.primaryPhone/);
+  assert.match(appShell, /params\.set\('phone', cardSettings\.primaryPhone\)/);
+  assert.match(vcardRoute, /primaryPhone: settings\?\.primary_phone/);
+  assert.doesNotMatch(roleList, /<SignedInCard signedIn=\{signedIn\}/);
+});
+
+test('canonical orders has a blueprint-grade mobile order surface', () => {
+  const orders = readFileSync('src/app/(app)/orders/page.tsx', 'utf8');
+  assert.match(orders, /data-mobile-orders-blueprint="true"/);
+  assert.match(orders, /Execution desk/);
+  assert.match(orders, /hidden md:block mobile-premium-orders/);
+});
+
 test('contact parser extracts a realistic business card text block for mobile scan prefill', () => {
   const script = `
     import { parseContactText } from './src/lib/contact-exchange/contact-parser.ts';

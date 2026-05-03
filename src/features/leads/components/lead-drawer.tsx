@@ -625,8 +625,13 @@ export function LeadDrawer({
       formData.set('source', uploadFile);
       if (browserText) formData.set('assist_text', browserText);
 
-      const result = await extractContactScan(undefined, formData);
-      if (result.error || !result.extraction) {
+      // Keep extractContactScan available for server-action parity, but use the explicit
+      // route in the Quick Add drawer so iOS camera/file-picker returns reliably update
+      // the same visible form after the picker closes.
+      void extractContactScan;
+      const response = await fetch('/api/mobile/contact-scan', { method: 'POST', body: formData });
+      const result = await response.json() as { error?: string; extraction?: any };
+      if (!response.ok || result.error || !result.extraction) {
         setQuickScanStatus({ tone: 'error', message: result.error ?? 'Scan finished without usable contact fields. Try retaking the photo with the card flatter and brighter.' });
         return;
       }
@@ -645,7 +650,7 @@ export function LeadDrawer({
       const scanText = [
         draft.notes,
         extraction.sourceLabel,
-        ...extraction.fields.map((field) => field.value),
+        ...extraction.fields.map((field: { value?: string | null }) => field.value),
       ].join(' ').toLowerCase();
       const matchedCountry = countries.find((country) => country.name && scanText.includes(country.name.toLowerCase()));
 
@@ -1635,7 +1640,7 @@ export function LeadDrawer({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                 <div>
                   <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>Company name *</label>
-                  <input name="company_name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g. Metro Retail GmbH" required
+                  <input ref={companyInputRef} name="company_name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g. Metro Retail GmbH" required
                     style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: 500, color: '#1e293b', background: '#f8fafc', boxSizing: 'border-box' }}
                   />
                 </div>
@@ -2242,7 +2247,7 @@ export function LeadDrawer({
           onCancel={onClose}
           onCreateQuote={quoteTimelineRows.length ? undefined : handleCreateQuote}
           formId="lead-drawer-form"
-          wizard={{
+          wizard={isQuickMode && !isEditingExistingLead ? undefined : {
             activeStepIndex,
             totalSteps: wizardSteps.length,
             activeStepTitle: activeStep.title,

@@ -231,3 +231,12 @@ Required checks:
 - `/api/mobile/scan-readiness` should return `ok: true` after deployment.
 
 Use `MOBILE_SCAN_PRODUCTION.md` and `.env.production.example` before release.
+
+
+## Pass 26 Mobile Video QA Fix
+
+- Quick Add Lead camera/file scan now posts to `/api/mobile/contact-scan` so iOS camera returns reliably run OCR and prefill the same visible drawer fields.
+- Share vCard now uses the saved My Card settings phone number, secondary phone, website, and address in public-card links and `.vcf` downloads.
+- Current Leads no longer repeats the signed-in/share-vCard card below the header; vCard sharing stays in the mobile top bar and drawer.
+- Orders now has a blueprint-grade phone surface while preserving the existing desktop Orders workspace at `md` and above.
+- Home mobile copy was cleaned to remove prototype/dev language.
