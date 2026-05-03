@@ -1475,3 +1475,25 @@ Converted the approved premium mobile blueprint into isolated real Next.js mobil
 - Kept desktop `/leads` rendering unchanged behind desktop-only layout classes.
 - Preserved Share vCard and added a visible signed-in summary card to the mobile lead queue.
 - Updated mobile docs and DCC guidance for canonical `/leads` mobile entry.
+
+# 2026-05-03 - Quick Add Lead Camera Scan Prefill Reliability Fix
+
+## Summary
+
+Fixed the live mobile Quick Add Lead camera flow so a photo selected from the phone camera is prepared, scanned, validated, and mapped into the same visible drawer fields shown to the user.
+
+## Changes
+
+- Quick Add Lead now prepares phone photos with the same mobile scan optimizer used by the dedicated scanner before sending the image to OCR.
+- Quick Add Lead now adds browser text-detection assist text when available.
+- The scan success state now appears only when structured lead fields are actually found.
+- The success message now summarizes the values filled into the form, such as company, contact, role, email, and phone.
+- The drawer scrolls to the Company field after a successful scan so the user immediately sees the populated form.
+- The OCR merge path now parses provider raw text as a deterministic fallback when the provider returns raw OCR text but sparse structured fields.
+
+## Validation
+
+- Added regression coverage for Quick Add Lead prefill wiring, mobile scan optimization, browser text-detection assist, and raw OCR text fallback.
+- Targeted mobile business-card scan tests pass.
+
+---

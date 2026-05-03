@@ -31,6 +31,9 @@ test('quick add lead camera scan writes OCR results into visible drawer fields',
   const drawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
   assert.match(drawer, /extractContactScan/);
   assert.match(drawer, /applyQuickScanExtraction/);
+  assert.match(drawer, /prepareMobileScanFile/);
+  assert.match(drawer, /hasQuickScanSignal/);
+  assert.match(drawer, /tryQuickScanBrowserTextDetection/);
   assert.match(drawer, /setCompanyName\(\(current\) => draft\.companyName \|\| current\)/);
   assert.match(drawer, /setContactName\(\(current\) => draft\.contactName \|\| current\)/);
   assert.match(drawer, /setJobTitle\(\(current\) => draft\.jobTitle \|\| current\)/);
@@ -38,6 +41,8 @@ test('quick add lead camera scan writes OCR results into visible drawer fields',
   assert.match(drawer, /setPhone\(\(current\) => \{/);
   assert.match(drawer, /setWebsite\(\(current\) => draft\.website \|\| current\)/);
   assert.match(drawer, /quickScanStatus\.message/);
+  assert.match(drawer, /Lead details filled from scan\. \$/);
+  assert.match(drawer, /scrollIntoView/);
   assert.doesNotMatch(drawer, /ql-hidden-upload/);
   assert.doesNotMatch(drawer, /Dispatch to the ContactScanTrigger/);
 });
@@ -70,4 +75,14 @@ test('contact parser extracts a realistic business card text block for mobile sc
   assert.equal(draft.email, 'maya@asterretail.com');
   assert.equal(draft.phone, '+971 55 123 4567');
   assert.equal(draft.website, 'https://asterretail.com');
+});
+
+
+test('OCR raw text fallback can still prefill business-card fields when structured OCR is sparse', () => {
+  const extraction = readFileSync('src/lib/contact-exchange/contact-extraction.ts', 'utf8');
+  assert.match(extraction, /rawTextParsed/);
+  assert.match(extraction, /parseContactText\(providerResult\.draft\.rawText/);
+  assert.match(extraction, /providerResult\.draft\.contactName \|\| rawTextParsed\?\.draft\.contactName/);
+  assert.match(extraction, /providerResult\.draft\.companyName \|\| rawTextParsed\?\.draft\.companyName/);
+  assert.match(extraction, /providerResult\.draft\.jobTitle \|\| rawTextParsed\?\.draft\.jobTitle/);
 });

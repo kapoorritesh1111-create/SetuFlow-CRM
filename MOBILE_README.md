@@ -416,3 +416,18 @@ Production verification:
 5. Test `/leads?quickLead=1` on a real iPhone or Android device over HTTPS.
 
 See `MOBILE_SCAN_PRODUCTION.md` and `.env.production.example` for the complete setup and troubleshooting checklist.
+
+## Quick Add Lead camera scan reliability note
+
+The canonical mobile Quick Add Lead drawer now uses the same production-safe photo preparation path as the dedicated mobile scanner.
+
+Expected live behavior:
+
+1. Tap **Use camera**.
+2. Take the business card photo and choose **Use Photo**.
+3. The drawer shows **Preparing photo for secure mobile scan...**.
+4. The drawer shows **Photo ready. Reading the business card now...** or an optimization message.
+5. On success, the drawer shows a summary such as `Company: ... · Contact: ... · Email: ...`.
+6. The form scrolls to the Company field and the visible Quick Add Lead fields are populated.
+
+If OCR reads raw text but the structured AI response is sparse, the server now parses the raw OCR text as a fallback before returning the scan result.

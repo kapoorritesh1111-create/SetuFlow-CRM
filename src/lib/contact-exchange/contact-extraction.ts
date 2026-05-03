@@ -89,16 +89,29 @@ function buildFieldMap(parsed: ContactExtractionResult) {
 }
 
 function mergeOcrResult(parsed: ContactExtractionResult, providerResult: ContactOcrProviderResult): ContactExtractionResult {
-  const phones = uniqueValues(providerResult.draft.phones);
-  const emails = uniqueValues(providerResult.draft.emails);
-  const websites = uniqueValues(providerResult.draft.websites);
-  const combinedNotes = mergeNotes(parsed.draft.notes, buildOcrSummary(providerResult));
+  const rawTextParsed = providerResult.draft.rawText
+    ? parseContactText(providerResult.draft.rawText, { filename: 'ocr-raw-text.txt', sourceMode: 'camera', fileType: 'text/plain' })
+    : null;
+  const phones = uniqueValues([
+    ...providerResult.draft.phones,
+    rawTextParsed?.draft.phone ?? '',
+    rawTextParsed?.draft.phoneSecondary ?? '',
+  ]);
+  const emails = uniqueValues([
+    ...providerResult.draft.emails,
+    rawTextParsed?.draft.email ?? '',
+  ]);
+  const websites = uniqueValues([
+    ...providerResult.draft.websites,
+    rawTextParsed?.draft.website ?? '',
+  ]);
+  const combinedNotes = mergeNotes(parsed.draft.notes, rawTextParsed?.draft.notes ?? '', buildOcrSummary(providerResult));
 
   const draft = {
     ...parsed.draft,
-    contactName: providerResult.draft.contactName || parsed.draft.contactName,
-    companyName: providerResult.draft.companyName || parsed.draft.companyName,
-    jobTitle: providerResult.draft.jobTitle || parsed.draft.jobTitle,
+    contactName: providerResult.draft.contactName || rawTextParsed?.draft.contactName || parsed.draft.contactName,
+    companyName: providerResult.draft.companyName || rawTextParsed?.draft.companyName || parsed.draft.companyName,
+    jobTitle: providerResult.draft.jobTitle || rawTextParsed?.draft.jobTitle || parsed.draft.jobTitle,
     email: emails[0] || parsed.draft.email,
     phone: phones[0] || parsed.draft.phone,
     phoneSecondary: phones[1] || parsed.draft.phoneSecondary,

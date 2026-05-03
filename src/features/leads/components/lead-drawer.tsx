@@ -8,6 +8,7 @@ import Link from 'next/link';
 import type { Database } from '@/types/database';
 import { openOrCreateLeadQuoteDraft, saveLead } from '@/features/leads/server/actions';
 import { extractContactScan } from '@/features/leads/server/contact-scan-actions';
+import { prepareMobileScanFile, MOBILE_SCAN_MAX_ORIGINAL_IMAGE_BYTES, MOBILE_SCAN_MAX_PDF_UPLOAD_BYTES } from '@/features/mobile/lib/mobile-card-image';
 import { saveSettingsListItem } from '@/features/settings/server/actions';
 import LeadRecentSection from './LeadRecentSection';
 import LeadBasicInfoSection from './LeadBasicInfoSection';
@@ -109,6 +110,56 @@ type ComplianceDefinition = { id: string; code: string; description: string };
 type QuoteVersion = { id: string; quote_id: string | null; version_no?: number | null; status?: string | null; created_at?: string | null; approved_at?: string | null; sent_at?: string | null; pdf_document_id?: string | null };
 type LeadDocument = { id: string; related_entity?: string | null; related_id?: string | null; requirement_code: string | null; status: string | null; expires_at: string | null; uploaded_at?: string | null; doc_type?: string | null; file_name?: string | null; linked_quote_id?: string | null; source_related_entity?: string | null; review_notes?: string | null };
 type CoverageSelection = { key: string; categoryId: string; productIds: string[] };
+
+type QuickScanDraft = {
+  contactName?: string | null;
+  companyName?: string | null;
+  jobTitle?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  phoneSecondary?: string | null;
+  website?: string | null;
+  notes?: string | null;
+};
+
+function hasQuickScanSignal(draft: QuickScanDraft) {
+  return Boolean(
+    String(draft.companyName ?? '').trim()
+    || String(draft.contactName ?? '').trim()
+    || String(draft.jobTitle ?? '').trim()
+    || String(draft.email ?? '').trim()
+    || String(draft.phone ?? '').trim()
+    || String(draft.phoneSecondary ?? '').trim()
+    || String(draft.website ?? '').trim()
+  );
+}
+
+function buildQuickScanSummary(draft: QuickScanDraft) {
+  const pieces = [
+    draft.companyName ? `Company: ${draft.companyName}` : '',
+    draft.contactName ? `Contact: ${draft.contactName}` : '',
+    draft.jobTitle ? `Role: ${draft.jobTitle}` : '',
+    draft.email ? `Email: ${draft.email}` : '',
+    draft.phone ? `Phone: ${draft.phone}` : '',
+  ].filter(Boolean);
+  return pieces.length ? pieces.join(' · ') : 'No structured lead fields were found.';
+}
+
+async function tryQuickScanBrowserTextDetection(file: File): Promise<string> {
+  if (typeof window === 'undefined') return '';
+  const Detector = (window as unknown as { TextDetector?: new () => { detect: (source: ImageBitmap) => Promise<Array<{ rawValue?: string; text?: string }>> } }).TextDetector;
+  if (!Detector || !file.type.startsWith('image/')) return '';
+  try {
+    const bitmap = await createImageBitmap(file);
+    const detector = new Detector();
+    const blocks = await detector.detect(bitmap);
+    bitmap.close?.();
+    return blocks.map((block) => block.rawValue || block.text || '').filter(Boolean).join('\n').trim();
+  } catch {
+    return '';
+  }
+}
+
 
 function createCoverageSelection(categoryId = '', productIds: string[] = [], seed = 0): CoverageSelection {
   return {
@@ -550,9 +601,29 @@ export function LeadDrawer({
     });
 
     try {
+      if (file.type.startsWith('image/') && file.size > MOBILE_SCAN_MAX_ORIGINAL_IMAGE_BYTES) {
+        throw new Error('This photo is too large for mobile scan. Retake it closer to the card or choose an image under 10 MB.');
+      }
+      if (file.type === 'application/pdf' && file.size > MOBILE_SCAN_MAX_PDF_UPLOAD_BYTES) {
+        throw new Error('This PDF is too large for mobile scan. Upload a PDF under 3 MB, or take a photo of the card instead.');
+      }
+
+      const prepared = await prepareMobileScanFile(file);
+      const uploadFile = prepared.file;
+      const browserText = await tryQuickScanBrowserTextDetection(file);
+      setQuickScanStatus({
+        tone: 'loading',
+        message: prepared.compressed
+          ? `${prepared.note} Reading the card now…`
+          : sourceMode === 'camera'
+            ? 'Photo ready. Reading the business card now…'
+            : 'File ready. Reading the business card now…',
+      });
+
       const formData = new FormData();
       formData.set('source_mode', sourceMode);
-      formData.set('source', file);
+      formData.set('source', uploadFile);
+      if (browserText) formData.set('assist_text', browserText);
 
       const result = await extractContactScan(undefined, formData);
       if (result.error || !result.extraction) {
@@ -562,6 +633,15 @@ export function LeadDrawer({
 
       const extraction = result.extraction;
       const draft = extraction.draft;
+      if (!hasQuickScanSignal(draft)) {
+        const guidance = extraction.boundary === 'server_image_ocr_live' || extraction.boundary === 'server_pdf_ocr_live'
+          ? 'The card was scanned, but no company, contact, email, phone, role, or website could be read. Retake the photo closer to the card with less glare, or use Upload file.'
+          : 'The photo was accepted, but OCR did not return readable lead fields. Retake the photo closer to the card with less glare, or use Upload file.';
+        setQuickScanStatus({ tone: 'error', message: guidance });
+        setState({ error: guidance });
+        return;
+      }
+
       const scanText = [
         draft.notes,
         extraction.sourceLabel,
@@ -595,19 +675,24 @@ export function LeadDrawer({
         return [existing, ...additions].filter(Boolean).join('\n\n');
       });
       setSourceType(extraction.sourceType || (sourceMode === 'camera' ? 'contact_scan_camera' : 'contact_scan_upload'));
-      setSourceLabel(extraction.sourceLabel || file.name || 'Quick entry contact scan');
+      setSourceLabel(extraction.sourceLabel || uploadFile.name || file.name || 'Quick entry contact scan');
       if (matchedCountry?.id) setCountryId(matchedCountry.id);
       setLeadType((current) => current || 'buyer');
       setActiveStepId('basics');
       setValidationIssues([]);
-      setState({ success: 'Lead details filled from scan. Review the fields, then save the buyer lead.' });
+      const summary = buildQuickScanSummary(draft);
+      setState({ success: `Lead details filled from scan. ${summary}` });
       setQuickScanStatus({
         tone: 'success',
-        message: 'Lead details filled from scan. Review the highlighted fields before saving.',
+        message: `Lead details filled from scan. ${summary}`,
+      });
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLInputElement>('input[name="company_name"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Scan failed before the form could be filled.';
       setQuickScanStatus({ tone: 'error', message });
+      setState({ error: message });
     } finally {
       const cameraInput = document.getElementById('ql-camera-input') as HTMLInputElement | null;
       const fileInput = document.getElementById('ql-file-input') as HTMLInputElement | null;

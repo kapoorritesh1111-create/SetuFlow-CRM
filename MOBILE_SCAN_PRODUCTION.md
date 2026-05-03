@@ -94,3 +94,16 @@ Production scan now uses two layers of protection:
 2. `MobileBusinessCardScanner` compresses phone images to a JPEG under roughly 3 MB before calling the scan action.
 
 This is necessary because production functions cannot safely receive full-size phone camera photos. The readiness endpoint can confirm keys and flags, but it cannot prove that the selected camera image was small enough to reach the OCR action. The mobile UI now shows when a photo is being prepared and when it was optimized.
+
+## Quick Add Lead drawer scan behavior
+
+The production readiness endpoint only verifies environment and service configuration. The live mobile drawer also needs the UI prefill path to complete. The current Quick Add Lead implementation now:
+
+- prepares large phone photos before OCR,
+- adds browser text-detection assist text where supported,
+- calls the server OCR action directly from the visible drawer,
+- treats scan success as valid only when at least one structured lead field is found,
+- writes the result into the visible Company, Contact, Job Title, Email, Phone, WhatsApp, Website, Source, and Notes fields,
+- scrolls the drawer to the Company field after the form is populated.
+
+If a business card still does not prefill, the status banner should show a specific error instead of a false success message.
