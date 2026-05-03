@@ -230,15 +230,15 @@ export async function extractContactSource(args: ExtractContactSourceArgs): Prom
   const boundaryNotes = boundary === 'server_text'
     ? ['Server extraction read the uploaded text source directly before prefill.']
     : boundary === 'server_pdf_text_layer'
-      ? ['Server extraction recovered embedded PDF text before prefill. Live OCR is optional and only runs when the AI provider is configured.']
+      ? ['Embedded PDF text was read before prefill.']
       : boundary === 'server_pdf_ocr_live'
-        ? ['Server extraction used a live OCR provider for this PDF before deterministic CRM field mapping.']
+        ? ['Contact details were read from this PDF.']
         : boundary === 'server_pdf_ocr_ready'
-          ? ['Server extraction accepted this PDF through an OCR-ready boundary. Configure the OCR provider to extract image-based PDF content automatically, or add assist text and review inline before saving.']
+          ? ['PDF received. Add visible text if the scanned image is unclear.']
           : boundary === 'server_image_ocr_live'
-            ? ['Server extraction used a live OCR provider for this image before deterministic CRM field mapping.']
+            ? ['Contact details were read from this image.']
             : boundary === 'server_image_ocr_ready'
-              ? ['Server extraction accepted this image through an OCR-ready boundary. Configure the OCR provider to enable automatic image extraction, or use assist text and review inline before saving.']
+              ? ['Image received. Add visible text if the photo is unclear.']
               : ['Server extraction is running without an attached file. Paste visible text and review inline before saving.'];
 
   return {

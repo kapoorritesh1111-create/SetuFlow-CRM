@@ -1,311 +1,480 @@
-# Setu Flow CRM
+# SETU Flow CRM
 
-## Pass 21 TypeScript build hotfix — 2026-05-01
+SETU Flow CRM is a trade-focused SaaS platform for managing buyers, suppliers, quotes, orders, product catalogs, commercial approvals, and field capture workflows. It is designed for teams that source, sell, and execute international trade opportunities across markets, products, events, and relationship-driven pipelines.
 
-Vercel build for commit `9dcacd9` compiled successfully but failed TypeScript on `src/features/quotes/server/actions.ts` because `safeQuoteDisplayCurrency` passed an `unknown` value directly into `normalizeQuoteDisplayCurrency`, whose contract accepts `string | null | undefined`. This hotfix narrows the unknown value to an optional string before normalization, preserving the Pass 21 quote display-currency constraint fix without relaxing TypeScript safety.
+The application combines a full desktop command center for operators with a mobile-first field experience for trade shows, buyer meetings, supplier visits, and on-the-go follow-up. Desktop workflows remain the source of depth and administration; mobile workflows are optimized for speed, capture, review, and next action.
 
-Verification boundary remains unchanged: no `npm ci` was run in GPT sandbox, and a fresh Vercel build is required to prove the hotfix.
+## What the product does
 
+SETU Flow helps a trade organization move from first contact to commercial execution:
 
-> **Single source of truth:** `public/internal-dcc/index.html`  
-> **Current working baseline after this pass:** `SetuFlow-CRM-Pass21-TypeFix` from `SetuFlow-CRM-Pass21-LiveSQL-UXFixes`  
-> **Verification boundary:** Build not claimed in GPT sandbox. Requires Vercel/live build proof and live QA retest proof.
+1. Capture a buyer or supplier lead.
+2. Qualify the opportunity by market, product, event/source, owner, and next action.
+3. Manage the lead through a role-aware pipeline.
+4. Create and review quotes with pricing, freight, FX, approvals, and trust evidence.
+5. Convert accepted commercial decisions into order execution records.
+6. Track activity, tasks, reports, compliance, and operational handoffs.
+7. Share professional digital business cards and collect inbound contacts from public card links.
 
-## Pass 20 proof-gated pilot hardening update — 2026-05-01
+## Core product areas
 
-Pass 20 began with the required verification review. This sandbox does not include `node_modules`, and `npm ci` was not authorized, so clean install/build/test proof is **not** claimed. Live QA proof is also **not** claimed from inside GPT. The package remains proof-gated until Vercel or a clean local environment builds it and the owner retests the live P0/P1 action checklist.
+### Dashboard
 
-| Area | Pass 20 status |
-|---|---|
-| Verification | No `npm ci`, `npm run build`, or `npm run test:all` was run. `node_modules` is absent. Build remains unclaimed for this ZIP. |
-| Navigation | Tasks was promoted into the primary operating shell / desktop navigation so operators can find supporting work from the main app shell. |
-| Pipeline | Added a visible horizontal-scroll cue above the Kanban lanes so desktop users know more stages may be off-screen. |
-| Dashboard | Hid the unsupported Custom time range option until a date picker exists, avoiding a misleading filter state. |
-| DCC/docs | Updated `public/internal-dcc/index.html`, `README.md`, `docs/RELEASE_READINESS.md`, `CHANGES.md`, and restored the minimal `docs/RELEASE_PROOF.md` evidence placeholder required by checked-in alignment tests. |
+The dashboard is the operator command center. It surfaces lead health, account activity, pipeline movement, market coverage, priority actions, recent activity, and operating context. It includes configurable dashboard components and supporting analytics so owners, managers, and team members can understand what needs attention.
 
-No live Supabase data was mutated. No remediation migrations were applied. Frozen records remain protected: `Q-00025` and `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`.
+Main route:
 
-**Buyer confidence remains held around ~96–97/100** until Vercel/build proof and live QA retest prove there are no visible P0 dead actions and no raw SQL/database errors shown to users. Security/RPC trust remains capped at 90–94% unless separate authorized security remediation evidence exists.
-
----
-
-## Pass 19 action hardening update — 2026-05-01
-
-Pass 19 focused on visible P0/P1 action reliability, not new feature expansion. The goal was to make primary buttons, tabs, rows, and CTAs either work, navigate to a meaningful place, or explain why they are unavailable.
-
-| Area | Pass 19 status |
-|---|---|
-| Global vCard | Header and avatar actions now share the same vCard modal path. |
-| Leads | Saved-view filters now apply real predicates; lead workspace receives a fallback selected lead; Quote Preview Continue now validates and advances with visible feedback; raw query issues are converted to customer-safe messages. |
-| Orders | Active-order grammar, execution-value wording, and blocked-doc explanation were hardened. |
-| Products | Pricing View now renders a distinct pricing-focused layout instead of only highlighting the tab. |
-| DCC/docs | `public/internal-dcc/index.html`, `README.md`, `docs/RELEASE_READINESS.md`, and `CHANGES.md` were updated with honest proof boundaries. |
-
-No live Supabase data was mutated. No remediation migrations were applied. Frozen records remain protected: `Q-00025` and `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`.
-
-**Buyer confidence remains held around ~96–97/100** until Vercel/build proof and live QA retest prove there are no visible P0 dead actions and no raw SQL/database errors shown to users.
-
----
-
-
-> **Single source of truth:** `public/internal-dcc/index.html`  
-> **Current locked baseline:** `SetuFlow-CRM-main(41)` / commit `89a825a` / Vercel production `READY`  
-> **Current operating mode:** Live QA hardening plan active. Do not claim 100/100 until P0/P1 live action defects, build proof, security/ops proof, dispatch/completion proof, and pilot evidence are all closed.
-
-## Current readiness snapshot after merged live QA reviews
-
-| Area | Honest readiness |
-|---|---:|
-| Build / deploy confidence | **9.5/10** |
-| UX / action confidence | **4.5/10** |
-| Buyer journey confidence | **4.5/10** |
-| Supplier journey confidence | **6.0/10** |
-| Admin / setup confidence | **7.5/10** |
-| Security / RPC trust | **90–94% cap** |
-| Buyer confidence | **~96–97/100 hold** |
-| 100/100 | **Not claimable** |
-
-**Why confidence is held:** Vercel production build/deploy proof remains clean for commit `89a825a`, and the live app is connected to Supabase. However, two live UX/CTO reviews identify and reproduce P0/P1 live action defects: global Share my vCard dead action, quote Continue failing to open a workspace, Open order dead action, raw `lead_id is ambiguous` SQL error exposure, lead/quote row-click no-ops, lead tab/filter issues, Quote Preview terms-step failure, and Products Pricing View partial behavior.
-
-**Next path:** Pass 19 fixes P0 action hardening. Pass 20 fixes P1 pilot hardening. Pass 21 verifies data/governance issues read-only before any live cleanup. Pass 22 performs live retest and Vercel/user build proof. Pass 23 closes security/ops. Pass 24 captures pilot and dispatch/completion proof. GPT must not run `npm ci` in sandbox; use Vercel or user logs for install/test/build proof.
-
----
-
-
-Setu Flow CRM is a governed commercial system. Commercial truth is the center.
-
-> **Single source of truth:** `public/internal-dcc/index.html`
-
----
-
-## Architecture order
-
-1. Lead truth → 2. Catalog truth → 3. Quote truth → 4. Override truth → 5. Approval truth → 6. Communication truth → 7. Order/contract truth → 8. Integration truth → 9. AI truth → 10. Hardening
-
-**Governing rule:** AI, communications, integrations, and hardening are subordinate to commercial truth and must never outrun it.
-
----
-
-## Current readiness snapshot
-
-| Area | Honest readiness |
-|---|---:|
-| Core CRM workflow | 91–94% |
-| Quote → Order revenue path | 92–95% |
-| Order execution (sign → dispatch) | 83–87% |
-| First paying customer | 88–92% |
-| Security / RPC trust | 90–94% |
-| Mobile truth / claim safety | 70–76% |
-| Mobile-native parity | Not claimed |
-| NorthStar sprint | 100% |
-| Buyer confidence | **~98.5/100** (target 100; live Vercel production build/deploy for commit `89a825a` is clean; security/ops/pilot evidence still open) |
-
-**Proven:** Live golden journey Q-00025 (accepted quote), signed contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e`, and 11 preserved contract lines. Sign-contract gate. FirstLoginGuide. CIF write path. Shell consolidated. 331 unit tests expected, including 46 Pass 5 security boundary tests. Live Supabase connector inspection verified the project is active/healthy and all 80 public base tables have RLS enabled. Pass 6 adds Supabase advisor/RPC review, external-audit prep, WAF/rate-limit plan, production-scale checklist, claim reconciliation, and a buyer-confidence path to 100. Pass 7 adds pilot launch, live proof planning, success metrics, support runbook, final investor/demo pack, and a live Supabase re-check. Pass 8 adds Supabase advisor remediation planning, RPC grant hardening planning, DB-level capability design, external audit remediation tracking, WAF evidence checklist, and another live read-only re-check. Pass 9 adds draft-only Supabase remediation implementation assets, rollback planning, negative RPC/design assertion tests, live proof-record checklist, and a 100/100 evidence gate. Pass 10 adds the final production launch gate, external auditor response pack, pilot evidence capture, and investor-ready 100/100 proof bundle. Pass 11 adds pilot evidence review, customer readiness decisioning, post-launch remediation backlog, production monitoring proof checklist, and final investor/customer claim lock. Pass 12 adds final remediation execution status, live negative RPC verification status, first-pilot evidence closure, monitoring/backup evidence closure, and final launch/no-launch decision. Pass 13 adds post-decision remediation status, pilot operations checklist, production support activation checklist, customer/investor evidence handoff, and final frozen launch-claim archive. Pass 14 adds actual evidence review, live Supabase proof for accepted quote/signed contract/11 preserved contract lines, production remediation closeout, pilot-to-production transition decision, final customer-facing launch packet, and an archived 100/100 evidence checklist. Pass 15 adds a UX visual review and fix plan for Leads, Orders, Quotes, Trade Events, and Organization Setup. Pass 16 implements the premium UI fixes and Organization Setup SaaS onboarding redesign in code. Advisor findings remain open and no migrations were applied. Pass 17 adds the missing `tsx` devDependency declaration. Pass 18 live-baseline lock closes the prior sandbox-only dependency/build gap using Vercel production evidence for commit `89a825a`: `npm ci --no-audit --no-fund` installed 151 packages, `next build` compiled successfully, type/lint checks ran, 55 pages generated, deployment completed, and Vercel marked production READY. User-provided live validation confirms the deployed app is connected to Supabase.
-
-**Not claimed:** Dispatch/completion proven, live Supabase RLS/RPC advisor closure, integration live connector, automated secrets rotation, deployed WAF/SIEM, mobile-native parity, completed external security audit, backup/restore drill, first-customer pilot evidence, and production-scale operating evidence. Clean Vercel install/build/deploy proof for the Pass 16 premium UI/Organization Setup redesign is now captured for commit `89a825a`.
-
----
-
-## Test suite
-
-| Command | Tests | Coverage |
-|---|---|---|
-| `npm run test:pricing` | 102 | FX, freight, compilation services |
-| `npm run test:workspace` | 54 | Role permissions, capability gates |
-| `npm run test:orders` | 25 | Order execution state machine |
-| `npm run test:integrations` | 32 | Governed sync candidates, alerts, connectors |
-| `npm run test:security` | 118 | Permission boundaries, order-action gates, RPC grant hardening draft checks, DB capability design checks |
-| **`npm run test:all`** | **331** | All unit tests |
-| `npm test` | — | Alignment tests (routes, DCC, docs) |
-
----
-
-## Passes completed
-
-**Pass 1** — Repo hygiene: deleted junk files, archived internal dev logs, stripped DCC to `index.html`.
-
-**Pass 2** — Technical credibility: 102 pricing unit tests, CSP `unsafe-eval` removed, dual lead command center resolved.
-
-**Pass 3** — Revenue path + foundations: `signContractAction`, `FirstLoginGuide`, CIF write path, 79 new tests (RLS + order execution).
-
-**Pass 4** — Code clarity + integration proof + operator docs:
-- **Shell consolidated** — 3 directories → 1 (`src/components/shell/`). Dead `setu-shell` deleted. `SHELL_ARCHITECTURE.md` documents every file's responsibility and rules.
-- **contact-exchange classified** — `/scan` = Supporting (trade-event wedge). `/vcard` = Experimental-Frozen.
-- **32 integration proof tests** — governed sync candidates, ERP/freight readiness, governance alerts, all 4 connector definitions, event reader helpers.
-- **`docs/OPERATOR_PRICING_GUIDE.md`** — pricing bases, rule set setup (import + manual), CIF two-path, override/approval flow, role matrix.
-
----
-
-
-**Pass 5** — Security hardening + admin onboarding:
-- **46 security boundary tests** — `tests/security/rls-boundaries.test.ts` and `tests/security/order-auth-boundaries.test.ts` cover application-layer role/capability gates without live Supabase mutation; live Supabase posture was separately inspected through the GPT Supabase connector.
-- **`docs/SECURITY_POLICY.md`** — secrets inventory, location rules, rotation cadence, compromise response, and honest non-claims.
-- **`docs/SECURITY_HARDENING_REVIEW_PASS5.md`** — review of existing hardening findings, middleware CSP/header posture, Supabase admin/server client separation, and live read-only Supabase connector findings.
-- **`docs/SOP_ADMIN_ONBOARDING.md`** — non-technical admin setup flow from first login through first quote, with deferred items clearly listed.
-
-**Pass 6** — External audit preparation + Supabase RPC hardening plan + production readiness:
-- **`docs/SUPABASE_ADVISOR_REVIEW_PASS6.md`** — live read-only Supabase project identity, table RLS posture, advisor findings, sampled RPC grant exposure, and hardening recommendation table.
-- **`docs/EXTERNAL_SECURITY_AUDIT_PREP.md`** — third-party audit scope, evidence pack, auditor questions, and pre-audit status.
-- **`docs/WAF_RATE_LIMITING_PLAN.md`** — route-level WAF/rate-limit plan and non-claims.
-- **`docs/PRODUCTION_SCALE_READINESS.md`** — database, application, operational, and scale-readiness checklist.
-- **`docs/CLAIM_RECONCILIATION_PASS6.md`** — claim-by-claim reconciliation across DCC, README, RELEASE_READINESS, and investor wording.
-- **`docs/BUYER_CONFIDENCE_TO_100.md`** — remaining proof path from ~92 to 100.
-
-
-**Pass 7** — Pilot customer launch + live proof pack:
-- **`docs/PILOT_CUSTOMER_LAUNCH_CHECKLIST.md`** — pre-launch, launch-day, go/no-go, owner matrix, and pilot non-claims.
-- **`docs/LIVE_SIGNED_CONTRACT_AND_DISPATCH_PROOF_PLAN.md`** — new-record proof plan for signed contract and dispatch without mutating Q-00025.
-- **`docs/FIRST_CUSTOMER_SUCCESS_METRICS.md`** — activation, operational, and buyer-confidence metrics for the first paying pilot.
-- **`docs/PRODUCTION_SUPPORT_RUNBOOK.md`** — support roles, common incidents, triage, severity, placeholder response targets, and non-claims.
-- **`docs/FINAL_INVESTOR_DEMO_READINESS_PACK.md`** — demo narrative, proven path, caveats, checklist, and investor Q&A.
-- **`docs/SUPABASE_ADVISOR_REVIEW_PASS7.md`** — live read-only re-check confirming advisor/RPC posture is unchanged from Pass 6.
-
-
-**Pass 9** — Draft Supabase remediation implementation + negative RPC tests:
-- **No live Supabase remediation applied** — authorization was not explicit, so production remained untouched.
-- **`docs/SUPABASE_REMEDIATION_IMPLEMENTATION_PASS9.md`** — records draft-only implementation status and claim boundaries.
-- **`docs/MIGRATION_DRY_RUN_AND_ROLLBACK_PASS9.md`** — dry-run and rollback plan for RPC grants, search path, RLS policies, SECURITY DEFINER view/function changes, DB helper, and Auth dashboard settings.
-- **Draft SQL migrations** — four draft-only files under `supabase/migrations/pass9_*_advisor_remediation.sql`.
-- **72 new security/design assertion tests** — `tests/security/rpc-grant-hardening.test.ts` and `tests/security/db-capability-design.test.ts`, raising expected full suite to 331 tests.
-- **`docs/LIVE_PROOF_RECORD_CREATION_CHECKLIST_PASS9.md`** — new-record proof checklist that preserves Q-00025.
-- **`docs/BUYER_CONFIDENCE_100_EVIDENCE_GATE_PASS9.md`** — final evidence gate confirming 100/100 is not claimable yet.
-
-## Next passes
-
-| Pass | Focus | Buyer Confidence |
-|---|---|---|
-| Pass 5 | RLS boundary tests + live Supabase inspection + security review + secrets policy + admin onboarding SOP | ~80 → 88 |
-| Pass 6 | Advisor review + external audit prep + WAF/rate-limit docs + production scale checklist + claim reconciliation | ~88 → 92 |
-| Pass 7 | Pilot launch checklist + live proof plan + success metrics + support runbook + investor/demo pack | ~92 → 96 |
-| Pass 8 | Supabase advisor remediation plan + RPC hardening plan + DB capability design + audit/WAF evidence checklists | ~96 → 98 |
-| Pass 9 | Draft remediation implementation assets + rollback plan + negative RPC/design tests + 100/100 evidence gate | ~98 → ~98 |
-| Pass 10 | Final launch gate + auditor response pack + pilot evidence capture + investor 100 proof bundle | ~98 → ~98 |
-| Pass 11 | Pilot evidence review + customer readiness decision + monitoring proof checklist + final claim lock | ~98 → ~98 |
-| Pass 12 | Final remediation execution status + live negative RPC status + first-pilot/monitoring closure + final launch decision | ~98 → ~98 |
-| Pass 13 | Post-decision remediation status + pilot operations + support activation + final evidence handoff + frozen claim archive | ~98 → ~98 |
-| Pass 14 | Actual evidence review + live accepted quote/signed contract proof + pilot expansion decision + customer launch packet + 100/100 evidence archive | ~98 → ~98 |
-| Pass 15 | UX visual review + premium UI fix plan + Organization Setup redesign brief | ~98 → ~97 |
-| Pass 16 | Premium UI implementation + Organization Setup SaaS onboarding redesign; local verification blocked by missing deps | ~97 → ~97.5 |
-| Pass 17 | Dependency restoration follow-up; `tsx` declared | ~97.5 → ~97.5 |
-| Pass 18 | Live baseline lock; Vercel production `npm ci` + `next build` + deployment READY for commit `89a825a` | ~97.5 → ~98.5 |
-| Future evidence passes | Actual advisor closure, deployed WAF/monitoring, backup drill, live connector, dispatch proof, pilot evidence | ~98.5 → 100 |
-
----
-
-## Shell structure (consolidated in Pass 4)
-
-All shell concerns in `src/components/shell/`. See `SHELL_ARCHITECTURE.md` for file-by-file ownership. Consuming parent: `src/components/layout/app-shell.tsx`.
-
----
-
-## Setup
-
-```bash
-npm install        # restore project-local Next.js/test tooling
-npm run dev
-npm run test:all   # 331 unit tests expected
-npm run build      # required before claiming Pass 16/17 clean verification
-npm run verify     # typecheck + contracts + dashboard + tests + build
+```text
+/dashboard
 ```
 
+### Leads
 
-**Pass 8** — Supabase advisor remediation plan + RPC grant hardening evidence checklist:
+The lead workspace manages buyer and supplier relationships. It supports lead entry, lead editing, filtering, stage management, health/status indicators, AI-assisted context, recent activity, and command-center style lead detail surfaces.
 
-- **`docs/SUPABASE_ADVISOR_REMEDIATION_PLAN_PASS8.md`** — maps open advisor classes to remediation categories without applying migrations.
-- **`docs/RPC_GRANT_HARDENING_PLAN_PASS8.md`** — draft grant hardening, DB gates, and negative-test plan.
-- **`docs/DATABASE_CAPABILITY_CHECKS_DESIGN_PASS8.md`** — database-level capability-check design matching the app role model.
-- **`docs/EXTERNAL_AUDIT_REMEDIATION_TRACKER_PASS8.md`** — pre-audit remediation tracker seeded with known gaps.
-- **`docs/WAF_DEPLOYMENT_EVIDENCE_CHECKLIST_PASS8.md`** — evidence checklist for future WAF/rate-limit deployment proof.
-- **`docs/SUPABASE_ADVISOR_REVIEW_PASS8.md`** — confirms findings are materially unchanged from Pass 7.
+Lead access is role-aware:
 
-## What this repo does not claim
+| Role | Visibility |
+|---|---|
+| Owner/Admin | Workspace-wide lead visibility |
+| Manager | Team and direct-report visibility |
+| Member | Assigned-lead visibility |
 
-- External security audit, automated secrets rotation, WAF, SIEM
-- Mobile-native parity
-- Production-scale operating evidence, monitoring evidence, backup/restore drill, or pilot evidence
-- Signed contract + dispatch proven end-to-end on live Supabase (Pass 7 provides proof plan; Pass 10 provides evidence capture only; Pass 11/12 confirm no new pilot evidence was supplied)
-- Integration with live external connector (ERP/freight mocks only)
+Main routes:
 
-**Pass 10** — Final production launch gate + auditor/investor evidence pack:
-- **No live Supabase remediation applied** — authorization was not explicit, so production remained untouched.
-- **`docs/FINAL_PRODUCTION_LAUNCH_GATE_PASS10.md`** — final launch gate with blockers, conditional pilot readiness, and 100/100 gating.
-- **`docs/EXTERNAL_AUDITOR_RESPONSE_PACK_PASS10.md`** — auditor-ready response pack covering architecture, known findings, evidence, missing evidence, and remediation ownership.
-- **`docs/PILOT_LAUNCH_EVIDENCE_CAPTURE_PASS10.md`** — first-pilot evidence capture template using a new proof record, not Q-00025.
-- **`docs/INVESTOR_READY_100_PROOF_BUNDLE_PASS10.md`** — investor-safe 100/100 proof bundle and non-claim boundaries.
+```text
+/leads
+/leads/[leadId]
+/leads/buyers
+/leads/suppliers
+```
 
+### Quick Add Lead and Smart Capture
 
-**Pass 11** — Pilot evidence review + customer readiness decision + production monitoring proof:
-- **`docs/PILOT_EVIDENCE_REVIEW_PASS11.md`** — evidence review template; all pilot/customer evidence remains pending because no new pilot artifacts were provided.
-- **`docs/CUSTOMER_READINESS_DECISION_PASS11.md`** — first paying customer decision remains conditional go, not unconditional.
-- **`docs/POST_LAUNCH_REMEDIATION_BACKLOG_PASS11.md`** — seeded backlog for advisor remediation, RPC hardening, WAF, monitoring, backup drill, live connector, signed/dispatch proof, and pilot evidence.
-- **`docs/PRODUCTION_MONITORING_PROOF_PASS11.md`** — monitoring proof checklist; no production alert evidence claimed.
-- **`docs/FINAL_INVESTOR_CUSTOMER_CLAIM_LOCK_PASS11.md`** — locked investor/customer wording boundaries and evidence required to upgrade claims.
+Quick Add Lead is the fast capture surface for mobile and desktop. It supports manual entry and card/document scanning.
 
-Pass 11 does not apply Supabase remediation, does not mutate live data, and does not raise buyer confidence beyond ~98/100 because no new evidence was supplied.
+In the current investor-demo production mode, camera photos are read directly with OpenAI Vision and then mapped into the visible Quick Add Lead form for review before save. Uploaded PDFs continue to use the existing file scan path.
 
+The form supports buyer and supplier capture, company/contact fields, country, title, email, phone, WhatsApp, source/event details, owner, deal estimate, product interest, and follow-up context.
 
-**Pass 12** — Final production remediation execution status + live verification status + launch decision:
-- **No live Supabase remediation applied** — authorization was not explicit, so production remained untouched.
-- **`docs/FINAL_REMEDIATION_EXECUTION_STATUS_PASS12.md`** — records every remediation area as pending authorization/evidence.
-- **`docs/LIVE_NEGATIVE_RPC_VERIFICATION_PASS12.md`** — keeps live mutation-prone RPC verification pending and links to Pass 9 tests.
-- **`docs/FIRST_PILOT_EVIDENCE_CLOSURE_PASS12.md`** — marks first-pilot evidence pending because no new proof artifacts were supplied.
-- **`docs/MONITORING_AND_BACKUP_EVIDENCE_CLOSURE_PASS12.md`** — marks monitoring/backup proof pending because no provider evidence was supplied.
-- **`docs/FINAL_LAUNCH_DECISION_PASS12.md`** — executive decision is **conditional pilot only**, not broad production launch.
+Production scan provider mode:
 
-Pass 12 does not apply Supabase remediation, does not mutate live data, and does not raise buyer confidence beyond ~98/100 because no new evidence or authorization was supplied.
+```env
+CONTACT_SCAN_PROVIDER=openai-vision
+CONTACT_SCAN_FALLBACK_PROVIDER=openai
+OPENAI_CONTACT_SCAN_MODEL=gpt-4.1-mini
+```
 
-**Pass 13** — Post-decision remediation status + pilot operations + final evidence handoff:
-- **`docs/POST_DECISION_REMEDIATION_STATUS_PASS13.md`** — remediation remains pending authorization; no live changes applied.
-- **`docs/PILOT_OPERATIONS_CHECKLIST_PASS13.md`** — controlled pilot operations checklist and evidence capture cadence.
-- **`docs/PRODUCTION_SUPPORT_ACTIVATION_PASS13.md`** — production support activation requirements, all marked pending evidence.
-- **`docs/CUSTOMER_INVESTOR_FINAL_EVIDENCE_HANDOFF_PASS13.md`** — safe customer/investor wording and missing evidence.
-- **`docs/FINAL_FROZEN_LAUNCH_CLAIM_ARCHIVE_PASS13.md`** — frozen claim boundaries after Pass 13.
+Readiness endpoint:
 
-Pass 13 does not apply Supabase remediation, does not mutate live data, and does not raise buyer confidence beyond ~98/100 because no new evidence or authorization was supplied.
+```text
+/api/mobile/scan-readiness
+```
 
-**Pass 14** — Actual evidence review + pilot-to-production transition decision:
-- **`docs/ACTUAL_EVIDENCE_REVIEW_PASS14.md`** — records live read-only Supabase proof: Q-00025 is accepted, contract/order `d129ffe2-c913-4cf7-9a7b-86ea6c9da54e` is signed, and 11 contract lines are preserved.
-- **`docs/PRODUCTION_REMEDIATION_CLOSEOUT_PASS14.md`** — confirms Supabase advisor/RPC remediation remains open because no migrations were applied and advisor findings remain.
-- **`docs/PILOT_TO_PRODUCTION_TRANSITION_DECISION_PASS14.md`** — upgrades the decision to pilot expansion approved, not broad production launch.
-- **`docs/FINAL_CUSTOMER_FACING_LAUNCH_PACKET_PASS14.md`** — customer-safe launch packet based only on proven evidence.
-- **`docs/ARCHIVED_100_EVIDENCE_CHECKLIST_PASS14.md`** — archived checklist of gates still required for 100/100.
+Expected scanner mode for this build:
 
-Pass 14 closes live signed-contract proof for the golden journey, but does not apply Supabase remediation, does not prove dispatch/completion, and does not raise buyer confidence beyond ~98/100 because production controls remain open.
+```json
+{
+  "requestedProvider": "openai-vision",
+  "activeProvider": "openai-vision",
+  "fallbackProvider": "openai"
+}
+```
 
-**Pass 16** — Premium UI implementation + Organization Setup redesign:
+### Pipeline
 
-- **`src/components/ui/premium-command-bar.tsx`** — shared premium command-bar primitives for filters, fields, inputs/selects, and active chips.
-- **Leads / Follow-up** — named active chips and clearer filtered-empty-state copy.
-- **Orders** — premium execution command bar with visible dispatch/docs chips.
-- **Quotes** — duplicate mode selector removed; shared command bar and active chips added.
-- **Trade Events** — premium event cockpit, KPI cards, proof-boundary card, and clearer CTAs.
-- **Organization Setup** — SaaS onboarding flow with setup checklist, customer setup cards, catalog readiness, team setup, and governance routing.
-- **Verification:** `npm run test:all` and `npm run build` were attempted in order but stopped because project-local binaries were unavailable (`tsx: not found`, `next: not found`).
+The pipeline workspace organizes leads by workflow stage and supports board-style review, buyer/supplier modes, filters, detail panels, and AI context. It is used by operators and managers to prioritize movement through qualification and commercial readiness.
 
+Main routes:
 
-**Pass 17** — Dependency restoration + verification follow-up:
+```text
+/pipeline
+/pipeline/buyers
+/pipeline/suppliers
+```
 
-- **`package.json`** — adds the missing `tsx` devDependency used by `npm run test:all`.
-- **`docs/PASS17_VERIFICATION.md`** — records dependency restoration attempts, partial Node 22 smoke test signal, and the remaining verification blocker.
-- **Verification:** the earlier sandbox install gap is superseded by live Vercel production evidence for commit `89a825a`: `npm ci --no-audit --no-fund` installed 151 packages and `npm run build` completed successfully before deployment. Buyer confidence is updated to ~98.5/100 while security/ops/pilot evidence remains open.
+### Products and catalog management
 
-**Pass 18** — Live baseline lock:
+The product area manages product records, product detail, spreadsheet-style catalog review, pricing rule ingestion, product status contracts, and catalog gaps. It supports product options needed by quoting, lead qualification, and order workflows.
 
-- **`docs/LIVE_BASELINE_LOCK_PASS18.md`** — locks `SetuFlow-CRM-main(41).zip` / commit `89a825a` as the active baseline.
-- **Vercel evidence:** production deployment `dpl_2tMU2g417f8wDAtMJPXDHrEkxoD8` is READY after clean dependency install and Next.js build.
-- **Supabase connection:** user-provided live validation confirms the deployed app is connected to Supabase; advisor/RPC remediation remains separate and open.
+Main route:
 
-**Pass 15** — UX visual review + premium UI fix plan:
-- **`docs/UX_VISUAL_REVIEW_PASS15.md`** — records visual issues across Leads, Orders, Quotes, Trade Events, and Organization Setup.
-- **`docs/PREMIUM_UI_FIX_PLAN_PASS15.md`** — defines the shared premium filter bar, page-specific fixes, and build/type-check acceptance criteria.
-- **`docs/ORGANIZATION_SETUP_REDESIGN_PASS15.md`** — defines the SaaS onboarding/setup flow needed for first customers.
+```text
+/products
+```
 
-Pass 15 is a review/planning pass, not an implementation pass. Buyer confidence is adjusted to ~97/100 until the premium UI and Organization Setup fixes are implemented and build-verified.
+Supporting API routes:
 
-### Pass 21 live SQL/UX fix boundary
+```text
+/api/products
+/api/products/[productId]
+/api/products/spreadsheet
+```
 
-Pass 21 used the current live baseline ZIP and checked Supabase schema/logs before code changes. The logs confirmed the two live SQL issues reported in screenshots: the batch lead move RPC can surface `column reference "lead_id" is ambiguous`, and quote draft creation can violate `quotes_display_currency_check` when the UI passes a display currency outside the allowed set.
+### Quotes
 
-This package patches those app surfaces without mutating live Supabase data: batch stage moves use a safe app-side path, quote display currency is normalized, Quote Preview includes a blocker guidance panel, order document upload gives visible feedback and requirement mapping, and Admin Categories now has list/add/edit UI.
+The quote area supports quote creation, commercial review, trust evidence, quote history, WhatsApp quote delivery, and pricing logic. It includes pricing, FX, freight, quote compilation, approval/send paths, and mobile-safe quote surfaces for phone users.
 
-Build not claimed in GPT sandbox. Requires Vercel/live build proof and live QA retest before confidence can rise.
+Main routes:
+
+```text
+/quotes
+/leads/[leadId]/quote
+/approval-send
+```
+
+### Orders
+
+Orders capture the execution layer after quote acceptance. The repo includes order operation logic, execution snapshots, order detail panels, and tests that validate order authorization and execution behavior.
+
+Main route:
+
+```text
+/orders
+```
+
+### Trade events
+
+Trade events support show/event capture, source attribution, lead entry at events, and product/market context. The mobile experience supports field capture during trade shows and supplier/buyer meetings.
+
+Main route:
+
+```text
+/trade-events
+```
+
+### Tasks, reports, compliance, contracts, and documents
+
+SETU Flow includes supporting operator workspaces for daily execution, reporting, compliance review, contracts, documents, and evidence-oriented workflows.
+
+Main routes:
+
+```text
+/tasks
+/reports
+/compliance
+/contracts
+/documents
+```
+
+### Admin and organization setup
+
+Admin workspaces manage organization settings, users, invitations, markets, categories, pipelines, stages, trade events, product management, security, audit, and AI analytics.
+
+Main routes:
+
+```text
+/admin
+/admin/users
+/admin/organization
+/admin/product-management
+/admin/audit
+/admin/security
+/admin/ai-analytics
+```
+
+### Integrations
+
+The integrations area includes connector definitions, governed sync, replay, retry queues, and governance checks. It is designed to support reliable operational sync rather than silent background failures.
+
+Main route:
+
+```text
+/integrations
+```
+
+### Digital business card and contact exchange
+
+SETU Flow includes a professional contact exchange surface for sharing a signed-in user’s digital business card and collecting inbound contact details.
+
+Capabilities include:
+
+- Public card link
+- QR code share
+- vCard download
+- Copy link
+- Email share
+- Saved My Card settings
+- Contact intake review
+- Public card intake API
+
+Main routes:
+
+```text
+/contact-exchange/vcard
+/contact-exchange/scan
+/card
+```
+
+Supporting API routes:
+
+```text
+/api/contact-exchange/vcard
+/api/my-card-settings
+/api/public/card-vcf
+/api/public/card-intake
+/api/public/card-intake/prefill
+```
+
+### Mobile app experience
+
+The mobile app experience is additive and isolated from the desktop product. It is designed for phone-width use cases and avoids compressed desktop layouts.
+
+Mobile surfaces include:
+
+- Home
+- Leads
+- Capture
+- Quote
+- Orders
+- Notifications
+- Settings
+- Quick Add Lead
+- Share vCard
+
+Mobile routes:
+
+```text
+/mobile
+/mobile/leads
+/mobile/capture
+/mobile/quote
+/mobile/notifications
+/mobile/settings
+```
+
+Canonical desktop routes such as `/leads`, `/orders`, and `/leads/[leadId]/quote` also include mobile-safe rendering at phone viewport sizes while preserving desktop behavior at desktop widths.
+
+## Contact actions
+
+SETU Flow supports native communication handoffs from mobile lead cards and share surfaces.
+
+- Email actions open the device email client with a prefilled subject and body.
+- WhatsApp actions open `https://wa.me/` using normalized phone numbers and a prefilled message.
+- Actions are shown only when the required contact value exists.
+- vCard downloads use saved My Card settings so the contact file matches the public card identity.
+
+## Technical architecture
+
+### Framework
+
+- Next.js 14 App Router
+- React 18
+- TypeScript
+- Supabase SSR/client libraries
+- Tailwind CSS
+- Server routes and server actions for data and workflow operations
+
+### Source layout
+
+```text
+src/app                  Next.js routes, API routes, layouts, auth and public pages
+src/features             Product feature modules and workspace implementations
+src/components           Shared UI, shell, layout, branding, and contact-exchange components
+src/lib                  Data access, workflow logic, AI helpers, security, Supabase, and domain utilities
+supabase/migrations      Database migrations and security hardening scripts
+tests                    Contract, route, security, pricing, order, mobile, and release checks
+public/internal-dcc      Internal design/component catalog and mobile blueprint
+public/logos             Brand assets
+docs                     Release, product, security, operations, and proof documentation
+scripts                  Verification, readiness, and maintenance scripts
+```
+
+### Data and backend
+
+The application uses Supabase for database access, authentication support, server-side privileged paths, row-level security, and migration-managed schema changes. Server-side code is organized around feature modules and shared domain libraries.
+
+Important backend areas include:
+
+- `src/lib/supabase/*` for Supabase clients
+- `src/lib/workspace/*` for workspace roles and permissions
+- `src/lib/permissionGuards.ts` for permission boundaries
+- `src/features/*/server/actions.ts` for feature-specific server actions
+- `src/lib/queries/*` for data-loading view models
+- `supabase/migrations/*` for schema, RPC, RLS, and hardening changes
+
+### Security and governance
+
+The repo includes security, permissions, and governance checks across workspace access, RLS boundaries, order authorization, RPC grants, connector governance, and release proof.
+
+Relevant areas:
+
+```text
+docs/SECURITY_POLICY.md
+docs/SECURITY_HARDENING.md
+docs/RELEASE_READINESS.md
+docs/RELEASE_PROOF.md
+tests/security/*
+tests/workspace/*
+tests/integrations/*
+```
+
+### Internal design/component catalog
+
+The internal DCC documents UI patterns, mobile tokens, mobile components, navigation, workflows, and implementation guidance.
+
+Main files:
+
+```text
+public/internal-dcc/index.html
+public/internal-dcc/mobile-blueprint.html
+public/internal-dcc/mobile-patterns.md
+public/internal-dcc/mobile-tokens.json
+```
+
+## Environment variables
+
+Required production variables:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_APP_URL=https://www.setuflowcrm.com
+NEXT_PUBLIC_SITE_URL=https://www.setuflowcrm.com
+FEATURE_MOBILE_APP_V1=true
+NEXT_PUBLIC_FEATURE_MOBILE_APP_V1=true
+CONTACT_SCAN_PROVIDER=openai-vision
+CONTACT_SCAN_FALLBACK_PROVIDER=openai
+OPENAI_API_KEY=
+OPENAI_CONTACT_SCAN_MODEL=gpt-4.1-mini
+```
+
+Optional comparison/future OCR variable:
+
+```env
+GOOGLE_CLOUD_VISION_API_KEY=
+```
+
+The current recommended card scan mode is `openai-vision`. Google Vision support can remain configured for comparison, but it is not required for the current direct photo scan flow.
+
+## Local development
+
+Install dependencies:
+
+```bash
+npm ci
+```
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
+Run the production build locally:
+
+```bash
+npm run build
+```
+
+Run the primary verification suite:
+
+```bash
+npm test
+```
+
+Run the mobile scan readiness check:
+
+```bash
+npm run check:mobile-scan
+```
+
+Run full release proof checks where the environment has all dependencies and required variables:
+
+```bash
+npm run release:proof
+```
+
+## Testing and verification
+
+The repository includes tests for:
+
+- Route presence and route contracts
+- Release readiness and documentation consistency
+- Dashboard freeze checks
+- Mobile route isolation
+- Role-aware mobile lead visibility
+- Quick Add Lead scan behavior
+- Mobile scan provider readiness
+- vCard and quote mobile behavior
+- Lead actions and drawer footer behavior
+- Pricing helpers and services
+- Workspace permissions
+- Order execution
+- Integration governance
+- Security/RLS/RPC hardening
+
+Primary scripts:
+
+```bash
+npm test
+npm run typecheck
+npm run build
+npm run check:mobile-scan
+npm run test:pricing
+npm run test:workspace
+npm run test:orders
+npm run test:integrations
+npm run test:security
+npm run test:all
+```
+
+## Deployment checklist
+
+Before production deploy:
+
+1. Confirm Vercel environment variables are set for Production.
+2. Confirm Supabase URL, anon key, and service role key are configured.
+3. Confirm `CONTACT_SCAN_PROVIDER=openai-vision` for the current card scan build.
+4. Confirm `OPENAI_API_KEY` has available credit and model access.
+5. Redeploy with a cleared build cache after environment changes.
+6. Open `/api/mobile/scan-readiness` and confirm `activeProvider` is `openai-vision`.
+7. Test `/leads?quickLead=1` on a real phone.
+8. Scan a business card and verify fields are filled before save.
+9. Test email and WhatsApp actions from a lead with valid contact values.
+10. Test Share vCard download and confirm the contact name, phone, email, website, and organization are correct.
+11. Test desktop `/dashboard`, `/leads`, `/quotes`, `/orders`, and `/admin` at desktop width.
+
+## Product QA checklist
+
+### Desktop
+
+- Dashboard loads with KPI and workflow surfaces.
+- Leads workspace opens, filters, and detail pages work.
+- Pipeline board is usable at desktop width.
+- Quote route opens without mobile compression.
+- Orders page remains accessible.
+- Admin workspaces load for authorized users.
+- Reports, tasks, compliance, contracts, products, and integrations routes remain reachable.
+
+### Mobile
+
+- Mobile shell renders without compressed desktop layout.
+- Bottom navigation is visible and usable.
+- Quick Add Lead opens above the mobile navigation.
+- Camera/file scan shows progress immediately after the picker closes.
+- Scan result fills the visible form fields and allows review before save.
+- Leads list respects role visibility.
+- Lead cards support Open, Quote, Email, and WhatsApp when data exists.
+- Orders and quote screens are mobile-safe.
+- Share vCard uses saved My Card data.
+
+## Current release focus
+
+This repo snapshot is focused on a polished SaaS demo and production pilot posture:
+
+- Preserve desktop CRM workflows.
+- Keep mobile additions isolated and feature-flagged.
+- Provide a reliable investor-demo card scan path through direct OpenAI Vision.
+- Avoid customer-facing technical/debug copy.
+- Keep contact actions practical for field users.
+- Maintain release proof, security, and route coverage through automated checks.
+
+## Notes for future production hardening
+
+- Keep the direct OpenAI Vision scan mode for investor/customer demos.
+- Compare long-term OCR options after pilot usage volume is known.
+- Consider a dedicated SETU Scan Agent service when scan volume or cost justifies owned OCR infrastructure.
+- Continue storing user-reviewed scan corrections to improve parsing and field quality over time.
+- Keep desktop and mobile route behavior contract-tested to avoid regressions.

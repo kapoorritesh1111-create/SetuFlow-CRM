@@ -133,7 +133,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
       if (hasDraftSignal(nextDraft)) {
         setStatus('Lead fields were prefilled. Review and save when ready.');
       } else if (result.extraction.boundary === 'server_image_ocr_ready' || result.extraction.boundary === 'server_pdf_ocr_ready') {
-        setStatus('The card was accepted, but automatic image text extraction is not enabled for this environment. Add visible text in Assist text, or enable the OCR provider, then scan again.');
+        setStatus('The card was received, but contact details could not be read. Add visible text or try another image.');
       } else {
         setStatus('Scan finished with limited data. Add or correct values before saving.');
       }
@@ -213,7 +213,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
 
         <label className="mt-4 block">
           <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Assist text optional</span>
-          <textarea value={assistText} onChange={(event) => setAssistText(event.target.value)} placeholder="Paste visible text only if the photo is blurry or OCR is unavailable." className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm outline-none ring-blue-500/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+          <textarea value={assistText} onChange={(event) => setAssistText(event.target.value)} placeholder="Add visible text only if the photo is blurry or incomplete." className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm outline-none ring-blue-500/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
         </label>
 
         <button type="button" onClick={runScan} disabled={!canScan || isScanning} className="mt-4 min-h-14 w-full rounded-2xl bg-[linear-gradient(135deg,#2563ff,#62a6ff_52%,#7c3aed)] text-sm font-black text-white shadow-lg shadow-blue-600/20 disabled:opacity-55">

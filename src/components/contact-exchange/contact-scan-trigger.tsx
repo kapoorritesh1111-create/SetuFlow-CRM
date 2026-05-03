@@ -67,13 +67,13 @@ function buildExtractionMessage(extraction: ContactServerExtractionResult) {
     return 'Extraction found limited contact detail. Review and complete the fields inline before applying them.';
   }
   if (extraction.boundary === 'server_image_ocr_live' || extraction.boundary === 'server_pdf_ocr_live') {
-    return `Live OCR extracted this ${humanizeProfile(extraction.sourceProfile)} on the server. ${lowConfidenceCount ? `Review ${lowConfidenceCount} lower-confidence field${lowConfidenceCount > 1 ? 's' : ''} before applying.` : 'Review the mapped values, confirm, and then apply them back into the lead form.'}`;
+    return `Contact details were read from this ${humanizeProfile(extraction.sourceProfile)}. ${lowConfidenceCount ? `Review ${lowConfidenceCount} field${lowConfidenceCount > 1 ? 's' : ''} before applying.` : 'Review the values, then apply them back into the lead form.'}`;
   }
   if (extraction.boundary === 'server_image_ocr_ready') {
-    return 'Server boundary accepted the image. If live AI OCR is unavailable the system falls back to local OCR, then you can review and apply the mapped values.';
+    return 'Image received. Review the suggested details before applying them.';
   }
   if (extraction.boundary === 'server_pdf_ocr_ready') {
-    return 'Server boundary accepted the PDF. Configure the OCR provider for scan-PDF extraction, or add assist text and review the values before applying them.';
+    return 'PDF received. Review the suggested details before applying them.';
   }
   if (extraction.boundary === 'server_pdf_text_layer') {
     return 'Embedded PDF text was recovered on the server. Review the mapped values before applying them.';
@@ -161,7 +161,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
     if (activeFile) formData.set('source', activeFile);
 
     setIsExtracting(true);
-    setExtractionMessage('Running the live OCR-capable server extraction boundary…');
+    setExtractionMessage('Reading contact details…');
     setExtractionError('');
     setReviewConfirmed(false);
 
@@ -270,7 +270,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Quick entry · inbound capture</p>
                 <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Scan Contact Info</h3>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Upload or capture a source, let the live OCR-capable server extraction boundary prefill the contact block, then review and apply it back into Quick Add Lead on the same screen.</p>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Upload or capture a card, review the suggested contact details, then apply them back into Quick Add Lead.</p>
               </div>
               <button type="button" onClick={() => setOpen(false)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Close</button>
             </div>
@@ -342,15 +342,15 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                     <p className="mt-3 leading-6 text-slate-600">
                       {selectedSource
                         ? sourceMode === 'camera'
-                          ? 'Camera capture is attached to the same review surface and routed through the server extraction boundary.'
-                          : 'Uploaded source is attached to the same review surface and routed through the server extraction boundary.'
+                          ? 'Camera capture is ready for review.'
+                          : 'Uploaded file is ready for review.'
                         : 'Pick a file or use the camera to begin. The chosen source stays in this review flow only.'}
                     </p>
                   </div>
 
                   <label className="mt-4 block">
                     <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Assist text for extraction</span>
-                    <textarea value={assistText} onChange={(event) => setAssistText(event.target.value)} className="mt-2 min-h-[120px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Paste visible text from a screenshot, card, PDF, catalog back, or email signature to strengthen extraction when confidence is low or when the OCR provider is not configured." />
+                    <textarea value={assistText} onChange={(event) => setAssistText(event.target.value)} className="mt-2 min-h-[120px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Add visible text only when a photo is blurry or incomplete." />
                   </label>
 
                   <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -365,7 +365,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                       <li>1. Pick a source or paste visible text.</li>
                       <li>2. Run extraction only when you want a prefill suggestion.</li>
                       <li>3. Review or manually edit the contact fields on the right.</li>
-                      <li>4. Confirm review, then apply everything back into Quick Add Lead. Final lead save still happens from the lead form.</li>
+                      <li>4. Review and apply the details back into Quick Add Lead before saving.</li>
                     </ol>
                   </div>
                 </section>
@@ -429,7 +429,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-700">{applyStatus}</p>
-                  <p className="mt-1 text-sm text-slate-500">Applying maps the reviewed fields into the standard lead payload, stamps the source as a contact scan, and can surface duplicate or follow-up assist back in Quick Add Lead. Final lead save still happens from the lead form.</p>
+                  <p className="mt-1 text-sm text-slate-500">Apply the reviewed details to the lead form, then save when the information looks right.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <button type="button" onClick={() => setOpen(false)} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>

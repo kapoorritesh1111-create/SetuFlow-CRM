@@ -272,8 +272,8 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
             className="mt-4"
             title="What to do next with My Card"
             description={shareSlug
-              ? 'Save changes, copy or share the public link, then use the public card to test Request Quote and Book Appointment end to end.'
-              : 'Save this card once to lock the permanent share link, then test the public card flow from the buyer side.'}
+              ? 'Save changes, copy or share the public link, then open the public card to confirm the customer experience.'
+              : 'Save this card once to create the permanent share link.'}
             tone="neutral"
           />
 

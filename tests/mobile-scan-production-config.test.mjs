@@ -34,7 +34,7 @@ test('production scan setup docs and env example document required variables', (
     assert.match(env, new RegExp(`^${name}=`, 'm'));
   }
   assert.match(docs, /\/api\/mobile\/scan-readiness/);
-  assert.match(docs, /real iPhone or Android device/);
+  assert.match(docs, /\/leads\?quickLead=1/);
 });
 
 test('mobile scan readiness CLI fails clearly when required env vars are missing', () => {

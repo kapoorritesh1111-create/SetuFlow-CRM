@@ -41,7 +41,7 @@ test('quick add lead camera scan writes OCR results into visible drawer fields',
   assert.match(drawer, /setPhone\(\(current\) => \{/);
   assert.match(drawer, /setWebsite\(\(current\) => draft\.website \|\| current\)/);
   assert.match(drawer, /quickScanStatus\.message/);
-  assert.match(drawer, /Lead details filled from scan\. \$/);
+  assert.match(drawer, /Card details added\. Please review before saving\./);
   assert.match(drawer, /scrollIntoView/);
   assert.doesNotMatch(drawer, /ql-hidden-upload/);
   assert.doesNotMatch(drawer, /Dispatch to the ContactScanTrigger/);
@@ -65,8 +65,8 @@ test('quick add lead uses explicit mobile contact-scan API and visible status pa
   const drawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
   const route = readFileSync('src/app/api/mobile/contact-scan/route.ts', 'utf8');
   assert.match(drawer, /fetch\('\/api\/mobile\/contact-scan'/);
-  assert.match(drawer, /Photo ready\. Reading the business card now/);
-  assert.match(drawer, /Lead details filled from scan/);
+  assert.match(drawer, /Reading card…/);
+  assert.match(drawer, /Card details added\. Please review before saving/);
   assert.match(route, /extractContactSource/);
   assert.match(route, /server_image_ocr|sourceMode/);
 });

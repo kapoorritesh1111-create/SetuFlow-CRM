@@ -175,7 +175,7 @@ export function PremiumVCardPreview({
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">{mode === 'publicCard' ? 'Digital card layout' : 'Apple layout guidance'}</p>
           <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">One calm screen with one decision path</h3>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Batch 12 removes the last traces of dashboard energy. The page now behaves like a calm digital identity card: large human presence, one dominant save moment, two obvious action tiles, and only the lightest supporting context.
+            Your digital card is ready to share: a clean profile, a clear save action, and simple contact options.
           </p>
         </div>
 
@@ -195,7 +195,7 @@ export function PremiumVCardPreview({
         {mode === 'publicCard' ? (
           <div className="rounded-[1.6rem] border border-emerald-200 bg-emerald-50/80 px-5 py-5 text-sm text-emerald-950">
             <p className="font-semibold">Leadership/demo callout</p>
-            <p className="mt-2 leading-6">This now demos like a finished identity product: minimal, deliberate, and obviously save-first without looking like a workflow tool.</p>
+            <p className="mt-2 leading-6">A simple, polished identity card built for fast saving and sharing.</p>
           </div>
         ) : (
           <div className="rounded-[1.6rem] border border-slate-200 bg-white px-5 py-5 text-sm text-slate-600 shadow-[0_12px_36px_rgba(15,23,42,0.05)]">

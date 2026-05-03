@@ -62,7 +62,7 @@ export default async function ProductManagementPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SectionCard eyebrow="Catalog governance" title={ratioLabel(summary.activeProducts, summary.totalProducts)} description="Active products under admin control.">
-          <p className="text-sm text-slate-600">{summary.totalCategories} categories · {summary.totalVariants} sellable variants in the current repo baseline.</p>
+          <p className="text-sm text-slate-600">{summary.totalCategories} categories · {summary.totalVariants} sellable variants available.</p>
         </SectionCard>
         <SectionCard eyebrow="Base pricing" title={ratioLabel(pricedActiveCount, activeProducts.length)} description="Active products with a catalog baseline.">
           <p className="text-sm text-slate-600">Catalog-led quoting stays primary and visible before any manual override is requested.</p>

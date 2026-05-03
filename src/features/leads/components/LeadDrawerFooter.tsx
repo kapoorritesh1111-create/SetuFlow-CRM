@@ -69,34 +69,26 @@ export default function LeadDrawerFooter({
           </div>
         </div>
       ) : null}
-      {quickScanStatus?.message ? (
+      {quickScanStatus?.tone === 'loading' ? (
         <div
-          className={[
-            'rounded-2xl border px-4 py-3 text-sm font-semibold',
-            quickScanStatus.tone === 'error'
-              ? 'border-rose-200 bg-rose-50 text-rose-700'
-              : quickScanStatus.tone === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : quickScanStatus.tone === 'loading'
-                  ? 'border-sky-200 bg-sky-50 text-sky-800'
-                  : 'border-slate-200 bg-slate-50 text-slate-700',
-          ].join(' ')}
-          aria-live="polite"
+          className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800"
+          aria-live="assertive"
+          role="status"
         >
-          {quickScanStatus.tone === 'loading' ? 'Scanning card… ' : quickScanStatus.tone === 'success' ? 'Scan complete. ' : quickScanStatus.tone === 'error' ? 'Scan needs attention. ' : ''}
-          {quickScanStatus.message}
+          Reading card…
+          <span className="mt-1 block text-xs font-medium text-sky-700">Filling contact fields…</span>
         </div>
       ) : null}
       {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
-      {success ? <p className="text-sm font-medium text-emerald-600">{success}</p> : null}
+      {success && !quickScanStatus?.message ? <p className="text-sm font-medium text-emerald-600">{success}</p> : null}
       <DrawerActionBar
         title={isQuickMode ? 'Lead capture' : 'Lead workflow'}
         description={
           isFinalStep
             ? isQuickMode
-              ? 'Save and stay ready for the next lead.'
+              ? 'Review the details, then save this lead.'
               : 'Save changes and return to the list.'
-            : 'Move step by step without leaving the current drawer workflow.'
+            : 'Continue to the next section.'
         }
       >
         <button

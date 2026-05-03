@@ -378,7 +378,7 @@ function buildQuoteSendDecisionSnapshot(input: {
         margin_exposed: false,
         delta_to_threshold_percent: deltaToThresholdPercent,
         narrative: actualOverrideDeltaPercent != null
-          ? `Required threshold ${normalizePercent(Number(input.thresholdPercent))}% with governed approval metric ${actualOverrideDeltaPercent}% from override delta. True commercial margin is not exposed in this repo surface.`
+          ? `Required threshold ${normalizePercent(Number(input.thresholdPercent))}% with governed approval metric ${actualOverrideDeltaPercent}% from override delta. Commercial margin is not shown in this view.`
           : `Required threshold ${normalizePercent(Number(input.thresholdPercent))}% is configured. True commercial margin and current override delta are not exposed in this send surface.`,
       }
     : {
@@ -390,7 +390,7 @@ function buildQuoteSendDecisionSnapshot(input: {
         governed_metric_percent: actualOverrideDeltaPercent,
         margin_exposed: false,
         delta_to_threshold_percent: null,
-        narrative: actualOverrideDeltaPercent != null ? `Threshold enforced, value not configured. Governed approval metric currently visible: override delta ${actualOverrideDeltaPercent}%. True commercial margin is not exposed in this repo surface.` : 'Threshold enforced, value not configured. True commercial margin is not exposed in this repo surface.',
+        narrative: actualOverrideDeltaPercent != null ? `Threshold enforced, value not configured. Governed approval metric currently visible: override delta ${actualOverrideDeltaPercent}%. Commercial margin is not shown in this view.` : 'Threshold enforced, value not configured. Commercial margin is not shown in this view.',
       };
 
   const safeToSend = blockers.length === 0;
@@ -409,8 +409,8 @@ function buildQuoteSendDecisionSnapshot(input: {
       ? 'Send is advisable because the current version, approval posture, and explicit blockers all resolve cleanly.'
       : `Do not send yet because ${blockers[0]?.detail ?? 'a governed blocker is still active.'}`,
     commercial_risk_factor: actualOverrideDeltaPercent != null
-      ? `Governed approval metric is override delta at ${actualOverrideDeltaPercent}%. True commercial margin is not exposed in this repo surface.`
-      : 'True commercial margin is not exposed in this repo surface, so approval risk is being explained from the governed override posture instead.',
+      ? `Governed approval metric is override delta at ${actualOverrideDeltaPercent}%. Commercial margin is not shown in this view.`
+      : 'Commercial margin is not shown in this view, so approval risk is being explained from the governed override posture instead.',
   };
 }
 

@@ -1,3 +1,12 @@
+
+## PASS33 — SaaS polish, contact actions, and documentation cleanup
+
+- Removed customer-facing technical wording from the mobile scan flow and replaced it with product-safe copy.
+- Kept the working OpenAI Vision card scan path from PASS31/PASS32 intact.
+- Simplified Quick Add Lead scan states so users see clear progress and short success/error messages.
+- Added mobile lead card Email and WhatsApp actions using safe `mailto:` and normalized `wa.me` links.
+- Updated README, MOBILE_README, and MOBILE_SCAN_PRODUCTION for a professional SaaS product handoff.
+- Updated tests to validate the polished scan copy and documentation contract.
 # PASS31 — camera scan 422 recovery and visible scan progress
 
 - Fixed the most likely cause of the production `422` camera scan failure: phone camera images can arrive as formats or MIME types that the OpenAI image endpoint does not accept directly. Mobile image scan now always transcodes image captures/uploads to JPEG before posting to `/api/mobile/contact-scan`, while preserving the 3 MB server upload limit.
@@ -1608,3 +1617,17 @@ Fixed the live mobile Quick Add Lead camera flow so a photo selected from the ph
 - Targeted mobile business-card scan tests pass.
 
 ---
+
+## PASS32 — Mobile scan UX copy and visibility polish
+- Kept the working OpenAI Vision scanner intact.
+- Added a sticky scan status banner inside Quick Add Lead so users can see scan progress immediately after camera/file picker closes.
+- Replaced verbose scan result field dumps with customer-safe copy: "Card scanned. Review the filled details below."
+- Removed duplicate scan success text from the drawer footer while keeping loading feedback visible above the Save button.
+- Added regression coverage for scan progress visibility and non-duplicate customer-facing copy.
+---
+
+## PASS34 — README full product and repo review rewrite
+
+- Rewrote the root README to describe the full SETU Flow CRM product, including desktop CRM, mobile field experience, leads, pipeline, products, quotes, orders, trade events, tasks, reports, compliance, admin, integrations, digital business card, and contact exchange surfaces.
+- Documented source layout, backend architecture, Supabase responsibilities, security/governance posture, environment variables, scan provider mode, QA checks, test commands, and deployment checklist.
+- Positioned the repository as a professional SaaS product handoff rather than a short mobile-only note.

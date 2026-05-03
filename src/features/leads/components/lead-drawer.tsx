@@ -597,7 +597,7 @@ export function LeadDrawer({
 
     setQuickScanStatus({
       tone: 'loading',
-      message: sourceMode === 'camera' ? 'Preparing photo for secure mobile scan…' : 'Preparing file for secure scan…',
+      message: sourceMode === 'camera' ? 'Photo received. Reading card…' : 'File received. Reading contact details…',
     });
 
     try {
@@ -614,10 +614,10 @@ export function LeadDrawer({
       setQuickScanStatus({
         tone: 'loading',
         message: prepared.compressed
-          ? `${prepared.note} Reading the card now…`
+          ? sourceMode === 'camera' ? 'Reading card…' : 'Reading contact details…'
           : sourceMode === 'camera'
-            ? 'Photo ready. Reading the business card now…'
-            : 'File ready. Reading the business card now…',
+            ? 'Reading card…'
+            : 'Reading contact details…',
       });
 
       const formData = new FormData();
@@ -633,7 +633,7 @@ export function LeadDrawer({
       const response = await fetch('/api/mobile/contact-scan', { method: 'POST', body: formData });
       const result = await response.json() as { ok?: boolean; error?: string; extraction?: any };
       if (!response.ok || result.error || !result.extraction) {
-        setQuickScanStatus({ tone: 'error', message: result.error ?? 'Scan finished without usable contact fields. Try retaking the photo with the card flatter and brighter.' });
+        setQuickScanStatus({ tone: 'error', message: result.error ?? 'We could not read enough contact details. Try a clearer photo or upload the file.' });
         return;
       }
 
@@ -643,8 +643,8 @@ export function LeadDrawer({
       if (genericOnlyCompany) draft.companyName = '';
       if (!hasQuickScanSignal(draft)) {
         const guidance = extraction.boundary === 'server_image_ocr_live' || extraction.boundary === 'server_pdf_ocr_live'
-          ? 'The card was scanned, but no company, contact, email, phone, role, or website could be read. Retake the photo closer to the card with less glare, or use Upload file.'
-          : 'The photo was accepted, but OCR did not return readable lead fields. Retake the photo closer to the card with less glare, or use Upload file.';
+          ? 'We could not read enough contact details. Retake the photo closer to the card with less glare, or upload the file.'
+          : 'We could not read enough contact details. Retake the photo closer to the card with less glare, or upload the file.';
         setQuickScanStatus({ tone: 'error', message: guidance });
         setState({ error: guidance });
         return;
@@ -689,16 +689,16 @@ export function LeadDrawer({
       setActiveStepId('basics');
       setValidationIssues([]);
       const summary = buildQuickScanSummary(draft);
-      setState({ success: `Lead details filled from scan. ${summary}` });
+      setState({ success: '' });
       setQuickScanStatus({
         tone: 'success',
-        message: `Lead details filled from scan. ${summary}`,
+        message: 'Card details added. Please review before saving.',
       });
       requestAnimationFrame(() => {
         document.querySelector<HTMLInputElement>('input[name="company_name"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Scan failed before the form could be filled.';
+      const message = error instanceof Error ? error.message : 'We could not read this card. Please try another photo or upload the file.';
       setQuickScanStatus({ tone: 'error', message });
       setState({ error: message });
     } finally {
@@ -1315,6 +1315,28 @@ export function LeadDrawer({
         <input key={categoryId} type="hidden" name="category_ids" value={categoryId} />
       ))}
 
+      {!isEditingExistingLead && isQuickMode && quickScanStatus.message ? (
+        <div
+          className={[
+            'sticky top-0 z-30 mx-5 mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold shadow-lg backdrop-blur',
+            quickScanStatus.tone === 'error'
+              ? 'border-rose-200 bg-rose-50/95 text-rose-700'
+              : quickScanStatus.tone === 'success'
+                ? 'border-emerald-200 bg-emerald-50/95 text-emerald-700'
+                : 'border-sky-200 bg-sky-50/95 text-sky-800',
+          ].join(' ')}
+          aria-live="assertive"
+          role={quickScanStatus.tone === 'error' ? 'alert' : 'status'}
+        >
+          {quickScanStatus.tone === 'loading'
+            ? 'Reading card…'
+            : quickScanStatus.tone === 'success'
+              ? 'Card scan complete'
+              : 'Card scan needs attention'}
+          <span className="mt-1 block text-xs font-medium opacity-90">{quickScanStatus.message}</span>
+        </div>
+      ) : null}
+
       <div className="space-y-5 px-5 py-5">
         {/* ── SCAN CAPTURE HERO — spec: Quick Lead opens with scan as primary action ── */}
         {!isEditingExistingLead && isQuickMode && !isFastFieldMode ? (
@@ -1323,9 +1345,9 @@ export function LeadDrawer({
               <div>
                 <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#0c7fff', marginBottom: '4px' }}>Smart capture</p>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', letterSpacing: '-.2px' }}>Scan a business card, document or PDF</h3>
-                <p style={{ fontSize: '11px', color: '#64748b', marginTop: '3px', lineHeight: 1.5 }}>Use your camera or upload a file — the AI will extract and prefill the form fields automatically.</p>
+                <p style={{ fontSize: '11px', color: '#64748b', marginTop: '3px', lineHeight: 1.5 }}>Fast contact capture for cards and files.</p>
               </div>
-              <span style={{ borderRadius: '999px', border: '1px solid #bae6fd', background: 'white', padding: '3px 10px', fontSize: '10px', fontWeight: 700, color: '#0369a1', letterSpacing: '.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>AI-powered OCR</span>
+              <span style={{ borderRadius: '999px', border: '1px solid #bae6fd', background: 'white', padding: '3px 10px', fontSize: '10px', fontWeight: 700, color: '#0369a1', letterSpacing: '.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Smart scan</span>
             </div>
             {/* Scan method buttons — camera + file */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1385,11 +1407,11 @@ export function LeadDrawer({
                 }}
               >
                 {quickScanStatus.tone === 'loading' ? '⏳ ' : quickScanStatus.tone === 'success' ? '✅ ' : quickScanStatus.tone === 'error' ? '⚠️ ' : ''}
-                {quickScanStatus.message}
+                {quickScanStatus.tone === 'success' ? 'Card details added. Please review before saving.' : quickScanStatus.message}
               </div>
             ) : null}
             <p style={{ marginTop: '10px', fontSize: '10px', color: '#94a3b8', letterSpacing: '.02em' }}>
-              📌 Or fill the form below manually — scan is optional
+
             </p>
           </div>
         ) : null}
@@ -1398,9 +1420,9 @@ export function LeadDrawer({
           <div className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50/80 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Fast capture lane</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Quick capture</p>
                 <h3 className="mt-2 text-base font-semibold text-slate-900">{prefill.title ?? 'Quick lead'}</h3>
-                <p className="mt-1 text-sm text-slate-600">{prefill.description ?? 'Save the minimum valid lead, keep the sales process compact, and move into Quote quickly.'}</p>
+                <p className="mt-1 text-sm text-slate-600">{prefill.description ?? 'Save the lead quickly and continue follow-up or quoting when ready.'}</p>
               </div>
               <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">{shouldAutoOpenQuoteAfterSave ? 'Quote opens after save' : 'Quick save'}</span>
             </div>

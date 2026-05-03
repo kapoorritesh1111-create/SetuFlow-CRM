@@ -49,21 +49,16 @@ export async function POST(request: NextRequest) {
 
     const isImageSource = source instanceof File && String(fileType).startsWith('image/');
     if (requireOcr && isImageSource && extraction.boundary !== 'server_image_ocr_live') {
-      const debugNote = Array.isArray(extraction.notes)
-        ? extraction.notes.find((note: string) => note.includes('Live OCR extraction could not complete'))
-        : '';
       return NextResponse.json({
         ok: false,
-        error: debugNote
-          ? `The photo reached SETU Flow, but card reading failed: ${debugNote.replace('Live OCR extraction could not complete: ', '')}`
-          : 'The photo reached SETU Flow, but live card reading did not complete. Retake the card closer and flatter, or try Upload file. If this repeats, check the OCR model logs.',
+        error: 'We could not read this card clearly. Retake the photo closer and flatter, or upload a sharper image.',
         extraction,
       }, { status: 422 });
     }
 
     return NextResponse.json({ ok: true, extraction });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Business card scan failed before extraction completed.';
+    const message = error instanceof Error ? error.message : 'We could not read this card. Please try another photo or upload the file.';
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

@@ -51,7 +51,7 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
           <p className="mt-2 max-w-lg text-sm leading-6 text-slate-600">Use your company credentials to continue into the platform. This login is presented as the branded front door for clients evaluating or using Setu Flow.</p>
           {!hasSupabaseEnv ? (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Environment variables are not set yet. Add them to <code>.env.local</code> before testing auth locally.
+              Sign-in is not available right now. Please contact your workspace administrator.
             </div>
           ) : null}
           <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">

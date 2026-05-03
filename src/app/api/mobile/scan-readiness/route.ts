@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       ok: secure,
       detail: secure
         ? `Camera capture can run from ${proto}://${url.host}.`
-        : 'Camera capture requires HTTPS in production. Localhost is allowed for development.',
+        : 'Camera capture requires HTTPS.',
     },
     {
       id: 'contact-scan-provider',
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
       ok: providerOk,
       detail: providerOk
         ? `Active provider: ${providerState.activeProvider}. Requested: ${providerState.requestedProvider}. Fallback: ${providerState.fallbackProvider}.`
-        : 'No OCR provider is configured. Set CONTACT_SCAN_PROVIDER plus GOOGLE_CLOUD_VISION_API_KEY or OPENAI_API_KEY, then redeploy.',
+        : 'No card scanner is configured.',
     },
 
     {
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     },
     {
       id: 'google-vision-ocr',
-      label: 'Google Vision photo OCR',
+      label: 'Google Vision card reader',
       ok: !wantsGoogle || providerState.googleConfigured,
       detail: providerState.googleConfigured
         ? 'GOOGLE_CLOUD_VISION_API_KEY is present. Photo scans can use Google Vision TEXT_DETECTION.'

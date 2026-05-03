@@ -228,6 +228,29 @@ function getLeadCommandCenterHref(leadId: string, initialStepId: LeadOpenStep = 
   return `/leads/${leadId}${focus}`;
 }
 
+
+function normalizeContactNumber(value?: string | null) {
+  const digits = String(value ?? '').replace(/[^0-9]/g, '');
+  return digits.length >= 7 ? digits : '';
+}
+
+function getLeadEmailHref(lead: Pick<LeadRow, 'email' | 'company_name' | 'contact_name'>) {
+  const email = String(lead.email ?? '').trim();
+  if (!email || !email.includes('@')) return '';
+  const subject = `Follow-up from SETU Flow`;
+  const greeting = lead.contact_name ? `Hi ${lead.contact_name},` : 'Hello,';
+  const body = `${greeting}\n\nIt was good connecting with you. I am following up from SETU Flow regarding ${lead.company_name}.\n\nBest regards`;
+  return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function getLeadWhatsAppHref(lead: Pick<LeadRow, 'whatsapp_number' | 'phone' | 'company_name' | 'contact_name'>) {
+  const number = normalizeContactNumber(lead.whatsapp_number || lead.phone);
+  if (!number) return '';
+  const greeting = lead.contact_name ? `Hi ${lead.contact_name},` : 'Hello,';
+  const message = `${greeting}\n\nIt was good connecting with you. I am following up from SETU Flow regarding ${lead.company_name}.`;
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+}
+
 function openLeadCommandCenter(router: ReturnType<typeof useRouter>, href: string) {
   navigateToLeadCommandCenter(router, href);
 }
@@ -2929,6 +2952,8 @@ function LeadMobileCard(props: LeadTableRowProps) {
   const followUpState = getFollowUpVisualState(lead.next_follow_up_at);
   const readiness = readinessMap.get(lead.id);
   const commandCenterHref = getLeadCommandCenterHref(lead.id);
+  const emailHref = getLeadEmailHref(lead);
+  const whatsappHref = getLeadWhatsAppHref(lead);
   const router = useRouter();
 
   return (
@@ -3009,8 +3034,28 @@ function LeadMobileCard(props: LeadTableRowProps) {
       </button>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-        <div className="text-xs font-medium text-slate-500">Open this lead to continue in the command center.</div>
+        <div className="text-xs font-medium text-slate-500">Continue, quote, or contact this lead.</div>
         <div className="flex flex-wrap gap-2">
+          {emailHref ? (
+            <a
+              href={emailHref}
+              onClick={(event) => event.stopPropagation()}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.05)]"
+            >
+              Email
+            </a>
+          ) : null}
+          {whatsappHref ? (
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(event) => event.stopPropagation()}
+              className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"
+            >
+              WhatsApp
+            </a>
+          ) : null}
           <button
             type="button"
             onClick={(event) => {
@@ -3019,7 +3064,7 @@ function LeadMobileCard(props: LeadTableRowProps) {
             }}
             className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
           >
-            Set preview
+            Preview
           </button>
           <button
             type="button"
