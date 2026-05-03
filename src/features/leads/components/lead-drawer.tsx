@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Database } from '@/types/database';
 import { openOrCreateLeadQuoteDraft, saveLead } from '@/features/leads/server/actions';
+import { extractContactScan } from '@/features/leads/server/contact-scan-actions';
 import { saveSettingsListItem } from '@/features/settings/server/actions';
 import LeadRecentSection from './LeadRecentSection';
 import LeadBasicInfoSection from './LeadBasicInfoSection';
@@ -253,6 +254,7 @@ export function LeadDrawer({
   const [notes, setNotes] = useState<string>(lead?.notes ?? '');
   const [sourceType, setSourceType] = useState<string>(lead?.source_type ?? prefill?.sourceType ?? '');
   const [sourceLabel, setSourceLabel] = useState<string>(lead?.source_label ?? prefill?.sourceLabel ?? '');
+  const [quickScanStatus, setQuickScanStatus] = useState<{ tone: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ tone: 'idle', message: '' });
   const [postApplyAssist, setPostApplyAssist] = useState<ContactPostApplyAssistResult | null>(null);
   const [afterSaveGuidance, setAfterSaveGuidance] = useState<ContactAfterSaveGuidanceResult | null>(null);
   const [lastSavedCompany, setLastSavedCompany] = useState<string | null>(null);
@@ -398,6 +400,7 @@ export function LeadDrawer({
     setNotes(lead?.notes ?? '');
     setSourceType(lead?.source_type ?? prefill?.sourceType ?? '');
     setSourceLabel(lead?.source_label ?? prefill?.sourceLabel ?? '');
+    setQuickScanStatus({ tone: 'idle', message: '' });
     setPostApplyAssist(null);
     setAfterSaveGuidance(null);
 
@@ -537,6 +540,81 @@ export function LeadDrawer({
     if (!filterMarketIds.length) return countries;
     return countries.filter((country) => country.market_id && filterMarketIds.includes(country.market_id));
   }, [autoMarketId, countries, selectedMarketIdSet]);
+
+  const applyQuickScanExtraction = async (file: File, sourceMode: 'camera' | 'upload') => {
+    if (!file) return;
+
+    setQuickScanStatus({
+      tone: 'loading',
+      message: sourceMode === 'camera' ? 'Preparing photo for secure mobile scan…' : 'Preparing file for secure scan…',
+    });
+
+    try {
+      const formData = new FormData();
+      formData.set('source_mode', sourceMode);
+      formData.set('source', file);
+
+      const result = await extractContactScan(undefined, formData);
+      if (result.error || !result.extraction) {
+        setQuickScanStatus({ tone: 'error', message: result.error ?? 'Scan finished without usable contact fields. Try retaking the photo with the card flatter and brighter.' });
+        return;
+      }
+
+      const extraction = result.extraction;
+      const draft = extraction.draft;
+      const scanText = [
+        draft.notes,
+        extraction.sourceLabel,
+        ...extraction.fields.map((field) => field.value),
+      ].join(' ').toLowerCase();
+      const matchedCountry = countries.find((country) => country.name && scanText.includes(country.name.toLowerCase()));
+
+      setCompanyName((current) => draft.companyName || current);
+      setContactName((current) => draft.contactName || current);
+      setJobTitle((current) => draft.jobTitle || current);
+      setEmail((current) => draft.email || current);
+      setPhone((current) => {
+        if (draft.phone) {
+          phoneManuallyEditedRef.current = true;
+          return draft.phone;
+        }
+        return current;
+      });
+      setWhatsappNumber((current) => {
+        if (draft.phone && !whatsappManuallyEditedRef.current) return draft.phone;
+        return current;
+      });
+      setPhoneSecondary((current) => draft.phoneSecondary || current);
+      setWebsite((current) => draft.website || current);
+      setNotes((current) => {
+        const additions = [draft.notes, extraction.notes.join('\n')]
+          .map((value) => String(value ?? '').trim())
+          .filter(Boolean);
+        if (!additions.length) return current;
+        const existing = String(current ?? '').trim();
+        return [existing, ...additions].filter(Boolean).join('\n\n');
+      });
+      setSourceType(extraction.sourceType || (sourceMode === 'camera' ? 'contact_scan_camera' : 'contact_scan_upload'));
+      setSourceLabel(extraction.sourceLabel || file.name || 'Quick entry contact scan');
+      if (matchedCountry?.id) setCountryId(matchedCountry.id);
+      setLeadType((current) => current || 'buyer');
+      setActiveStepId('basics');
+      setValidationIssues([]);
+      setState({ success: 'Lead details filled from scan. Review the fields, then save the buyer lead.' });
+      setQuickScanStatus({
+        tone: 'success',
+        message: 'Lead details filled from scan. Review the highlighted fields before saving.',
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Scan failed before the form could be filled.';
+      setQuickScanStatus({ tone: 'error', message });
+    } finally {
+      const cameraInput = document.getElementById('ql-camera-input') as HTMLInputElement | null;
+      const fileInput = document.getElementById('ql-file-input') as HTMLInputElement | null;
+      if (cameraInput) cameraInput.value = '';
+      if (fileInput) fileInput.value = '';
+    }
+  };
 
   const categoryTree = useMemo(() => {
     const groupMap = new Map<string | null, ProductCategory[]>();
@@ -1169,17 +1247,11 @@ export function LeadDrawer({
                   accept="image/*"
                   capture="environment"
                   className="hidden"
+                  disabled={quickScanStatus.tone === 'loading'}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    // Dispatch to the ContactScanTrigger via hidden file input below
-                    const hidden = document.getElementById('ql-hidden-upload') as HTMLInputElement | null;
-                    if (hidden) {
-                      const dt = new DataTransfer();
-                      dt.items.add(file);
-                      hidden.files = dt.files;
-                      hidden.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
+                    void applyQuickScanExtraction(file, 'camera');
                   }}
                 />
               </label>
@@ -1193,16 +1265,11 @@ export function LeadDrawer({
                   type="file"
                   accept="image/*,.pdf,text/plain,.txt"
                   className="hidden"
+                  disabled={quickScanStatus.tone === 'loading'}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const hidden = document.getElementById('ql-hidden-upload') as HTMLInputElement | null;
-                    if (hidden) {
-                      const dt = new DataTransfer();
-                      dt.items.add(file);
-                      hidden.files = dt.files;
-                      hidden.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
+                    void applyQuickScanExtraction(file, 'upload');
                   }}
                 />
               </label>
@@ -1210,6 +1277,24 @@ export function LeadDrawer({
                 Supports: JPG, PNG, PDF, TXT · Max 10 MB
               </span>
             </div>
+            {quickScanStatus.message ? (
+              <div
+                aria-live="polite"
+                style={{
+                  marginTop: '12px',
+                  borderRadius: '12px',
+                  border: `1px solid ${quickScanStatus.tone === 'error' ? '#fecaca' : quickScanStatus.tone === 'success' ? '#bbf7d0' : '#bae6fd'}`,
+                  background: quickScanStatus.tone === 'error' ? '#fef2f2' : quickScanStatus.tone === 'success' ? '#f0fdf4' : '#f0f9ff',
+                  color: quickScanStatus.tone === 'error' ? '#991b1b' : quickScanStatus.tone === 'success' ? '#166534' : '#075985',
+                  padding: '8px 10px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                }}
+              >
+                {quickScanStatus.tone === 'loading' ? '⏳ ' : quickScanStatus.tone === 'success' ? '✅ ' : quickScanStatus.tone === 'error' ? '⚠️ ' : ''}
+                {quickScanStatus.message}
+              </div>
+            ) : null}
             <p style={{ marginTop: '10px', fontSize: '10px', color: '#94a3b8', letterSpacing: '.02em' }}>
               📌 Or fill the form below manually — scan is optional
             </p>

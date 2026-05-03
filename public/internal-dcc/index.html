@@ -1834,6 +1834,12 @@ function bakeIntoHTML() {
   <p>The live mobile app now includes camera business-card scan with lead field prefill, plus a desktop-grade Share vCard sheet with QR, native share, copy intro, public card, and .vcf download actions.</p>
   <p><strong>QA paths:</strong> /dashboard, /leads, /leads?quickLead=1, /orders, /mobile/capture.</p>
 </section>
+
+<section style="display:none" data-pass24-quick-add-camera-prefill="fixed">
+  <h3>PASS24 Quick Add Camera Prefill Hotfix</h3>
+  <p>Quick Add Lead camera/file scan now calls the production contact scan server action directly and writes extracted buyer contact fields into the visible drawer form before save. The broken ql-hidden-upload dispatch path was removed, and inline scan status now confirms loading, success, or error.</p>
+</section>
+
 </body>
   const final = cleaned.replace('<section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
 
@@ -1842,6 +1848,12 @@ function bakeIntoHTML() {
   <p>The live mobile app now includes camera business-card scan with lead field prefill, plus a desktop-grade Share vCard sheet with QR, native share, copy intro, public card, and .vcf download actions.</p>
   <p><strong>QA paths:</strong> /dashboard, /leads, /leads?quickLead=1, /orders, /mobile/capture.</p>
 </section>
+
+<section style="display:none" data-pass24-quick-add-camera-prefill="fixed">
+  <h3>PASS24 Quick Add Camera Prefill Hotfix</h3>
+  <p>Quick Add Lead camera/file scan now calls the production contact scan server action directly and writes extracted buyer contact fields into the visible drawer form before save. The broken ql-hidden-upload dispatch path was removed, and inline scan status now confirms loading, success, or error.</p>
+</section>
+
 </body>', scriptTag + '\n<section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
 
 <section class="mobile-dcc-card">
@@ -1849,6 +1861,12 @@ function bakeIntoHTML() {
   <p>The live mobile app now includes camera business-card scan with lead field prefill, plus a desktop-grade Share vCard sheet with QR, native share, copy intro, public card, and .vcf download actions.</p>
   <p><strong>QA paths:</strong> /dashboard, /leads, /leads?quickLead=1, /orders, /mobile/capture.</p>
 </section>
+
+<section style="display:none" data-pass24-quick-add-camera-prefill="fixed">
+  <h3>PASS24 Quick Add Camera Prefill Hotfix</h3>
+  <p>Quick Add Lead camera/file scan now calls the production contact scan server action directly and writes extracted buyer contact fields into the visible drawer form before save. The broken ql-hidden-upload dispatch path was removed, and inline scan status now confirms loading, success, or error.</p>
+</section>
+
 </body>');
   const blob = new Blob([final], { type:'text/html' });
   const a = document.createElement('a');
@@ -2650,5 +2668,11 @@ loadStoredData();
   <p>The live mobile app now includes camera business-card scan with lead field prefill, plus a desktop-grade Share vCard sheet with QR, native share, copy intro, public card, and .vcf download actions.</p>
   <p><strong>QA paths:</strong> /dashboard, /leads, /leads?quickLead=1, /orders, /mobile/capture.</p>
 </section>
+
+<section style="display:none" data-pass24-quick-add-camera-prefill="fixed">
+  <h3>PASS24 Quick Add Camera Prefill Hotfix</h3>
+  <p>Quick Add Lead camera/file scan now calls the production contact scan server action directly and writes extracted buyer contact fields into the visible drawer form before save. The broken ql-hidden-upload dispatch path was removed, and inline scan status now confirms loading, success, or error.</p>
+</section>
+
 </body>
 </html>

@@ -26,6 +26,22 @@ test('canonical leads quick capture renders scanner on mobile while desktop work
   assert.match(leads, /hidden space-y-4 md:block/);
 });
 
+
+test('quick add lead camera scan writes OCR results into visible drawer fields', () => {
+  const drawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
+  assert.match(drawer, /extractContactScan/);
+  assert.match(drawer, /applyQuickScanExtraction/);
+  assert.match(drawer, /setCompanyName\(\(current\) => draft\.companyName \|\| current\)/);
+  assert.match(drawer, /setContactName\(\(current\) => draft\.contactName \|\| current\)/);
+  assert.match(drawer, /setJobTitle\(\(current\) => draft\.jobTitle \|\| current\)/);
+  assert.match(drawer, /setEmail\(\(current\) => draft\.email \|\| current\)/);
+  assert.match(drawer, /setPhone\(\(current\) => \{/);
+  assert.match(drawer, /setWebsite\(\(current\) => draft\.website \|\| current\)/);
+  assert.match(drawer, /quickScanStatus\.message/);
+  assert.doesNotMatch(drawer, /ql-hidden-upload/);
+  assert.doesNotMatch(drawer, /Dispatch to the ContactScanTrigger/);
+});
+
 test('mobile Share vCard uses desktop-grade share system actions', () => {
   const sheet = readFileSync('src/features/mobile/components/mobile-vcard-share-sheet.tsx', 'utf8');
   const shell = readFileSync('src/components/layout/app-shell.tsx', 'utf8');
