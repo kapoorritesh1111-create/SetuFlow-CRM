@@ -2,11 +2,15 @@
 const requestedProvider = String(process.env.CONTACT_SCAN_PROVIDER || 'openai').trim().toLowerCase();
 const fallbackProvider = String(process.env.CONTACT_SCAN_FALLBACK_PROVIDER || 'openai').trim().toLowerCase();
 const usingGoogleVision = requestedProvider === 'google-vision';
+const usingOpenAiVision = requestedProvider === 'openai-vision' || requestedProvider === 'openai';
 
 const required = [
   ...(usingGoogleVision
     ? [['GOOGLE_CLOUD_VISION_API_KEY', 'Required because CONTACT_SCAN_PROVIDER=google-vision for phone photo OCR.']]
-    : [['OPENAI_API_KEY', 'Required because CONTACT_SCAN_PROVIDER is not google-vision; OpenAI will do image/PDF OCR.']]),
+    : []),
+  ...(usingOpenAiVision
+    ? [['OPENAI_API_KEY', 'Required because CONTACT_SCAN_PROVIDER=openai-vision/openai for direct image/PDF OCR.']]
+    : []),
   ...(fallbackProvider === 'openai'
     ? [['OPENAI_API_KEY', 'Required because CONTACT_SCAN_FALLBACK_PROVIDER=openai for CRM field mapping/fallback.']]
     : []),
@@ -16,9 +20,10 @@ const required = [
 ];
 
 const recommended = [
-  ['CONTACT_SCAN_PROVIDER', 'Recommended explicit scanner provider. Use google-vision for low-cost photo OCR.'],
+  ['CONTACT_SCAN_PROVIDER', 'Recommended explicit scanner provider. For PASS30 investor demo use openai-vision. For low-cost production comparison use google-vision.'],
   ['CONTACT_SCAN_FALLBACK_PROVIDER', 'Recommended explicit fallback provider. Use openai for field mapping.'],
   ['OPENAI_CONTACT_SCAN_MODEL', 'Recommended explicit model; defaults to gpt-4.1-mini.'],
+  ['GOOGLE_CLOUD_VISION_API_KEY', 'Optional while CONTACT_SCAN_PROVIDER=openai-vision; keep it for future provider comparison.'],
   ['NEXT_PUBLIC_APP_URL', 'Recommended for stable public card / vCard links.'],
   ['NEXT_PUBLIC_FEATURE_MOBILE_APP_V1', 'Recommended explicit mobile rollout flag.'],
 ];

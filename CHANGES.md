@@ -1,3 +1,24 @@
+# 2026-05-03 - PASS30 OpenAI Vision Investor Demo Scanner
+
+## Summary
+
+Added a direct OpenAI Vision card-scan provider for investor demo reliability. PASS29 proved Google Vision could be configured, but live photo scans still underperformed compared with direct image reading. PASS30 adds `CONTACT_SCAN_PROVIDER=openai-vision` so camera photos are sent directly to the OpenAI vision model with the existing strict contact JSON schema.
+
+## Files changed
+
+- `src/lib/contact-exchange/contact-ocr-provider.ts` - added `openai-vision` provider selection, direct image reading label, and stricter instructions against filename/generic value extraction.
+- `src/app/api/mobile/scan-readiness/route.ts` - added explicit OpenAI Vision readiness reporting.
+- `.env.production.example` - switched demo recommendation to `CONTACT_SCAN_PROVIDER=openai-vision`.
+- `MOBILE_SCAN_PRODUCTION.md` - added exact PASS30 Vercel setup and readiness expectations.
+- `scripts/check-mobile-scan-prod.mjs` - accepts the OpenAI Vision provider path and keeps Google Vision as optional future comparison.
+- `tests/mobile-pass30-openai-vision-provider.test.mjs` - added regression coverage for provider selection, readiness, and docs.
+
+## Deployment note
+
+After deploying PASS30, set `CONTACT_SCAN_PROVIDER=openai-vision`, keep `CONTACT_SCAN_FALLBACK_PROVIDER=openai`, and redeploy production with cache cleared. The readiness endpoint should report `activeProvider: openai-vision`.
+
+---
+
 # 2026-05-03 - PASS29 Google Vision Photo OCR Activation
 
 ## Summary

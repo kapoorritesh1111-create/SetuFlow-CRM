@@ -29,7 +29,7 @@ export type ContactOcrProviderDraft = {
 };
 
 export type ContactOcrProviderResult = {
-  provider: 'openai' | 'google-vision' | 'google-vision+openai';
+  provider: 'openai' | 'openai-vision' | 'google-vision' | 'google-vision+openai';
   model: string;
   draft: ContactOcrProviderDraft;
 };
@@ -110,7 +110,7 @@ const CONTACT_EXTRACTION_SCHEMA = {
 
 function getContactScanProvider() {
   const provider = String(process.env.CONTACT_SCAN_PROVIDER || 'openai').trim().toLowerCase();
-  return provider === 'google-vision' || provider === 'openai' ? provider : 'openai';
+  return provider === 'google-vision' || provider === 'openai' || provider === 'openai-vision' ? provider : 'openai';
 }
 
 function getContactScanFallbackProvider() {
@@ -142,6 +142,8 @@ function buildExtractionInstructions(args: ExtractContactWithOcrArgs, mode: 'vis
     'Prefer the primary person and company shown in the source. If multiple options exist, choose the best lead/contact interpretation.',
     'Keep phone numbers as shown. Keep websites and emails exact. Put contextual leftovers into notes.',
     'For business cards, do not confuse taglines, dates, file names, or decorative words with company names.',
+    'Never use the uploaded filename, generic words like image/photo/scan, or camera metadata as a company or contact value.',
+    'Company is usually the brand/logo/company name. Contact name is a human name. Job title is a role such as CEO, CMO, Founder, Director, Manager, Procurement, Sales.',
     'Provide fieldConfidence for each mapped CRM field. Use high only when the value is clearly visible, medium when it is likely but layout/noise could cause ambiguity, and low when the value is tentative.',
     'Use warnings for anything that may need human review, especially multiple similar names, duplicate companies, or uncertain OCR characters.',
     `Source filename: ${filename}`,
@@ -438,15 +440,15 @@ async function extractWithGoogleVision(args: ExtractContactWithOcrArgs, buffer: 
   };
 }
 
-async function extractWithOpenAiVision(args: ExtractContactWithOcrArgs, buffer: Buffer): Promise<ContactOcrProviderResult> {
+async function extractWithOpenAiVision(args: ExtractContactWithOcrArgs, buffer: Buffer, providerLabel: 'openai' | 'openai-vision' = 'openai'): Promise<ContactOcrProviderResult> {
   const fileType = String(args.fileType ?? '').trim();
   const dataUrl = fileType === 'application/pdf'
     ? `data:application/pdf;base64,${buffer.toString('base64')}`
     : `data:${fileType || 'image/jpeg'};base64,${buffer.toString('base64')}`;
   const draft = await callOpenAiResponsesApi(args, dataUrl);
   return {
-    provider: 'openai',
-    model: OPENAI_CONTACT_SCAN_MODEL,
+    provider: providerLabel,
+    model: providerLabel === 'openai-vision' ? `${OPENAI_CONTACT_SCAN_MODEL} vision-direct` : OPENAI_CONTACT_SCAN_MODEL,
     draft,
   };
 }
@@ -459,20 +461,25 @@ export async function extractContactWithOcrProvider(args: ExtractContactWithOcrA
   const provider = getContactScanProvider();
   const isImage = fileType.startsWith('image/');
 
+  if (provider === 'openai-vision' && isImage) {
+    if (!isOpenAiConfigured()) return null;
+    return extractWithOpenAiVision(args, buffer, 'openai-vision');
+  }
+
   if (provider === 'google-vision' && isImage && isGoogleVisionConfigured()) {
     try {
       return await extractWithGoogleVision(args, buffer);
     } catch (error) {
       const fallbackProvider = getContactScanFallbackProvider();
       if (fallbackProvider === 'openai' && isOpenAiConfigured()) {
-        return extractWithOpenAiVision(args, buffer);
+        return extractWithOpenAiVision(args, buffer, 'openai');
       }
       throw error;
     }
   }
 
   if (!isOpenAiConfigured()) return null;
-  return extractWithOpenAiVision(args, buffer);
+  return extractWithOpenAiVision(args, buffer, provider === 'openai-vision' && isImage ? 'openai-vision' : 'openai');
 }
 
 export function getConfiguredContactOcrProviderState() {
@@ -480,11 +487,13 @@ export function getConfiguredContactOcrProviderState() {
   const fallbackProvider = getContactScanFallbackProvider();
   const googleConfigured = isGoogleVisionConfigured();
   const openAiConfigured = isOpenAiConfigured();
-  const activeProvider = provider === 'google-vision' && googleConfigured
-    ? (fallbackProvider === 'openai' && openAiConfigured ? 'google-vision+openai' : 'google-vision')
-    : openAiConfigured
-      ? 'openai'
-      : 'none';
+  const activeProvider = provider === 'openai-vision'
+    ? (openAiConfigured ? 'openai-vision' : 'none')
+    : provider === 'google-vision' && googleConfigured
+      ? (fallbackProvider === 'openai' && openAiConfigured ? 'google-vision+openai' : 'google-vision')
+      : openAiConfigured
+        ? 'openai'
+        : 'none';
 
   return {
     requestedProvider: provider,

@@ -36,6 +36,7 @@ export async function GET(request: Request) {
   const providerState = getConfiguredContactOcrProviderState();
   const providerOk = providerState.activeProvider !== 'none';
   const wantsGoogle = providerState.requestedProvider === 'google-vision';
+  const wantsOpenAiVision = providerState.requestedProvider === 'openai-vision';
 
   const checks: ReadinessCheck[] = [
     {
@@ -53,6 +54,17 @@ export async function GET(request: Request) {
       detail: providerOk
         ? `Active provider: ${providerState.activeProvider}. Requested: ${providerState.requestedProvider}. Fallback: ${providerState.fallbackProvider}.`
         : 'No OCR provider is configured. Set CONTACT_SCAN_PROVIDER plus GOOGLE_CLOUD_VISION_API_KEY or OPENAI_API_KEY, then redeploy.',
+    },
+
+    {
+      id: 'openai-vision-reader',
+      label: 'OpenAI Vision card reader',
+      ok: !wantsOpenAiVision || providerState.openAiConfigured,
+      detail: providerState.openAiConfigured
+        ? `OPENAI_API_KEY is present. Direct image card reader model: ${providerState.openAiModel}.`
+        : wantsOpenAiVision
+          ? 'CONTACT_SCAN_PROVIDER is openai-vision, but OPENAI_API_KEY is missing or empty.'
+          : 'OpenAI Vision is available as fallback when configured.',
     },
     {
       id: 'google-vision-ocr',
@@ -120,7 +132,7 @@ export async function GET(request: Request) {
       requestedProvider: providerState.requestedProvider,
       activeProvider: providerState.activeProvider,
       fallbackProvider: providerState.fallbackProvider,
-      model: providerState.activeProvider.includes('google-vision') ? providerState.googleModel : providerState.openAiModel,
+      model: providerState.activeProvider.includes('google-vision') ? providerState.googleModel : providerState.activeProvider === 'openai-vision' ? `${providerState.openAiModel} vision-direct` : providerState.openAiModel,
       openAiModel: providerState.openAiModel,
     },
     checks,

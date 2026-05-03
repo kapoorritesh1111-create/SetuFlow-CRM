@@ -1,27 +1,44 @@
 # SETU Flow Mobile Scan Production Setup
 
-## Current recommended startup scanner
+## PASS30 investor-demo scanner
 
-Use Google Cloud Vision OCR as the primary photo OCR layer and OpenAI as the field mapper/fallback:
+For the investor demo, use direct OpenAI Vision as the primary photo reader:
 
 ```env
-CONTACT_SCAN_PROVIDER=google-vision
+CONTACT_SCAN_PROVIDER=openai-vision
 CONTACT_SCAN_FALLBACK_PROVIDER=openai
-GOOGLE_CLOUD_VISION_API_KEY=<restricted Cloud Vision API key>
 OPENAI_API_KEY=<OpenAI API key>
 OPENAI_CONTACT_SCAN_MODEL=gpt-4.1-mini
 ```
 
-Why: Google Vision is strong and low-cost for reading text from phone photos. OpenAI is better used after OCR to map raw text into SETU Flow fields such as company, contact, title, email, phone, website, and notes.
+Why: the camera photo is sent directly to OpenAI Vision, which is the closest production path to the way ChatGPT can read a business-card image in conversation. It avoids the weaker handoff where Google OCR extracts raw text first and then another mapper tries to reconstruct the card fields.
+
+Keep Google Vision configured for future production comparison, but it is not active while `CONTACT_SCAN_PROVIDER=openai-vision`:
+
+```env
+GOOGLE_CLOUD_VISION_API_KEY=<restricted Cloud Vision API key>
+```
+
+
+## Future low-cost production comparison
+
+After the investor demo, you can compare the Google Vision pipeline again by switching:
+
+```env
+CONTACT_SCAN_PROVIDER=google-vision
+CONTACT_SCAN_FALLBACK_PROVIDER=openai
+GOOGLE_CLOUD_VISION_API_KEY=your_google_cloud_vision_api_key
+```
+
+That path should report `activeProvider: google-vision+openai` in readiness when configured.
 
 ## Required Vercel variables
 
 Add these to **Vercel → Project → Settings → Environment Variables** for **Production**:
 
 ```env
-CONTACT_SCAN_PROVIDER=google-vision
+CONTACT_SCAN_PROVIDER=openai-vision
 CONTACT_SCAN_FALLBACK_PROVIDER=openai
-GOOGLE_CLOUD_VISION_API_KEY=your_google_cloud_vision_api_key
 OPENAI_API_KEY=your_openai_key
 OPENAI_CONTACT_SCAN_MODEL=gpt-4.1-mini
 NEXT_PUBLIC_FEATURE_MOBILE_APP_V1=true
@@ -38,19 +55,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-## Google Cloud checklist
+Optional but recommended for later provider testing:
 
-1. Open Google Cloud Console.
-2. Select the same project where the API key was created.
-3. Enable **Cloud Vision API**.
-4. Create or edit an API key.
-5. Restrict the key to **Cloud Vision API**.
-6. Copy the key into Vercel as `GOOGLE_CLOUD_VISION_API_KEY`.
-7. Set `CONTACT_SCAN_PROVIDER=google-vision`.
-8. Set `CONTACT_SCAN_FALLBACK_PROVIDER=openai`.
-9. Redeploy production after saving env variables.
+```env
+GOOGLE_CLOUD_VISION_API_KEY=...
+```
 
-## How to verify after deploy
+## How to verify after PASS30 deploy
 
 Open:
 
@@ -58,19 +69,21 @@ Open:
 https://www.setuflowcrm.com/api/mobile/scan-readiness
 ```
 
-Then test the camera scan on a **real iPhone or Android device**. Browser emulators can simulate the viewport, but they do not fully reproduce the mobile camera/file handoff.
-
 The scanner block should show:
 
 ```json
 {
-  "requestedProvider": "google-vision",
-  "activeProvider": "google-vision+openai",
+  "requestedProvider": "openai-vision",
+  "activeProvider": "openai-vision",
   "fallbackProvider": "openai"
 }
 ```
 
-If it still says only `openai`, then the deployed build is not using the Google-enabled code or Vercel has not redeployed since the env variables were added.
+You should also see a readiness check named `openai-vision-reader` with `ok: true`.
+
+Test the camera flow on a real iPhone or Android device; desktop emulators do not reproduce the full camera/file handoff.
+
+If readiness still says `google-vision`, then the PASS30 repo is not deployed, `CONTACT_SCAN_PROVIDER` is still set to `google-vision`, or the Vercel production deployment was not redeployed after saving the variable.
 
 ## How photo scan should work
 
@@ -79,18 +92,17 @@ Use camera
 → take photo
 → browser prepares/compresses image
 → /api/mobile/contact-scan
-→ Google Vision TEXT_DETECTION reads raw text
-→ OpenAI maps raw text to CRM fields
+→ OpenAI Vision reads the card image directly
 → SETU Flow fills visible Quick Add Lead fields
 → user reviews
 → Save lead
 ```
 
-PDF scan may work before photo scan because PDFs often have a readable text layer. Camera photos require the Vision OCR path to be active.
+PDF scan can continue to use the existing path because it already works well. PASS30 mainly improves live camera/photo card reading.
 
 ## Troubleshooting
 
-- If readiness says `openai` only: deploy the latest Google-enabled repo and redeploy after adding variables.
-- If readiness says `google-vision` but scan fails: check Vercel function logs for `/api/mobile/contact-scan` and Google Cloud API key restrictions.
-- If Vision returns text but fields are weak: OpenAI fallback may be missing or disabled.
-- If the photo is dark, angled, glossy, or too far away: retake closer and flatter, or use Upload file with a cropped image.
+- If readiness says `google-vision`: change `CONTACT_SCAN_PROVIDER=openai-vision` and redeploy production.
+- If readiness says `openai-vision` but scan fails: check Vercel function logs for `/api/mobile/contact-scan` and confirm `OPENAI_API_KEY` is valid.
+- If fields are still weak: retake closer and flatter, avoid glare, and make the card fill most of the photo.
+- If scan fills no useful fields: the app should show a clear retake/upload message instead of saving garbage values.
