@@ -15,6 +15,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .top-row{height:var(--top-h);display:flex;align-items:center;justify-content:space-between}
 .top-title{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px}
 .icon-btn{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.signed-strip{display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid var(--border);padding:12px 14px}
+.signed-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--slate-950),var(--navy) 58%,var(--brand));color:#fff;font-size:12px;font-weight:900}
+.signed-copy{flex:1;min-width:0}.signed-copy b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.signed-copy span{display:block;font-size:11px;color:var(--slate-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vcard-action{border:0;border-radius:13px;background:var(--brand);color:#fff;padding:9px 10px;font-size:11px;font-weight:900}
 
 /* SEARCH BAR */
 .search-wrap{position:relative;margin-bottom:10px}
@@ -82,7 +86,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
   <div class="top-row">
     <div class="top-title">Leads · 47</div>
     <div style="display:flex;gap:4px">
-      <button class="icon-btn" aria-label="Sort">↕</button>
+      <button class="icon-btn" aria-label="Share vCard">📇</button>
+      <button class="icon-btn" aria-label="Signed in as Ritesh Kapoor">RK</button>
     </div>
   </div>
   <div class="search-wrap">
@@ -97,6 +102,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
     <div class="filter-chip">Overdue</div>
     <div class="filter-chip">New this week</div>
   </div>
+</div>
+
+<div class="signed-strip" aria-label="Signed-in user">
+  <div class="signed-avatar">RK</div>
+  <div class="signed-copy"><b>Ritesh Kapoor</b><span>Owner · SETU Flow · kapoorritesh1111@gmail.com</span></div>
+  <button class="vcard-action">Share vCard</button>
 </div>
 
 <!-- SEGMENT: All / Buyers / Suppliers -->

@@ -213,6 +213,12 @@ button { cursor:pointer; -webkit-tap-highlight-color:transparent; }
 
 .sf-brand-lockup { display:flex; align-items:center; gap:10px; min-width:0; }
 .sf-brand-logo { width:38px; height:38px; border-radius:12px; background:white; padding:5px; box-shadow:0 10px 24px rgba(0,0,0,.16); object-fit:contain; }
+.sf-signed-card { display:flex; align-items:center; gap:12px; padding:13px; border-radius:22px; background:var(--m-surface-card); border:1px solid var(--m-border-subtle); box-shadow:var(--m-shadow-soft); margin-bottom:12px; }
+.sf-avatar { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; color:#fff; font-size:12px; font-weight:950; background:linear-gradient(135deg,#0f172a,#0b2e4a 56%,#0c7fff); box-shadow:0 10px 24px rgba(12,127,255,.25); }
+.sf-signed-copy { min-width:0; flex:1; }
+.sf-signed-copy b { display:block; font-size:14px; color:var(--m-text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sf-signed-copy span { display:block; font-size:11px; color:var(--m-text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sf-vcard-link { min-height:34px; display:inline-flex; align-items:center; border:0; border-radius:14px; background:var(--m-gradient-brand); color:#fff; padding:0 10px; font-size:11px; font-weight:950; box-shadow:0 10px 22px rgba(37,99,255,.24); }
 .sf-brand-word { display:flex; flex-direction:column; min-width:0; }
 .sf-lead-toolbar { display:grid; gap:10px; margin-bottom:12px; }
 .sf-search { width:100%; min-height:48px; border-radius:18px; border:1px solid var(--m-border-subtle); padding:0 14px; color:var(--m-text-primary); background:var(--m-surface-card); outline:none; }
@@ -256,7 +262,8 @@ button { cursor:pointer; -webkit-tap-highlight-color:transparent; }
         <div class="sfi-title" id="screenTitle">Home Dashboard</div>
       </div>
     </div>
-    <div class="sfi-status-pill">Synced</div>
+    <button class="sfi-icon-button" aria-label="Share vCard">📇</button>
+    <div class="sfi-status-pill">RK</div>
   </header>
 
   <main>
@@ -346,6 +353,12 @@ button { cursor:pointer; -webkit-tap-highlight-color:transparent; }
 
 
     <section id="screen-leads" class="sf-screen" aria-label="Current Leads">
+      <div class="sf-signed-card" aria-label="Signed-in user">
+        <div class="sf-avatar">RK</div>
+        <div class="sf-signed-copy"><b>Ritesh Kapoor</b><span>Owner · SETU Flow · kapoorritesh1111@gmail.com</span></div>
+        <button class="sf-vcard-link" type="button">Share vCard</button>
+      </div>
+
       <div class="sf-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
           <div>
@@ -365,7 +378,7 @@ button { cursor:pointer; -webkit-tap-highlight-color:transparent; }
         </div>
         <div class="sf-lead-list" id="leadList" aria-live="polite"></div>
         <div class="sf-guidance">
-          Role view: owners and admins see every lead, managers see their team and direct reports, and members see only their own assigned leads.
+          Role view: owners and admins see every lead, managers see their team and direct reports, and members see only their own assigned leads. In the real app, /leads now shows this premium queue on phone viewports while desktop keeps the existing lead workspace.
         </div>
       </div>
     </section>

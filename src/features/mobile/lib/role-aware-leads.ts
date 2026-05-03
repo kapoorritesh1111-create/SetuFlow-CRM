@@ -1,4 +1,4 @@
-export type MobileLeadStatus = 'New' | 'Qualified' | 'Quoted' | 'Negotiation' | 'Follow-up' | 'Won' | 'At risk';
+export type MobileLeadStatus = string;
 export type MobileUserRole = 'owner' | 'admin' | 'manager' | 'member';
 
 export type MobileLead = {
@@ -7,7 +7,7 @@ export type MobileLead = {
   contact: string;
   ownerName: string;
   assignedUserId: string;
-  managerUserId?: string;
+  managerUserId?: string | null;
   teamId: string;
   teamName: string;
   status: MobileLeadStatus;
@@ -62,4 +62,12 @@ export function filterLeadsForRole(leads: MobileLead[], user: MobileUserContext,
     if (!query) return true;
     return [lead.company, lead.contact, lead.ownerName, lead.teamName, lead.status, lead.nextAction, lead.market, lead.productInterest].some((value) => value.toLowerCase().includes(query));
   });
+}
+
+export function workspaceRolesToMobileRole(roles: readonly string[] = []): MobileUserRole {
+  const normalized = roles.map((role) => role.toLowerCase());
+  if (normalized.includes('owner')) return 'owner';
+  if (normalized.includes('admin')) return 'admin';
+  if (normalized.includes('manager')) return 'manager';
+  return 'member';
 }

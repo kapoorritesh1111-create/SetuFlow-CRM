@@ -1391,6 +1391,14 @@ Report each as PASS, FAIL, or BLOCKED.</div>
     </tbody>
   </table>
 
+  <h3 style="margin:18px 0 10px;font-size:14px;">Real App Mobile Entry</h3>
+  <div class="mobile-dcc-grid">
+    <div class="mobile-dcc-card"><h3>Canonical /leads Mobile</h3><p>The real app <code>/leads</code> route now renders the premium mobile lead queue on phone viewports while preserving the existing desktop lead workspace at desktop width.</p></div>
+    <div class="mobile-dcc-card"><h3>Signed-in Identity</h3><p>The mobile lead queue includes a signed-in summary with user name, role, organization, and email when available so field users always know which account they are using.</p></div>
+    <div class="mobile-dcc-card"><h3>Share vCard Preserved</h3><p>Share vCard remains in the mobile top bar and is also exposed from the signed-in card for fast contact sharing on trade floors.</p></div>
+    <div class="mobile-dcc-card"><h3>Desktop Unchanged</h3><p>The desktop route remains the original <code>LeadsWorkspace</code>; mobile rendering is isolated with responsive route composition instead of replacing desktop UI.</p></div>
+  </div>
+
   <h3 style="margin:18px 0 10px;font-size:14px;">Implementation Plan</h3>
   <div class="mobile-code">
 1. Keep mobile routes isolated behind feature/mobile_app_v1.

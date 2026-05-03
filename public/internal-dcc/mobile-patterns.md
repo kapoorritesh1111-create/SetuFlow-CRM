@@ -189,3 +189,16 @@ The mobile leads screen must enforce visibility in the data layer before renderi
 ### Mobile regression coverage
 
 The route contract tests cover mobile route isolation and desktop route preservation. The lead visibility tests cover role-based filtering and search across company, contact, owner, team, status, and next action.
+
+---
+
+## Real `/leads` Mobile Visibility Correction
+
+The mobile route group remains available at `/mobile/*`, but production users commonly enter through canonical app routes. The canonical `/leads` route now uses viewport isolation:
+
+- Mobile viewport: render the premium `RoleAwareLeadList` using real app lead data.
+- Desktop viewport: render the existing `LeadsWorkspace` unchanged.
+- Signed-in identity: always show who is signed in before the mobile lead queue.
+- Share vCard: keep the AppShell vCard action and include a visible Share vCard action in the signed-in card.
+
+This pattern prevents the compressed-desktop problem seen in phone testing while preserving desktop route behavior.

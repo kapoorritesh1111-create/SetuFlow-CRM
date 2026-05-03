@@ -283,3 +283,42 @@ The desktop route group remains under `src/app/(app)` and is not imported by the
 - `tests/mobile-role-aware-leads.test.mjs`
 
 These tests verify route isolation, feature flag presence, desktop preservation, role visibility, and lead search coverage.
+
+---
+
+# Mobile App v1 Real `/leads` Fix
+
+## Why this patch exists
+
+The first real-route pass created the isolated `/mobile/*` route group, but the production phone viewport shown at `/leads` still rendered the existing desktop lead command center squeezed into the mobile shell. This patch makes the mobile lead experience visible where field users actually land: `/leads` on phone-sized viewports.
+
+## What changed now
+
+- `/leads` now renders the premium mobile `RoleAwareLeadList` on mobile viewports only.
+- The existing desktop `/leads` route and `LeadsWorkspace` remain unchanged behind `md:block` desktop rendering.
+- The mobile lead list now uses real app lead data from `getLeadsPageData`, mapped through `buildMobileLeadCardsFromAppData`.
+- The signed-in user is visible above the mobile lead queue.
+- Share vCard remains available in the mobile top bar and is also exposed in the signed-in mobile card.
+- Role-aware visibility is still enforced by the shared data-layer function before cards render.
+- Search/filter continues to cover company, contact, owner, team, status, market/product, and next action.
+
+## Current mobile entry points
+
+| User path | Mobile behavior | Desktop behavior |
+|---|---|---|
+| `/leads` | Premium mobile lead queue with signed-in card and Share vCard | Existing desktop lead workspace unchanged |
+| `/mobile` | Isolated feature-flagged mobile Home | Isolated preview route |
+| `/mobile/leads` | Isolated feature-flagged mobile Leads | Isolated preview route |
+| `/mobile/quote` | Isolated feature-flagged Quick Quote | Isolated preview route |
+| `/mobile/capture` | Isolated feature-flagged Capture | Isolated preview route |
+| `/mobile/notifications` | Isolated feature-flagged Notifications | Isolated preview route |
+| `/mobile/settings` | Isolated feature-flagged Settings | Isolated preview route |
+
+## QA check for this fix
+
+1. Open `/leads` in an iPhone 14 Pro Max viewport.
+2. Confirm the screen shows the premium mobile lead queue instead of the dense desktop command center.
+3. Confirm the signed-in card appears with user name, role, organization, and email when available.
+4. Tap **Share vCard** from the signed-in card or top bar.
+5. Search by company/contact/status/owner/team/next action.
+6. Resize to desktop width and confirm the original desktop lead workspace still appears.

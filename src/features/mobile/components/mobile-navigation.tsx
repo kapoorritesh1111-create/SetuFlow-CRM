@@ -19,8 +19,9 @@ export function BrandedMobileTopBar() {
       <div className="mx-auto flex max-w-[430px] items-center gap-3">
         <button onClick={() => setOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10" aria-label="Open mobile menu">☰</button>
         <img src="/logos/setu-flow-logo.svg" alt="SETU Flow" className="h-9 w-9 rounded-xl bg-white p-1" />
-        <div className="min-w-0 flex-1"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-200">Premium mobile</p><p className="truncate text-base font-black tracking-tight">SETU Flow</p></div>
-        <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-black text-emerald-200">Synced</span>
+        <div className="min-w-0 flex-1"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-200">Signed in</p><p className="truncate text-base font-black tracking-tight">Ritesh Kapoor</p></div>
+        <a href="/card" className="grid h-10 w-10 place-items-center rounded-2xl bg-white/10 text-lg" aria-label="Share my vCard">📇</a>
+        <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-500/30 text-xs font-black ring-1 ring-white/20" title="Signed in as Ritesh Kapoor">RK</span>
       </div>
     </header>
     <MobileActionDrawer open={open} onClose={() => setOpen(false)} />

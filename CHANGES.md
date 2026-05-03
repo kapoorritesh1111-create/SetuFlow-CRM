@@ -1373,3 +1373,11 @@ Converted the approved premium mobile blueprint into isolated real Next.js mobil
 `npm test` includes the new mobile route and role visibility checks.
 
 ---
+
+## Mobile `/leads` visibility fix
+
+- Fixed the real app `/leads` phone viewport so it renders the premium mobile lead queue instead of the desktop lead command center compressed into mobile width.
+- Added real app lead-data mapping for the mobile list via `buildMobileLeadCardsFromAppData`.
+- Kept desktop `/leads` rendering unchanged behind desktop-only layout classes.
+- Preserved Share vCard and added a visible signed-in summary card to the mobile lead queue.
+- Updated mobile docs and DCC guidance for canonical `/leads` mobile entry.

@@ -73,8 +73,10 @@ h1,h2{margin:0 0 12px}p,li{color:#b6c4e3}code{background:#0b1323;padding:2px 6px
 
 <section class="section" id="mobile-app-v1-real-routes">
   <h2>Mobile App v1 real routes</h2>
-  <p>SETU Flow Mobile now includes an isolated premium mobile route group behind <strong>feature/mobile_app_v1</strong>: Home, Leads, Quote, Capture, Notifications, and Settings.</p>
-  <p>The Leads screen supports role-aware visibility: owners and admins see all leads, managers see their teams and direct reports, and members see only assigned leads.</p>
+  <p>SETU Flow Mobile includes an isolated premium mobile route group behind <strong>feature/mobile_app_v1</strong>: Home, Leads, Quote, Capture, Notifications, and Settings.</p>
+  <p>The canonical <strong>/leads</strong> app route also renders the premium mobile lead queue on phone viewports, while desktop widths continue to render the existing desktop Leads workspace unchanged.</p>
+  <p>The mobile Leads screen keeps <strong>Share vCard</strong> and a visible <strong>signed-in user summary</strong> so field users know who is operating before they act on leads.</p>
+  <p>Role-aware visibility is enforced before render: owners and admins see all leads, managers see their teams and direct reports, and members see only assigned leads.</p>
 </section>
 </body>
 </html>

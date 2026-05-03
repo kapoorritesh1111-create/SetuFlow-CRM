@@ -6,6 +6,8 @@ import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page-view-model';
+import { RoleAwareLeadList } from '@/features/mobile/components/role-aware-lead-list';
+import { buildMobileLeadCardsFromAppData, buildMobileSignedInSummary, buildMobileUserContextFromWorkspace } from '@/features/mobile/lib/app-mobile-leads';
 
 export default async function LeadsPage({
   searchParams,
@@ -60,6 +62,10 @@ export default async function LeadsPage({
   const initialFastField = quickLeadEnabled && Boolean(eventId);
   const handoffMessage = handoff === 'dashboard-overdue' || handoff === 'dashboard-open-follow-up' ? { title: 'Overview sent you into Follow-up', description: 'Your active mode and next working lane were preserved. Open one priority lead and clear the real blocker.' } : handoff === 'capture-converted' ? { title: 'Capture converted into Follow-up', description: 'The lead is live now. Stay in Follow-up to qualify it, then move into Quote only when the commercial path is ready.' } : null;
 
+  const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
+  const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
+  const mobileSignedIn = buildMobileSignedInSummary(workspace as any);
+
   const initialQuickCapture = quickLeadEnabled
     ? {
         sourceType: readParam(searchParams?.sourceType).trim() || 'trade_show',
@@ -74,15 +80,25 @@ export default async function LeadsPage({
 
   return (
     <div className="space-y-4">
-      <QueryIssuesAlert issues={data.queryIssues} />
-      {handoffMessage ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          <p className="font-semibold">{handoffMessage.title}</p>
-          <p className="mt-1">{handoffMessage.description}</p>
-        </div>
-      ) : null}
+      <div className="md:hidden">
+        <RoleAwareLeadList
+          leads={mobileLeadCards}
+          user={mobileUser}
+          signedIn={mobileSignedIn}
+          allowRolePreview={false}
+        />
+      </div>
 
-      <LeadsWorkspace
+      <div className="hidden space-y-4 md:block">
+        <QueryIssuesAlert issues={data.queryIssues} />
+        {handoffMessage ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <p className="font-semibold">{handoffMessage.title}</p>
+            <p className="mt-1">{handoffMessage.description}</p>
+          </div>
+        ) : null}
+
+        <LeadsWorkspace
         currentUserId={viewModel.currentUserId}
         canManageLeads={viewModel.canManageLeads}
         readOnlyMessage={viewModel.readOnlyMessage}
@@ -117,7 +133,8 @@ export default async function LeadsPage({
         initialQuickCapture={initialQuickCapture}
         initialEventId={eventId || null}
         initialFastField={initialFastField}
-      />
+        />
+      </div>
     </div>
   );
 }

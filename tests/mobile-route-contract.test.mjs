@@ -38,3 +38,24 @@ test('desktop app route group remains separate from mobile route group', () => {
   const desktopLayout = readFileSync('src/app/(app)/layout.tsx', 'utf8');
   assert.doesNotMatch(desktopLayout, /features\/mobile/);
 });
+
+test('canonical leads route renders premium mobile leads without replacing desktop workspace', () => {
+  const leadsPage = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
+  assert.match(leadsPage, /RoleAwareLeadList/);
+  assert.match(leadsPage, /buildMobileLeadCardsFromAppData/);
+  assert.match(leadsPage, /buildMobileSignedInSummary/);
+  assert.match(leadsPage, /md:hidden/);
+  assert.match(leadsPage, /hidden space-y-4 md:block/);
+  assert.match(leadsPage, /LeadsWorkspace/);
+});
+
+test('mobile docs and html preserve signed-in identity and Share vCard', () => {
+  const readme = readFileSync('MOBILE_README.md', 'utf8');
+  const dcc = readFileSync('public/internal-dcc/index.html', 'utf8');
+  const architecture = readFileSync('public/setuflow-architecture.html', 'utf8');
+  const blueprint = readFileSync('public/internal-dcc/mobile-blueprint.html', 'utf8');
+  for (const source of [readme, dcc, architecture, blueprint]) {
+    assert.match(source, /Share vCard/);
+    assert.match(source, /signed-in|Signed-in|Signed in/);
+  }
+});
