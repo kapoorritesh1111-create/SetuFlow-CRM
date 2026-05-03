@@ -1,9 +1,6 @@
 import Link from 'next/link';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
-import { TradeEventsManager } from '@/features/trade-events/components/trade-events-manager';
-import { TradeEventEntryCapture } from '@/features/trade-events/components/trade-event-entry-capture';
-import { TradeShowCapture } from '@/features/trade-events/components/trade-show-capture';
 import { convertTradeEventEntryToLead } from '@/features/trade-events/server/actions';
 import { getTradeEventsData } from '@/lib/queries/trade-events';
 import { createClient } from '@/lib/supabase/server';
@@ -235,256 +232,205 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
     });
   });
 
+  const activeEvents = eventsByStartDate.length ? eventsByStartDate : data.events;
+  const eventCards = activeEvents.slice(0, 3);
+  const queueEntries = data.entries.slice(0, 4);
+  const todayFocusCards = [
+    { icon: '💬', label: 'Need review', value: Math.max(data.entries.length - tradeEventKpis.convertedLeads, 0), sub: 'Booth entries', tone: 'from-sky-400 to-blue-600' },
+    { icon: '📅', label: 'Follow-ups due', value: tradeEventKpis.followUpsDue, sub: 'Needs attention', tone: 'from-amber-300 to-orange-500' },
+    { icon: '🛩️', label: 'Quotes ready', value: tradeEventKpis.quotesCreated, sub: 'Ready to send', tone: 'from-lime-300 to-emerald-500' },
+    { icon: '🎯', label: 'High priority', value: Math.max(1, Math.min(tradeEventKpis.followUpsDue, 9)), sub: 'Follow up today', tone: 'from-fuchsia-400 to-purple-700' },
+  ];
+
   return (
-    <div className="space-y-6">
-      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.14),transparent_32%),linear-gradient(135deg,#ffffff,#f8fafc)] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-700">Trade event cockpit</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Shows, capture, and commercial handoffs</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Track event-sourced buyers and suppliers, quote handoffs, and follow-up readiness. Mobile-native scope remains limited to trade-event capture only; core CRM, quote, and order execution stay desktop-first.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/leads?quickLead=1&sourceType=trade_event" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-slate-800">Capture buyer</Link>
-            <Link href="/leads?quickLead=1&sourceType=trade_event&mode=suppliers" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">Capture supplier</Link>
-            <Link href="/leads?view=trade-event" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100">Review queue</Link>
-          </div>
-        </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          {[
-            { label: 'Trade events', value: tradeEventKpis.events, sub: 'configured shows' },
-            { label: 'Captured leads', value: tradeEventKpis.capturedLeads, sub: 'event-linked CRM leads' },
-            { label: 'Converted leads', value: tradeEventKpis.convertedLeads, sub: 'intake rows converted' },
-            { label: 'Quotes created', value: tradeEventKpis.quotesCreated, sub: 'quote handoffs' },
-            { label: 'Follow-ups due', value: tradeEventKpis.followUpsDue, sub: 'needs next step' },
-          ].map((kpi) => (
-            <div key={kpi.label} className="rounded-[1.35rem] border border-slate-200 bg-white/90 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">{kpi.label}</p>
-              <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">{kpi.value}</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">{kpi.sub}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-[1.75rem] border border-blue-200 bg-blue-50/70 p-5 text-sm text-blue-950 shadow-[0_16px_42px_rgba(37,99,235,0.08)]">
-        <p className="font-extrabold uppercase tracking-[0.16em]">Proof boundary</p>
-        <p className="mt-2 leading-6">Live event records prove event-linked leads, quote handoffs, and event analytics. Offline queue sync is not claimed as production evidence until booth entries are captured, converted, and independently verified.</p>
-      </section>
-
+    <div className="space-y-5 pb-4">
       <QueryIssuesAlert issues={data.queryIssues} />
       {noticeKey === 'capture-converted' ? (
-        <WorkspaceState eyebrow="Capture handoff" title="Lead is ready for Follow-up" description="This capture was converted into a live lead. Continue in Follow-up to qualify it, then open Quote only when commercial readiness is real." primaryActionHref="/leads?handoff=capture-converted" primaryActionLabel="Open Follow-up" secondaryActionHref="/quotes" secondaryActionLabel="Open Quote workspace" />
+        <WorkspaceState eyebrow="Lead saved" title="Lead is ready for follow-up" description="Continue qualification or open the quote workspace when the conversation is ready." primaryActionHref="/leads?handoff=capture-converted" primaryActionLabel="Open follow-up" secondaryActionHref="/quotes" secondaryActionLabel="Open quotes" />
       ) : null}
-      <TradeEventEntryCapture events={data.events} />
-      <TradeShowCapture events={data.events} />
-      <TradeEventsManager events={data.events} />
 
-      {data.entries.length ? (
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
-          <div className="flex items-center justify-between gap-3">
+      <section className="relative overflow-hidden rounded-[2rem] border border-blue-300/30 bg-[radial-gradient(circle_at_80%_15%,rgba(12,127,255,0.38),transparent_22%),radial-gradient(circle_at_50%_0%,rgba(125,211,252,0.18),transparent_30%),linear-gradient(135deg,#07172f_0%,#0b2e63_48%,#102b57_100%)] p-4 text-white shadow-[0_28px_90px_rgba(15,23,42,0.18)] sm:p-6">
+        <div className="pointer-events-none absolute inset-0 opacity-45 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.24)_1px,transparent_0)] [background-size:22px_22px]" />
+        <div className="pointer-events-none absolute -right-10 top-4 hidden h-48 w-64 rounded-[2rem] border border-white/20 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.20),0_26px_80px_rgba(12,127,255,0.24)] backdrop-blur md:block">
+          <div className="absolute left-8 top-8 h-28 w-24 rounded-2xl bg-[linear-gradient(145deg,#0c7fff,#8bd3ff)] shadow-[0_16px_45px_rgba(12,127,255,0.55)]" />
+          <div className="absolute left-16 top-14 h-10 w-20 rounded-xl bg-white/90" />
+          <div className="absolute right-14 top-12 h-28 w-24 rounded-2xl border border-white/30 bg-[#0b2e4a]/70" />
+          <div className="absolute bottom-8 right-8 h-16 w-32 rounded-2xl bg-white/90" />
+          <div className="absolute bottom-7 left-10 h-10 w-10 rounded-full bg-emerald-300" />
+          <div className="absolute bottom-8 left-20 h-14 w-5 rounded-full bg-slate-950" />
+        </div>
+
+        <div className="relative z-10 max-w-5xl">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-sm font-semibold text-slate-900">Recent intake entries</p>
-              <p className="mt-1 text-sm text-slate-600">Raw captured contacts waiting for qualification, deduplication, or conversion to leads.</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-cyan-200">Event Pipeline</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">Capture. Qualify. Follow up. Close.</h2>
             </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{data.entries.length} tracked</span>
+            <Link href="/admin/trade-events" className="inline-flex min-h-11 w-fit items-center justify-center rounded-2xl bg-white/12 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/20 transition hover:bg-white/18">＋ Add Event</Link>
           </div>
-          <div className="mt-4 overflow-x-auto rounded-3xl border border-slate-200">
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
-                <tr>
-                  <th className="px-4 py-3">Company</th>
-                  <th className="px-4 py-3">Trade event</th>
-                  <th className="px-4 py-3">Contact</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Captured</th>
-                  <th className="px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.entries.map((entry) => {
-                  const event = data.events.find((item) => item.id === entry.trade_event_id);
-                  const isConverted = String(entry.status || '').toLowerCase() === 'converted' && Boolean(entry.converted_lead_id);
-                  return (
-                    <tr key={entry.id} className="border-t border-slate-100">
-                      <td className="px-4 py-3 font-medium text-slate-900">
-                        {entry.captured_company_name || 'Unnamed company'}
-                        <p className="mt-1 text-xs font-normal text-slate-500">{entry.captured_notes || entry.source_label || 'No notes yet'}</p>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{event?.name || 'Unknown event'}</td>
-                      <td className="px-4 py-3 text-slate-600">{entry.captured_contact_name || '—'}</td>
-                      <td className="px-4 py-3 text-slate-600">{String(entry.status || 'new').replace(/_/g, ' ')}</td>
-                      <td className="px-4 py-3 text-slate-600">{formatDateTime(entry.captured_at || entry.created_at)}</td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {isConverted ? (
-                          <div className="flex flex-wrap gap-2">
-                            <a href={`/leads/${entry.converted_lead_id}?tab=workflow&handoff=capture-open-lead`} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                              Open lead
-                            </a>
-                            <a href={`/quotes?leadId=${entry.converted_lead_id}&handoff=capture-open-quote`} className="rounded-2xl border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                              Open Quote
-                            </a>
-                          </div>
-                        ) : (
-                          <form action={convertTradeEventEntryToLead}>
-                            <input type="hidden" name="entry_id" value={entry.id} />
-                            <button type="submit" className="rounded-2xl border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                              Convert to lead
-                            </button>
-                          </form>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
 
-      {data.events.length ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.events.map((event) => {
-            const captureDefaults = captureDefaultsByEventId.get(event.id) ?? null;
-            const quickLeadSourceLabel = captureDefaults?.source_label ?? event.name;
-            const eventEntryCount = entryCountByEvent.get(event.id) ?? 0;
-            const captureHref = `/leads?quickLead=1&sourceType=trade_event&eventId=${event.id}&sourceLabel=${encodeURIComponent(quickLeadSourceLabel)}`;
-            const analytics = analyticsByEventId.get(event.id) ?? { leadCount: 0, quotedCount: 0, openLeadCount: 0, pipelineValue: 0, currency: 'USD', ordersPlaced: 0, orderHandoffCount: 0 };
-            const conversionRate = eventEntryCount > 0 ? Math.round((analytics.leadCount / eventEntryCount) * 100) : 0;
-            const previousPerformance = previousEventPerformanceById.get(event.id);
-            return (
-            <article key={event.id} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_22px_58px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_28px_70px_rgba(37,99,235,0.10)]">
-              <div className="flex flex-col gap-4">
-                <span className="inline-flex w-fit rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-base font-semibold text-emerald-800">
-                  {eventEntryCount} intake entr{eventEntryCount === 1 ? 'y' : 'ies'}
-                </span>
-                <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 text-xs font-semibold text-slate-700 sm:grid-cols-4">
-                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{eventEntryCount} entries</span>
-                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{analytics.leadCount} event leads</span>
-                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{analytics.quotedCount} quote handoffs</span>
-                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">{analytics.orderHandoffCount} order handoffs</span>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {[
+              { icon: '👥', label: 'Active events', value: tradeEventKpis.events, sub: 'View all', tone: 'from-violet-400 to-purple-700' },
+              { icon: '🟢', label: 'Captured', value: tradeEventKpis.capturedLeads, sub: 'This season', tone: 'from-lime-300 to-emerald-600' },
+              { icon: '🪄', label: 'Qualified', value: tradeEventKpis.convertedLeads, sub: 'Leads', tone: 'from-amber-300 to-orange-500' },
+              { icon: '📄', label: 'Quotes', value: tradeEventKpis.quotesCreated, sub: 'Created', tone: 'from-sky-300 to-blue-600' },
+              { icon: '🗓️', label: 'Due today', value: tradeEventKpis.followUpsDue, sub: 'Follow-ups', tone: 'from-rose-300 to-red-500' },
+            ].map((item) => (
+              <div key={item.label} className="rounded-[1.35rem] border border-white/18 bg-white/8 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_18px_45px_rgba(0,0,0,0.18)] backdrop-blur">
+                <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${item.tone} text-2xl shadow-[0_14px_28px_rgba(0,0,0,0.30)]`}>{item.icon}</div>
+                <div className="flex items-end gap-2">
+                  <p className="text-3xl font-black leading-none text-white">{item.value}</p>
+                  <p className="pb-1 text-sm font-bold text-white/85">{item.label}</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{event.name}</p>
-                  <p className="mt-2 text-sm font-medium text-slate-700">{formatTradeEventDateRange(event.starts_on, event.ends_on)}</p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {[event.city, event.country].filter(Boolean).join(', ') || 'Location not set'}
-                  </p>
-                </div>
-              </div>
-              <p className="mt-4 text-sm text-slate-600">{event.notes ?? 'No notes added yet.'}</p>
-              <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <a
-                  href={captureHref}
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-700 px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-800 sm:flex-1"
-                >
-                  Capture buyer
-                </a>
-                <a
-                  href={`/admin/trade-events?eventId=${event.id}`}
-                  className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  View event
-                </a>
-                <a
-                  href={`/leads?quickLead=1&sourceType=trade_event&mode=suppliers&eventId=${event.id}&sourceLabel=${encodeURIComponent(quickLeadSourceLabel)}`}
-                  className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Capture supplier
-                </a>
-                <a href={`/leads?eventId=${event.id}`} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800 transition hover:bg-blue-100">Review queue</a>
-              </div>
-              <details className="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
-                  <span className="inline-flex items-center justify-between gap-3">
-                    <span>Event performance</span>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">ROI report</span>
-                  </span>
-                </summary>
-                {analytics.leadCount === 0 ? (
-                  <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-                    No event-linked leads yet — capture or link leads before claiming quote handoff proof.
-                  </p>
-                ) : (
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Intake queue rows</p><p className="mt-2 text-xl font-semibold text-slate-900">{eventEntryCount}</p></div>
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Event-linked leads</p><p className="mt-2 text-xl font-semibold text-slate-900">{analytics.leadCount}</p></div>
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Entry conversion rate</p><p className="mt-2 text-xl font-semibold text-slate-900">{conversionRate}%</p></div>
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quote handoffs</p><p className="mt-2 text-xl font-semibold text-slate-900">{analytics.quotedCount}</p></div>
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Pipeline value</p><p className="mt-2 text-xl font-semibold text-slate-900">{formatPipelineValue(analytics.pipelineValue, analytics.currency)}</p></div>
-                    <div className="rounded-2xl bg-white p-3 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Order handoffs</p><p className="mt-2 text-xl font-semibold text-slate-900">{analytics.orderHandoffCount}</p></div>
-                  </div>
-                )}
-                {previousPerformance ? (
-                  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                    <p className="font-semibold">vs. prev. event: {previousPerformance.previousName}</p>
-                    <p className="mt-1">Entries {formatSignedDelta(previousPerformance.entryDelta)} · Pipeline {formatSignedPipelineDelta(previousPerformance.pipelineDelta, analytics.currency)}</p>
-                  </div>
-                ) : null}
-                <p className="mt-4 text-xs font-medium text-slate-500">Proof boundary: entries show the capture queue; event-linked leads and quote handoffs show CRM/quote follow-through. Offline queue sync is scoped to capture only and is not proof of full offline CRM.</p>
-              </details>
-            </article>
-            );
-          })}
-        </div>
-      ) : (
-        <WorkspaceState
-          eyebrow="Trade events workspace"
-          title="No trade events yet"
-          description="Add records for IndusFood, Gulfood, Anuga, and other shows to power source reporting."
-        />
-      )}
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Follow-up needed</p>
-            <p className="mt-1 text-sm text-slate-600">Event-sourced leads without a scheduled next step.</p>
-          </div>
-          <Link href="/leads?view=trade-event" className="text-sm font-semibold text-brand-700 hover:text-brand-800">View all in Leads</Link>
-        </div>
-        {followUpNeededLeads.length ? (
-          <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-slate-200">
-            {followUpNeededLeads.map((lead) => (
-              <div key={lead.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-semibold text-slate-900">{lead.company_name || 'Unnamed company'}</p>
-                  <p className="mt-1 text-sm text-slate-600">{lead.contact_name || 'No contact name'} · {eventNameById.get(lead.trade_event_id ?? '') || 'Unknown event'}</p>
-                </div>
-                <Link href={`/leads/${lead.id}?tab=workflow&handoff=trade-event-follow-up`} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100">
-                  Schedule follow-up
-                </Link>
+                <p className="mt-2 text-xs font-semibold text-blue-100/80">{item.sub}</p>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">All event leads have follow-up scheduled ✓</p>
-        )}
+
+          <div className="mt-5 grid gap-3 md:grid-cols-5">
+            {[
+              { href: '/leads?quickLead=1&sourceType=trade_event', icon: '👤', label: 'Capture buyer' },
+              { href: '/leads?quickLead=1&sourceType=trade_event&mode=suppliers', icon: '📦', label: 'Capture supplier' },
+              { href: '/leads?quickLead=1&sourceType=trade_event&scan=card', icon: '📷', label: 'Scan card' },
+              { href: '/leads?quickLead=1&sourceType=trade_event&note=dictate', icon: '🎙️', label: 'Dictate note' },
+              { href: '/leads?view=trade-event', icon: '🧾', label: 'Review queue' },
+            ].map((action) => (
+              <Link key={action.label} href={action.href} className="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-white/25 bg-white px-4 py-3 text-sm font-extrabold text-slate-900 shadow-[0_16px_34px_rgba(0,0,0,0.14)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_42px_rgba(12,127,255,0.22)]">
+                <span className="text-xl">{action.icon}</span>
+                <span>{action.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
       </section>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            document.addEventListener('click', async function (event) {
-              var button = event.target && event.target.closest ? event.target.closest('[data-share-capture-link]') : null;
-              if (!button) return;
-              var link = button.getAttribute('data-share-capture-link');
-              if (!link) return;
-              var absoluteLink = new URL(link, window.location.origin).toString();
-              try {
-                await navigator.clipboard.writeText(absoluteLink);
-                var label = button.querySelector('span');
-                if (!label) return;
-                var original = label.textContent || 'Share capture link';
-                label.textContent = 'Copied!';
-                window.setTimeout(function () { label.textContent = original; }, 2000);
-              } catch (error) {
-                window.prompt('Copy capture link', absoluteLink);
-              }
-            });
-          `,
-        }}
-      />
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="space-y-5">
+          <section className="rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-base font-black tracking-tight text-slate-950">Active Events</h3>
+              <Link href="/admin/trade-events" className="text-sm font-bold text-blue-700 hover:text-blue-800">View all events</Link>
+            </div>
+            {eventCards.length ? (
+              <div className="grid gap-4 lg:grid-cols-3">
+                {eventCards.map((event, index) => {
+                  const analytics = analyticsByEventId.get(event.id) ?? { leadCount: 0, quotedCount: 0, openLeadCount: 0, pipelineValue: 0, currency: 'USD', ordersPlaced: 0, orderHandoffCount: 0 };
+                  const eventEntryCount = entryCountByEvent.get(event.id) ?? 0;
+                  const captureDefaults = captureDefaultsByEventId.get(event.id) ?? null;
+                  const quickLeadSourceLabel = captureDefaults?.source_label ?? event.name;
+                  const captureHref = `/leads?quickLead=1&sourceType=trade_event&eventId=${event.id}&sourceLabel=${encodeURIComponent(quickLeadSourceLabel)}`;
+                  const status = index === 0 ? 'Live' : index === 1 ? 'Upcoming' : 'Planned';
+                  const statusClass = index === 0 ? 'bg-emerald-100 text-emerald-700' : index === 1 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700';
+                  return (
+                    <article key={event.id} className="overflow-hidden rounded-[1.4rem] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_26px_60px_rgba(15,23,42,0.12)]">
+                      <div className="relative h-32 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.55),transparent_20%),linear-gradient(135deg,#7dd3fc_0%,#2563eb_42%,#0f172a_100%)]">
+                        <span className={`absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-black ${statusClass}`}>{status}</span>
+                        <div className="absolute bottom-[-24px] left-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-lg font-black text-slate-900 shadow-[0_14px_35px_rgba(15,23,42,0.15)]">
+                          {event.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      </div>
+                      <div className="px-4 pb-4 pt-9">
+                        <h4 className="text-lg font-black text-slate-950">{event.name}</h4>
+                        <p className="mt-2 text-xs font-semibold text-slate-600">📍 {[event.city, event.country].filter(Boolean).join(', ') || 'Location TBD'}</p>
+                        <p className="mt-1 text-xs font-semibold text-slate-600">🗓 {formatTradeEventDateRange(event.starts_on, event.ends_on)}</p>
+                        <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200 border-y border-slate-100 py-3 text-center">
+                          <div><p className="text-base font-black text-slate-950">{analytics.leadCount || eventEntryCount}</p><p className="text-[10px] font-bold text-slate-500">Captured</p></div>
+                          <div><p className="text-base font-black text-slate-950">{analytics.quotedCount}</p><p className="text-[10px] font-bold text-slate-500">Quotes</p></div>
+                          <div><p className="text-base font-black text-slate-950">{analytics.openLeadCount}</p><p className="text-[10px] font-bold text-slate-500">Open</p></div>
+                        </div>
+                        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+                          <Link href={captureHref} className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white transition hover:bg-slate-800">Capture</Link>
+                          <Link href={`/leads?eventId=${event.id}`} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100">Review</Link>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                <p className="text-lg font-black text-slate-950">No events yet</p>
+                <Link href="/admin/trade-events" className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl bg-blue-600 px-5 text-sm font-bold text-white">Add first event</Link>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5">
+            <h3 className="text-base font-black tracking-tight text-slate-950">Today's Focus</h3>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {todayFocusCards.map((item) => (
+                <div key={item.label} className="rounded-[1.2rem] border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.06)]">
+                  <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${item.tone} text-2xl shadow-[0_14px_24px_rgba(15,23,42,0.20)]`}>{item.icon}</div>
+                  <div className="flex items-end gap-2"><p className="text-2xl font-black text-slate-950">{item.value}</p><p className="pb-1 text-sm font-black text-slate-900">{item.label}</p></div>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <section className="rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5 xl:sticky xl:top-28 xl:self-start">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-black text-slate-950">Intake Queue</h3>
+              <p className="mt-1 text-sm font-medium text-slate-600">Review booth entries before saving as leads.</p>
+            </div>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-black text-blue-700">{data.entries.length}</span>
+          </div>
+          {queueEntries.length ? (
+            <div className="mt-4 space-y-3">
+              {queueEntries.map((entry) => {
+                const initials = (entry.captured_contact_name || entry.captured_company_name || 'SE').split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'SE';
+                const isConverted = String(entry.status || '').toLowerCase() === 'converted' && Boolean(entry.converted_lead_id);
+                return (
+                  <div key={entry.id} className="rounded-[1.2rem] border border-slate-200 bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.06)]">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,#8b5cf6,#0ea5e9)] text-sm font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)]">{initials}</div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-black text-slate-950">{entry.captured_contact_name || entry.captured_company_name || 'New contact'}</p>
+                        <p className="truncate text-sm font-semibold text-slate-600">{entry.captured_company_name || eventNameById.get(entry.trade_event_id ?? '') || 'Trade event'}</p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">{entry.captured_notes ? '🎙️ Voice note added' : '▣ Card scanned'}</p>
+                      </div>
+                      {isConverted ? (
+                        <Link href={`/leads/${entry.converted_lead_id}?tab=workflow&handoff=event-queue`} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">Open</Link>
+                      ) : (
+                        <form action={convertTradeEventEntryToLead}>
+                          <input type="hidden" name="entry_id" value={entry.id} />
+                          <button type="submit" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-800 shadow-sm hover:bg-slate-50">Review</button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <Link href="/leads?view=trade-event" className="mt-2 inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700 hover:bg-blue-100">View all entries →</Link>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+              <p className="font-black text-slate-950">Queue is clear</p>
+              <p className="mt-1 text-sm font-medium text-slate-600">New scans and voice notes will appear here.</p>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {followUpNeededLeads.length ? (
+        <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-base font-black text-slate-950">Follow-ups</h3>
+            <Link href="/leads?view=trade-event" className="text-sm font-bold text-blue-700 hover:text-blue-800">View all in Leads</Link>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {followUpNeededLeads.slice(0, 6).map((lead) => (
+              <Link key={lead.id} href={`/leads/${lead.id}?tab=workflow&handoff=trade-event-follow-up`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-200 hover:bg-blue-50">
+                <p className="font-black text-slate-950">{lead.company_name || 'Unnamed company'}</p>
+                <p className="mt-1 text-sm font-medium text-slate-600">{lead.contact_name || 'No contact'} · {eventNameById.get(lead.trade_event_id ?? '') || 'Event'}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -367,9 +367,9 @@ export function AppShell({
                         <span>Quick Lead</span>
                       </a>
 
-                      <a href="/trade-events" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" title="Trade Events — capture leads on the show floor">
+                      <a href={pathname.startsWith('/trade-events') ? '/admin/trade-events' : '/trade-events'} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" title={pathname.startsWith('/trade-events') ? 'Add event' : 'Trade events'}>
                         <FaIcon icon="calendar" fixedWidth className="text-sm" />
-                        <span>Trade Show</span>
+                        <span>{pathname.startsWith('/trade-events') ? 'Add Event' : 'Events'}</span>
                       </a>
 
                       <button

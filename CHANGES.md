@@ -1640,3 +1640,10 @@ Fixed the live mobile Quick Add Lead camera flow so a photo selected from the ph
 - Rewrote the root README to describe the full SETU Flow CRM product, including desktop CRM, mobile field experience, leads, pipeline, products, quotes, orders, trade events, tasks, reports, compliance, admin, integrations, digital business card, and contact exchange surfaces.
 - Documented source layout, backend architecture, Supabase responsibilities, security/governance posture, environment variables, scan provider mode, QA checks, test commands, and deployment checklist.
 - Positioned the repository as a professional SaaS product handoff rather than a short mobile-only note.
+
+## PASS36 — Premium Trade Events Command Center
+
+- Rebuilt `/trade-events` into a premium event command center with dark event pipeline hero, 3D-style icon metrics, action chips, Active Events cards, Intake Queue, and Today's Focus.
+- Removed proof-boundary, desktop-first, audit/prototype, and internal implementation language from the visible Trade Events page.
+- Preserved existing data sources, event analytics, Quick Lead handoffs, vCard sharing, and intake conversion actions.
+- Updated the desktop top-bar Trade Events action so the page can create an event without showing redundant route copy.
