@@ -1,4 +1,3 @@
-import { getAiProviderKey, getAiProviderName, isAiEnabled } from '@/lib/ai/config';
 import { parseContactText, type ContactSourceProfile } from '@/lib/contact-exchange/contact-parser';
 
 export type ProviderFieldConfidence = {
@@ -100,7 +99,7 @@ const CONTACT_EXTRACTION_SCHEMA = {
 } as const;
 
 function isOpenAiVisionConfigured() {
-  return isAiEnabled() && getAiProviderName().toLowerCase() === 'openai' && Boolean(getAiProviderKey());
+  return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
 function buildExtractionInstructions(args: ExtractContactWithOcrArgs) {
@@ -229,8 +228,8 @@ function normalizeDraft(input: unknown): ContactOcrProviderDraft {
 
 
 async function callOpenAiResponsesApi(args: ExtractContactWithOcrArgs, dataUrl: string) {
-  const apiKey = getAiProviderKey();
-  if (!apiKey) throw new Error('OpenAI key is not configured for contact scan OCR.');
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured for contact scan OCR. Add it to the production deployment environment and redeploy.');
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',

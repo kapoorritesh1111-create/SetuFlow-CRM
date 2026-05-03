@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ThreeDIconOrb } from './icon-3d-orb';
+import { MobileVCardShareSheet } from './mobile-vcard-share-sheet';
 import type { MobileSignedInIdentity } from './mobile-shell';
 
 const standaloneTabs = [
@@ -43,6 +44,7 @@ function initialsFrom(name?: string | null) {
 export function BrandedMobileTopBar({ signedIn, canonical = false }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [dateLabel, setDateLabel] = useState('');
   const title = resolveTitle(pathname);
   const displayName = signedIn?.name ?? 'SETU Flow';
@@ -63,16 +65,17 @@ export function BrandedMobileTopBar({ signedIn, canonical = false }: { signedIn?
             <p className="truncate text-base font-black tracking-tight">{title}</p>
             <p className="truncate text-[10px] text-white/55">{dateLabel || 'Today'} · {displayName}</p>
           </div>
-          <a href={signedIn?.shareHref ?? '/card'} className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-lg" aria-label="Share my vCard">📇</a>
+          <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-lg" aria-label="Share my vCard">📇</button>
           <span className="grid h-11 w-11 place-items-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-xs font-black ring-1 ring-white/20" title={`Signed in as ${displayName}`}>{initials}</span>
         </div>
       </header>
-      <MobileActionDrawer open={open} onClose={() => setOpen(false)} canonical={canonical} signedIn={signedIn} />
+      <MobileActionDrawer open={open} onClose={() => setOpen(false)} canonical={canonical} signedIn={signedIn} onShareVCard={() => setShareOpen(true)} />
+      <MobileVCardShareSheet open={shareOpen} onClose={() => setShareOpen(false)} signedIn={signedIn} />
     </>
   );
 }
 
-export function MobileActionDrawer({ open, onClose, canonical = false, signedIn }: { open: boolean; onClose: () => void; canonical?: boolean; signedIn?: MobileSignedInIdentity }) {
+export function MobileActionDrawer({ open, onClose, canonical = false, signedIn, onShareVCard }: { open: boolean; onClose: () => void; canonical?: boolean; signedIn?: MobileSignedInIdentity; onShareVCard?: () => void }) {
   if (!open) return null;
   const tabs = canonical ? canonicalTabs : standaloneTabs;
   return (
@@ -87,7 +90,7 @@ export function MobileActionDrawer({ open, onClose, canonical = false, signedIn 
           </div>
         </div>
         <div className="mt-4 grid gap-2">
-          <a href={signedIn?.shareHref ?? '/card'} onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 font-black text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-sky-200"><span>📇</span>Share vCard</a>
+          <button type="button" onClick={() => { onClose(); onShareVCard?.(); }} className="flex min-h-12 items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 text-left font-black text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-sky-200"><span>📇</span>Share vCard</button>
           {tabs.map((tab) => <Link key={tab.href} href={tab.href} onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>{tab.icon}</span>{tab.label}</Link>)}
         </div>
       </div>

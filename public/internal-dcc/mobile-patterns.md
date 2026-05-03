@@ -207,3 +207,27 @@ This pattern prevents the compressed-desktop problem seen in phone testing while
 ## Canonical Mobile Shell Rebuild Fix
 
 Canonical app routes now use the premium mobile shell on phone viewports. `/dashboard`, `/leads`, and `/orders` should no longer render the compressed desktop shell on mobile. The desktop shell remains active at `md` and above. Signed-in identity and Share vCard remain part of the mobile top bar and drawer.
+
+
+## True Mobile Parity Fix: Scan Card and Share vCard
+
+The production mobile app must match the approved `mobile-blueprint.html` behavior, not only the visual shell. The latest implementation adds two required parity gates:
+
+1. **Business card scan must prefill lead fields.** `MobileBusinessCardScanner` is the canonical mobile capture component. It uses camera/file input, calls the contact scan extraction action, fills editable lead fields, and saves through the existing reviewed contact scan lead action.
+2. **Share vCard must match desktop quality.** `MobileVCardShareSheet` provides QR, native share, copy intro, open card, and `.vcf` download from the mobile shell.
+
+QA should test `/dashboard`, `/leads`, `/leads?quickLead=1`, `/orders`, and `/mobile/capture` on a 390-430px viewport.
+
+## Production Camera and File Scan Readiness
+
+Camera/file business-card scan requires production environment configuration, not only UI wiring.
+
+Required checks:
+
+- production domain must use HTTPS for camera capture,
+- `OPENAI_API_KEY` must be present for automatic image/PDF OCR,
+- Supabase public and server keys must be present for reviewed scan save,
+- mobile feature flags should be explicitly enabled,
+- `/api/mobile/scan-readiness` should return `ok: true` after deployment.
+
+Use `MOBILE_SCAN_PRODUCTION.md` and `.env.production.example` before release.

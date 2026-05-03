@@ -352,3 +352,50 @@ The canonical app routes now use the same premium mobile direction as `public/in
 2. Open `/dashboard` at a 390-430px mobile viewport. It should show the premium mobile shell, not the old compressed desktop app.
 3. Open `/leads` at a 390-430px mobile viewport. It should show the premium role-aware lead cards, signed-in card, Share vCard, and bottom tabs.
 4. Open the same routes at desktop width. The existing desktop app shell and desktop workspace should remain unchanged.
+
+
+## 2026-05-02 True Mobile Parity Review
+
+Completed a route/component/function review against `public/internal-dcc/mobile-blueprint.html`. The approved shell contract now maps into live app routes as follows:
+
+| Blueprint requirement | Live app file | Verification |
+|---|---|---|
+| Premium mobile shell | `src/features/mobile/components/mobile-shell.tsx` | Canonical phone routes use `data-mobile-shell="canonical"`. |
+| Branded top bar | `src/features/mobile/components/mobile-navigation.tsx` | Uses real SETU Flow logo, signed-in identity, and vCard share control. |
+| Bottom tabs + FAB | `mobile-shell.tsx`, `mobile-navigation.tsx` | Home, Leads, Capture, Orders, More plus quick capture FAB. |
+| Current leads | `src/app/(app)/leads/page.tsx` + `RoleAwareLeadList` | Phone viewport uses role-aware cards; desktop keeps `LeadsWorkspace`. |
+| Business card scan | `MobileBusinessCardScanner` | `/leads?quickLead=1` and `/mobile/capture` now launch camera upload, extraction, field prefill, review, and save. |
+| Share vCard parity | `MobileVCardShareSheet` | Mobile now includes QR, native share, copy intro, open card, and `.vcf` download actions. |
+
+### Business card scan behavior
+
+The mobile scan flow accepts camera images, uploaded images, and PDFs. It sends the source through the existing contact scan extraction boundary and pre-fills Full name, Company, Role, Email, Phone, Website, and Notes. If the live OCR provider is not configured, the screen now clearly tells the operator that automatic image text extraction is unavailable and allows Assist text as a fallback.
+
+For automatic image extraction in production, configure the existing AI/OCR environment used by `extractContactWithOcrProvider`. Deterministic parsing is also regression-tested with realistic business-card text.
+
+### Share vCard behavior
+
+Mobile Share vCard now mirrors the stronger desktop share system: public card, QR code, native share sheet, copy intro, and `.vcf` download. It is no longer a simple link-only action.
+
+## Production camera/file scan configuration
+
+The mobile business-card scanner requires production environment setup before camera/file OCR can prefill leads from a photo.
+
+Required production variables:
+
+- `OPENAI_API_KEY` - enables automatic OCR from uploaded card photos, camera captures, and image-only PDFs.
+- `OPENAI_CONTACT_SCAN_MODEL` - recommended explicit model, defaults to `gpt-4.1-mini`.
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` - required for Supabase browser/auth configuration.
+- `SUPABASE_SERVICE_ROLE_KEY` - required for server-side reviewed-scan lead save actions.
+- `NEXT_PUBLIC_FEATURE_MOBILE_APP_V1=true` and `FEATURE_MOBILE_APP_V1=true` - recommended explicit mobile rollout flags.
+- `NEXT_PUBLIC_APP_URL=https://www.setuflowcrm.com` - recommended for stable vCard/QR links.
+
+Production verification:
+
+1. Add variables in Vercel for Production and Preview.
+2. Redeploy after saving variables.
+3. Open `/api/mobile/scan-readiness` on the deployed domain.
+4. Confirm the readiness response shows `ok: true`.
+5. Test `/leads?quickLead=1` on a real iPhone or Android device over HTTPS.
+
+See `MOBILE_SCAN_PRODUCTION.md` and `.env.production.example` for the complete setup and troubleshooting checklist.

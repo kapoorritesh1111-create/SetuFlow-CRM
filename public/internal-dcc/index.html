@@ -1828,9 +1828,27 @@ function bakeIntoHTML() {
   // Strip any previous baked data block
   const cleaned = html.replace(/<script>\s*window\.SETUFLOW_BAKED=[\s\S]*?<\/script>\s*/,'');
   // Inject before <section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
+
+<section class="mobile-dcc-card">
+  <h3>True Mobile Parity: Business Card Scan + Share vCard</h3>
+  <p>The live mobile app now includes camera business-card scan with lead field prefill, plus a desktop-grade Share vCard sheet with QR, native share, copy intro, public card, and .vcf download actions.</p>
+  <p><strong>QA paths:</strong> /dashboard, /leads, /leads?quickLead=1, /orders, /mobile/capture.</p>
+</section>
 </body>
   const final = cleaned.replace('<section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
+
+<section class="mobile-dcc-card">
+  <h3>True Mobile Parity: Business Card Scan + Share vCard</h3>
+  <p>The live mobile app now includes camera business-card scan with lead field prefill, plus a desktop-grade Share vCard sheet with QR, native share, copy intro, public card, and .vcf download actions.</p>
+  <p><strong>QA paths:</strong> /dashboard, /leads, /leads?quickLead=1, /orders, /mobile/capture.</p>
+</section>
 </body>', scriptTag + '\n<section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
+
+<section class="mobile-dcc-card">
+  <h3>True Mobile Parity: Business Card Scan + Share vCard</h3>
+  <p>The live mobile app now includes camera business-card scan with lead field prefill, plus a desktop-grade Share vCard sheet with QR, native share, copy intro, public card, and .vcf download actions.</p>
+  <p><strong>QA paths:</strong> /dashboard, /leads, /leads?quickLead=1, /orders, /mobile/capture.</p>
+</section>
 </body>');
   const blob = new Blob([final], { type:'text/html' });
   const a = document.createElement('a');
@@ -2626,5 +2644,11 @@ function preloadDashboardResults() {
 loadStoredData();
 </script>
 <section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
+
+<section class="mobile-dcc-card">
+  <h3>True Mobile Parity: Business Card Scan + Share vCard</h3>
+  <p>The live mobile app now includes camera business-card scan with lead field prefill, plus a desktop-grade Share vCard sheet with QR, native share, copy intro, public card, and .vcf download actions.</p>
+  <p><strong>QA paths:</strong> /dashboard, /leads, /leads?quickLead=1, /orders, /mobile/capture.</p>
+</section>
 </body>
 </html>

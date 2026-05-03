@@ -1,3 +1,50 @@
+# 2026-05-02 - Production Mobile Scan Configuration
+
+## Summary
+
+Added production readiness configuration for camera/file business-card scanning. The scanner now has a safe readiness endpoint, an environment verification script, a production environment example, and a deployment checklist for Vercel. Contact OCR now uses `OPENAI_API_KEY` directly so business-card OCR works even when the broader AI provider setting is configured for another model provider.
+
+## Files changed
+
+- `src/app/api/mobile/scan-readiness/route.ts` - safe production diagnostics for camera secure context, OCR provider, Supabase, feature flag, and upload limits.
+- `src/lib/contact-exchange/contact-ocr-provider.ts` - contact scan OCR now checks and uses `OPENAI_API_KEY` directly.
+- `scripts/check-mobile-scan-prod.mjs` - CLI readiness check for required production variables.
+- `.env.production.example` - production environment template for camera/file scan and vCard links.
+- `MOBILE_SCAN_PRODUCTION.md` - deployment and troubleshooting checklist.
+- `MOBILE_README.md` - added production scan configuration notes.
+- `tests/mobile-scan-production-config.test.mjs` - regression coverage for scan production readiness.
+
+## Verification
+
+Run `npm run check:mobile-scan` with production-like environment variables before deploy, then verify `/api/mobile/scan-readiness` on the production domain after redeploy.
+
+---
+
+# 2026-05-02 - True Mobile Parity, Card Scan, and vCard Fix
+
+## Summary
+
+Performed a deeper mobile parity pass against the approved `public/internal-dcc/mobile-blueprint.html` plan. The live mobile shell now includes a real business-card scan capture path and a desktop-grade Share vCard sheet instead of link-only sharing.
+
+## Files changed
+
+- `src/features/mobile/components/mobile-business-card-scanner.tsx` - new mobile camera/upload scan flow with extraction, prefilled fields, review, and lead save.
+- `src/features/mobile/components/mobile-vcard-share-sheet.tsx` - new mobile Share vCard sheet with QR, native share, copy intro, open card, and `.vcf` download.
+- `src/features/mobile/components/mobile-navigation.tsx` - Share vCard now opens the mobile sheet from top bar and drawer.
+- `src/features/mobile/components/mobile-shell.tsx` - signed-in identity now supports vCard download path.
+- `src/components/layout/app-shell.tsx` - canonical mobile shell passes Share vCard and `.vcf` data to mobile.
+- `src/app/(app)/leads/page.tsx` - `/leads?quickLead=1` on mobile now launches the card scanner.
+- `src/app/(mobile)/mobile/capture/page.tsx` - mobile Capture route now uses the card scanner.
+- `src/lib/contact-exchange/contact-parser.ts` - improved deterministic business-card parsing so company lines are not misclassified as websites or addresses.
+- `tests/mobile-business-card-scan.test.mjs` - added regression coverage for scan flow, parser prefill, mobile quick capture, and vCard share parity.
+
+## Verification
+
+- `npm test` passes: 20/20 tests.
+- `npm run typecheck` could not complete in this container because dependencies/types are not installed; errors include missing `react`, `next`, Supabase packages, and `@types/node`.
+
+---
+
 # 2026-05-03 - Canonical Mobile Shell Rebuild Fix
 
 ## Summary

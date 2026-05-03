@@ -153,7 +153,8 @@ function extractLabeledFields(lines: string[]) : LabeledFields {
 
 function pickCompany(lines: string[], title: string, name: string, profile: ContactSourceProfile) {
   if (profile === 'business_card') {
-    return lines.find((line) => line !== title && line !== name && looksLikeCompany(line) && !looksLikePersonName(line))
+    return lines.find((line) => line !== title && line !== name && COMPANY_PATTERNS.test(line))
+      ?? lines.find((line) => line !== title && line !== name && looksLikeCompany(line) && !looksLikePersonName(line))
       ?? lines.find((line) => line !== title && line !== name && !/[.@]/.test(line) && line.split(/\s+/).length <= 5 && !looksLikePersonName(line))
       ?? '';
   }
@@ -211,7 +212,13 @@ export function parseContactText(input: string, options?: { filename?: string | 
   const phones = uniqueValues([...labeled.phone, ...detectPhones(combined)]);
   const unlabeledLines = lines.filter((line) => !labeled.consumed.has(line));
   const name = labeled.name[0] ?? unlabeledLines.find(looksLikePersonName) ?? '';
-  const remaining = unlabeledLines.filter((line) => ![name, emails[0] ?? '', websites[0] ?? '', phones[0] ?? ''].includes(line));
+  const remaining = unlabeledLines.filter((line) => {
+    const normalizedLineWebsite = detectWebsites(line)[0] ?? '';
+    const normalizedLinePhone = detectPhones(line)[0] ?? '';
+    return ![name, emails[0] ?? '', websites[0] ?? '', phones[0] ?? ''].includes(line)
+      && !normalizedLineWebsite
+      && !normalizedLinePhone;
+  });
   const title = labeled.title[0] ?? remaining.find(looksLikeTitle) ?? '';
   const company = labeled.company[0] ?? pickCompany(remaining, title, name, sourceProfile);
   const address = labeled.address[0] ?? remaining.find((line) => line !== title && line !== company && looksLikeAddress(line)) ?? '';

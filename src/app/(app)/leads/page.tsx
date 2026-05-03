@@ -7,6 +7,7 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page-view-model';
 import { RoleAwareLeadList } from '@/features/mobile/components/role-aware-lead-list';
+import { MobileBusinessCardScanner } from '@/features/mobile/components/mobile-business-card-scanner';
 import { buildMobileLeadCardsFromAppData, buildMobileSignedInSummary, buildMobileUserContextFromWorkspace } from '@/features/mobile/lib/app-mobile-leads';
 
 export default async function LeadsPage({
@@ -81,12 +82,19 @@ export default async function LeadsPage({
   return (
     <div className="space-y-4">
       <div className="md:hidden">
-        <RoleAwareLeadList
-          leads={mobileLeadCards}
-          user={mobileUser}
-          signedIn={mobileSignedIn}
-          allowRolePreview={false}
-        />
+        {quickLeadEnabled ? (
+          <MobileBusinessCardScanner
+            initialLeadType={readParam(searchParams?.sourceType).trim() === 'supplier' ? 'supplier' : 'buyer'}
+            eventId={eventId || null}
+          />
+        ) : (
+          <RoleAwareLeadList
+            leads={mobileLeadCards}
+            user={mobileUser}
+            signedIn={mobileSignedIn}
+            allowRolePreview={false}
+          />
+        )}
       </div>
 
       <div className="hidden space-y-4 md:block">

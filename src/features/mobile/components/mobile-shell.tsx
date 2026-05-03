@@ -8,6 +8,7 @@ export type MobileSignedInIdentity = {
   organizationName?: string | null;
   roleLabel?: string;
   shareHref?: string;
+  downloadVcfHref?: string;
 };
 
 export function MobileShell({

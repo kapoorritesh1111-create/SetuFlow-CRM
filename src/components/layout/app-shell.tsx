@@ -66,18 +66,6 @@ export function AppShell({
   }, [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
 
 
-  const signedInForMobile = useMemo(() => ({
-    name: profile?.full_name ?? profile?.username ?? 'SETU Flow user',
-    initials: getInitials(profile?.full_name ?? profile?.username),
-    email: profile?.email,
-    organizationName: organization?.name ?? 'SETU Flow',
-    roleLabel: getWorkspaceRoleDisplayName(currentRole),
-    shareHref: shareLink,
-  }), [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username, shareLink]);
-
-  const canonicalMobileRoutes = ['/dashboard', '/leads', '/orders'];
-  const shouldUseCanonicalMobileShell = canonicalMobileRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
-
   const downloadVcfHref = useMemo(() => {
     const params = new URLSearchParams();
     params.set('fullName', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
@@ -86,6 +74,19 @@ export function AppShell({
     params.set('roleLabel', getWorkspaceRoleDisplayName(currentRole));
     return `/api/public/card-vcf?${params.toString()}`;
   }, [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
+
+  const signedInForMobile = useMemo(() => ({
+    name: profile?.full_name ?? profile?.username ?? 'SETU Flow user',
+    initials: getInitials(profile?.full_name ?? profile?.username),
+    email: profile?.email,
+    organizationName: organization?.name ?? 'SETU Flow',
+    roleLabel: getWorkspaceRoleDisplayName(currentRole),
+    shareHref: shareLink,
+    downloadVcfHref,
+  }), [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username, shareLink, downloadVcfHref]);
+
+  const canonicalMobileRoutes = ['/dashboard', '/leads', '/orders'];
+  const shouldUseCanonicalMobileShell = canonicalMobileRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
 
   useEffect(() => {
     setTopbarDate(new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()));
