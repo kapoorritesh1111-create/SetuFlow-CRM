@@ -241,6 +241,7 @@
   <div class="tab" data-tab="buyer">Buyer Workflows</div>
   <div class="tab" data-tab="supplier">Supplier Workflows</div>
   <div class="tab" data-tab="admin">Admin Settings</div>
+  <div class="tab" data-tab="onboarding" style="background:#eef2ff;color:#3730a3;border-bottom:2.5px solid #6366f1;font-weight:800;">Client Onboarding</div>
   <div class="tab" data-tab="shared">Shared Modules</div>
   <div class="tab" data-tab="issues">Issue Tracker</div>
   <div class="tab" data-tab="resolution">Resolution Guide</div>
@@ -788,6 +789,21 @@
 </div><!-- end admin panel -->
 
 <!-- ==================== SHARED MODULES ==================== -->
+
+<div id="tab-onboarding" class="panel">
+  <h2 style="margin-bottom:16px;">Client Onboarding Command Center — Pass 37</h2>
+  <div class="module-section">
+    <div class="module-header"><div><div class="module-title">New client setup flow</div><div class="module-subtitle">Client submits /onboarding, Setu Flow creates workspace, then sends first admin invite.</div></div><span class="badge badge-pass">Implemented</span></div>
+    <div class="test-list">
+      <div class="test-row"><div class="test-num">1</div><div class="test-desc"><div class="test-name">Public onboarding form route</div><div class="test-steps">Open /onboarding and verify company, first admin, logo, markets, countries, pipelines, stages, next steps, pricing notes, and product category notes are captured.</div><div class="test-ctas">CTA: Submit onboarding form</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
+      <div class="test-row"><div class="test-num">2</div><div class="test-desc"><div class="test-name">Logo fallback</div><div class="test-steps">Leave logo URL blank and verify Setu Flow logo is used as the onboarding/workspace fallback.</div><div class="test-ctas">Default: /logos/setu-flow-logo.png</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
+      <div class="test-row"><div class="test-num">3</div><div class="test-desc"><div class="test-name">Reserved client workspace domain</div><div class="test-steps">Submit a company name and verify confirmation/admin page shows companyname.setuflowcrm.com.</div><div class="test-ctas">Domain rule: slug.setuflowcrm.com</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
+      <div class="test-row"><div class="test-num">4</div><div class="test-desc"><div class="test-name">Editable default setup package</div><div class="test-steps">Verify pipelines, pipeline stages, next steps, markets, and countries are captured/preloaded as editable defaults; product categories remain client-created.</div><div class="test-ctas">Admin routes: pipelines, stages, markets, categories</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
+      <div class="test-row"><div class="test-num">5</div><div class="test-desc"><div class="test-name">Internal admin command center</div><div class="test-steps">Open /admin/client-onboarding and verify submitted requests, workspace draft action, status update, setup checklist, and first-admin invitation handoff are visible.</div><div class="test-ctas">CTA: Open client form / Send admin invite</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
+    </div>
+  </div>
+</div>
+
 <div id="tab-shared" class="panel">
   <div class="section-title">Shared Module Tests <span>Orders · Tasks · Trade Events · Documents · Compliance · Reports · Integrations · Contact Exchange</span></div>
 
