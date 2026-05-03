@@ -322,3 +322,33 @@ The first real-route pass created the isolated `/mobile/*` route group, but the 
 4. Tap **Share vCard** from the signed-in card or top bar.
 5. Search by company/contact/status/owner/team/next action.
 6. Resize to desktop width and confirm the original desktop lead workspace still appears.
+
+
+## 2026-05-03 Canonical Mobile Shell Rebuild Fix
+
+The canonical app routes now use the same premium mobile direction as `public/internal-dcc/mobile-blueprint.html` on phone viewports. The prior route-only mobile pass placed the new experience under `/mobile/*`, but `/dashboard` and `/leads` could still show the legacy app shell in a narrow viewport.
+
+### Fixed behavior
+
+- `/dashboard` at phone width renders the premium mobile home dashboard.
+- `/leads` at phone width renders the role-aware premium mobile lead queue.
+- `/orders` at phone width uses the premium mobile shell frame.
+- Desktop versions of the same routes remain unchanged at `md` and above.
+- Signed-in identity and Share vCard remain visible in the premium mobile top bar and drawer.
+
+### Files reviewed and corrected
+
+- `src/components/layout/app-shell.tsx`
+- `src/app/(app)/dashboard/_lib/render-dashboard-page.tsx`
+- `src/app/(app)/leads/page.tsx`
+- `src/features/mobile/components/mobile-shell.tsx`
+- `src/features/mobile/components/mobile-navigation.tsx`
+- `src/app/globals.css`
+- `tests/mobile-route-contract.test.mjs`
+
+### QA check
+
+1. Open `/internal-dcc/mobile-blueprint.html` to confirm the approved design direction.
+2. Open `/dashboard` at a 390-430px mobile viewport. It should show the premium mobile shell, not the old compressed desktop app.
+3. Open `/leads` at a 390-430px mobile viewport. It should show the premium role-aware lead cards, signed-in card, Share vCard, and bottom tabs.
+4. Open the same routes at desktop width. The existing desktop app shell and desktop workspace should remain unchanged.

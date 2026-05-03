@@ -11,6 +11,7 @@ import { OfflineIndicator } from '@/components/shell/OfflineIndicator';
 import { getRouteMeta } from '@/components/shell/route-meta';
 import { getWorkspaceBasePath, getWorkspaceModeFromLocation, withWorkspaceMode, withWorkspaceModePreservedParams } from '@/components/shell/utils';
 import { cn, getInitials } from '@/lib/utils';
+import { MobileShell } from '@/features/mobile/components/mobile-shell';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 import type { Database } from '@/types/database';
@@ -63,6 +64,19 @@ export function AppShell({
     params.set('roleLabel', getWorkspaceRoleDisplayName(currentRole));
     return `/card?${params.toString()}`;
   }, [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
+
+
+  const signedInForMobile = useMemo(() => ({
+    name: profile?.full_name ?? profile?.username ?? 'SETU Flow user',
+    initials: getInitials(profile?.full_name ?? profile?.username),
+    email: profile?.email,
+    organizationName: organization?.name ?? 'SETU Flow',
+    roleLabel: getWorkspaceRoleDisplayName(currentRole),
+    shareHref: shareLink,
+  }), [currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username, shareLink]);
+
+  const canonicalMobileRoutes = ['/dashboard', '/leads', '/orders'];
+  const shouldUseCanonicalMobileShell = canonicalMobileRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
 
   const downloadVcfHref = useMemo(() => {
     const params = new URLSearchParams();
@@ -139,7 +153,18 @@ export function AppShell({
   );
 
   return (
-    <div className="setu-mobile-shell min-h-screen overflow-x-clip bg-[#f0f4f8] md:bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]">
+    <>
+      {shouldUseCanonicalMobileShell ? (
+        <div className="md:hidden">
+          <MobileShell signedIn={signedInForMobile} canonical>
+            {children}
+          </MobileShell>
+        </div>
+      ) : null}
+      <div className={cn(
+        "setu-mobile-shell min-h-screen overflow-x-clip bg-[#f0f4f8] md:bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]",
+        shouldUseCanonicalMobileShell ? "hidden md:block" : undefined,
+      )}>
       <a
         href="#app-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900"
@@ -354,6 +379,7 @@ export function AppShell({
       </div>
       <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} aria-label="Quick Lead" className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#0c7fff] text-2xl font-semibold text-white shadow-[0_4px_16px_rgba(12,127,255,0.42)] md:hidden">＋</a>
       <MobileTabBar />
-    </div>
+      </div>
+    </>
   );
 }

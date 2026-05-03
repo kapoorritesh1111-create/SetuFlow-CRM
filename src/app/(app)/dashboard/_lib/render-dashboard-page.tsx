@@ -3,6 +3,7 @@ import type { DashboardScope } from '@/features/dashboard/types';
 import type { WorkspaceMode } from '@/features/workspace/types';
 import DashboardInteractive from '@/features/dashboard/components/dashboard-interactive';
 import { FirstLoginGuide } from '@/features/dashboard/components/first-login-guide';
+import { MobileDashboardHome } from '@/features/mobile/components/mobile-navigation';
 import { getDashboardData } from '@/lib/queries/dashboard';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -156,6 +157,10 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
 
   return (
     <>
+      <div className="md:hidden">
+        <MobileDashboardHome />
+      </div>
+      <div className="hidden md:block">
       {isFirstLogin && (
         <FirstLoginGuide
           hasLeads={hasLeads}
@@ -201,6 +206,7 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
         serverNowIso={new Date().toISOString()}
         readOnlyMessage={readOnlyMessage}
       />
+      </div>
     </>
   );
 }

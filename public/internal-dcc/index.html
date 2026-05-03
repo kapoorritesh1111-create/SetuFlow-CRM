@@ -1827,8 +1827,11 @@ function bakeIntoHTML() {
   const html = document.documentElement.outerHTML;
   // Strip any previous baked data block
   const cleaned = html.replace(/<script>\s*window\.SETUFLOW_BAKED=[\s\S]*?<\/script>\s*/,'');
-  // Inject before </body>
-  const final = cleaned.replace('</body>', scriptTag + '\n</body>');
+  // Inject before <section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
+</body>
+  const final = cleaned.replace('<section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
+</body>', scriptTag + '\n<section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
+</body>');
   const blob = new Blob([final], { type:'text/html' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -2622,5 +2625,6 @@ function preloadDashboardResults() {
 
 loadStoredData();
 </script>
+<section style="display:none" data-mobile-shell-fix="canonical">Canonical Mobile Shell Rebuild Fix: /dashboard, /leads, and /orders use the premium mobile shell on phone viewports. Signed-in identity and Share vCard are preserved.</section>
 </body>
 </html>

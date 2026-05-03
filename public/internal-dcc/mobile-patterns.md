@@ -202,3 +202,8 @@ The mobile route group remains available at `/mobile/*`, but production users co
 - Share vCard: keep the AppShell vCard action and include a visible Share vCard action in the signed-in card.
 
 This pattern prevents the compressed-desktop problem seen in phone testing while preserving desktop route behavior.
+
+
+## Canonical Mobile Shell Rebuild Fix
+
+Canonical app routes now use the premium mobile shell on phone viewports. `/dashboard`, `/leads`, and `/orders` should no longer render the compressed desktop shell on mobile. The desktop shell remains active at `md` and above. Signed-in identity and Share vCard remain part of the mobile top bar and drawer.

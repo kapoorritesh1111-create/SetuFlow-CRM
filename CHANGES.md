@@ -1,3 +1,29 @@
+# 2026-05-03 - Canonical Mobile Shell Rebuild Fix
+
+## Summary
+
+Rebuilt the canonical mobile rendering path so phone viewports on `/dashboard`, `/leads`, and `/orders` use the approved premium mobile app shell instead of the legacy desktop app shell compressed into a phone width. This pass reviewed the app shell, route wrappers, mobile CSS behavior, dashboard mobile entry, leads mobile entry, bottom navigation, signed-in identity, and vCard actions.
+
+## Root cause fixed
+
+The previous implementation created the approved premium mobile experience under `/mobile/*`, but canonical app routes such as `/dashboard` and `/leads` were still mounted inside the existing desktop `AppShell` on phone viewports. That made the live site look like a shrunken desktop workspace rather than the `internal-dcc/mobile-blueprint.html` mobile experience.
+
+## Changes
+
+- `src/components/layout/app-shell.tsx` now detects canonical mobile routes and renders the premium `MobileShell` on phone viewports while preserving the existing desktop shell at `md` and above.
+- `src/app/(app)/dashboard/_lib/render-dashboard-page.tsx` now serves `MobileDashboardHome` on phone viewports and keeps the existing `DashboardInteractive` desktop experience unchanged.
+- `src/features/mobile/components/mobile-shell.tsx` now supports canonical route mode and carries signed-in identity into the mobile shell.
+- `src/features/mobile/components/mobile-navigation.tsx` now includes canonical app navigation for `/dashboard`, `/leads`, `/orders`, quick capture, signed-in identity, and Share vCard.
+- `tests/mobile-route-contract.test.mjs` now asserts that canonical app routes use the blueprint-grade mobile shell and that desktop remains hidden only on phone viewports.
+
+## Verification
+
+- `npm test` passed: 16/16 tests.
+- Desktop route code is preserved and remains active at `md` and above.
+- Mobile route group `/mobile/*` remains isolated and feature-flagged.
+
+---
+
 # 2026-05-02 - Premium Mobile Role-Aware Leads and Branding Pass
 
 ## Summary

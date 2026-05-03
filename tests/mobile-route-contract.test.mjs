@@ -49,6 +49,26 @@ test('canonical leads route renders premium mobile leads without replacing deskt
   assert.match(leadsPage, /LeadsWorkspace/);
 });
 
+
+test('canonical dashboard and leads use the blueprint-grade mobile shell on phone viewports', () => {
+  const appShell = readFileSync('src/components/layout/app-shell.tsx', 'utf8');
+  const dashboardPage = readFileSync('src/app/(app)/dashboard/_lib/render-dashboard-page.tsx', 'utf8');
+  const mobileShell = readFileSync('src/features/mobile/components/mobile-shell.tsx', 'utf8');
+  const mobileNav = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
+
+  assert.match(appShell, /shouldUseCanonicalMobileShell/);
+  assert.match(appShell, /'\/dashboard', '\/leads', '\/orders'/);
+  assert.match(appShell, /<MobileShell signedIn=\{signedInForMobile\} canonical>/);
+  assert.match(appShell, /hidden md:block/);
+  assert.match(dashboardPage, /MobileDashboardHome/);
+  assert.match(dashboardPage, /<div className="md:hidden">/);
+  assert.match(mobileShell, /data-mobile-shell=\{canonical \? 'canonical' : 'standalone'\}/);
+  assert.match(mobileNav, /canonicalTabs/);
+  assert.match(mobileNav, /\/dashboard/);
+  assert.match(mobileNav, /\/leads/);
+  assert.match(mobileNav, /Share vCard/);
+});
+
 test('mobile docs and html preserve signed-in identity and Share vCard', () => {
   const readme = readFileSync('MOBILE_README.md', 'utf8');
   const dcc = readFileSync('public/internal-dcc/index.html', 'utf8');
