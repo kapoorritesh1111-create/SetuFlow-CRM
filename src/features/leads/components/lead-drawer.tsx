@@ -2261,6 +2261,7 @@ export function LeadDrawer({
           }}
           disableSubmit={isEditingExistingLead && !hasLeadChanges}
           submitLabel={isFastFieldMode ? 'Save contact' : undefined}
+          quickScanStatus={isQuickMode && !isEditingExistingLead ? quickScanStatus : undefined}
         />
       }
     >

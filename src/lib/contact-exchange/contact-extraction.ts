@@ -220,6 +220,7 @@ export async function extractContactSource(args: ExtractContactSourceArgs): Prom
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Live OCR extraction failed.';
+      console.error('[mobile-contact-scan] live OCR extraction failed', { acceptedSourceKind, fileType, filename: args.filename, message });
       parsed = { ...parsed, notes: [`Live OCR extraction could not complete: ${message}`, ...parsed.notes] };
     }
   }

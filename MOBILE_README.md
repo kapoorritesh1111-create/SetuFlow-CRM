@@ -456,3 +456,7 @@ The mobile card scanner now treats a live OCR result as mandatory for camera/ima
 For best camera results, capture the full card in focus, avoid glare, keep the card flat, and use Upload file for screenshots or images already saved in the photo library. The scanner follows a modern OCR pipeline: image preparation, live vision OCR, structured field mapping, deterministic fallback from raw text, and explicit user review before save.
 
 The vCard share/download flow now uses the public-card URL contract (`name`, `org`, `role`, `email`, `phone`) so downloaded contacts preserve the user's real name and saved My Card phone settings.
+
+### PASS31 mobile camera scan recovery
+
+PASS31 hardens live card scan for investor demos. It always sends JPEG to the server for image scans, keeps uploads under the Vercel function payload limit, runs high-detail OpenAI vision extraction, and retries through Chat Vision if the Responses vision call fails. The Quick Add Lead footer now mirrors scan progress so users can see the scan lifecycle after the camera closes.

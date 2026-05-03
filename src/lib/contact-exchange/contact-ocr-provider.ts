@@ -56,6 +56,17 @@ type OpenAiStructuredResponse = {
   };
 };
 
+type OpenAiChatCompletionResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string | null;
+    };
+  }>;
+  error?: {
+    message?: string;
+  };
+};
+
 type GoogleVisionAnnotateResponse = {
   responses?: Array<{
     fullTextAnnotation?: { text?: string };
@@ -169,6 +180,7 @@ function buildUserContent(args: ExtractContactWithOcrArgs, dataUrl: string) {
     content.push({
       type: 'input_image',
       image_url: dataUrl,
+      detail: 'high',
     });
   }
 
@@ -338,6 +350,51 @@ async function callOpenAiResponsesApi(args: ExtractContactWithOcrArgs, dataUrl: 
   return normalizeDraft(JSON.parse(jsonText));
 }
 
+async function callOpenAiChatVisionApi(args: ExtractContactWithOcrArgs, dataUrl: string) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured for contact scan OCR. Add it to the production deployment environment and redeploy.');
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_CONTACT_SCAN_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: buildExtractionInstructions(args, 'vision'),
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Read this business card or contact document and return CRM lead fields as JSON only.' },
+            { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
+            ...(args.assistText?.trim() ? [{ type: 'text', text: `Operator assist text:
+${args.assistText.trim()}` }] : []),
+          ],
+        },
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: CONTACT_EXTRACTION_SCHEMA,
+      },
+      max_tokens: 1400,
+    }),
+  });
+
+  const payload = (await response.json()) as OpenAiChatCompletionResponse;
+  if (!response.ok) {
+    throw new Error(payload.error?.message || `OpenAI chat vision OCR request failed with status ${response.status}.`);
+  }
+
+  const jsonText = payload.choices?.[0]?.message?.content?.trim() || '';
+  if (!jsonText) throw new Error('OpenAI chat vision OCR response did not include structured output text.');
+  return normalizeDraft(JSON.parse(jsonText));
+}
+
 async function callOpenAiTextMapper(args: ExtractContactWithOcrArgs, rawText: string) {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) throw new Error('OPENAI_API_KEY is not configured for contact scan field mapping.');
@@ -445,10 +502,25 @@ async function extractWithOpenAiVision(args: ExtractContactWithOcrArgs, buffer: 
   const dataUrl = fileType === 'application/pdf'
     ? `data:application/pdf;base64,${buffer.toString('base64')}`
     : `data:${fileType || 'image/jpeg'};base64,${buffer.toString('base64')}`;
-  const draft = await callOpenAiResponsesApi(args, dataUrl);
+  let draft: ContactOcrProviderDraft;
+  let modelSuffix = providerLabel === 'openai-vision' ? 'vision-direct' : 'responses';
+  try {
+    draft = await callOpenAiResponsesApi(args, dataUrl);
+  } catch (responsesError) {
+    try {
+      draft = await callOpenAiChatVisionApi(args, dataUrl);
+      modelSuffix = 'chat-vision-fallback';
+      const message = responsesError instanceof Error ? responsesError.message : 'Responses API vision path failed.';
+      draft.warnings = [...draft.warnings, `Primary vision path recovered by chat fallback: ${message}`];
+    } catch (chatError) {
+      const responseMessage = responsesError instanceof Error ? responsesError.message : 'Responses API vision path failed.';
+      const chatMessage = chatError instanceof Error ? chatError.message : 'Chat vision fallback failed.';
+      throw new Error(`OpenAI image reading failed. Responses: ${responseMessage} Chat fallback: ${chatMessage}`);
+    }
+  }
   return {
     provider: providerLabel,
-    model: providerLabel === 'openai-vision' ? `${OPENAI_CONTACT_SCAN_MODEL} vision-direct` : OPENAI_CONTACT_SCAN_MODEL,
+    model: providerLabel === 'openai-vision' ? `${OPENAI_CONTACT_SCAN_MODEL} ${modelSuffix}` : `${OPENAI_CONTACT_SCAN_MODEL} ${modelSuffix}`,
     draft,
   };
 }

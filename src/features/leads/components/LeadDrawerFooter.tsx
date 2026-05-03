@@ -25,6 +25,7 @@ interface LeadDrawerFooterProps {
   wizard?: WizardFooterMeta;
   disableSubmit?: boolean;
   submitLabel?: string;
+  quickScanStatus?: { tone: 'idle' | 'loading' | 'success' | 'error'; message: string };
 }
 
 export default function LeadDrawerFooter({
@@ -39,6 +40,7 @@ export default function LeadDrawerFooter({
   wizard,
   disableSubmit = false,
   submitLabel,
+  quickScanStatus,
 }: LeadDrawerFooterProps) {
   const isFinalStep = wizard ? wizard.activeStepIndex === wizard.totalSteps - 1 : true;
 
@@ -65,6 +67,24 @@ export default function LeadDrawerFooter({
               ))}
             </div>
           </div>
+        </div>
+      ) : null}
+      {quickScanStatus?.message ? (
+        <div
+          className={[
+            'rounded-2xl border px-4 py-3 text-sm font-semibold',
+            quickScanStatus.tone === 'error'
+              ? 'border-rose-200 bg-rose-50 text-rose-700'
+              : quickScanStatus.tone === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : quickScanStatus.tone === 'loading'
+                  ? 'border-sky-200 bg-sky-50 text-sky-800'
+                  : 'border-slate-200 bg-slate-50 text-slate-700',
+          ].join(' ')}
+          aria-live="polite"
+        >
+          {quickScanStatus.tone === 'loading' ? 'Scanning card… ' : quickScanStatus.tone === 'success' ? 'Scan complete. ' : quickScanStatus.tone === 'error' ? 'Scan needs attention. ' : ''}
+          {quickScanStatus.message}
         </div>
       ) : null}
       {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}

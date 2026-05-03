@@ -1,9 +1,9 @@
 export const MOBILE_SCAN_MAX_ORIGINAL_IMAGE_BYTES = 10 * 1024 * 1024;
 export const MOBILE_SCAN_MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
 export const MOBILE_SCAN_MAX_PDF_UPLOAD_BYTES = 3 * 1024 * 1024;
-export const MOBILE_SCAN_MAX_IMAGE_EDGE = 1600;
-export const MOBILE_SCAN_MIN_IMAGE_QUALITY = 0.58;
-export const MOBILE_SCAN_INITIAL_IMAGE_QUALITY = 0.82;
+export const MOBILE_SCAN_MAX_IMAGE_EDGE = 2048;
+export const MOBILE_SCAN_MIN_IMAGE_QUALITY = 0.56;
+export const MOBILE_SCAN_INITIAL_IMAGE_QUALITY = 0.86;
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) {
   return new Promise<Blob>((resolve, reject) => {
@@ -26,9 +26,7 @@ export async function prepareMobileScanFile(file: File): Promise<{ file: File; c
     throw new Error('This photo is too large for mobile scan. Retake the photo closer to the card or choose an image under 10 MB.');
   }
 
-  if (file.size <= MOBILE_SCAN_MAX_UPLOAD_BYTES) {
-    return { file, compressed: false, note: 'Photo is ready for scan.' };
-  }
+  const shouldTranscode = file.type !== 'image/jpeg' || file.size > MOBILE_SCAN_MAX_UPLOAD_BYTES;
 
   const bitmap = await createImageBitmap(file);
   try {
@@ -55,10 +53,15 @@ export async function prepareMobileScanFile(file: File): Promise<{ file: File; c
 
     const optimizedName = file.name.replace(/\.[^.]+$/, '') || 'business-card';
     const optimizedFile = new File([blob], `${optimizedName}-mobile-scan.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
+    const originalKb = Math.round(file.size / 1024);
+    const optimizedKb = Math.round(optimizedFile.size / 1024);
+    const wasConverted = file.type !== 'image/jpeg';
     return {
       file: optimizedFile,
-      compressed: true,
-      note: `Photo optimized for scan (${Math.round(file.size / 1024)} KB → ${Math.round(optimizedFile.size / 1024)} KB).`,
+      compressed: shouldTranscode || wasConverted,
+      note: wasConverted
+        ? `Photo converted to JPEG for card scan (${originalKb} KB → ${optimizedKb} KB).`
+        : `Photo optimized for card scan (${originalKb} KB → ${optimizedKb} KB).`,
     };
   } finally {
     bitmap.close?.();

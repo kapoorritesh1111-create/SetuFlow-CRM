@@ -49,9 +49,14 @@ export async function POST(request: NextRequest) {
 
     const isImageSource = source instanceof File && String(fileType).startsWith('image/');
     if (requireOcr && isImageSource && extraction.boundary !== 'server_image_ocr_live') {
+      const debugNote = Array.isArray(extraction.notes)
+        ? extraction.notes.find((note: string) => note.includes('Live OCR extraction could not complete'))
+        : '';
       return NextResponse.json({
         ok: false,
-        error: 'The photo reached SETU Flow, but live card reading did not complete. Retake the card closer and flatter, or try Upload file. If this repeats, check the OCR model logs.',
+        error: debugNote
+          ? `The photo reached SETU Flow, but card reading failed: ${debugNote.replace('Live OCR extraction could not complete: ', '')}`
+          : 'The photo reached SETU Flow, but live card reading did not complete. Retake the card closer and flatter, or try Upload file. If this repeats, check the OCR model logs.',
         extraction,
       }, { status: 422 });
     }

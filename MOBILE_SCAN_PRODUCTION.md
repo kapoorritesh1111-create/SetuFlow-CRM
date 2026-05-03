@@ -106,3 +106,14 @@ PDF scan can continue to use the existing path because it already works well. PA
 - If readiness says `openai-vision` but scan fails: check Vercel function logs for `/api/mobile/contact-scan` and confirm `OPENAI_API_KEY` is valid.
 - If fields are still weak: retake closer and flatter, avoid glare, and make the card fill most of the photo.
 - If scan fills no useful fields: the app should show a clear retake/upload message instead of saving garbage values.
+
+## PASS31 camera-photo fix
+
+If `/api/mobile/contact-scan` returns `422` while readiness is green, deploy PASS31. PASS31 keeps `CONTACT_SCAN_PROVIDER=openai-vision`, but changes the client and server scan path:
+
+1. Camera/image files are converted to JPEG before upload, so iPhone/Android camera formats do not fail the OpenAI image endpoint.
+2. OpenAI image reading uses high detail for business-card text.
+3. If the primary Responses API vision call fails, the route retries through Chat Vision with the same schema.
+4. The sticky Quick Add Lead footer shows scan progress and errors without needing to press Cancel.
+
+After deployment, retest with a real photo and then check Vercel function logs for `/api/mobile/contact-scan` only if the UI still shows an error. The error should now include the provider failure detail.

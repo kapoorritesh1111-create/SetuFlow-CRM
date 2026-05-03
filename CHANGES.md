@@ -1,3 +1,11 @@
+# PASS31 — camera scan 422 recovery and visible scan progress
+
+- Fixed the most likely cause of the production `422` camera scan failure: phone camera images can arrive as formats or MIME types that the OpenAI image endpoint does not accept directly. Mobile image scan now always transcodes image captures/uploads to JPEG before posting to `/api/mobile/contact-scan`, while preserving the 3 MB server upload limit.
+- Added high-detail image reading for business cards and a second OpenAI Chat Vision fallback if the primary Responses API vision path fails. This keeps the investor-demo path on the existing OpenAI key without requiring a hosted OCR server.
+- Improved `/api/mobile/contact-scan` failure details and server logs so the next production error tells us the actual provider failure instead of only showing the generic live OCR boundary error.
+- Added scan progress to the sticky Quick Add Lead footer so users can see that the camera/file was received and is being scanned without pressing Cancel.
+- Added PASS31 regression tests for JPEG transcoding, OpenAI fallback, and visible scan progress.
+
 # 2026-05-03 - PASS30 OpenAI Vision Investor Demo Scanner
 
 ## Summary
