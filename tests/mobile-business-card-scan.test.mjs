@@ -64,7 +64,7 @@ test('mobile Share vCard uses desktop-grade share system actions', () => {
 test('quick add lead uses explicit mobile contact-scan API and visible status path', () => {
   const drawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
   const route = readFileSync('src/app/api/mobile/contact-scan/route.ts', 'utf8');
-  assert.match(drawer, /fetch\('\/api\/mobile\/contact-scan'/);
+  assert.match(drawer, /fetch\([\"']\/api\/mobile\/contact-scan[\"']/);
   assert.match(drawer, /Reading card…/);
   assert.match(drawer, /Card details added\. Please review before saving/);
   assert.match(route, /extractContactSource/);

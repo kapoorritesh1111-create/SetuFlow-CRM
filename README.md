@@ -55,7 +55,9 @@ Quick Add Lead is the fast capture surface for mobile and desktop. It supports m
 
 In the current investor-demo production mode, camera photos are read directly with OpenAI Vision and then mapped into the visible Quick Add Lead form for review before save. Uploaded PDFs continue to use the existing file scan path.
 
-The form supports buyer and supplier capture, company/contact fields, country, title, email, phone, WhatsApp, source/event details, owner, deal estimate, product interest, and follow-up context.
+The form supports buyer and supplier capture, company/contact fields, country, title, email, phone, WhatsApp, source/event details, owner, deal estimate, and follow-up context.
+
+Field capture is intentionally flexible for trade-show work. Operators can capture a specific product, an entire category, or a new buyer/supplier request that is not yet in the catalog. Voice notes are supported in browsers with speech recognition so teams can dictate meeting context immediately after scanning a card.
 
 Production scan provider mode:
 

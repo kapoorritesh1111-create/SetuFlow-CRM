@@ -24,5 +24,5 @@ test('PASS31 scan progress is visible in the sticky lead footer', () => {
   const drawer = read('src/features/leads/components/lead-drawer.tsx');
   assert.match(footer, /quickScanStatus\?:/);
   assert.match(footer, /Reading card/);
-  assert.match(drawer, /quickScanStatus=\{isQuickMode && !isEditingExistingLead \? quickScanStatus : undefined\}/);
+  assert.match(drawer, /quickScanStatus=\{\s*isQuickMode && !isEditingExistingLead\s*\?\s*quickScanStatus\s*:\s*undefined\s*\}/s);
 });

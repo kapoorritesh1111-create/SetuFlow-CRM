@@ -9,7 +9,7 @@ test('PASS28: mobile quick scan requires live OCR and never accepts generic imag
   const route = read('src/app/api/mobile/contact-scan/route.ts');
   const parser = read('src/lib/contact-exchange/contact-parser.ts');
 
-  assert.match(drawer, /formData\.set\('require_ocr', 'true'\)/, 'camera/image scans must request live OCR');
+  assert.match(drawer, /formData\.set\([\"']require_ocr[\"'], [\"']true[\"']\)/, 'camera/image scans must request live OCR');
   assert.match(drawer, /genericOnlyCompany/, 'drawer must reject Image\/Photo\/Scan as fake company names');
   assert.match(route, /extraction\.boundary !== 'server_image_ocr_live'/, 'API must reject image scans that did not complete live OCR');
   assert.match(parser, /isGenericScanFilename/, 'parser must avoid using generic camera filenames as company fallback');

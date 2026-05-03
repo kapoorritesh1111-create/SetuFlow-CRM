@@ -1,3 +1,12 @@
+# PASS35 — mobile field capture polish
+
+- Simplified the mobile Home surface so it reads like an operational SaaS app instead of a prototype/marketing page.
+- Removed explanatory copy from mobile CTA cards and kept actions short: Leads, Buyer, Supplier, Orders.
+- Added Quick Add Lead interest modes for Product, Category, and New Request/New Supply so field teams can capture catalog, category, and portfolio-expansion opportunities without forcing SKU selection.
+- Added browser-based dictated notes in Quick Add Lead for trade-show and event conversations without adding a new paid speech service.
+- Preserved the working OpenAI Vision business-card scan path and the existing PDF scan path.
+- Added regression coverage for mobile home copy, flexible interests, and voice-note capture.
+
 
 ## PASS33 — SaaS polish, contact actions, and documentation cleanup
 

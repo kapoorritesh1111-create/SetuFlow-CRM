@@ -20,6 +20,6 @@ test('Quick Add Lead footer is not hidden behind mobile bottom tabs and does not
   assert.match(rightDrawer, /z-\[120\]/);
   assert.match(footer, /wizard && wizard\.canGoBack \?/);
   assert.doesNotMatch(footer, /disabled=\{!wizard\.canGoBack \|\| isPending\}/);
-  assert.match(drawer, /wizard=\{isQuickMode && !isEditingExistingLead \? undefined : \{/);
-  assert.match(footer, /isQuickMode \? '✓ Save lead'/);
+  assert.match(drawer, /wizard=\{\s*isQuickMode && !isEditingExistingLead\s*\?\s*undefined\s*:\s*\{/s);
+  assert.match(footer, /isQuickMode \? [\"']✓ Save lead[\"']/);
 });
