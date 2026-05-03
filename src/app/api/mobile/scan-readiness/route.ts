@@ -1,3 +1,5 @@
+import { getConfiguredContactOcrProviderState } from '@/lib/contact-exchange/contact-ocr-provider';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -26,13 +28,14 @@ function getOrigin(request: Request) {
 
 export async function GET(request: Request) {
   const { url, proto, secure } = getOrigin(request);
-  const hasOpenAiKey = maskPresent(process.env.OPENAI_API_KEY);
   const hasSupabaseUrl = maskPresent(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const hasSupabaseAnon = maskPresent(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   const hasSupabaseService = maskPresent(process.env.SUPABASE_SERVICE_ROLE_KEY);
   const mobileFlag = process.env.NEXT_PUBLIC_FEATURE_MOBILE_APP_V1 ?? process.env.FEATURE_MOBILE_APP_V1;
   const mobileEnabled = mobileFlag === undefined ? true : truthy(mobileFlag);
-  const model = process.env.OPENAI_CONTACT_SCAN_MODEL || 'gpt-4.1-mini';
+  const providerState = getConfiguredContactOcrProviderState();
+  const providerOk = providerState.activeProvider !== 'none';
+  const wantsGoogle = providerState.requestedProvider === 'google-vision';
 
   const checks: ReadinessCheck[] = [
     {
@@ -44,12 +47,32 @@ export async function GET(request: Request) {
         : 'Camera capture requires HTTPS in production. Localhost is allowed for development.',
     },
     {
-      id: 'openai-ocr',
-      label: 'Business-card OCR provider',
-      ok: hasOpenAiKey,
-      detail: hasOpenAiKey
-        ? `OPENAI_API_KEY is present. Contact scan model: ${model}.`
-        : 'OPENAI_API_KEY is missing. Image/PDF uploads will accept files but cannot auto-read text without assist text.',
+      id: 'contact-scan-provider',
+      label: 'Active card scanner',
+      ok: providerOk,
+      detail: providerOk
+        ? `Active provider: ${providerState.activeProvider}. Requested: ${providerState.requestedProvider}. Fallback: ${providerState.fallbackProvider}.`
+        : 'No OCR provider is configured. Set CONTACT_SCAN_PROVIDER plus GOOGLE_CLOUD_VISION_API_KEY or OPENAI_API_KEY, then redeploy.',
+    },
+    {
+      id: 'google-vision-ocr',
+      label: 'Google Vision photo OCR',
+      ok: !wantsGoogle || providerState.googleConfigured,
+      detail: providerState.googleConfigured
+        ? 'GOOGLE_CLOUD_VISION_API_KEY is present. Photo scans can use Google Vision TEXT_DETECTION.'
+        : wantsGoogle
+          ? 'CONTACT_SCAN_PROVIDER is google-vision, but GOOGLE_CLOUD_VISION_API_KEY is missing or empty.'
+          : 'Google Vision is not the requested primary provider for this deployment.',
+    },
+    {
+      id: 'openai-field-mapper',
+      label: 'OpenAI field mapping / fallback',
+      ok: providerState.fallbackProvider !== 'openai' || providerState.openAiConfigured,
+      detail: providerState.openAiConfigured
+        ? `OPENAI_API_KEY is present. Contact field model: ${providerState.openAiModel}.`
+        : providerState.fallbackProvider === 'openai'
+          ? 'CONTACT_SCAN_FALLBACK_PROVIDER is openai, but OPENAI_API_KEY is missing.'
+          : 'OpenAI fallback is disabled for this deployment.',
     },
     {
       id: 'mobile-flag',
@@ -94,7 +117,11 @@ export async function GET(request: Request) {
       maxServerUploadBytes: 3 * 1024 * 1024,
       maxPdfBytes: 3 * 1024 * 1024,
       capture: 'environment',
-      model,
+      requestedProvider: providerState.requestedProvider,
+      activeProvider: providerState.activeProvider,
+      fallbackProvider: providerState.fallbackProvider,
+      model: providerState.activeProvider.includes('google-vision') ? providerState.googleModel : providerState.openAiModel,
+      openAiModel: providerState.openAiModel,
     },
     checks,
   });

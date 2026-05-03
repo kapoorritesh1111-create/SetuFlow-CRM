@@ -1,3 +1,24 @@
+# 2026-05-03 - PASS29 Google Vision Photo OCR Activation
+
+## Summary
+
+Added true Google Cloud Vision support for mobile business-card photo scans. The scanner can now use `CONTACT_SCAN_PROVIDER=google-vision` with `GOOGLE_CLOUD_VISION_API_KEY`, then use OpenAI as a field-mapping fallback. The scan-readiness endpoint now reports the requested provider, active provider, and fallback provider so production configuration is verifiable.
+
+## Files changed
+
+- `src/lib/contact-exchange/contact-ocr-provider.ts` - added Google Vision TEXT_DETECTION, OpenAI raw-text field mapping, provider selection, and provider readiness state.
+- `src/app/api/mobile/scan-readiness/route.ts` - now reports Google Vision / OpenAI provider status instead of only OpenAI.
+- `src/lib/contact-exchange/contact-parser.ts` - improved OCR parsing for spaced-letter company logos from business cards.
+- `.env.production.example` - added Google Vision startup scan variables.
+- `MOBILE_SCAN_PRODUCTION.md` - updated exact Vercel/Google setup and verification steps.
+- `tests/mobile-pass29-google-vision-provider.test.mjs` - added regression coverage for Google Vision provider activation.
+
+## Verification
+
+Run `npm test`. After deploy, `/api/mobile/scan-readiness` should show `requestedProvider: google-vision` and `activeProvider: google-vision+openai` when Google and OpenAI keys are present.
+
+---
+
 # 2026-05-03 - PASS28 mobile OCR accuracy, vCard identity, and quote mobile handoff
 
 ## Summary

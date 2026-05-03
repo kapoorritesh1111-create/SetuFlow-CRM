@@ -1,12 +1,23 @@
 #!/usr/bin/env node
+const requestedProvider = String(process.env.CONTACT_SCAN_PROVIDER || 'openai').trim().toLowerCase();
+const fallbackProvider = String(process.env.CONTACT_SCAN_FALLBACK_PROVIDER || 'openai').trim().toLowerCase();
+const usingGoogleVision = requestedProvider === 'google-vision';
+
 const required = [
-  ['OPENAI_API_KEY', 'Required for automatic business-card OCR from camera/file uploads.'],
+  ...(usingGoogleVision
+    ? [['GOOGLE_CLOUD_VISION_API_KEY', 'Required because CONTACT_SCAN_PROVIDER=google-vision for phone photo OCR.']]
+    : [['OPENAI_API_KEY', 'Required because CONTACT_SCAN_PROVIDER is not google-vision; OpenAI will do image/PDF OCR.']]),
+  ...(fallbackProvider === 'openai'
+    ? [['OPENAI_API_KEY', 'Required because CONTACT_SCAN_FALLBACK_PROVIDER=openai for CRM field mapping/fallback.']]
+    : []),
   ['NEXT_PUBLIC_SUPABASE_URL', 'Required for Supabase client/auth.'],
   ['NEXT_PUBLIC_SUPABASE_ANON_KEY', 'Required for Supabase client/auth.'],
   ['SUPABASE_SERVICE_ROLE_KEY', 'Required for server-side contact scan lead save actions.'],
 ];
 
 const recommended = [
+  ['CONTACT_SCAN_PROVIDER', 'Recommended explicit scanner provider. Use google-vision for low-cost photo OCR.'],
+  ['CONTACT_SCAN_FALLBACK_PROVIDER', 'Recommended explicit fallback provider. Use openai for field mapping.'],
   ['OPENAI_CONTACT_SCAN_MODEL', 'Recommended explicit model; defaults to gpt-4.1-mini.'],
   ['NEXT_PUBLIC_APP_URL', 'Recommended for stable public card / vCard links.'],
   ['NEXT_PUBLIC_FEATURE_MOBILE_APP_V1', 'Recommended explicit mobile rollout flag.'],
@@ -18,6 +29,8 @@ function has(name) {
 
 let failed = false;
 console.log('SETU Flow mobile scan production readiness');
+console.log(`INFO CONTACT_SCAN_PROVIDER=${requestedProvider || 'openai'}`);
+console.log(`INFO CONTACT_SCAN_FALLBACK_PROVIDER=${fallbackProvider || 'openai'}`);
 for (const [name, reason] of required) {
   const ok = has(name);
   console.log(`${ok ? 'PASS' : 'FAIL'} ${name} - ${reason}`);
@@ -29,7 +42,7 @@ for (const [name, reason] of recommended) {
 }
 
 if (process.env.AI_PROVIDER && process.env.AI_PROVIDER !== 'openai') {
-  console.log('WARN AI_PROVIDER is not openai. Contact-scan OCR now uses OPENAI_API_KEY directly, but global AI routes may use another provider.');
+  console.log('WARN AI_PROVIDER is not openai. Contact-scan OCR uses its own CONTACT_SCAN_PROVIDER / CONTACT_SCAN_FALLBACK_PROVIDER settings.');
 }
 
 if (failed) {

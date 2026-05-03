@@ -1,4 +1,4 @@
-import { parseContactText, type ContactSourceProfile } from '@/lib/contact-exchange/contact-parser';
+import { parseContactText, type ContactSourceProfile, type ExtractionConfidence } from '@/lib/contact-exchange/contact-parser';
 
 export type ProviderFieldConfidence = {
   contactName: 'high' | 'medium' | 'low';
@@ -29,7 +29,7 @@ export type ContactOcrProviderDraft = {
 };
 
 export type ContactOcrProviderResult = {
-  provider: 'openai';
+  provider: 'openai' | 'google-vision' | 'google-vision+openai';
   model: string;
   draft: ContactOcrProviderDraft;
 };
@@ -56,7 +56,17 @@ type OpenAiStructuredResponse = {
   };
 };
 
+type GoogleVisionAnnotateResponse = {
+  responses?: Array<{
+    fullTextAnnotation?: { text?: string };
+    textAnnotations?: Array<{ description?: string }>;
+    error?: { message?: string };
+  }>;
+  error?: { message?: string };
+};
+
 const OPENAI_CONTACT_SCAN_MODEL = process.env.OPENAI_CONTACT_SCAN_MODEL || 'gpt-4.1-mini';
+const GOOGLE_VISION_MODEL_LABEL = 'google-cloud-vision-text-detection';
 
 const CONTACT_EXTRACTION_SCHEMA = {
   name: 'contact_scan_extraction',
@@ -98,23 +108,40 @@ const CONTACT_EXTRACTION_SCHEMA = {
   },
 } as const;
 
-function isOpenAiVisionConfigured() {
+function getContactScanProvider() {
+  const provider = String(process.env.CONTACT_SCAN_PROVIDER || 'openai').trim().toLowerCase();
+  return provider === 'google-vision' || provider === 'openai' ? provider : 'openai';
+}
+
+function getContactScanFallbackProvider() {
+  const provider = String(process.env.CONTACT_SCAN_FALLBACK_PROVIDER || 'openai').trim().toLowerCase();
+  return provider === 'openai' || provider === 'none' || provider === 'off' ? provider : 'openai';
+}
+
+function isOpenAiConfigured() {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
-function buildExtractionInstructions(args: ExtractContactWithOcrArgs) {
+function isGoogleVisionConfigured() {
+  return Boolean(process.env.GOOGLE_CLOUD_VISION_API_KEY?.trim());
+}
+
+function buildExtractionInstructions(args: ExtractContactWithOcrArgs, mode: 'vision' | 'text' = 'vision') {
   const filename = String(args.filename ?? '').trim() || 'contact source';
   const fileType = String(args.fileType ?? '').trim() || 'application/octet-stream';
   const assistText = String(args.assistText ?? '').trim();
   const sourceMode = args.sourceMode === 'camera' ? 'camera capture' : args.sourceMode === 'manual' ? 'manual assist text' : 'upload';
 
   return [
-    'Extract business contact information from the provided source into JSON.',
+    mode === 'text'
+      ? 'Extract business contact information from OCR text into JSON.'
+      : 'Extract business contact information from the provided source into JSON.',
     'Classify the source profile as business_card, screenshot, scan_pdf, or generic.',
-    'Read the full image or PDF carefully. Return only information that is visibly present or directly inferable from layout labels.',
+    'Return only information that is visibly present in the OCR/source text or directly inferable from layout labels.',
     'Do not invent values. Use empty strings or empty arrays when a field is missing.',
     'Prefer the primary person and company shown in the source. If multiple options exist, choose the best lead/contact interpretation.',
     'Keep phone numbers as shown. Keep websites and emails exact. Put contextual leftovers into notes.',
+    'For business cards, do not confuse taglines, dates, file names, or decorative words with company names.',
     'Provide fieldConfidence for each mapped CRM field. Use high only when the value is clearly visible, medium when it is likely but layout/noise could cause ambiguity, and low when the value is tentative.',
     'Use warnings for anything that may need human review, especially multiple similar names, duplicate companies, or uncertain OCR characters.',
     `Source filename: ${filename}`,
@@ -189,6 +216,12 @@ function defaultFieldConfidence(): ProviderFieldConfidence {
   };
 }
 
+function confidenceFromUi(value: ExtractionConfidence | undefined): 'high' | 'medium' | 'low' {
+  if (value === 'High') return 'high';
+  if (value === 'Medium') return 'medium';
+  return 'low';
+}
+
 function normalizeDraft(input: unknown): ContactOcrProviderDraft {
   const record = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>;
   const rawSourceProfile = String(record.sourceProfile ?? '').toLowerCase();
@@ -225,7 +258,41 @@ function normalizeDraft(input: unknown): ContactOcrProviderDraft {
   };
 }
 
-
+function draftFromParsedRawText(rawText: string, args: ExtractContactWithOcrArgs): ContactOcrProviderDraft {
+  const parsed = parseContactText(rawText, {
+    filename: args.filename,
+    sourceMode: args.sourceMode,
+    fileType: args.fileType,
+  });
+  const fieldMap = new Map(parsed.fields.map((field) => [field.label, field.confidence]));
+  return {
+    contactName: parsed.draft.contactName,
+    companyName: parsed.draft.companyName,
+    jobTitle: parsed.draft.jobTitle,
+    emails: parsed.draft.email ? [parsed.draft.email] : [],
+    phones: [parsed.draft.phone, parsed.draft.phoneSecondary].filter(Boolean),
+    websites: parsed.draft.website ? [parsed.draft.website] : [],
+    address: parsed.draft.notes.match(/Address:\s*([^\n]+)/i)?.[1]?.trim() || '',
+    notes: parsed.draft.notes,
+    rawText,
+    confidence: parsed.draft.contactName || parsed.draft.companyName || parsed.draft.email || parsed.draft.phone ? 'medium' : 'low',
+    sourceProfile: parsed.sourceProfile === 'generic' ? 'business_card' : parsed.sourceProfile,
+    fieldConfidence: {
+      contactName: confidenceFromUi(fieldMap.get('Full name')),
+      companyName: confidenceFromUi(fieldMap.get('Company')),
+      jobTitle: confidenceFromUi(fieldMap.get('Role')),
+      email: confidenceFromUi(fieldMap.get('Email')),
+      phone: confidenceFromUi(fieldMap.get('Phone')),
+      phoneSecondary: confidenceFromUi(fieldMap.get('Phone 2')),
+      website: confidenceFromUi(fieldMap.get('Website')),
+      address: parsed.draft.notes.includes('Address:') ? 'medium' : 'low',
+      notes: confidenceFromUi(fieldMap.get('Notes')),
+    },
+    warnings: parsed.draft.contactName || parsed.draft.companyName || parsed.draft.email || parsed.draft.phone
+      ? []
+      : ['Google Vision OCR returned text, but deterministic field mapping found limited structured lead details.'],
+  };
+}
 
 async function callOpenAiResponsesApi(args: ExtractContactWithOcrArgs, dataUrl: string) {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -242,7 +309,7 @@ async function callOpenAiResponsesApi(args: ExtractContactWithOcrArgs, dataUrl: 
       input: [
         {
           role: 'system',
-          content: [{ type: 'input_text', text: buildExtractionInstructions(args) }],
+          content: [{ type: 'input_text', text: buildExtractionInstructions(args, 'vision') }],
         },
         {
           role: 'user',
@@ -269,22 +336,163 @@ async function callOpenAiResponsesApi(args: ExtractContactWithOcrArgs, dataUrl: 
   return normalizeDraft(JSON.parse(jsonText));
 }
 
-export async function extractContactWithOcrProvider(args: ExtractContactWithOcrArgs): Promise<ContactOcrProviderResult | null> {
-  const fileType = String(args.fileType ?? '').trim();
-  if (!fileType || (!fileType.startsWith('image/') && fileType !== 'application/pdf')) return null;
-  if (!isOpenAiVisionConfigured()) {
-    return null;
+async function callOpenAiTextMapper(args: ExtractContactWithOcrArgs, rawText: string) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured for contact scan field mapping.');
+
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_CONTACT_SCAN_MODEL,
+      input: [
+        {
+          role: 'system',
+          content: [{ type: 'input_text', text: buildExtractionInstructions(args, 'text') }],
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'input_text', text: `OCR text from business card/photo:\n\n${rawText}` },
+            ...(args.assistText?.trim() ? [{ type: 'input_text', text: `Operator assist text:\n${args.assistText.trim()}` }] : []),
+          ],
+        },
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          ...CONTACT_EXTRACTION_SCHEMA,
+        },
+      },
+      max_output_tokens: 1200,
+    }),
+  });
+
+  const payload = (await response.json()) as OpenAiStructuredResponse;
+  if (!response.ok) {
+    throw new Error(payload.error?.message || `OpenAI contact field mapping failed with status ${response.status}.`);
+  }
+  const jsonText = getStructuredResponseText(payload);
+  if (!jsonText) throw new Error('OpenAI contact field mapping did not include structured output text.');
+  return normalizeDraft(JSON.parse(jsonText));
+}
+
+async function callGoogleVisionTextDetection(buffer: Buffer) {
+  const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY?.trim();
+  if (!apiKey) throw new Error('GOOGLE_CLOUD_VISION_API_KEY is not configured. Add it to Vercel Production and redeploy.');
+
+  const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${encodeURIComponent(apiKey)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requests: [
+        {
+          image: { content: buffer.toString('base64') },
+          features: [{ type: 'TEXT_DETECTION', maxResults: 1 }],
+          imageContext: {
+            languageHints: ['en', 'hi'],
+          },
+        },
+      ],
+    }),
+  });
+
+  const payload = (await response.json()) as GoogleVisionAnnotateResponse;
+  if (!response.ok) {
+    throw new Error(payload.error?.message || `Google Vision OCR request failed with status ${response.status}.`);
+  }
+  const first = payload.responses?.[0];
+  if (first?.error?.message) throw new Error(first.error.message);
+  const rawText = first?.fullTextAnnotation?.text || first?.textAnnotations?.[0]?.description || '';
+  if (!rawText.trim()) throw new Error('Google Vision OCR did not find readable text in this photo. Retake closer, flatter, and with less glare.');
+  return rawText.trim();
+}
+
+async function extractWithGoogleVision(args: ExtractContactWithOcrArgs, buffer: Buffer): Promise<ContactOcrProviderResult> {
+  const rawText = await callGoogleVisionTextDetection(buffer);
+  let draft = draftFromParsedRawText(rawText, args);
+  let provider: ContactOcrProviderResult['provider'] = 'google-vision';
+  const fallbackProvider = getContactScanFallbackProvider();
+
+  if (fallbackProvider === 'openai' && isOpenAiConfigured()) {
+    try {
+      draft = await callOpenAiTextMapper(args, rawText);
+      draft.rawText = draft.rawText || rawText;
+      provider = 'google-vision+openai';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'OpenAI field mapping failed after Google Vision OCR.';
+      draft = {
+        ...draft,
+        warnings: [...draft.warnings, `OpenAI field mapping fallback failed: ${message}`],
+      };
+    }
   }
 
-  const buffer = Buffer.from(await args.source.arrayBuffer());
+  return {
+    provider,
+    model: provider === 'google-vision+openai' ? `${GOOGLE_VISION_MODEL_LABEL} + ${OPENAI_CONTACT_SCAN_MODEL}` : GOOGLE_VISION_MODEL_LABEL,
+    draft,
+  };
+}
+
+async function extractWithOpenAiVision(args: ExtractContactWithOcrArgs, buffer: Buffer): Promise<ContactOcrProviderResult> {
+  const fileType = String(args.fileType ?? '').trim();
   const dataUrl = fileType === 'application/pdf'
     ? `data:application/pdf;base64,${buffer.toString('base64')}`
     : `data:${fileType || 'image/jpeg'};base64,${buffer.toString('base64')}`;
-
   const draft = await callOpenAiResponsesApi(args, dataUrl);
   return {
     provider: 'openai',
     model: OPENAI_CONTACT_SCAN_MODEL,
     draft,
+  };
+}
+
+export async function extractContactWithOcrProvider(args: ExtractContactWithOcrArgs): Promise<ContactOcrProviderResult | null> {
+  const fileType = String(args.fileType ?? '').trim();
+  if (!fileType || (!fileType.startsWith('image/') && fileType !== 'application/pdf')) return null;
+
+  const buffer = Buffer.from(await args.source.arrayBuffer());
+  const provider = getContactScanProvider();
+  const isImage = fileType.startsWith('image/');
+
+  if (provider === 'google-vision' && isImage && isGoogleVisionConfigured()) {
+    try {
+      return await extractWithGoogleVision(args, buffer);
+    } catch (error) {
+      const fallbackProvider = getContactScanFallbackProvider();
+      if (fallbackProvider === 'openai' && isOpenAiConfigured()) {
+        return extractWithOpenAiVision(args, buffer);
+      }
+      throw error;
+    }
+  }
+
+  if (!isOpenAiConfigured()) return null;
+  return extractWithOpenAiVision(args, buffer);
+}
+
+export function getConfiguredContactOcrProviderState() {
+  const provider = getContactScanProvider();
+  const fallbackProvider = getContactScanFallbackProvider();
+  const googleConfigured = isGoogleVisionConfigured();
+  const openAiConfigured = isOpenAiConfigured();
+  const activeProvider = provider === 'google-vision' && googleConfigured
+    ? (fallbackProvider === 'openai' && openAiConfigured ? 'google-vision+openai' : 'google-vision')
+    : openAiConfigured
+      ? 'openai'
+      : 'none';
+
+  return {
+    requestedProvider: provider,
+    fallbackProvider,
+    activeProvider,
+    googleConfigured,
+    openAiConfigured,
+    openAiModel: OPENAI_CONTACT_SCAN_MODEL,
+    googleModel: GOOGLE_VISION_MODEL_LABEL,
   };
 }

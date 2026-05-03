@@ -46,10 +46,18 @@ type LabeledFields = {
   consumed: Set<string>;
 };
 
+function normalizeOcrLine(line: string) {
+  const compact = line.replace(/\s+/g, ' ').trim();
+  // Many card logos are OCR'd as spaced letters like "O L I T I A".
+  // Collapse only short all-caps letter runs so company logos can map cleanly.
+  if (/^[A-Z](?:\s+[A-Z]){2,12}$/.test(compact)) return compact.replace(/\s+/g, '');
+  return compact;
+}
+
 function compactLines(input: string) {
   return input
     .split(/\r?\n/)
-    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .map(normalizeOcrLine)
     .filter(Boolean);
 }
 
