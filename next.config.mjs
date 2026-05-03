@@ -3,7 +3,7 @@ const nextConfig = {
   experimental: {
     webpackBuildWorker: false,
     serverActions: {
-      bodySizeLimit: '2mb'
+      bodySizeLimit: '4mb'
     }
   }
 };

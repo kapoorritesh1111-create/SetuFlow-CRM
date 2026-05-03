@@ -3,6 +3,7 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { extractContactScan, createLeadFromContactScanReview } from '@/features/leads/server/contact-scan-actions';
 import type { ContactServerExtractionResult } from '@/lib/contact-exchange/contact-extraction';
+import { prepareMobileScanFile, MOBILE_SCAN_MAX_ORIGINAL_IMAGE_BYTES, MOBILE_SCAN_MAX_PDF_UPLOAD_BYTES } from '@/features/mobile/lib/mobile-card-image';
 import { ThreeDIconOrb } from './icon-3d-orb';
 
 type Draft = {
@@ -53,6 +54,7 @@ async function tryBrowserTextDetection(file: File): Promise<string> {
 export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }: { initialLeadType?: 'buyer' | 'supplier'; eventId?: string | null }) {
   const [leadType, setLeadType] = useState<'buyer' | 'supplier'>(initialLeadType);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [scanFile, setScanFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [assistText, setAssistText] = useState('');
   const [extraction, setExtraction] = useState<ContactServerExtractionResult | null>(null);
@@ -64,7 +66,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
   const [createdLeadId, setCreatedLeadId] = useState('');
 
   const previewKind = useMemo(() => selectedFile?.type?.startsWith('image/') ? 'image' : selectedFile?.type === 'application/pdf' ? 'pdf' : 'none', [selectedFile]);
-  const canScan = Boolean(selectedFile || assistText.trim());
+  const canScan = Boolean(scanFile || assistText.trim());
   const canSave = hasDraftSignal(draft) && !isSaving;
 
   function updateField(field: keyof Draft, value: string) {
@@ -75,6 +77,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
   function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     setSelectedFile(file);
+    setScanFile(null);
     setExtraction(null);
     setDraft(draftFromExtraction(null));
     setError('');
@@ -82,7 +85,22 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     const nextPreview = file ? URL.createObjectURL(file) : '';
     setPreviewUrl(nextPreview);
-    setStatus(file ? 'Card photo ready. Tap Scan business card to extract details.' : 'Take or upload a business card photo.');
+    if (!file) {
+      setStatus('Take or upload a business card photo.');
+      return;
+    }
+    if (file.type.startsWith('image/') && file.size > MOBILE_SCAN_MAX_ORIGINAL_IMAGE_BYTES) {
+      setError('This photo is too large for mobile scan. Retake it closer to the card or choose an image under 10 MB.');
+      setStatus('This photo is too large for mobile scan. Retake it closer to the card or choose an image under 10 MB.');
+      return;
+    }
+    if (file.type === 'application/pdf' && file.size > MOBILE_SCAN_MAX_PDF_UPLOAD_BYTES) {
+      setError('This PDF is too large for mobile scan. Upload a PDF under 3 MB, or take a photo of the card instead.');
+      setStatus('This PDF is too large for mobile scan. Upload a PDF under 3 MB, or take a photo of the card instead.');
+      return;
+    }
+    setScanFile(file);
+    setStatus(`Card ready: ${file.name} (${Math.round(file.size / 1024)} KB). Tap Scan business card to extract details.`);
   }
 
   async function runScan() {
@@ -92,12 +110,20 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
     setStatus('Scanning card and reading contact details…');
     try {
       const formData = new FormData();
+      let uploadFile = scanFile;
+      if (selectedFile) {
+        setStatus('Preparing photo for secure mobile scan…');
+        const prepared = await prepareMobileScanFile(selectedFile);
+        uploadFile = prepared.file;
+        setScanFile(prepared.file);
+        if (prepared.compressed) setStatus(prepared.note);
+      }
       const browserText = selectedFile ? await tryBrowserTextDetection(selectedFile) : '';
       const combinedAssistText = [assistText.trim(), browserText].filter(Boolean).join('\n');
-      if (selectedFile) formData.set('source', selectedFile);
+      if (uploadFile) formData.set('source', uploadFile);
       if (combinedAssistText.trim()) formData.set('assist_text', combinedAssistText.trim());
       if (browserText && !assistText.trim()) setAssistText(browserText);
-      formData.set('source_mode', selectedFile ? 'camera' : 'manual');
+      formData.set('source_mode', uploadFile ? 'camera' : 'manual');
       const result = await extractContactScan(undefined, formData);
       if (result.error) throw new Error(result.error);
       if (!result.extraction) throw new Error('No scan result returned.');
@@ -175,7 +201,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
         <label className="mt-4 flex min-h-[156px] cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-blue-200 bg-blue-50/70 px-4 py-5 text-center dark:border-blue-900 dark:bg-blue-950/30">
           <span className="text-3xl">📇</span>
           <span className="mt-2 text-sm font-black text-slate-950 dark:text-white">Take or upload business card photo</span>
-          <span className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-300">Camera capture is enabled on mobile. Images and PDFs are accepted.</span>
+          <span className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-300">Camera capture is enabled on mobile. Large phone photos are optimized before scan.</span>
           <input type="file" accept="image/*,application/pdf" capture="environment" className="sr-only" onChange={onFileChange} data-mobile-card-scan-input />
         </label>
 

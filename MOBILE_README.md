@@ -63,6 +63,23 @@ The prototype shows both app treatments in Settings:
 
 Implementation should default to mobile system appearance and allow a manual override.
 
+
+## Production card scan reliability update
+
+The mobile scanner now optimizes large phone photos before sending them to the server. This keeps camera/file scan inside production request limits while preserving the user flow:
+
+```text
+Take photo -> optimize on device -> OCR scan -> prefill fields -> review -> save lead
+```
+
+Operational rules:
+
+- Original image photos can be up to 10 MB.
+- Images are converted to a mobile scan JPEG under roughly 3 MB before upload.
+- PDFs should be under 3 MB, or the user should take a photo of the card instead.
+- `next.config.mjs` uses a 4 MB Server Action body budget.
+- `/api/mobile/scan-readiness` now reports both original image and server upload limits.
+
 ## Engineering migration plan
 
 ### Phase 0: Prototype lock

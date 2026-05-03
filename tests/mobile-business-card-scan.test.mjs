@@ -11,7 +11,7 @@ test('mobile capture has a real business card scan flow wired to extraction and 
   assert.match(scanner, /capture="environment"/);
   assert.match(scanner, /extractContactScan/);
   assert.match(scanner, /createLeadFromContactScanReview/);
-  assert.match(scanner, /source_mode', selectedFile \? 'camera' : 'manual'/);
+  assert.match(scanner, /source_mode', uploadFile \? 'camera' : 'manual'/);
   assert.match(scanner, /data-mobile-scan-field="contactName"/);
   assert.match(scanner, /data-mobile-scan-field="companyName"/);
   assert.match(scanner, /data-mobile-scan-field="email"/);

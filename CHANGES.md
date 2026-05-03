@@ -1,3 +1,24 @@
+# 2026-05-03 - Mobile Business Card Scan Production Payload Fix
+
+## Summary
+
+Fixed the production-only business card scan failure path where environment readiness was green but live camera scans could still fail because phone photos exceeded Server Action / Vercel Function request payload limits.
+
+## Changes
+
+- Added client-side mobile image optimization before calling the contact scan action.
+- Added upload guardrails for original images, optimized scan uploads, and PDFs.
+- Increased Next Server Action body budget from 2 MB to 4 MB.
+- Updated `/api/mobile/scan-readiness` to report original image, server upload, and PDF limits.
+- Updated production scan docs and tests.
+
+## Verification
+
+- `npm test` covers the new mobile scan upload-size guardrail.
+- Desktop routes and desktop UI remain unchanged.
+
+---
+
 # 2026-05-02 - Production Mobile Scan Configuration
 
 ## Summary

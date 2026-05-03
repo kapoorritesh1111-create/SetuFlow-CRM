@@ -22,7 +22,7 @@ Add these in Vercel Project Settings -> Environment Variables for **Production**
 - Camera capture must run on **HTTPS**. It will not reliably open the device camera from plain HTTP.
 - Test with a real iPhone or Android device. Desktop device emulation can show the mobile viewport, but it does not fully reproduce mobile camera behavior.
 - The scanner input accepts `image/*` and `application/pdf` and uses `capture="environment"` to prefer the rear camera.
-- Keep card scans under 10 MB.
+- Photos can be selected up to 10 MB. The mobile client now optimizes phone photos before upload so the server request stays under production payload limits. PDFs should be under 3 MB, or users should take a photo of the card instead.
 
 ## Verify after deploy
 
@@ -71,7 +71,7 @@ The command fails if required variables are missing.
 
 ### Camera opens but fields do not prefill
 
-Most likely `OPENAI_API_KEY` is missing from the deployed environment, the deployment was not redeployed after adding it, or the card image is too blurry. Check `/api/mobile/scan-readiness` first.
+If `/api/mobile/scan-readiness` is already `ok: true`, the most common production blocker is upload size: phone photos are often larger than Server Action and Vercel Function payload limits. This build optimizes large images on-device before sending them. Redeploy this version, then test with a fresh card photo. If it still fails, open browser dev tools or Vercel function logs and look for `413`, `FUNCTION_PAYLOAD_TOO_LARGE`, or `body exceeded` errors.
 
 ### Upload works but Save fails
 
@@ -84,3 +84,13 @@ Confirm the production domain is HTTPS and that environment variables were added
 ### A PDF accepts but does not extract text
 
 Image-only scanned PDFs require the OpenAI OCR provider. Embedded-text PDFs can be read through the text layer even without OCR.
+
+
+## Upload-size guardrail added in this build
+
+Production scan now uses two layers of protection:
+
+1. `next.config.mjs` sets Server Actions to a 4 MB body budget.
+2. `MobileBusinessCardScanner` compresses phone images to a JPEG under roughly 3 MB before calling the scan action.
+
+This is necessary because production functions cannot safely receive full-size phone camera photos. The readiness endpoint can confirm keys and flags, but it cannot prove that the selected camera image was small enough to reach the OCR action. The mobile UI now shows when a photo is being prepared and when it was optimized.

@@ -79,7 +79,7 @@ export async function GET(request: Request) {
       id: 'upload-limits',
       label: 'Upload limit',
       ok: true,
-      detail: 'Mobile scanner accepts image/* and application/pdf up to 10 MB per scan.',
+      detail: 'Mobile scanner accepts image/* up to 10 MB, optimizes phone photos before upload, and accepts PDFs up to 3 MB. Server upload stays under Vercel function payload limits.',
     },
   ];
 
@@ -90,7 +90,9 @@ export async function GET(request: Request) {
     environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'unknown',
     scanner: {
       acceptedTypes: ['image/*', 'application/pdf'],
-      maxBytes: 10 * 1024 * 1024,
+      maxOriginalImageBytes: 10 * 1024 * 1024,
+      maxServerUploadBytes: 3 * 1024 * 1024,
+      maxPdfBytes: 3 * 1024 * 1024,
       capture: 'environment',
       model,
     },
