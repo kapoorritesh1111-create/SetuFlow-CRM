@@ -23,6 +23,7 @@ import {
   buildOnboardingSetupUrl,
   getOnboardingAdminEmail,
   sendClientOnboardingAdminNotification,
+  sendFirstAdminInviteEmail,
 } from '@/features/client-onboarding/server/notifications';
 import { provisionWorkspaceFromOnboardingRequest } from '@/features/client-onboarding/server/provisioning';
 
@@ -137,6 +138,130 @@ export async function resendClientOnboardingNotification(formData: FormData): Pr
   redirect(`/admin/client-onboarding?request=${request.id}&notice=${notification.status === 'email_sent' ? 'notification-sent' : 'notification-failed'}`);
 }
 
+function pickDelivery(metadata: unknown): Record<string, any> {
+  const value = metadata as Record<string, any> | null | undefined;
+  const delivery = value?.delivery;
+  return delivery && typeof delivery === 'object' ? delivery as Record<string, any> : {};
+}
+
+export async function sendFirstAdminInviteFromOnboardingRequest(formData: FormData): Promise<void> {
+  const requestId = normalizeText(formData.get('request_id'));
+  if (!requestId) return;
+
+  const { missingEnv, membership, organization } = await requireSetuInternalAdminWorkspace();
+  if (missingEnv || !membership || !organization) return;
+
+  const admin = createAdminSupabaseClient() as any;
+  if (!admin) return;
+
+  const { data: request, error: requestError } = await admin
+    .from('client_onboarding_requests')
+    .select('*')
+    .eq('id', requestId)
+    .maybeSingle();
+
+  if (requestError || !request?.company_name || !request.primary_admin_email) {
+    redirect('/admin/client-onboarding?notice=request-not-found');
+  }
+
+  let organizationId = request.linked_organization_id as string | null;
+  let workspaceDomain = request.workspace_domain || `${request.company_slug || slugifyCompanyName(request.company_name)}.${ROOT_DOMAIN}`;
+
+  if (!organizationId) {
+    const result = await provisionWorkspaceFromOnboardingRequest({
+      admin,
+      request,
+      platformOrganizationId: organization.id,
+      actorMembershipId: membership.id,
+      actorUserId: membership.user_id ?? null,
+    });
+    organizationId = result.organizationId;
+    workspaceDomain = result.workspaceDomain;
+
+    await admin
+      .from('client_onboarding_requests')
+      .update({
+        status: 'admin_invite_ready',
+        workspace_domain: workspaceDomain,
+        linked_organization_id: organizationId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId);
+  }
+
+  const { data: invitation } = await admin
+    .from('organization_invitations')
+    .select('id, email, status, expires_at, metadata, roles(name)')
+    .eq('organization_id', organizationId)
+    .ilike('email', request.primary_admin_email)
+    .in('status', ['draft', 'pending', 'sent'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const delivery = pickDelivery(invitation?.metadata);
+  const acceptUrl = typeof delivery.accept_url === 'string' ? delivery.accept_url : null;
+
+  if (!invitation?.id || !acceptUrl) {
+    await admin
+      .from('client_onboarding_requests')
+      .update({
+        status: 'admin_invite_ready',
+        additional_notes: 'First admin invite needs to be regenerated. Re-run provisioning, then send the first admin invite.',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId);
+    redirect(`/admin/client-onboarding?request=${requestId}&notice=invite-link-missing`);
+  }
+
+  const roleName = Array.isArray(invitation.roles) ? invitation.roles[0]?.name : invitation.roles?.name;
+  const notification = await sendFirstAdminInviteEmail({
+    toEmail: request.primary_admin_email,
+    companyName: request.company_name,
+    workspaceDomain,
+    acceptUrl,
+    roleName: roleName || 'owner',
+    expiresAt: invitation.expires_at ?? null,
+  });
+
+  const nextMetadata = {
+    ...(invitation.metadata ?? {}),
+    delivery: {
+      ...delivery,
+      email_status: notification.status,
+      email_error: notification.error,
+      emailed_at: notification.status === 'email_sent' ? new Date().toISOString() : null,
+      provider: (process.env.SETU_EMAIL_PROVIDER ?? (process.env.MAILTRAP_API_KEY ? 'mailtrap' : 'resend')).toLowerCase(),
+      source: 'client_onboarding_first_admin_invite',
+    },
+  };
+
+  await admin
+    .from('organization_invitations')
+    .update({
+      status: notification.status === 'email_sent' ? 'sent' : 'pending',
+      last_sent_at: notification.status === 'email_sent' ? new Date().toISOString() : null,
+      metadata: nextMetadata,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', invitation.id);
+
+  await admin
+    .from('client_onboarding_requests')
+    .update({
+      status: notification.status === 'email_sent' ? 'admin_invited' : 'admin_invite_ready',
+      additional_notes: notification.status === 'email_sent'
+        ? 'First admin invite email sent. The client can create their own auth user, set password, and accept owner access.'
+        : `First admin invite email failed: ${notification.error ?? notification.status}`,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', requestId);
+
+  revalidatePath('/admin/client-onboarding');
+  revalidatePath('/admin/invitations');
+  redirect(`/admin/client-onboarding?request=${requestId}&notice=${notification.status === 'email_sent' ? 'first-admin-invite-sent' : 'first-admin-invite-failed'}`);
+}
+
 export async function createWorkspaceFromOnboardingDraft(formData: FormData): Promise<void> {
   const requestId = normalizeText(formData.get('request_id'));
   if (!requestId) return;
@@ -167,7 +292,7 @@ export async function createWorkspaceFromOnboardingDraft(formData: FormData): Pr
     await admin
       .from('client_onboarding_requests')
       .update({
-        status: result.invitationId ? 'admin_invited' : 'admin_invite_ready',
+        status: 'admin_invite_ready',
         workspace_domain: result.workspaceDomain,
         linked_organization_id: result.organizationId,
         updated_at: new Date().toISOString(),

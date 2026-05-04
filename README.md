@@ -120,7 +120,7 @@ npm test
 Current expected test summary for this baseline:
 
 ```text
-66/66 tests passed
+68/68 tests passed
 ```
 
 Full release verification script:

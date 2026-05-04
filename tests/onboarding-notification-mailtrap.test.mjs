@@ -27,7 +27,7 @@ test('client onboarding notification sender remains shared between public submis
 
 test('admin onboarding page exposes admin email retry action', () => {
   assert.match(page, /resendClientOnboardingNotification/);
-  assert.match(page, /Send admin email/);
+  assert.match(page, /Notify Setu admin/);
 });
 
 test('production env example documents Mailtrap delivery controls', () => {

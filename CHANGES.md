@@ -1,4 +1,5 @@
 # Changelog
+- Added first-admin invite email flow: Setu admins can now send the client-facing owner/admin account creation link from onboarding without manually creating Supabase Auth users.
 
 ## Current clean baseline
 
@@ -6,7 +7,7 @@
 - Provisioning now creates/uses a unique organization ID, seeds all country reference rows, markets, pipelines, stages, next steps, roles, pricing starter settings, and first owner invitation metadata.
 - Client Onboarding is now Setu-internal only at route/sidebar/RLS-policy levels.
 - Wildcard workspace domain model supports `companyname.setuflowcrm.com` via `*.setuflowcrm.com`.
-- Added admin-side onboarding notification retry: each submitted request now has a **Send admin email** action backed by Mailtrap.
+- Added admin-side onboarding notification retry: each submitted request now has a **Notify Setu admin** action backed by Mailtrap.
 - Consolidated onboarding email delivery into `src/features/client-onboarding/server/notifications.ts` so public submission and admin resend use the same Mailtrap-first provider configuration.
 - Added regression coverage for onboarding Mailtrap notification resend wiring.
 - Removed historical archive folders and duplicate/retired HTML files from the active repo.
@@ -33,5 +34,5 @@
 
 ```text
 npm test
-66/66 tests passed
+68/68 tests passed
 ```

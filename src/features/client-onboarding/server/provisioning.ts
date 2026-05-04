@@ -1,4 +1,4 @@
-import { buildInvitationAcceptUrl, createInvitationToken, hashInvitationToken } from '@/lib/invitationTokens';
+import { createInvitationToken, hashInvitationToken } from '@/lib/invitationTokens';
 import { DEFAULT_SETU_FLOW_LOGO, ROOT_DOMAIN, defaultMarkets, defaultNextSteps, defaultPipelineStages, defaultPipelines, slugifyCompanyName } from '@/features/client-onboarding/shared';
 
 type SupabaseAdmin = any;
@@ -223,7 +223,7 @@ async function seedPricingSettings(admin: SupabaseAdmin, organizationId: string,
   }
 }
 
-async function createFirstAdminInvitation(admin: SupabaseAdmin, input: { organizationId: string; email: string | null; roleId: string | null; actorMembershipId: string; requestId: string }) {
+async function createFirstAdminInvitation(admin: SupabaseAdmin, input: { organizationId: string; email: string | null; roleId: string | null; actorMembershipId: string; requestId: string; workspaceDomain: string }) {
   const email = normalizeEmail(input.email);
   if (!email) return { invitationId: null, invitationAcceptUrl: null };
 
@@ -239,14 +239,14 @@ async function createFirstAdminInvitation(admin: SupabaseAdmin, input: { organiz
 
   const rawToken = createInvitationToken();
   const tokenHash = hashInvitationToken(rawToken);
-  const acceptUrl = buildInvitationAcceptUrl(rawToken);
+  const acceptUrl = `https://${input.workspaceDomain}/invite/${encodeURIComponent(rawToken)}`;
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
   const metadata = {
     onboarding_request_id: input.requestId,
     delivery: {
       accept_url: acceptUrl,
       generated_at: new Date().toISOString(),
-      provider: 'manual_link',
+      provider: 'email_pending',
       source: 'client_onboarding_wizard',
     },
   };
@@ -258,8 +258,8 @@ async function createFirstAdminInvitation(admin: SupabaseAdmin, input: { organiz
         role_id: input.roleId,
         token_hash: tokenHash,
         expires_at: expiresAt,
-        status: 'sent',
-        last_sent_at: new Date().toISOString(),
+        status: 'pending',
+        last_sent_at: null,
         metadata: { ...(existing.metadata ?? {}), ...metadata },
         updated_at: new Date().toISOString(),
       })
@@ -277,10 +277,10 @@ async function createFirstAdminInvitation(admin: SupabaseAdmin, input: { organiz
       email,
       role_id: input.roleId,
       invited_by_membership_id: input.actorMembershipId,
-      status: 'sent',
+      status: 'pending',
       token_hash: tokenHash,
       expires_at: expiresAt,
-      last_sent_at: new Date().toISOString(),
+      last_sent_at: null,
       metadata,
     })
     .select('id')
@@ -330,6 +330,7 @@ export async function provisionWorkspaceFromOnboardingRequest(input: Provisionin
     roleId: ownerRoleId,
     actorMembershipId,
     requestId: request.id,
+    workspaceDomain,
   });
 
   await admin.from('audit_logs').insert({

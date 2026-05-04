@@ -21,7 +21,7 @@ The repo is ready to be treated as the current clean baseline for continued Setu
 
 ```text
 npm test
-66/66 tests passed
+68/68 tests passed
 ```
 
 ## Release gate

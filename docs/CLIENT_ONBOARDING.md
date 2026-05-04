@@ -130,7 +130,7 @@ RESEND_API_KEY=
 
 `SETU_NOTIFICATION_FROM_EMAIL` must be a sender on a Mailtrap-verified domain. `SETU_ONBOARDING_ADMIN_EMAIL` is the recipient for new-client setup alerts. Keep `MAILTRAP_USE_SANDBOX=false` in production delivery; set it to `true` only for sandbox capture.
 
-The request saves even when email delivery is not configured. In that case the notification status records the missing email environment state. After fixing Vercel environment variables, use **Send admin email** on `/admin/client-onboarding` to send the notification for the same existing record.
+The request saves even when email delivery is not configured. In that case the notification status records the missing email environment state. After fixing Vercel environment variables, use **Notify Setu admin** on `/admin/client-onboarding` to send the internal setup notification for the same existing record. Use **Send first admin invite** to send the client-facing owner/admin account creation link.
 
 ## Hydration guard
 
@@ -151,3 +151,8 @@ Setu Flow uses one Supabase project with tenant-scoped rows. Each client gets a 
 ## Domains
 
 Wildcard workspace routing is supported by `*.setuflowcrm.com` in Vercel. New client workspaces use `companyname.setuflowcrm.com`; the app resolves the host slug to the matching organization row.
+
+
+## First admin invite acceptance
+
+After the provisioning wizard creates the tenant organization, Setu admins use **Send first admin invite** from `/admin/client-onboarding`. The email sends a secure tenant-domain `/invite/[token]` link to the requested first admin. The invited user creates their own Supabase Auth account, sets a password, accepts the owner/admin role, and lands in the new organization workspace. No manual Supabase Auth user creation is part of the production onboarding workflow.

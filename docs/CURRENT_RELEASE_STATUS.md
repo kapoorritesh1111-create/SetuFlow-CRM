@@ -22,5 +22,5 @@ Setu Flow CRM is in a clean baseline state with public client onboarding, Setu-i
 
 ```text
 npm test
-66/66 tests passed
+68/68 tests passed
 ```
