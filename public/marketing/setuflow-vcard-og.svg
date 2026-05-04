@@ -1,0 +1,10 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#061C2E"/>
+  <rect x="72" y="72" width="1056" height="486" rx="48" fill="url(#g)"/>
+  <circle cx="280" cy="278" r="96" fill="rgba(255,255,255,.18)" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+  <text x="280" y="306" text-anchor="middle" font-size="76" font-family="Inter, Arial, sans-serif" font-weight="700" fill="white">S</text>
+  <text x="420" y="250" font-size="28" font-family="Inter, Arial, sans-serif" font-weight="700" letter-spacing="8" fill="#9DF0E4">SETU FLOW</text>
+  <text x="420" y="326" font-size="64" font-family="Inter, Arial, sans-serif" font-weight="750" fill="white">Digital vCard</text>
+  <text x="420" y="382" font-size="28" font-family="Inter, Arial, sans-serif" fill="rgba(255,255,255,.75)">Save contact • request quote • book appointment</text>
+  <defs><linearGradient id="g" x1="72" y1="72" x2="1128" y2="558" gradientUnits="userSpaceOnUse"><stop stop-color="#0B2E4A"/><stop offset="1" stop-color="#359F91"/></linearGradient></defs>
+</svg>

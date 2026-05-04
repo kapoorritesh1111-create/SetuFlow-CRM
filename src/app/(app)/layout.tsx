@@ -44,9 +44,8 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     );
   }
 
-  const myCardSettings = workspace.user
-    ? toCardSettingsInput(await getMyCardSettingsForUser(workspace.user.id), EMPTY_CARD_SETTINGS)
-    : EMPTY_CARD_SETTINGS;
+  const myCardSettingsRow = workspace.user ? await getMyCardSettingsForUser(workspace.user.id) : null;
+  const myCardSettings = toCardSettingsInput(myCardSettingsRow, EMPTY_CARD_SETTINGS);
 
   return (
     <AppShell
@@ -55,6 +54,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       membership={workspace.membership}
       currentRoles={workspace.currentRoles}
       cardSettings={myCardSettings}
+      cardShareSlug={myCardSettingsRow?.share_slug ?? null}
     >
       {children}
     </AppShell>

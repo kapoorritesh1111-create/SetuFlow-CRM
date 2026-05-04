@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { ProfessionalDigitalCard } from '@/components/contact-exchange/professional-digital-card';
 import { PublicCardCaptureForm } from '@/components/contact-exchange/public-card-capture-form';
 import { getPublicCardByShareSlug } from '@/lib/contact-exchange/my-card-settings';
@@ -5,14 +6,55 @@ import { buildPublicCardSearchParams, parsePublicCardSearchParams } from '@/lib/
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
+function getFirstParam(searchParams: SearchParams, key: string) {
+  const value = searchParams[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function isShareSafeImage(value?: string | null) {
+  const trimmed = String(value ?? '').trim();
+  return /^https?:\/\//i.test(trimmed) && trimmed.length < 1000;
+}
+
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const share = getFirstParam(searchParams, 'share');
+  const sharedCard = share ? await getPublicCardByShareSlug(share) : null;
+  const identity = sharedCard?.identity ?? parsePublicCardSearchParams(searchParams);
+  const title = `${identity.fullName} · ${identity.organizationName}`;
+  const description = `Save ${identity.fullName}'s digital vCard, request a quote, or book an appointment.`;
+  const image = isShareSafeImage(identity.avatarUrl) ? identity.avatarUrl! : '/marketing/setuflow-vcard-og.svg';
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'profile',
+      images: [{ url: image, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
+
 export default async function PublicCardPage({ searchParams }: { searchParams: SearchParams }) {
-  const share = Array.isArray(searchParams.share) ? searchParams.share[0] : searchParams.share;
+  const share = getFirstParam(searchParams, 'share');
   const sharedCard = share ? await getPublicCardByShareSlug(share) : null;
   const identity = sharedCard?.identity ?? parsePublicCardSearchParams(searchParams);
   const compactParams = buildPublicCardSearchParams(identity);
   const saveContactHref = share
     ? `/api/public/card-vcf?share=${encodeURIComponent(share)}`
     : `/api/public/card-vcf?${compactParams.toString()}`;
+  const publicCardPath = share ? `/card?share=${encodeURIComponent(share)}` : `/card?${compactParams.toString()}`;
+  const appleWalletHref = `/api/public/apple-wallet?url=${encodeURIComponent(publicCardPath)}&name=${encodeURIComponent(identity.fullName)}`;
+  const googleWalletHref = `/api/public/google-wallet?url=${encodeURIComponent(publicCardPath)}&name=${encodeURIComponent(identity.fullName)}`;
+  const source = getFirstParam(searchParams, 'src') || getFirstParam(searchParams, 'source') || '';
+  const analyticsPath = `/api/public/card-analytics?event=view${share ? `&share=${encodeURIComponent(share)}` : ''}${source ? `&src=${encodeURIComponent(source)}` : ''}`;
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f4f5f7_45%,#ffffff_100%)] px-4 py-10 sm:px-6 lg:px-10">
@@ -25,9 +67,13 @@ export default async function PublicCardPage({ searchParams }: { searchParams: S
           primaryActionLabel="Request quote"
           secondaryActionHref={identity.bookingUrl?.trim() || '#book-appointment'}
           secondaryActionLabel="Book appointment"
+          appleWalletHref={appleWalletHref}
+          googleWalletHref={googleWalletHref}
         />
         <PublicCardCaptureForm identity={identity} />
       </div>
+      {/* Lightweight view tracking. The endpoint is best-effort and never blocks the public card. */}
+      <img src={analyticsPath} alt="" width={1} height={1} className="sr-only" />
     </div>
   );
 }

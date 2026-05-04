@@ -11,3 +11,13 @@
 ## Notes
 - Uploaded profile photos still show inside the signed-in product and share modal.
 - Public card links use saved share slugs when available; otherwise they use compact fallback query params without large image payloads.
+
+## V12 — Smart vCard sharing architecture
+
+- Default QR now opens the public profile card instead of the raw `.vcf` endpoint.
+- Header share modal now uses clean `/card` public links for QR, copy, email, and native share.
+- Signed-in shell now prefers saved share slugs, so uploaded profile photos load from the public card instead of being embedded into URLs.
+- Added Smart QR / Offline QR toggle on My Card settings: Smart opens the public card; Offline points directly to the `.vcf` contact download.
+- Added lightweight public card analytics pixel for view/QR source tracking via `audit_logs` when a share slug is available.
+- Added Open Graph metadata for public cards so mobile share previews use the card/profile context instead of a generic page.
+- Added Apple Wallet / Google Wallet icon actions with stable wallet-ready endpoints for future pass-provider credentials.

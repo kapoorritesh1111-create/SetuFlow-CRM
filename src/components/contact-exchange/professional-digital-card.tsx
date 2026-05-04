@@ -8,6 +8,8 @@ type ProfessionalDigitalCardProps = {
   primaryActionLabel?: string;
   secondaryActionHref?: string | null;
   secondaryActionLabel?: string;
+  appleWalletHref?: string | null;
+  googleWalletHref?: string | null;
 };
 
 type SocialLabel = 'Facebook' | 'Instagram' | 'TikTok' | 'LinkedIn';
@@ -76,6 +78,8 @@ export function ProfessionalDigitalCard({
   primaryActionLabel = 'Request quote',
   secondaryActionHref,
   secondaryActionLabel = 'Book appointment',
+  appleWalletHref,
+  googleWalletHref,
 }: ProfessionalDigitalCardProps) {
   const details = [
     cleanDetail(identity.primaryPhone),
@@ -143,11 +147,19 @@ export function ProfessionalDigitalCard({
                 </a>
               ) : null}
             </div>
-            {saveContactHref ? (
-              <a href={saveContactHref} className="mt-4 inline-flex min-h-[50px] items-center justify-center rounded-[1.2rem] bg-slate-950 px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-slate-800">
-                Save contact
-              </a>
-            ) : null}
+            <div className="mt-4 flex items-center justify-center gap-3">
+              {saveContactHref ? (
+                <a href={saveContactHref} download className="inline-flex min-h-[50px] items-center justify-center rounded-[1.2rem] bg-slate-950 px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-slate-800">
+                  Save contact
+                </a>
+              ) : null}
+              {appleWalletHref ? (
+                <a href={appleWalletHref} className="flex h-[50px] w-[50px] items-center justify-center rounded-[1.2rem] border border-[#1F487C]/16 bg-white text-2xl font-semibold text-slate-950 transition hover:bg-[#F5F9FF]" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"></a>
+              ) : null}
+              {googleWalletHref ? (
+                <a href={googleWalletHref} className="flex h-[50px] w-[50px] items-center justify-center rounded-[1.2rem] border border-[#1F487C]/16 bg-white text-sm font-bold text-[#4285F4] transition hover:bg-[#F5F9FF]" aria-label="Add to Google Wallet" title="Add to Google Wallet">G</a>
+              ) : null}
+            </div>
           </div>
         ) : null}
 

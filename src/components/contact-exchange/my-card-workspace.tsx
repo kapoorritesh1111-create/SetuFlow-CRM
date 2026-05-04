@@ -31,6 +31,7 @@ type MyCardWorkspaceProps = {
 
 type CopyKind = 'link' | 'summary' | null;
 type ShareState = 'idle' | 'shared' | 'copied' | 'error';
+type QrMode = 'smart' | 'offline';
 type CropDraft = { src: string; zoom: number; x: number; y: number } | null;
 
 function fieldClassName() {
@@ -114,6 +115,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [shareSupported, setShareSupported] = useState(false);
   const [shareState, setShareState] = useState<ShareState>('idle');
+  const [qrMode, setQrMode] = useState<QrMode>('smart');
   const [avatarUrl, setAvatarUrl] = useState(identity.avatarUrl ?? '');
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState('');
@@ -158,6 +160,8 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
   const publicCardUrl = origin ? `${origin}${preferredPublicCardPath}` : preferredPublicCardPath;
   const publicVcfPath = shareSlug ? `/api/public/card-vcf?share=${encodeURIComponent(shareSlug)}` : `/api/public/card-vcf?${fallbackParams.toString()}`;
   const publicVcfUrl = origin ? `${origin}${publicVcfPath}` : publicVcfPath;
+  const smartQrUrl = `${publicCardUrl}${publicCardUrl.includes('?') ? '&' : '?'}src=qr`;
+  const qrDestinationUrl = qrMode === 'offline' ? publicVcfUrl : smartQrUrl;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -169,9 +173,9 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
   useEffect(() => {
     let isActive = true;
     async function buildQrCode() {
-      if (!publicCardUrl) return;
+      if (!qrDestinationUrl) return;
       try {
-        const dataUrl = await QRCode.toDataURL(publicCardUrl, { width: 220, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0B2E4A', light: '#FFFFFF' } });
+        const dataUrl = await QRCode.toDataURL(qrDestinationUrl, { width: 220, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0B2E4A', light: '#FFFFFF' } });
         if (isActive) setQrCodeDataUrl(dataUrl);
       } catch {
         if (isActive) setQrCodeDataUrl('');
@@ -179,7 +183,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
     }
     void buildQrCode();
     return () => { isActive = false; };
-  }, [publicCardUrl]);
+  }, [qrDestinationUrl]);
 
   function handleAvatarFile(file?: File | null) {
     if (!file) return;
@@ -347,14 +351,23 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
             <button type="button" onClick={() => void copy(shareIntro, 'summary')} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'summary' ? 'Copied' : 'Copy intro'}</button>
             <a href={publicVcfUrl} download className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Download .vcf</a>
           </div>
+          <div className="mt-3 flex items-center gap-2" aria-label="Wallet actions">
+            <a href={`/api/public/apple-wallet?url=${encodeURIComponent(publicCardUrl)}&name=${encodeURIComponent(cardIdentity.fullName)}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-lg font-semibold text-slate-950 shadow-sm" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"></a>
+            <a href={`/api/public/google-wallet?url=${encodeURIComponent(publicCardUrl)}&name=${encodeURIComponent(cardIdentity.fullName)}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-bold text-[#4285F4] shadow-sm" aria-label="Add to Google Wallet" title="Add to Google Wallet">G</a>
+            <span className="text-xs text-slate-500">Wallet-ready card pass</span>
+          </div>
           <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{shareStateCopy}</p>
 
           <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-900">QR destination</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Scans open your public card. The link stays compact so QR, copy link, and .vcf download work reliably.</p>
-                <p className="mt-2 truncate rounded-xl bg-white px-3 py-2 text-xs text-slate-500">{publicCardUrl}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Smart QR opens the public card by default. Offline QR can be used when you want a direct contact-file scan.</p>
+                <div className="mt-3 inline-flex rounded-full border border-slate-200 bg-white p-1">
+                  <button type="button" onClick={() => setQrMode('smart')} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${qrMode === 'smart' ? 'bg-slate-950 text-white' : 'text-slate-600'}`}>Smart</button>
+                  <button type="button" onClick={() => setQrMode('offline')} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${qrMode === 'offline' ? 'bg-slate-950 text-white' : 'text-slate-600'}`}>Offline</button>
+                </div>
+                <p className="mt-2 truncate rounded-xl bg-white px-3 py-2 text-xs text-slate-500">{qrDestinationUrl}</p>
               </div>
               {qrCodeDataUrl ? <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-40 w-40 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <div className="flex h-36 w-36 items-center justify-center rounded-[1.25rem] border border-dashed border-slate-300 bg-white/70 p-4 text-center text-xs font-medium uppercase tracking-[0.12em] text-slate-400">QR loading</div>}
             </div>

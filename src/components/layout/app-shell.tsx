@@ -33,6 +33,7 @@ export function AppShell({
   membership,
   currentRoles = [],
   cardSettings,
+  cardShareSlug,
 }: {
   children: ReactNode;
   profile: Profile;
@@ -40,6 +41,7 @@ export function AppShell({
   membership: Membership;
   currentRoles?: string[];
   cardSettings?: MyCardSettingsInput | null;
+  cardShareSlug?: string | null;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -65,6 +67,7 @@ export function AppShell({
   };
 
   const shareLink = useMemo(() => {
+    if (cardShareSlug) return `/card?share=${encodeURIComponent(cardShareSlug)}`;
     const params = new URLSearchParams();
     params.set('name', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
     if (profile?.email) params.set('email', profile.email);
@@ -76,10 +79,11 @@ export function AppShell({
     if (cardSettings?.website) params.set('web', cardSettings.website);
     if (cardSettings?.address) params.set('addr', cardSettings.address);
     return `/card?${params.toString()}`;
-  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.avatar_url, profile?.email, profile?.full_name, profile?.username]);
+  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, cardShareSlug, currentRole, organization?.name, profile?.avatar_url, profile?.email, profile?.full_name, profile?.username]);
 
 
   const downloadVcfHref = useMemo(() => {
+    if (cardShareSlug) return `/api/public/card-vcf?share=${encodeURIComponent(cardShareSlug)}`;
     const params = new URLSearchParams();
     params.set('name', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
     if (profile?.email) params.set('email', profile.email);
@@ -91,7 +95,7 @@ export function AppShell({
     if (cardSettings?.website) params.set('web', cardSettings.website);
     if (cardSettings?.address) params.set('addr', cardSettings.address);
     return `/api/public/card-vcf?${params.toString()}`;
-  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.avatar_url, profile?.email, profile?.full_name, profile?.username]);
+  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, cardShareSlug, currentRole, organization?.name, profile?.avatar_url, profile?.email, profile?.full_name, profile?.username]);
 
   const signedInForMobile = useMemo(() => ({
     name: profile?.full_name ?? profile?.username ?? 'SETU Flow user',
@@ -118,17 +122,34 @@ export function AppShell({
     if (typeof window !== 'undefined') setAbsoluteShareUrl(`${window.location.origin}${shareLink}`);
   }, [shareLink]);
 
-  const absoluteDownloadVcfUrl = useMemo(() => {
-    if (!absoluteShareUrl || !shareLink || !absoluteShareUrl.endsWith(shareLink)) return downloadVcfHref;
-    const origin = absoluteShareUrl.slice(0, -shareLink.length);
-    return downloadVcfHref.startsWith('/') ? `${origin}${downloadVcfHref}` : downloadVcfHref;
-  }, [absoluteShareUrl, downloadVcfHref, shareLink]);
+  const qrShareUrl = useMemo(() => {
+    const base = absoluteShareUrl || shareLink;
+    const separator = base.includes('?') ? '&' : '?';
+    return `${base}${separator}src=qr`;
+  }, [absoluteShareUrl, shareLink]);
 
-  const qrImageSrc = useMemo(() => `/api/contact-exchange/qr?data=${encodeURIComponent(absoluteDownloadVcfUrl)}`, [absoluteDownloadVcfUrl]);
+  const qrImageSrc = useMemo(() => `/api/contact-exchange/qr?data=${encodeURIComponent(qrShareUrl)}`, [qrShareUrl]);
 
   const handleCopyShareLink = async () => {
     if (typeof window === 'undefined' || !navigator.clipboard) return;
     await navigator.clipboard.writeText(absoluteShareUrl || shareLink);
+  };
+
+  const handleNativeVCardShare = async () => {
+    const url = absoluteShareUrl || shareLink;
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: `${profileDisplayName} · SETU Flow`,
+          text: `${profileDisplayName} · ${organization?.name ?? 'SETU Flow'}`,
+          url,
+        });
+        return;
+      } catch {
+        // User cancelled or the platform rejected the share. Fall back to copy.
+      }
+    }
+    await handleCopyShareLink();
   };
 
 
@@ -256,7 +277,7 @@ export function AppShell({
                     loading="eager"
                   />
                 </div>
-                <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Scan to save contact</p>
+                <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Scan to open card</p>
               </div>
               <div className="space-y-2.5">
                 {cardSettings?.primaryPhone ? (
@@ -265,7 +286,7 @@ export function AppShell({
                     <span>{cardSettings.primaryPhone}</span>
                   </a>
                 ) : null}
-                <a href={downloadVcfHref} className="flex items-center gap-3 rounded-[0.9rem] bg-[#0b2e4a] px-4 py-3 text-sm font-semibold text-white hover:bg-[#061c2e]">
+                <a href={downloadVcfHref} download className="flex items-center gap-3 rounded-[0.9rem] bg-[#0b2e4a] px-4 py-3 text-sm font-semibold text-white hover:bg-[#061c2e]">
                   <span>⬇</span>
                   <span>Download .vcf</span>
                 </a>
@@ -273,10 +294,18 @@ export function AppShell({
                   <span>🔗</span>
                   <span>Copy link</span>
                 </button>
+                <button type="button" onClick={handleNativeVCardShare} className="flex w-full items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
+                  <span>↗</span>
+                  <span>Share</span>
+                </button>
                 <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(absoluteShareUrl || shareLink)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
                   <span>✉</span>
                   <span>Send email</span>
                 </a>
+                <div className="grid grid-cols-2 gap-2" aria-label="Wallet actions">
+                  <a href={`/api/public/apple-wallet?url=${encodeURIComponent(absoluteShareUrl || shareLink)}&name=${encodeURIComponent(profileDisplayName)}`} className="flex h-12 items-center justify-center rounded-[0.9rem] border border-slate-200 bg-white text-xl font-semibold text-slate-950 hover:bg-slate-50" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"></a>
+                  <a href={`/api/public/google-wallet?url=${encodeURIComponent(absoluteShareUrl || shareLink)}&name=${encodeURIComponent(profileDisplayName)}`} className="flex h-12 items-center justify-center rounded-[0.9rem] border border-slate-200 bg-white text-sm font-bold text-[#4285F4] hover:bg-slate-50" aria-label="Add to Google Wallet" title="Add to Google Wallet">G</a>
+                </div>
                 <a href={PRODUCT_ROUTES.app.myCard} className="flex items-center justify-center gap-2 rounded-[0.9rem] px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50">
                   <span>⚙</span>
                   <span>Edit settings</span>
