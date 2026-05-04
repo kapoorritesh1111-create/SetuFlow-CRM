@@ -48,3 +48,10 @@
 - Reordered and relabeled share actions to feel more contact-first: Save contact, Copy link, Share card, Send email.
 - Added the provided Apple Wallet and Google Wallet icon assets across desktop modal, mobile sheet, My Card settings, and public card.
 - Preserved wallet actions as premium pass placeholders until Apple `.pkpass` certificates and Google Wallet issuer credentials are connected.
+
+## V16 - Homepage vCard feature spotlight
+
+- Added a dedicated Contact Exchange section to the marketing homepage after the product showcase so the shareable vCard is presented as a core product feature before the comparison table.
+- Added a sanitized, blurred vCard share screenshot asset for homepage use, preserving QR/action/wallet UI while blurring the profile photo and contact details.
+- Tuned the section for mobile and desktop: compact proof bullets, strong call-to-action, responsive phone-style visual, and brand-color glow treatment.
+- Updated the Connection Layer card copy from generic vCard wording to Smart vCard Exchange positioning.

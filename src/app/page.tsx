@@ -70,7 +70,7 @@ const audiences: Card[] = [
 
 const integrations: Card[] = [
   { icon: 'message', title: 'WhatsApp handoffs', body: 'Share quotes and follow up where buyers already respond.' },
-  { icon: 'qr', title: 'vCard + QR', body: 'Digital card sharing, saved-contact flows and public capture paths.' },
+  { icon: 'qr', title: 'Smart vCard exchange', body: 'QR, clean contact save, Wallet actions and public reply capture from the same share card.' },
   { icon: 'scan', title: 'Smart scan', body: 'Business card, document and PDF capture for fast lead entry.' },
   { icon: 'box', title: 'Product catalog', body: 'Quote-ready products, variants, MOQ, pricing and market coverage.' },
   { icon: 'file', title: 'Export views', body: 'Commercial lists and operational views ready for team review.' },
@@ -150,6 +150,36 @@ export default function HomePage() {
         <section className="bg-[#061c2e] px-4 py-14 text-white sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl rounded-[1.8rem] border border-white/10 bg-white/[0.06] p-7 shadow-[0_24px_80px_rgba(0,0,0,0.18)] backdrop-blur setu-reveal"><div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center"><div><p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7de2d2]">Mid-page CTA</p><h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">See how Setu Flow fits your workflow.</h3><p className="mt-3 max-w-2xl text-sm leading-7 text-white/62">Map your current lead, quote and execution process into Setu Flow.</p></div><a href="#book-demo" className="rounded-full bg-white px-7 py-3.5 text-center text-sm font-semibold text-[#06263f] shadow-xl transition hover:-translate-y-0.5">Book demo</a></div></div></section>
 
         <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="Product showcase" title="Premium product proof, not a documentation wall." body="Four focused product billboards show the operational outcomes buyers care about most." /><div className="mx-auto mt-12 grid max-w-7xl gap-6 lg:grid-cols-2">{productFrames.map(({ eyebrow, title, body, image, alt }, index) => <article key={title} className={`rounded-[2rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4 shadow-[0_24px_70px_rgba(31,72,124,0.085)] setu-reveal setu-delay-${(index % 4) + 1}`}><div className="relative"><div className="absolute -inset-3 rounded-[1.8rem] bg-[#359F91]/9 blur-2xl" /><div className="relative rounded-[1.6rem] border border-slate-200 bg-white p-2 shadow-[0_15px_45px_rgba(31,72,124,0.12)]"><Image src={image} alt={alt} width={1628} height={1032} className="rounded-[1.25rem]" /></div></div><div className="p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#108477]">{eyebrow}</p><h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{title}</h3><p className="mt-3 text-sm leading-7 text-slate-600">{body}</p></div></article>)}</div></section>
+
+        <section className="overflow-hidden bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+            <div className="setu-reveal">
+              <Eyebrow>Contact Exchange</Eyebrow>
+              <h2 className="mt-4 text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 sm:text-5xl">Turn every meeting into a saved contact and a next action.</h2>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">Setu Flow’s shareable vCard is more than a business card. Prospects can scan, save, share, request a quote, book an appointment, or send their details back into your CRM flow.</p>
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                {[
+                  ['Smart QR opens the public card'],
+                  ['Save contact as a clean vCard'],
+                  ['Apple and Google Wallet actions'],
+                  ['Lead capture and follow-through']
+                ].map(([text]) => (
+                  <div key={text} className="flex items-center gap-3 rounded-2xl border border-[#1F487C]/10 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-[0_14px_38px_rgba(31,72,124,0.06)]">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#e8fbf7] text-[#108477]">✓</span>
+                    <span>{text}</span>
+                  </div>
+                ))}
+              </div>
+              <a href="#book-demo" className="mt-8 inline-flex rounded-full bg-[#061c2e] px-7 py-3.5 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(6,28,46,0.18)] transition hover:-translate-y-0.5">See contact exchange in the demo →</a>
+            </div>
+            <div className="relative mx-auto w-full max-w-[23rem] setu-reveal setu-delay-1 sm:max-w-[26rem] lg:max-w-[28rem]">
+              <div className="absolute -inset-8 rounded-[3rem] bg-[radial-gradient(circle_at_50%_18%,rgba(53,159,145,0.30),transparent_40%),radial-gradient(circle_at_50%_70%,rgba(12,127,255,0.18),transparent_42%)] blur-2xl" />
+              <div className="relative rounded-[2.1rem] border border-white/70 bg-white/80 p-2 shadow-[0_34px_90px_rgba(6,28,46,0.24)] backdrop-blur">
+                <Image src="/marketing/vcard-share-homepage-blurred.png" alt="Setu Flow shareable vCard modal with QR, save contact, share, and wallet actions" width={413} height={896} className="rounded-[1.7rem]" />
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section id="compare" className="bg-[#061c2e] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="Why Setu Flow wins" title="Where other CRMs stop, your operation still has work to do." body="Generic CRMs were never built for trade execution. This chart should be one of the strongest conversion assets on the page." light /><div className="mx-auto mt-12 max-w-7xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_34px_100px_rgba(0,0,0,0.22)] setu-reveal"><div className="overflow-x-auto"><table className="min-w-[880px] w-full text-left text-sm"><thead><tr className="border-b border-white/10 bg-white/[0.04] text-[10px] uppercase tracking-[0.20em] text-white/45"><th className="px-5 py-5 font-semibold">What you need</th><th className="px-5 py-5 font-semibold">Excel + Email</th><th className="px-5 py-5 font-semibold">HubSpot / Zoho</th><th className="px-5 py-5 font-semibold text-[#7de2d2]">Setu Flow</th></tr></thead><tbody>{comparisonRows.map((row, index) => row[0] === 'section' ? <tr key={`${row[1]}-${index}`} className="border-b border-white/8 bg-white/[0.035]"><td colSpan={4} className="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/30">{row[1]}</td></tr> : <tr key={`${row[0]}-${index}`} className="border-b border-white/8 transition hover:bg-white/[0.04]"><td className="px-5 py-4 font-medium text-white/92">{row[0]}</td><td className="px-5 py-4 text-white/66">{row[1]}</td><td className="px-5 py-4 text-white/66">{row[2]}</td><td className="px-5 py-4 font-semibold text-[#d6fff8]">{row[3]}</td></tr>)}</tbody></table></div></div><div className="mx-auto mt-10 max-w-3xl text-center setu-reveal"><p className="text-lg font-semibold tracking-[-0.02em]">Spreadsheets didn’t break your workflow. CRMs did.</p><a href="#book-demo" className="mt-6 inline-flex rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-[#06263f] shadow-xl transition hover:-translate-y-0.5">See how this works in your workflow →</a></div></section>
 
