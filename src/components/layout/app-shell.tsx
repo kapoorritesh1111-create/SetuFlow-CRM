@@ -288,7 +288,7 @@ export function AppShell({
                 ) : null}
                 <a href={downloadVcfHref} download className="flex items-center gap-3 rounded-[0.9rem] bg-[#0b2e4a] px-4 py-3 text-sm font-semibold text-white hover:bg-[#061c2e]">
                   <span>⬇</span>
-                  <span>Download .vcf</span>
+                  <span>Save contact</span>
                 </a>
                 <button type="button" onClick={handleCopyShareLink} className="flex w-full items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
                   <span>🔗</span>
@@ -296,15 +296,15 @@ export function AppShell({
                 </button>
                 <button type="button" onClick={handleNativeVCardShare} className="flex w-full items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
                   <span>↗</span>
-                  <span>Share</span>
+                  <span>Share card</span>
                 </button>
                 <a href={`mailto:?subject=${encodeURIComponent('My SETU Flow vCard')}&body=${encodeURIComponent(absoluteShareUrl || shareLink)}`} className="flex items-center gap-3 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
                   <span>✉</span>
                   <span>Send email</span>
                 </a>
                 <div className="grid grid-cols-2 gap-2" aria-label="Wallet actions">
-                  <a href={`/api/public/apple-wallet?url=${encodeURIComponent(absoluteShareUrl || shareLink)}&name=${encodeURIComponent(profileDisplayName)}`} className="flex h-12 items-center justify-center rounded-[0.9rem] border border-slate-200 bg-white text-xl font-semibold text-slate-950 hover:bg-slate-50" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"></a>
-                  <a href={`/api/public/google-wallet?url=${encodeURIComponent(absoluteShareUrl || shareLink)}&name=${encodeURIComponent(profileDisplayName)}`} className="flex h-12 items-center justify-center rounded-[0.9rem] border border-slate-200 bg-white text-sm font-bold text-[#4285F4] hover:bg-slate-50" aria-label="Add to Google Wallet" title="Add to Google Wallet">G</a>
+                  <a href={`/api/public/apple-wallet?url=${encodeURIComponent(absoluteShareUrl || shareLink)}&name=${encodeURIComponent(profileDisplayName)}`} className="flex h-12 items-center justify-center rounded-[0.9rem] border border-slate-200 bg-white p-2 hover:bg-slate-50" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"><img src="/marketing/apple-wallet-icon.png" alt="Apple Wallet" className="h-8 w-8 object-contain" /></a>
+                  <a href={`/api/public/google-wallet?url=${encodeURIComponent(absoluteShareUrl || shareLink)}&name=${encodeURIComponent(profileDisplayName)}`} className="flex h-12 items-center justify-center rounded-[0.9rem] border border-slate-200 bg-white p-2 hover:bg-slate-50" aria-label="Add to Google Wallet" title="Add to Google Wallet"><img src="/marketing/google-wallet-icon.png" alt="Google Wallet" className="h-8 w-8 object-contain" /></a>
                 </div>
                 <a href={PRODUCT_ROUTES.app.myCard} className="flex items-center justify-center gap-2 rounded-[0.9rem] px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50">
                   <span>⚙</span>

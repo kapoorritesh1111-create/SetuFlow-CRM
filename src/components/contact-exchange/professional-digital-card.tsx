@@ -154,10 +154,10 @@ export function ProfessionalDigitalCard({
                 </a>
               ) : null}
               {appleWalletHref ? (
-                <a href={appleWalletHref} className="flex h-[50px] w-[50px] items-center justify-center rounded-[1.2rem] border border-[#1F487C]/16 bg-white text-2xl font-semibold text-slate-950 transition hover:bg-[#F5F9FF]" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"></a>
+                <a href={appleWalletHref} className="flex h-[50px] w-[50px] items-center justify-center rounded-[1.2rem] border border-[#1F487C]/16 bg-white p-2 transition hover:bg-[#F5F9FF]" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"><img src="/marketing/apple-wallet-icon.png" alt="Apple Wallet" className="h-8 w-8 object-contain" /></a>
               ) : null}
               {googleWalletHref ? (
-                <a href={googleWalletHref} className="flex h-[50px] w-[50px] items-center justify-center rounded-[1.2rem] border border-[#1F487C]/16 bg-white text-sm font-bold text-[#4285F4] transition hover:bg-[#F5F9FF]" aria-label="Add to Google Wallet" title="Add to Google Wallet">G</a>
+                <a href={googleWalletHref} className="flex h-[50px] w-[50px] items-center justify-center rounded-[1.2rem] border border-[#1F487C]/16 bg-white p-2 transition hover:bg-[#F5F9FF]" aria-label="Add to Google Wallet" title="Add to Google Wallet"><img src="/marketing/google-wallet-icon.png" alt="Google Wallet" className="h-8 w-8 object-contain" /></a>
               ) : null}
             </div>
           </div>

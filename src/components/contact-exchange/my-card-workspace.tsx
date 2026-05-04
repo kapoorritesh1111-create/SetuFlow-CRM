@@ -349,12 +349,12 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
             <a href={publicCardUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Open card</a>
             <button type="button" onClick={() => void handleShare()} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{shareSupported ? 'Share' : copied === 'link' ? 'Copied' : 'Copy link'}</button>
             <button type="button" onClick={() => void copy(shareIntro, 'summary')} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'summary' ? 'Copied' : 'Copy intro'}</button>
-            <a href={publicVcfUrl} download className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Download .vcf</a>
+            <a href={publicVcfUrl} download className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Save contact</a>
           </div>
           <div className="mt-3 flex items-center gap-2" aria-label="Wallet actions">
-            <a href={`/api/public/apple-wallet?url=${encodeURIComponent(publicCardUrl)}&name=${encodeURIComponent(cardIdentity.fullName)}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-lg font-semibold text-slate-950 shadow-sm" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"></a>
-            <a href={`/api/public/google-wallet?url=${encodeURIComponent(publicCardUrl)}&name=${encodeURIComponent(cardIdentity.fullName)}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-bold text-[#4285F4] shadow-sm" aria-label="Add to Google Wallet" title="Add to Google Wallet">G</a>
-            <span className="text-xs text-slate-500">Wallet-ready card pass</span>
+            <a href={`/api/public/apple-wallet?url=${encodeURIComponent(publicCardUrl)}&name=${encodeURIComponent(cardIdentity.fullName)}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white p-1.5 shadow-sm" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"><img src="/marketing/apple-wallet-icon.png" alt="Apple Wallet" className="h-7 w-7 object-contain" /></a>
+            <a href={`/api/public/google-wallet?url=${encodeURIComponent(publicCardUrl)}&name=${encodeURIComponent(cardIdentity.fullName)}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white p-1.5 shadow-sm" aria-label="Add to Google Wallet" title="Add to Google Wallet"><img src="/marketing/google-wallet-icon.png" alt="Google Wallet" className="h-7 w-7 object-contain" /></a>
+            <span className="text-xs text-slate-500">Wallet pass actions</span>
           </div>
           <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{shareStateCopy}</p>
 

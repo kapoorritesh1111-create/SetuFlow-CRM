@@ -55,7 +55,7 @@ export function MobileVCardShareSheet({
       setStatus(message);
       window.setTimeout(() => setStatus('Ready to share your digital business card.'), 1800);
     } catch {
-      setStatus('Copy did not start. Use Download .vcf or Send email instead.');
+      setStatus('Copy did not start. Use Save contact or Send email instead.');
     }
   }
 
@@ -97,13 +97,17 @@ export function MobileVCardShareSheet({
           <div className="grid gap-4 p-6">
             <div className="text-center">
               <img src={qrImageUrl} alt="QR code for digital vCard" className="mx-auto h-36 w-36 rounded-[1.25rem] border border-slate-200 bg-white p-2 shadow-sm" />
-              <p className="mt-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Scan to save contact</p>
+              <p className="mt-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Scan to open card</p>
             </div>
 
-            <a href={downloadUrl} download className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#0b2e4a] px-4 text-sm font-black text-white shadow-lg shadow-sky-950/20">⬇️ Download .vcf</a>
+            <a href={downloadUrl} download className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#0b2e4a] px-4 text-sm font-black text-white shadow-lg shadow-sky-950/20">⬇️ Save contact</a>
             <button type="button" onClick={() => copy(publicCardUrl, 'Card link copied.')} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-800">🔗 Copy link</button>
             <a href={`mailto:?subject=${encodeURIComponent(`${signedIn?.name ?? 'SETU Flow'} digital business card`)}&body=${encodeURIComponent(intro)}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-800">✉️ Send email</a>
-            <button type="button" onClick={shareNow} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-800">{shareSupported ? '📲 Share now' : '📋 Copy intro'}</button>
+            <button type="button" onClick={shareNow} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-800">{shareSupported ? '📲 Share card' : '📋 Copy link'}</button>
+            <div className="grid grid-cols-2 gap-2" aria-label="Wallet actions">
+              <a href={`/api/public/apple-wallet?url=${encodeURIComponent(publicCardUrl)}&name=${encodeURIComponent(signedIn?.name ?? 'SETU Flow')}`} className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white p-2" aria-label="Add to Apple Wallet"><img src="/marketing/apple-wallet-icon.png" alt="Apple Wallet" className="h-8 w-8 object-contain" /></a>
+              <a href={`/api/public/google-wallet?url=${encodeURIComponent(publicCardUrl)}&name=${encodeURIComponent(signedIn?.name ?? 'SETU Flow')}`} className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white p-2" aria-label="Add to Google Wallet"><img src="/marketing/google-wallet-icon.png" alt="Google Wallet" className="h-8 w-8 object-contain" /></a>
+            </div>
             <a href="/contact-exchange/vcard" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-slate-500">⚙️ Edit settings</a>
             <p className="text-center text-xs font-semibold text-blue-600">{status}</p>
           </div>

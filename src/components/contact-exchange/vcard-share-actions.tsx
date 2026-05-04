@@ -141,7 +141,7 @@ export function VCardShareActions({
             <ActionButton href={publicCardUrl} label="Open public card" primary />
             <ActionButton label={shareSupported ? 'Share now' : 'Copy share link'} onClick={handleNativeShare} />
             <ActionButton label={copiedSummary ? 'Intro copied' : 'Copy intro'} onClick={copyIntroSummary} />
-            <ActionButton href={downloadUrl} label="Download .vcf" download />
+            <ActionButton href={downloadUrl} label="Save contact" download />
           </div>
         </div>
 

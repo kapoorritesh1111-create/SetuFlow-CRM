@@ -21,3 +21,12 @@
 - Added lightweight public card analytics pixel for view/QR source tracking via `audit_logs` when a share slug is available.
 - Added Open Graph metadata for public cards so mobile share previews use the card/profile context instead of a generic page.
 - Added Apple Wallet / Google Wallet icon actions with stable wallet-ready endpoints for future pass-provider credentials.
+
+## V13 — vCard mobile contact polish
+
+- Kept Smart QR as the default public-card link and clarified modal copy to “Scan to open card.”
+- Cleaned `.vcf` generation so saved iPhone/Android contacts no longer show the Setu Flow public-card URL as an ugly work field.
+- Added compressed profile photo support in generated `.vcf` files when the saved avatar is available as an optimized data image.
+- Reordered and relabeled share actions to feel more contact-first: Save contact, Copy link, Share card, Send email.
+- Added the provided Apple Wallet and Google Wallet icon assets across desktop modal, mobile sheet, My Card settings, and public card.
+- Preserved wallet actions as premium pass placeholders until Apple `.pkpass` certificates and Google Wallet issuer credentials are connected.
