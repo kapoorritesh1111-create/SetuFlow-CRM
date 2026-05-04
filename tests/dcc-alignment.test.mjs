@@ -3,14 +3,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const dcc = readFileSync('public/internal-dcc/index.html', 'utf8');
 
-test('dcc exposes current, ux 99 tracker, ux audit, and archive tabs while preserving release truth', () => {
-  assert.match(dcc, /Release truth \+ UX 99 system tracker/i);
-  assert.match(dcc, /UX 99 tracker/i);
-  assert.match(dcc, /UX audit/i);
-  assert.match(dcc, /Archive/i);
-  assert.match(dcc, /UX 99 program active/i);
-  assert.match(dcc, /Reset history archived/i);
-  assert.match(dcc, /All tracked modules are at or above 96%/i);
-  assert.match(dcc, /PR-UX-01/i);
-  assert.match(dcc, /PR-UX-05/i);
+test('dcc exposes current clean baseline, onboarding truth, and preserved test results format', () => {
+  assert.match(dcc, /Current Baseline/i);
+  assert.match(dcc, /Client onboarding/i);
+  assert.match(dcc, /\/onboarding/);
+  assert.match(dcc, /\/admin\/client-onboarding/);
+  assert.match(dcc, /companyname\.setuflowcrm\.com/);
+  assert.match(dcc, /Test Results/i);
+  assert.match(dcc, /58\/58 PASS/i);
+  assert.match(dcc, /badge-pass/i);
+  assert.match(dcc, /Share vCard/);
+  assert.match(dcc, /Signed-in|signed-in|Signed in/);
+  assert.doesNotMatch(dcc, /docs\/Archive|public\/internal-dcc\/archive|indexold/i);
 });

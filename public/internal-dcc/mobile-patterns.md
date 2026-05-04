@@ -233,7 +233,7 @@ Required checks:
 Use `MOBILE_SCAN_PRODUCTION.md` and `.env.production.example` before release.
 
 
-## Pass 26 Mobile Video QA Fix
+## Current mobile video QA fix
 
 - Quick Add Lead camera/file scan now posts to `/api/mobile/contact-scan` so iOS camera returns reliably run OCR and prefill the same visible drawer fields.
 - Share vCard now uses the saved My Card settings phone number, secondary phone, website, and address in public-card links and `.vcf` downloads.

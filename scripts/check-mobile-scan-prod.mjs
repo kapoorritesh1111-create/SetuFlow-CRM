@@ -20,7 +20,7 @@ const required = [
 ];
 
 const recommended = [
-  ['CONTACT_SCAN_PROVIDER', 'Recommended explicit scanner provider. For PASS30 investor demo use openai-vision. For low-cost production comparison use google-vision.'],
+  ['CONTACT_SCAN_PROVIDER', 'Recommended explicit scanner provider. For mobile OpenAI Vision baseline investor demo use openai-vision. For low-cost production comparison use google-vision.'],
   ['CONTACT_SCAN_FALLBACK_PROVIDER', 'Recommended explicit fallback provider. Use openai for field mapping.'],
   ['OPENAI_CONTACT_SCAN_MODEL', 'Recommended explicit model; defaults to gpt-4.1-mini.'],
   ['GOOGLE_CLOUD_VISION_API_KEY', 'Optional while CONTACT_SCAN_PROVIDER=openai-vision; keep it for future provider comparison.'],

@@ -62,7 +62,7 @@ Scope: repository and operator guidance for SETU Flow CRM secrets. This policy d
 - No production key-usage anomaly detection is claimed.
 - These are environment and operations controls, not repo-level proof.
 
-## 6. Pass 5 live Supabase connector verification
+## 6. current security baseline live Supabase connector verification
 
 Verified through the GPT Supabase connector against project `sjzfzloggabsmcuxktnl` (`SETU Flow CRM`) on 2026-04-30. This was a read-only inspection; no golden quote, contract, lead, order, or document rows were mutated.
 
@@ -75,4 +75,4 @@ Verified through the GPT Supabase connector against project `sjzfzloggabsmcuxktn
 | Quote/order RPC execute exposure sample | Partially verified | Sampled quote/order/contract RPCs are `SECURITY DEFINER`; most sampled quote/order RPCs are not executable by `anon`, but several workflow/document/compliance RPCs remain executable by `anon` and/or `authenticated` per advisors and SQL. |
 | Service role handling | Repo-level verified | Repo review confirms service role is read via `SUPABASE_SERVICE_ROLE_KEY` in server/admin client paths, not through the default browser/server anon client. |
 
-**Conclusion:** Pass 5 now includes direct live Supabase inspection evidence, but still does **not** claim complete live RLS closure. The remaining Supabase advisor findings are production/security hardening follow-up items for the next pass.
+**Conclusion:** current security baseline now includes direct live Supabase inspection evidence, but still does **not** claim complete live RLS closure. The remaining Supabase advisor findings are production/security hardening follow-up items for the next authorized hardening cycle.

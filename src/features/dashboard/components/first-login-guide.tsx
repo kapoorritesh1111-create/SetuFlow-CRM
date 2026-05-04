@@ -5,7 +5,7 @@
  * Provides a clear, step-by-step onboarding path so new organizations
  * are never dropped into a blank workspace without guidance.
  *
- * Proof criteria (Pass 3):
+ * Proof criteria:
  * - Detected by: zero leads, zero quotes, zero products
  * - Shown on: Dashboard, above the main content, only when all counts are 0
  * - Hides automatically once data exists

@@ -1,5 +1,9 @@
 # Mitigation SQL execution order
 
+## current baseline note
+
+This file is retained for the legacy mitigation SQL pack. Current release/setup guidance lives in `README.md`, `docs/OPERATIONS_RUNBOOK.md`, and `docs/CURRENT_RELEASE_STATUS.md`.
+
 Run these in filename order.
 
 1. `001_env_and_secrets_checklist.sql`

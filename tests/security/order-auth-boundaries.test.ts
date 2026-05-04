@@ -1,5 +1,5 @@
 /**
- * Pass 5 Security Boundary Tests — Order/Contract Action Gates
+ * current security baseline Security Boundary Tests — Order/Contract Action Gates
  *
  * These tests cover the pure permission predicates used by order execution,
  * contract signing, and order document upload actions. No Supabase connection.

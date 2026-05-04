@@ -1,4 +1,4 @@
--- PASS37/38 client onboarding intake, notification, and setup handoff
+-- Current client onboarding intake, notification, and setup handoff
 create table if not exists public.client_onboarding_requests (
   id uuid primary key default gen_random_uuid(),
   company_name text not null,

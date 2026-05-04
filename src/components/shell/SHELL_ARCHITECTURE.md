@@ -1,6 +1,6 @@
 # Shell Architecture — `src/components/shell/`
 
-**Consolidated: Pass 4 (2026-04-30)**
+**Current shell baseline**
 
 Previously split across three directories:
 - `src/components/shell/` — mobile/PWA utilities
@@ -30,7 +30,7 @@ All shell concerns now live in **`src/components/shell/`**. The consuming parent
 
 1. **Only `app-shell.tsx` and `layout.tsx` import from this folder.** Features must not import shell components directly.
 2. **Route metadata lives in `route-meta.ts` only.** Do not duplicate route lists in other files.
-3. **Mobile components** (`MobileTabBar`, `DesktopRedirect`, `OfflineIndicator`, `ServiceWorkerRegistration`) are mobile-wedge only. Do not expand them beyond trade-event capture without a Pass 6 mobile decision.
+3. **Mobile components** (`MobileTabBar`, `DesktopRedirect`, `OfflineIndicator`, `ServiceWorkerRegistration`) are mobile-wedge only. Do not expand them beyond trade-event capture without an explicit mobile product decision.
 4. **No new shell directories.** If a new shell concern is added, it goes in this folder with an entry in this document.
 
 ---
@@ -38,4 +38,4 @@ All shell concerns now live in **`src/components/shell/`**. The consuming parent
 ## What was deleted
 
 - `src/components/layout/shell/` — merged here
-- `src/components/setu-shell/index.tsx` — dead UI helpers, zero imports, removed in Pass 4
+- `src/components/setu-shell/index.tsx` — dead UI helpers, zero imports, removed in the shell cleanup

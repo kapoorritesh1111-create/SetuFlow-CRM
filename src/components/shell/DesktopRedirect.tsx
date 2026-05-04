@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const mobileFeatures = [
   { icon: '⌂', label: 'Dashboard — at-a-glance view' },
@@ -19,7 +19,13 @@ export function DesktopRedirect({
   description?: string;
 }) {
   const [copied, setCopied] = useState(false);
-  const href = useMemo(() => (typeof window === 'undefined' ? '' : window.location.href), []);
+  const [href, setHref] = useState('');
+  const [hostname, setHostname] = useState('setuflowcrm.com');
+
+  useEffect(() => {
+    setHref(window.location.href);
+    setHostname(window.location.hostname);
+  }, []);
 
   const copyLink = async () => {
     if (!href || !navigator.clipboard) return;
@@ -35,7 +41,7 @@ export function DesktopRedirect({
       <p className="text-sm text-slate-500 leading-relaxed max-w-[280px] mx-auto mb-5">{description}</p>
 
       <div className="font-mono text-[11px] font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-md mb-6">
-        {typeof window !== 'undefined' ? window.location.hostname : 'setuflow.com'}
+        {hostname}
       </div>
 
       <div className="flex flex-col gap-2 w-full max-w-[280px] mb-4">
@@ -47,7 +53,7 @@ export function DesktopRedirect({
           📋 {copied ? 'Copied!' : 'Copy link for desktop'}
         </button>
         <a
-          href={`mailto:?subject=${encodeURIComponent('Open this SETU Flow workspace on desktop')}&body=${encodeURIComponent(href)}`}
+          href={href ? `mailto:?subject=${encodeURIComponent('Open this SETU Flow workspace on desktop')}&body=${encodeURIComponent(href)}` : 'mailto:?subject=Open%20this%20SETU%20Flow%20workspace%20on%20desktop'}
           className="w-full py-4 rounded-[14px] bg-slate-100 border border-slate-200 text-slate-700 text-[15px] font-extrabold text-center"
         >
           📧 Email link to myself

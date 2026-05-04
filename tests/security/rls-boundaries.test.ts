@@ -1,5 +1,5 @@
 /**
- * Pass 5 Security Boundary Tests — Workspace RLS/Application Gates
+ * current security baseline Security Boundary Tests — Workspace RLS/Application Gates
  *
  * Pure logic tests for the application-layer permission helpers that guard
  * write operations before Supabase/RLS is reached. No live Supabase connection.
