@@ -71,3 +71,10 @@ npm test
 
 - `npm ci --ignore-scripts` completed enough to stage dependencies in the container, but the tool returned a client-side error without detailed output.
 - `npm run typecheck` started successfully but timed out in the container before completion.
+
+## V6 production conversion homepage
+- Rebuilt the marketing homepage around the provided conversion wireframe strategy.
+- Removed all free-trial and credit-card messaging.
+- Updated pricing to Starter $199/month up to 5 users, Growth $499/month up to 10 users, Enterprise custom.
+- Promoted the comparison table as the main conversion section.
+- Added motion classes, premium screenshot frames, concise mobile showcase, connection-layer section, and demo-led CTAs.
