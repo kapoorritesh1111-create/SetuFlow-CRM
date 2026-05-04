@@ -42,3 +42,10 @@ npm test
 - Added a SaaS-style product narrative for trade command center, follow-up control, guided quoting, execution desk, trade events, catalog/pricing, and commercial intelligence.
 - Added polished marketing screenshot assets under `public/marketing/` using the supplied product screenshots.
 - Added `public/reference-html/setuflow-homepage-marketing-redesign.html` as a static reference matching the homepage structure.
+
+## Homepage redesign v3 - full SaaS level
+
+- Rebuilt the public homepage into a premium SaaS marketing experience while preserving Setu Flow brand colors.
+- Added futuristic dark hero, product positioning, CRM comparison, icon-driven capabilities, real screenshot showcases, and mobile-first proof section.
+- Added mobile screenshot assets under `public/marketing/`.
+- Updated `src/components/marketing/site-shell.tsx` with a more polished navigation and CTA structure.
