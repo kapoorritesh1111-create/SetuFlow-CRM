@@ -45,16 +45,16 @@ async function getMyCardInsights(organizationId: string, repName: string): Promi
 
 const setupNotes = [
   {
-    title: 'Professional identity',
-    body: 'Use your profile, contact details, and social links to present a clean buyer-facing card that is ready to share outside the CRM.',
+    title: 'Your profile',
+    body: 'Add your photo, phone, website, and links so prospects can save the right contact instantly.',
   },
   {
-    title: 'Share with confidence',
-    body: 'Generate a public card, QR code, and downloadable contact file so prospects can save your details quickly from any device.',
+    title: 'Share instantly',
+    body: 'Use QR, copy link, device share, or a downloadable contact file from one screen.',
   },
   {
-    title: 'Capture the reply',
-    body: 'Shared card responses can feed back into the CRM through the public capture form and uploaded document intake.',
+    title: 'Turn interest into leads',
+    body: 'Prospects can request a quote or appointment, then your team follows up inside Setu Flow.',
   },
 ];
 
@@ -105,7 +105,7 @@ export default async function DigitalVCardPage() {
       <PageHeader
         eyebrow="Global contact exchange"
         title="My Digital vCard"
-        description="Create a polished digital business card with QR sharing, downloadable contact details, and trusted follow-through for quotes or appointments."
+        description="Create a polished digital business card your team can share from events, calls, and follow-ups."
         badge={initialSettings?.share_slug ? 'Ready to share' : 'Setup needed'}
         actions={[{ label: 'Go to leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' }]}
       />

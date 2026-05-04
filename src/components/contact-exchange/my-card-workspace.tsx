@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { StateMessage } from '@/components/ui/state-message';
 import QRCode from 'qrcode';
 import { ProfessionalDigitalCard } from '@/components/contact-exchange/professional-digital-card';
 import {
@@ -32,6 +31,7 @@ type MyCardWorkspaceProps = {
 
 type CopyKind = 'link' | 'summary' | null;
 type ShareState = 'idle' | 'shared' | 'copied' | 'error';
+type CropDraft = { src: string; zoom: number; x: number; y: number } | null;
 
 function fieldClassName() {
   return 'mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100';
@@ -53,15 +53,52 @@ function buildDefaults(identity: PublicCardIdentity) {
   } satisfies Partial<MyCardSettingsInput>;
 }
 
+async function cropToDataUrl(draft: NonNullable<CropDraft>) {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Could not load image.'));
+    img.src = draft.src;
+  });
+
+  const preview = 280;
+  const output = 512;
+  const scale = Math.max(preview / image.naturalWidth, preview / image.naturalHeight) * draft.zoom;
+  const canvas = document.createElement('canvas');
+  canvas.width = output;
+  canvas.height = output;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Could not prepare image editor.');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, output, output);
+  const ratio = output / preview;
+  const drawW = image.naturalWidth * scale * ratio;
+  const drawH = image.naturalHeight * scale * ratio;
+  const drawX = (output - drawW) / 2 + draft.x * ratio;
+  const drawY = (output - drawH) / 2 + draft.y * ratio;
+  ctx.drawImage(image, drawX, drawY, drawW, drawH);
+  return canvas.toDataURL('image/jpeg', 0.84);
+}
+
 function formatRecency(value: string | null) {
   if (!value) return 'recent';
   const diffMs = Date.now() - new Date(value).getTime();
   if (!Number.isFinite(diffMs)) return 'recent';
   const hours = Math.max(1, Math.round(diffMs / 3600000));
   if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
+  return `${Math.round(hours / 24)}d ago`;
 }
+
+const quickFields: Array<{ key: keyof MyCardSettingsInput; label: string; placeholder?: string }> = [
+  { key: 'primaryPhone', label: 'Primary phone' },
+  { key: 'secondaryPhone', label: 'Secondary phone' },
+  { key: 'website', label: 'Website' },
+  { key: 'address', label: 'Address' },
+  { key: 'bookingUrl', label: 'Booking link', placeholder: 'https://cal.com/...' },
+  { key: 'quoteUrl', label: 'Quote request link', placeholder: 'https://... or leave blank' },
+  { key: 'linkedin', label: 'LinkedIn' },
+  { key: 'instagram', label: 'Instagram' },
+];
 
 export function MyCardWorkspace({ identity, organizationId, initialSettings, insights }: MyCardWorkspaceProps) {
   const defaults = useMemo(() => buildDefaults(identity), [identity]);
@@ -80,6 +117,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
   const [avatarUrl, setAvatarUrl] = useState(identity.avatarUrl ?? '');
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState('');
+  const [cropDraft, setCropDraft] = useState<CropDraft>(null);
 
   useEffect(() => {
     setOverrides(initialOverrides);
@@ -130,62 +168,58 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
   useEffect(() => {
     let isActive = true;
     async function buildQrCode() {
-      if (!publicCardUrl) {
-        if (isActive) setQrCodeDataUrl('');
-        return;
-      }
+      if (!publicCardUrl) return;
       try {
-        const dataUrl = await QRCode.toDataURL(publicCardUrl, {
-          width: 180,
-          margin: 1,
-          color: { dark: '#1F487C', light: '#FFFFFF' },
-        });
+        const dataUrl = await QRCode.toDataURL(publicCardUrl, { width: 180, margin: 1, color: { dark: '#1F487C', light: '#FFFFFF' } });
         if (isActive) setQrCodeDataUrl(dataUrl);
       } catch {
         if (isActive) setQrCodeDataUrl('');
       }
     }
     void buildQrCode();
-    return () => {
-      isActive = false;
-    };
+    return () => { isActive = false; };
   }, [publicCardUrl]);
 
-  async function handleAvatarFile(file?: File | null) {
+  function handleAvatarFile(file?: File | null) {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setAvatarMessage('Please choose an image file.');
+      setAvatarMessage('Choose an image file.');
       return;
     }
-    if (file.size > 1_250_000) {
-      setAvatarMessage('Use a smaller image under 1.25MB.');
+    if (file.size > 12_000_000) {
+      setAvatarMessage('Choose an image under 12MB. We optimize it before saving.');
       return;
     }
-
     const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = String(reader.result ?? '');
-      setAvatarUrl(dataUrl);
-      setAvatarSaving(true);
-      setAvatarMessage('Saving profile photo…');
-      try {
-        const response = await fetch('/api/profile/avatar', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ avatarUrl: dataUrl }),
-        });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok) throw new Error(payload?.error || 'Could not save profile photo.');
-        setAvatarUrl(payload.avatarUrl || dataUrl);
-        setAvatarMessage('Profile photo saved. Your vCard preview now uses it.');
-        window.setTimeout(() => setAvatarMessage(''), 2200);
-      } catch (error) {
-        setAvatarMessage(error instanceof Error ? error.message : 'Could not save profile photo.');
-      } finally {
-        setAvatarSaving(false);
-      }
+    reader.onload = () => {
+      setCropDraft({ src: String(reader.result ?? ''), zoom: 1, x: 0, y: 0 });
+      setAvatarMessage('');
     };
     reader.readAsDataURL(file);
+  }
+
+  async function saveCroppedAvatar() {
+    if (!cropDraft) return;
+    setAvatarSaving(true);
+    setAvatarMessage('Optimizing and saving photo…');
+    try {
+      const dataUrl = await cropToDataUrl(cropDraft);
+      const response = await fetch('/api/profile/avatar', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarUrl: dataUrl }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.error || 'Could not save photo.');
+      setAvatarUrl(payload.avatarUrl || dataUrl);
+      setCropDraft(null);
+      setAvatarMessage('Photo saved and optimized for your vCard.');
+      window.setTimeout(() => setAvatarMessage(''), 2400);
+    } catch (error) {
+      setAvatarMessage(error instanceof Error ? error.message : 'Could not save photo.');
+    } finally {
+      setAvatarSaving(false);
+    }
   }
 
   async function persistSettings(nextOverrides = overrides) {
@@ -199,15 +233,15 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
         body: JSON.stringify({ organizationId, fullName: identity.fullName, email: identity.email, settings: nextOverrides }),
       });
       const payload = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(payload?.error || 'Unable to save My Card settings.');
+      if (!response.ok) throw new Error(payload?.error || 'Unable to save card details.');
       setOverrides(payload.settings);
       setShareSlug(payload.shareSlug);
       setSaveState('saved');
-      setSaveMessage('Card settings saved. Public card, QR, and vCard actions are ready.');
+      setSaveMessage('Saved. Your QR code, public card, and .vcf now use the latest details.');
       window.setTimeout(() => setSaveState('idle'), 1800);
     } catch (error) {
       setSaveState('error');
-      setSaveMessage(error instanceof Error ? error.message : 'Unable to save My Card settings.');
+      setSaveMessage(error instanceof Error ? error.message : 'Unable to save card details.');
     } finally {
       setIsSaving(false);
     }
@@ -219,30 +253,17 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
       await navigator.clipboard.writeText(value);
       setCopied(kind);
       setShareState('copied');
-      window.setTimeout(() => {
-        setCopied(null);
-        setShareState('idle');
-      }, 1800);
+      window.setTimeout(() => { setCopied(null); setShareState('idle'); }, 1800);
     } catch {
       setShareState('error');
     }
   }
 
   async function handleShare() {
-    if (!publicCardUrl) {
-      setShareState('error');
-      return;
-    }
-    if (!shareSupported) {
-      await copy(publicCardUrl, 'link');
-      return;
-    }
+    if (!publicCardUrl) return setShareState('error');
+    if (!shareSupported) return copy(publicCardUrl, 'link');
     try {
-      await navigator.share({
-        title: `${cardIdentity.fullName} · SETU Flow digital vCard`,
-        text: `${cardIdentity.fullName} · ${cardIdentity.roleLabel} · ${cardIdentity.organizationName}`,
-        url: publicCardUrl,
-      });
+      await navigator.share({ title: `${cardIdentity.fullName} · SETU Flow`, text: `${cardIdentity.fullName} · ${cardIdentity.organizationName}`, url: publicCardUrl });
       setShareState('shared');
       window.setTimeout(() => setShareState('idle'), 1800);
     } catch {
@@ -250,171 +271,109 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
     }
   }
 
-  const shareIntro = `Save ${cardIdentity.fullName} · ${cardIdentity.roleLabel}\n${cardIdentity.organizationName}\n${publicCardUrl}`;
-
-  const statusCopy = saveState === 'saved' ? 'Saved' : saveState === 'error' ? 'Save failed' : isSaving ? 'Saving…' : isDirty ? 'Unsaved changes' : shareSlug ? 'Ready to share' : 'Share link pending save';
-  const shareStateCopy = shareState === 'shared'
-    ? 'Shared through your device share sheet.'
-    : shareState === 'copied'
-      ? copied === 'summary'
-        ? 'Your share intro was copied.'
-        : 'Your public card link was copied.'
-      : shareState === 'error'
-        ? 'Share could not start. Save once, then try again.'
-        : shareSlug
-          ? 'Every action below is live. The link also includes a fallback payload so the public card still opens if server lookup is unavailable.'
-          : 'Save once to lock in your permanent share slug. The live preview link below already works as a fallback.';
+  const shareIntro = `Save ${cardIdentity.fullName}\n${cardIdentity.organizationName}\n${publicCardUrl}`;
+  const statusCopy = saveState === 'saved' ? 'Saved' : saveState === 'error' ? 'Save failed' : isSaving ? 'Saving…' : isDirty ? 'Unsaved changes' : 'Ready';
+  const shareStateCopy = shareState === 'shared' ? 'Shared.' : shareState === 'copied' ? 'Copied.' : shareState === 'error' ? 'Could not share. Try copying the link.' : 'Ready to share.';
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.98fr_1.02fr]">
+    <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="space-y-6">
-        <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-soft">
-          <div className="flex items-center justify-between gap-3">
+        <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-soft">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">My card settings</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Professional digital vCard details and share controls</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">These details are saved in the database so your public card, QR share, and save-contact experience stay consistent across devices. Use the share actions below or the global Share card button in the product header.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Card profile</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Make your vCard feel personal.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Upload a photo, adjust the crop, and save phone-ready contact details. The preview on the right shows exactly what prospects will see.</p>
             </div>
-            <div className="text-right">
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Database-backed</span>
-              <p className="mt-2 text-xs text-slate-500">{statusCopy}</p>
-            </div>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">{statusCopy}</span>
           </div>
 
-          {!shareSlug ? (
-            <div className="mt-5 rounded-[1.5rem] border border-sky-200 bg-sky-50/70 p-4 text-sm text-slate-700">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-slate-900">Finish setup once, then every Share action becomes permanent.</p>
-                  <p className="mt-1 leading-6 text-slate-600">The card preview and fallback share link already work below. Saving once adds the durable share slug used by QR and vCard downloads.</p>
-                </div>
-                <span className="rounded-full border border-sky-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">Share slug pending</span>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="mt-6 rounded-[1.6rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-6 rounded-[1.5rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[1.4rem] border border-slate-200 bg-slate-100 text-xl font-semibold text-slate-700 shadow-sm">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-xl font-semibold text-slate-700 shadow-sm">
                   {avatarUrl ? <img src={avatarUrl} alt={identity.fullName} className="h-full w-full object-cover" /> : identity.fullName.slice(0, 1).toUpperCase()}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Profile photo</p>
-                  <p className="mt-1 max-w-md text-sm leading-6 text-slate-600">Upload from phone camera roll or a file. This makes the public vCard feel personal and screenshot-ready for the homepage.</p>
+                  <p className="mt-1 max-w-md text-sm leading-6 text-slate-600">Large phone photos are welcome. Setu Flow crops and compresses them before saving.</p>
                   {avatarMessage ? <p className="mt-2 text-xs font-medium text-[#1F487C]">{avatarMessage}</p> : null}
                 </div>
               </div>
               <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-[#1F487C]/12 bg-white px-5 py-2 text-sm font-semibold text-[#1F487C] shadow-sm transition hover:bg-[#eef6fb]">
-                {avatarSaving ? 'Saving…' : 'Upload photo'}
-                <input type="file" accept="image/*" className="sr-only" onChange={(event) => void handleAvatarFile(event.target.files?.[0])} />
+                Upload photo
+                <input type="file" accept="image/*" className="sr-only" onChange={(event) => handleAvatarFile(event.target.files?.[0])} />
               </label>
             </div>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <label className="block text-sm font-medium text-slate-700">Primary phone<input className={fieldClassName()} value={overrides.primaryPhone} onChange={(e) => setOverrides((c) => ({ ...c, primaryPhone: e.target.value }))} /></label>
-            <label className="block text-sm font-medium text-slate-700">Secondary phone<input className={fieldClassName()} value={overrides.secondaryPhone} onChange={(e) => setOverrides((c) => ({ ...c, secondaryPhone: e.target.value }))} /></label>
-            <label className="block text-sm font-medium text-slate-700">Website<input className={fieldClassName()} value={overrides.website} onChange={(e) => setOverrides((c) => ({ ...c, website: e.target.value }))} /></label>
-            <label className="block text-sm font-medium text-slate-700">Address<input className={fieldClassName()} value={overrides.address} onChange={(e) => setOverrides((c) => ({ ...c, address: e.target.value }))} /></label>
-            <label className="block text-sm font-medium text-slate-700">Booking link<input className={fieldClassName()} value={overrides.bookingUrl} onChange={(e) => setOverrides((c) => ({ ...c, bookingUrl: e.target.value }))} placeholder="https://cal.com/..." /></label>
-            <label className="block text-sm font-medium text-slate-700">Request quote link<input className={fieldClassName()} value={overrides.quoteUrl} onChange={(e) => setOverrides((c) => ({ ...c, quoteUrl: e.target.value }))} placeholder="https://... or leave blank" /></label>
-            <label className="block text-sm font-medium text-slate-700">LinkedIn<input className={fieldClassName()} value={overrides.linkedin} onChange={(e) => setOverrides((c) => ({ ...c, linkedin: e.target.value }))} /></label>
-            <label className="block text-sm font-medium text-slate-700">Instagram<input className={fieldClassName()} value={overrides.instagram} onChange={(e) => setOverrides((c) => ({ ...c, instagram: e.target.value }))} /></label>
-            <label className="block text-sm font-medium text-slate-700">Facebook<input className={fieldClassName()} value={overrides.facebook} onChange={(e) => setOverrides((c) => ({ ...c, facebook: e.target.value }))} /></label>
-            <label className="block text-sm font-medium text-slate-700">TikTok<input className={fieldClassName()} value={overrides.tiktok} onChange={(e) => setOverrides((c) => ({ ...c, tiktok: e.target.value }))} /></label>
+            {quickFields.map((field) => (
+              <label key={field.key} className="block text-sm font-medium text-slate-700">
+                {field.label}
+                <input
+                  className={fieldClassName()}
+                  value={String(overrides[field.key] ?? '')}
+                  placeholder={field.placeholder}
+                  onChange={(e) => setOverrides((c) => ({ ...c, [field.key]: e.target.value }))}
+                />
+              </label>
+            ))}
           </div>
+
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-500">{isDirty ? 'Save to refresh the public card, QR code, and vCard download with your latest details.' : shareSlug ? 'Your saved public card is ready to open, share, copy, and download.' : 'Save once to generate the permanent slug. Until then, the fallback share link below still opens your card.'}</p>
-            <button type="button" onClick={() => void persistSettings()} disabled={isSaving} className="inline-flex min-h-[50px] items-center justify-center rounded-[1.2rem] bg-slate-950 px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">{isSaving ? 'Saving…' : shareSlug ? 'Save card settings' : 'Save and generate share slug'}</button>
+            <p className="text-sm text-slate-500">{isDirty ? 'Save to refresh the public card, QR code, and contact download.' : 'Your latest saved details are ready to share.'}</p>
+            <button type="button" onClick={() => void persistSettings()} disabled={isSaving} className="inline-flex min-h-[48px] items-center justify-center rounded-[1rem] bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">
+              {isSaving ? 'Saving…' : 'Save card'}
+            </button>
           </div>
-          <StateMessage
-            className="mt-4"
-            title="What to do next with My Card"
-            description={shareSlug
-              ? 'Save changes, copy or share the public link, then open the public card to confirm the customer experience.'
-              : 'Save this card once to create the permanent share link.'}
-            tone="neutral"
-          />
-
-          {saveMessage ? <StateMessage className="mt-4" title={saveState === 'error' ? 'My Card save failed' : 'My Card updated'} description={saveMessage} tone={saveState === 'error' ? 'danger' : 'success'} /> : null}
+          {saveMessage ? <p className={`mt-4 rounded-2xl px-4 py-3 text-sm ${saveState === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{saveMessage}</p> : null}
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-soft">
+        <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-soft">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Conversion visibility</p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">What your public card is bringing into the CRM</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">These are working outcomes, not vanity metrics. Review the request mix, then open the captured lead record and move it into qualification or quote work.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Share</p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Send your card in seconds.</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Share by QR, link, device share, or downloadable contact file.</p>
             </div>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Source-attributed</span>
+            <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${shareSlug ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : 'border border-amber-200 bg-amber-50 text-amber-700'}`}>{shareSlug ? 'Live' : 'Save once'}</span>
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Quote requests</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{insights?.quoteRequestCount ?? 0}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Public-card visitors who raised commercial demand and should be qualified into quote-ready pipeline.</p>
-            </div>
-            <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Appointments</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{insights?.appointmentCount ?? 0}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Booked follow-up requests that now exist inside the CRM for the team to action.</p>
-            </div>
-            <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Captured leads</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{insights?.recentLeads.length ?? 0}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Recent CRM records linked back to your card share so the team can verify the funnel is working.</p>
-            </div>
-          </div>
-
-          <StateMessage
-            className="mt-4"
-            title="What to do next with card responses"
-            description="Open the latest captured lead, verify the source label from Public Card, then qualify serious demand into Quote without leaving the CRM."
-            tone="neutral"
-          />
-
-          <div className="mt-5 space-y-3">
-            {(insights?.recentLeads?.length ?? 0) ? insights!.recentLeads.slice(0, 5).map((item) => (
-              <div key={item.id} className="flex flex-col gap-3 rounded-[1.3rem] border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{item.company_name || item.contact_name || 'Public card lead'}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-600">{item.source_label || 'Public Card'} · {formatRecency(item.created_at)}</p>
-                </div>
-                <a href={`/leads/${item.id}`} className="inline-flex min-h-[42px] items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">Open lead</a>
-              </div>
-            )) : (
-              <div className="rounded-[1.3rem] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-4 text-sm leading-6 text-slate-500">
-                Public-card requests and appointments will appear here once shared-card traffic starts creating CRM records.
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-soft">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Share actions</p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Public card, QR share, and save contact</h3>
-            </div>
-            <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${shareSlug ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : 'border border-amber-200 bg-amber-50 text-amber-700'}`}>{shareSlug ? 'Permanent share live' : 'Fallback share live'}</span>
-          </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <a href={publicCardUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Open public card</a>
-            <button type="button" onClick={() => void handleShare()} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{shareSupported ? 'Share now' : copied === 'link' ? 'Link copied' : 'Copy share link'}</button>
-            <button type="button" onClick={() => void copy(shareIntro, 'summary')} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'summary' ? 'Intro copied' : 'Copy intro'}</button>
-            <a href={publicVcfUrl} className="inline-flex min-h-[54px] items-center justify-center rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Download .vcf</a>
+            <a href={publicCardUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Open card</a>
+            <button type="button" onClick={() => void handleShare()} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{shareSupported ? 'Share' : copied === 'link' ? 'Copied' : 'Copy link'}</button>
+            <button type="button" onClick={() => void copy(shareIntro, 'summary')} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'summary' ? 'Copied' : 'Copy intro'}</button>
+            <a href={publicVcfUrl} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Download .vcf</a>
           </div>
-          <StateMessage className="mt-4" title="Share readiness" description={shareStateCopy} tone={shareState === 'error' ? 'danger' : shareState === 'shared' || shareState === 'copied' ? 'success' : 'neutral'} />
-          <div className="mt-5 rounded-[1.6rem] border border-slate-200 bg-slate-50 p-5">
+          <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{shareStateCopy}</p>
+
+          <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Live QR / share destination</p>
+                <p className="text-sm font-semibold text-slate-900">QR destination</p>
                 <p className="mt-2 break-all text-sm leading-6 text-slate-600">{publicCardUrl}</p>
               </div>
-              {qrCodeDataUrl ? <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-40 w-40 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <div className="flex h-40 w-40 items-center justify-center rounded-[1.5rem] border border-dashed border-slate-300 bg-white/70 p-4 text-center text-xs font-medium uppercase tracking-[0.12em] text-slate-400">QR code loading</div>}
+              {qrCodeDataUrl ? <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-36 w-36 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <div className="flex h-36 w-36 items-center justify-center rounded-[1.25rem] border border-dashed border-slate-300 bg-white/70 p-4 text-center text-xs font-medium uppercase tracking-[0.12em] text-slate-400">QR loading</div>}
             </div>
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-soft">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Responses</p>
+          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Card activity</h3>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quotes</p><p className="mt-2 text-3xl font-semibold text-slate-900">{insights?.quoteRequestCount ?? 0}</p></div>
+            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Appointments</p><p className="mt-2 text-3xl font-semibold text-slate-900">{insights?.appointmentCount ?? 0}</p></div>
+            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Leads</p><p className="mt-2 text-3xl font-semibold text-slate-900">{insights?.recentLeads.length ?? 0}</p></div>
+          </div>
+          <div className="mt-5 space-y-3">
+            {(insights?.recentLeads?.length ?? 0) ? insights!.recentLeads.slice(0, 4).map((item) => (
+              <div key={item.id} className="flex flex-col gap-3 rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div><p className="text-sm font-semibold text-slate-900">{item.company_name || item.contact_name || 'Public card lead'}</p><p className="mt-1 text-xs text-slate-600">{formatRecency(item.created_at)}</p></div>
+                <a href={`/leads/${item.id}`} className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">Open lead</a>
+              </div>
+            )) : <div className="rounded-[1.2rem] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-4 text-sm leading-6 text-slate-500">Requests and appointments will appear here after your card is shared.</div>}
           </div>
         </div>
       </div>
@@ -428,6 +387,43 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
         secondaryActionHref={cardIdentity.bookingUrl?.trim() || `${preferredPublicCardPath}#book-appointment`}
         secondaryActionLabel="Book appointment"
       />
+
+      {cropDraft ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-[2rem] bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Photo editor</p>
+                <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Place your photo in the circle.</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Use the controls below to crop and resize. The saved image is optimized for the site.</p>
+              </div>
+              <button type="button" onClick={() => setCropDraft(null)} className="rounded-full border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600">Close</button>
+            </div>
+            <div className="mt-5 flex justify-center">
+              <div className="relative h-[280px] w-[280px] overflow-hidden rounded-full border border-slate-200 bg-slate-100 shadow-inner">
+                <img
+                  src={cropDraft.src}
+                  alt="Crop preview"
+                  className="absolute left-1/2 top-1/2 max-w-none select-none"
+                  style={{ transform: `translate(calc(-50% + ${cropDraft.x}px), calc(-50% + ${cropDraft.y}px)) scale(${cropDraft.zoom})`, width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div className="pointer-events-none absolute inset-0 rounded-full ring-4 ring-white/80" />
+              </div>
+            </div>
+            <div className="mt-5 space-y-4">
+              <label className="block text-sm font-medium text-slate-700">Zoom<input type="range" min="1" max="2.4" step="0.01" value={cropDraft.zoom} onChange={(e) => setCropDraft((c) => c ? { ...c, zoom: Number(e.target.value) } : c)} className="mt-2 w-full" /></label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm font-medium text-slate-700">Move left / right<input type="range" min="-90" max="90" step="1" value={cropDraft.x} onChange={(e) => setCropDraft((c) => c ? { ...c, x: Number(e.target.value) } : c)} className="mt-2 w-full" /></label>
+                <label className="block text-sm font-medium text-slate-700">Move up / down<input type="range" min="-90" max="90" step="1" value={cropDraft.y} onChange={(e) => setCropDraft((c) => c ? { ...c, y: Number(e.target.value) } : c)} className="mt-2 w-full" /></label>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setCropDraft(null)} className="min-h-11 rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700">Cancel</button>
+              <button type="button" onClick={() => void saveCroppedAvatar()} disabled={avatarSaving} className="min-h-11 rounded-full bg-slate-950 px-5 text-sm font-semibold text-white disabled:bg-slate-400">{avatarSaving ? 'Saving…' : 'Save photo'}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

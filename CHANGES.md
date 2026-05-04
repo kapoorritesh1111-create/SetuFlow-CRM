@@ -95,3 +95,10 @@ npm test
 - Added profile photo upload support to My Digital vCard settings via `/api/profile/avatar`.
 - Ensured the vCard public/share flows include saved primary phone and profile photo in the generated card/share links.
 - Updated the in-app vCard modal to show profile photo and primary phone as a direct call action.
+
+## V9 — vCard + login cleanup
+- Removed developer-heavy wording from client login and digital vCard pages.
+- Tightened login layout for desktop and mobile with cleaner SaaS copy and less empty space.
+- Added a circular photo cropper before saving vCard profile photos.
+- Large phone images are accepted, cropped, compressed to an optimized JPEG, and saved for the public card.
+- Simplified vCard setup/share/activity copy so the page feels customer-facing rather than internal/dev-facing.
