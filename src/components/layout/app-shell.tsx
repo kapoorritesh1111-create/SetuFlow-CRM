@@ -107,9 +107,10 @@ export function AppShell({
     secondaryPhone: cardSettings?.secondaryPhone ?? null,
     website: cardSettings?.website ?? null,
     address: cardSettings?.address ?? null,
+    avatarUrl: profile?.avatar_url ?? null,
     shareHref: shareLink,
     downloadVcfHref,
-  }), [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username, shareLink, downloadVcfHref]);
+  }), [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.avatar_url, profile?.email, profile?.full_name, profile?.username, shareLink, downloadVcfHref]);
 
   const canonicalMobileRoutes = ['/dashboard', '/leads', '/orders'];
   const shouldUseCanonicalMobileShell = canonicalMobileRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));

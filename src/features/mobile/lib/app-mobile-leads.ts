@@ -1,4 +1,6 @@
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
+import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
+import { buildPublicCardSearchParams } from '@/lib/contact-exchange/public-card';
 import type { MobileLead, MobileUserContext } from './role-aware-leads';
 import { workspaceRolesToMobileRole } from './role-aware-leads';
 
@@ -99,23 +101,61 @@ export function buildMobileUserContextFromWorkspace(workspace: {
   };
 }
 
-export function buildMobileSignedInSummary(workspace: {
-  profile?: { full_name?: string | null; username?: string | null; email?: string | null } | null;
+export async function buildMobileSignedInSummary(workspace: {
+  user?: { id?: string | null } | null;
+  profile?: { full_name?: string | null; username?: string | null; email?: string | null; avatar_url?: string | null } | null;
   organization?: { name?: string | null } | null;
   currentRoles?: string[];
 }) {
   const roles = normalizeWorkspaceRoles(workspace.currentRoles ?? []);
   const primaryRole = getPrimaryWorkspaceRole(roles) ?? 'member';
-  const params = new URLSearchParams();
-  params.set('name', workspace.profile?.full_name ?? workspace.profile?.username ?? 'SETU Flow user');
-  if (workspace.profile?.email) params.set('email', workspace.profile.email);
-  params.set('org', workspace.organization?.name ?? 'SETU Flow');
-  params.set('role', getWorkspaceRoleDisplayName(primaryRole));
+  const roleLabel = getWorkspaceRoleDisplayName(primaryRole);
+  const fullName = workspace.profile?.full_name ?? workspace.profile?.username ?? 'SETU Flow user';
+  const email = workspace.profile?.email ?? null;
+  const organizationName = workspace.organization?.name ?? 'SETU Flow';
+  const settings = workspace.user?.id ? await getMyCardSettingsForUser(workspace.user.id) : null;
+
+  if (settings?.share_slug) {
+    return {
+      name: fullName,
+      initials: fullName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'SF',
+      email,
+      roleLabel,
+      organizationName,
+      primaryPhone: settings.primary_phone ?? null,
+      secondaryPhone: settings.secondary_phone ?? null,
+      website: settings.website ?? null,
+      address: settings.address ?? null,
+      avatarUrl: workspace.profile?.avatar_url ?? null,
+      shareHref: `/card?share=${encodeURIComponent(settings.share_slug)}`,
+      downloadVcfHref: `/api/public/card-vcf?share=${encodeURIComponent(settings.share_slug)}`,
+    };
+  }
+
+  const params = buildPublicCardSearchParams({
+    fullName,
+    roleLabel,
+    organizationName,
+    email: email ?? 'hello@setuflow.com',
+    primaryPhone: settings?.primary_phone ?? 'Phone shared after save',
+    secondaryPhone: settings?.secondary_phone ?? null,
+    website: settings?.website ?? null,
+    address: settings?.address ?? null,
+    avatarUrl: workspace.profile?.avatar_url ?? null,
+  });
+
   return {
-    name: workspace.profile?.full_name ?? workspace.profile?.username ?? 'SETU Flow user',
-    email: workspace.profile?.email ?? null,
-    roleLabel: getWorkspaceRoleDisplayName(primaryRole),
-    organizationName: workspace.organization?.name ?? 'SETU Flow',
+    name: fullName,
+    initials: fullName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'SF',
+    email,
+    roleLabel,
+    organizationName,
+    primaryPhone: settings?.primary_phone ?? null,
+    secondaryPhone: settings?.secondary_phone ?? null,
+    website: settings?.website ?? null,
+    address: settings?.address ?? null,
+    avatarUrl: workspace.profile?.avatar_url ?? null,
     shareHref: `/card?${params.toString()}`,
+    downloadVcfHref: '/api/contact-exchange/vcard',
   };
 }

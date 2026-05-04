@@ -1,4 +1,13 @@
 
+## V15 - Unified mobile vCard share source
+
+- Fixed inconsistent mobile Share vCard modal data across Dashboard, Leads, Orders, and Admin routes.
+- Passed the saved profile photo into the canonical mobile share sheet so the same image appears from every entry point.
+- Updated the mobile Leads signed-in summary to load saved My Card settings and share slug before building QR, Save Contact, Copy Link, and Share actions.
+- Kept Smart QR as the default public-card link while keeping Save Contact on the compact .vcf endpoint.
+- Further reduced newly uploaded profile photo output size to improve iPhone contact-photo import reliability.
+
+
 ## V14 - iPhone vCard import polish
 
 - Added structured `N:` name fields so iOS displays the full contact name instead of falling back to the phone number.

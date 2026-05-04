@@ -65,7 +65,7 @@ export default async function LeadsPage({
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
-  const mobileSignedIn = buildMobileSignedInSummary(workspace as any);
+  const mobileSignedIn = await buildMobileSignedInSummary(workspace as any);
 
   const initialQuickCapture = quickLeadEnabled
     ? {

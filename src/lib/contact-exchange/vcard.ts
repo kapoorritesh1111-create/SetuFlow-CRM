@@ -50,7 +50,7 @@ function dataImageToVCardPhoto(value?: string | null) {
   const base64 = match[2].replace(/\s/g, '');
   // iOS Contacts is much more reliable when embedded contact photos are small.
   // Larger photos may be silently ignored by the native preview/import sheet.
-  if (!base64 || base64.length > 260_000) return null;
+  if (!base64 || base64.length > 360_000) return null;
   return { type, base64 };
 }
 
@@ -95,7 +95,7 @@ export function buildVCard(identity: VCardIdentity) {
   if (hasRealValue(identity.address)) lines.push(`ADR;TYPE=WORK:;;${escapeVCardValue(String(identity.address).trim())};;;;`);
 
   const photo = dataImageToVCardPhoto(identity.avatarUrl);
-  if (photo) lines.push(`PHOTO;ENCODING=b;TYPE=${photo.type}:${photo.base64}`);
+  if (photo) lines.push(`PHOTO;TYPE=${photo.type};ENCODING=BASE64:${photo.base64}`);
 
   lines.push('NOTE:Shared via Setu Flow');
   lines.push(`REV:${now}`);

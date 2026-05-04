@@ -11,6 +11,7 @@ export type MobileSignedInIdentity = {
   secondaryPhone?: string | null;
   website?: string | null;
   address?: string | null;
+  avatarUrl?: string | null;
   shareHref?: string;
   downloadVcfHref?: string;
 };
