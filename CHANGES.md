@@ -36,3 +36,9 @@
 npm test
 68/68 tests passed
 ```
+
+## Homepage marketing redesign
+- Rebuilt the public homepage around the new Setu Flow positioning: “Bridge the gaps in your business — shore to shore.”
+- Added a SaaS-style product narrative for trade command center, follow-up control, guided quoting, execution desk, trade events, catalog/pricing, and commercial intelligence.
+- Added polished marketing screenshot assets under `public/marketing/` using the supplied product screenshots.
+- Added `public/reference-html/setuflow-homepage-marketing-redesign.html` as a static reference matching the homepage structure.
