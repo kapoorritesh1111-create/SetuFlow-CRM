@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import QRCode from 'qrcode';
 
 function ActionButton({ href, label, primary = false, download, onClick }: { href?: string; label: string; primary?: boolean; download?: boolean; onClick?: () => void | Promise<void> }) {
   const className = primary
@@ -63,10 +62,11 @@ export function VCardShareActions({
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [shareSupported, setShareSupported] = useState(false);
   const [shareState, setShareState] = useState<'idle' | 'shared' | 'fallback'>('idle');
-  const [qrImageUrl, setQrImageUrl] = useState('');
 
   const publicCardUrl = useMemo(() => (origin ? `${origin}${publicCardPath}` : publicCardPath), [origin, publicCardPath]);
   const downloadUrl = useMemo(() => (origin ? `${origin}${downloadPath}` : downloadPath), [origin, downloadPath]);
+  const qrImageUrl = useMemo(() => `/api/contact-exchange/qr?data=${encodeURIComponent(publicCardUrl)}`, [publicCardUrl]);
+
   const shareText = useMemo(
     () => `Save ${fullName} · ${roleLabel}\n${organizationName}\nDirect contact: ${email}${primaryPhone ? ` · ${primaryPhone}` : ''}\nOpen the premium identity page: ${publicCardUrl}`,
     [email, fullName, organizationName, publicCardUrl, primaryPhone, roleLabel],
@@ -78,32 +78,6 @@ export function VCardShareActions({
       setShareSupported(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
     }
   }, []);
-
-  useEffect(() => {
-    let isActive = true;
-
-    async function buildQr() {
-      if (!publicCardUrl) {
-        if (isActive) setQrImageUrl('');
-        return;
-      }
-      try {
-        const dataUrl = await QRCode.toDataURL(publicCardUrl, {
-          width: 224,
-          margin: 1,
-          color: { dark: '#1F487C', light: '#FFFFFF' },
-        });
-        if (isActive) setQrImageUrl(dataUrl);
-      } catch {
-        if (isActive) setQrImageUrl('');
-      }
-    }
-
-    void buildQr();
-    return () => {
-      isActive = false;
-    };
-  }, [publicCardUrl]);
 
   async function copyPreviewLink() {
     try {
@@ -207,7 +181,7 @@ export function VCardShareActions({
 
         <div className="mt-5 rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
           <div className="flex min-h-[244px] items-center justify-center rounded-[1.6rem] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4">
-            {qrImageUrl ? <img src={qrImageUrl} alt="QR code for digital card" className="h-56 w-56 rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <p className="max-w-xs text-center text-sm text-slate-500">Preparing QR for the public card URL…</p>}
+            <img src={qrImageUrl} alt="QR code for digital card" className="h-56 w-56 rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm" />
           </div>
 
           <div className="mt-4 space-y-3">

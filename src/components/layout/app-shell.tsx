@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import QRCode from 'qrcode';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { ShellNavigation } from '@/components/shell/navigation';
 import { MobileTabBar } from '@/components/shell/MobileTabBar';
@@ -41,7 +40,6 @@ export function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [vcardModalOpen, setVcardModalOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [topbarDate, setTopbarDate] = useState('');
   const [absoluteShareUrl, setAbsoluteShareUrl] = useState('');
 
@@ -114,33 +112,13 @@ export function AppShell({
     if (typeof window !== 'undefined') setAbsoluteShareUrl(`${window.location.origin}${shareLink}`);
   }, [shareLink]);
 
-  useEffect(() => {
-    let active = true;
+  const absoluteDownloadVcfUrl = useMemo(() => {
+    if (!absoluteShareUrl || !shareLink || !absoluteShareUrl.endsWith(shareLink)) return downloadVcfHref;
+    const origin = absoluteShareUrl.slice(0, -shareLink.length);
+    return downloadVcfHref.startsWith('/') ? `${origin}${downloadVcfHref}` : downloadVcfHref;
+  }, [absoluteShareUrl, downloadVcfHref, shareLink]);
 
-    async function generateQr() {
-      if (!vcardModalOpen) return;
-      const absoluteShareLink = absoluteShareUrl || shareLink;
-      try {
-        const dataUrl = await QRCode.toDataURL(absoluteShareLink, {
-          errorCorrectionLevel: 'M',
-          margin: 1,
-          width: 220,
-          color: {
-            dark: '#0f172a',
-            light: '#ffffff',
-          },
-        });
-        if (active) setQrCodeDataUrl(dataUrl);
-      } catch {
-        if (active) setQrCodeDataUrl(null);
-      }
-    }
-
-    void generateQr();
-    return () => {
-      active = false;
-    };
-  }, [absoluteShareUrl, shareLink, vcardModalOpen]);
+  const qrImageSrc = useMemo(() => `/api/contact-exchange/qr?data=${encodeURIComponent(absoluteDownloadVcfUrl)}`, [absoluteDownloadVcfUrl]);
 
   const handleCopyShareLink = async () => {
     if (typeof window === 'undefined' || !navigator.clipboard) return;
@@ -265,13 +243,12 @@ export function AppShell({
             <div className="px-7 py-6">
               <div className="mb-5 flex flex-col items-center">
                 <div className="flex h-[124px] w-[124px] items-center justify-center rounded-[1rem] border border-slate-200 bg-slate-50 p-2 shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
-                  {qrCodeDataUrl ? (
-                    <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-full w-full rounded-[0.75rem] bg-white p-1" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center rounded-[0.75rem] border border-dashed border-slate-300 bg-white text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Preparing QR
-                    </div>
-                  )}
+                  <img
+                    src={qrImageSrc}
+                    alt="QR code for digital vCard share"
+                    className="h-full w-full rounded-[0.75rem] bg-white p-1"
+                    loading="eager"
+                  />
                 </div>
                 <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Scan to save contact</p>
               </div>

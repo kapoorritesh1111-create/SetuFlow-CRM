@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import QRCode from 'qrcode';
 import type { MobileSignedInIdentity } from './mobile-shell';
 
 function buildIntro(identity?: MobileSignedInIdentity, publicCardUrl = '') {
@@ -32,13 +31,14 @@ export function MobileVCardShareSheet({
   signedIn?: MobileSignedInIdentity;
 }) {
   const [origin, setOrigin] = useState('');
-  const [qrImageUrl, setQrImageUrl] = useState('');
   const [status, setStatus] = useState('Ready to share your digital business card.');
   const [shareSupported, setShareSupported] = useState(false);
   const publicPath = signedIn?.shareHref ?? '/card';
   const downloadPath = signedIn?.downloadVcfHref ?? '/api/contact-exchange/vcard';
   const publicCardUrl = useMemo(() => (origin && publicPath.startsWith('/') ? `${origin}${publicPath}` : publicPath), [origin, publicPath]);
   const downloadUrl = useMemo(() => (origin && downloadPath.startsWith('/') ? `${origin}${downloadPath}` : downloadPath), [origin, downloadPath]);
+  const qrImageUrl = useMemo(() => `/api/contact-exchange/qr?data=${encodeURIComponent(publicCardUrl)}`, [publicCardUrl]);
+
   const intro = useMemo(() => buildIntro(signedIn, publicCardUrl), [publicCardUrl, signedIn]);
   const initials = signedIn?.initials || getInitials(signedIn?.name);
 
@@ -48,25 +48,6 @@ export function MobileVCardShareSheet({
       setShareSupported(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
     }
   }, []);
-
-  useEffect(() => {
-    if (!open || !publicCardUrl) return;
-    let active = true;
-    async function buildQr() {
-      try {
-        const dataUrl = await QRCode.toDataURL(publicCardUrl, {
-          width: 208,
-          margin: 1,
-          color: { dark: '#0B2E4A', light: '#FFFFFF' },
-        });
-        if (active) setQrImageUrl(dataUrl);
-      } catch {
-        if (active) setQrImageUrl('');
-      }
-    }
-    void buildQr();
-    return () => { active = false; };
-  }, [open, publicCardUrl]);
 
   async function copy(value: string, message: string) {
     try {
@@ -115,7 +96,7 @@ export function MobileVCardShareSheet({
 
           <div className="grid gap-4 p-6">
             <div className="text-center">
-              {qrImageUrl ? <img src={qrImageUrl} alt="QR code for digital vCard" className="mx-auto h-36 w-36 rounded-[1.25rem] border border-slate-200 bg-white p-2 shadow-sm" /> : <p className="py-14 text-sm text-slate-500">Preparing QR…</p>}
+              <img src={qrImageUrl} alt="QR code for digital vCard" className="mx-auto h-36 w-36 rounded-[1.25rem] border border-slate-200 bg-white p-2 shadow-sm" />
               <p className="mt-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Scan to save contact</p>
             </div>
 

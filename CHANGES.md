@@ -102,3 +102,8 @@ npm test
 - Added a circular photo cropper before saving vCard profile photos.
 - Large phone images are accepted, cropped, compressed to an optimized JPEG, and saved for the public card.
 - Simplified vCard setup/share/activity copy so the page feels customer-facing rather than internal/dev-facing.
+
+## V10 — vCard QR reliability fix
+- Replaced client-side QR generation in the in-app vCard share modal with a server-rendered SVG QR endpoint.
+- The share modal QR now points to the downloadable `.vcf` contact file so scanning it saves the contact instead of waiting on a fragile client-side QR build.
+- Updated mobile and workspace QR rendering paths to use the same reliable QR endpoint.
