@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
-      <body><ServiceWorkerRegistration />{children}</body>
+      <body suppressHydrationWarning><ServiceWorkerRegistration />{children}</body>
     </html>
   );
 }

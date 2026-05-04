@@ -5,20 +5,23 @@ import { revalidatePath } from 'next/cache';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import {
+  DEFAULT_SETU_FLOW_LOGO,
+  ROOT_DOMAIN,
+  buildWorkspaceDomain,
+  checked,
+  defaultMarkets,
+  defaultNextSteps,
+  defaultPipelineStages,
+  defaultPipelines,
+  normalizeEmail,
+  normalizeList,
+  normalizeText,
+  slugifyCompanyName,
+} from '@/features/client-onboarding/shared';
 
-const DEFAULT_SETU_FLOW_LOGO = '/logos/setu-flow-logo.png';
-const ROOT_DOMAIN = 'setuflowcrm.com';
-
-function normalizeText(value: FormDataEntryValue | null | undefined) {
-  const text = String(value ?? '').trim();
-  return text.length > 0 ? text : null;
-}
-function normalizeEmail(value: FormDataEntryValue | null | undefined) { return String(value ?? '').trim().toLowerCase(); }
-function normalizeList(value: FormDataEntryValue | null | undefined) { return String(value ?? '').split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean); }
-function slugifyCompanyName(value: string) { return value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 54) || 'new-client'; }
-function buildWorkspaceDomain(companyName: string) { return `${slugifyCompanyName(companyName)}.${ROOT_DOMAIN}`; }
-function checked(formData: FormData, key: string) { return formData.get(key) === 'on'; }
 function onboardingRedirect(path: string, params: Record<string, string | null | undefined>): never { const query = new URLSearchParams(); for (const [key, value] of Object.entries(params)) if (value) query.set(key, value); redirect(`${path}${query.size ? `?${query.toString()}` : ''}`); }
+function cleanList(value: string[] | null | undefined, fallback: string[]) { const items = Array.isArray(value) && value.length > 0 ? value : fallback; return Array.from(new Set(items.map((item) => item.trim()).filter(Boolean))); }
 
 export async function submitClientOnboardingRequest(formData: FormData): Promise<void> {
   const companyName = normalizeText(formData.get('company_name'));
@@ -70,18 +73,51 @@ export async function updateClientOnboardingStatus(formData: FormData): Promise<
 
 export async function createWorkspaceFromOnboardingDraft(formData: FormData): Promise<void> {
   const requestId = normalizeText(formData.get('request_id'));
-  const companyName = normalizeText(formData.get('company_name'));
-  const logoUrl = normalizeText(formData.get('logo_url')) ?? DEFAULT_SETU_FLOW_LOGO;
-  if (!requestId || !companyName) return;
+  if (!requestId) return;
   const { missingEnv, membership } = await requireWorkspace();
   if (missingEnv || !membership) return;
   const admin = createAdminSupabaseClient() as any;
   if (!admin) return;
-  const slug = slugifyCompanyName(companyName);
+
+  const { data: request, error: requestError } = await admin.from('client_onboarding_requests').select('*').eq('id', requestId).maybeSingle();
+  if (requestError || !request?.company_name) redirect('/admin/client-onboarding?notice=request-not-found');
+
+  const companyName = String(request.company_name);
+  const logoUrl = request.logo_url || DEFAULT_SETU_FLOW_LOGO;
+  const slug = request.company_slug || slugifyCompanyName(companyName);
   const workspaceDomain = `${slug}.${ROOT_DOMAIN}`;
   const { data: org, error: orgError } = await admin.from('organizations').upsert({ name: companyName, slug, default_currency: 'USD', logo_url: logoUrl, created_by: membership.user_id ?? null, updated_at: new Date().toISOString() }, { onConflict: 'slug' }).select('id').maybeSingle();
   if (orgError || !org?.id) redirect('/admin/client-onboarding?notice=workspace-create-failed');
-  await admin.from('client_onboarding_requests').update({ status: 'setup_in_progress', workspace_domain: workspaceDomain, linked_organization_id: org.id, updated_at: new Date().toISOString() }).eq('id', requestId);
+
+  const organizationId = org.id;
+  const markets = cleanList(request.requested_markets, defaultMarkets);
+  const countries = cleanList(request.requested_countries, request.headquarters_country ? [request.headquarters_country] : []);
+  const pipelines = cleanList(request.requested_pipelines, defaultPipelines);
+  const stages = cleanList(request.requested_pipeline_stages, defaultPipelineStages);
+  const nextSteps = cleanList(request.requested_next_steps, defaultNextSteps);
+
+  const marketRows = markets.map((name, index) => ({ organization_id: organizationId, name, market_code: slugifyCompanyName(name).toUpperCase().slice(0, 12), sort_order: index + 1, is_active: true }));
+  const { data: insertedMarkets } = marketRows.length
+    ? await admin.from('markets').insert(marketRows).select('id, name').throwOnError()
+    : { data: [] };
+  const firstMarketId = insertedMarkets?.[0]?.id;
+  if (firstMarketId && countries.length) {
+    await admin.from('countries').insert(countries.map((name, index) => ({ organization_id: organizationId, market_id: firstMarketId, name, sort_order: index + 1, is_active: true }))).throwOnError();
+  }
+
+  const pipelineRows = pipelines.map((name, index) => ({ organization_id: organizationId, name, lead_type: name.toLowerCase().includes('supplier') ? 'supplier' : 'buyer', is_default: index === 0 }));
+  const { data: insertedPipelines } = pipelineRows.length
+    ? await admin.from('pipelines').insert(pipelineRows).select('id, name').throwOnError()
+    : { data: [] };
+  for (const pipeline of insertedPipelines ?? []) {
+    await admin.from('pipeline_stages').insert(stages.map((name, index) => ({ pipeline_id: pipeline.id, name, sort_order: index + 1, is_closed: ['won', 'lost'].includes(name.toLowerCase()), is_won: name.toLowerCase() === 'won', is_lost: name.toLowerCase() === 'lost' }))).throwOnError();
+  }
+
+  if (nextSteps.length) {
+    await admin.from('next_steps').insert(nextSteps.map((name, index) => ({ organization_id: organizationId, name, sort_order: index + 1, is_active: true }))).throwOnError();
+  }
+
+  await admin.from('client_onboarding_requests').update({ status: 'admin_invite_ready', workspace_domain: workspaceDomain, linked_organization_id: organizationId, updated_at: new Date().toISOString() }).eq('id', requestId);
   revalidatePath('/admin/client-onboarding');
-  redirect('/admin/client-onboarding?notice=workspace-drafted');
+  redirect(`/admin/client-onboarding?request=${requestId}&notice=workspace-drafted`);
 }

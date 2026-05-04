@@ -1,9 +1,10 @@
--- Client onboarding intake and workspace setup requests.
+-- PASS37/38 client onboarding intake, notification, and setup handoff
 create table if not exists public.client_onboarding_requests (
   id uuid primary key default gen_random_uuid(),
   company_name text not null,
   company_slug text not null,
   workspace_domain text not null,
+  linked_organization_id uuid references public.organizations(id) on delete set null,
   logo_url text not null default '/logos/setu-flow-logo.png',
   website text,
   primary_admin_name text,
@@ -19,11 +20,23 @@ create table if not exists public.client_onboarding_requests (
   product_category_notes text,
   additional_notes text,
   wants_trade_events boolean not null default false,
-  status text not null default 'submitted' check (status in ('submitted', 'reviewing', 'setup_in_progress', 'admin_invite_ready', 'admin_invited', 'live', 'paused')),
-  linked_organization_id uuid references public.organizations(id) on delete set null,
+  notification_email text not null default 'admin@setugroups.com',
+  admin_setup_url text,
+  notification_status text not null default 'pending',
+  notification_error text,
+  notification_sent_at timestamptz,
+  status text not null default 'submitted',
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint client_onboarding_requests_status_check check (status in ('submitted', 'reviewing', 'setup_in_progress', 'admin_invite_ready', 'admin_invited', 'live', 'paused'))
 );
+
+alter table public.client_onboarding_requests add column if not exists notification_email text not null default 'admin@setugroups.com';
+alter table public.client_onboarding_requests add column if not exists admin_setup_url text;
+alter table public.client_onboarding_requests add column if not exists notification_status text not null default 'pending';
+alter table public.client_onboarding_requests add column if not exists notification_error text;
+alter table public.client_onboarding_requests add column if not exists notification_sent_at timestamptz;
+
 create index if not exists client_onboarding_requests_status_idx on public.client_onboarding_requests(status, created_at desc);
 create unique index if not exists client_onboarding_requests_workspace_domain_idx on public.client_onboarding_requests(workspace_domain);
 alter table public.client_onboarding_requests enable row level security;
@@ -32,3 +45,4 @@ create policy "client onboarding requests are editable by authenticated admins" 
 comment on table public.client_onboarding_requests is 'Public client intake requests reviewed by Setu Flow before workspace creation and first admin invitation.';
 comment on column public.client_onboarding_requests.workspace_domain is 'Reserved customer workspace host, e.g. companyname.setuflowcrm.com.';
 comment on column public.client_onboarding_requests.logo_url is 'Falls back to Setu Flow logo when client does not provide one.';
+comment on column public.client_onboarding_requests.admin_setup_url is 'Direct authenticated setup link emailed to Setu Flow admin after public onboarding submission.';

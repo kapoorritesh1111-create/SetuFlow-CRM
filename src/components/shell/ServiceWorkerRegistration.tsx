@@ -5,6 +5,7 @@ import { installOfflineSyncListener } from '@/lib/offline/sync';
 
 export function ServiceWorkerRegistration() {
   useEffect(() => {
+    if (window.location.pathname.startsWith('/onboarding')) return undefined;
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => undefined);
     }
