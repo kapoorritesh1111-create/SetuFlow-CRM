@@ -87,13 +87,18 @@ NEXT_PUBLIC_APP_URL=https://setuflowcrm.com
 Onboarding notifications:
 
 ```text
-RESEND_API_KEY=
-SETU_NOTIFICATION_FROM_EMAIL=help@setugroups.com
+SETU_EMAIL_PROVIDER=mailtrap
+MAILTRAP_API_KEY=
+MAILTRAP_USE_SANDBOX=false
+MAILTRAP_SANDBOX_ID=
+SETU_NOTIFICATION_FROM_EMAIL=Setu Flow <help@setugroups.com>
 SETU_ONBOARDING_ADMIN_EMAIL=admin@setugroups.com
+# Optional fallback only if switching SETU_EMAIL_PROVIDER=resend
+RESEND_API_KEY=
 SETU_INTERNAL_ORG_SLUG=setu-flow
 ```
 
-`SETU_NOTIFICATION_FROM_EMAIL` is the verified sender address/domain in Resend. `SETU_ONBOARDING_ADMIN_EMAIL` is the internal recipient for new onboarding alerts and resend attempts.
+`SETU_EMAIL_PROVIDER=mailtrap` makes onboarding alerts use Mailtrap. `SETU_NOTIFICATION_FROM_EMAIL` must be a sender on a Mailtrap-verified domain, and `SETU_ONBOARDING_ADMIN_EMAIL` is the internal recipient. Use `MAILTRAP_USE_SANDBOX=true` only when you want messages captured in the sandbox instead of delivered to real inboxes.
 
 Mobile scan provider variables are documented in `MOBILE_SCAN_PRODUCTION.md`.
 
@@ -115,7 +120,7 @@ npm test
 Current expected test summary for this baseline:
 
 ```text
-60/60 tests passed
+66/66 tests passed
 ```
 
 Full release verification script:

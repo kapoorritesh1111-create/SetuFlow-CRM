@@ -26,5 +26,5 @@
 
 - Hydration errors on admin routes: inspect shell components for browser-only values during first render.
 - Public form access issues: confirm `/onboarding` remains outside authenticated route groups.
-- Missing onboarding emails: confirm `RESEND_API_KEY`, `SETU_NOTIFICATION_FROM_EMAIL`, and `SETU_ONBOARDING_ADMIN_EMAIL`.
+- Missing onboarding emails: confirm `SETU_EMAIL_PROVIDER`, `MAILTRAP_API_KEY`, `SETU_NOTIFICATION_FROM_EMAIL`, and `SETU_ONBOARDING_ADMIN_EMAIL`. If `MAILTRAP_USE_SANDBOX=true`, emails are captured in the Mailtrap sandbox rather than delivered to the admin inbox.
 - Scan issues: check `/api/mobile/scan-readiness` and OpenAI API credentials.

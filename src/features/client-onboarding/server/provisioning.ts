@@ -109,7 +109,11 @@ async function seedCountries(admin: SupabaseAdmin, organizationId: string, platf
     iso2_code: country.iso2_code ?? null,
     iso3_code: country.iso3_code ?? null,
     phone_code: country.phone_code ?? null,
-    sort_order: country.sort_order ?? index + 1,
+    // Countries are assigned to the onboarding fallback market. The countries table
+    // has a unique (market_id, sort_order) constraint, so use a tenant-local
+    // sequential order instead of copying template sort_order values that may
+    // repeat across source markets.
+    sort_order: index + 1,
     is_active: country.is_active ?? true,
     search_aliases: country.search_aliases ?? null,
   }));

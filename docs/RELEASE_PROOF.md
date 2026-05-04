@@ -6,7 +6,7 @@ Current proof baseline: clean current repository baseline.
 
 ```text
 npm test
-60/60 tests passed
+66/66 tests passed
 ```
 
 The `release:proof` command remains wired through `package.json` and the route manifest contract.

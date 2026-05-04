@@ -12,11 +12,11 @@
   <header>
     <div class="eyebrow">Setu Flow Development Control Center</div>
     <h1>Current Baseline · Internal DCC</h1>
-    <div>Clean repo baseline with public onboarding, Setu-internal SaaS provisioning wizard, Resend notification retry, current docs, and updated reference HTMLs.</div>
+    <div>Clean repo baseline with public onboarding, Setu-internal SaaS provisioning wizard, Mailtrap notification retry, current docs, and updated reference HTMLs.</div>
   </header>
   <main class="wrap">
     <section class="grid">
-      <div class="card"><span class="badge badge-pass">Ready</span><h2>Client onboarding</h2><p class="muted">Public form at <code>/onboarding</code>; Setu-internal provisioning wizard and Resend retry at <code>/admin/client-onboarding</code>.</p></div>
+      <div class="card"><span class="badge badge-pass">Ready</span><h2>Client onboarding</h2><p class="muted">Public form at <code>/onboarding</code>; Setu-internal provisioning wizard and Mailtrap retry at <code>/admin/client-onboarding</code>.</p></div>
       <div class="card"><span class="badge badge-pass">Ready</span><h2>Hydration guard</h2><p class="muted">Admin shell avoids first-render browser-only URL reads.</p></div>
       <div class="card"><span class="badge badge-pass">Ready</span><h2>Clean docs</h2><p class="muted">Duplicate historical files have been removed from the active repo.</p></div>
     </section>
@@ -48,9 +48,9 @@
 
     <section class="card section">
       <h2>Test Results</h2>
-      <div class="test-row"><div class="test-num">01</div><div><div class="test-name">Repo regression suite</div><div class="test-steps">Run <code>npm test</code> against the clean baseline.</div></div><div class="test-status"><span class="badge badge-pass">60/60 PASS</span></div></div>
+      <div class="test-row"><div class="test-num">01</div><div><div class="test-name">Repo regression suite</div><div class="test-steps">Run <code>npm test</code> against the clean baseline.</div></div><div class="test-status"><span class="badge badge-pass">66/66 PASS</span></div></div>
       <div class="test-row"><div class="test-num">02</div><div><div class="test-name">Public onboarding access</div><div class="test-steps">Verify <code>/onboarding</code> has no login wall and posts to <code>/api/public/client-onboarding</code>.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
-      <div class="test-row"><div class="test-num">03</div><div><div class="test-name">Admin onboarding protection</div><div class="test-steps">Verify <code>/admin/client-onboarding</code> is Setu-internal only, provisions tenant org IDs, seeds all countries, prepares owner invitations, and exposes <code>Resend admin email</code>.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
+      <div class="test-row"><div class="test-num">03</div><div><div class="test-name">Admin onboarding protection</div><div class="test-steps">Verify <code>/admin/client-onboarding</code> is Setu-internal only, provisions tenant org IDs, seeds all countries, prepares owner invitations, and exposes <code>Send admin email</code> backed by Mailtrap.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
       <div class="test-row"><div class="test-num">04</div><div><div class="test-name">Clean file tree</div><div class="test-steps">Verify historical HTML and handoff docs are absent from the active repo.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
       <div class="test-row"><div class="test-num">05</div><div><div class="test-name">Reference handoff</div><div class="test-steps">Verify README, CHANGES, docs, internal DCC, mobile blueprint, and reference HTMLs describe the current baseline.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
     </section>

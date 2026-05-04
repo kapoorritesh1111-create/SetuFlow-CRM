@@ -98,7 +98,7 @@ Capabilities:
 - Seed all countries, markets, pipelines, stages, next steps, roles, and pricing settings.
 - Prepare the first owner invitation for the primary admin.
 - Move request status forward.
-- Resend the internal admin onboarding notification when email configuration was added after the original request or an earlier send failed.
+- Resend the internal admin onboarding notification through Mailtrap when email configuration was added after the original request or an earlier send failed.
 - Handoff to Admin -> Invitations to send the first admin login.
 
 Deep link from notification:
@@ -118,14 +118,19 @@ admin@setugroups.com
 Environment variables:
 
 ```env
-RESEND_API_KEY=
-SETU_NOTIFICATION_FROM_EMAIL=help@setugroups.com
+SETU_EMAIL_PROVIDER=mailtrap
+MAILTRAP_API_KEY=
+MAILTRAP_USE_SANDBOX=false
+MAILTRAP_SANDBOX_ID=
+SETU_NOTIFICATION_FROM_EMAIL=Setu Flow <help@setugroups.com>
 SETU_ONBOARDING_ADMIN_EMAIL=admin@setugroups.com
+# Optional fallback only if switching SETU_EMAIL_PROVIDER=resend
+RESEND_API_KEY=
 ```
 
-`SETU_NOTIFICATION_FROM_EMAIL` must be a verified sender/domain in Resend. `SETU_ONBOARDING_ADMIN_EMAIL` is the recipient for new-client setup alerts.
+`SETU_NOTIFICATION_FROM_EMAIL` must be a sender on a Mailtrap-verified domain. `SETU_ONBOARDING_ADMIN_EMAIL` is the recipient for new-client setup alerts. Keep `MAILTRAP_USE_SANDBOX=false` in production delivery; set it to `true` only for sandbox capture.
 
-The request saves even when email delivery is not configured. In that case the notification status records the missing email environment state. After fixing Vercel environment variables, use **Resend admin email** on `/admin/client-onboarding` to send the notification for the same existing record.
+The request saves even when email delivery is not configured. In that case the notification status records the missing email environment state. After fixing Vercel environment variables, use **Send admin email** on `/admin/client-onboarding` to send the notification for the same existing record.
 
 ## Hydration guard
 

@@ -17,5 +17,5 @@ test('client onboarding notification sender is shared between public submission 
 
 test('admin onboarding page exposes resend admin email action', () => {
   assert.match(page, /resendClientOnboardingNotification/);
-  assert.match(page, /Resend admin email/);
+  assert.match(page, /Send admin email/);
 });
