@@ -62,8 +62,8 @@ async function cropToDataUrl(draft: NonNullable<CropDraft>) {
     img.src = draft.src;
   });
 
-  const preview = 280;
-  const output = 512;
+  const preview = 260;
+  const output = 360;
   const scale = Math.max(preview / image.naturalWidth, preview / image.naturalHeight) * draft.zoom;
   const canvas = document.createElement('canvas');
   canvas.width = output;
@@ -78,7 +78,7 @@ async function cropToDataUrl(draft: NonNullable<CropDraft>) {
   const drawX = (output - drawW) / 2 + draft.x * ratio;
   const drawY = (output - drawH) / 2 + draft.y * ratio;
   ctx.drawImage(image, drawX, drawY, drawW, drawH);
-  return canvas.toDataURL('image/jpeg', 0.84);
+  return canvas.toDataURL('image/jpeg', 0.72);
 }
 
 function formatRecency(value: string | null) {

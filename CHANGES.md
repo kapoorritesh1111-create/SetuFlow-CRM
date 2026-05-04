@@ -1,3 +1,12 @@
+
+## V14 - iPhone vCard import polish
+
+- Added structured `N:` name fields so iOS displays the full contact name instead of falling back to the phone number.
+- Tightened vCard output to iOS-friendly fields: name, organization, title, cell phone, email, website, address, note, and revision.
+- Kept the public card URL out of visible contact fields.
+- Reduced future profile-photo crop output to a smaller square JPEG so iOS is more likely to import the contact photo reliably.
+- Added size guard for embedded vCard photos to avoid iOS silently rejecting oversized images.
+
 # Setu Flow vCard QR Hotfix V11
 
 ## Fixed
