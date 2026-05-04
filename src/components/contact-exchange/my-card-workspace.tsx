@@ -151,11 +151,12 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
     const query = fallbackParams.toString();
     return query ? `/card?${query}` : '/card';
   }, [fallbackParams]);
-  const preferredPublicCardPath = shareSlug
-    ? `${fallbackPublicCardPath}${fallbackPublicCardPath.includes('?') ? '&' : '?'}share=${encodeURIComponent(shareSlug)}`
-    : fallbackPublicCardPath;
+  // Prefer the server share slug when available. Do not append full profile
+  // details to share links once a slug exists; large phone-uploaded avatars
+  // can otherwise create URI_TOO_LONG failures in QR and .vcf links.
+  const preferredPublicCardPath = shareSlug ? `/card?share=${encodeURIComponent(shareSlug)}` : fallbackPublicCardPath;
   const publicCardUrl = origin ? `${origin}${preferredPublicCardPath}` : preferredPublicCardPath;
-  const publicVcfPath = `/api/public/card-vcf?${fallbackParams.toString()}${shareSlug ? `&share=${encodeURIComponent(shareSlug)}` : ''}`;
+  const publicVcfPath = shareSlug ? `/api/public/card-vcf?share=${encodeURIComponent(shareSlug)}` : `/api/public/card-vcf?${fallbackParams.toString()}`;
   const publicVcfUrl = origin ? `${origin}${publicVcfPath}` : publicVcfPath;
 
   useEffect(() => {
@@ -170,7 +171,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
     async function buildQrCode() {
       if (!publicCardUrl) return;
       try {
-        const dataUrl = await QRCode.toDataURL(publicCardUrl, { width: 180, margin: 1, color: { dark: '#1F487C', light: '#FFFFFF' } });
+        const dataUrl = await QRCode.toDataURL(publicCardUrl, { width: 220, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0B2E4A', light: '#FFFFFF' } });
         if (isActive) setQrCodeDataUrl(dataUrl);
       } catch {
         if (isActive) setQrCodeDataUrl('');
@@ -344,7 +345,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
             <a href={publicCardUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Open card</a>
             <button type="button" onClick={() => void handleShare()} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{shareSupported ? 'Share' : copied === 'link' ? 'Copied' : 'Copy link'}</button>
             <button type="button" onClick={() => void copy(shareIntro, 'summary')} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'summary' ? 'Copied' : 'Copy intro'}</button>
-            <a href={publicVcfUrl} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Download .vcf</a>
+            <a href={publicVcfUrl} download className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Download .vcf</a>
           </div>
           <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{shareStateCopy}</p>
 
@@ -352,9 +353,10 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-900">QR destination</p>
-                <p className="mt-2 break-all text-sm leading-6 text-slate-600">{publicCardUrl}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Scans open your public card. The link stays compact so QR, copy link, and .vcf download work reliably.</p>
+                <p className="mt-2 truncate rounded-xl bg-white px-3 py-2 text-xs text-slate-500">{publicCardUrl}</p>
               </div>
-              {qrCodeDataUrl ? <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-36 w-36 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <div className="flex h-36 w-36 items-center justify-center rounded-[1.25rem] border border-dashed border-slate-300 bg-white/70 p-4 text-center text-xs font-medium uppercase tracking-[0.12em] text-slate-400">QR loading</div>}
+              {qrCodeDataUrl ? <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-40 w-40 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <div className="flex h-36 w-36 items-center justify-center rounded-[1.25rem] border border-dashed border-slate-300 bg-white/70 p-4 text-center text-xs font-medium uppercase tracking-[0.12em] text-slate-400">QR loading</div>}
             </div>
           </div>
         </div>

@@ -20,6 +20,12 @@ type Profile = Database['public']['Tables']['profiles']['Row'] | null;
 type Organization = Database['public']['Tables']['organizations']['Row'] | null;
 type Membership = Database['public']['Tables']['organization_members']['Row'] | null;
 
+function addShareSafeAssetParam(params: URLSearchParams, key: string, value?: string | null) {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed || /^data:/i.test(trimmed) || /^blob:/i.test(trimmed) || trimmed.length > 500) return;
+  params.set(key, trimmed);
+}
+
 export function AppShell({
   children,
   profile,
@@ -62,7 +68,7 @@ export function AppShell({
     const params = new URLSearchParams();
     params.set('name', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
     if (profile?.email) params.set('email', profile.email);
-    if (profile?.avatar_url) params.set('avatar', profile.avatar_url);
+    addShareSafeAssetParam(params, 'avatar', profile?.avatar_url);
     params.set('org', organization?.name ?? 'SETU Flow');
     params.set('role', getWorkspaceRoleDisplayName(currentRole));
     if (cardSettings?.primaryPhone) params.set('phone', cardSettings.primaryPhone);
@@ -77,7 +83,7 @@ export function AppShell({
     const params = new URLSearchParams();
     params.set('name', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
     if (profile?.email) params.set('email', profile.email);
-    if (profile?.avatar_url) params.set('avatar', profile.avatar_url);
+    addShareSafeAssetParam(params, 'avatar', profile?.avatar_url);
     params.set('org', organization?.name ?? 'SETU Flow');
     params.set('role', getWorkspaceRoleDisplayName(currentRole));
     if (cardSettings?.primaryPhone) params.set('phone', cardSettings.primaryPhone);

@@ -22,6 +22,22 @@ export type PublicCardIdentity = {
   socials?: PublicCardSocialLinks;
 };
 
+
+function isShareSafeAssetUrl(value?: string | null) {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) return false;
+  // Data URLs from phone uploads can be thousands of characters long and break
+  // QR, .vcf and copied links. Only stable http(s) assets belong in URLs.
+  if (/^data:/i.test(trimmed) || /^blob:/i.test(trimmed)) return false;
+  if (!/^https?:\/\//i.test(trimmed)) return false;
+  return trimmed.length <= 500;
+}
+
+export function getShareSafeAssetUrl(value?: string | null) {
+  const trimmed = String(value ?? '').trim();
+  return isShareSafeAssetUrl(trimmed) ? trimmed : undefined;
+}
+
 function normalizeUrl(value?: string | null) {
   const trimmed = String(value ?? '').trim();
   if (!trimmed) return '';
@@ -40,8 +56,8 @@ export function buildPublicCardSearchParams(identity: PublicCardIdentity) {
     phone2: identity.secondaryPhone ?? undefined,
     web: identity.website ? normalizeUrl(identity.website) : undefined,
     addr: identity.address ?? undefined,
-    avatar: identity.avatarUrl ?? undefined,
-    logo: identity.logoUrl ?? undefined,
+    avatar: getShareSafeAssetUrl(identity.avatarUrl),
+    logo: getShareSafeAssetUrl(identity.logoUrl),
     book: identity.bookingUrl ? normalizeUrl(identity.bookingUrl) : undefined,
     quote: identity.quoteUrl ? normalizeUrl(identity.quoteUrl) : undefined,
     orgId: identity.organizationId ?? undefined,

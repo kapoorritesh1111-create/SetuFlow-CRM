@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildVCard, getVCardFilename } from '@/lib/contact-exchange/vcard';
 import { getPublicCardByShareSlug } from '@/lib/contact-exchange/my-card-settings';
-import { parsePublicCardSearchParams } from '@/lib/contact-exchange/public-card';
+import { buildPublicCardSearchParams, parsePublicCardSearchParams } from '@/lib/contact-exchange/public-card';
 
 export async function GET(request: NextRequest) {
   const share = request.nextUrl.searchParams.get('share');
   const sharedCard = share ? await getPublicCardByShareSlug(share) : null;
   const identity = sharedCard?.identity ?? parsePublicCardSearchParams(Object.fromEntries(request.nextUrl.searchParams.entries()));
+  const compactParams = buildPublicCardSearchParams(identity);
   const previewPath = share
     ? `${request.nextUrl.origin}/card?share=${encodeURIComponent(share)}`
-    : request.nextUrl.toString().replace('/api/public/card-vcf', '/card');
+    : `${request.nextUrl.origin}/card?${compactParams.toString()}`;
 
   const vcard = buildVCard({
     fullName: identity.fullName,
