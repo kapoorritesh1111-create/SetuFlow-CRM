@@ -14,7 +14,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <a href="/#platform" className="text-sm font-medium text-slate-600 transition hover:text-[#1F487C]">Platform</a>
             <a href="/#compare" className="text-sm font-medium text-slate-600 transition hover:text-[#1F487C]">Compare</a>
             <a href="/#pricing" className="text-sm font-medium text-slate-600 transition hover:text-[#1F487C]">Pricing</a>
-            <a href="mailto:hello@setuflowcrm.com" className="text-sm font-medium text-slate-600 transition hover:text-[#1F487C]">Book demo</a>
+            <a href="/#book-demo" className="text-sm font-medium text-slate-600 transition hover:text-[#1F487C]">Book demo</a>
             <Link href="/client-login" className="rounded-full bg-[#06263f] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(6,38,63,0.20)] transition hover:-translate-y-0.5 hover:bg-[#0b2e4a]">Enter workspace</Link>
           </nav>
           <Link href="/client-login" className="rounded-full bg-[#06263f] px-4 py-2 text-xs font-semibold text-white shadow-lg md:hidden">Enter</Link>
@@ -24,7 +24,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <footer className="border-t border-[#1F487C]/10 bg-white/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-sm text-slate-600 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div><p className="font-semibold text-slate-900">Setu Flow CRM</p><p>Trade execution CRM for capture, quotes, approvals and orders.</p></div>
-          <div className="flex flex-wrap gap-5 font-medium"><a href="mailto:hello@setuflowcrm.com">hello@setuflowcrm.com</a><Link href="/client-login">Enter workspace</Link></div>
+          <div className="flex flex-wrap gap-5 font-medium"><a href="mailto:help@setugroups.com">help@setugroups.com</a><Link href="/client-login">Enter workspace</Link></div>
         </div>
       </footer>
     </div>

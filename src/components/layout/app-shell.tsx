@@ -64,6 +64,7 @@ export function AppShell({
     const params = new URLSearchParams();
     params.set('name', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
     if (profile?.email) params.set('email', profile.email);
+    if (profile?.avatar_url) params.set('avatar', profile.avatar_url);
     params.set('org', organization?.name ?? 'SETU Flow');
     params.set('role', getWorkspaceRoleDisplayName(currentRole));
     if (cardSettings?.primaryPhone) params.set('phone', cardSettings.primaryPhone);
@@ -71,13 +72,14 @@ export function AppShell({
     if (cardSettings?.website) params.set('web', cardSettings.website);
     if (cardSettings?.address) params.set('addr', cardSettings.address);
     return `/card?${params.toString()}`;
-  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
+  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.avatar_url, profile?.email, profile?.full_name, profile?.username]);
 
 
   const downloadVcfHref = useMemo(() => {
     const params = new URLSearchParams();
     params.set('name', profile?.full_name ?? profile?.username ?? 'SETU Flow user');
     if (profile?.email) params.set('email', profile.email);
+    if (profile?.avatar_url) params.set('avatar', profile.avatar_url);
     params.set('org', organization?.name ?? 'SETU Flow');
     params.set('role', getWorkspaceRoleDisplayName(currentRole));
     if (cardSettings?.primaryPhone) params.set('phone', cardSettings.primaryPhone);
@@ -85,7 +87,7 @@ export function AppShell({
     if (cardSettings?.website) params.set('web', cardSettings.website);
     if (cardSettings?.address) params.set('addr', cardSettings.address);
     return `/api/public/card-vcf?${params.toString()}`;
-  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.email, profile?.full_name, profile?.username]);
+  }, [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, currentRole, organization?.name, profile?.avatar_url, profile?.email, profile?.full_name, profile?.username]);
 
   const signedInForMobile = useMemo(() => ({
     name: profile?.full_name ?? profile?.username ?? 'SETU Flow user',
@@ -252,12 +254,13 @@ export function AppShell({
               <button type="button" onClick={() => setVcardModalOpen(false)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white">
                 ✕
               </button>
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-[linear-gradient(135deg,#0c7fff,#38bdf8)] text-lg font-bold">
-                {profileInitials}
+              <div className="mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-white/25 bg-[linear-gradient(135deg,#0c7fff,#38bdf8)] text-lg font-bold shadow-[0_14px_40px_rgba(0,0,0,0.18)]">
+                {profile?.avatar_url ? <img src={profile.avatar_url} alt={profileDisplayName} className="h-full w-full object-cover" /> : profileInitials}
               </div>
               <p className="text-xl font-semibold tracking-tight">{profile?.full_name ?? profile?.username ?? 'SETU Flow user'}</p>
               <p className="mt-1 text-sm text-white/70">{getWorkspaceRoleDisplayName(currentRole)} · {organization?.name ?? 'SETU Flow'}</p>
               <p className="mt-2 text-xs text-white/55">{profile?.email ?? 'Signed in via Supabase'}</p>
+              {cardSettings?.primaryPhone ? <p className="mt-1 text-xs font-medium text-white/72">{cardSettings.primaryPhone}</p> : null}
             </div>
             <div className="px-7 py-6">
               <div className="mb-5 flex flex-col items-center">
@@ -273,6 +276,12 @@ export function AppShell({
                 <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Scan to save contact</p>
               </div>
               <div className="space-y-2.5">
+                {cardSettings?.primaryPhone ? (
+                  <a href={`tel:${cardSettings.primaryPhone}`} className="flex items-center gap-3 rounded-[0.9rem] border border-[#359F91]/20 bg-[#eefaf7] px-4 py-3 text-sm font-semibold text-[#0f766e] hover:bg-[#ddf7f1]">
+                    <span>☏</span>
+                    <span>{cardSettings.primaryPhone}</span>
+                  </a>
+                ) : null}
                 <a href={downloadVcfHref} className="flex items-center gap-3 rounded-[0.9rem] bg-[#0b2e4a] px-4 py-3 text-sm font-semibold text-white hover:bg-[#061c2e]">
                   <span>⬇</span>
                   <span>Download .vcf</span>

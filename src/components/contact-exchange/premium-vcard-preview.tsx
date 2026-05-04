@@ -129,6 +129,12 @@ export function PremiumVCardPreview({
               <p>{verificationLabel}</p>
               <p>{contextLine}</p>
             </div>
+            {primaryPhone ? (
+              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#359F91]/20 bg-[#eefaf7] px-4 py-2 text-sm font-semibold text-[#0f766e]">
+                <span>☏</span>
+                <span>{primaryPhone}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-8 rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5 text-center shadow-[0_18px_40px_rgba(15,23,42,0.06)]">

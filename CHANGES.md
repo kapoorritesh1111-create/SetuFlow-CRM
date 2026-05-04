@@ -86,3 +86,12 @@ npm test
 - Tightened card spacing, workflow spacing, pricing list alignment, and checkmark alignment.
 - Added icons to the Built For and Connection Layer sections.
 - Reduced bulky visual weight across hero, workflow, product, comparison, pricing, and CTA sections while preserving Setu Flow brand colors.
+
+## V8 demo, login, and vCard polish
+- Replaced homepage Book Demo mailto links with a conversion form anchored at `#book-demo`.
+- Added `/api/book-demo` to email demo requests to `admin@setugroups.com` using Mailtrap/Resend configuration, with `help@setugroups.com` as the support/reply address.
+- Updated marketing shell footer/contact email to `help@setugroups.com`.
+- Elevated `/client-login` copy and layout to match the premium trade execution positioning and vCard value proposition.
+- Added profile photo upload support to My Digital vCard settings via `/api/profile/avatar`.
+- Ensured the vCard public/share flows include saved primary phone and profile photo in the generated card/share links.
+- Updated the in-app vCard modal to show profile photo and primary phone as a direct call action.

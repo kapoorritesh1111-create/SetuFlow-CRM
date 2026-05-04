@@ -77,19 +77,23 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [shareSupported, setShareSupported] = useState(false);
   const [shareState, setShareState] = useState<ShareState>('idle');
+  const [avatarUrl, setAvatarUrl] = useState(identity.avatarUrl ?? '');
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState('');
 
   useEffect(() => {
     setOverrides(initialOverrides);
     setShareSlug(initialSettings?.share_slug ?? null);
     setSaveState('idle');
     setSaveMessage('');
-  }, [initialOverrides, initialSettings?.share_slug]);
+    setAvatarUrl(identity.avatarUrl ?? '');
+  }, [initialOverrides, initialSettings?.share_slug, identity.avatarUrl]);
 
   const isDirty = JSON.stringify(overrides) !== JSON.stringify(initialOverrides);
 
   const cardIdentity = useMemo<PublicCardIdentity>(
     () =>
-      mergeIdentityWithCardSettings(identity, {
+      mergeIdentityWithCardSettings({ ...identity, avatarUrl: avatarUrl || identity.avatarUrl }, {
         primary_phone: overrides.primaryPhone,
         secondary_phone: overrides.secondaryPhone,
         website: overrides.website,
@@ -101,7 +105,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
         facebook_url: overrides.facebook,
         tiktok_url: overrides.tiktok,
       } as Partial<MyCardSettingsRow>),
-    [identity, overrides],
+    [identity, overrides, avatarUrl],
   );
 
   const fallbackParams = useMemo(() => buildPublicCardSearchParams(cardIdentity), [cardIdentity]);
@@ -146,6 +150,43 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
       isActive = false;
     };
   }, [publicCardUrl]);
+
+  async function handleAvatarFile(file?: File | null) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setAvatarMessage('Please choose an image file.');
+      return;
+    }
+    if (file.size > 1_250_000) {
+      setAvatarMessage('Use a smaller image under 1.25MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = String(reader.result ?? '');
+      setAvatarUrl(dataUrl);
+      setAvatarSaving(true);
+      setAvatarMessage('Saving profile photo…');
+      try {
+        const response = await fetch('/api/profile/avatar', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatarUrl: dataUrl }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(payload?.error || 'Could not save profile photo.');
+        setAvatarUrl(payload.avatarUrl || dataUrl);
+        setAvatarMessage('Profile photo saved. Your vCard preview now uses it.');
+        window.setTimeout(() => setAvatarMessage(''), 2200);
+      } catch (error) {
+        setAvatarMessage(error instanceof Error ? error.message : 'Could not save profile photo.');
+      } finally {
+        setAvatarSaving(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
 
   async function persistSettings(nextOverrides = overrides) {
     try {
@@ -251,6 +292,25 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
               </div>
             </div>
           ) : null}
+
+          <div className="mt-6 rounded-[1.6rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[1.4rem] border border-slate-200 bg-slate-100 text-xl font-semibold text-slate-700 shadow-sm">
+                  {avatarUrl ? <img src={avatarUrl} alt={identity.fullName} className="h-full w-full object-cover" /> : identity.fullName.slice(0, 1).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Profile photo</p>
+                  <p className="mt-1 max-w-md text-sm leading-6 text-slate-600">Upload from phone camera roll or a file. This makes the public vCard feel personal and screenshot-ready for the homepage.</p>
+                  {avatarMessage ? <p className="mt-2 text-xs font-medium text-[#1F487C]">{avatarMessage}</p> : null}
+                </div>
+              </div>
+              <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-[#1F487C]/12 bg-white px-5 py-2 text-sm font-semibold text-[#1F487C] shadow-sm transition hover:bg-[#eef6fb]">
+                {avatarSaving ? 'Saving…' : 'Upload photo'}
+                <input type="file" accept="image/*" className="sr-only" onChange={(event) => void handleAvatarFile(event.target.files?.[0])} />
+              </label>
+            </div>
+          </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <label className="block text-sm font-medium text-slate-700">Primary phone<input className={fieldClassName()} value={overrides.primaryPhone} onChange={(e) => setOverrides((c) => ({ ...c, primaryPhone: e.target.value }))} /></label>

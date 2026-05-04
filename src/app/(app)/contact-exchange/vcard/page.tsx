@@ -138,7 +138,7 @@ export default async function DigitalVCardPage() {
           organizationName: workspace.organization.name,
           avatarUrl: workspace.profile?.avatar_url,
           logoUrl: workspace.organization.logo_url,
-          primaryPhone: '',
+          primaryPhone: initialSettings?.primary_phone?.trim() || '',
           organizationId: workspace.organization.id,
         }}
         organizationId={workspace.organization.id}

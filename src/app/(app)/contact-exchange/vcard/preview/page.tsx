@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName } from '@/lib/workspace/roles';
 import { buildPublicCardSearchParams } from '@/lib/contact-exchange/public-card';
+import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
 
 export default async function DigitalVCardPreviewPage() {
   const workspace = await requireWorkspace();
@@ -9,6 +10,7 @@ export default async function DigitalVCardPreviewPage() {
   const email = workspace.profile?.email || workspace.user?.email || 'hello@setuflow.com';
   const primaryRole = getPrimaryWorkspaceRole(workspace.currentRoles) || 'member';
   const roleLabel = getWorkspaceRoleDisplayName(primaryRole);
+  const settings = workspace.user?.id ? await getMyCardSettingsForUser(workspace.user.id).catch(() => null) : null;
   const params = buildPublicCardSearchParams({
     fullName,
     email,
@@ -16,7 +18,7 @@ export default async function DigitalVCardPreviewPage() {
     organizationName: workspace.organization?.name || 'SETU Flow',
     avatarUrl: workspace.profile?.avatar_url,
     logoUrl: workspace.organization?.logo_url,
-    primaryPhone: '',
+    primaryPhone: settings?.primary_phone?.trim() || '',
     organizationId: workspace.organization?.id,
   });
   redirect(`/card?${params.toString()}`);
