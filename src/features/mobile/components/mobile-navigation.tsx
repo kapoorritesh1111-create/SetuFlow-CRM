@@ -104,12 +104,15 @@ export function BrandedMobileTopBar({
           >
             📇
           </button>
-          <span
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
             className="grid h-11 w-11 place-items-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-xs font-black ring-1 ring-white/20"
             title={`Signed in as ${displayName}`}
+            aria-label="Open profile and quick actions"
           >
             {initials}
-          </span>
+          </button>
         </div>
       </header>
       <MobileActionDrawer
@@ -155,16 +158,21 @@ export function MobileActionDrawer({
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
         <div className="flex items-start gap-3">
           <ThreeDIconOrb icon="✦" tone="blue" />
-          <div>
-            <h2 className="text-lg font-black text-slate-950 dark:text-white">
-              Quick actions
+          <div className="min-w-0">
+            <h2 className="truncate text-lg font-black text-slate-950 dark:text-white">
+              {signedIn?.name ?? "SETU Flow user"}
             </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
-              Choose an action.
+            <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-300">
+              {signedIn?.email ?? "Signed in to workspace"}
+            </p>
+            <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-600 dark:text-sky-300">
+              {signedIn?.roleLabel ?? "Member"} · {signedIn?.organizationName ?? "SETU Flow"}
             </p>
           </div>
         </div>
         <div className="mt-4 grid gap-2">
+          <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>👤</span>Profile</Link>
+          <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>⚙</span>Settings</Link>
           <button
             type="button"
             onClick={() => {
@@ -186,6 +194,9 @@ export function MobileActionDrawer({
               {tab.label}
             </Link>
           ))}
+          <form action="/api/logout" method="post">
+            <button type="submit" className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 text-left font-black text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-200"><span>↪</span>Sign out</button>
+          </form>
         </div>
       </div>
     </div>

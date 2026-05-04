@@ -49,3 +49,25 @@ npm test
 - Added futuristic dark hero, product positioning, CRM comparison, icon-driven capabilities, real screenshot showcases, and mobile-first proof section.
 - Added mobile screenshot assets under `public/marketing/`.
 - Updated `src/components/marketing/site-shell.tsx` with a more polished navigation and CTA structure.
+
+## Login UX + Profile Menu Upgrade
+- Upgraded the client login form with a premium branded input treatment, show/hide password toggle, and collapsed password reset helper.
+- Added a profile dropdown to the authenticated desktop/mobile header avatar with user details, role/org context, Profile, Settings, vCard, and Sign out actions.
+- Added sign-out access to the canonical mobile quick actions drawer so mobile users can safely end their session.
+
+## Homepage refinement v5 - product-leader feedback pass
+
+- Rebuilt the public homepage around the latest product-leader feedback for a more premium SaaS structure.
+- Simplified the hero into a sharper value proposition with one dominant product screenshot, glow/depth treatment, and clear Book Demo / Explore Platform CTAs.
+- Added an emotional category-creation section: where CRMs stop, trade teams still have execution work to do.
+- Reworked the workflow into a modular Capture -> Qualify -> Quote -> Approve -> Execute section with a mid-page CTA.
+- Added "Built for" audience clarity for exporters, importers, trading companies, and sourcing teams.
+- Added social-proof-style operating metrics using current demo data without inventing customer logos.
+- Reduced mobile proof to three focused phone frames instead of an overwhelming long mobile gallery.
+- Simplified the comparison table and added pricing clarity cards to improve conversion readiness.
+- Preserved Setu Flow brand colors and existing marketing screenshot assets.
+
+## Verification
+
+- `npm ci --ignore-scripts` completed enough to stage dependencies in the container, but the tool returned a client-side error without detailed output.
+- `npm run typecheck` started successfully but timed out in the container before completion.

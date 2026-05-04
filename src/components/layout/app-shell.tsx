@@ -40,6 +40,7 @@ export function AppShell({
   const searchParams = useSearchParams();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [vcardModalOpen, setVcardModalOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [topbarDate, setTopbarDate] = useState('');
   const [absoluteShareUrl, setAbsoluteShareUrl] = useState('');
@@ -144,6 +145,43 @@ export function AppShell({
     await navigator.clipboard.writeText(absoluteShareUrl || shareLink);
   };
 
+
+  const profileDisplayName = profile?.full_name ?? profile?.username ?? 'SETU Flow user';
+  const profileEmail = profile?.email ?? 'Signed in via Supabase';
+  const profileInitials = getInitials(profileDisplayName);
+
+  const ProfileMenu = ({ compact = false }: { compact?: boolean }) => (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setProfileMenuOpen((value) => !value)}
+        className={cn(
+          "flex items-center justify-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] font-semibold text-white ring-1 ring-white/20 transition hover:scale-[1.02]",
+          compact ? "h-10 w-10 text-xs" : "h-11 w-11 text-sm shadow-soft",
+        )}
+        aria-label="Open profile menu"
+        aria-expanded={profileMenuOpen}
+      >
+        {profileInitials}
+      </button>
+      {profileMenuOpen ? (
+        <div className={cn("absolute right-0 z-[90] mt-2 w-72 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white text-left shadow-[0_28px_70px_rgba(15,23,42,0.22)] ring-1 ring-slate-950/5", compact && "right-[-4px]")}>
+          <div className="bg-[linear-gradient(135deg,#061c2e_0%,#0b2e4a_70%,#0c7fff_150%)] px-4 py-4 text-white">
+            <div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/12 text-sm font-bold ring-1 ring-white/20">{profileInitials}</div><div className="min-w-0"><p className="truncate text-sm font-bold">{profileDisplayName}</p><p className="mt-0.5 truncate text-xs text-white/65">{profileEmail}</p></div></div>
+            <div className="mt-3 inline-flex rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">{getWorkspaceRoleDisplayName(currentRole)} · {organization?.name ?? 'SETU Flow'}</div>
+          </div>
+          <div className="p-2">
+            <a href={PRODUCT_ROUTES.app.myCard} onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><FaIcon icon="user-o" fixedWidth className="text-[#1F487C]" /><span>Profile</span></a>
+            <a href={PRODUCT_ROUTES.app.myCard} onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><FaIcon icon="cog" fixedWidth className="text-[#1F487C]" /><span>Settings</span></a>
+            <button type="button" onClick={() => { setProfileMenuOpen(false); setVcardModalOpen(true); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><FaIcon icon="address-card-o" fixedWidth className="text-[#1F487C]" /><span>Share my vCard</span></button>
+            <div className="my-2 border-t border-slate-100" />
+            <form action="/api/logout" method="post"><button type="submit" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-rose-600 transition hover:bg-rose-50"><FaIcon icon="sign-out" fixedWidth /><span>Sign out</span></button></form>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+
   const sidebar = (
     <>
       <div className="flex justify-center">
@@ -162,7 +200,7 @@ export function AppShell({
       </div>
       <div className="mt-6 flex justify-center">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-xs font-semibold text-white ring-1 ring-white/20">
-          {getInitials(profile?.full_name ?? profile?.username)}
+          {profileInitials}
         </div>
       </div>
     </>
@@ -215,7 +253,7 @@ export function AppShell({
                 ✕
               </button>
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-[linear-gradient(135deg,#0c7fff,#38bdf8)] text-lg font-bold">
-                {getInitials(profile?.full_name ?? profile?.username)}
+                {profileInitials}
               </div>
               <p className="text-xl font-semibold tracking-tight">{profile?.full_name ?? profile?.username ?? 'SETU Flow user'}</p>
               <p className="mt-1 text-sm text-white/70">{getWorkspaceRoleDisplayName(currentRole)} · {organization?.name ?? 'SETU Flow'}</p>
@@ -297,15 +335,7 @@ export function AppShell({
                   >
                     📇
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setVcardModalOpen(true)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-xs font-bold text-white ring-1 ring-white/20"
-                    aria-label="Open my vCard"
-                    title="Open my vCard"
-                  >
-                    {getInitials(profile?.full_name ?? profile?.username)}
-                  </button>
+                  <ProfileMenu compact />
                 </div>
               </div>
 
@@ -372,15 +402,7 @@ export function AppShell({
                         <span>{pathname.startsWith('/trade-events') ? 'Add Event' : 'Events'}</span>
                       </a>
 
-                      <button
-                        type="button"
-                        onClick={() => setVcardModalOpen(true)}
-                        className="flex h-11 w-11 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-sm font-semibold text-white shadow-soft ring-1 ring-white/20 transition hover:scale-[1.02]"
-                        aria-label="Open my vCard"
-                        title="Open my vCard"
-                      >
-                        {getInitials(profile?.full_name ?? profile?.username)}
-                      </button>
+                      <ProfileMenu />
                     </div>
                   </div>
                 </div>
