@@ -78,3 +78,11 @@ npm test
 - Updated pricing to Starter $199/month up to 5 users, Growth $499/month up to 10 users, Enterprise custom.
 - Promoted the comparison table as the main conversion section.
 - Added motion classes, premium screenshot frames, concise mobile showcase, connection-layer section, and demo-led CTAs.
+
+## V7 Premium UI Refactor
+
+- Reworked homepage typography to a lighter premium SaaS feel using Inter and lower font weights.
+- Replaced placeholder letter badges like CR/QU/BL with consistent inline SVG icons.
+- Tightened card spacing, workflow spacing, pricing list alignment, and checkmark alignment.
+- Added icons to the Built For and Connection Layer sections.
+- Reduced bulky visual weight across hero, workflow, product, comparison, pricing, and CTA sections while preserving Setu Flow brand colors.
