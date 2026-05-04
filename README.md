@@ -27,7 +27,7 @@ This repo is now treated as the clean baseline. Historical pass/archive document
 |---|---|---|
 | `/onboarding` | Public client workspace request form | No login required |
 | `/onboarding/received` | Public confirmation after form submission | No login required |
-| `/admin/client-onboarding` | Admin command center for submitted onboarding requests | Admin login required |
+| `/admin/client-onboarding` | Setu-internal SaaS provisioning wizard for onboarding requests | Setu platform admin only |
 | `/admin/invitations` | Send first admin login after workspace setup | Admin login required |
 | `/dashboard` | Leadership overview | Authenticated |
 | `/leads` | Follow-up workspace | Authenticated |
@@ -44,10 +44,10 @@ The client onboarding flow is intentionally controlled:
 
 1. Client submits `/onboarding` without logging in.
 2. The request saves through `POST /api/public/client-onboarding`.
-3. Admin notification is sent to `admin@setugroups.com` when email configuration is present.
+3. Admin notification is sent to `admin@setugroups.com` when email configuration is present, and admins can resend that notification from `/admin/client-onboarding` if an earlier attempt failed or environment variables were added later.
 4. The notification includes a setup link to `/admin/client-onboarding?request=<request_id>`.
-5. Setu Flow admin drafts the workspace and preloads editable defaults.
-6. First admin login is sent from the existing invitations flow.
+5. Setu Flow admin runs the SaaS provisioning wizard.
+6. The wizard creates a unique organization ID, seeds all countries and editable reference defaults, creates the first owner invitation, and the client lands in their own workspace after accepting the invite.
 
 Workspace URL format:
 
@@ -59,11 +59,13 @@ If the client does not provide a logo, the Setu Flow logo is used as the default
 
 Defaults preloaded during setup:
 
+- All countries from the Setu platform country reference list
 - Markets
-- Countries
 - Pipelines
 - Pipeline stages
 - Next steps
+- Owner/admin/sales/operations/viewer roles
+- Pricing engine starter settings
 
 Client-created after login:
 
@@ -86,9 +88,12 @@ Onboarding notifications:
 
 ```text
 RESEND_API_KEY=
-SETU_NOTIFICATION_FROM_EMAIL=
+SETU_NOTIFICATION_FROM_EMAIL=help@setugroups.com
 SETU_ONBOARDING_ADMIN_EMAIL=admin@setugroups.com
+SETU_INTERNAL_ORG_SLUG=setu-flow
 ```
+
+`SETU_NOTIFICATION_FROM_EMAIL` is the verified sender address/domain in Resend. `SETU_ONBOARDING_ADMIN_EMAIL` is the internal recipient for new onboarding alerts and resend attempts.
 
 Mobile scan provider variables are documented in `MOBILE_SCAN_PRODUCTION.md`.
 
@@ -110,7 +115,7 @@ npm test
 Current expected test summary for this baseline:
 
 ```text
-58/58 tests passed
+60/60 tests passed
 ```
 
 Full release verification script:

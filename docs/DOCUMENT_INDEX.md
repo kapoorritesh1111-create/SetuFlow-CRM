@@ -7,7 +7,7 @@ This repo now keeps only current, decision-useful documentation in the active tr
 | `README.md` | Primary setup, routes, environment variables, verification, and clean-baseline policy. |
 | `CHANGES.md` | Current baseline changelog and verification note. |
 | `docs/CURRENT_RELEASE_STATUS.md` | Current readiness status and known verification posture. |
-| `docs/CLIENT_ONBOARDING.md` | Public onboarding form, admin notification, workspace draft, and first-admin handoff. |
+| `docs/CLIENT_ONBOARDING.md` | Public onboarding form, admin notification/resend, workspace draft, and first-admin handoff. |
 | `docs/PRODUCT_OVERVIEW.md` | Product scope and operating model. |
 | `docs/OPERATIONS_RUNBOOK.md` | Operational setup and support guidance. |
 | `docs/RELEASE_READINESS.md` | Readiness checklist and release gate. |

@@ -6,7 +6,7 @@ Current proof baseline: clean current repository baseline.
 
 ```text
 npm test
-58/58 tests passed
+60/60 tests passed
 ```
 
 The `release:proof` command remains wired through `package.json` and the route manifest contract.
@@ -15,7 +15,7 @@ The `release:proof` command remains wired through `package.json` and the route m
 
 - Public onboarding form is unauthenticated.
 - Onboarding submission persists through the public API route.
-- Admin notification handoff points to the admin onboarding setup route.
+- Admin notification handoff points to the admin onboarding setup route and can be resent from the admin command center.
 - Admin onboarding remains protected.
 - Workspace URL format is `companyname.setuflowcrm.com`.
 - Default workflow setup data is editable/removable by admin.

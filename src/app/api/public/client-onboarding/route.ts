@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import {
-  ADMIN_ONBOARDING_EMAIL,
   DEFAULT_SETU_FLOW_LOGO,
   buildWorkspaceDomain,
   checked,
@@ -10,6 +9,11 @@ import {
   normalizeText,
   slugifyCompanyName,
 } from '@/features/client-onboarding/shared';
+import {
+  buildOnboardingSetupUrl,
+  getOnboardingAdminEmail,
+  sendClientOnboardingAdminNotification,
+} from '@/features/client-onboarding/server/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,55 +33,6 @@ function redirectToForm(request: NextRequest, params: Record<string, string | nu
   return NextResponse.redirect(url, { status: 303 });
 }
 
-async function sendAdminNotification(input: {
-  adminEmail: string;
-  companyName: string;
-  primaryAdminEmail: string;
-  workspaceDomain: string;
-  setupUrl: string;
-}) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.SETU_NOTIFICATION_FROM_EMAIL ?? process.env.RESEND_FROM_EMAIL;
-  if (!apiKey || !from) {
-    return { status: 'email_env_missing', error: 'RESEND_API_KEY and SETU_NOTIFICATION_FROM_EMAIL are required for outbound email notifications.' };
-  }
-
-  const subject = `New Setu Flow onboarding request: ${input.companyName}`;
-  const text = [
-    `A new client submitted the Setu Flow onboarding form.`,
-    `Company: ${input.companyName}`,
-    `First admin email: ${input.primaryAdminEmail}`,
-    `Reserved workspace: ${input.workspaceDomain}`,
-    `Start setup: ${input.setupUrl}`,
-  ].join('\n');
-  const html = `
-    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
-      <h2>New Setu Flow onboarding request</h2>
-      <p><strong>Company:</strong> ${input.companyName}</p>
-      <p><strong>First admin email:</strong> ${input.primaryAdminEmail}</p>
-      <p><strong>Reserved workspace:</strong> ${input.workspaceDomain}</p>
-      <p><a href="${input.setupUrl}" style="display:inline-block;background:#0f172a;color:white;padding:12px 18px;border-radius:12px;text-decoration:none">Start org setup</a></p>
-    </div>`;
-
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ from, to: [input.adminEmail], subject, text, html }),
-    });
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Email provider rejected the notification.');
-      return { status: 'email_failed', error: errorText.slice(0, 500) };
-    }
-    return { status: 'email_sent', error: null };
-  } catch (error) {
-    return { status: 'email_failed', error: error instanceof Error ? error.message : 'Unknown email notification error.' };
-  }
-}
-
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const companyName = normalizeText(formData.get('company_name'));
@@ -87,7 +42,7 @@ export async function POST(request: NextRequest) {
   }
 
   const workspaceDomain = buildWorkspaceDomain(companyName);
-  const adminEmail = process.env.SETU_ONBOARDING_ADMIN_EMAIL ?? ADMIN_ONBOARDING_EMAIL;
+  const adminEmail = getOnboardingAdminEmail();
   const admin = createAdminSupabaseClient() as any;
   if (!admin) {
     return redirectToReceived(request, { company: companyName, domain: workspaceDomain, notice: 'service-role-missing' });
@@ -121,8 +76,8 @@ export async function POST(request: NextRequest) {
     return redirectToReceived(request, { company: companyName, domain: workspaceDomain, notice: 'storage-pending' });
   }
 
-  const setupUrl = new URL(`/admin/client-onboarding?request=${data.id}`, request.url).toString();
-  const notification = await sendAdminNotification({ adminEmail, companyName, primaryAdminEmail, workspaceDomain, setupUrl });
+  const setupUrl = buildOnboardingSetupUrl(data.id, new URL(`/admin/client-onboarding?request=${data.id}`, request.url).toString());
+  const notification = await sendClientOnboardingAdminNotification({ adminEmail, companyName, primaryAdminEmail, workspaceDomain, setupUrl });
 
   await admin
     .from('client_onboarding_requests')

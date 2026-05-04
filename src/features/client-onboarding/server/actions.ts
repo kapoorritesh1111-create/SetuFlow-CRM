@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import { requireWorkspace } from '@/lib/workspace/auth';
+import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
 import {
   DEFAULT_SETU_FLOW_LOGO,
   ROOT_DOMAIN,
@@ -19,6 +19,12 @@ import {
   normalizeText,
   slugifyCompanyName,
 } from '@/features/client-onboarding/shared';
+import {
+  buildOnboardingSetupUrl,
+  getOnboardingAdminEmail,
+  sendClientOnboardingAdminNotification,
+} from '@/features/client-onboarding/server/notifications';
+import { provisionWorkspaceFromOnboardingRequest } from '@/features/client-onboarding/server/provisioning';
 
 function onboardingRedirect(path: string, params: Record<string, string | null | undefined>): never { const query = new URLSearchParams(); for (const [key, value] of Object.entries(params)) if (value) query.set(key, value); redirect(`${path}${query.size ? `?${query.toString()}` : ''}`); }
 function cleanList(value: string[] | null | undefined, fallback: string[]) { const items = Array.isArray(value) && value.length > 0 ? value : fallback; return Array.from(new Set(items.map((item) => item.trim()).filter(Boolean))); }
@@ -63,7 +69,7 @@ export async function updateClientOnboardingStatus(formData: FormData): Promise<
   if (!requestId || !status) return;
   const allowed = new Set(['submitted', 'reviewing', 'setup_in_progress', 'admin_invite_ready', 'admin_invited', 'live', 'paused']);
   if (!allowed.has(status)) return;
-  const { missingEnv, membership } = await requireWorkspace();
+  const { missingEnv, membership } = await requireSetuInternalAdminWorkspace();
   if (missingEnv || !membership) return;
   const supabase = (await createClient()) as any;
   await supabase.from('client_onboarding_requests').update({ status, updated_at: new Date().toISOString() }).eq('id', requestId);
@@ -71,53 +77,115 @@ export async function updateClientOnboardingStatus(formData: FormData): Promise<
   redirect('/admin/client-onboarding?notice=status-updated');
 }
 
-export async function createWorkspaceFromOnboardingDraft(formData: FormData): Promise<void> {
+
+export async function resendClientOnboardingNotification(formData: FormData): Promise<void> {
   const requestId = normalizeText(formData.get('request_id'));
   if (!requestId) return;
-  const { missingEnv, membership } = await requireWorkspace();
+
+  const { missingEnv, membership } = await requireSetuInternalAdminWorkspace();
   if (missingEnv || !membership) return;
+
   const admin = createAdminSupabaseClient() as any;
   if (!admin) return;
 
-  const { data: request, error: requestError } = await admin.from('client_onboarding_requests').select('*').eq('id', requestId).maybeSingle();
+  const { data: request, error } = await admin
+    .from('client_onboarding_requests')
+    .select('id, company_name, primary_admin_email, workspace_domain, company_slug, notification_email, admin_setup_url')
+    .eq('id', requestId)
+    .maybeSingle();
+
+  if (error || !request?.id || !request.company_name) {
+    redirect('/admin/client-onboarding?notice=request-not-found');
+  }
+
+  const adminEmail = getOnboardingAdminEmail() || request.notification_email;
+  const workspaceDomain = request.workspace_domain || `${request.company_slug || slugifyCompanyName(request.company_name)}.${ROOT_DOMAIN}`;
+  const setupUrl = buildOnboardingSetupUrl(request.id, request.admin_setup_url);
+
+  await admin
+    .from('client_onboarding_requests')
+    .update({
+      notification_email: adminEmail,
+      admin_setup_url: setupUrl,
+      notification_status: 'sending',
+      notification_error: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', request.id);
+
+  const notification = await sendClientOnboardingAdminNotification({
+    adminEmail,
+    companyName: request.company_name,
+    primaryAdminEmail: request.primary_admin_email || 'Primary admin email pending',
+    workspaceDomain,
+    setupUrl,
+  });
+
+  await admin
+    .from('client_onboarding_requests')
+    .update({
+      notification_email: adminEmail,
+      admin_setup_url: setupUrl,
+      notification_status: notification.status,
+      notification_error: notification.error,
+      notification_sent_at: notification.status === 'email_sent' ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', request.id);
+
+  revalidatePath('/admin/client-onboarding');
+  redirect(`/admin/client-onboarding?request=${request.id}&notice=${notification.status === 'email_sent' ? 'notification-sent' : 'notification-failed'}`);
+}
+
+export async function createWorkspaceFromOnboardingDraft(formData: FormData): Promise<void> {
+  const requestId = normalizeText(formData.get('request_id'));
+  if (!requestId) return;
+
+  const { missingEnv, membership, organization } = await requireSetuInternalAdminWorkspace();
+  if (missingEnv || !membership || !organization) return;
+
+  const admin = createAdminSupabaseClient() as any;
+  if (!admin) return;
+
+  const { data: request, error: requestError } = await admin
+    .from('client_onboarding_requests')
+    .select('*')
+    .eq('id', requestId)
+    .maybeSingle();
+
   if (requestError || !request?.company_name) redirect('/admin/client-onboarding?notice=request-not-found');
 
-  const companyName = String(request.company_name);
-  const logoUrl = request.logo_url || DEFAULT_SETU_FLOW_LOGO;
-  const slug = request.company_slug || slugifyCompanyName(companyName);
-  const workspaceDomain = `${slug}.${ROOT_DOMAIN}`;
-  const { data: org, error: orgError } = await admin.from('organizations').upsert({ name: companyName, slug, default_currency: 'USD', logo_url: logoUrl, created_by: membership.user_id ?? null, updated_at: new Date().toISOString() }, { onConflict: 'slug' }).select('id').maybeSingle();
-  if (orgError || !org?.id) redirect('/admin/client-onboarding?notice=workspace-create-failed');
+  try {
+    const result = await provisionWorkspaceFromOnboardingRequest({
+      admin,
+      request,
+      platformOrganizationId: organization.id,
+      actorMembershipId: membership.id,
+      actorUserId: membership.user_id ?? null,
+    });
 
-  const organizationId = org.id;
-  const markets = cleanList(request.requested_markets, defaultMarkets);
-  const countries = cleanList(request.requested_countries, request.headquarters_country ? [request.headquarters_country] : []);
-  const pipelines = cleanList(request.requested_pipelines, defaultPipelines);
-  const stages = cleanList(request.requested_pipeline_stages, defaultPipelineStages);
-  const nextSteps = cleanList(request.requested_next_steps, defaultNextSteps);
-
-  const marketRows = markets.map((name, index) => ({ organization_id: organizationId, name, market_code: slugifyCompanyName(name).toUpperCase().slice(0, 12), sort_order: index + 1, is_active: true }));
-  const { data: insertedMarkets } = marketRows.length
-    ? await admin.from('markets').insert(marketRows).select('id, name').throwOnError()
-    : { data: [] };
-  const firstMarketId = insertedMarkets?.[0]?.id;
-  if (firstMarketId && countries.length) {
-    await admin.from('countries').insert(countries.map((name, index) => ({ organization_id: organizationId, market_id: firstMarketId, name, sort_order: index + 1, is_active: true }))).throwOnError();
+    await admin
+      .from('client_onboarding_requests')
+      .update({
+        status: result.invitationId ? 'admin_invited' : 'admin_invite_ready',
+        workspace_domain: result.workspaceDomain,
+        linked_organization_id: result.organizationId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId);
+  } catch (error) {
+    await admin
+      .from('client_onboarding_requests')
+      .update({
+        status: 'setup_in_progress',
+        additional_notes: `Workspace provisioning needs attention: ${error instanceof Error ? error.message : 'unknown error'}`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId);
+    redirect('/admin/client-onboarding?notice=workspace-create-failed');
   }
 
-  const pipelineRows = pipelines.map((name, index) => ({ organization_id: organizationId, name, lead_type: name.toLowerCase().includes('supplier') ? 'supplier' : 'buyer', is_default: index === 0 }));
-  const { data: insertedPipelines } = pipelineRows.length
-    ? await admin.from('pipelines').insert(pipelineRows).select('id, name').throwOnError()
-    : { data: [] };
-  for (const pipeline of insertedPipelines ?? []) {
-    await admin.from('pipeline_stages').insert(stages.map((name, index) => ({ pipeline_id: pipeline.id, name, sort_order: index + 1, is_closed: ['won', 'lost'].includes(name.toLowerCase()), is_won: name.toLowerCase() === 'won', is_lost: name.toLowerCase() === 'lost' }))).throwOnError();
-  }
-
-  if (nextSteps.length) {
-    await admin.from('next_steps').insert(nextSteps.map((name, index) => ({ organization_id: organizationId, name, sort_order: index + 1, is_active: true }))).throwOnError();
-  }
-
-  await admin.from('client_onboarding_requests').update({ status: 'admin_invite_ready', workspace_domain: workspaceDomain, linked_organization_id: organizationId, updated_at: new Date().toISOString() }).eq('id', requestId);
   revalidatePath('/admin/client-onboarding');
-  redirect(`/admin/client-onboarding?request=${requestId}&notice=workspace-drafted`);
+  revalidatePath('/admin/invitations');
+  redirect(`/admin/client-onboarding?request=${requestId}&notice=workspace-provisioned`);
 }

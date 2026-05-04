@@ -2,6 +2,13 @@
 
 ## Current clean baseline
 
+- Added SaaS Workspace Provisioning Wizard for client onboarding.
+- Provisioning now creates/uses a unique organization ID, seeds all country reference rows, markets, pipelines, stages, next steps, roles, pricing starter settings, and first owner invitation metadata.
+- Client Onboarding is now Setu-internal only at route/sidebar/RLS-policy levels.
+- Wildcard workspace domain model supports `companyname.setuflowcrm.com` via `*.setuflowcrm.com`.
+- Added admin-side onboarding notification retry: each submitted request now has a **Resend admin email** action.
+- Consolidated onboarding email delivery into `src/features/client-onboarding/server/notifications.ts` so public submission and admin resend use the same Resend configuration.
+- Added regression coverage for onboarding notification resend wiring.
 - Removed historical archive folders and duplicate/retired HTML files from the active repo.
 - Promoted the current product state to the baseline instead of maintaining pass-by-pass handoff files.
 - Renamed pass-numbered regression test files to feature-based names where safe.
@@ -17,8 +24,8 @@
 - Admin setup link targets `/admin/client-onboarding?request=<request_id>`.
 - Workspace URL rule is `companyname.setuflowcrm.com`.
 - Setu Flow logo is the fallback when no client logo is provided.
-- Admin setup preloads editable markets, countries, pipelines, pipeline stages, and next steps.
-- Product categories and pricing rules remain client-specific setup after first login.
+- Admin provisioning seeds all countries plus editable markets, pipelines, pipeline stages, next steps, roles, and pricing starter settings.
+- Product categories and detailed pricing rules remain client-specific setup after first login.
 - Admin-shell hydration guard is included for desktop-only redirect behavior.
 - Internal DCC and reference HTMLs reflect the current baseline.
 
@@ -26,5 +33,5 @@
 
 ```text
 npm test
-58/58 tests passed
+60/60 tests passed
 ```

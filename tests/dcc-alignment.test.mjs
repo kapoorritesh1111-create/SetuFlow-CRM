@@ -10,7 +10,7 @@ test('dcc exposes current clean baseline, onboarding truth, and preserved test r
   assert.match(dcc, /\/admin\/client-onboarding/);
   assert.match(dcc, /companyname\.setuflowcrm\.com/);
   assert.match(dcc, /Test Results/i);
-  assert.match(dcc, /58\/58 PASS/i);
+  assert.match(dcc, /60\/60 PASS/i);
   assert.match(dcc, /badge-pass/i);
   assert.match(dcc, /Share vCard/);
   assert.match(dcc, /Signed-in|signed-in|Signed in/);

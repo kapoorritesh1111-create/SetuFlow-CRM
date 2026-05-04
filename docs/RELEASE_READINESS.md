@@ -2,7 +2,7 @@
 
 ## Summary
 
-The repo is ready to be treated as the current clean baseline for continued Setu Flow development. Old pass/archive files and duplicate retired HTMLs have been removed from the active tree.
+The repo is ready to be treated as the current clean baseline for continued Setu Flow development with onboarding notification resend. Old pass/archive files and duplicate retired HTMLs have been removed from the active tree.
 
 ## Readiness checklist
 
@@ -13,7 +13,7 @@ The repo is ready to be treated as the current clean baseline for continued Setu
 | Internal DCC updated | Ready | `public/internal-dcc/index.html` shows current test results and baseline scope. |
 | Reference HTMLs updated | Ready | `public/reference-html/*.html` have current baseline handoff notes. |
 | Public onboarding remains public | Ready | `/onboarding` stays outside authenticated app shell. |
-| Admin onboarding remains protected | Ready | `/admin/client-onboarding` uses admin workspace guard. |
+| Admin onboarding remains protected | Ready | `/admin/client-onboarding` uses admin workspace guard and exposes Resend admin email. |
 | Hydration guard retained | Ready | Desktop redirect avoids first-render browser-only reads. |
 | Tests | Ready | `npm test` passes. |
 
@@ -21,7 +21,7 @@ The repo is ready to be treated as the current clean baseline for continued Setu
 
 ```text
 npm test
-58/58 tests passed
+60/60 tests passed
 ```
 
 ## Release gate

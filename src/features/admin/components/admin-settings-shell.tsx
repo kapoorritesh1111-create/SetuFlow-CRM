@@ -61,6 +61,7 @@ function AdminNavBadge({ label, tone = 'success' }: { label: string; tone?: 'suc
 }
 
 export function AdminSettingsShell({ active, organizationName, missingCount = 0, sectionTitle, gapItems = [], children }: { active: AdminNavKey; organizationName: string; missingCount?: number; sectionTitle?: string; gapItems?: AdminGapItem[]; children: ReactNode }) {
+  const showClientOnboarding = organizationName.trim().toLowerCase() === 'setu flow' || organizationName.trim().toLowerCase() === 'setuflow';
   return (
     <div className="grid gap-6 xl:grid-cols-[216px_minmax(0,1fr)]">
       <aside className="rounded-none border-r border-slate-200 bg-white px-2 py-5 shadow-[4px_0_18px_rgba(15,23,42,0.04)] xl:sticky xl:top-16 xl:min-h-[calc(100vh-4rem)] xl:self-start">
@@ -69,7 +70,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
             <div key={section.label} className={cn(index > 0 && 'border-t border-slate-200 pt-7')}>
               <p className="px-2 text-[9px] font-extrabold uppercase tracking-[0.24em] text-slate-400">{section.label}</p>
               <div className="mt-4 space-y-2">
-                {section.items.map((item) => {
+                {section.items.filter((item) => showClientOnboarding || item.key !== 'client-onboarding').map((item) => {
                   const isActive = item.key === active;
                   return (
                     <Link

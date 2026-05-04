@@ -43,6 +43,16 @@ type QueryClient = {
 const ACTIVE_ORGANIZATION_COOKIE = 'setuflow_active_organization_id';
 const ADMIN_ROLE_NAMES = ['owner', 'admin'] as const;
 
+const SETU_INTERNAL_ORG_SLUG = (process.env.SETU_INTERNAL_ORG_SLUG ?? 'setu-flow').trim().toLowerCase();
+const SETU_INTERNAL_ORG_ID = (process.env.SETU_INTERNAL_ORG_ID ?? '').trim();
+
+export function isSetuInternalOrganization(organization: OrganizationRow | null | undefined) {
+  if (!organization) return false;
+  if (SETU_INTERNAL_ORG_ID && organization.id === SETU_INTERNAL_ORG_ID) return true;
+  return String(organization.slug ?? '').trim().toLowerCase() === SETU_INTERNAL_ORG_SLUG;
+}
+
+
 function normalizeOrganizationId(value: string | null | undefined) {
   const normalized = String(value ?? '').trim();
   return normalized.length > 0 ? normalized : null;
@@ -260,6 +270,14 @@ export async function requireWorkspace(): Promise<WorkspaceAccessContext> {
 
   if (context.missingEnv) return context;
   if (!context.user) redirect('/login');
+
+  return context;
+}
+export async function requireSetuInternalAdminWorkspace() {
+  const context = await requireAdminWorkspace();
+
+  if (context.missingEnv) return context;
+  if (!isSetuInternalOrganization(context.organization)) notFound();
 
   return context;
 }

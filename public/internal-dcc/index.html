@@ -12,11 +12,11 @@
   <header>
     <div class="eyebrow">Setu Flow Development Control Center</div>
     <h1>Current Baseline · Internal DCC</h1>
-    <div>Clean repo baseline with public onboarding, admin setup, current docs, and updated reference HTMLs.</div>
+    <div>Clean repo baseline with public onboarding, Setu-internal SaaS provisioning wizard, Resend notification retry, current docs, and updated reference HTMLs.</div>
   </header>
   <main class="wrap">
     <section class="grid">
-      <div class="card"><span class="badge badge-pass">Ready</span><h2>Client onboarding</h2><p class="muted">Public form at <code>/onboarding</code>; admin setup at <code>/admin/client-onboarding</code>.</p></div>
+      <div class="card"><span class="badge badge-pass">Ready</span><h2>Client onboarding</h2><p class="muted">Public form at <code>/onboarding</code>; Setu-internal provisioning wizard and Resend retry at <code>/admin/client-onboarding</code>.</p></div>
       <div class="card"><span class="badge badge-pass">Ready</span><h2>Hydration guard</h2><p class="muted">Admin shell avoids first-render browser-only URL reads.</p></div>
       <div class="card"><span class="badge badge-pass">Ready</span><h2>Clean docs</h2><p class="muted">Duplicate historical files have been removed from the active repo.</p></div>
     </section>
@@ -28,17 +28,17 @@
           <h3>Workspace onboarding</h3>
           <ul>
             <li>Client submits a public onboarding request without login.</li>
-            <li>Admin receives notification when email variables are configured.</li>
-            <li>Admin setup link opens the new-org setup view.</li>
+            <li>Admin receives notification when email variables are configured.</li><li>Admin can resend onboarding notification after Vercel email env fixes.</li>
+            <li>Admin setup link opens the Setu-internal SaaS provisioning wizard.</li>
             <li>Workspace URL format: <code>companyname.setuflowcrm.com</code>.</li>
           </ul>
         </div>
         <div>
           <h3>Default setup</h3>
           <ul>
-            <li>Markets, countries, pipelines, pipeline stages, and next steps are preloaded.</li>
-            <li>Admins can edit or remove those defaults.</li>
-            <li>Product categories and pricing rules remain client-specific.</li>
+            <li>Every new organization gets all country reference rows plus editable markets, pipelines, pipeline stages, next steps, roles, and pricing starter settings.</li>
+            <li>Client admins can edit/remove workflow defaults inside their own organization after first login.</li>
+            <li>Product categories and detailed pricing rules remain client-specific and are not pre-created.</li>
             <li>Setu Flow logo is used when no client logo is supplied.</li>
           </ul>
         </div>
@@ -48,9 +48,9 @@
 
     <section class="card section">
       <h2>Test Results</h2>
-      <div class="test-row"><div class="test-num">01</div><div><div class="test-name">Repo regression suite</div><div class="test-steps">Run <code>npm test</code> against the clean baseline.</div></div><div class="test-status"><span class="badge badge-pass">58/58 PASS</span></div></div>
+      <div class="test-row"><div class="test-num">01</div><div><div class="test-name">Repo regression suite</div><div class="test-steps">Run <code>npm test</code> against the clean baseline.</div></div><div class="test-status"><span class="badge badge-pass">60/60 PASS</span></div></div>
       <div class="test-row"><div class="test-num">02</div><div><div class="test-name">Public onboarding access</div><div class="test-steps">Verify <code>/onboarding</code> has no login wall and posts to <code>/api/public/client-onboarding</code>.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
-      <div class="test-row"><div class="test-num">03</div><div><div class="test-name">Admin onboarding protection</div><div class="test-steps">Verify <code>/admin/client-onboarding</code> remains admin-authenticated and links to invitations for first admin login.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
+      <div class="test-row"><div class="test-num">03</div><div><div class="test-name">Admin onboarding protection</div><div class="test-steps">Verify <code>/admin/client-onboarding</code> is Setu-internal only, provisions tenant org IDs, seeds all countries, prepares owner invitations, and exposes <code>Resend admin email</code>.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
       <div class="test-row"><div class="test-num">04</div><div><div class="test-name">Clean file tree</div><div class="test-steps">Verify historical HTML and handoff docs are absent from the active repo.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
       <div class="test-row"><div class="test-num">05</div><div><div class="test-name">Reference handoff</div><div class="test-steps">Verify README, CHANGES, docs, internal DCC, mobile blueprint, and reference HTMLs describe the current baseline.</div></div><div class="test-status"><span class="badge badge-pass">PASS</span></div></div>
     </section>
