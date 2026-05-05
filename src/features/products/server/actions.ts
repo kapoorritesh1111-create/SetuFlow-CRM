@@ -676,3 +676,176 @@ export async function distributeProductPricing(_: ActionState | undefined, formD
   const skipLabel = unpricedCount ? ` ${unpricedCount} unpriced product${unpricedCount === 1 ? ' was' : 's were'} skipped.` : '';
   return { success: `Pricing ${actionLabel} for ${pricedProductIds.size} product${pricedProductIds.size === 1 ? '' : 's'}.${skipLabel}` };
 }
+
+export async function savePricingCalculatorSnapshot(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
+
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
+  if (!hasWorkspaceCapability(workspace.currentRoles, 'catalog.manage')) return { error: 'Your current role cannot manage products and pricing.' };
+
+  const organizationId = workspace.organization.id;
+  const productId = String(formData.get('product_id') ?? '').trim();
+  const variantId = String(formData.get('product_variant_id') ?? '').trim() || null;
+  const snapshotText = String(formData.get('pricing_snapshot') ?? '').trim();
+
+  if (!productId) return { error: 'Choose a product before saving pricing calculator results.' };
+  if (!snapshotText) return { error: 'Pricing calculator snapshot is required.' };
+
+  let snapshot: Record<string, any>;
+  try { snapshot = JSON.parse(snapshotText) as Record<string, any>; } catch { return { error: 'Pricing calculator snapshot is not valid JSON.' }; }
+
+  const supabase = await createClient();
+  const db = supabase as any;
+  const productValidation = await validateOrganizationProduct(db, organizationId, productId);
+  if (productValidation.error) return { error: productValidation.error };
+
+  let variantQuery = db.from('product_variants').select('id, source_payload').eq('organization_id', organizationId).eq('product_id', productId);
+  if (variantId) variantQuery = variantQuery.eq('id', variantId);
+  const { data: variant, error: variantError } = await variantQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: true }).limit(1).maybeSingle();
+  if (variantError) return { error: variantError.message };
+  if (!variant?.id) return { error: 'No product variant is available for this product.' };
+
+  const sourcePayload = variant.source_payload && typeof variant.source_payload === 'object' ? variant.source_payload : {};
+  const nextPayload = { ...sourcePayload, pricing_calculator: { ...snapshot, saved_by: workspace.user.id, saved_at: new Date().toISOString() } };
+
+  const productPricingPayload = {
+    exw_price: typeof snapshot.prices?.exw === 'number' ? snapshot.prices.exw : null,
+    fob_price: typeof snapshot.prices?.fob === 'number' ? snapshot.prices.fob : null,
+    cif_price: typeof snapshot.prices?.cif === 'number' ? snapshot.prices.cif : null,
+    ddp_price: typeof snapshot.prices?.ddp === 'number' ? snapshot.prices.ddp : null,
+    distributor_price: typeof snapshot.prices?.distributor === 'number' ? snapshot.prices.distributor : null,
+    retail_price: typeof snapshot.prices?.retail === 'number' ? snapshot.prices.retail : null,
+    pricing_currency: typeof snapshot.currency === 'string' ? snapshot.currency : 'USD',
+    inland_transport_cost: typeof snapshot.costLayers?.inlandTransportCost === 'number' ? snapshot.costLayers.inlandTransportCost : null,
+    export_customs_cost: typeof snapshot.costLayers?.exportCustomsCost === 'number' ? snapshot.costLayers.exportCustomsCost : null,
+    port_handling_cost: typeof snapshot.costLayers?.portHandlingCost === 'number' ? snapshot.costLayers.portHandlingCost : null,
+    freight_cost: typeof snapshot.costLayers?.freightCost === 'number' ? snapshot.costLayers.freightCost : null,
+    insurance_cost: typeof snapshot.costLayers?.insuranceCost === 'number' ? snapshot.costLayers.insuranceCost : null,
+    import_duty_percent: typeof snapshot.costLayers?.importDutyPercent === 'number' ? snapshot.costLayers.importDutyPercent : null,
+    destination_charges: typeof snapshot.costLayers?.destinationCharges === 'number' ? snapshot.costLayers.destinationCharges : null,
+    local_delivery_cost: typeof snapshot.costLayers?.localDeliveryCost === 'number' ? snapshot.costLayers.localDeliveryCost : null,
+    distributor_margin_percent: typeof snapshot.costLayers?.distributorMarginPercent === 'number' ? snapshot.costLayers.distributorMarginPercent : null,
+    retail_margin_percent: typeof snapshot.costLayers?.retailMarginPercent === 'number' ? snapshot.costLayers.retailMarginPercent : null,
+    pricing_start_level: typeof snapshot.startLevel === 'string' ? snapshot.startLevel : null,
+    pricing_margin_mode: typeof snapshot.marginMode === 'string' ? snapshot.marginMode : null,
+    pricing_last_calculated_at: typeof snapshot.calculatedAt === 'string' ? snapshot.calculatedAt : new Date().toISOString(),
+    updated_by: workspace.user.id,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error: productPricingError } = await db.from('products').update(productPricingPayload).eq('id', productId).eq('organization_id', organizationId);
+  if (productPricingError) return { error: productPricingError.message };
+
+  const { error } = await db.from('product_variants').update({ source_payload: nextPayload, updated_by: workspace.user.id, updated_at: new Date().toISOString() }).eq('id', variant.id).eq('organization_id', organizationId);
+  if (error) return { error: error.message };
+
+  await recordAuditEvent(organizationId, { eventType: 'product_updated', entityType: 'product_pricing_calculator', entityId: productId, actorId: workspace.user.id, metadata: { product_id: productId, product_variant_id: variant.id, snapshot } });
+
+  revalidatePath('/products');
+  revalidatePath('/quotes');
+  const product = await loadAuthoritativeProductViewModel(organizationId, productId);
+  return { success: 'Pricing calculator results saved to the product record.', product };
+}
+
+type ImportCsvActionState = { error?: string; success?: string; inserted?: number; updated?: number; skipped?: number };
+
+function csvBool(value: unknown, fallback = true) {
+  const text = String(value ?? '').trim().toLowerCase();
+  if (!text) return fallback;
+  return ['active', 'true', 'yes', '1', 'enabled'].includes(text);
+}
+
+async function ensureCategoryByName(db: any, organizationId: string, name: string, parentName?: string | null) {
+  const cleanName = name.trim();
+  if (!cleanName) return { id: null as string | null, error: 'Category name is required.' };
+  let parentId: string | null = null;
+  if (parentName?.trim()) {
+    const parent = await ensureCategoryByName(db, organizationId, parentName.trim(), null);
+    if (parent.error) return parent;
+    parentId = parent.id;
+  }
+  let query = db.from('product_categories').select('id').eq('organization_id', organizationId).ilike('name', cleanName);
+  if (parentId) query = query.eq('parent_id', parentId); else query = query.is('parent_id', null);
+  const { data: existing, error: lookupError } = await query.maybeSingle();
+  if (lookupError) return { id: null as string | null, error: lookupError.message };
+  if (existing?.id) return { id: existing.id as string, error: null as string | null };
+  const { data: inserted, error } = await db.from('product_categories').insert({ organization_id: organizationId, name: cleanName, parent_id: parentId, is_active: true }).select('id').single();
+  return { id: typeof inserted?.id === 'string' ? inserted.id : null, error: error?.message ?? null };
+}
+
+export async function importCsvRows(_: ImportCsvActionState | undefined, formData: FormData): Promise<ImportCsvActionState> {
+  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
+
+  const entity = String(formData.get('entity') ?? '').trim();
+  const rowsText = String(formData.get('rows_json') ?? '').trim();
+  if (!['products', 'categories', 'leads'].includes(entity)) return { error: 'Choose a supported import type.' };
+  if (entity === 'leads' && !hasWorkspaceCapability(workspace.currentRoles, 'lead.manage')) return { error: 'Your current role cannot import leads.' };
+  if (entity !== 'leads' && !hasWorkspaceCapability(workspace.currentRoles, 'catalog.manage')) return { error: 'Your current role cannot import catalog data.' };
+
+  let rows: Record<string, string>[] = [];
+  try { rows = JSON.parse(rowsText) as Record<string, string>[]; } catch { return { error: 'Import rows were not valid JSON.' }; }
+  if (!rows.length) return { error: 'No valid rows were provided for import.' };
+
+  const organizationId = workspace.organization.id;
+  const supabase = await createClient();
+  const db = supabase as any;
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  if (entity === 'categories') {
+    for (const row of rows) {
+      const name = String(row.category_name ?? '').trim();
+      if (!name) { skipped += 1; continue; }
+      const ensured = await ensureCategoryByName(db, organizationId, name, String(row.parent_category ?? '').trim() || null);
+      if (ensured.error) return { error: ensured.error, inserted, updated, skipped };
+      const { error } = await db.from('product_categories').update({ is_active: csvBool(row.active_status, true), updated_at: new Date().toISOString() }).eq('id', ensured.id);
+      if (error) return { error: error.message, inserted, updated, skipped };
+      inserted += 1;
+    }
+  }
+
+  if (entity === 'products') {
+    for (const row of rows) {
+      const name = String(row.product_name ?? '').trim();
+      const sku = String(row.sku ?? '').trim();
+      if (!name || !String(row.category ?? '').trim()) { skipped += 1; continue; }
+      const category = await ensureCategoryByName(db, organizationId, String(row.subcategory || row.category).trim(), row.subcategory ? String(row.category).trim() : null);
+      if (category.error) return { error: category.error, inserted, updated, skipped };
+      const payload = { organization_id: organizationId, category_id: category.id, name, sku: sku || null, sku_code: sku || null, description: row.description || null, pricing_type: row.unit || null, is_active: csvBool(row.active_status, true), updated_by: workspace.user.id };
+      let existing = null as any;
+      if (sku) {
+        const lookup = await db.from('products').select('id').eq('organization_id', organizationId).eq('sku', sku).maybeSingle();
+        if (lookup.error) return { error: lookup.error.message, inserted, updated, skipped };
+        existing = lookup.data;
+      }
+      const saved = existing?.id ? await db.from('products').update(payload).eq('id', existing.id).select('id').single() : await db.from('products').insert({ ...payload, created_by: workspace.user.id }).select('id').single();
+      if (saved.error) return { error: saved.error.message, inserted, updated, skipped };
+      const productId = saved.data.id as string;
+      const { data: variant } = await db.from('product_variants').select('id, source_payload').eq('organization_id', organizationId).eq('product_id', productId).order('sort_order', { ascending: true }).limit(1).maybeSingle();
+      const calculatorPayload = { import_row: row, imported_at: new Date().toISOString(), prices: { exw: row.exw_price || row.base_cost || null, fob: row.fob_price || null, cif: row.cif_price || null, ddp: row.ddp_price || null, distributor: row.distributor_price || null, retail: row.retail_price || null } };
+      if (variant?.id) await db.from('product_variants').update({ sku_code: sku || null, pricing_mode_default: row.unit || 'unit', source_payload: { ...((variant.source_payload && typeof variant.source_payload === 'object') ? variant.source_payload : {}), pricing_calculator: calculatorPayload }, updated_by: workspace.user.id }).eq('id', variant.id);
+      else await db.from('product_variants').insert({ organization_id: organizationId, product_id: productId, name, sku_code: sku || null, pricing_mode_default: row.unit || 'unit', source_payload: { pricing_calculator: calculatorPayload }, created_by: workspace.user.id, updated_by: workspace.user.id });
+      if (existing?.id) updated += 1; else inserted += 1;
+    }
+  }
+
+  if (entity === 'leads') {
+    for (const row of rows) {
+      const companyName = String(row.company_name ?? '').trim();
+      if (!companyName) { skipped += 1; continue; }
+      const { error } = await db.from('leads').insert({ organization_id: organizationId, lead_type: 'buyer', company_name: companyName, contact_name: row.contact_name || null, email: row.email || null, phone: row.phone || null, country: row.country || null, source_type: row.source || 'csv_import', source_label: row.lead_status || null, products_or_needs: row.interested_products || null, notes: row.notes || null, created_by: workspace.user.id, updated_by: workspace.user.id });
+      if (error) return { error: error.message, inserted, updated, skipped };
+      inserted += 1;
+    }
+  }
+
+  await recordAuditEvent(organizationId, { eventType: 'product_updated', entityType: 'csv_import', entityId: null, actorId: workspace.user.id, metadata: { entity, inserted, updated, skipped } });
+  revalidatePath('/products');
+  revalidatePath('/leads');
+  revalidatePath('/admin/categories');
+  return { success: `${entity} import completed.`, inserted, updated, skipped };
+}

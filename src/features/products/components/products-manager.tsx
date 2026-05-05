@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import RightDrawer from '@/components/RightDrawer';
+import { CatalogImportExportWizard } from '@/features/products/components/catalog-import-export-wizard';
 import { AuditHistoryDrawer } from '@/components/app/audit-history-drawer';
 import type { AuditEventRecord } from '@/lib/auditLog';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -726,6 +727,9 @@ export function ProductsManager({
       </div>
 
       {message&&<div style={{margin:'14px 24px 0',padding:'12px 16px',borderRadius:'12px',border:'1px solid #a7f3d0',background:'#ecfdf5',fontSize:'13px',color:'#065f46'}}>{message}</div>}
+      <div style={{padding:'14px 24px 0'}}>
+        <CatalogImportExportWizard products={workspaceProducts} categories={categories} canManageCatalog={canManageCatalog} />
+      </div>
 
       <div style={{padding:"14px 24px 40px",display:"flex",flexDirection:"column",gap:"14px"}}>
       <div className="space-y-4">

@@ -1,3 +1,12 @@
+## V17 - Catalog import/export and pricing calculator upgrade
+
+- Added the catalog command center to the Products workspace for product/category CSV template downloads, CSV validation preview, error reporting, and safe import actions.
+- Added lead CSV template support and lead import wiring with role-aware permissions.
+- Added a pricing hierarchy engine that calculates EXW, FOB, CIF, DDP, Distributor, and Retail prices from any starting level with explicit cost layers and margin-mode handling.
+- Added product-level pricing calculator save support with additive product pricing fields and variant source-payload snapshots.
+- Added the additive Supabase migration `20260504_import_export_pricing_calculator.sql` for product pricing fields without removing existing pricing-rule or quote pricing tables.
+- Preserved the existing quote pricing SSOT and kept quote/order integration conservative until the product-level calculator is validated.
+
 
 ## V15 - Unified mobile vCard share source
 
