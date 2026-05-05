@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createProduct } from '@/features/products/api/create-product';
 import { getProductOptions, type ProductCategoryOption } from '@/features/products/api/get-product-options';
+import { ProductPricingCalculatorPanel } from '@/features/products/components/product-pricing-calculator-panel';
+import type { ProductPricingSnapshot } from '@/types/products';
 
 type Props = {
   open: boolean;
@@ -52,6 +54,7 @@ export function AddProductDrawer({ open, onClose, onCreated }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<ProductCategoryOption[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
+  const [pricingSnapshot, setPricingSnapshot] = useState<ProductPricingSnapshot | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -93,6 +96,7 @@ export function AddProductDrawer({ open, onClose, onCreated }: Props) {
 
   const reset = () => {
     setForm(initialForm);
+    setPricingSnapshot(null);
     setError(null);
   };
 
@@ -122,6 +126,7 @@ export function AddProductDrawer({ open, onClose, onCreated }: Props) {
           pricing_mode_default: form.pricingModeDefault,
           supports_bulk_pricing: isPowder,
         },
+        pricing_snapshot: pricingSnapshot,
         pricing: {
           ex_factory_value: form.exFactoryValue ? Number(form.exFactoryValue) : null,
           ex_factory_unit: isPowder ? 'kg' : 'unit',
@@ -243,6 +248,30 @@ export function AddProductDrawer({ open, onClose, onCreated }: Props) {
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Bulk / kg {isPowder ? '(optional)' : '(not used for chips)'}</span>
             <input value={form.bulkValue} onChange={(e) => setField('bulkValue', e.target.value)} placeholder={isPowder ? '9.50' : ''} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" />
           </label>
+        </div>
+
+
+        <div className="mt-6">
+          <ProductPricingCalculatorPanel
+            productName={form.name || 'New product'}
+            compact
+            showSave={false}
+            initialValues={{
+              startLevel: 'exw',
+              startPrice: form.exFactoryValue ? Number(form.exFactoryValue) : null,
+              currency: 'USD',
+              marginMode: 'markup',
+            }}
+            onApplyToLegacyPricing={({ exw, fob, snapshot }) => {
+              setPricingSnapshot(snapshot);
+              setForm((current) => ({
+                ...current,
+                exFactoryValue: exw == null ? current.exFactoryValue : String(exw),
+                fobValue: fob == null ? current.fobValue : String(fob),
+                bulkValue: isPowder && exw != null ? String(exw) : current.bulkValue,
+              }));
+            }}
+          />
         </div>
 
         <div className="mt-6 flex justify-end gap-3">

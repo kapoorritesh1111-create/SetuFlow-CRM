@@ -69,3 +69,10 @@
 - Added a sanitized, blurred vCard share screenshot asset for homepage use, preserving QR/action/wallet UI while blurring the profile photo and contact details.
 - Tuned the section for mobile and desktop: compact proof bullets, strong call-to-action, responsive phone-style visual, and brand-color glow treatment.
 - Updated the Connection Layer card copy from generic vCard wording to Smart vCard Exchange positioning.
+
+## 2026-05-05 — V17.2 Product UX + Pricing Workflow
+
+- Fixed the Product Management data query that could surface `column reference "product_variant_id" is ambiguous` by removing the legacy embedded `product_prices` join from the primary products query. Runtime pricing continues to use `product_pricing_rules`; compatibility prices are only fetched through explicit variant IDs when needed.
+- Lightened Admin → Product Management with concise page copy, compact metric tiles, and a collapsible help area instead of long explanatory cards on the main surface.
+- Promoted the pricing calculator into product workflows with a reusable product pricing calculator panel, help icon, product detail pricing card, Add Product integration, and direct Products workspace access.
+- Reused the import/export wizard inside Client Onboarding so category, catalog, lead, and pricing import setup is visible during first-login/customer setup planning.

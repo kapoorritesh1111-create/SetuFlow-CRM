@@ -622,9 +622,11 @@ export async function distributeProductPricing(_: ActionState | undefined, formD
   if (!productValidation.ok) return { error: productValidation.error };
 
   const { data: priceRows, error: priceError } = await db
-    .from('product_prices')
-    .select('id, currency, market_id, product_variants!inner(product_id, products!inner(organization_id))')
-    .eq('product_variants.products.organization_id', organizationId);
+    .from('product_pricing_rules')
+    .select('id, product_id, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_input_currency, fob_input_currency')
+    .eq('organization_id', organizationId)
+    .eq('is_active', true)
+    .in('product_id', productIds);
 
   if (priceError) return { error: priceError.message };
 
@@ -632,12 +634,15 @@ export async function distributeProductPricing(_: ActionState | undefined, formD
   const marketIds = new Set<string>();
   const currencySet = new Set<string>();
   for (const row of (priceRows ?? []) as Array<Record<string, any>>) {
-    const productId = row?.product_variants?.product_id;
-    if (typeof productId === 'string' && productIds.includes(productId)) {
-      pricedProductIds.add(productId);
-      if (typeof row.market_id === 'string' && row.market_id) marketIds.add(row.market_id);
-      const currency = normalizeCurrencyCode(typeof row.currency === 'string' ? row.currency : null);
-      if (currency) currencySet.add(currency);
+    const productId = typeof row.product_id === 'string' ? row.product_id : null;
+    if (productId && productIds.includes(productId)) {
+      const hasUsd = row.ex_factory_usd != null || row.fob_usd != null;
+      const hasInr = row.ex_factory_inr != null || row.fob_inr != null;
+      const inputCurrency = normalizeCurrencyCode(row.ex_factory_input_currency ?? row.fob_input_currency ?? null);
+      if (hasUsd || hasInr || inputCurrency) pricedProductIds.add(productId);
+      if (hasUsd) currencySet.add('USD');
+      if (hasInr) currencySet.add('INR');
+      if (inputCurrency) currencySet.add(inputCurrency);
     }
   }
 

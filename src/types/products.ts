@@ -1,5 +1,5 @@
-export type PricingViewMode = 'unit' | 'case';
-export type PricingBasis = 'unit' | 'case' | 'kg' | null;
+export type PricingViewMode = "unit" | "case";
+export type PricingBasis = "unit" | "case" | "kg" | null;
 
 export type ProductsSpreadsheetRow = {
   sku_code: string | null;
@@ -40,6 +40,7 @@ export type ProductsSpreadsheetRow = {
   source_sheet_name: string | null;
   updated_at: string | null;
   is_active: boolean;
+  pricing_snapshot?: ProductPricingSnapshot | null;
 };
 
 export type ProductsSpreadsheetSummary = {
@@ -84,6 +85,37 @@ export type ProductDetailVariant = {
   effective_from: string | null;
 };
 
+export type ProductPricingSnapshot = {
+  base_cost: number | null;
+  exw_price: number | null;
+  fob_price: number | null;
+  cif_price: number | null;
+  ddp_price: number | null;
+  distributor_price: number | null;
+  retail_price: number | null;
+  pricing_currency: string | null;
+  inland_transport_cost: number | null;
+  export_customs_cost: number | null;
+  port_handling_cost: number | null;
+  freight_cost: number | null;
+  insurance_cost: number | null;
+  import_duty_percent: number | null;
+  destination_charges: number | null;
+  local_delivery_cost: number | null;
+  distributor_margin_percent: number | null;
+  retail_margin_percent: number | null;
+  pricing_start_level:
+    | "exw"
+    | "fob"
+    | "cif"
+    | "ddp"
+    | "distributor"
+    | "retail"
+    | null;
+  pricing_margin_mode: "markup" | "margin" | null;
+  pricing_last_calculated_at: string | null;
+};
+
 export type ProductDetailResponse = {
   product: {
     id: string;
@@ -93,6 +125,7 @@ export type ProductDetailResponse = {
     pricing_type: string | null;
     description: string | null;
     is_active: boolean;
+    pricing_snapshot?: ProductPricingSnapshot | null;
   };
   variants: ProductDetailVariant[];
   pricing_meta: {
@@ -107,15 +140,15 @@ export type UpdateProductVariantPayload = {
   product_variant_id: string;
   is_quoteable?: boolean;
   ex_factory_value?: number | null;
-  ex_factory_unit?: 'unit' | 'case' | 'kg' | null;
+  ex_factory_unit?: "unit" | "case" | "kg" | null;
   fob_value?: number | null;
-  fob_unit?: 'unit' | 'case' | 'kg' | null;
+  fob_unit?: "unit" | "case" | "kg" | null;
   bulk_value?: number | null;
   /** Direct CIF reference price — stored in source_payload for catalog display.
    *  Actual quote CIF is computed from FOB + freight profile. This field is for
    *  reference/display only and does not gate quote compilation. */
   cif_value?: number | null;
-  cif_unit?: 'unit' | 'case' | null;
+  cif_unit?: "unit" | "case" | null;
 };
 
 export type UpdateProductPayload = {
@@ -141,15 +174,16 @@ export type CreateProductPayload = {
     units_per_case?: number | null;
     moq_cases?: number | null;
     moq_kg?: number | null;
-    pricing_mode_default?: 'unit' | 'case' | 'kg' | null;
+    pricing_mode_default?: "unit" | "case" | "kg" | null;
     supports_bulk_pricing?: boolean;
   };
   pricing?: {
     ex_factory_value?: number | null;
-    ex_factory_unit?: 'unit' | 'case' | 'kg' | null;
+    ex_factory_unit?: "unit" | "case" | "kg" | null;
     fob_value?: number | null;
-    fob_unit?: 'unit' | 'case' | 'kg' | null;
+    fob_unit?: "unit" | "case" | "kg" | null;
     bulk_value?: number | null;
     source_sheet_name?: string | null;
   };
+  pricing_snapshot?: ProductPricingSnapshot | null;
 };

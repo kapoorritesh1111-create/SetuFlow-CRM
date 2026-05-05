@@ -24,3 +24,14 @@ Setu Flow CRM is in an upgraded baseline state with public client onboarding, Se
 npm run typecheck
 Blocked: dependencies are not installed in the sandbox, and npm ci was intentionally not run per upgrade constraint.
 ```
+
+## V17.2 Product UX + Pricing Workflow
+
+Status: implementation pass complete in repo package; Vercel build still needs to run in the deployment environment with dependencies installed.
+
+Highlights:
+- Product Management page reduced to operational copy, compact metrics, and help drawer content.
+- Pricing Calculator is now available from Products & Pricing, Product Detail pricing, and Add Product.
+- Product-specific calculator snapshots save to product-level pricing fields.
+- Client Onboarding now exposes the import/export wizard for setup flows.
+- Legacy product_prices embedded join removed from the main products query to avoid ambiguous `product_variant_id` errors.

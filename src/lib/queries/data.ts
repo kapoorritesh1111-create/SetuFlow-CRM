@@ -3034,12 +3034,11 @@ export async function getProductsData(organizationId: string): Promise<ProductsD
       .eq('products.organization_id', organizationId)
       .order('created_at', { ascending: false })
       .limit(PRODUCT_VARIANTS_QUERY_LIMIT),
-    supabase
-      .from('product_prices')
-      .select('id, product_variant_id, market_id, price, currency, effective_from, effective_to, product_variants!inner(product_id, products!inner(organization_id))')
-      .eq('product_variants.products.organization_id', organizationId)
-      .order('effective_from', { ascending: false })
-      .limit(PRODUCT_PRICES_QUERY_LIMIT),
+    // product_prices is a compatibility-only table and its embedded joins can produce
+    // ambiguous product_variant_id references in PostgREST once quote/variant joins evolve.
+    // Runtime pricing now resolves from product_pricing_rules; compatibility prices are fetched
+    // later through getScopedPricingTables with explicit variant ids only when required.
+    Promise.resolve({ data: [], error: null }),
     supabase.from('markets').select('id, name, is_active').eq('organization_id', organizationId).order('sort_order').limit(PRODUCT_MARKETS_QUERY_LIMIT),
     (supabase as any).from('product_pricing_rules').select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type, product_name, sku_code').eq('organization_id', organizationId).eq('is_active', true).eq('is_quoteable', true),
     getAuditEvents(organizationId, {

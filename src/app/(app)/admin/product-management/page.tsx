@@ -1,7 +1,6 @@
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { SectionCard } from '@/components/ui/section-card';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
@@ -48,8 +47,8 @@ export default async function ProductManagementPage() {
       <PageHeader
         eyebrow="Admin"
         title="Product management"
-        badge="System of record"
-        description="Admin-owned catalog governance for categories, products, packaging, UOM, base pricing, and the approval-protected commercial posture used by leads, quotes, and orders."
+        badge="Governance"
+        description="Manage catalog records, coverage, import tools, and governed product pricing."
         actions={[
           { label: 'Organization', href: '/admin/organization' },
           { label: 'Settings lists', href: '/admin/organization#settings-lists' },
@@ -60,35 +59,38 @@ export default async function ProductManagementPage() {
       {readOnlyMessage ? <StateMessage title="Read-only product governance" description={readOnlyMessage} tone="warning" /> : null}
       <QueryIssuesAlert issues={data.queryIssues} />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SectionCard eyebrow="Catalog governance" title={ratioLabel(summary.activeProducts, summary.totalProducts)} description="Active products under admin control.">
-          <p className="text-sm text-slate-600">{summary.totalCategories} categories · {summary.totalVariants} sellable variants available.</p>
-        </SectionCard>
-        <SectionCard eyebrow="Base pricing" title={ratioLabel(pricedActiveCount, activeProducts.length)} description="Active products with a catalog baseline.">
-          <p className="text-sm text-slate-600">Catalog-led quoting stays primary and visible before any manual override is requested.</p>
-        </SectionCard>
-        <SectionCard eyebrow="Trade attributes" title={ratioLabel(tradeReadyCount, activeProducts.length)} description="Active products with HS code and packaging captured.">
-          <p className="text-sm text-slate-600">Packaging comes from pack size and variant pack labels. HS code posture remains visible in the product source of truth.</p>
-        </SectionCard>
-        <SectionCard eyebrow="Approval posture" title={ratioLabel(approvalProtectedCount, activeProducts.length)} description="Products with governed pricing rows available to Quotes.">
-          <p className="text-sm text-slate-600">Manual quote overrides still require reason capture and approval routing; this page does not weaken that logic.</p>
-        </SectionCard>
-      </section>
+      <details className="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm open:p-5">
+        <summary className="cursor-pointer text-sm font-semibold text-slate-800">? Help: how this product governance page works</summary>
+        <div className="mt-4 grid gap-4 text-sm text-slate-600 lg:grid-cols-3">
+          <div>
+            <h3 className="font-semibold text-slate-950">Catalog source of truth</h3>
+            <p className="mt-1">This admin page governs product names, categories, variants, pack details, UOM defaults, activation, and import/export maintenance.</p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-950">Pricing posture</h3>
+            <p className="mt-1">Product-level EXW to Retail calculator snapshots are visible here, while quote pricing rules stay protected until quote integration is intentionally upgraded.</p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-950">Workflow continuity</h3>
+            <p className="mt-1">Lead product interests, quote rows, and order execution continue to trace back to governed product and variant records.</p>
+          </div>
+        </div>
+      </details>
 
-      <section className="grid gap-4 xl:grid-cols-3">
-        <SectionCard eyebrow="Units of measure" title="UOM coverage" description="Default commercial unit is carried by the variant pricing mode.">
-          <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
-            <li>Case-led variants: {uomCounts.case}</li>
-            <li>Unit-led variants: {uomCounts.unit}</li>
-            <li>Kg-led variants: {uomCounts.kg}</li>
-          </ul>
-        </SectionCard>
-        <SectionCard eyebrow="Lead bridge" title="Product/category interest is first-class" description="Leads map to category-backed product selections before quoting begins.">
-          <p className="text-sm text-slate-600">This admin surface owns the catalog records that appear in lead coverage selection and downstream quote product pickers.</p>
-        </SectionCard>
-        <SectionCard eyebrow="Order continuity" title="Quote lines remain traceable" description="Accepted quote lines continue into contract-backed order execution.">
-          <p className="text-sm text-slate-600">Orders now read confirmed commercial lines instead of only quote headers so operators can verify pack, quantity, baseline, and override posture.</p>
-        </SectionCard>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {[
+          { label: 'Products', value: ratioLabel(summary.activeProducts, summary.totalProducts), detail: `${summary.totalCategories} categories` },
+          { label: 'Pricing', value: ratioLabel(pricedActiveCount, activeProducts.length), detail: 'baseline coverage' },
+          { label: 'Trade attrs', value: ratioLabel(tradeReadyCount, activeProducts.length), detail: 'HS + pack captured' },
+          { label: 'Approval rows', value: ratioLabel(approvalProtectedCount, activeProducts.length), detail: 'governed pricing rows' },
+          { label: 'Variants', value: String(summary.totalVariants), detail: `${uomCounts.case} case · ${uomCounts.unit} unit · ${uomCounts.kg} kg` },
+        ].map((metric) => (
+          <div key={metric.label} className="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">{metric.label}</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-950">{metric.value}</p>
+            <p className="mt-1 text-xs text-slate-500">{metric.detail}</p>
+          </div>
+        ))}
       </section>
 
       <ProductsManager

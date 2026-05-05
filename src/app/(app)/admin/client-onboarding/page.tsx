@@ -8,6 +8,9 @@ import { DEFAULT_SETU_FLOW_LOGO, defaultMarkets, defaultNextSteps, defaultPipeli
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
+import { getProductsData } from '@/lib/queries/products';
+import { buildProductsViewModel } from '@/features/products/view-model';
+import { CatalogImportExportWizard } from '@/features/products/components/catalog-import-export-wizard';
 // Uses requireAdminWorkspace through requireSetuInternalAdminWorkspace, then adds the Setu-internal tenant guard.
 
 type OnboardingRequest = {
@@ -120,10 +123,12 @@ export default async function ClientOnboardingAdminPage({ searchParams }: { sear
   if (missingEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using client onboarding." tone="warning" />;
   if (!organization) return null;
   const supabase = (await createClient()) as any;
-  const [{ data, error }, { count: countryCount }] = await Promise.all([
+  const [{ data, error }, { count: countryCount }, productData] = await Promise.all([
     supabase.from('client_onboarding_requests').select('*').order('created_at', { ascending: false }).limit(25),
     supabase.from('countries').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
+    getProductsData(organization.id),
   ]);
+  const productImportView = productData ? buildProductsViewModel(productData) : { categories: [], products: [] };
   const requests = (data ?? []) as OnboardingRequest[];
   const openRequests = requests.filter((request) => !['live', 'paused'].includes(request.status)).length;
   const readyForInvite = requests.filter((request) => ['admin_invite_ready', 'admin_invited'].includes(request.status)).length;
@@ -136,6 +141,9 @@ export default async function ClientOnboardingAdminPage({ searchParams }: { sear
     {error ? <StateMessage title="Client onboarding table is not available yet" description="Apply the current onboarding migration, then reopen this page to manage submitted intake forms." tone="warning" /> : null}
     <SectionCard eyebrow="Operating model" title="How SaaS client setup works" description="The client submits requirements, Setu Flow provisions a tenant-scoped organization, seeds shared reference data, then sends the first admin login. Client workspaces never see Client Onboarding.">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><AdminStep number="01" title="Client submits form" description="Company identity, first admin, focus markets/countries, desired pipelines, pricing notes, and trade event preference." href="/onboarding" /><AdminStep number="02" title="Create org tenant" description="Create a unique organization ID and reserve companyname.setuflowcrm.com under the wildcard domain." /><AdminStep number="03" title="Seed workspace" description={`Copy all ${countryCount ?? 195} countries plus editable markets, pipelines, stages, next steps, roles, and pricing settings.`} /><AdminStep number="04" title="Send first admin login" description="Create the first owner invitation. Product categories and products stay client-created after login." href="/admin/invitations" /></div>
+    </SectionCard>
+    <SectionCard eyebrow="First-login data setup" title="Import categories, products, leads, and pricing" description="Use the same CSV validation flow during customer setup so new clients can load their catalog and leads before they go live.">
+      <CatalogImportExportWizard products={productImportView.products} categories={productImportView.categories} canManageCatalog />
     </SectionCard>
     <SectionCard eyebrow="Default setup package" title="What gets preloaded" description="Countries are seeded completely. The other workflow lists are defaults and can be edited or removed by the client admin after first login.">
       <div className="grid gap-4 md:grid-cols-2"><ListBlock title="Country reference" items={[`${countryCount ?? 195} countries copied into every new organization`]} /><ListBlock title="Pipeline stages" items={defaultPipelineStages} /><ListBlock title="Pipelines" items={defaultPipelines} /><ListBlock title="Next steps" items={defaultNextSteps} /><ListBlock title="Markets" items={defaultMarkets} /><ListBlock title="Product categories" items={['Not pre-created', 'Client creates after login']} /></div>
