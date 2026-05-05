@@ -73,3 +73,10 @@ Status: implementation patch prepared. Supabase migration and Vercel deployment 
 - Internal markup/margin is available before distributor and retail margins.
 - Existing products inherit category pricing rules until a user explicitly edits a product-specific pricing override.
 - Quote-specific adjustments remain isolated to the quote workflow.
+
+### V17.5.2 TypeScript calculator input hotfix
+
+- Live Supabase schema was checked before code changes.
+- Confirmed pricing calculator default rules include internal/distributor/retail margin fields and do not own UOM or pack-size fields.
+- Confirmed product variant packaging fields include pack size, pack unit/label, units per case, pricing mode default, and net weight.
+- Patched calculator input conversion so numeric variant defaults compile under Vercel strict TypeScript checks.

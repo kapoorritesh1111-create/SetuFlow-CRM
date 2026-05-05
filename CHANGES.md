@@ -109,3 +109,9 @@
 - Product pricing calculator now starts in inherited-default mode for saved products and requires an explicit Edit product pricing override action before changing product-specific pricing.
 - Clarified quote-level price adjustments as quote-only changes that do not rewrite product/category defaults.
 - Added V17.5 additive migration to align pricing_calculator_default_rules with internal margin guidance.
+
+## V17.5.2 TypeScript calculator input hotfix
+
+- Verified live Supabase schema for `pricing_calculator_default_rules`, `product_variants`, and `products` before patching.
+- Confirmed product/variant packaging fields live on `product_variants`, while default pricing rule margins live on `pricing_calculator_default_rules`.
+- Fixed `ProductPricingCalculatorPanel.toInput` so numeric Supabase fields such as `units_per_case` can be used as safe string input fallbacks without failing strict TypeScript builds.

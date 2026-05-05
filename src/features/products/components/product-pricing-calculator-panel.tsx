@@ -84,8 +84,11 @@ type DraftState = {
   retailMarginPercent: string;
 };
 
-function toInput(value: number | string | null | undefined, fallback = "") {
-  if (value === null || value === undefined || value === "") return fallback;
+function toInput(
+  value: number | string | null | undefined,
+  fallback: number | string | null | undefined = "",
+): string {
+  if (value === null || value === undefined || value === "") return String(fallback ?? "");
   return String(value);
 }
 
