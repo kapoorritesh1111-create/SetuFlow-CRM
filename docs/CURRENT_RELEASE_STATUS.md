@@ -121,3 +121,7 @@ No `npm ci` was run in the sandbox.
 ### V17.6.1 Quote Builder workflow alignment
 
 This pass aligns Quote Preview workflow order with commercial logic: product lock -> terms/currency/incoterm/validity -> pricing lines. Pricing lines now surface variant UOM, pack, MOQ, and pricing basis so users know whether the quantity/price is by case, unit, or kg/bulk before editing line price. No Supabase migration is required; the patch uses existing `product_variants` fields verified in Supabase (`pack_size_value`, `pack_size_unit`, `units_per_case`, `moq_cases`, `moq_kg`, `pricing_mode_default`).
+
+### V17.6.2 quote builder alignment
+
+The quote builder now locks commercial terms before pricing, explains incoterms, shows UOM/MOQ pricing basis, supports quote-only margin/discount adjustments, and routes >15% quote-only deviations to approval before send. No Supabase migration is required for this pass; it uses existing quote approval fields.
