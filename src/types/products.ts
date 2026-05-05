@@ -102,6 +102,8 @@ export type ProductPricingSnapshot = {
   import_duty_percent: number | null;
   destination_charges: number | null;
   local_delivery_cost: number | null;
+  internal_margin_percent?: number | null;
+  internal_price?: number | null;
   distributor_margin_percent: number | null;
   retail_margin_percent: number | null;
   pricing_start_level:
@@ -114,6 +116,11 @@ export type ProductPricingSnapshot = {
     | null;
   pricing_margin_mode: "markup" | "margin" | null;
   pricing_last_calculated_at: string | null;
+  product_variant_id?: string | null;
+  pricing_mode_default?: PricingBasis;
+  default_unit_of_measure?: string | null;
+  pack_size?: string | number | null;
+  pack_size_unit?: string | null;
 };
 
 export type ProductDetailResponse = {

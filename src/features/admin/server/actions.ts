@@ -911,3 +911,71 @@ export async function updateProductCategory(formData: FormData): Promise<void> {
   await revalidateAdminReferencePaths('/admin/categories');
   redirect('/admin/categories?notice=category-updated');
 }
+
+export async function savePricingCalculatorDefaultRule(formData: FormData): Promise<void> {
+  const context = await getAdminContext();
+  if (!context) return;
+
+  const { supabase, organization, membership } = context;
+  const scope = String(formData.get('rule_scope') ?? 'organization').trim() === 'category' ? 'category' : 'organization';
+  const categoryId = scope === 'category' ? String(formData.get('category_id') ?? '').trim() || null : null;
+  const currency = String(formData.get('currency') ?? 'USD').trim().toUpperCase() || 'USD';
+  const marginMode = String(formData.get('margin_mode') ?? 'markup').trim() === 'margin' ? 'margin' : 'markup';
+  const num = (name: string) => {
+    const raw = String(formData.get(name) ?? '').trim();
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  if (scope === 'category' && !categoryId) return;
+
+  const payload = {
+    organization_id: organization.id,
+    rule_scope: scope,
+    category_id: categoryId,
+    currency,
+    margin_mode: marginMode,
+    inland_transport_cost: num('inland_transport_cost'),
+    export_customs_cost: num('export_customs_cost'),
+    port_handling_cost: num('port_handling_cost'),
+    freight_cost: num('freight_cost'),
+    insurance_cost: num('insurance_cost'),
+    import_duty_percent: num('import_duty_percent'),
+    destination_charges: num('destination_charges'),
+    local_delivery_cost: num('local_delivery_cost'),
+    internal_margin_percent: num('internal_margin_percent'),
+    distributor_margin_percent: num('distributor_margin_percent'),
+    retail_margin_percent: num('retail_margin_percent'),
+    is_active: true,
+    updated_by: membership.user_id,
+    updated_at: new Date().toISOString(),
+  };
+
+  let existingQuery = (supabase as any)
+    .from('pricing_calculator_default_rules')
+    .select('id')
+    .eq('organization_id', organization.id)
+    .eq('rule_scope', scope);
+  existingQuery = categoryId ? existingQuery.eq('category_id', categoryId) : existingQuery.is('category_id', null);
+  const { data: existing } = await existingQuery.limit(1).maybeSingle();
+
+  const { error } = existing?.id
+    ? await (supabase as any).from('pricing_calculator_default_rules').update(payload).eq('id', existing.id).eq('organization_id', organization.id)
+    : await (supabase as any).from('pricing_calculator_default_rules').insert({ ...payload, created_by: membership.user_id });
+
+  if (!error) {
+    await logAdminAuditAction({
+      organizationId: organization.id,
+      action: 'product_updated',
+      entityType: 'pricing_calculator_default_rule',
+      entityId: categoryId,
+      actorUserId: membership.user_id,
+      newValue: payload,
+    });
+  }
+
+  revalidatePath('/admin/product-management');
+  revalidatePath('/admin/categories');
+  revalidatePath('/products');
+}

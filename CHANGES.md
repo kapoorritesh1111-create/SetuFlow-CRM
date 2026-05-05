@@ -85,3 +85,21 @@
 - Lightened Admin → Product Management with concise page copy, compact metric tiles, and a collapsible help area instead of long explanatory cards on the main surface.
 - Promoted the pricing calculator into product workflows with a reusable product pricing calculator panel, help icon, product detail pricing card, Add Product integration, and direct Products workspace access.
 - Reused the import/export wizard inside Client Onboarding so category, catalog, lead, and pricing import setup is visible during first-login/customer setup planning.
+
+## V17.4 — Pricing calculator variant/defaults hotfix
+
+- Fixed Product Detail pricing calculator variant selection so products with multiple variants can save against the selected variant instead of falling through to "No product variant is available".
+- Added variant selector, default unit of measure, pack size, pack unit, and pricing basis fields to the product pricing calculator.
+- Changed pricing calculator help from inline content to a centered pop-up help modal.
+- Changed Admin help from side drawer behavior to centered pop-up behavior.
+- Added Admin → Product Management pricing rules/defaults screen for organization and category calculator defaults.
+- Added additive Supabase migration for `pricing_calculator_default_rules` to store organization/category default cost layers, margins, UOM, pack size, and pricing basis.
+
+## V17.5 pricing calculator clarity alignment
+
+- Clarified default pricing calculator rules so organization/category defaults store shared calculator assumptions only: currency, margin mode, landed-cost layers, internal markup/margin, distributor margin, and retail margin.
+- Moved product UOM, pack size, pack unit, and pricing basis responsibility back to product/variant pricing screens instead of default rules.
+- Added internal markup/margin to the pricing hierarchy so operator margin is applied after DDP/last landed base and before distributor/retail margins.
+- Product pricing calculator now starts in inherited-default mode for saved products and requires an explicit Edit product pricing override action before changing product-specific pricing.
+- Clarified quote-level price adjustments as quote-only changes that do not rewrite product/category defaults.
+- Added V17.5 additive migration to align pricing_calculator_default_rules with internal margin guidance.

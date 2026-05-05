@@ -259,6 +259,8 @@ export function ProductDetailDrawer({
           fob_value: "",
           fob_unit: "",
           bulk_value: "",
+          cif_value: "",
+          cif_unit: "",
         }),
         ...patch,
       },
@@ -443,8 +445,19 @@ export function ProductDetailDrawer({
               <ProductPricingCalculatorPanel
                 productId={detail.product.id}
                 productVariantId={
-                  detail.variants[0]?.product_variant_id ?? null
+                  detail.product.pricing_snapshot?.product_variant_id ?? detail.variants[0]?.product_variant_id ?? null
                 }
+                variantOptions={detail.variants.map((variant) => ({
+                  id: variant.product_variant_id,
+                  name: variant.variant_name,
+                  skuCode: variant.sku_code,
+                  packLabel: variant.pack_label,
+                  unitsPerCase: variant.units_per_case,
+                  moqDisplay: variant.moq_display,
+                  pricingModeDefault: variant.pricing_mode_default,
+                  exFactoryValue: variant.ex_factory_value,
+                  fobValue: variant.fob_value,
+                }))}
                 productName={detail.product.name}
                 canManageCatalog={canManageCatalog}
                 compact
@@ -482,6 +495,22 @@ export function ProductDetailDrawer({
                   marginMode:
                     detail.product.pricing_snapshot?.pricing_margin_mode ??
                     "markup",
+                  defaultUnitOfMeasure:
+                    detail.product.pricing_snapshot?.default_unit_of_measure ??
+                    detail.variants[0]?.pricing_mode_default ??
+                    "unit",
+                  packSize:
+                    detail.product.pricing_snapshot?.pack_size ??
+                    detail.variants[0]?.units_per_case ??
+                    null,
+                  packSizeUnit:
+                    detail.product.pricing_snapshot?.pack_size_unit ??
+                    detail.variants[0]?.pack_label ??
+                    null,
+                  pricingMode:
+                    detail.product.pricing_snapshot?.pricing_mode_default ??
+                    detail.variants[0]?.pricing_mode_default ??
+                    "unit",
                 }}
                 onSaved={async () => {
                   const refreshed =

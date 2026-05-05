@@ -357,6 +357,13 @@ export function CatalogImportExportWizard({
         <ProductPricingCalculatorPanel
           productId={selectedProduct?.id ?? null}
           productVariantId={selectedProduct?.variants[0]?.id ?? null}
+          variantOptions={(selectedProduct?.variants ?? []).map((variant) => ({
+            id: variant.id,
+            name: variant.name,
+            packLabel: variant.packLabel,
+            unitsPerCase: variant.unitsPerCase,
+            pricingModeDefault: variant.unitOfMeasure,
+          }))}
           productName={selectedProduct?.name ?? null}
           canManageCatalog={canManageCatalog}
           onSaved={() => setDrawer(null)}

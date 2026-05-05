@@ -13,6 +13,7 @@ export type PricingHierarchyInputs = {
   importDutyPercent?: number | null;
   destinationCharges?: number | null;
   localDeliveryCost?: number | null;
+  internalMarginPercent?: number | null;
   distributorMarginPercent?: number | null;
   retailMarginPercent?: number | null;
   marginMode?: MarginMode;
@@ -27,6 +28,8 @@ export type PricingHierarchyResult = {
   marginMode: MarginMode;
   prices: Record<PricingLevel, number | null>;
   costLayers: Required<Omit<PricingHierarchyInputs, 'startLevel' | 'startPrice' | 'currency' | 'marginMode'>>;
+  internalPrice: number | null;
+  pricingBaseLevel: PricingLevel;
   importDutyAmount: number | null;
   calculatedAt: string;
 };
@@ -67,6 +70,7 @@ function validateInput(input: PricingHierarchyInputs) {
     ['importDutyPercent', 'Import duty percent'],
     ['destinationCharges', 'Destination charges'],
     ['localDeliveryCost', 'Local delivery cost'],
+    ['internalMarginPercent', 'Internal markup / margin percent'],
     ['distributorMarginPercent', 'Distributor margin percent'],
     ['retailMarginPercent', 'Retail margin percent'],
   ];
@@ -80,6 +84,7 @@ function validateInput(input: PricingHierarchyInputs) {
 
   const percentageFields: Array<[keyof PricingHierarchyInputs, string]> = [
     ['importDutyPercent', 'Import duty percent'],
+    ['internalMarginPercent', 'Internal markup / margin percent'],
     ['distributorMarginPercent', 'Distributor margin percent'],
     ['retailMarginPercent', 'Retail margin percent'],
   ];
@@ -105,17 +110,21 @@ export function calculatePricingHierarchy(input: PricingHierarchyInputs): Pricin
     importDutyPercent: toNumber(input.importDutyPercent),
     destinationCharges: toNumber(input.destinationCharges),
     localDeliveryCost: toNumber(input.localDeliveryCost),
+    internalMarginPercent: toNumber(input.internalMarginPercent),
     distributorMarginPercent: toNumber(input.distributorMarginPercent),
     retailMarginPercent: toNumber(input.retailMarginPercent),
   };
   const prices: Record<PricingLevel, number | null> = { exw: null, fob: null, cif: null, ddp: null, distributor: null, retail: null };
   let importDutyAmount: number | null = null;
+  let internalPrice: number | null = null;
+  const pricingBaseLevel: PricingLevel = 'ddp';
 
   if (!errors.length && input.startPrice != null) {
     prices[input.startLevel] = input.startPrice;
 
     if (prices.distributor == null && prices.retail != null) prices.distributor = removeMargin(prices.retail, costLayers.retailMarginPercent, marginMode);
-    if (prices.ddp == null && prices.distributor != null) prices.ddp = removeMargin(prices.distributor, costLayers.distributorMarginPercent, marginMode);
+    if (internalPrice == null && prices.distributor != null) internalPrice = removeMargin(prices.distributor, costLayers.distributorMarginPercent, marginMode);
+    if (prices.ddp == null && internalPrice != null) prices.ddp = removeMargin(internalPrice, costLayers.internalMarginPercent, marginMode);
     if (prices.cif == null && prices.ddp != null) prices.cif = (prices.ddp - costLayers.destinationCharges - costLayers.localDeliveryCost) / (1 + costLayers.importDutyPercent / 100);
     if (prices.fob == null && prices.cif != null) prices.fob = prices.cif - costLayers.freightCost - costLayers.insuranceCost;
     if (prices.exw == null && prices.fob != null) prices.exw = prices.fob - costLayers.inlandTransportCost - costLayers.exportCustomsCost - costLayers.portHandlingCost;
@@ -126,7 +135,8 @@ export function calculatePricingHierarchy(input: PricingHierarchyInputs): Pricin
       importDutyAmount = prices.cif * (costLayers.importDutyPercent / 100);
       prices.ddp = prices.cif + importDutyAmount + costLayers.destinationCharges + costLayers.localDeliveryCost;
     }
-    if (prices.distributor == null && prices.ddp != null) prices.distributor = addMargin(prices.ddp, costLayers.distributorMarginPercent, marginMode);
+    if (internalPrice == null && prices.ddp != null) internalPrice = addMargin(prices.ddp, costLayers.internalMarginPercent, marginMode);
+    if (prices.distributor == null && internalPrice != null) prices.distributor = addMargin(internalPrice, costLayers.distributorMarginPercent, marginMode);
     if (prices.retail == null && prices.distributor != null) prices.retail = addMargin(prices.distributor, costLayers.retailMarginPercent, marginMode);
     if (importDutyAmount == null && prices.cif != null) importDutyAmount = prices.cif * (costLayers.importDutyPercent / 100);
 
@@ -135,12 +145,14 @@ export function calculatePricingHierarchy(input: PricingHierarchyInputs): Pricin
       prices[level] = prices[level] == null ? null : roundMoney(prices[level]!);
     }
     importDutyAmount = importDutyAmount == null ? null : roundMoney(importDutyAmount);
+    internalPrice = internalPrice == null ? null : roundMoney(internalPrice);
   }
 
   if (costLayers.retailMarginPercent === 0) warnings.push('Retail margin is 0%, so distributor price equals retail price when retail is the starting point.');
-  if (costLayers.distributorMarginPercent === 0) warnings.push('Distributor margin is 0%, so DDP equals distributor price when distributor is the starting point.');
+  if (costLayers.distributorMarginPercent === 0) warnings.push('Distributor margin is 0%, so internal selling price equals distributor price when distributor pricing is calculated.');
+  if (costLayers.internalMarginPercent === 0) warnings.push('Internal markup / margin is 0%, so DDP or the last calculated landed base passes through unchanged.');
 
-  return { ok: errors.length === 0, startLevel: input.startLevel, errors, warnings, currency: (input.currency || 'USD').toUpperCase().slice(0, 3), marginMode, prices, costLayers, importDutyAmount, calculatedAt: new Date().toISOString() };
+  return { ok: errors.length === 0, startLevel: input.startLevel, errors, warnings, currency: (input.currency || 'USD').toUpperCase().slice(0, 3), marginMode, prices, costLayers, internalPrice, pricingBaseLevel, importDutyAmount, calculatedAt: new Date().toISOString() };
 }
 
 export const PRICING_LEVEL_LABELS: Record<PricingLevel, string> = {

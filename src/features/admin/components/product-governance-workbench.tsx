@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CatalogImportExportWizard } from "@/features/products/components/catalog-import-export-wizard";
 import { AdminHelpDrawer } from "@/features/admin/components/admin-help-drawer";
+import { savePricingCalculatorDefaultRule } from "@/features/admin/server/actions";
 import type { ProductCategoryViewModel, ProductViewModel, ProductsSummaryViewModel } from "@/features/products/view-model";
 
 type MarketOption = { id: string; name: string; isActive: boolean };
@@ -133,7 +134,7 @@ export function ProductGovernanceWorkbench({
         </div>
         <div className="space-y-3 p-5">
           {tab === "imports" ? <CatalogImportExportWizard products={products} categories={categories} canManageCatalog={canManageCatalog} /> : null}
-          {tab === "pricing" ? <PricingRulesSummary /> : null}
+          {tab === "pricing" ? <PricingRulesSummary categories={categories} /> : null}
           {tab === "audit" ? <AuditSummary auditEvents={auditEvents} /> : null}
           {filteredRows.map((row) => (
             <div key={row.title} className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 lg:grid-cols-[1fr_auto_auto_auto] lg:items-center">
@@ -149,21 +150,87 @@ export function ProductGovernanceWorkbench({
   );
 }
 
-function PricingRulesSummary() {
+function PricingRulesSummary({ categories }: { categories: ProductCategoryViewModel[] }) {
+  const fields = [
+    ["inland_transport_cost", "Inland transport"],
+    ["export_customs_cost", "Export customs"],
+    ["port_handling_cost", "Port handling"],
+    ["freight_cost", "Freight"],
+    ["insurance_cost", "Insurance"],
+    ["import_duty_percent", "Import duty %"],
+    ["destination_charges", "Destination charges"],
+    ["local_delivery_cost", "Local delivery"],
+    ["internal_margin_percent", "Internal markup / margin %"],
+    ["distributor_margin_percent", "Distributor margin %"],
+    ["retail_margin_percent", "Retail margin %"],
+  ] as const;
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h3 className="font-semibold text-slate-950">Pricing rule defaults</h3>
-          <p className="mt-1 text-sm text-slate-500">SETU Flow applies the most specific rule available: product override, then category rule, then organization default.</p>
+          <h3 className="font-semibold text-slate-950">Default pricing calculator rules</h3>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            Set organization or category calculator defaults. Currency comes from the organization unless changed here. Product UOM, pack size, pack unit, and pricing basis are edited on the product/variant, not in defaults.
+          </p>
         </div>
-        <Link href="/products" className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white">Edit product pricing</Link>
+        <AdminHelpDrawer
+          title="Pricing rules help"
+          buttonLabel="Rules help"
+          intro="Pricing rules provide default calculation assumptions for products. Defaults keep pricing consistent, while product overrides allow special cases."
+          sections={[
+            { title: "Default rule behavior", body: "SETU Flow applies the most specific rule available. Product rules override category rules. Category rules override organization defaults." },
+            { title: "When to edit category defaults", body: "Edit category defaults when products in a category share freight, duty, internal markup, distributor margin, or retail margin assumptions." },
+            { title: "When to edit product pricing", body: "Edit product pricing when only one product or one variant needs different assumptions from the category default." },
+            { title: "Product UOM and pack size", body: "Unit of measure, pack size, pack unit, and pricing basis belong to the product or variant. Defaults should only hold shared calculator assumptions like costs, duties, and margins." },
+            { title: "Margin order", body: "After EXW/FOB/CIF/DDP is calculated, internal markup or margin is applied first. Distributor margin and retail margin are applied after that. Quote-specific price changes stay on the quote only." },
+            { title: "Missing values", body: "If a required cost layer or margin is missing, the calculator should stop and show the missing value. It should never silently guess." },
+          ]}
+        />
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
+
+      <form action={savePricingCalculatorDefaultRule} className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-3">
+        <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+          Rule level
+          <select name="rule_scope" defaultValue="organization" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400">
+            <option value="organization">Organization default</option>
+            <option value="category">Category default</option>
+          </select>
+        </label>
+        <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+          Category
+          <select name="category_id" defaultValue="" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400">
+            <option value="">Only needed for category rule</option>
+            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select>
+        </label>
+        <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+          Currency
+          <input name="currency" defaultValue="USD" maxLength={3} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400" />
+        </label>
+        <div className="md:col-span-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">Default rules cover shared calculator assumptions. Product UOM, pack size, pack unit, and pricing basis are managed inside Add/Edit Product.</div>
+        <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+          Margin mode
+          <select name="margin_mode" defaultValue="markup" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400">
+            <option value="markup">Markup</option>
+            <option value="margin">Margin</option>
+          </select>
+        </label>
+        {fields.map(([name, label]) => (
+          <label key={name} className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+            {label}
+            <input name={name} inputMode="decimal" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400" />
+          </label>
+        ))}
+        <div className="md:col-span-3">
+          <button type="submit" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Save default pricing rule</button>
+        </div>
+      </form>
+
+      <div className="grid gap-3 md:grid-cols-3">
         {[
-          ["Organization default", "Common costs and default margin mode."],
-          ["Category rule", "Shared freight, duty, or margin assumptions."],
-          ["Product override", "Special pricing for one product only."],
+          ["Organization default", "Used when no category or product rule exists."],
+          ["Category rule", "Used for products in the selected category unless a product override exists."],
+          ["Product override", "Used when a specific product or variant needs unique pricing."],
         ].map(([title, body]) => <div key={title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="font-semibold text-slate-900">{title}</p><p className="mt-1 text-sm text-slate-500">{body}</p></div>)}
       </div>
     </div>

@@ -46,3 +46,21 @@ Highlights:
 - Product-specific calculator snapshots save to product-level pricing fields.
 - Client Onboarding now exposes the import/export wizard for setup flows.
 - Legacy product_prices embedded join removed from the main products query to avoid ambiguous `product_variant_id` errors.
+
+## V17.4 Pricing calculator defaults and variant fix
+
+- Product calculator now asks for selected variant, default UOM, pack size, pack unit, and pricing basis.
+- Product calculator save no longer depends on `product_variants.organization_id`; it validates the parent product and then resolves variants by product ID, which avoids false "No product variant" errors for legacy/null organization variant rows.
+- Admin Product Management now includes an editable pricing defaults screen for organization-level and category-level pricing calculator rules.
+- Help interactions are pop-up modals, not inline page sections or side drawers.
+- Migration added: `20260505_pricing_calculator_default_rules.sql`.
+
+### V17.5 pricing calculator clarity alignment
+
+Status: implementation patch prepared. Supabase migration and Vercel deployment still need operator execution.
+
+- Default pricing rules are now treated as organization/category shared assumptions, not product packaging records.
+- Product UOM, pack size, pack unit, and pricing basis remain product/variant responsibilities.
+- Internal markup/margin is available before distributor and retail margins.
+- Existing products inherit category pricing rules until a user explicitly edits a product-specific pricing override.
+- Quote-specific adjustments remain isolated to the quote workflow.

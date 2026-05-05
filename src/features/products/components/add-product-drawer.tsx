@@ -261,6 +261,10 @@ export function AddProductDrawer({ open, onClose, onCreated }: Props) {
               startPrice: form.exFactoryValue ? Number(form.exFactoryValue) : null,
               currency: 'USD',
               marginMode: 'markup',
+              defaultUnitOfMeasure: form.pricingModeDefault,
+              packSize: form.unitsPerCase || form.packSizeValue,
+              packSizeUnit: form.packSizeUnit || form.pricingModeDefault,
+              pricingMode: form.pricingModeDefault,
             }}
             onApplyToLegacyPricing={({ exw, fob, snapshot }) => {
               setPricingSnapshot(snapshot);

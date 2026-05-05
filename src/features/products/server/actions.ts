@@ -693,6 +693,10 @@ export async function savePricingCalculatorSnapshot(_: ActionState | undefined, 
   const productId = String(formData.get('product_id') ?? '').trim();
   const variantId = String(formData.get('product_variant_id') ?? '').trim() || null;
   const snapshotText = String(formData.get('pricing_snapshot') ?? '').trim();
+  const defaultUnitOfMeasure = String(formData.get('default_unit_of_measure') ?? '').trim() || null;
+  const packSizeText = String(formData.get('pack_size') ?? '').trim();
+  const packSizeUnit = String(formData.get('pack_size_unit') ?? '').trim() || null;
+  const pricingModeDefault = String(formData.get('pricing_mode_default') ?? '').trim() || null;
 
   if (!productId) return { error: 'Choose a product before saving pricing calculator results.' };
   if (!snapshotText) return { error: 'Pricing calculator snapshot is required.' };
@@ -705,14 +709,28 @@ export async function savePricingCalculatorSnapshot(_: ActionState | undefined, 
   const productValidation = await validateOrganizationProduct(db, organizationId, productId);
   if (productValidation.error) return { error: productValidation.error };
 
-  let variantQuery = db.from('product_variants').select('id, source_payload').eq('organization_id', organizationId).eq('product_id', productId);
+  let variantQuery = db
+    .from('product_variants')
+    .select('id, source_payload, product_id, organization_id')
+    .eq('product_id', productId);
   if (variantId) variantQuery = variantQuery.eq('id', variantId);
   const { data: variant, error: variantError } = await variantQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: true }).limit(1).maybeSingle();
   if (variantError) return { error: variantError.message };
-  if (!variant?.id) return { error: 'No product variant is available for this product.' };
 
-  const sourcePayload = variant.source_payload && typeof variant.source_payload === 'object' ? variant.source_payload : {};
-  const nextPayload = { ...sourcePayload, pricing_calculator: { ...snapshot, saved_by: workspace.user.id, saved_at: new Date().toISOString() } };
+  const sourcePayload = variant?.source_payload && typeof variant.source_payload === 'object' ? variant.source_payload : {};
+  const nextPayload = {
+    ...sourcePayload,
+    pricing_calculator: {
+      ...snapshot,
+      product_variant_id: variant?.id ?? variantId ?? null,
+      default_unit_of_measure: defaultUnitOfMeasure,
+      pack_size: packSizeText || null,
+      pack_size_unit: packSizeUnit,
+      pricing_mode_default: pricingModeDefault,
+      saved_by: workspace.user.id,
+      saved_at: new Date().toISOString(),
+    },
+  };
 
   const productPricingPayload = {
     exw_price: typeof snapshot.prices?.exw === 'number' ? snapshot.prices.exw : null,
@@ -742,15 +760,32 @@ export async function savePricingCalculatorSnapshot(_: ActionState | undefined, 
   const { error: productPricingError } = await db.from('products').update(productPricingPayload).eq('id', productId).eq('organization_id', organizationId);
   if (productPricingError) return { error: productPricingError.message };
 
-  const { error } = await db.from('product_variants').update({ source_payload: nextPayload, updated_by: workspace.user.id, updated_at: new Date().toISOString() }).eq('id', variant.id).eq('organization_id', organizationId);
-  if (error) return { error: error.message };
+  if (variant?.id) {
+    const variantUpdate: Record<string, unknown> = {
+      source_payload: nextPayload,
+      updated_by: workspace.user.id,
+      updated_at: new Date().toISOString(),
+    };
+    if (pricingModeDefault && ['unit', 'case', 'kg'].includes(pricingModeDefault)) {
+      variantUpdate.pricing_mode_default = pricingModeDefault;
+    }
+    const parsedPackSize = packSizeText ? Number(packSizeText) : null;
+    if (parsedPackSize != null && Number.isFinite(parsedPackSize)) {
+      variantUpdate.units_per_case = parsedPackSize;
+    }
+    if (packSizeUnit) {
+      variantUpdate.pack_label = packSizeText ? `${packSizeText} ${packSizeUnit}` : packSizeUnit;
+    }
+    const { error } = await db.from('product_variants').update(variantUpdate).eq('id', variant.id);
+    if (error) return { error: error.message };
+  }
 
-  await recordAuditEvent(organizationId, { eventType: 'product_updated', entityType: 'product_pricing_calculator', entityId: productId, actorId: workspace.user.id, metadata: { product_id: productId, product_variant_id: variant.id, snapshot } });
+  await recordAuditEvent(organizationId, { eventType: 'product_updated', entityType: 'product_pricing_calculator', entityId: productId, actorId: workspace.user.id, metadata: { product_id: productId, product_variant_id: variant?.id ?? variantId ?? null, default_unit_of_measure: defaultUnitOfMeasure, pack_size: packSizeText || null, pack_size_unit: packSizeUnit, pricing_mode_default: pricingModeDefault, snapshot } });
 
   revalidatePath('/products');
   revalidatePath('/quotes');
   const product = await loadAuthoritativeProductViewModel(organizationId, productId);
-  return { success: 'Pricing calculator results saved to the product record.', product };
+  return { success: variant?.id ? 'Pricing calculator results saved to the product record and selected variant.' : 'Pricing calculator results saved to the product record. No variant row was available to update.', product };
 }
 
 type ImportCsvActionState = { error?: string; success?: string; inserted?: number; updated?: number; skipped?: number };

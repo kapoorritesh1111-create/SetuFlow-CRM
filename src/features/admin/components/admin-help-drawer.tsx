@@ -31,9 +31,9 @@ export function AdminHelpDrawer({
         {buttonLabel}
       </button>
       {open ? (
-        <div className="fixed inset-0 z-[80] flex justify-end bg-slate-950/30 p-3 backdrop-blur-sm sm:p-5" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-[90] grid place-items-center bg-slate-950/35 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
           <button type="button" className="absolute inset-0 cursor-default" aria-label="Close help" onClick={() => setOpen(false)} />
-          <aside className="relative flex h-full w-full max-w-xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
+          <section className="relative max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-700">SETU Flow help</p>
@@ -49,7 +49,7 @@ export function AdminHelpDrawer({
                 <span className="text-lg leading-none">×</span>
               </button>
             </div>
-            <div className="flex-1 space-y-3 overflow-y-auto p-5">
+            <div className="max-h-[64vh] space-y-3 overflow-y-auto p-5">
               {sections.map((section) => (
                 <section key={section.title} className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
                   <h3 className="text-sm font-semibold text-slate-950">{section.title}</h3>
@@ -62,7 +62,7 @@ export function AdminHelpDrawer({
                 </section>
               ))}
             </div>
-          </aside>
+          </section>
         </div>
       ) : null}
     </>
