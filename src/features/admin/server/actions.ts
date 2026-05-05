@@ -882,9 +882,11 @@ export async function createProductCategory(formData: FormData): Promise<void> {
   if (!context) return;
   const name = normalizeText(formData.get('name'));
   if (!name) return;
+  const parentId = normalizeText(formData.get('parent_id'));
   await context.supabase.from('product_categories').insert({
     organization_id: context.organization.id,
     name,
+    parent_id: parentId || null,
     sort_order: normalizeNumber(formData.get('sort_order')),
     is_active: true,
   });
@@ -898,8 +900,10 @@ export async function updateProductCategory(formData: FormData): Promise<void> {
   const id = normalizeText(formData.get('id'));
   const name = normalizeText(formData.get('name'));
   if (!id || !name) return;
+  const parentId = normalizeText(formData.get('parent_id'));
   await context.supabase.from('product_categories').update({
     name,
+    parent_id: parentId && parentId !== id ? parentId : null,
     sort_order: normalizeNumber(formData.get('sort_order')),
     is_active: checked(formData, 'is_active'),
     updated_at: new Date().toISOString(),

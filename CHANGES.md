@@ -1,3 +1,12 @@
+## 2026-05-05 — V17.3 Admin Reference Pages cleanup
+
+- Reworked Admin → Product Management as a governance control center instead of a duplicate Products workspace. The page now focuses on catalog readiness, pricing gaps, variant coverage, trade attributes, approval posture, imports, and audit-oriented exceptions.
+- Removed long educational content from the Product Management main surface and moved it into a proper Help drawer covering page purpose, Products-vs-Admin responsibilities, pricing rules, calculator behavior, and default margin hierarchy.
+- Redesigned Admin → Categories around taxonomy governance with compact health metrics, a taxonomy workbench, selected category editor, parent-category support, and a Help drawer explaining product/import/quote/pricing-rule connections.
+- Added parent category creation/update support to the Admin category server actions so category hierarchy can be managed directly from the taxonomy workbench.
+- Expanded the Pricing Calculator help popover with clear EXW → FOB → CIF → DDP → Distributor → Retail explanations, markup vs margin behavior, and default rule priority.
+- Kept day-to-day product editing and product-specific pricing in the Products workspace; Admin pages now link to Products instead of embedding duplicate product tables.
+
 ## V17.1 - Vercel TypeScript build hotfix
 
 - Added an explicit return type for the recursive `ensureCategoryByName` helper used by the catalog/category CSV import action.

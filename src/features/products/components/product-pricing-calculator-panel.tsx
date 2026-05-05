@@ -228,22 +228,28 @@ export function ProductPricingCalculatorPanel({
       </div>
 
       {showHelp ? (
-        <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-900">
-          <p className="font-bold">How it works</p>
-          <p className="mt-1">
-            The calculator stacks import/export cost layers: EXW adds
-            inland/export/port costs to reach FOB, FOB adds freight and
-            insurance to reach CIF, CIF adds duty and destination costs to reach
-            DDP, then distributor and retail margins create selling prices.
-          </p>
-          <p className="mt-2">
-            You can start from EXW, FOB, CIF, DDP, Distributor, or Retail.
-            Reverse calculation only runs when required costs and margins are
-            entered; blank values are not guessed.
-          </p>
-          <p className="mt-2">
-            Markup means base × (1 + %). Margin means base ÷ (1 - %).
-          </p>
+        <div className="mt-4 rounded-3xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950 shadow-sm">
+          <p className="font-bold">How pricing is calculated</p>
+          <p className="mt-1">Use this calculator to build the full export pricing chain for this product: EXW → FOB → CIF → DDP → Distributor → Retail.</p>
+          <p className="mt-2">You can start from any known price. The calculator will calculate forward and backward when enough cost layers and margins are available.</p>
+          <p className="mt-2">Default rules are applied automatically unless you edit them for this product. Product-specific values override category defaults; category defaults override organization defaults.</p>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {[
+              ["EXW", "Factory or ex-works price."],
+              ["FOB", "EXW plus inland transport, export customs, and port handling."],
+              ["CIF", "FOB plus freight and insurance."],
+              ["DDP", "CIF plus import duty, destination charges, and local delivery."],
+              ["Distributor", "DDP plus distributor margin."],
+              ["Retail", "Distributor Price plus retail margin."],
+            ].map(([label, body]) => (
+              <div key={label} className="rounded-2xl border border-blue-200 bg-white/70 p-3">
+                <p className="font-semibold">{label}</p>
+                <p className="mt-1 text-xs leading-5 text-blue-900">{body}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3"><strong>Markup mode</strong> adds a percentage on top of cost. <strong>Margin mode</strong> calculates the price so the percentage is protected as gross margin.</p>
+          <p className="mt-2">If a required value is missing, the calculator shows a clear message instead of guessing.</p>
         </div>
       ) : null}
 
