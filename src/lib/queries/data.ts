@@ -2265,7 +2265,7 @@ export async function getLeadsPageData(organizationId: string): Promise<LeadsPag
     leadIds.length
       ? supabase
           .from('quotes')
-          .select('id, lead_id, rfq_id, status, currency, created_at, updated_at, notes, quote_number, current_version_id')
+          .select('id, lead_id, rfq_id, status, currency, created_at, updated_at, notes, notes_internal, quote_number, current_version_id, approval_required, approved_at, approved_by')
           .eq('organization_id', organizationId)
           .in('lead_id', leadIds)
           .order('created_at', { ascending: false })
@@ -2595,7 +2595,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     supabase.from('lead_markets').select('lead_id, market_id').eq('lead_id', leadId),
     supabase.from('lead_product_interests').select('lead_id, product_id, label, interest_type, source_context').eq('lead_id', leadId),
     supabase.from('rfqs').select('id, lead_id, status, currency, validity_date, created_at, updated_at, notes').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
-    supabase.from('quotes').select('id, lead_id, rfq_id, status, currency, pricing_basis, created_at, updated_at, notes, quote_number, current_version_id').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
+    supabase.from('quotes').select('id, lead_id, rfq_id, status, currency, pricing_basis, created_at, updated_at, notes, notes_internal, quote_number, current_version_id, approval_required, approved_at, approved_by').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
     supabase.from('lead_compliance_items').select('id, lead_id, compliance_item_id, document_id, status, created_at, submitted_at, approved_at, due_at, severity, reviewed_at').eq('lead_id', leadId).order('created_at', { ascending: false }),
     supabase.from('compliance_checklist_items').select('id, code, description').order('created_at', { ascending: false }),
     supabase.from('documents').select('id, related_entity, related_id, file_name, doc_type, status, uploaded_at, uploaded_by, reviewer_user_id, reviewed_at, review_notes, expires_at, version, version_label, requirement_code').eq('organization_id', organizationId).eq('related_entity', 'lead').eq('related_id', leadId).order('uploaded_at', { ascending: false }),

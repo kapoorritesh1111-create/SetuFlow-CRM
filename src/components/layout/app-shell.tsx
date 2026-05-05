@@ -112,8 +112,9 @@ function getShellHelp(pathname: string, fallbackDescription: string): { title: s
     title: 'Follow-up and Quote Builder help',
     intro: 'Use Follow-up to qualify the buyer or supplier, map product interest, and build a governed quote preview without changing product defaults.',
     sections: [
-      { title: 'Quote Builder order', body: 'Lock commercial terms first: currency, incoterm, payment terms, port context, validity days, and FX reference. Then price the line items using the selected product UOM, pack size, and MOQ.' },
-      { title: 'Pricing basis', body: 'Each quote line should show whether it is priced per unit, per case, or per kg/bulk. Quantity should follow the product variant MOQ and pack setup.' },
+      { title: 'Quote Builder order', body: 'Lock terms first: currency, incoterm, validity days, payment terms, and FX reference. Then price each line using the product UOM, pack size, and MOQ.' },
+      { title: 'Pricing basis and incoterms', body: 'EXW, FOB/FCA, CFR, CIF, and DDP describe where cost and risk transfer. The pricing row shows whether the quote is per unit, per case, or per kg/bulk, and quantity follows the variant MOQ.' },
+      { title: 'Quote-only adjustments', body: 'Discounts or markups entered in Quote Builder apply only to this quote. They do not update product, category, or organization pricing rules. Changes beyond the approval threshold go to owner approval before send.' },
       { title: 'Currency and FX', body: 'The quote currency can use the lead country currency when mapped. Weekly average FX should be treated as a quote reference for the selected validity period.' },
       { title: 'Quick Lead', body: 'Quick Lead stays fast and should not require extra help clicks or confirmation steps.' },
     ],

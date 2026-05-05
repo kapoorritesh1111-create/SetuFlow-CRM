@@ -504,7 +504,7 @@ async function getQuoteCommunicationGate(db: any, organizationId: string, quoteI
 
   const { data: quote, error } = await db
     .from('quotes')
-    .select('id, status, approval_required, approval_state')
+    .select('id, status, approval_required, approved_at')
     .eq('organization_id', organizationId)
     .eq('id', quoteId)
     .maybeSingle();
@@ -513,7 +513,7 @@ async function getQuoteCommunicationGate(db: any, organizationId: string, quoteI
   if (!quote?.id) return { allowed: false, reason: 'Quote not found for governed communication.' };
 
   const approvalRequired = Boolean(quote.approval_required);
-  const approvalState = typeof quote.approval_state === 'string' ? quote.approval_state : null;
+  const approvalState = quote.approved_at ? 'approved' : approvalRequired ? 'pending' : null;
   if (approvalRequired && approvalState !== 'approved') {
     return {
       allowed: false,
@@ -1326,6 +1326,10 @@ type QuotePreviewSaveInput = {
     catalogPriceCurrency?: string | null;
     notes?: string | null;
     source?: string | null;
+    quoteAdjustmentType?: string | null;
+    quoteAdjustmentValue?: number | null;
+    quoteAdjustmentReason?: string | null;
+    approvalRequired?: boolean | null;
   }>;
 };
 
@@ -1365,9 +1369,18 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
         override_reason: isPriceOverridden ? 'Edited in Leads quote preview' : null,
         overridden_by: isPriceOverridden ? currentUser.id : null,
         overridden_at: isPriceOverridden ? nowIso : null,
-        notes: line.notes ?? null,
+        notes: [line.notes, line.quoteAdjustmentType && line.quoteAdjustmentType !== 'none' ? `Quote-only adjustment: ${line.quoteAdjustmentType} ${line.quoteAdjustmentValue ?? 0}. ${line.quoteAdjustmentReason ?? ''}` : null].filter(Boolean).join(' | ') || null,
+        approvalRequired: Boolean(line.approvalRequired),
       };
     });
+
+  const quoteAdjustmentApprovalRequired = previewLines.some((line) => Boolean((line as any).approvalRequired));
+  const previewOverrideCount = previewLines.filter((line) => Boolean(line.is_price_overridden)).length;
+  const approvalNote = quoteAdjustmentApprovalRequired
+    ? `Approval pending: ${previewOverrideCount || 1} quote-only pricing adjustment${previewOverrideCount === 1 ? '' : 's'} exceeded the 15% threshold.`
+    : previewOverrideCount
+      ? `${previewOverrideCount} quote-only pricing adjustment${previewOverrideCount === 1 ? '' : 's'} saved inside this quote.`
+      : null;
 
   const { data: quote, error: quoteError } = await db
     .from('quotes')
@@ -1380,15 +1393,16 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
 
   const { error: quoteUpdateError } = await db
     .from('quotes')
-    .update({ currency, display_currency: currency, updated_at: nowIso })
+    .update({ currency, display_currency: currency, approval_required: quoteAdjustmentApprovalRequired, notes_internal: approvalNote, updated_at: nowIso })
     .eq('organization_id', organization.id)
     .eq('id', quote.id);
   if (quoteUpdateError) return { error: quoteUpdateError.message };
 
   const { error: deleteLineError } = await db.from('quote_line_items').delete().eq('quote_id', quote.id);
   if (deleteLineError) return { error: deleteLineError.message };
-  if (previewLines.length) {
-    const { error: insertLineError } = await db.from('quote_line_items').insert(previewLines);
+  const insertablePreviewLines = previewLines.map(({ approvalRequired: _approvalRequired, ...line }) => line);
+  if (insertablePreviewLines.length) {
+    const { error: insertLineError } = await db.from('quote_line_items').insert(insertablePreviewLines);
     if (insertLineError) return { error: insertLineError.message };
   }
 
@@ -1432,7 +1446,7 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
       overridden_at: line.overridden_at,
       line_notes: line.notes ?? 'Saved from Leads quote preview',
       sort_order: index,
-      calculation_meta: { source: 'leads_quote_preview' },
+      calculation_meta: { source: 'leads_quote_preview', quote_only_adjustment: Boolean((line as any).is_price_overridden), approval_required: Boolean((line as any).approvalRequired) },
       catalog_price_snapshot: {},
     }));
     if (versionLines.length) {
@@ -1450,8 +1464,8 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
     direction: 'internal',
     channel: 'system',
     subject: 'Quote preview saved',
-    body: `Quote preview saved with ${previewLines.length} line${previewLines.length === 1 ? '' : 's'} and ${currency} currency.`,
-    summary: 'Quote preview saved',
+    body: `Quote preview saved with ${previewLines.length} line${previewLines.length === 1 ? '' : 's'} and ${currency} currency.${quoteAdjustmentApprovalRequired ? ' Approval is required before send.' : ''}`, 
+    summary: quoteAdjustmentApprovalRequired ? 'Quote preview saved · approval required' : 'Quote preview saved',
     created_by: currentUser.id,
     metadata: { source: 'saveLeadQuoteDraftPreview' },
   });
@@ -1460,7 +1474,7 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
   revalidatePath('/leads');
   revalidatePath('/quotes');
   revalidateLeadSurfaces(input.leadId);
-  return { success: 'Quote preview saved to the active draft.', quoteId: quote.id };
+  return { success: quoteAdjustmentApprovalRequired ? 'Quote preview saved. Approval is pending before send.' : 'Quote preview saved to the active draft.', quoteId: quote.id };
 }
 
 export async function saveLead(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
@@ -3223,6 +3237,72 @@ export async function recordLeadQuoteApprovalRequest(input: {
     },
   };
 }
+export async function approveLeadQuoteAdjustment(input: { leadId: string; quoteId: string; note?: string | null }): Promise<ActionState> {
+  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
+
+  const workspace = await requireWorkspace();
+  const currentUser = workspace.user;
+  const organization = workspace.organization;
+  if (!currentUser || !organization) return { error: 'Not authenticated.' };
+
+  const leadId = String(input.leadId ?? '').trim();
+  const quoteId = String(input.quoteId ?? '').trim();
+  if (!leadId || !quoteId) return { error: 'Lead and quote are required for approval.' };
+
+  const supabase = await createClient();
+  const db = supabase as any;
+  const nowIso = new Date().toISOString();
+
+  const { data: quote, error: quoteError } = await db
+    .from('quotes')
+    .select('id, lead_id, quote_number')
+    .eq('organization_id', organization.id)
+    .eq('id', quoteId)
+    .eq('lead_id', leadId)
+    .maybeSingle();
+  if (quoteError) return { error: quoteError.message };
+  if (!quote?.id) return { error: 'Quote not found for approval.' };
+
+  const { error: updateError } = await db
+    .from('quotes')
+    .update({ approval_required: false, approved_at: nowIso, approved_by: currentUser.id, notes_internal: input.note || 'Quote-only pricing adjustment approved.', updated_at: nowIso })
+    .eq('organization_id', organization.id)
+    .eq('id', quoteId);
+  if (updateError) return { error: updateError.message };
+
+  await insertCommunication(db, {
+    organization_id: organization.id,
+    lead_id: leadId,
+    quote_id: quoteId,
+    related_entity: 'quote',
+    related_id: quoteId,
+    communication_type: 'system_note',
+    direction: 'internal',
+    channel: 'system',
+    subject: 'Quote adjustment approved',
+    body: input.note || 'Quote-only pricing adjustment approved by owner/admin.',
+    summary: 'Quote approval completed',
+    status: 'approved',
+    approved_at: nowIso,
+    approved_by: currentUser.id,
+    created_by: currentUser.id,
+    metadata: { source: 'approveLeadQuoteAdjustment' },
+  });
+
+  await insertActivity(db, {
+    organization_id: organization.id,
+    lead_id: leadId,
+    actor_user_id: currentUser.id,
+    kind: 'quote_adjustment_approved',
+    message: `Quote adjustment approved${quote.quote_number ? ` for ${quote.quote_number}` : ''}.`,
+  });
+
+  revalidateLeadSurfaces(leadId);
+  revalidatePath('/leads');
+  revalidatePath('/quotes');
+  return { success: 'Quote adjustment approved.' };
+}
+
 export async function saveLeadCommunicationDraft(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
   if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
 

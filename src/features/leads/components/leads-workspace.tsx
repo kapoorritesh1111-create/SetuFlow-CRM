@@ -9,7 +9,7 @@ import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
 import { SavedViewsBar, ToolbarActionButton, ToolbarSearchInput, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, batchDeleteLeads, deleteLead, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, saveLeadQuoteDraftPreview, recordLeadQuoteApprovalRequest } from '@/features/leads/server/actions';
+import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, batchDeleteLeads, deleteLead, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, saveLeadQuoteDraftPreview, recordLeadQuoteApprovalRequest, approveLeadQuoteAdjustment } from '@/features/leads/server/actions';
 import { markQuoteAsDirectOrder } from '@/features/quotes/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
@@ -79,7 +79,7 @@ type StageHistory = { id: string; lead_id?: string; from_stage_id: string | null
 type RfqLineItem = { id: string; rfq_id: string | null; product_id: string | null; product_variant_id?: string | null; catalog_price_id?: string | null; catalog_price_amount?: number | null; catalog_price_currency?: string | null; quantity?: number | null; unit_price?: number | null; currency?: string | null; is_price_overridden?: boolean | null; override_reason?: string | null; overridden_by?: string | null; overridden_at?: string | null; notes?: string | null };
 type QuoteLineItem = { id: string; quote_id: string | null; product_id: string | null; product_variant_id?: string | null; catalog_price_id?: string | null; catalog_price_amount?: number | null; catalog_price_currency?: string | null; quantity?: number | null; unit_price?: number | null; currency?: string | null; is_price_overridden?: boolean | null; override_reason?: string | null; overridden_by?: string | null; overridden_at?: string | null; notes?: string | null };
 type Rfq = { id: string; lead_id: string | null; status: string; currency: string | null; validity_date: string | null; created_at: string | null; updated_at: string | null; notes?: string | null; lineItems?: RfqLineItem[] };
-type Quote = { id: string; lead_id: string; rfq_id: string | null; status: string; currency: string | null; created_at: string; updated_at: string; notes?: string | null; quote_number?: string | null; current_version_id?: string | null; lineItems?: QuoteLineItem[] };
+type Quote = { id: string; lead_id: string; rfq_id: string | null; status: string; currency: string | null; created_at: string; updated_at: string; notes?: string | null; notes_internal?: string | null; quote_number?: string | null; current_version_id?: string | null; approval_required?: boolean | null; approved_at?: string | null; approved_by?: string | null; lineItems?: QuoteLineItem[] };
 type QuoteVersion = { id: string; quote_id: string | null; version_no?: number | null; status?: string | null; created_at?: string | null; approved_at?: string | null; sent_at?: string | null; pdf_document_id?: string | null };
 type ComplianceItem = { id: string; lead_id: string; compliance_item_id: string; status: string; created_at: string; submitted_at: string | null; approved_at: string | null };
 type ComplianceDefinition = { id: string; code: string; description: string };
@@ -91,7 +91,7 @@ type FormState = { error?: string; success?: string };
 type SavedView = 'all' | 'mine' | 'overdue' | 'today' | 'trade-event' | 'buyers' | 'suppliers';
 type SortMode = 'follow-up' | 'created' | 'company' | 'health';
 type DrawerMode = 'quick' | 'full';
-type QuotePreviewSavePayload = { currency: string; lines: Array<{ id?: string; productId: string | null; productVariantId?: string | null; quantity: number; unitPrice: number | null; currency: string; catalogPriceAmount?: number | null; catalogPriceCurrency?: string | null; notes?: string | null; source?: string | null }> };
+type QuotePreviewSavePayload = { currency: string; lines: Array<{ id?: string; productId: string | null; productVariantId?: string | null; quantity: number; unitPrice: number | null; currency: string; catalogPriceAmount?: number | null; catalogPriceCurrency?: string | null; notes?: string | null; source?: string | null; quoteAdjustmentType?: 'none' | 'discount_percent' | 'discount_amount' | 'markup_percent' | 'markup_amount'; quoteAdjustmentValue?: number | null; quoteAdjustmentReason?: string | null; approvalRequired?: boolean | null }> };
 type LeadOpenStep = 'basics' | 'workflow' | 'coverage' | 'quotes';
 
 
@@ -107,6 +107,45 @@ const COUNTRY_CURRENCY: Record<string, string> = {
 function countryCurrency(country?: string | null) {
   const key = String(country ?? '').toLowerCase().replace(/[^a-z]/g, '');
   return COUNTRY_CURRENCY[key] ?? null;
+}
+
+const INCOTERM_HELP: Record<string, string> = {
+  EXW: 'EXW: buyer collects from factory; quote price is factory gate only.',
+  FOB: 'FOB/FCA: seller covers factory to port/carrier handoff; buyer handles main freight.',
+  CFR: 'CFR: seller covers freight to destination port; buyer handles insurance and import.',
+  CIF: 'CIF: seller covers freight and insurance to destination port.',
+  DDP: 'DDP: seller covers delivery, duty, taxes, and local handoff to buyer.'
+};
+
+const QUOTE_ADJUSTMENT_OPTIONS = [
+  { value: 'none', label: 'No quote adjustment' },
+  { value: 'discount_percent', label: 'Discount %' },
+  { value: 'discount_amount', label: 'Discount amount' },
+  { value: 'markup_percent', label: 'Markup %' },
+  { value: 'markup_amount', label: 'Markup amount' },
+] as const;
+
+function getIncotermHelp(value: string) {
+  return INCOTERM_HELP[String(value || '').toUpperCase()] ?? 'Select the commercial handoff point before pricing the customer.';
+}
+
+function quoteAdjustmentDeltaPercent(base: number | null | undefined, adjusted: number | null | undefined) {
+  const baseline = Number(base ?? 0);
+  const next = Number(adjusted ?? 0);
+  if (!Number.isFinite(baseline) || baseline <= 0 || !Number.isFinite(next)) return 0;
+  return ((next - baseline) / baseline) * 100;
+}
+
+function applyQuoteAdjustment(base: number | null | undefined, type?: string | null, value?: number | null) {
+  const starting = Number(base ?? 0);
+  const amount = Number(value ?? 0);
+  if (!Number.isFinite(starting) || starting < 0) return 0;
+  if (!Number.isFinite(amount) || amount === 0 || !type || type === 'none') return starting;
+  if (type === 'discount_percent') return Math.max(0, starting * (1 - amount / 100));
+  if (type === 'markup_percent') return Math.max(0, starting * (1 + amount / 100));
+  if (type === 'discount_amount') return Math.max(0, starting - amount);
+  if (type === 'markup_amount') return Math.max(0, starting + amount);
+  return starting;
 }
 
 function uniqueCurrencyOptions(...values: Array<string | null | undefined>) {
@@ -1152,6 +1191,24 @@ export function LeadsWorkspace({
     });
   };
 
+  const handleInlineApproveQuoteAdjustment = (leadId: string, quoteId?: string | null) => {
+    if (!quoteId) {
+      setInlineActionState({ error: 'Create or open a quote draft before approving.' });
+      return;
+    }
+    setInlineActionState({});
+    startInlineActionTransition(() => {
+      void approveLeadQuoteAdjustment({
+        leadId,
+        quoteId,
+        note: 'Owner/admin approved quote-only adjustment from Follow-up approval queue.',
+      }).then((result) => {
+        setInlineActionState(result ?? {});
+        if (result?.success) router.refresh();
+      });
+    });
+  };
+
   const handleInlineMarkDirectOrder = (leadId: string, quoteId?: string | null, notes?: string | null) => {
     if (!quoteId) {
       setInlineActionState({ error: 'Create or open a quote draft before marking a direct order.' });
@@ -1341,6 +1398,10 @@ export function LeadsWorkspace({
           ◇ Quote Preview
           <span style={{ background: spotlightLead ? '#0c7fff' : '#e2e8f0', color: spotlightLead ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
         </button>
+        <button type="button" onClick={() => setActiveView('quote')} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? '#92400e' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: 'pointer' }}>
+          ✅ Approval Queue
+          <span style={{ background: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? '#f59e0b' : '#e2e8f0', color: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{quotes.filter((quote) => quote.approval_required && !quote.approved_at).length}</span>
+        </button>
         <a href="/pipeline" style={{ marginLeft: 'auto', padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', textDecoration: 'none' }}>
           ⊕ View in Pipeline →
         </a>
@@ -1528,6 +1589,7 @@ export function LeadsWorkspace({
           onMoveToStage={handleInlineMoveLeadToStage}
           onOpenOrCreateQuote={handleInlineOpenOrCreateQuote}
           onRequestQuoteApproval={handleInlineRequestQuoteApproval}
+          onApproveQuoteAdjustment={handleInlineApproveQuoteAdjustment}
           onMarkDirectOrder={handleInlineMarkDirectOrder}
           onBackToList={() => setActiveView('list')}
           onOpenCommandCenter={() => setActiveView('cc')}
@@ -1778,6 +1840,7 @@ type InlineLeadWorkspaceProps = {
   onMoveToStage: (leadId: string, stageId: string) => void;
   onOpenOrCreateQuote: (leadId: string, preview?: QuotePreviewSavePayload) => void;
   onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
+  onApproveQuoteAdjustment: (leadId: string, quoteId?: string | null) => void;
   onMarkDirectOrder: (leadId: string, quoteId?: string | null, notes?: string | null) => void;
   onBackToList: () => void;
   onOpenCommandCenter: () => void;
@@ -1821,6 +1884,7 @@ function InlineLeadWorkspace({
   onMoveToStage,
   onOpenOrCreateQuote,
   onRequestQuoteApproval,
+  onApproveQuoteAdjustment,
   onMarkDirectOrder,
   onBackToList,
   onOpenCommandCenter,
@@ -2391,6 +2455,7 @@ function InlineQuoteBuilder({
   isInlineActionPending,
   onOpenOrCreateQuote,
   onRequestQuoteApproval,
+  onApproveQuoteAdjustment,
   onMarkDirectOrder,
   onOpenCommandCenter,
 }: {
@@ -2419,6 +2484,7 @@ function InlineQuoteBuilder({
   isInlineActionPending: boolean;
   onOpenOrCreateQuote: (leadId: string, preview?: QuotePreviewSavePayload) => void;
   onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
+  onApproveQuoteAdjustment: (leadId: string, quoteId?: string | null) => void;
   onMarkDirectOrder: (leadId: string, quoteId?: string | null, notes?: string | null) => void;
   onOpenCommandCenter: () => void;
 }) {
@@ -2446,6 +2512,11 @@ function InlineQuoteBuilder({
     uomLabel?: string | null;
     moqLabel?: string | null;
     packSummary?: string | null;
+    quoteAdjustmentType?: 'none' | 'discount_percent' | 'discount_amount' | 'markup_percent' | 'markup_amount';
+    quoteAdjustmentValue?: number | null;
+    quoteAdjustmentReason?: string | null;
+    approvalRequired?: boolean | null;
+    adjustmentDeltaPercent?: number | null;
   };
 
   const productNameMap = React.useMemo(() => new Map(products.map((product) => [product.id, product.name])), [products]);
@@ -2484,6 +2555,11 @@ function InlineQuoteBuilder({
           source: quoteItems.length ? 'quote' : 'rfq',
           priceStatus: unitPrice != null && unitPrice > 0 ? 'priced' : 'missing',
           note: item.notes ?? null,
+          quoteAdjustmentType: item.is_price_overridden ? 'discount_amount' : 'none',
+          quoteAdjustmentValue: item.is_price_overridden && item.catalog_price_amount != null && item.unit_price != null ? Math.abs(Number(item.catalog_price_amount) - Number(item.unit_price)) : null,
+          quoteAdjustmentReason: item.override_reason ?? null,
+          approvalRequired: item.is_price_overridden ? Math.abs(quoteAdjustmentDeltaPercent(item.catalog_price_amount, item.unit_price)) > 15 : false,
+          adjustmentDeltaPercent: quoteAdjustmentDeltaPercent(item.catalog_price_amount, item.unit_price),
           pricingBasis: variantPricingUnit(lineVariant),
           uomLabel: variantPricingUnit(lineVariant),
           moqLabel: variantPricingUnit(lineVariant) === 'kg' ? `${lineVariant?.moq_kg ?? 1} kg MOQ` : variantPricingUnit(lineVariant) === 'case' ? `${lineVariant?.moq_cases ?? 1} cases MOQ` : '1 unit MOQ',
@@ -2538,6 +2614,11 @@ function InlineQuoteBuilder({
         source: 'coverage',
         priceStatus: unitPrice != null && unitPrice > 0 ? 'priced' : 'missing',
         note: unitPrice == null ? `No catalog price found${marketLabel ? ` for ${marketLabel}` : ''}. Create/open draft preview creates the quote shell; fill price in saved quote workflow.` : `Catalog/reference price${marketLabel ? ` for ${marketLabel}` : ''}.`,
+        quoteAdjustmentType: 'none',
+        quoteAdjustmentValue: null,
+        quoteAdjustmentReason: null,
+        approvalRequired: false,
+        adjustmentDeltaPercent: 0,
         pricingBasis: variantPricingUnit(selectedVariant),
         uomLabel: variantPricingUnit(selectedVariant),
         moqLabel: variantPricingUnit(selectedVariant) === 'kg' ? `${selectedVariant?.moq_kg ?? 1} kg MOQ` : variantPricingUnit(selectedVariant) === 'case' ? `${selectedVariant?.moq_cases ?? 1} cases MOQ` : '1 unit MOQ',
@@ -2562,13 +2643,31 @@ function InlineQuoteBuilder({
     setTermsCurrency(latestQuote?.currency ?? baseDisplayLines.find((item) => item.currency)?.currency ?? lead.deal_currency ?? 'USD');
   }, [baseDisplayLines, latestQuote?.currency, lead.deal_currency]);
 
-  const updateEditableLine = (lineId: string, field: 'quantity' | 'unitPrice', value: string) => {
-    const normalized = Number(value.replace(/,/g, ''));
+  const updateEditableLine = (lineId: string, field: 'quantity' | 'unitPrice' | 'quoteAdjustmentType' | 'quoteAdjustmentValue' | 'quoteAdjustmentReason', value: string) => {
+    const normalized = field === 'quoteAdjustmentType' || field === 'quoteAdjustmentReason' ? NaN : Number(value.replace(/,/g, ''));
     setEditableLines((current) => current.map((line) => {
       if (line.id !== lineId) return line;
       const nextQuantity = field === 'quantity' ? (Number.isFinite(normalized) && normalized > 0 ? normalized : 0) : line.quantity;
-      const nextUnitPrice = field === 'unitPrice' ? (Number.isFinite(normalized) ? normalized : 0) : line.unitPrice;
-      return { ...line, quantity: nextQuantity, unitPrice: nextUnitPrice, total: nextQuantity * (nextUnitPrice ?? 0), priceStatus: nextUnitPrice && nextUnitPrice > 0 ? 'priced' : 'missing' };
+      const manualPrice = field === 'unitPrice' ? (Number.isFinite(normalized) ? normalized : 0) : line.unitPrice;
+      const nextAdjustmentType = field === 'quoteAdjustmentType' ? value as DisplayLine['quoteAdjustmentType'] : (line.quoteAdjustmentType ?? 'none');
+      const nextAdjustmentValue = field === 'quoteAdjustmentValue' ? (Number.isFinite(normalized) ? normalized : 0) : (line.quoteAdjustmentValue ?? null);
+      const nextAdjustmentReason = field === 'quoteAdjustmentReason' ? value : (line.quoteAdjustmentReason ?? null);
+      const baseline = line.catalogPriceAmount ?? manualPrice ?? 0;
+      const nextUnitPrice = field === 'unitPrice' ? manualPrice : applyQuoteAdjustment(baseline, nextAdjustmentType, nextAdjustmentValue);
+      const deltaPercent = quoteAdjustmentDeltaPercent(baseline, nextUnitPrice);
+      const approvalRequired = Math.abs(deltaPercent) > 15;
+      return {
+        ...line,
+        quantity: nextQuantity,
+        unitPrice: nextUnitPrice,
+        quoteAdjustmentType: nextAdjustmentType,
+        quoteAdjustmentValue: nextAdjustmentValue,
+        quoteAdjustmentReason: nextAdjustmentReason,
+        adjustmentDeltaPercent: deltaPercent,
+        approvalRequired,
+        total: nextQuantity * (nextUnitPrice ?? 0),
+        priceStatus: nextUnitPrice && nextUnitPrice > 0 ? 'priced' : 'missing'
+      };
     }));
   };
 
@@ -2578,7 +2677,10 @@ function InlineQuoteBuilder({
   const blockerCount = readiness?.blockerCount ?? complianceItems.length;
   const pricingReady = displayLines.length > 0 && displayLines.every((item) => item.priceStatus === 'priced');
   const hasQuoteDraft = Boolean(latestQuote);
-  const sendReady = blockerCount === 0 && pricingReady && hasQuoteDraft;
+  const quoteAdjustmentApprovalRequired = displayLines.some((line) => Boolean(line.approvalRequired));
+  const latestQuoteApprovalRequired = Boolean(latestQuote?.approval_required) && !latestQuote?.approved_at;
+  const approvalPending = quoteAdjustmentApprovalRequired || latestQuoteApprovalRequired;
+  const sendReady = blockerCount === 0 && pricingReady && hasQuoteDraft && !approvalPending;
   const approvalReady = hasQuoteDraft && displayLines.length > 0;
   const canSendQuote = sendReady;
 
@@ -2595,6 +2697,10 @@ function InlineQuoteBuilder({
       catalogPriceCurrency: line.catalogPriceCurrency ?? line.currency ?? currency ?? 'USD',
       notes: line.note ?? null,
       source: line.source,
+      quoteAdjustmentType: line.quoteAdjustmentType ?? 'none',
+      quoteAdjustmentValue: line.quoteAdjustmentValue ?? null,
+      quoteAdjustmentReason: line.quoteAdjustmentReason ?? null,
+      approvalRequired: Boolean(line.approvalRequired),
     })),
   }), [currency, displayLines]);
 
@@ -2615,6 +2721,7 @@ function InlineQuoteBuilder({
       if (displayLines.some((line) => !line.productId)) return 'Every quote line needs a mapped product before continuing.';
       if (displayLines.some((line) => !line.quantity || line.quantity <= 0)) return 'Every quote line needs a quantity above zero.';
       if (displayLines.some((line) => line.unitPrice == null || line.unitPrice <= 0)) return 'Every quote line needs a unit price above zero.';
+      if (displayLines.some((line) => line.approvalRequired && !String(line.quoteAdjustmentReason ?? '').trim())) return 'Add a quote-only adjustment reason when the change requires approval.';
     }
     return null;
   }, [builderStep, displayLines, paymentTerms, quoteValidityDays, selectedProductIds.length, termsCurrency, termsIncoterm]);
@@ -2741,8 +2848,8 @@ function InlineQuoteBuilder({
                       <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Product</th>
                       <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Price basis</th>
                       <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Qty</th>
-                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Unit price</th>
-                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Total</th>
+                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Baseline / adjustment</th>
+                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Quote price / total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2754,8 +2861,19 @@ function InlineQuoteBuilder({
                           <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.productLabel}</div><div className="mt-1 text-[10px] text-[#64748b]">{item.variantLabel ? `${item.variantLabel} · ` : ''}{item.source === 'coverage' ? 'coverage/catalog fallback' : item.source === 'rfq' ? 'RFQ line' : 'quote draft line'}</div>{item.note ? <div className="mt-1 text-[10px] text-[#94a3b8]">{item.note}</div> : null}</td>
                           <td className="px-[10px] py-[10px] text-[10px] text-[#475569]"><div className="font-extrabold uppercase tracking-[.08em] text-[#0f172a]">{item.pricingBasis ?? 'case'}</div><div>{item.packSummary ?? 'Pack not set'}</div><div>{item.moqLabel ?? 'MOQ not set'}</div></td>
                           <td className="px-[10px] py-[10px]"><input title="Quantity updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[68px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-center text-[12px] font-semibold text-[#0f172a] outline-none" value={qty} onChange={(event) => updateEditableLine(item.id, 'quantity', event.target.value)} /></td>
-                          <td className="px-[10px] py-[10px]"><input title="Unit price updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[90px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px_7px] text-right text-[12px] font-bold text-[#0f172a] outline-none" value={price ?? ''} onChange={(event) => updateEditableLine(item.id, 'unitPrice', event.target.value)} placeholder="Price" /></td>
-                          <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{item.currency} {formatPreviewAmount(item.total)}</td>
+                          <td className="px-[10px] py-[10px]">
+                            <div className="text-[10px] font-semibold text-[#475569]">Default: {item.currency} {formatPreviewAmount(item.catalogPriceAmount ?? price ?? 0)}</div>
+                            <div className="mt-1 grid grid-cols-[1fr_72px] gap-1">
+                              <select title="Quote-only adjustment type. This does not change product/category/default pricing." className="rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-[10px] font-semibold text-[#0f172a] outline-none" value={item.quoteAdjustmentType ?? 'none'} onChange={(event) => updateEditableLine(item.id, 'quoteAdjustmentType', event.target.value)}>
+                                {QUOTE_ADJUSTMENT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                              </select>
+                              <input title="Adjustment value in percent or quote currency based on selected adjustment type." className="rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-right text-[10px] font-bold text-[#0f172a] outline-none" value={item.quoteAdjustmentValue ?? ''} onChange={(event) => updateEditableLine(item.id, 'quoteAdjustmentValue', event.target.value)} placeholder="0" />
+                            </div>
+                            <input title="Reason is required if the quote-only change exceeds the approval threshold." className="mt-1 w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[5px] text-[10px] text-[#334155] outline-none" value={item.quoteAdjustmentReason ?? ''} onChange={(event) => updateEditableLine(item.id, 'quoteAdjustmentReason', event.target.value)} placeholder="Adjustment reason for this quote only" />
+                            {item.approvalRequired ? <div className="mt-1 rounded-[6px] border border-[#fde68a] bg-[#fffbeb] px-2 py-1 text-[10px] font-bold text-[#92400e]">Approval needed: {formatPreviewAmount(Math.abs(item.adjustmentDeltaPercent ?? 0))}% change exceeds 15% threshold.</div> : null}
+                          </td>
+                          <td className="px-[10px] py-[10px]"><input title="Final quote unit price for this quote only. Save via the governed quote workflow when ready." className="w-[90px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px_7px] text-right text-[12px] font-bold text-[#0f172a] outline-none" value={price ?? ''} onChange={(event) => updateEditableLine(item.id, 'unitPrice', event.target.value)} placeholder="Price" />
+                          <div className="mt-1 font-bold text-[#0f172a]">{item.currency} {formatPreviewAmount(item.total)}</div></td>
                         </tr>
                       );
                     }) : (
@@ -2771,8 +2889,8 @@ function InlineQuoteBuilder({
                   <div className="mt-[5px] h-px bg-[#e2e8f0]" />
                   <div className="flex justify-between py-[6px] text-[13px]"><span className="font-bold text-[#0f172a]">Grand total</span><span className="text-[16px] font-extrabold text-[#0b2e4a]">{currency} {formatPreviewAmount(subtotal)}</span></div>
                 </div>
-                {subtotal > 0 && (subtotal / (displayLines.length || 1)) > 10000 ? (
-                  <div className="rounded-[6px] border border-[#fde68a] bg-[#fffbeb] p-[9px_13px] text-[11px] leading-[1.55] text-[#92400e]">⚠ Pricing override detected — overrides above 10% require manager approval before send.</div>
+                {quoteAdjustmentApprovalRequired ? (
+                  <div className="rounded-[6px] border border-[#fde68a] bg-[#fffbeb] p-[9px_13px] text-[11px] leading-[1.55] text-[#92400e]">⚠ Quote-only adjustment exceeds the 15% approval threshold. Save the draft, then request approval before sending.</div>
                 ) : null}
               </div>
             ) : builderStep === 1 ? (
@@ -2787,8 +2905,9 @@ function InlineQuoteBuilder({
                 <div className="flex flex-col gap-[4px]">
                   <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Incoterm</label>
                   <select className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={termsIncoterm} onChange={(event) => setTermsIncoterm(event.target.value)}>
-                    {['FOB', 'CIF', 'EXW', 'DDP', 'CFR'].map((option) => <option key={option}>{option}</option>)}
+                    {['FOB', 'CIF', 'EXW', 'DDP', 'CFR'].map((option) => <option key={option} value={option}>{option} — {getIncotermHelp(option)}</option>)}
                   </select>
+                  <p className="text-[10px] leading-[1.45] text-[#64748b]">{getIncotermHelp(termsIncoterm)}</p>
                 </div>
                 <div className="flex flex-col gap-[4px]">
                   <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Payment terms</label>
@@ -2864,6 +2983,7 @@ function InlineQuoteBuilder({
                   {[
                     { label: blockerCount === 0 ? 'No active blockers' : 'Resolve active blockers', ok: blockerCount === 0 },
                     { label: 'Pricing complete', ok: pricingReady },
+                    { label: 'Approval cleared', ok: !approvalPending },
                     { label: 'Compliance clear', ok: complianceItems.length === 0 },
                     { label: 'Quote draft exists', ok: hasQuoteDraft },
                   ].map((ck) => (
@@ -2877,7 +2997,7 @@ function InlineQuoteBuilder({
                     Send quote
                   </button>
                   <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none disabled:cursor-not-allowed disabled:opacity-60">
-                    Request approval
+                    {approvalPending ? 'Request approval / view queue' : 'Request approval'}
                   </button>
                   <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569] disabled:opacity-60">
                     Create/open draft preview
@@ -2937,9 +3057,14 @@ function InlineQuoteBuilder({
 
           {/* Context card */}
           <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
-            <div className="mb-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Approval threshold</div>
-            <div className="mb-[6px] text-[13px] font-bold text-[#0f172a]">{blockerCount > 0 ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'}` : 'No blockers'}</div>
-            <div className="text-[11px] leading-[1.6] text-[#64748b]">{sendReady ? 'Send gate clear — quote is safe to send.' : 'Resolve blockers before the send gate opens.'}</div>
+            <div className="mb-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Approval queue</div>
+            <div className="mb-[6px] text-[13px] font-bold text-[#0f172a]">{approvalPending ? 'Approval pending' : blockerCount > 0 ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'}` : 'No blockers'}</div>
+            <div className="text-[11px] leading-[1.6] text-[#64748b]">{approvalPending ? 'A quote-only adjustment needs owner approval. The requester sees pending until approved.' : sendReady ? 'Send gate clear — quote is safe to send.' : 'Resolve blockers before the send gate opens.'}</div>
+            {approvalPending ? (
+              <button type="button" onClick={() => onApproveQuoteAdjustment(lead.id, latestQuote?.id ?? null)} disabled={!latestQuote?.id || isInlineActionPending} className="mt-3 w-full rounded-[8px] bg-[#059669] px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
+                Approve quote adjustment
+              </button>
+            ) : null}
           </div>
         </aside>
       </div>
@@ -2958,7 +3083,7 @@ function InlineQuoteBuilder({
             {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : canSendQuote ? 'Send ready in quote workflow' : 'Review blockers'}
           </button>
           <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
-          <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:cursor-not-allowed disabled:opacity-60">Request approval</button>
+          <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:cursor-not-allowed disabled:opacity-60">{approvalPending ? 'Request approval / view queue' : 'Request approval'}</button>
           <span className="ml-auto rounded-full bg-[#f1f5f9] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#64748b]">
             Command Center · Quote Preview · {steps[builderStep]}
           </span>

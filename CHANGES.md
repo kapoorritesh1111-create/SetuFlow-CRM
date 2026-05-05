@@ -156,3 +156,12 @@
 - Enriched lead quote variant data with pack size/unit, pack label, MOQ, and pricing mode defaults from Supabase-backed product variants.
 - Added lead-country currency candidate to the Quote Terms currency selector when it can be mapped.
 - Updated Follow-up Help to describe the current Quote Builder workflow, pricing basis, UOM/MOQ handling, quote-only adjustments, and FX reference behavior.
+
+## V17.6.2 — Quote Builder basis, adjustments, and approval queue
+
+- Clarified incoterm meanings directly in the quote Terms step.
+- Added quote-only line adjustments for discount/markup by percent or quote currency amount.
+- Flagged quote-only adjustments beyond the 15% threshold for owner/admin approval.
+- Added approval queue visibility and an approve action in the Follow-up quote preview flow.
+- Preserved product/category/default pricing rules when quote-only adjustments are made.
+- Updated quote help copy for incoterms, pricing basis, UOM/MOQ, FX reference, and approval handling.
