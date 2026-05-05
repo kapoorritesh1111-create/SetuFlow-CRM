@@ -205,7 +205,7 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-4">
               {/* Logo — only shown on mobile (desktop has it in left panel) */}
               <div className="lg:hidden">
-                <Image src="/logos/setu-flow-logo.png" alt="Setu Flow" width={140} height={44} className="h-9 w-auto" priority />
+                <Image src="/logos/setu-flow-logo.png" alt="Setu Flow" width={140} height={44} className="h-9 w-auto" />
               </div>
               {/* Spacer for desktop so back-link goes to the right */}
               <div className="hidden lg:block" />

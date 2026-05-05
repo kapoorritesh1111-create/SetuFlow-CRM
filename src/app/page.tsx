@@ -157,9 +157,15 @@ function Check({ light = false }: { light?: boolean }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function HomePage() {
-  const targetMarkets = ['India', 'Ireland', 'United Kingdom', 'Germany', 'United States'];
+const targetMarkets = [
+  { flag: '\u{1F1EE}\u{1F1F3}', name: 'India'          },
+  { flag: '\u{1F1EE}\u{1F1EA}', name: 'Ireland'        },
+  { flag: '\u{1F1EC}\u{1F1E7}', name: 'United Kingdom' },
+  { flag: '\u{1F1E9}\u{1F1EA}', name: 'Germany'        },
+  { flag: '\u{1F1FA}\u{1F1F8}', name: 'United States'  },
+];
 
+export default function HomePage() {
   return (
     <SiteShell>
       <main className="overflow-hidden bg-white" style={{ fontFamily: "'Plus Jakarta Sans', var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, sans-serif" }}>
@@ -232,13 +238,14 @@ export default function HomePage() {
                   ))}
                 </div>
 
-                {/* Markets — integrated inside hero, no emoji to avoid broken rendering */}
-                <div className="mt-8 flex flex-wrap items-center gap-x-1.5 gap-y-2 border-t border-white/10 pt-7 text-[12px]">
+                {/* Markets — with flag emoji, browsers render them correctly */}
+                <div className="mt-8 flex flex-wrap items-center gap-x-1.5 gap-y-2 border-t border-white/10 pt-7">
                   <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white/30">Active in</span>
                   {targetMarkets.map((m, i) => (
-                    <span key={m} className="flex items-center gap-1.5">
-                      <span className="font-medium text-white/48">{m}</span>
-                      {i < targetMarkets.length - 1 && <span className="text-white/20">·</span>}
+                    <span key={m.name} className="flex items-center gap-1.5 text-[12px]">
+                      <span role="img" aria-label={m.name} className="text-[15px] leading-none">{m.flag}</span>
+                      <span className="font-medium text-white/52">{m.name}</span>
+                      {i < targetMarkets.length - 1 && <span className="mx-0.5 text-white/20">·</span>}
                     </span>
                   ))}
                 </div>
@@ -259,6 +266,7 @@ export default function HomePage() {
                       width={1628}
                       height={1032}
                       priority
+                      sizes="(max-width: 640px) 95vw, (max-width: 1024px) 90vw, 55vw"
                       className="rounded-[1.35rem]"
                     />
                   </div>

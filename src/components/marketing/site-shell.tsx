@@ -38,7 +38,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
               width={200}
               height={60}
               className="h-[52px] w-auto"
-              priority
             />
           </Link>
 
@@ -140,7 +139,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="mt-10 flex flex-col items-start gap-4 border-t border-slate-100 pt-8 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-400">&copy; {new Date().getFullYear()} Setu Groups. All rights reserved.</p>
+            <p className="text-xs text-slate-400" suppressHydrationWarning>&copy; {new Date().getFullYear()} Setu Groups. All rights reserved.</p>
             <p className="text-xs text-slate-400">Trade execution software for global import-export teams.</p>
           </div>
         </div>
