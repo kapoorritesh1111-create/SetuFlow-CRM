@@ -1366,7 +1366,7 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
         unit_price: unitPrice != null && Number.isFinite(unitPrice) ? unitPrice : null,
         currency: lineCurrency,
         is_price_overridden: isPriceOverridden,
-        override_reason: isPriceOverridden ? 'Edited in Leads quote preview' : null,
+        override_reason: isPriceOverridden ? (line.quoteAdjustmentReason || 'Edited in Leads quote preview') : null,
         overridden_by: isPriceOverridden ? currentUser.id : null,
         overridden_at: isPriceOverridden ? nowIso : null,
         notes: [line.notes, line.quoteAdjustmentType && line.quoteAdjustmentType !== 'none' ? `Quote-only adjustment: ${line.quoteAdjustmentType} ${line.quoteAdjustmentValue ?? 0}. ${line.quoteAdjustmentReason ?? ''}` : null].filter(Boolean).join(' | ') || null,
@@ -3301,6 +3301,73 @@ export async function approveLeadQuoteAdjustment(input: { leadId: string; quoteI
   revalidatePath('/leads');
   revalidatePath('/quotes');
   return { success: 'Quote adjustment approved.' };
+}
+
+export async function rejectLeadQuoteAdjustment(input: { leadId: string; quoteId: string; note?: string | null }): Promise<ActionState> {
+  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
+
+  const workspace = await requireWorkspace();
+  const currentUser = workspace.user;
+  const organization = workspace.organization;
+  if (!currentUser || !organization) return { error: 'Not authenticated.' };
+
+  const leadId = String(input.leadId ?? '').trim();
+  const quoteId = String(input.quoteId ?? '').trim();
+  const reason = String(input.note ?? '').trim() || 'Quote-only pricing adjustment rejected. Revise the quote before sending.';
+  if (!leadId || !quoteId) return { error: 'Lead and quote are required for rejection.' };
+
+  const supabase = await createClient();
+  const db = supabase as any;
+  const nowIso = new Date().toISOString();
+
+  const { data: quote, error: quoteError } = await db
+    .from('quotes')
+    .select('id, lead_id, quote_number')
+    .eq('organization_id', organization.id)
+    .eq('id', quoteId)
+    .eq('lead_id', leadId)
+    .maybeSingle();
+  if (quoteError) return { error: quoteError.message };
+  if (!quote?.id) return { error: 'Quote not found for rejection.' };
+
+  const { error: updateError } = await db
+    .from('quotes')
+    .update({ approval_required: true, approved_at: null, approved_by: null, notes_internal: `Approval rejected: ${reason}`, updated_at: nowIso })
+    .eq('organization_id', organization.id)
+    .eq('id', quoteId);
+  if (updateError) return { error: updateError.message };
+
+  await insertCommunication(db, {
+    organization_id: organization.id,
+    lead_id: leadId,
+    quote_id: quoteId,
+    related_entity: 'quote',
+    related_id: quoteId,
+    communication_type: 'system_note',
+    direction: 'internal',
+    channel: 'system',
+    subject: 'Quote adjustment rejected',
+    body: reason,
+    summary: 'Quote approval rejected',
+    status: 'approved',
+    approved_at: nowIso,
+    approved_by: currentUser.id,
+    created_by: currentUser.id,
+    metadata: { source: 'rejectLeadQuoteAdjustment' },
+  });
+
+  await insertActivity(db, {
+    organization_id: organization.id,
+    lead_id: leadId,
+    actor_user_id: currentUser.id,
+    kind: 'quote_adjustment_rejected',
+    message: `Quote adjustment rejected${quote.quote_number ? ` for ${quote.quote_number}` : ''}.`,
+  });
+
+  revalidateLeadSurfaces(leadId);
+  revalidatePath('/leads');
+  revalidatePath('/quotes');
+  return { success: 'Quote adjustment rejected. Revise the quote before sending.' };
 }
 
 export async function saveLeadCommunicationDraft(_: ActionState | undefined, formData: FormData): Promise<ActionState> {

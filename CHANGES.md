@@ -178,3 +178,14 @@
 - Updated the shared Leads workspace `Quote` type so Approval Queue UI can safely read quote approval state.
 - Updated the legacy local database `QuoteRow` shape to include current quote workflow fields used by the app.
 - No Supabase migration required.
+
+## V17.6.5 — Quote workflow cleanup, approval revision, and PDF preview
+
+- Converted inline Lead/Quote Builder success and error messages to floating toast notifications.
+- Hid lead queue filters and duplicate workspace buttons while a lead/quote workspace is active so operators land directly on the quote workflow.
+- Added automatic scroll-to-quote behavior when opening Quote Preview from Follow-up so the editable workspace is visible immediately.
+- Adjusted approval behavior so unsaved quote-only discounts/markups must be saved before approval, preventing adjustments from disappearing when approved.
+- Added reject/request-revision handling for quote adjustments with a required rejection reason.
+- Added quote PDF preview/export route without adding a new heavy PDF dependency; the route creates a valid PDF response and records a quote document pointer.
+- Updated Quotes workspace export action to open the generated PDF for the selected quote.
+

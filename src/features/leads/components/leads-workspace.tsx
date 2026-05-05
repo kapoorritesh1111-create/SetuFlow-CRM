@@ -9,7 +9,8 @@ import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
 import { SavedViewsBar, ToolbarActionButton, ToolbarSearchInput, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, batchDeleteLeads, deleteLead, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, saveLeadQuoteDraftPreview, recordLeadQuoteApprovalRequest, approveLeadQuoteAdjustment } from '@/features/leads/server/actions';
+import { NoticeToast } from '@/components/ui/notice-toast';
+import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, batchDeleteLeads, deleteLead, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, saveLeadQuoteDraftPreview, recordLeadQuoteApprovalRequest, approveLeadQuoteAdjustment, rejectLeadQuoteAdjustment } from '@/features/leads/server/actions';
 import { markQuoteAsDirectOrder } from '@/features/quotes/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
@@ -1209,6 +1210,25 @@ export function LeadsWorkspace({
     });
   };
 
+  const handleInlineRejectQuoteAdjustment = (leadId: string, quoteId?: string | null) => {
+    if (!quoteId) {
+      setInlineActionState({ error: 'Create or open a quote draft before rejecting.' });
+      return;
+    }
+    const note = window.prompt('Reason for rejecting this quote adjustment?') ?? '';
+    if (!note.trim()) {
+      setInlineActionState({ error: 'Add a rejection reason before sending it back for revision.' });
+      return;
+    }
+    setInlineActionState({});
+    startInlineActionTransition(() => {
+      void rejectLeadQuoteAdjustment({ leadId, quoteId, note }).then((result) => {
+        setInlineActionState(result ?? {});
+        if (result?.success) router.refresh();
+      });
+    });
+  };
+
   const handleInlineMarkDirectOrder = (leadId: string, quoteId?: string | null, notes?: string | null) => {
     if (!quoteId) {
       setInlineActionState({ error: 'Create or open a quote draft before marking a direct order.' });
@@ -1358,6 +1378,13 @@ export function LeadsWorkspace({
     setSelectedLeadIds((current) => [...new Set([...current, ...visibleLeads.map((lead) => lead.id)])]);
   };
 
+  useEffect(() => {
+    if (activeView !== 'quote') return;
+    window.requestAnimationFrame(() => {
+      document.getElementById('inline-lead-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [activeView, activeLeadId]);
+
   const activeFilterCount = [
     leadTypeFilter,
     ownerId,
@@ -1381,11 +1408,17 @@ export function LeadsWorkspace({
     tradeEventFilter ? { key: 'event', label: `Source event: ${tradeEventMap.get(tradeEventFilter) ?? 'Selected event'}`, clear: () => handleTradeEventFilterChange('') } : null,
   ].filter(Boolean) as Array<{ key: string; label: string; clear: () => void }>;
 
+  const inlineNoticeTitle = inlineActionState.error ? 'Action failed' : inlineActionState.success ? 'Action saved' : '';
+  const inlineNoticeDescription = inlineActionState.error ?? inlineActionState.success ?? '';
+
   return (
     <div className="mobile-premium-leads flex flex-col">
+      {inlineNoticeDescription ? (
+        <NoticeToast title={inlineNoticeTitle} description={inlineNoticeDescription} tone={inlineActionState.error ? 'danger' : 'success'} />
+      ) : null}
 
       {/* ═══ PAGE NAV TABS — inline view switcher ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center' }}>
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center' }}>
         <button type="button" onClick={() => setActiveView('list')} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'list' ? '#0b2e4a' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'list' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: 'pointer' }}>
           📋 Lead Queue
           <span style={{ background: summary.overdue > 0 ? '#f43f5e' : '#64748b', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{sortedLeads.length}</span>
@@ -1408,7 +1441,7 @@ export function LeadsWorkspace({
       </div>
 
       {/* ═══ FILTER BAR — matches spec .filter-bar ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '8px 20px', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
 
         {/* Search box inline */}
         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '200px' }}>
@@ -1530,7 +1563,7 @@ export function LeadsWorkspace({
       </div>
 
       {/* ═══ SAVED VIEWS BAR — matches spec .saved-views ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center', overflowX: 'auto' }}>
         {savedViews.map((view) => {
           const active = savedView === view.id;
           const isOverdue = view.id === 'overdue';
@@ -1590,6 +1623,7 @@ export function LeadsWorkspace({
           onOpenOrCreateQuote={handleInlineOpenOrCreateQuote}
           onRequestQuoteApproval={handleInlineRequestQuoteApproval}
           onApproveQuoteAdjustment={handleInlineApproveQuoteAdjustment}
+          onRejectQuoteAdjustment={handleInlineRejectQuoteAdjustment}
           onMarkDirectOrder={handleInlineMarkDirectOrder}
           onBackToList={() => setActiveView('list')}
           onOpenCommandCenter={() => setActiveView('cc')}
@@ -1841,6 +1875,7 @@ type InlineLeadWorkspaceProps = {
   onOpenOrCreateQuote: (leadId: string, preview?: QuotePreviewSavePayload) => void;
   onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
   onApproveQuoteAdjustment: (leadId: string, quoteId?: string | null) => void;
+  onRejectQuoteAdjustment: (leadId: string, quoteId?: string | null) => void;
   onMarkDirectOrder: (leadId: string, quoteId?: string | null, notes?: string | null) => void;
   onBackToList: () => void;
   onOpenCommandCenter: () => void;
@@ -1885,6 +1920,7 @@ function InlineLeadWorkspace({
   onOpenOrCreateQuote,
   onRequestQuoteApproval,
   onApproveQuoteAdjustment,
+  onRejectQuoteAdjustment,
   onMarkDirectOrder,
   onBackToList,
   onOpenCommandCenter,
@@ -1900,13 +1936,15 @@ function InlineLeadWorkspace({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 bg-slate-50 px-6 py-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={onBackToList} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">← Back to Lead Queue</button>
-        <button type="button" onClick={onOpenCommandCenter} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'cc' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Command Center</button>
-        <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} className={`rounded-xl px-4 py-2 text-xs font-semibold shadow-sm ${activeView === 'quote' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>Quote Preview</button>
-        <span className="ml-auto rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">One page workspace · no nested route</span>
-      </div>
+    <div id="inline-lead-workspace" className="flex flex-1 flex-col gap-4 bg-slate-50 px-6 py-4">
+      {activeView === 'cc' ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={onBackToList} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">← Back to Lead Queue</button>
+          <button type="button" onClick={onOpenCommandCenter} className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm">Command Center</button>
+          <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">Quote Preview</button>
+          <span className="ml-auto rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">One page workspace · no nested route</span>
+        </div>
+      ) : null}
       {activeView === 'quote' ? (
         <InlineQuoteBuilder
           lead={lead}
@@ -1935,6 +1973,7 @@ function InlineLeadWorkspace({
           onOpenOrCreateQuote={onOpenOrCreateQuote}
           onRequestQuoteApproval={onRequestQuoteApproval}
           onApproveQuoteAdjustment={onApproveQuoteAdjustment}
+          onRejectQuoteAdjustment={onRejectQuoteAdjustment}
           onMarkDirectOrder={onMarkDirectOrder}
           onOpenCommandCenter={onOpenCommandCenter}
         />
@@ -2114,8 +2153,6 @@ function InlineCommandCenter({
 
   return (
     <div className="flex flex-col gap-3 px-6 py-4" style={{ background: '#f0f4f8' }}>
-      {inlineActionState.error ? <StateMessage title="Lead action failed" tone="danger" description={inlineActionState.error} /> : null}
-      {inlineActionState.success ? <StateMessage title="Lead action applied" tone="success" description={inlineActionState.success} /> : null}
 
       {/* Lead header card — spec .lead-header-card */}
       <div className="overflow-hidden rounded-[22px] border border-[#e2e8f0] bg-white shadow-sm">
@@ -2457,6 +2494,7 @@ function InlineQuoteBuilder({
   onOpenOrCreateQuote,
   onRequestQuoteApproval,
   onApproveQuoteAdjustment,
+  onRejectQuoteAdjustment,
   onMarkDirectOrder,
   onOpenCommandCenter,
 }: {
@@ -2486,6 +2524,7 @@ function InlineQuoteBuilder({
   onOpenOrCreateQuote: (leadId: string, preview?: QuotePreviewSavePayload) => void;
   onRequestQuoteApproval: (leadId: string, quoteId?: string | null) => void;
   onApproveQuoteAdjustment: (leadId: string, quoteId?: string | null) => void;
+  onRejectQuoteAdjustment: (leadId: string, quoteId?: string | null) => void;
   onMarkDirectOrder: (leadId: string, quoteId?: string | null, notes?: string | null) => void;
   onOpenCommandCenter: () => void;
 }) {
@@ -2559,7 +2598,7 @@ function InlineQuoteBuilder({
           quoteAdjustmentType: item.is_price_overridden ? 'discount_amount' : 'none',
           quoteAdjustmentValue: item.is_price_overridden && item.catalog_price_amount != null && item.unit_price != null ? Math.abs(Number(item.catalog_price_amount) - Number(item.unit_price)) : null,
           quoteAdjustmentReason: item.override_reason ?? null,
-          approvalRequired: item.is_price_overridden ? Math.abs(quoteAdjustmentDeltaPercent(item.catalog_price_amount, item.unit_price)) > 15 : false,
+          approvalRequired: item.is_price_overridden && !latestQuote?.approved_at ? Math.abs(quoteAdjustmentDeltaPercent(item.catalog_price_amount, item.unit_price)) > 15 : false,
           adjustmentDeltaPercent: quoteAdjustmentDeltaPercent(item.catalog_price_amount, item.unit_price),
           pricingBasis: variantPricingUnit(lineVariant),
           uomLabel: variantPricingUnit(lineVariant),
@@ -2768,8 +2807,6 @@ function InlineQuoteBuilder({
         </div>
       </div>
 
-      {inlineActionState.error ? <StateMessage title="Quote draft action failed" tone="danger" description={inlineActionState.error} /> : null}
-      {inlineActionState.success ? <StateMessage title="Quote draft action saved" tone="success" description={inlineActionState.success} /> : null}
 
       {/* Stepper — spec .qb-stepper */}
       <div className="rounded-[22px] border border-[#e2e8f0] bg-white p-[16px_20px] shadow-sm">
@@ -2994,9 +3031,15 @@ function InlineQuoteBuilder({
                   ))}
                 </div>
                 <div className="flex gap-[8px] border-t p-[12px_18px]" style={{ borderColor: sendReady ? '#a7f3d0' : '#fecaca' }}>
-                  <button type="button" disabled title="Send quote is disabled in the inline builder until the governed quote send workflow is connected." className="flex-1 rounded-[6px] bg-[#e2e8f0] p-[10px] text-[13px] font-extrabold text-[#94a3b8] border-none cursor-not-allowed">
-                    Send quote
-                  </button>
+                  {sendReady && latestQuote?.id ? (
+                    <Link href={`/quotes?quoteId=${latestQuote.id}&send=1`} className="flex-1 rounded-[6px] bg-[#0b2e4a] p-[10px] text-center text-[13px] font-extrabold text-white no-underline">
+                      Open send workflow
+                    </Link>
+                  ) : (
+                    <button type="button" disabled title="Resolve blockers or approval before sending." className="flex-1 rounded-[6px] bg-[#e2e8f0] p-[10px] text-[13px] font-extrabold text-[#94a3b8] border-none cursor-not-allowed">
+                      Send quote
+                    </button>
+                  )}
                   <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none disabled:cursor-not-allowed disabled:opacity-60">
                     {approvalPending ? 'Request approval / view queue' : 'Request approval'}
                   </button>
@@ -3062,9 +3105,22 @@ function InlineQuoteBuilder({
             <div className="mb-[6px] text-[13px] font-bold text-[#0f172a]">{approvalPending ? 'Approval pending' : blockerCount > 0 ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'}` : 'No blockers'}</div>
             <div className="text-[11px] leading-[1.6] text-[#64748b]">{approvalPending ? 'A quote-only adjustment needs owner approval. The requester sees pending until approved.' : sendReady ? 'Send gate clear — quote is safe to send.' : 'Resolve blockers before the send gate opens.'}</div>
             {approvalPending ? (
-              <button type="button" onClick={() => onApproveQuoteAdjustment(lead.id, latestQuote?.id ?? null)} disabled={!latestQuote?.id || isInlineActionPending} className="mt-3 w-full rounded-[8px] bg-[#059669] px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
-                Approve quote adjustment
-              </button>
+              <div className="mt-3 grid gap-2">
+                {quoteAdjustmentApprovalRequired && !latestQuoteApprovalRequired ? (
+                  <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="w-full rounded-[8px] bg-[#0b2e4a] px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
+                    Save adjustment for approval
+                  </button>
+                ) : (
+                  <>
+                    <button type="button" onClick={() => onApproveQuoteAdjustment(lead.id, latestQuote?.id ?? null)} disabled={!latestQuote?.id || isInlineActionPending} className="w-full rounded-[8px] bg-[#059669] px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
+                      Approve quote adjustment
+                    </button>
+                    <button type="button" onClick={() => onRejectQuoteAdjustment(lead.id, latestQuote?.id ?? null)} disabled={!latestQuote?.id || isInlineActionPending} className="w-full rounded-[8px] border border-[#fecaca] bg-white px-3 py-2 text-[12px] font-extrabold text-[#dc2626] disabled:cursor-not-allowed disabled:opacity-60">
+                      Reject / request revision
+                    </button>
+                  </>
+                )}
+              </div>
             ) : null}
           </div>
         </aside>
@@ -3084,6 +3140,8 @@ function InlineQuoteBuilder({
             {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : canSendQuote ? 'Send ready in quote workflow' : 'Review blockers'}
           </button>
           <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
+          {latestQuote?.id ? <Link href={`/quotes?quoteId=${latestQuote.id}`} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] no-underline">Open in Quotes</Link> : null}
+          {latestQuote?.id ? <Link href={`/api/quotes/${latestQuote.id}/pdf`} target="_blank" className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] no-underline">PDF preview</Link> : null}
           <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:cursor-not-allowed disabled:opacity-60">{approvalPending ? 'Request approval / view queue' : 'Request approval'}</button>
           <span className="ml-auto rounded-full bg-[#f1f5f9] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#64748b]">
             Command Center · Quote Preview · {steps[builderStep]}

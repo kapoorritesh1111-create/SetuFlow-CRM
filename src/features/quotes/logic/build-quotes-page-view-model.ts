@@ -14,6 +14,10 @@ type QuoteRow = {
   created_at: string;
   updated_at: string;
   current_version_id: string | null;
+  approval_required?: boolean | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  notes_internal?: string | null;
 };
 type QuoteLineItemRow = {
   id: string;
@@ -173,7 +177,8 @@ export function buildQuotesPageViewModel({ quotes, leads, versions, negotiations
     const lead = leadMap.get(quote.lead_id);
     const quoteNegotiations = negotiations.filter((row) => row.quote_id === quote.id);
     const leadType: QuoteWorkspaceListItem['leadType'] = lead?.lead_type === 'buyer' || lead?.lead_type === 'supplier' ? lead.lead_type : 'mixed';
-    const status = lower(quote.status) || 'draft';
+    const rawStatus = lower(quote.status) || 'draft';
+    const status = quote.approval_required && !quote.approved_at ? 'pending_approval' : rawStatus;
     const hasAcceptedContract = contractQuoteIds.has(quote.id);
     const fx = getQuoteFxLockFromNotes(quote.notes);
     const quoteLines = (lineItemsByQuote.get(quote.id) ?? []).map((line, index) => {

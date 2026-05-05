@@ -84,7 +84,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     mode: FILTER_MODES.includes(requestedMode) ? requestedMode : 'all',
   };
 
-  const quotesResult = await db.from('quotes').select('id, lead_id, status, currency, notes, quote_number, created_at, updated_at, current_version_id').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(200);
+  const quotesResult = await db.from('quotes').select('id, lead_id, status, currency, notes, quote_number, created_at, updated_at, current_version_id, approval_required, approved_at, approved_by, notes_internal').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(200);
   if (quotesResult.error) return <EmptyState title="Could not load quotes" description={String(quotesResult.error.message ?? 'Unknown error')} />;
   const quotes = Array.isArray(quotesResult.data) ? quotesResult.data : [];
 
@@ -320,7 +320,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
               </div>
               <div style={{display:'flex',gap:'8px'}}>
                 <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={{padding:'9px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',textDecoration:'none'}}>Edit quote</Link>
-                <Link href="/quotes?export=pdf" style={{padding:'9px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',textDecoration:'none'}}>Export PDF</Link>
+                <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={{padding:'9px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',textDecoration:'none'}}>Export PDF</Link>
                 <Link href={selected.status==='accepted'||selected.hasAcceptedContract?selectedOrderHref:selectedApprovalHref} style={{flex:1,padding:'9px 16px',borderRadius:'6px',background:'#0b2e4a',color:'white',border:'none',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>
                   {selected.status==='accepted'||selected.hasAcceptedContract?'Create order':selected.status==='pending_approval'?'Approve & allow send':'Open lead'}
                 </Link>

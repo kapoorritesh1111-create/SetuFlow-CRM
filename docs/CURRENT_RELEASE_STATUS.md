@@ -2,7 +2,7 @@
 
 ## Status
 
-Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, cleaned Admin reference pages, and the V17.6.4 Quote approval handler TypeScript hotfix.
+Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, cleaned Admin reference pages, and the V17.6.5 Quote workflow cleanup, approval revision, and PDF preview pass.
 
 ## Current readiness
 
@@ -16,7 +16,7 @@ Setu Flow CRM is in an upgraded baseline state with public client onboarding, Se
 | Pricing rules | Product-level calculator added | Quote pricing rules remain the commercial SSOT; product records now have additive calculator fields for EXW/FOB/CIF/DDP/Distributor/Retail. V17.3 adds clearer help copy for defaults, category rules, and product overrides. |
 | DCC/reference HTML | Ready | Current internal and reference HTMLs are updated. |
 | Docs | Ready | Active docs are consolidated and current. |
-| Regression tests | Partially verified in sandbox | Typecheck could not complete in this sandbox because dependencies are not installed and `npm ci` was intentionally not run. V17.6.4 directly fixes the Vercel-reported missing `onApproveQuoteAdjustment` prop on `InlineQuoteBuilder`. |
+| Regression tests | Partially verified in sandbox | Typecheck could not complete in this sandbox because dependencies are not installed and `npm ci` was intentionally not run. V17.6.5 continues quote workflow stabilization: toast feedback, hidden queue filters during quote work, approval revision handling, and a dependency-light PDF preview/export route. Typecheck still requires the Vercel dependency install environment because npm ci is not run in sandbox. |
 
 ## Test result
 
@@ -144,3 +144,15 @@ Highlights:
 - Confirmed the live Supabase `quotes` table includes approval workflow fields: `approval_required`, `approved_at`, `approved_by`, and `notes_internal`.
 - Passed `onApproveQuoteAdjustment` into the inline Quote Builder render so the required component prop is satisfied.
 - No Supabase migration is required for this hotfix.
+
+
+## V17.6.5 Quote workflow cleanup
+
+Status: implementation package ready for Vercel validation.
+
+Highlights:
+- Quote Builder local success/error messages now use floating toast notifications instead of inline green banners.
+- Follow-up filters and duplicate navigation buttons are hidden while the quote workspace is active.
+- Opening Quote Preview scrolls to the quote workspace so the operator can see the active editor immediately.
+- Approval flow now requires saving quote-only discounts/markups before approval, includes an approval action, and adds a reject/request-revision action with a required reason.
+- Quote PDF preview/export now uses a lightweight built-in PDF response route and updates the Documents table with a quote PDF pointer. No new npm dependency was added.
