@@ -19,6 +19,15 @@ type ProductLookup = {
   sku?: string | null;
 };
 
+type QuotePdfLineRow = {
+  name: string;
+  qty: number;
+  unit: number;
+  total: number;
+  override: boolean;
+  reason: string;
+};
+
 function asProductLookup(value: unknown): ProductLookup | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<ProductLookup>;
@@ -92,7 +101,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     if (normalized) productMap.set(normalized.id, normalized);
   });
   const currency = String(quote.display_currency ?? quote.currency ?? 'USD');
-  const rows = (lineItems ?? []).map((line: any) => {
+  const rows: QuotePdfLineRow[] = (lineItems ?? []).map((line: any): QuotePdfLineRow => {
     const product = productMap.get(line.product_id);
     const qty = Number(line.quantity ?? 0);
     const unit = Number(line.unit_price ?? 0);
@@ -105,7 +114,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
       reason: line.override_reason ?? line.notes ?? '',
     };
   });
-  const subtotal = rows.reduce((sum, row) => sum + row.total, 0);
+  const subtotal = rows.reduce((sum: number, row: QuotePdfLineRow) => sum + row.total, 0);
   const pdfLines = [
     `SETU Flow Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
     `Customer: ${lead?.company_name ?? 'Unknown customer'}`,
@@ -114,7 +123,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     `Approval: ${quote.approval_required && !quote.approved_at ? 'Pending approval' : 'Cleared'}`,
     ' ',
     'Line items',
-    ...rows.flatMap((row, index) => [
+    ...rows.flatMap((row: QuotePdfLineRow, index: number) => [
       `${index + 1}. ${row.name}`,
       `   Qty ${row.qty} x ${money(row.unit, currency)} = ${money(row.total, currency)}${row.override ? '  (quote-only adjusted)' : ''}`,
       row.reason ? `   Note: ${row.reason}` : '',

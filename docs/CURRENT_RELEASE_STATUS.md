@@ -162,3 +162,10 @@ Highlights:
 - Build hotfix for `src/app/api/quotes/[quoteId]/pdf/route.ts`.
 - Supabase schema listing confirms `products.id`, `products.name`, and legacy `products.sku` exist.
 - No new migration required.
+
+
+### V17.6.7 Quote PDF strict TypeScript hotfix
+- Targeted Vercel build error in `src/app/api/quotes/[quoteId]/pdf/route.ts`.
+- Confirmed required `quotes`, `quote_line_items`, `products`, and `documents` columns exist in Supabase.
+- Added explicit PDF line row typing for subtotal calculation and line rendering.
+- No schema change required.

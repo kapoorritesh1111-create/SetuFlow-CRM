@@ -195,3 +195,8 @@
 - Verified Supabase product columns through the schema listing before changing the PDF route.
 - Typed quote PDF product lookup rows defensively so Vercel does not infer joined product rows as `{}`.
 - No Supabase migration required.
+
+## V17.6.7 - Quote PDF strict TypeScript hotfix
+- Verified live Supabase quote/PDF fields used by the PDF route.
+- Added explicit QuotePdfLineRow typing in the quote PDF API route so Vercel strict TypeScript does not infer reduce/flatMap callback parameters as any.
+- No Supabase migration required.
