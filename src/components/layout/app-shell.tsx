@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { FaIcon } from '@/components/ui/fa-icon';
+import { NoticeToast } from '@/components/ui/notice-toast';
 import { ShellNavigation } from '@/components/shell/navigation';
 import { MobileTabBar } from '@/components/shell/MobileTabBar';
 import { DesktopRedirect } from '@/components/shell/DesktopRedirect';
@@ -15,6 +16,127 @@ import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 import type { Database } from '@/types/database';
 import type { MyCardSettingsInput } from '@/lib/contact-exchange/my-card-settings-shared';
+
+
+type ShellNotice = { title: string; description?: string; tone?: 'neutral' | 'success' | 'warning' | 'danger' };
+type ShellHelpSection = { title: string; body: string };
+
+const NOTICE_COPY: Record<string, ShellNotice> = {
+  'category-created': { title: 'Category created', description: 'The new category is available for products and imports.', tone: 'success' },
+  'category-updated': { title: 'Category saved', description: 'Category name, parent, sort order, and active state were saved.', tone: 'success' },
+  'category-error': { title: 'Category was not saved', description: 'Check the category fields and try again.', tone: 'danger' },
+  'pricing-rule-saved': { title: 'Pricing rule saved', description: 'Default pricing calculator assumptions were saved.', tone: 'success' },
+  'pricing-rule-error': { title: 'Pricing rule was not saved', description: 'Check required fields and try again.', tone: 'danger' },
+  'pricing-rule-category-required': { title: 'Choose a category', description: 'Select a category before saving category pricing defaults.', tone: 'warning' },
+  'invitation-sent': { title: 'Invitation sent', description: 'The invitation is ready for the teammate to accept.', tone: 'success' },
+  'invitation-revoked': { title: 'Invitation revoked', description: 'The invitation can no longer be accepted.', tone: 'success' },
+  'invite-error': { title: 'Invitation was not saved', description: 'Review the email, role, and workspace access.', tone: 'danger' },
+  'role-updated': { title: 'Role saved', description: 'The user access level was updated.', tone: 'success' },
+  'user-deactivated': { title: 'User deactivated', description: 'The user no longer has active workspace access.', tone: 'success' },
+  'user-reactivated': { title: 'User reactivated', description: 'The user has active workspace access again.', tone: 'success' },
+  'status-updated': { title: 'Status saved', description: 'The workflow status was updated.', tone: 'success' },
+  'request-not-found': { title: 'Request not found', description: 'The selected onboarding request could not be loaded.', tone: 'warning' },
+  'workspace-provisioned': { title: 'Workspace provisioned', description: 'The client workspace is ready for the next setup step.', tone: 'success' },
+  'workspace-create-failed': { title: 'Workspace was not created', description: 'Check setup fields and Supabase permissions.', tone: 'danger' },
+  'notification-sent': { title: 'Notification sent', description: 'The client onboarding notification was sent.', tone: 'success' },
+  'notification-failed': { title: 'Notification failed', description: 'The record was saved, but email delivery needs attention.', tone: 'warning' },
+  'first-admin-invite-sent': { title: 'First admin invite sent', description: 'The client admin can now accept access.', tone: 'success' },
+  'first-admin-invite-failed': { title: 'First admin invite failed', description: 'The workspace exists, but invite delivery needs attention.', tone: 'warning' },
+  'quote-accepted': { title: 'Quote accepted', description: 'The accepted quote is ready for order execution review.', tone: 'success' },
+  'quote-sent': { title: 'Quote sent', description: 'The quote handoff was recorded.', tone: 'success' },
+  'order-doc-uploaded': { title: 'Order document uploaded', description: 'The document is now attached to the order.', tone: 'success' },
+  'capture-converted': { title: 'Trade event lead converted', description: 'The captured entry is now available in the lead workflow.', tone: 'success' },
+  'missing-required': { title: 'Missing required fields', description: 'Complete the required fields before submitting.', tone: 'warning' },
+  'submitted': { title: 'Request submitted', description: 'The onboarding request was received.', tone: 'success' },
+  'handoff-dashboard-overdue': { title: 'Overview sent you into Follow-up', description: 'Your active mode and next working lane were preserved. Open one priority lead and clear the real blocker.', tone: 'success' },
+  'handoff-dashboard-open-follow-up': { title: 'Overview sent you into Follow-up', description: 'Your active mode and next working lane were preserved. Open one priority lead and clear the real blocker.', tone: 'success' },
+  'handoff-capture-converted': { title: 'Capture converted into Follow-up', description: 'The lead is live now. Stay in Follow-up to qualify it, then move into Quote only when the commercial path is ready.', tone: 'success' },
+  'handoff-quote-to-orders': { title: 'Quote handoff continues here', description: 'The commercial decision is finished. Stay in Orders to confirm documents, compliance, and release readiness on the accepted record.', tone: 'success' },
+  'handoff-dashboard-execution': { title: 'Dashboard routed you into execution', description: 'Your active mode and next working lane were preserved.', tone: 'success' },
+  'handoff-approval-send-open-orders': { title: 'Sending hands off to execution here', description: 'Use Orders for fulfilment readiness, release evidence, and dispatch posture.', tone: 'success' },
+  'handoff-dashboard-open-orders': { title: 'Order queue opened from Overview', description: 'The next working route is now in focus.', tone: 'success' },
+};
+
+function titleCaseNotice(value: string) {
+  return value
+    .replace(/[:_]/g, '-')
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function decodeShellNotice(rawNotice: string | null): ShellNotice | null {
+  if (!rawNotice) return null;
+  const notice = decodeURIComponent(rawNotice);
+  if (NOTICE_COPY[notice]) return NOTICE_COPY[notice];
+  if (notice.startsWith('order-state-progressed:')) return { title: 'Order updated', description: `Order state changed to ${titleCaseNotice(notice.split(':')[1] ?? 'updated')}.`, tone: 'success' };
+  if (notice.startsWith('order-state-blocked:')) return { title: 'Order execution is blocked', description: notice.slice('order-state-blocked:'.length).split(' | ').join(' '), tone: 'warning' };
+  if (notice.startsWith('order-readonly:')) return { title: 'Order is read-only', description: notice.slice('order-readonly:'.length), tone: 'warning' };
+  if (notice.startsWith('order-doc-upload-failed:')) return { title: 'Order document upload failed', description: notice.slice('order-doc-upload-failed:'.length), tone: 'danger' };
+  if (notice.includes('failed') || notice.includes('error') || notice.includes('blocked')) return { title: titleCaseNotice(notice), description: 'The action needs attention. Review the page fields and try again.', tone: 'danger' };
+  if (notice.includes('missing') || notice.includes('required') || notice.includes('readonly')) return { title: titleCaseNotice(notice), description: 'Additional information is required before this action can finish.', tone: 'warning' };
+  if (notice.includes('created') || notice.includes('updated') || notice.includes('saved') || notice.includes('sent') || notice.includes('uploaded') || notice.includes('converted') || notice.includes('submitted')) return { title: titleCaseNotice(notice), description: 'The action completed successfully.', tone: 'success' };
+  return { title: titleCaseNotice(notice), description: 'The workspace recorded this update.', tone: 'neutral' };
+}
+
+function getShellHelp(pathname: string, fallbackDescription: string): { title: string; intro: string; sections: ShellHelpSection[] } {
+  if (pathname.startsWith('/products')) return {
+    title: 'Products help',
+    intro: 'Use Products for product rows, variants, pricing snapshots, quote-ready checks, and product-specific pricing overrides.',
+    sections: [
+      { title: 'Primary workflow', body: 'Find, add, and edit product rows. Each row represents the product/variant context used by quoting.' },
+      { title: 'Pricing calculator', body: 'Use the calculator for product-specific pricing. Product rows inherit category or organization defaults unless an override is edited.' },
+      { title: 'CTAs', body: 'Add Product creates a new catalog record. Edit Product updates the selected row. Quick Quote starts a quote without changing default product pricing.' },
+    ],
+  };
+  if (pathname.startsWith('/admin/product-management')) return {
+    title: 'Product Management help',
+    intro: 'Use this Admin page to monitor catalog governance, default pricing rules, import health, and setup gaps. Daily product edits belong in Products.',
+    sections: [
+      { title: 'Pricing rules', body: 'Organization defaults apply first. Category rules override organization defaults. Product overrides apply only when a product row is edited.' },
+      { title: 'Review CTAs', body: 'Review buttons open the Products workspace with the matching filter so the operator can fix the exact gap.' },
+      { title: 'Imports', body: 'Product imports carry product setup and starting prices only. Shared freight, duty, and margin assumptions belong in pricing rules.' },
+    ],
+  };
+  if (pathname.startsWith('/admin/categories')) return {
+    title: 'Categories help',
+    intro: 'Use Categories to govern taxonomy, parent structure, active status, and category-level pricing defaults.',
+    sections: [
+      { title: 'Category defaults', body: 'A category can have its own pricing calculator defaults. Products inherit those defaults unless product pricing is edited.' },
+      { title: 'Active state', body: 'Inactive categories are hidden from new setup but historical product records stay traceable.' },
+      { title: 'Open Products', body: 'Use Open Products in this category to jump to the operational product list with the category filter applied.' },
+    ],
+  };
+  if (pathname.startsWith('/leads')) return {
+    title: 'Follow-up help',
+    intro: 'Use Follow-up for buyer/supplier qualification, product interest, next steps, and moving work toward quotes.',
+    sections: [
+      { title: 'Quick Lead', body: 'Quick Lead stays fast and should not require extra help clicks or confirmation steps.' },
+      { title: 'CTAs', body: 'Use follow-up actions to capture next contact, update qualification, map products, or prepare quote work.' },
+    ],
+  };
+  if (pathname.startsWith('/quotes')) return {
+    title: 'Quotes help',
+    intro: 'Use Quotes to assemble commercial lines, check approvals, and send quote versions without changing product defaults.',
+    sections: [
+      { title: 'Quote-only adjustments', body: 'Price increases or reductions inside a quote affect that quote only. They do not update category or product defaults.' },
+      { title: 'Approvals', body: 'Approval checks protect deviations from governed product pricing.' },
+    ],
+  };
+  if (pathname.startsWith('/orders')) return {
+    title: 'Orders help',
+    intro: 'Use Orders after quote acceptance to manage execution readiness, blockers, documents, and dispatch progress.',
+    sections: [
+      { title: 'Execution state', body: 'Order state changes should show a pop-up notification and keep the page layout stable.' },
+      { title: 'Documents', body: 'Upload documents as execution evidence without changing the accepted quote.' },
+    ],
+  };
+  if (pathname.startsWith('/pipeline')) return { title: 'Pipeline help', intro: 'Use Pipeline to identify stalled work, active risks, and the next intervention.', sections: [{ title: 'Board actions', body: 'Move work only when the next stage is valid for the selected buyer or supplier workflow.' }] };
+  if (pathname.startsWith('/trade-events')) return { title: 'Trade events help', intro: 'Use Trade Events to manage event setup, floor capture, and conversion into leads.', sections: [{ title: 'Capture flow', body: 'Capture entries quickly, then convert only cleaned records into leads.' }] };
+  if (pathname.startsWith('/admin')) return { title: 'Admin help', intro: 'Use Admin for organization setup, reference lists, access, governance, and audit controls.', sections: [{ title: 'Admin actions', body: 'Save and error feedback appears as a pop-up notification so forms do not shift down after every action.' }] };
+  return { title: `${titleCaseNotice(pathname.replace(/^\//, '') || 'Workspace')} help`, intro: fallbackDescription, sections: [{ title: 'How to use this page', body: fallbackDescription || 'Use the page actions to continue the workflow. Save and error messages appear as pop-up notifications.' }] };
+}
 
 type Profile = Database['public']['Tables']['profiles']['Row'] | null;
 type Organization = Database['public']['Tables']['organizations']['Row'] | null;
@@ -50,11 +172,16 @@ export function AppShell({
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [topbarDate, setTopbarDate] = useState('');
   const [absoluteShareUrl, setAbsoluteShareUrl] = useState('');
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const normalizedRoles = useMemo(() => normalizeWorkspaceRoles(currentRoles), [currentRoles]);
   const currentRole = useMemo(() => getPrimaryWorkspaceRole(normalizedRoles) ?? 'member', [normalizedRoles]);
   const canAccessAdmin = normalizedRoles.includes('owner') || normalizedRoles.includes('admin');
   const routeMeta = getRouteMeta(pathname);
+  const noticeParam = searchParams.get('notice');
+  const handoffParam = searchParams.get('handoff');
+  const shellNotice = useMemo(() => decodeShellNotice(noticeParam ?? (handoffParam ? `handoff-${handoffParam}` : null)), [noticeParam, handoffParam]);
+  const shellHelp = useMemo(() => getShellHelp(pathname, routeMeta.description), [pathname, routeMeta.description]);
   const workspaceMode = getWorkspaceModeFromLocation(pathname, searchParams.get('mode'));
   const workspaceBasePath = getWorkspaceBasePath(pathname);
   const showWorkspaceModeSwitch = routeMeta.showWorkspaceModeSwitch ?? true;
@@ -248,6 +375,36 @@ export function AppShell({
         </div>
       ) : null}
 
+      {shellNotice ? <NoticeToast key={noticeParam ?? shellNotice.title} title={shellNotice.title} description={shellNotice.description} tone={shellNotice.tone ?? 'neutral'} /> : null}
+
+      {helpOpen ? (
+        <div
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/50 px-4 py-8 backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setHelpOpen(false);
+          }}
+        >
+          <section className="w-full max-w-xl overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.28)]">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-700">SETU Flow help</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{shellHelp.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{shellHelp.intro}</p>
+              </div>
+              <button type="button" onClick={() => setHelpOpen(false)} className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 text-slate-500 hover:bg-slate-50" aria-label="Close help">×</button>
+            </div>
+            <div className="max-h-[60vh] space-y-3 overflow-y-auto px-6 py-5">
+              {shellHelp.sections.map((section) => (
+                <div key={section.title} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <h3 className="text-sm font-bold text-slate-950">{section.title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">{section.body}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
       {vcardModalOpen ? (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/65 px-4 py-8 backdrop-blur-sm"
@@ -357,6 +514,15 @@ export function AppShell({
                   >
                     📇
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setHelpOpen(true)}
+                    className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-white/10 text-white/85 text-sm font-black"
+                    aria-label={`Open help for ${routeMeta.title}`}
+                    title="Help"
+                  >
+                    ?
+                  </button>
                   <ProfileMenu compact />
                 </div>
               </div>
@@ -423,6 +589,11 @@ export function AppShell({
                         <FaIcon icon="calendar" fixedWidth className="text-sm" />
                         <span>{pathname.startsWith('/trade-events') ? 'Add Event' : 'Events'}</span>
                       </a>
+
+                      <button type="button" onClick={() => setHelpOpen(true)} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" aria-label={`Open help for ${routeMeta.title}`}>
+                        <span className="grid h-5 w-5 place-items-center rounded-full bg-slate-900 text-[11px] font-black text-white">?</span>
+                        <span>Help</span>
+                      </button>
 
                       <ProfileMenu />
                     </div>

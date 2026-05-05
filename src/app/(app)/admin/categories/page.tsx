@@ -18,15 +18,6 @@ type CategoryRow = {
 
 type ProductRow = { id: string; category_id: string | null };
 
-function noticeFor(code?: string) {
-  if (code === 'category-created') return { title: 'Category created', description: 'The new category is available for products and imports.', tone: 'success' as const };
-  if (code === 'category-updated') return { title: 'Category saved', description: 'Category name, parent, sort order, and active state were saved.', tone: 'success' as const };
-  if (code === 'category-error') return { title: 'Category was not saved', description: 'Supabase rejected the category save. Check the category fields and try again.', tone: 'danger' as const };
-  if (code === 'pricing-rule-saved') return { title: 'Category pricing rule saved', description: 'This category now has its own default pricing calculator rule.', tone: 'success' as const };
-  if (code === 'pricing-rule-error') return { title: 'Pricing rule was not saved', description: 'Supabase rejected the category pricing rule save. Check values and try again.', tone: 'danger' as const };
-  if (code === 'pricing-rule-category-required') return { title: 'Choose a category', description: 'Select a category before saving category pricing defaults.', tone: 'warning' as const };
-  return null;
-}
 
 export default async function Page({ searchParams }: { searchParams?: { notice?: string } }) {
   if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using this admin workspace." tone="warning" />;
@@ -60,7 +51,6 @@ export default async function Page({ searchParams }: { searchParams?: { notice?:
     product_count: Array.isArray(category.products) ? category.products.length : 0,
   }));
   const uncategorizedProducts = ((products ?? []) as ProductRow[]).filter((product) => !product.category_id).length;
-  const notice = noticeFor(searchParams?.notice);
 
   return (
     <AdminSettingsShell active="categories" organizationName={organization.name} missingCount={rows.length === 0 ? 1 : 0}>
@@ -71,7 +61,6 @@ export default async function Page({ searchParams }: { searchParams?: { notice?:
           badge="Taxonomy"
           description="Manage category structure, hierarchy, active status, and import-ready taxonomy."
         />
-        {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
         <CategoriesGovernanceWorkbench categories={rows} uncategorizedProducts={uncategorizedProducts} pricingRules={(pricingRules ?? []) as PricingCalculatorDefaultRule[]} />
       </div>
     </AdminSettingsShell>

@@ -58,10 +58,8 @@ export default async function LeadsPage({
   const readParam = (value?: string | string[]) => Array.isArray(value) ? value[0] ?? '' : value ?? '';
   const quickLeadEnabled = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
   const quickLeadProductId = readParam(searchParams?.productId).trim();
-  const handoff = readParam(searchParams?.handoff).trim();
   const eventId = readParam(searchParams?.eventId).trim();
   const initialFastField = quickLeadEnabled && Boolean(eventId);
-  const handoffMessage = handoff === 'dashboard-overdue' || handoff === 'dashboard-open-follow-up' ? { title: 'Overview sent you into Follow-up', description: 'Your active mode and next working lane were preserved. Open one priority lead and clear the real blocker.' } : handoff === 'capture-converted' ? { title: 'Capture converted into Follow-up', description: 'The lead is live now. Stay in Follow-up to qualify it, then move into Quote only when the commercial path is ready.' } : null;
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -99,13 +97,6 @@ export default async function LeadsPage({
 
       <div className="hidden space-y-4 md:block">
         <QueryIssuesAlert issues={data.queryIssues} />
-        {handoffMessage ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            <p className="font-semibold">{handoffMessage.title}</p>
-            <p className="mt-1">{handoffMessage.description}</p>
-          </div>
-        ) : null}
-
         <LeadsWorkspace
         currentUserId={viewModel.currentUserId}
         canManageLeads={viewModel.canManageLeads}

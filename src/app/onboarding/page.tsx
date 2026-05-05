@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { NoticeToast } from '@/components/ui/notice-toast';
 import { defaultMarkets, defaultNextSteps, defaultPipelineStages, defaultPipelines } from '@/features/client-onboarding/shared';
 
 function Field({ label, name, placeholder, required = false, type = 'text' }: { label: string; name: string; placeholder?: string; required?: boolean; type?: string }) {
@@ -22,7 +23,7 @@ export default function ClientOnboardingPage({ searchParams }: { searchParams?: 
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700 lg:max-w-sm"><p className="font-bold text-slate-950">Workspace URL format</p><p className="mt-1"><span className="font-semibold text-blue-700">companyname.setuflowcrm.com</span></p><p className="mt-2 text-xs text-slate-500">If no logo is supplied, the Setu Flow logo is used until your team uploads a brand asset.</p></div>
           </div>
         </header>
-        {notice === 'missing-required' ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">Company name and primary admin email are required.</div> : null}
+        {notice === 'missing-required' ? <NoticeToast title="Missing required fields" description="Company name and primary admin email are required." tone="warning" /> : null}
         <section className="grid gap-4 lg:grid-cols-2"><DefaultList title="Pipeline stages" items={defaultPipelineStages} note="We preload these. Your admin can edit or remove them after setup." /><DefaultList title="Pipelines" items={defaultPipelines} note="Buyer and supplier pipelines are editable/removable in Admin." /><DefaultList title="Next steps" items={defaultNextSteps} note="Follow-up labels are editable/removable in Admin." /><DefaultList title="Markets" items={defaultMarkets} note="Markets and countries are prefilled from this form, then editable/removable in Admin." /></section>
         <form action="/api/public/client-onboarding" method="post" className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:p-8"><div className="grid gap-8">
           <section><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-blue-600">1. Company identity</p><div className="mt-5 grid gap-4 md:grid-cols-2"><Field label="Company name" name="company_name" required placeholder="Blue Orbit International" /><Field label="Website" name="website" placeholder="https://example.com" /><Field label="Logo URL" name="logo_url" placeholder="Optional. Leave blank to use Setu Flow logo." /><Field label="Headquarters country" name="headquarters_country" placeholder="India" /></div></section>

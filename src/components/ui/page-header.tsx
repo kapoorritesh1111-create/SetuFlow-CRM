@@ -66,7 +66,7 @@ export function PageHeader({
             ) : null}
             {status ? <StatusBadge label={status} tone={getStatusTone(status)} /> : null}
           </div>
-          {description ? <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-[15px]">{description}</p> : null}
+          {/* Long page education belongs in the Help pop-up, not in the main page header. */}
           {meta?.length ? (
             <div className="mt-4 flex flex-wrap gap-2">
               {meta.map((item) => (

@@ -10,12 +10,6 @@ import { ProductGovernanceWorkbench, type PricingCalculatorDefaultRule } from '@
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { createClient } from '@/lib/supabase/server';
 
-function noticeFor(code?: string) {
-  if (code === 'pricing-rule-saved') return { title: 'Pricing rule saved', description: 'Default pricing calculator rule has been saved.', tone: 'success' as const };
-  if (code === 'pricing-rule-category-required') return { title: 'Choose a category', description: 'Select a category before saving a category-level pricing rule.', tone: 'warning' as const };
-  if (code === 'pricing-rule-error') return { title: 'Pricing rule was not saved', description: 'Supabase rejected the save. Check required fields and try again.', tone: 'danger' as const };
-  return null;
-}
 
 export default async function ProductManagementPage({ searchParams }: { searchParams?: { notice?: string } }) {
   const workspace = await getWorkspaceAccess();
@@ -41,7 +35,6 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
     .eq('is_active', true);
 
   const { categories, products, summary } = buildProductsViewModel(data);
-  const notice = noticeFor(searchParams?.notice);
 
   return (
     <AdminSettingsShell active="product-management" organizationName={workspace.organization.name} missingCount={summary.unpricedProducts === 0 ? 0 : 1}>
@@ -53,7 +46,6 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
         description="Monitor catalog readiness, setup gaps, import health, and governed pricing controls."
       />
 
-      {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
       {readOnlyMessage ? <StateMessage title="Read-only product governance" description={readOnlyMessage} tone="warning" /> : null}
       <QueryIssuesAlert issues={data.queryIssues} />
 

@@ -633,14 +633,10 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
   const accepted = orders.filter(o => o.quoteStatus === 'accepted' || o.quoteStatus === 'sent' || Boolean(o.contract));
 
-  const noticeKey = Array.isArray(searchParams?.notice) ? searchParams?.notice[0] ?? null : searchParams?.notice ?? null;
-  const notice = decodeNotice(noticeKey);
-  const handoffKey = Array.isArray(searchParams?.handoff) ? searchParams?.handoff[0] ?? null : searchParams?.handoff ?? null;
   const focusQuoteId = requestedQuoteId;
   const focusLeadId = requestedLeadId;
   const perspectiveAccepted = accepted.filter((order) => perspectiveMode === 'all' ? true : perspectiveMode === 'buyers' ? order.leadType === 'buyer' : order.leadType === 'supplier');
   const focusedOrder = focusQuoteId ? accepted.find((order) => order.quoteId === focusQuoteId) ?? null : focusLeadId ? accepted.find((order) => order.leadId === focusLeadId) ?? null : perspectiveAccepted[0] ?? null;
-  const handoffMessage = handoffKey === 'quote-to-orders' ? { title: 'Quote handoff continues here', description: 'The commercial decision is finished. Stay in Orders to confirm documents, compliance, and release readiness on the accepted record.', tone: 'success' as const } : handoffKey === 'dashboard-execution' ? { title: 'Dashboard routed you into execution', description: 'This jump preserved your active mode so you can work the next accepted record instead of reopening the watchtower.', tone: 'success' as const } : handoffKey === 'approval-send-open-orders' ? { title: 'Sending hands off to execution here', description: 'Use Orders when the next question is fulfilment readiness, release evidence, or dispatch posture.', tone: 'success' as const } : handoffKey === 'dashboard-open-orders' ? { title: 'Order queue opened from Overview', description: 'The next working route is now in focus. Open the accepted record instead of scanning every card first.', tone: 'success' as const } : null;
   const perspectiveOrders = orders.filter((order) => perspectiveMode === 'all' ? true : perspectiveMode === 'buyers' ? order.leadType === 'buyer' : order.leadType === 'supplier');
 
 
@@ -816,8 +812,6 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
 
       {/* CONTENT */}
       <div style={{padding:'14px 24px 40px',display:'flex',flexDirection:'column',gap:'14px'}}>
-        {notice&&<div style={{padding:'12px 16px',borderRadius:'12px',border:'1px solid #a7f3d0',background:'#ecfdf5',fontSize:'13px',color:'#065f46'}}><strong>{notice.title}</strong> — {notice.description}</div>}
-        {handoffMessage&&<div style={{padding:'12px 16px',borderRadius:'12px',border:'1px solid #a7f3d0',background:'#ecfdf5',fontSize:'13px',color:'#065f46'}}><strong>{handoffMessage.title}</strong> — {handoffMessage.description}</div>}
 
         {perspectiveAccepted.length===0?(
           <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'48px',textAlign:'center'}}>

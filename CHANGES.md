@@ -134,3 +134,17 @@
 - Removes the duplicated variant baseline/quote-ready edit cards from the Pricing tab because each variant is already represented as its own product row in Products.
 - Keeps the Variants tab as a read-only/summary style list for pack/SKU/MOQ visibility, while pricing edits happen through the selected product row calculator.
 - Quick quote links now preserve the selected product variant id so quote flows can stay variant-aware without rewriting product defaults.
+
+## V17.5.5 Save/Error Toast Notifications
+
+- Replaced inline success/error notice banners for admin save flows with floating toast notifications.
+- Applied toast behavior to Product Management, Categories, Invitations, Users, Client Onboarding, Orders, and public onboarding validation notices.
+- Added shared `NoticeToast` UI component so save/error feedback no longer pushes page content down or creates blank space in the page layout.
+
+## V17.6 Global Help + Toast Consistency Pass
+
+- Added a global Help button to the authenticated app shell so every protected workflow has a consistent pop-up explanation without long instructional text on the page.
+- Moved common page/header education out of the main surface by suppressing PageHeader, AdminPageHero, and SectionCard explanatory descriptions from the visual page layout.
+- Expanded save/error notification behavior from selected pages to the app shell: any authenticated route using `?notice=` now receives a floating toast notification instead of an inline banner.
+- Added handoff toast support for routed workflow transitions such as Dashboard → Follow-up, Capture → Follow-up, and Quote/Approval → Orders.
+- Updated toast dismissal so clicking outside the toast clears the notification, while Quick Lead remains a direct quick-entry action without extra help or confirmation clicks.

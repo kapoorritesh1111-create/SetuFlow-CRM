@@ -101,3 +101,19 @@ No `npm ci` was run in the sandbox.
 - Removes the duplicated variant baseline/quote-ready edit cards from the Pricing tab because each variant is already represented as its own product row in Products.
 - Keeps the Variants tab as a read-only/summary style list for pack/SKU/MOQ visibility, while pricing edits happen through the selected product row calculator.
 - Quick quote links now preserve the selected product variant id so quote flows can stay variant-aware without rewriting product defaults.
+
+### V17.5.5 notification cleanup
+
+Save and error notices now use a floating toast pattern instead of inline page banners. This keeps admin/category/product pages stable after form submissions and prevents large blank spaces at the top of pages.
+
+### V17.6 Global Help + Toast Consistency Pass
+
+Status: implementation package prepared for Vercel validation.
+
+- Every authenticated page now receives a shell-level Help button with route-aware pop-up guidance.
+- Main page headers and common card shells no longer render long explanatory text directly on the page; education belongs in Help.
+- Save/error messages are centralized through a shell-level floating toast for `notice` redirects so page content does not shift down after actions.
+- Toast notifications can be dismissed by clicking outside the notification box.
+- Quick Lead remains frictionless and does not receive additional help/confirmation steps.
+
+No `npm ci` was run in the sandbox.

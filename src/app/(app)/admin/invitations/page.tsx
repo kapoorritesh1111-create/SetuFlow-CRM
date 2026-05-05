@@ -18,74 +18,6 @@ function getInvitationTone(status: string) {
 }
 
 
-const noticeMap: Record<string, { title: string; description: string; tone?: 'neutral' | 'success' | 'warning' | 'danger' }> = {
-  'invite-created': {
-    title: 'Invitation created',
-    description: 'The invitation draft was created successfully.',
-    tone: 'success',
-  },
-  'invite-sent': {
-    title: 'Invitation sent',
-    description: 'A secure accept link was generated for the invitation.',
-    tone: 'success',
-  },
-  'invite-resent': {
-    title: 'Invitation resent',
-    description: 'A fresh invitation link was generated for the selected invite.',
-    tone: 'success',
-  },
-  'invite-revoked': {
-    title: 'Invitation revoked',
-    description: 'The pending invitation was revoked.',
-    tone: 'success',
-  },
-  'invite-already-open': {
-    title: 'Open invitation refreshed',
-    description: 'An open invitation for that email already existed, so its role/expiry was refreshed instead of creating a duplicate.',
-    tone: 'warning',
-  },
-  'member-already-active': {
-    title: 'User already active',
-    description: 'That email already belongs to an active workspace member.',
-    tone: 'warning',
-  },
-  'member-disabled-exists': {
-    title: 'Disabled user already exists',
-    description: 'That email already belongs to a disabled member. Reactivate the existing record instead of creating a new invite.',
-    tone: 'warning',
-  },
-  'invite-not-open': {
-    title: 'Invitation is no longer open',
-    description: 'Only draft, pending, or sent invitations can be changed from this screen.',
-    tone: 'warning',
-  },
-  'invite-send-failed': {
-    title: 'Invitation send failed',
-    description: 'The secure invitation link could not be generated.',
-    tone: 'danger',
-  },
-  'invite-revoke-failed': {
-    title: 'Invitation revoke failed',
-    description: 'The invitation could not be revoked.',
-    tone: 'danger',
-  },
-  'invite-create-failed': {
-    title: 'Invitation creation failed',
-    description: 'The invitation row could not be created.',
-    tone: 'danger',
-  },
-  'role-invalid': {
-    title: 'Invalid role',
-    description: 'The selected role is not available in the current organization scope.',
-    tone: 'warning',
-  },
-  'owner-role-requires-owner': {
-    title: 'Owner role requires owner access',
-    description: 'Only an existing owner can assign the owner role.',
-    tone: 'warning',
-  },
-};
-
 export default async function AdminInvitationsPage({
   searchParams,
 }: {
@@ -110,8 +42,6 @@ export default async function AdminInvitationsPage({
     .order('name');
 
   const invitations = await listInvitations(organization.id);
-  const noticeKey = typeof (searchParams as any)?.notice === 'string' ? (searchParams as any).notice : null;
-  const notice = noticeKey ? noticeMap[noticeKey] : null;
   const sentCount = invitations.filter((invite) => invite.status === 'sent').length;
   const pendingCount = invitations.filter((invite) => invite.status === 'pending').length;
   const acceptedCount = invitations.filter((invite) => invite.status === 'accepted').length;
@@ -129,7 +59,6 @@ export default async function AdminInvitationsPage({
         ]}
       />
 
-      {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone ?? 'neutral'} /> : null}
       <StateMessage
         title="What to do next in Invitations"
         description="Create the invite, send or resend the secure link, then verify the status change here before treating onboarding as complete. Accepted invites should be checked in Users."

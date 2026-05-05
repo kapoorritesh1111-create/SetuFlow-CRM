@@ -95,7 +95,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
         </nav>
         <div className="mt-8 rounded-2xl border border-blue-100 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
           <p className="font-bold">{sectionTitle ?? 'Workspace control'}</p>
-          <p className="mt-1 text-blue-800/80">Governance, lists, and security controls for {organizationName}.</p>
+          
         </div>
       </aside>
       <main className="min-w-0 space-y-6"><GovernanceBanner missingCount={missingCount} gapItems={gapItems} />{children}</main>
@@ -104,7 +104,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
 }
 
 export function AdminPageHero({ title, description, badge, cta, stats }: { title: string; description: string; badge?: string; cta?: ReactNode; stats?: Array<{ label: string; value: string | number; tone?: 'default' | 'success' | 'warning' | 'danger' | 'info' }> }) {
-  return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description={description} badge={badge} actions={cta} meta={stats?.map((stat) => <ToolbarStat key={stat.label} label={stat.label} value={String(stat.value)} tone={stat.tone ?? 'default'} />)} />;
+  return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description="" badge={badge} actions={cta} meta={stats?.map((stat) => <ToolbarStat key={stat.label} label={stat.label} value={String(stat.value)} tone={stat.tone ?? 'default'} />)} />;
 }
 
 function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: number; gapItems?: AdminGapItem[] }) {
