@@ -749,14 +749,15 @@ export async function savePricingCalculatorSnapshot(_: ActionState | undefined, 
 }
 
 type ImportCsvActionState = { error?: string; success?: string; inserted?: number; updated?: number; skipped?: number };
+type EnsureCategoryByNameResult = { id: string | null; error: string | null };
 
-function csvBool(value: unknown, fallback = true) {
+function csvBool(value: unknown, fallback = true): boolean {
   const text = String(value ?? '').trim().toLowerCase();
   if (!text) return fallback;
   return ['active', 'true', 'yes', '1', 'enabled'].includes(text);
 }
 
-async function ensureCategoryByName(db: any, organizationId: string, name: string, parentName?: string | null) {
+async function ensureCategoryByName(db: any, organizationId: string, name: string, parentName?: string | null): Promise<EnsureCategoryByNameResult> {
   const cleanName = name.trim();
   if (!cleanName) return { id: null as string | null, error: 'Category name is required.' };
   let parentId: string | null = null;

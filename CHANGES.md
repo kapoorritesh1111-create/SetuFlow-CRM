@@ -1,3 +1,8 @@
+## V17.1 - Vercel TypeScript build hotfix
+
+- Added an explicit return type for the recursive `ensureCategoryByName` helper used by the catalog/category CSV import action.
+- Kept the import/export and pricing-calculator behavior unchanged; this is a compile-only TypeScript fix for the Vercel build failure.
+
 ## V17 - Catalog import/export and pricing calculator upgrade
 
 - Added the catalog command center to the Products workspace for product/category CSV template downloads, CSV validation preview, error reporting, and safe import actions.
