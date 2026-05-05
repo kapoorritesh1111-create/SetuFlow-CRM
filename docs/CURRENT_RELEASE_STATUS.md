@@ -2,7 +2,7 @@
 
 ## Status
 
-Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, cleaned Admin reference pages, and the V17.5.1 Add Product pricing unit TypeScript hotfix.
+Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, cleaned Admin reference pages, and the V17.6.4 Quote approval handler TypeScript hotfix.
 
 ## Current readiness
 
@@ -16,7 +16,7 @@ Setu Flow CRM is in an upgraded baseline state with public client onboarding, Se
 | Pricing rules | Product-level calculator added | Quote pricing rules remain the commercial SSOT; product records now have additive calculator fields for EXW/FOB/CIF/DDP/Distributor/Retail. V17.3 adds clearer help copy for defaults, category rules, and product overrides. |
 | DCC/reference HTML | Ready | Current internal and reference HTMLs are updated. |
 | Docs | Ready | Active docs are consolidated and current. |
-| Regression tests | Partially verified in sandbox | Typecheck could not complete in this sandbox because dependencies are not installed and `npm ci` was intentionally not run. V17.5.1 directly fixes the Vercel-reported `form.packSizeUnit` TypeScript error. |
+| Regression tests | Partially verified in sandbox | Typecheck could not complete in this sandbox because dependencies are not installed and `npm ci` was intentionally not run. V17.6.4 directly fixes the Vercel-reported missing `onApproveQuoteAdjustment` prop on `InlineQuoteBuilder`. |
 
 ## Test result
 
@@ -134,3 +134,13 @@ Highlights:
 - Confirmed Supabase `quotes` table has approval workflow fields: `approval_required`, `approved_at`, `approved_by`, and `notes_internal`.
 - Fixed the Vercel-reported TypeScript error in the Lead Follow-up Approval Queue by updating the shared `Quote` type.
 - No migration required; this is an app type alignment fix against the live schema.
+
+
+## V17.6.4 Quote approval handler hotfix
+
+Status: compile hotfix package ready for Vercel validation.
+
+Highlights:
+- Confirmed the live Supabase `quotes` table includes approval workflow fields: `approval_required`, `approved_at`, `approved_by`, and `notes_internal`.
+- Passed `onApproveQuoteAdjustment` into the inline Quote Builder render so the required component prop is satisfied.
+- No Supabase migration is required for this hotfix.
