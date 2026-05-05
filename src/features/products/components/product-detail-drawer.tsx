@@ -25,6 +25,7 @@ type Props = {
   actionBlockedMessage?: string | null;
   onActionBlocked?: (message: string) => void;
   initialTab?: DrawerTab;
+  focusedVariantId?: string | null;
 };
 
 export type DrawerTab = "overview" | "pricing" | "variants" | "trade" | "history";
@@ -89,6 +90,7 @@ export function ProductDetailDrawer({
   actionBlockedMessage = null,
   onActionBlocked,
   initialTab = "overview",
+  focusedVariantId = null,
 }: Props) {
   const [name, setName] = useState("");
   const [brandName, setBrandName] = useState("");
@@ -179,6 +181,31 @@ export function ProductDetailDrawer({
       ).length ?? 0,
     [detail],
   );
+
+  const selectedPricingVariant = useMemo(() => {
+    if (!detail?.variants.length) return null;
+    return (
+      detail.variants.find((variant) => variant.product_variant_id === focusedVariantId) ??
+      detail.variants.find((variant) => variant.product_variant_id === detail.product.pricing_snapshot?.product_variant_id) ??
+      detail.variants[0]
+    );
+  }, [detail, focusedVariantId]);
+
+  const selectedPricingVariantOptions = useMemo(() => {
+    return selectedPricingVariant
+      ? [{
+          id: selectedPricingVariant.product_variant_id,
+          name: selectedPricingVariant.variant_name,
+          skuCode: selectedPricingVariant.sku_code,
+          packLabel: selectedPricingVariant.pack_label,
+          unitsPerCase: selectedPricingVariant.units_per_case,
+          moqDisplay: selectedPricingVariant.moq_display,
+          pricingModeDefault: selectedPricingVariant.pricing_mode_default,
+          exFactoryValue: selectedPricingVariant.ex_factory_value,
+          fobValue: selectedPricingVariant.fob_value,
+        }]
+      : [];
+  }, [selectedPricingVariant]);
 
   if (!open) return null;
 
@@ -444,20 +471,8 @@ export function ProductDetailDrawer({
             <div className="space-y-4">
               <ProductPricingCalculatorPanel
                 productId={detail.product.id}
-                productVariantId={
-                  detail.product.pricing_snapshot?.product_variant_id ?? detail.variants[0]?.product_variant_id ?? null
-                }
-                variantOptions={detail.variants.map((variant) => ({
-                  id: variant.product_variant_id,
-                  name: variant.variant_name,
-                  skuCode: variant.sku_code,
-                  packLabel: variant.pack_label,
-                  unitsPerCase: variant.units_per_case,
-                  moqDisplay: variant.moq_display,
-                  pricingModeDefault: variant.pricing_mode_default,
-                  exFactoryValue: variant.ex_factory_value,
-                  fobValue: variant.fob_value,
-                }))}
+                productVariantId={selectedPricingVariant?.product_variant_id ?? null}
+                variantOptions={selectedPricingVariantOptions}
                 productName={detail.product.name}
                 canManageCatalog={canManageCatalog}
                 compact
@@ -467,9 +482,9 @@ export function ProductDetailDrawer({
                     "exw",
                   startPrice:
                     detail.product.pricing_snapshot?.exw_price ??
-                    detail.variants[0]?.ex_factory_value ??
+                    selectedPricingVariant?.ex_factory_value ??
                     detail.product.pricing_snapshot?.fob_price ??
-                    detail.variants[0]?.fob_value ??
+                    selectedPricingVariant?.fob_value ??
                     null,
                   currency:
                     detail.product.pricing_snapshot?.pricing_currency ?? "USD",
@@ -497,19 +512,19 @@ export function ProductDetailDrawer({
                     "markup",
                   defaultUnitOfMeasure:
                     detail.product.pricing_snapshot?.default_unit_of_measure ??
-                    detail.variants[0]?.pricing_mode_default ??
+                    selectedPricingVariant?.pricing_mode_default ??
                     "unit",
                   packSize:
                     detail.product.pricing_snapshot?.pack_size ??
-                    detail.variants[0]?.units_per_case ??
+                    selectedPricingVariant?.units_per_case ??
                     null,
                   packSizeUnit:
                     detail.product.pricing_snapshot?.pack_size_unit ??
-                    detail.variants[0]?.pack_label ??
+                    selectedPricingVariant?.pack_label ??
                     null,
                   pricingMode:
                     detail.product.pricing_snapshot?.pricing_mode_default ??
-                    detail.variants[0]?.pricing_mode_default ??
+                    selectedPricingVariant?.pricing_mode_default ??
                     "unit",
                 }}
                 onSaved={async () => {
@@ -570,129 +585,12 @@ export function ProductDetailDrawer({
                 Catalog prices remain in USD. Quote currency is selected later
                 in the quote workspace.
               </div>
-              {detail.variants.map((variant) => {
-                const draft = variantDrafts[variant.product_variant_id];
-                return (
-                  <div
-                    key={variant.product_variant_id}
-                    className="rounded-2xl border border-slate-200 p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="font-semibold text-slate-950">
-                          {variant.variant_name}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-500">
-                          {variant.sku_code ?? "No SKU"} ·{" "}
-                          {variant.pack_label ?? "No pack"} · MOQ{" "}
-                          {variant.moq_display ?? "missing"}
-                        </div>
-                      </div>
-                      <label className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                        <input
-                          type="checkbox"
-                          checked={draft?.is_quoteable ?? false}
-                          disabled={!canManageCatalog}
-                          onChange={(e) =>
-                            updateVariant(variant.product_variant_id, {
-                              is_quoteable: e.target.checked,
-                            })
-                          }
-                        />{" "}
-                        Quote-ready
-                      </label>
-                    </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      {(
-                        [
-                          ["Ex-Factory", "ex_factory_value", "ex_factory_unit"],
-                          ["FOB", "fob_value", "fob_unit"],
-                          ["Bulk/kg", "bulk_value", null],
-                        ] as const
-                      ).map(([label, valueKey, unitKey]) => (
-                        <label
-                          key={label}
-                          className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm"
-                        >
-                          <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                            {label}
-                          </div>
-                          <div className="mt-2 flex gap-2">
-                            <input
-                              inputMode="decimal"
-                              disabled={!canManageCatalog}
-                              value={draft?.[valueKey] ?? ""}
-                              onChange={(e) =>
-                                updateVariant(variant.product_variant_id, {
-                                  [valueKey]: e.target.value,
-                                } as Partial<VariantDraft>)
-                              }
-                              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-400"
-                              placeholder="Missing"
-                            />
-                            {unitKey ? (
-                              <select
-                                disabled={!canManageCatalog}
-                                value={draft?.[unitKey] ?? ""}
-                                onChange={(e) =>
-                                  updateVariant(variant.product_variant_id, {
-                                    [unitKey]: e.target
-                                      .value as VariantDraft[typeof unitKey],
-                                  } as Partial<VariantDraft>)
-                                }
-                                className="rounded-lg border border-slate-200 px-2 py-2 text-xs"
-                              >
-                                <option value="">Unit</option>
-                                <option value="unit">unit</option>
-                                <option value="case">case</option>
-                                <option value="kg">kg</option>
-                              </select>
-                            ) : null}
-                          </div>
-                        </label>
-                      ))}
-                      {/* CIF reference — stored in source_payload, display only in catalog */}
-                      <label className="rounded-xl border border-dashed border-sky-200 bg-sky-50/40 p-3 shadow-sm">
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-600">
-                          CIF Reference
-                        </div>
-                        <div className="mt-1 text-[9px] text-slate-400">
-                          Display only · Quote CIF uses freight profile
-                        </div>
-                        <div className="mt-2 flex gap-2">
-                          <input
-                            inputMode="decimal"
-                            disabled={!canManageCatalog}
-                            value={draft?.cif_value ?? ""}
-                            onChange={(e) =>
-                              updateVariant(variant.product_variant_id, {
-                                cif_value: e.target.value,
-                              })
-                            }
-                            className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-sky-400"
-                            placeholder="— add"
-                          />
-                          <select
-                            disabled={!canManageCatalog}
-                            value={draft?.cif_unit ?? ""}
-                            onChange={(e) =>
-                              updateVariant(variant.product_variant_id, {
-                                cif_unit: e.target
-                                  .value as VariantDraft["cif_unit"],
-                              })
-                            }
-                            className="rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs"
-                          >
-                            <option value="">Unit</option>
-                            <option value="unit">unit</option>
-                            <option value="case">case</option>
-                          </select>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                );
-              })}
+              {selectedPricingVariant ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  Pricing is being edited for <strong>{selectedPricingVariant.variant_name}</strong>.
+                  Product variants are listed as separate product rows in Products, so variant price fields are not repeated here.
+                </div>
+              ) : null}
             </div>
           ) : null}
 

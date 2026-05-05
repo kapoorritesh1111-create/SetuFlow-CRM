@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { createProductCategory, updateProductCategory } from "@/features/admin/server/actions";
 import { AdminHelpDrawer } from "@/features/admin/components/admin-help-drawer";
+import { PricingRulesSummary, type PricingCalculatorDefaultRule } from "@/features/admin/components/product-governance-workbench";
 
 type CategoryRow = {
   id: string;
@@ -31,13 +32,12 @@ function statusClass(active: boolean | null | undefined, empty = false) {
   return "bg-emerald-50 text-emerald-700 ring-emerald-200";
 }
 
-export function CategoriesGovernanceWorkbench({ categories }: { categories: CategoryRow[] }) {
+export function CategoriesGovernanceWorkbench({ categories, uncategorizedProducts = 0, pricingRules = [] }: { categories: CategoryRow[]; uncategorizedProducts?: number; pricingRules?: PricingCalculatorDefaultRule[] }) {
   const [selectedId, setSelectedId] = useState(categories[0]?.id ?? "");
   const [tab, setTab] = useState<Tab>("tree");
   const selected = categories.find((category) => category.id === selectedId) ?? categories[0] ?? null;
   const activeCount = categories.filter((category) => category.is_active).length;
   const emptyCount = categories.filter((category) => (category.product_count ?? 0) === 0).length;
-  const uncategorizedProducts = 0;
   const importReady = categories.length > 0 ? "Ready" : "Needs setup";
   const categoryNameById = useMemo(() => new Map(categories.map((category) => [category.id, category.name])), [categories]);
 
@@ -111,14 +111,34 @@ export function CategoriesGovernanceWorkbench({ categories }: { categories: Cate
         <div className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-5"><h2 className="text-xl font-semibold tracking-tight text-slate-950">Selected category</h2><p className="mt-1 text-sm text-slate-500">Edit only taxonomy data that belongs in Admin.</p></div>
           {selected ? (
+            <>
             <form action={updateProductCategory} className="space-y-4 p-5">
               <input type="hidden" name="id" value={selected.id} />
               <div><label className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Category name</label><input className={`${inputClass} mt-2 w-full`} name="name" defaultValue={selected.name} required /></div>
               <div><label className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Parent category</label><select className={`${inputClass} mt-2 w-full`} name="parent_id" defaultValue={selected.parent_id ?? ""}><option value="">No parent</option>{categories.filter((category) => category.id !== selected.id).map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></div>
               <div className="grid gap-3 sm:grid-cols-2"><div><label className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Sort order</label><input className={`${inputClass} mt-2 w-full`} name="sort_order" type="number" defaultValue={selected.sort_order ?? 0} /></div><div><label className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Products using this category</label><div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800">{selected.product_count ?? 0}</div></div></div>
               <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"><input type="checkbox" name="is_active" defaultChecked={selected.is_active ?? true} /> Active</label>
-              <div className="flex flex-wrap gap-2"><button type="submit" className={buttonClass}>Save category</button><Link href={`/products?category=${selected.id}`} className={secondaryButtonClass}>Open products in this category</Link></div>
+              <div className="flex flex-wrap gap-2"><button type="submit" className={buttonClass}>Save category</button><Link href={`/products?category=${encodeURIComponent(selected.name)}`} className={secondaryButtonClass}>Open products in this category</Link></div>
             </form>
+            
+              <div className="border-t border-slate-200 pt-5">
+                <PricingRulesSummary
+                  categories={categories.map((category) => ({
+                    id: category.id,
+                    name: category.name,
+                    isActive: Boolean(category.is_active),
+                    sortOrder: Number(category.sort_order ?? 0),
+                    parentId: category.parent_id ?? null,
+                    pathLabel: category.name,
+                    rootCategoryName: category.name,
+                  }))}
+                  pricingRules={pricingRules}
+                  selectedCategoryId={selected.id}
+                  returnPath="/admin/categories"
+                  compact
+                />
+              </div>
+            </>
           ) : <p className="p-5 text-sm text-slate-500">Select or create a category to edit taxonomy details.</p>}
         </div>
       </section>

@@ -80,3 +80,24 @@ Status: implementation patch prepared. Supabase migration and Vercel deployment 
 - Confirmed pricing calculator default rules include internal/distributor/retail margin fields and do not own UOM or pack-size fields.
 - Confirmed product variant packaging fields include pack size, pack unit/label, units per case, pricing mode default, and net weight.
 - Patched calculator input conversion so numeric variant defaults compile under Vercel strict TypeScript checks.
+
+### V17.5.3 admin pricing/defaults correction
+
+This pass fixes issues found after the V17.5.2 build hotfix:
+
+- Supabase schema was checked before code edits.
+- Pricing rule save now redirects with success/error notices instead of failing silently.
+- Category save now redirects with success/error notices, including active/inactive changes.
+- Category selected panel now includes category pricing defaults.
+- Admin Product Management pricing-gap count now matches Products gap filtering and separates product masters without variants.
+- Product import/export templates no longer include shared pricing-rule fields; they carry required product setup plus starting prices only.
+
+No `npm ci` was run in the sandbox.
+
+
+## V17.5.4 Product Row Pricing Drawer Cleanup
+
+- Focuses Product Detail pricing on the product/variant row selected from Products instead of asking users to choose a variant again.
+- Removes the duplicated variant baseline/quote-ready edit cards from the Pricing tab because each variant is already represented as its own product row in Products.
+- Keeps the Variants tab as a read-only/summary style list for pack/SKU/MOQ visibility, while pricing edits happen through the selected product row calculator.
+- Quick quote links now preserve the selected product variant id so quote flows can stay variant-aware without rewriting product defaults.

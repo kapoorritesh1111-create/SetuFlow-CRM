@@ -42,33 +42,31 @@ function downloadTextFile(fileName: string, text: string) {
 }
 
 function buildProductExportRows(products: ProductViewModel[]) {
-  return products.map((product) => ({
-    product_name: product.name,
-    sku: product.skuCode ?? product.sku ?? "",
-    category: product.rootCategoryName ?? product.categoryName ?? "",
-    subcategory: product.categoryPath ?? "",
-    description: product.description ?? "",
-    unit: product.variants[0]?.unitOfMeasure ?? "unit",
-    currency: product.latestPriceCurrency ?? "USD",
-    base_cost: "",
-    exw_price: "",
-    fob_price: product.latestPrice ?? "",
-    cif_price: "",
-    ddp_price: "",
-    distributor_price: "",
-    retail_price: "",
-    inland_transport_cost: "",
-    export_customs_cost: "",
-    port_handling_cost: "",
-    freight_cost: "",
-    insurance_cost: "",
-    import_duty_percent: "",
-    destination_charges: "",
-    local_delivery_cost: "",
-    distributor_margin_percent: "",
-    retail_margin_percent: "",
-    active_status: product.isActive ? "active" : "inactive",
-  }));
+  return products.map((product) => {
+    const firstVariant = product.variants[0];
+    const packParts = String(firstVariant?.packLabel ?? "").trim().split(/\s+/);
+    const packSize = Number(packParts[0]);
+    const packUnit = packParts.slice(1).join(" ");
+    return {
+      product_name: product.name,
+      sku: product.skuCode ?? product.sku ?? "",
+      category: product.rootCategoryName ?? product.categoryName ?? "",
+      subcategory: product.categoryPath ?? "",
+      description: product.description ?? "",
+      unit_of_measure: firstVariant?.unitOfMeasure ?? "unit",
+      pack_size: Number.isFinite(packSize) ? packSize : firstVariant?.unitsPerCase ?? "",
+      pack_unit: packUnit || firstVariant?.unitOfMeasure || "unit",
+      pricing_basis: firstVariant?.unitOfMeasure ?? "unit",
+      currency: product.latestPriceCurrency ?? "USD",
+      exw_price: "",
+      fob_price: product.latestPrice ?? "",
+      cif_price: "",
+      ddp_price: "",
+      distributor_price: "",
+      retail_price: "",
+      active_status: product.isActive ? "active" : "inactive",
+    };
+  });
 }
 
 function buildCategoryExportRows(categories: ProductCategoryViewModel[]) {
@@ -159,7 +157,7 @@ export function CatalogImportExportWizard({
             </h2>
             <p className="mt-1 text-sm text-slate-600">
               Download CSV templates, validate imports before saving, and
-              calculate EXW to Retail from any starting price.
+              import products with starting prices and calculate EXW to Retail from any starting price.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

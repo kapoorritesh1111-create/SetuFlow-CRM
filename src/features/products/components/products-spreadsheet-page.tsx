@@ -36,27 +36,33 @@ function isStalePriceDate(value: string | null | undefined) {
   return Date.now() - date.getTime() > ninetyDaysMs;
 }
 
+type ProductsInitialFilters = { search?: string; category?: string; pricingMode?: string; gap?: string; active?: string; quoteable?: string; mode?: 'products' | 'pricing' | 'spreadsheet' };
+
 type Props = {
   canManageCatalog?: boolean;
   readOnlyMessage?: string | null;
+  initialFilters?: ProductsInitialFilters;
 };
 
-export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessage = null }: Props) {
+export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessage = null, initialFilters = {} }: Props) {
   const [response, setResponse] = useState<ProductsSpreadsheetResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [catalogMode, setCatalogMode] = useState<'products' | 'pricing' | 'spreadsheet'>('products');
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
-  const [pricingMode, setPricingMode] = useState('');
-  const [gapFilter, setGapFilter] = useState('all');
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [quoteableFilter, setQuoteableFilter] = useState('all');
+  const initialGapFilter = initialFilters.gap === 'has_gap' ? 'has_gap' : initialFilters.gap === 'complete' ? 'complete' : 'all';
+  const initialMode = initialFilters.mode === 'pricing' ? 'pricing' : initialFilters.mode === 'spreadsheet' ? 'spreadsheet' : 'products';
+  const [catalogMode, setCatalogMode] = useState<'products' | 'pricing' | 'spreadsheet'>(initialMode);
+  const [search, setSearch] = useState(initialFilters.search ?? '');
+  const [category, setCategory] = useState(initialFilters.category ?? '');
+  const [pricingMode, setPricingMode] = useState(initialFilters.pricingMode ?? '');
+  const [gapFilter, setGapFilter] = useState(initialGapFilter);
+  const [activeFilter, setActiveFilter] = useState(initialFilters.active === 'inactive' ? 'inactive' : initialFilters.active === 'active' ? 'active' : 'all');
+  const [quoteableFilter, setQuoteableFilter] = useState(initialFilters.quoteable === 'quoteable' ? 'quoteable' : initialFilters.quoteable === 'not_quoteable' ? 'not_quoteable' : 'all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [sortBy, setSortBy] = useState<ProductsSortKey | ''>('product_name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detail, setDetail] = useState<ProductDetailResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -146,8 +152,9 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
   const isFilteredEmpty = !loading && !isEmptyWorkspace && filteredRows.length === 0;
   const noPricingConfigured = !loading && rows.length > 0 && !summary?.has_pricing_rule_set;
 
-  const openProduct = useCallback(async (productId: string, initialTab: DrawerTab = 'overview') => {
+  const openProduct = useCallback(async (productId: string, initialTab: DrawerTab = 'overview', focusedVariantId: string | null = null) => {
     setSelectedProductId(productId);
+    setSelectedVariantId(focusedVariantId);
     setDetailInitialTab(initialTab);
     setDrawerOpen(true);
     setDetailLoading(true);
@@ -312,7 +319,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
                       <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">{row.bulk_display ?? row.cif_display ?? '—'}</td>
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{row.moq_display ?? 'Not set'}</td>
                       <td className="px-4 py-3"><span className={gapState === 'complete' ? 'rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700' : 'rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700'}>{gapState === 'complete' ? 'Quote-ready' : 'Pricing gap'}</span></td>
-                      <td className="px-4 py-3 text-right"><button type="button" onClick={() => openProduct(row.product_id, 'pricing')} className={workspaceSecondaryButtonClass + ' rounded-xl px-3 py-2 text-xs font-semibold'}>Open pricing</button></td>
+                      <td className="px-4 py-3 text-right"><button type="button" onClick={() => openProduct(row.product_id, 'pricing', row.product_variant_id)} className={workspaceSecondaryButtonClass + ' rounded-xl px-3 py-2 text-xs font-semibold'}>Open pricing</button></td>
                     </tr>
                   );
                 })}
@@ -373,6 +380,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
         actionBlockedMessage={actionBlockedMessage}
         onActionBlocked={setActionBlockedMessage}
         initialTab={detailInitialTab}
+        focusedVariantId={selectedVariantId}
       />
     </div>
   );

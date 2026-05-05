@@ -115,3 +115,22 @@
 - Verified live Supabase schema for `pricing_calculator_default_rules`, `product_variants`, and `products` before patching.
 - Confirmed product/variant packaging fields live on `product_variants`, while default pricing rule margins live on `pricing_calculator_default_rules`.
 - Fixed `ProductPricingCalculatorPanel.toInput` so numeric Supabase fields such as `units_per_case` can be used as safe string input fallbacks without failing strict TypeScript builds.
+
+## V17.5.3 pricing rules, category defaults, and import alignment
+
+- Verified the live Supabase schema for `pricing_calculator_default_rules`, `products`, `product_variants`, and `product_categories` before updating code.
+- Added visible success/error redirect notices for default pricing rule saves and category saves.
+- Updated Admin Product Management pricing-gap counts to match the Products variant grid instead of counting product masters that have no variants.
+- Added a separate variant setup gap so product masters without variants are not mislabeled as pricing gaps.
+- Added category-level pricing default editing directly in Admin → Categories → Selected category.
+- Updated category open-products links and Products page initial query filters so review links open the correct filtered view.
+- Simplified product import/export templates so imports carry product setup and starting prices only, while shared costs/margins stay in pricing default rules.
+- Product imports now write product-level starting prices and variant-level UOM/pack/pricing-basis setup.
+
+
+## V17.5.4 Product Row Pricing Drawer Cleanup
+
+- Focuses Product Detail pricing on the product/variant row selected from Products instead of asking users to choose a variant again.
+- Removes the duplicated variant baseline/quote-ready edit cards from the Pricing tab because each variant is already represented as its own product row in Products.
+- Keeps the Variants tab as a read-only/summary style list for pack/SKU/MOQ visibility, while pricing edits happen through the selected product row calculator.
+- Quick quote links now preserve the selected product variant id so quote flows can stay variant-aware without rewriting product defaults.

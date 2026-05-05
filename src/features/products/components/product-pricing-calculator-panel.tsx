@@ -338,9 +338,9 @@ export function ProductPricingCalculatorPanel({
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
-        {variantOptions.length ? (
+        {variantOptions.length > 1 ? (
           <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 md:col-span-3">
-            Product variant
+            Product row / variant
             <select
               value={selectedVariant?.id ?? selectedVariantId ?? ""}
               onChange={(event) => {
@@ -361,6 +361,10 @@ export function ProductPricingCalculatorPanel({
               {variantOptions.map((variant) => <option key={variant.id} value={variant.id}>{buildVariantLabel(variant)}</option>)}
             </select>
           </label>
+        ) : selectedVariant ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 md:col-span-3">
+            Pricing applies to this product row: <strong className="text-slate-950">{buildVariantLabel(selectedVariant)}</strong>.
+          </div>
         ) : null}
         <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
           Product UOM

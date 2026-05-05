@@ -856,7 +856,29 @@ export async function importCsvRows(_: ImportCsvActionState | undefined, formDat
       if (!name || !String(row.category ?? '').trim()) { skipped += 1; continue; }
       const category = await ensureCategoryByName(db, organizationId, String(row.subcategory || row.category).trim(), row.subcategory ? String(row.category).trim() : null);
       if (category.error) return { error: category.error, inserted, updated, skipped };
-      const payload = { organization_id: organizationId, category_id: category.id, name, sku: sku || null, sku_code: sku || null, description: row.description || null, pricing_type: row.unit || null, is_active: csvBool(row.active_status, true), updated_by: workspace.user.id };
+      const currency = String(row.currency ?? 'USD').trim().toUpperCase() || 'USD';
+      const productPricingPayload = {
+        base_cost: row.exw_price ? Number(row.exw_price) : null,
+        exw_price: row.exw_price ? Number(row.exw_price) : null,
+        fob_price: row.fob_price ? Number(row.fob_price) : null,
+        cif_price: row.cif_price ? Number(row.cif_price) : null,
+        ddp_price: row.ddp_price ? Number(row.ddp_price) : null,
+        distributor_price: row.distributor_price ? Number(row.distributor_price) : null,
+        retail_price: row.retail_price ? Number(row.retail_price) : null,
+        pricing_currency: currency,
+      };
+      const payload = {
+        organization_id: organizationId,
+        category_id: category.id,
+        name,
+        sku: sku || null,
+        sku_code: sku || null,
+        description: row.description || null,
+        pricing_type: row.pricing_basis || row.unit_of_measure || null,
+        is_active: csvBool(row.active_status, true),
+        updated_by: workspace.user.id,
+        ...productPricingPayload,
+      };
       let existing = null as any;
       if (sku) {
         const lookup = await db.from('products').select('id').eq('organization_id', organizationId).eq('sku', sku).maybeSingle();
@@ -866,10 +888,41 @@ export async function importCsvRows(_: ImportCsvActionState | undefined, formDat
       const saved = existing?.id ? await db.from('products').update(payload).eq('id', existing.id).select('id').single() : await db.from('products').insert({ ...payload, created_by: workspace.user.id }).select('id').single();
       if (saved.error) return { error: saved.error.message, inserted, updated, skipped };
       const productId = saved.data.id as string;
-      const { data: variant } = await db.from('product_variants').select('id, source_payload').eq('organization_id', organizationId).eq('product_id', productId).order('sort_order', { ascending: true }).limit(1).maybeSingle();
-      const calculatorPayload = { import_row: row, imported_at: new Date().toISOString(), prices: { exw: row.exw_price || row.base_cost || null, fob: row.fob_price || null, cif: row.cif_price || null, ddp: row.ddp_price || null, distributor: row.distributor_price || null, retail: row.retail_price || null } };
-      if (variant?.id) await db.from('product_variants').update({ sku_code: sku || null, pricing_mode_default: row.unit || 'unit', source_payload: { ...((variant.source_payload && typeof variant.source_payload === 'object') ? variant.source_payload : {}), pricing_calculator: calculatorPayload }, updated_by: workspace.user.id }).eq('id', variant.id);
-      else await db.from('product_variants').insert({ organization_id: organizationId, product_id: productId, name, sku_code: sku || null, pricing_mode_default: row.unit || 'unit', source_payload: { pricing_calculator: calculatorPayload }, created_by: workspace.user.id, updated_by: workspace.user.id });
+      const { data: variant } = await db.from('product_variants').select('id, source_payload').eq('product_id', productId).order('sort_order', { ascending: true }).limit(1).maybeSingle();
+      const packSize = row.pack_size ? Number(row.pack_size) : null;
+      const packUnit = String(row.pack_unit ?? '').trim() || null;
+      const pricingBasis = String(row.pricing_basis ?? row.unit_of_measure ?? 'unit').trim() || 'unit';
+      const packLabel = packSize != null && Number.isFinite(packSize) ? `${packSize}${packUnit ? ` ${packUnit}` : ''}` : packUnit;
+      const calculatorPayload = {
+        import_row: row,
+        imported_at: new Date().toISOString(),
+        currency,
+        product_setup: {
+          unit_of_measure: row.unit_of_measure || null,
+          pack_size: packSize != null && Number.isFinite(packSize) ? packSize : null,
+          pack_unit: packUnit,
+          pricing_basis: pricingBasis,
+        },
+        prices: {
+          exw: row.exw_price || null,
+          fob: row.fob_price || null,
+          cif: row.cif_price || null,
+          ddp: row.ddp_price || null,
+          distributor: row.distributor_price || null,
+          retail: row.retail_price || null,
+        },
+      };
+      const variantPayload = {
+        sku_code: sku || null,
+        pricing_mode_default: ['unit', 'case', 'kg'].includes(pricingBasis) ? pricingBasis : 'unit',
+        pack_size_value: packSize != null && Number.isFinite(packSize) ? packSize : null,
+        pack_size_unit: packUnit,
+        pack_label: packLabel || null,
+        source_payload: { ...((variant?.source_payload && typeof variant.source_payload === 'object') ? variant.source_payload : {}), pricing_calculator: calculatorPayload },
+        updated_by: workspace.user.id,
+      };
+      if (variant?.id) await db.from('product_variants').update(variantPayload).eq('id', variant.id);
+      else await db.from('product_variants').insert({ organization_id: organizationId, product_id: productId, name, ...variantPayload, created_by: workspace.user.id });
       if (existing?.id) updated += 1; else inserted += 1;
     }
   }

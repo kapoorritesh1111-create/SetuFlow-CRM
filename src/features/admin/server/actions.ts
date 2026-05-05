@@ -830,6 +830,15 @@ function normalizeText(value: FormDataEntryValue | null | undefined) { const tex
 function normalizeNumber(value: FormDataEntryValue | null | undefined, fallback = 0) { const parsed = Number(String(value ?? '').trim()); return Number.isFinite(parsed) ? parsed : fallback; }
 function normalizeDate(value: FormDataEntryValue | null | undefined) { const text = normalizeText(value); return text && /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null; }
 function checked(formData: FormData, key: string) { return formData.get(key) === 'on'; }
+
+function sanitizeAdminReturnPath(value: FormDataEntryValue | null | undefined): '/admin/product-management' | '/admin/categories' {
+  return value === '/admin/categories' ? '/admin/categories' : '/admin/product-management';
+}
+
+function redirectWithAdminNotice(path: '/admin/product-management' | '/admin/categories', notice: string): never {
+  const params = new URLSearchParams({ notice });
+  redirect(`${path}?${params.toString()}`);
+}
 async function getAdminMutationContext() { return getAdminContext(); }
 async function revalidateAdminReferencePaths(extraPath?: string) { ['/admin/organization','/admin/markets','/admin/stages','/admin/pipelines','/admin/trade-events','/admin/security'].forEach((path) => revalidatePath(path)); if (extraPath) revalidatePath(extraPath); }
 
@@ -883,13 +892,14 @@ export async function createProductCategory(formData: FormData): Promise<void> {
   const name = normalizeText(formData.get('name'));
   if (!name) return;
   const parentId = normalizeText(formData.get('parent_id'));
-  await context.supabase.from('product_categories').insert({
+  const { error } = await context.supabase.from('product_categories').insert({
     organization_id: context.organization.id,
     name,
     parent_id: parentId || null,
     sort_order: normalizeNumber(formData.get('sort_order')),
     is_active: true,
   });
+  if (error) redirect('/admin/categories?notice=category-error');
   await revalidateAdminReferencePaths('/admin/categories');
   redirect('/admin/categories?notice=category-created');
 }
@@ -901,20 +911,22 @@ export async function updateProductCategory(formData: FormData): Promise<void> {
   const name = normalizeText(formData.get('name'));
   if (!id || !name) return;
   const parentId = normalizeText(formData.get('parent_id'));
-  await context.supabase.from('product_categories').update({
+  const { error } = await context.supabase.from('product_categories').update({
     name,
     parent_id: parentId && parentId !== id ? parentId : null,
     sort_order: normalizeNumber(formData.get('sort_order')),
     is_active: checked(formData, 'is_active'),
     updated_at: new Date().toISOString(),
   }).eq('id', id).eq('organization_id', context.organization.id);
+  if (error) redirect('/admin/categories?notice=category-error');
   await revalidateAdminReferencePaths('/admin/categories');
   redirect('/admin/categories?notice=category-updated');
 }
 
 export async function savePricingCalculatorDefaultRule(formData: FormData): Promise<void> {
+  const returnPath = sanitizeAdminReturnPath(formData.get('return_path'));
   const context = await getAdminContext();
-  if (!context) return;
+  if (!context) redirectWithAdminNotice(returnPath, 'pricing-rule-auth-error');
 
   const { supabase, organization, membership } = context;
   const scope = String(formData.get('rule_scope') ?? 'organization').trim() === 'category' ? 'category' : 'organization';
@@ -928,7 +940,7 @@ export async function savePricingCalculatorDefaultRule(formData: FormData): Prom
     return Number.isFinite(parsed) ? parsed : null;
   };
 
-  if (scope === 'category' && !categoryId) return;
+  if (scope === 'category' && !categoryId) redirectWithAdminNotice(returnPath, 'pricing-rule-category-required');
 
   const payload = {
     organization_id: organization.id,
@@ -958,24 +970,26 @@ export async function savePricingCalculatorDefaultRule(formData: FormData): Prom
     .eq('organization_id', organization.id)
     .eq('rule_scope', scope);
   existingQuery = categoryId ? existingQuery.eq('category_id', categoryId) : existingQuery.is('category_id', null);
-  const { data: existing } = await existingQuery.limit(1).maybeSingle();
+  const { data: existing, error: lookupError } = await existingQuery.limit(1).maybeSingle();
+  if (lookupError) redirectWithAdminNotice(returnPath, 'pricing-rule-error');
 
-  const { error } = existing?.id
-    ? await (supabase as any).from('pricing_calculator_default_rules').update(payload).eq('id', existing.id).eq('organization_id', organization.id)
-    : await (supabase as any).from('pricing_calculator_default_rules').insert({ ...payload, created_by: membership.user_id });
+  const { data: saved, error } = existing?.id
+    ? await (supabase as any).from('pricing_calculator_default_rules').update(payload).eq('id', existing.id).eq('organization_id', organization.id).select('id').single()
+    : await (supabase as any).from('pricing_calculator_default_rules').insert({ ...payload, created_by: membership.user_id }).select('id').single();
 
-  if (!error) {
-    await logAdminAuditAction({
-      organizationId: organization.id,
-      action: 'product_updated',
-      entityType: 'pricing_calculator_default_rule',
-      entityId: categoryId,
-      actorUserId: membership.user_id,
-      newValue: payload,
-    });
-  }
+  if (error) redirectWithAdminNotice(returnPath, 'pricing-rule-error');
+
+  await logAdminAuditAction({
+    organizationId: organization.id,
+    action: 'product_updated',
+    entityType: 'pricing_calculator_default_rule',
+    entityId: typeof saved?.id === 'string' ? saved.id : categoryId,
+    actorUserId: membership.user_id,
+    newValue: payload,
+  });
 
   revalidatePath('/admin/product-management');
   revalidatePath('/admin/categories');
   revalidatePath('/products');
+  redirectWithAdminNotice(returnPath, 'pricing-rule-saved');
 }

@@ -1,7 +1,23 @@
 export type ImportEntity = 'products' | 'categories' | 'leads';
 
 export const PRODUCT_IMPORT_HEADERS = [
-  'product_name','sku','category','subcategory','description','unit','currency','base_cost','exw_price','fob_price','cif_price','ddp_price','distributor_price','retail_price','inland_transport_cost','export_customs_cost','port_handling_cost','freight_cost','insurance_cost','import_duty_percent','destination_charges','local_delivery_cost','distributor_margin_percent','retail_margin_percent','active_status'
+  'product_name',
+  'sku',
+  'category',
+  'subcategory',
+  'description',
+  'unit_of_measure',
+  'pack_size',
+  'pack_unit',
+  'pricing_basis',
+  'currency',
+  'exw_price',
+  'fob_price',
+  'cif_price',
+  'ddp_price',
+  'distributor_price',
+  'retail_price',
+  'active_status',
 ] as const;
 export const CATEGORY_IMPORT_HEADERS = ['category_name','parent_category','description','active_status'] as const;
 export const LEAD_IMPORT_HEADERS = ['company_name','contact_name','email','phone','country','source','lead_status','interested_products','notes','assigned_to'] as const;
@@ -16,7 +32,7 @@ export function csvEscape(value: unknown) {
 export function buildCsvTemplate(entity: ImportEntity) {
   const headers = IMPORT_HEADERS[entity];
   const sample = entity === 'products'
-    ? ['Mango Powder','MP-001','Powders','Fruit Powders','Spray dried mango powder','case','USD','18','20','22','27','32','38','48','1','0.5','0.5','4','1','8','1.5','1','18','25','active']
+    ? ['Banana Chips','RH-CS-BC-100','Vacuum-Cooked Chips','','Vacuum-cooked banana chips','case','100','g','case','USD','108','110','115','126.70','149.51','186.88','active']
     : entity === 'categories'
       ? ['Fruit Powders','Powders','Spray dried and dehydrated fruit powders','active']
       : ['Acme Imports','Priya Shah','priya@example.com','+1 555 0100','United States','Trade Show','new','Mango Powder; Banana Chips','Interested in distributor pricing',''];
@@ -48,12 +64,13 @@ export type CsvValidationIssue = { row: number; field: string; severity: 'error'
 export type CsvValidationResult = { headers: string[]; rows: Record<string, string>[]; issues: CsvValidationIssue[] };
 
 function requiredFields(entity: ImportEntity) {
-  if (entity === 'products') return ['product_name', 'sku', 'category'];
+  if (entity === 'products') return ['product_name', 'sku', 'category', 'unit_of_measure', 'pack_size', 'pack_unit', 'pricing_basis'];
   if (entity === 'categories') return ['category_name'];
   return ['company_name'];
 }
 
-const numericFields = new Set(['base_cost','exw_price','fob_price','cif_price','ddp_price','distributor_price','retail_price','inland_transport_cost','export_customs_cost','port_handling_cost','freight_cost','insurance_cost','import_duty_percent','destination_charges','local_delivery_cost','distributor_margin_percent','retail_margin_percent']);
+const numericFields = new Set(['pack_size','exw_price','fob_price','cif_price','ddp_price','distributor_price','retail_price']);
+const productStartPriceFields = ['exw_price','fob_price','cif_price','ddp_price','distributor_price','retail_price'];
 
 export function validateCsvImport(entity: ImportEntity, text: string): CsvValidationResult {
   const parsed = parseCsv(text);
@@ -66,6 +83,7 @@ export function validateCsvImport(entity: ImportEntity, text: string): CsvValida
     const record: Record<string, string> = {};
     headers.forEach((header, cellIndex) => { record[header] = cells[cellIndex] ?? ''; });
     for (const field of requiredFields(entity)) if (!record[field]?.trim()) issues.push({ row: rowIndex + 2, field, severity: 'error', message: `${field} is required.` });
+    if (entity === 'products' && !productStartPriceFields.some((field) => record[field]?.trim())) issues.push({ row: rowIndex + 2, field: 'exw_price', severity: 'warning', message: 'Provide at least one starting price when importing product pricing.' });
     const duplicateKey = entity === 'products' ? record.sku : entity === 'categories' ? `${record.parent_category}/${record.category_name}` : record.email || record.company_name;
     if (duplicateKey?.trim()) {
       const normalized = duplicateKey.trim().toLowerCase();

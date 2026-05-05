@@ -10,6 +10,27 @@ import type { ProductCategoryViewModel, ProductViewModel, ProductsSummaryViewMod
 type MarketOption = { id: string; name: string; isActive: boolean };
 type Tab = "setup" | "pricing" | "imports" | "approvals" | "audit";
 
+export type PricingCalculatorDefaultRule = {
+  id: string;
+  organization_id?: string;
+  rule_scope: "organization" | "category" | string;
+  category_id: string | null;
+  currency: string | null;
+  margin_mode: "markup" | "margin" | string | null;
+  inland_transport_cost: number | null;
+  export_customs_cost: number | null;
+  port_handling_cost: number | null;
+  freight_cost: number | null;
+  insurance_cost: number | null;
+  import_duty_percent: number | null;
+  destination_charges: number | null;
+  local_delivery_cost: number | null;
+  internal_margin_percent: number | null;
+  distributor_margin_percent: number | null;
+  retail_margin_percent: number | null;
+  is_active?: boolean | null;
+};
+
 function metricClass(tone: "blue" | "green" | "amber" | "slate") {
   const border = tone === "blue" ? "border-t-brand-500" : tone === "green" ? "border-t-emerald-500" : tone === "amber" ? "border-t-amber-500" : "border-t-slate-300";
   return `rounded-3xl border border-slate-200 ${border} border-t-4 bg-white p-4 shadow-sm`;
@@ -25,6 +46,33 @@ function statusClass(tone: "success" | "warning" | "info" | "neutral") {
   return `inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${map[tone]}`;
 }
 
+const PRICING_FIELDS = [
+  ["inland_transport_cost", "Inland transport"],
+  ["export_customs_cost", "Export customs"],
+  ["port_handling_cost", "Port handling"],
+  ["freight_cost", "Freight"],
+  ["insurance_cost", "Insurance"],
+  ["import_duty_percent", "Import duty %"],
+  ["destination_charges", "Destination charges"],
+  ["local_delivery_cost", "Local delivery"],
+  ["internal_margin_percent", "Internal markup / margin %"],
+  ["distributor_margin_percent", "Distributor margin %"],
+  ["retail_margin_percent", "Retail margin %"],
+] as const;
+
+type PricingFieldName = typeof PRICING_FIELDS[number][0];
+
+function inputValue(value: number | string | null | undefined, fallback = "") {
+  return value === null || value === undefined ? fallback : String(value);
+}
+
+function findPricingRule(rules: PricingCalculatorDefaultRule[] | undefined, scope: "organization" | "category", categoryId: string | null) {
+  return (rules ?? []).find((rule) => {
+    if (scope === "organization") return rule.rule_scope === "organization" && !rule.category_id;
+    return rule.rule_scope === "category" && rule.category_id === categoryId;
+  }) ?? null;
+}
+
 export function ProductGovernanceWorkbench({
   products,
   categories,
@@ -32,6 +80,7 @@ export function ProductGovernanceWorkbench({
   summary,
   auditEvents,
   canManageCatalog,
+  pricingRules = [],
 }: {
   products: ProductViewModel[];
   categories: ProductCategoryViewModel[];
@@ -39,11 +88,14 @@ export function ProductGovernanceWorkbench({
   summary: ProductsSummaryViewModel;
   auditEvents: any[];
   canManageCatalog: boolean;
+  pricingRules?: PricingCalculatorDefaultRule[];
 }) {
   const [tab, setTab] = useState<Tab>("setup");
   const activeProducts = products.filter((product) => product.isActive);
-  const pricedActiveCount = activeProducts.filter((product) => product.baselineStatus !== "missing").length;
-  const pricingGaps = Math.max(activeProducts.length - pricedActiveCount, 0);
+  const productsWithVariants = activeProducts.filter((product) => product.variantCount > 0);
+  const pricedVariantProducts = productsWithVariants.filter((product) => product.baselineStatus !== "missing").length;
+  const pricingGaps = Math.max(productsWithVariants.length - pricedVariantProducts, 0);
+  const variantSetupGaps = activeProducts.filter((product) => product.variantCount === 0).length;
   const tradeReadyCount = activeProducts.filter((product) => Boolean(product.hsnCode) && Boolean(product.packSize)).length;
   const approvalProtectedCount = activeProducts.filter((product) => product.pricingEntries.length > 0).length;
   const importReady = categories.length > 0 && products.length > 0;
@@ -51,12 +103,21 @@ export function ProductGovernanceWorkbench({
   const rows = useMemo(() => [
     {
       title: `${pricingGaps} products are missing governed pricing`,
-      note: pricingGaps ? "Open Products to fix product pricing or import a corrected baseline file." : "All active products have baseline pricing coverage.",
+      note: pricingGaps ? "Open Products with the pricing-gap filter to fix product pricing or import corrected starting prices." : "Products with variants match the Products page pricing-gap filter.",
       status: pricingGaps ? "Action needed" : "Covered",
       statusTone: pricingGaps ? "warning" : "success",
       area: "Pricing",
-      href: "/products",
+      href: "/products?gap=has_gap",
       showIn: ["setup", "pricing"] as Tab[],
+    },
+    {
+      title: `${variantSetupGaps} product masters need variant setup`,
+      note: variantSetupGaps ? "These catalog masters do not appear in the Products variant grid until at least one variant is created." : "Every active product master has at least one variant.",
+      status: variantSetupGaps ? "Setup needed" : "Covered",
+      statusTone: variantSetupGaps ? "warning" : "success",
+      area: "Variants",
+      href: "/products",
+      showIn: ["setup"] as Tab[],
     },
     {
       title: `${Math.max(activeProducts.length - tradeReadyCount, 0)} products are missing full trade attributes`,
@@ -69,7 +130,7 @@ export function ProductGovernanceWorkbench({
     },
     {
       title: "Client onboarding import tools are ready",
-      note: "Categories, products, leads, and pricing can be imported here or during new client setup.",
+      note: "Categories, products, leads, and starting product prices can be imported here or during new client setup.",
       status: importReady ? "Ready" : "Needs setup",
       statusTone: importReady ? "success" : "warning",
       area: "Imports",
@@ -93,7 +154,7 @@ export function ProductGovernanceWorkbench({
       area: "Approvals",
       showIn: ["approvals"] as Tab[],
     },
-  ], [activeProducts.length, approvalProtectedCount, importReady, pricingGaps, tradeReadyCount]);
+  ], [activeProducts.length, approvalProtectedCount, importReady, pricingGaps, tradeReadyCount, variantSetupGaps]);
 
   const filteredRows = rows.filter((row) => row.showIn.includes(tab));
 
@@ -110,17 +171,16 @@ export function ProductGovernanceWorkbench({
             { title: "Why this page exists", body: "This page helps admins confirm the catalog is ready for sales, quotes, and order workflows. It highlights setup gaps, pricing rule gaps, import issues, approval posture, and audit history." },
             { title: "What belongs here", body: "Use this page for catalog governance, onboarding imports, pricing rule coverage, approval controls, and setup health." },
             { title: "What belongs in Products", body: "Use the Products workspace to add products, edit product details, assign categories, update variants, and calculate product-specific pricing." },
-            { title: "Pricing rules", body: "Pricing rules define default calculation logic for products and categories. They can provide default freight layers, duty assumptions, distributor margin, retail margin, and margin mode. Defaults apply unless they are edited at a more specific level.", items: ["Product-specific pricing override", "Category-level pricing rule", "Organization default pricing rule"] },
-            { title: "Pricing calculator", body: "The calculator can work from EXW, FOB, CIF, DDP, Distributor Price, or Retail Price. It calculates the missing levels using cost layers, duty %, and margins. Blank values are not guessed." },
-            { title: "Editing margins and defaults", body: "Admins can set default margins at the organization or category level. Product users can override margins on a specific product when that product needs different cost assumptions.", items: ["Organization default rule for common costs and margin mode", "Category rule for category-specific freight, duty, or distributor margin", "Product override only when one product needs special pricing"] },
+            { title: "Pricing rules", body: "Pricing rules define default calculation logic for products and categories. They provide default freight layers, duty assumptions, internal markup or margin, distributor margin, retail margin, and margin mode.", items: ["Product-specific pricing override", "Category-level pricing rule", "Organization default pricing rule"] },
+            { title: "Import pricing", body: "Product imports should provide product/variant setup and starting prices such as EXW, FOB, CIF, DDP, Distributor, or Retail. Shared cost layers and margins belong in default pricing rules." },
           ]}
         />
       </div>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <div className={metricClass("blue")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Catalog readiness</p><p className="mt-2 text-2xl font-semibold text-slate-950">{pricedActiveCount}/{activeProducts.length}</p><p className="mt-1 text-xs text-slate-500">quote-ready</p></div>
-        <div className={metricClass(pricingGaps ? "amber" : "green")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Pricing gaps</p><p className="mt-2 text-2xl font-semibold text-slate-950">{pricingGaps}</p><p className="mt-1 text-xs text-slate-500">need pricing rules</p></div>
-        <div className={metricClass("green")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Variant coverage</p><p className="mt-2 text-2xl font-semibold text-slate-950">{summary.totalVariants}</p><p className="mt-1 text-xs text-slate-500">variants</p></div>
+        <div className={metricClass("blue")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Catalog readiness</p><p className="mt-2 text-2xl font-semibold text-slate-950">{pricedVariantProducts}/{productsWithVariants.length}</p><p className="mt-1 text-xs text-slate-500">variant products quote-ready</p></div>
+        <div className={metricClass(pricingGaps ? "amber" : "green")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Pricing gaps</p><p className="mt-2 text-2xl font-semibold text-slate-950">{pricingGaps}</p><p className="mt-1 text-xs text-slate-500">match Products filter</p></div>
+        <div className={metricClass(variantSetupGaps ? "amber" : "green")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Variant setup</p><p className="mt-2 text-2xl font-semibold text-slate-950">{variantSetupGaps}</p><p className="mt-1 text-xs text-slate-500">masters without variants</p></div>
         <div className={metricClass(tradeReadyCount === activeProducts.length ? "green" : "amber")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Trade attributes</p><p className="mt-2 text-2xl font-semibold text-slate-950">{tradeReadyCount}/{activeProducts.length}</p><p className="mt-1 text-xs text-slate-500">complete</p></div>
         <div className={metricClass("slate")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Approval posture</p><p className="mt-2 text-2xl font-semibold text-slate-950">{approvalProtectedCount}</p><p className="mt-1 text-xs text-slate-500">governed rows</p></div>
       </section>
@@ -134,14 +194,14 @@ export function ProductGovernanceWorkbench({
         </div>
         <div className="space-y-3 p-5">
           {tab === "imports" ? <CatalogImportExportWizard products={products} categories={categories} canManageCatalog={canManageCatalog} /> : null}
-          {tab === "pricing" ? <PricingRulesSummary categories={categories} /> : null}
+          {tab === "pricing" ? <PricingRulesSummary categories={categories} pricingRules={pricingRules} /> : null}
           {tab === "audit" ? <AuditSummary auditEvents={auditEvents} /> : null}
           {filteredRows.map((row) => (
             <div key={row.title} className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 lg:grid-cols-[1fr_auto_auto_auto] lg:items-center">
               <div><h3 className="font-semibold text-slate-950">{row.title}</h3><p className="mt-1 text-sm text-slate-500">{row.note}</p></div>
               <span className={statusClass(row.statusTone as any)}>{row.status}</span>
               <span className={statusClass("neutral")}>{row.area}</span>
-              {row.href ? <Link href={row.href} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 text-center shadow-sm">Review</Link> : row.onClick ? <button type="button" onClick={row.onClick} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">Review</button> : <span />}
+              {row.href ? <Link href={row.href} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 shadow-sm">Review</Link> : row.onClick ? <button type="button" onClick={row.onClick} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">Review</button> : <span />}
             </div>
           ))}
         </div>
@@ -150,28 +210,35 @@ export function ProductGovernanceWorkbench({
   );
 }
 
-function PricingRulesSummary({ categories }: { categories: ProductCategoryViewModel[] }) {
-  const fields = [
-    ["inland_transport_cost", "Inland transport"],
-    ["export_customs_cost", "Export customs"],
-    ["port_handling_cost", "Port handling"],
-    ["freight_cost", "Freight"],
-    ["insurance_cost", "Insurance"],
-    ["import_duty_percent", "Import duty %"],
-    ["destination_charges", "Destination charges"],
-    ["local_delivery_cost", "Local delivery"],
-    ["internal_margin_percent", "Internal markup / margin %"],
-    ["distributor_margin_percent", "Distributor margin %"],
-    ["retail_margin_percent", "Retail margin %"],
-  ] as const;
+export function PricingRulesSummary({
+  categories,
+  pricingRules = [],
+  selectedCategoryId = null,
+  returnPath = "/admin/product-management",
+  compact = false,
+}: {
+  categories: ProductCategoryViewModel[];
+  pricingRules?: PricingCalculatorDefaultRule[];
+  selectedCategoryId?: string | null;
+  returnPath?: "/admin/product-management" | "/admin/categories";
+  compact?: boolean;
+}) {
+  const forcedCategory = Boolean(selectedCategoryId);
+  const selectedCategory = selectedCategoryId ? categories.find((category) => category.id === selectedCategoryId) ?? null : null;
+  const organizationRule = findPricingRule(pricingRules, "organization", null);
+  const categoryRule = selectedCategoryId ? findPricingRule(pricingRules, "category", selectedCategoryId) : null;
+  const defaultRule = categoryRule ?? organizationRule;
+  const formScope = forcedCategory ? "category" : "organization";
+
   return (
     <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h3 className="font-semibold text-slate-950">Default pricing calculator rules</h3>
+          <h3 className="font-semibold text-slate-950">{forcedCategory ? `${selectedCategory?.name ?? "Selected category"} pricing defaults` : "Default pricing calculator rules"}</h3>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-            Set organization or category calculator defaults. Currency comes from the organization unless changed here. Product UOM, pack size, pack unit, and pricing basis are edited on the product/variant, not in defaults.
+            Set shared calculator defaults. Product UOM, pack size, pack unit, and pricing basis are edited on the product/variant, not in defaults.
           </p>
+          {forcedCategory ? <p className="mt-2 rounded-2xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-900">This category uses its own rule when saved. If no category rule exists, products inherit the organization default.</p> : null}
         </div>
         <AdminHelpDrawer
           title="Pricing rules help"
@@ -182,43 +249,51 @@ function PricingRulesSummary({ categories }: { categories: ProductCategoryViewMo
             { title: "When to edit category defaults", body: "Edit category defaults when products in a category share freight, duty, internal markup, distributor margin, or retail margin assumptions." },
             { title: "When to edit product pricing", body: "Edit product pricing when only one product or one variant needs different assumptions from the category default." },
             { title: "Product UOM and pack size", body: "Unit of measure, pack size, pack unit, and pricing basis belong to the product or variant. Defaults should only hold shared calculator assumptions like costs, duties, and margins." },
-            { title: "Margin order", body: "After EXW/FOB/CIF/DDP is calculated, internal markup or margin is applied first. Distributor margin and retail margin are applied after that. Quote-specific price changes stay on the quote only." },
-            { title: "Missing values", body: "If a required cost layer or margin is missing, the calculator should stop and show the missing value. It should never silently guess." },
+            { title: "Quote adjustments", body: "Quote-specific price reductions or increases stay on the quote and do not rewrite product, category, or organization defaults." },
           ]}
         />
       </div>
 
       <form action={savePricingCalculatorDefaultRule} className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-3">
-        <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-          Rule level
-          <select name="rule_scope" defaultValue="organization" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400">
-            <option value="organization">Organization default</option>
-            <option value="category">Category default</option>
-          </select>
-        </label>
-        <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-          Category
-          <select name="category_id" defaultValue="" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400">
-            <option value="">Only needed for category rule</option>
-            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-          </select>
-        </label>
+        <input type="hidden" name="return_path" value={returnPath} />
+        {forcedCategory ? <input type="hidden" name="rule_scope" value="category" /> : null}
+        {forcedCategory && selectedCategoryId ? <input type="hidden" name="category_id" value={selectedCategoryId} /> : null}
+        {!forcedCategory ? (
+          <>
+            <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+              Rule level
+              <select name="rule_scope" defaultValue={formScope} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400">
+                <option value="organization">Organization default</option>
+                <option value="category">Category default</option>
+              </select>
+            </label>
+            <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+              Category
+              <select name="category_id" defaultValue="" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400">
+                <option value="">Only needed for category rule</option>
+                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+              </select>
+            </label>
+          </>
+        ) : (
+          <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 md:col-span-2"><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Rule level</p><p className="mt-1 text-sm font-semibold text-slate-900">Category default · {selectedCategory?.name ?? "Selected category"}</p></div>
+        )}
         <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
           Currency
-          <input name="currency" defaultValue="USD" maxLength={3} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400" />
+          <input name="currency" defaultValue={inputValue(defaultRule?.currency, "USD")} maxLength={3} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400" />
         </label>
         <div className="md:col-span-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">Default rules cover shared calculator assumptions. Product UOM, pack size, pack unit, and pricing basis are managed inside Add/Edit Product.</div>
         <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
           Margin mode
-          <select name="margin_mode" defaultValue="markup" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400">
+          <select name="margin_mode" defaultValue={defaultRule?.margin_mode === "margin" ? "margin" : "markup"} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400">
             <option value="markup">Markup</option>
             <option value="margin">Margin</option>
           </select>
         </label>
-        {fields.map(([name, label]) => (
+        {PRICING_FIELDS.map(([name, label]) => (
           <label key={name} className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
             {label}
-            <input name={name} inputMode="decimal" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400" />
+            <input name={name} defaultValue={inputValue(defaultRule?.[name as PricingFieldName])} inputMode="decimal" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400" />
           </label>
         ))}
         <div className="md:col-span-3">
@@ -226,13 +301,13 @@ function PricingRulesSummary({ categories }: { categories: ProductCategoryViewMo
         </div>
       </form>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      {!compact ? <div className="grid gap-3 md:grid-cols-3">
         {[
           ["Organization default", "Used when no category or product rule exists."],
           ["Category rule", "Used for products in the selected category unless a product override exists."],
           ["Product override", "Used when a specific product or variant needs unique pricing."],
         ].map(([title, body]) => <div key={title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="font-semibold text-slate-900">{title}</p><p className="mt-1 text-sm text-slate-500">{body}</p></div>)}
-      </div>
+      </div> : null}
     </div>
   );
 }

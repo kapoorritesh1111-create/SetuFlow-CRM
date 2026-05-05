@@ -3,7 +3,22 @@ import { ProductsSpreadsheetPage } from '@/features/products/components/products
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
-export default async function ProductsPage() {
+type ProductsSearchParams = {
+  search?: string;
+  category?: string;
+  pricing_mode?: string;
+  gap?: string;
+  active?: string;
+  quoteable?: string;
+  mode?: string;
+};
+
+function normalizeMode(mode: string | undefined): 'products' | 'pricing' | 'spreadsheet' | undefined {
+  if (mode === 'pricing' || mode === 'spreadsheet' || mode === 'products') return mode;
+  return undefined;
+}
+
+export default async function ProductsPage({ searchParams }: { searchParams?: ProductsSearchParams }) {
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {
     return (
@@ -22,5 +37,5 @@ export default async function ProductsPage() {
     ? null
     : getReadOnlyWorkspaceMessage(workspace.currentRoles, 'catalog.manage') ?? 'Your current role can review products, but only catalog managers can create or edit pricing.';
 
-  return <ProductsSpreadsheetPage canManageCatalog={canManageCatalog} readOnlyMessage={readOnlyMessage} />;
+  return <ProductsSpreadsheetPage canManageCatalog={canManageCatalog} readOnlyMessage={readOnlyMessage} initialFilters={{ search: searchParams?.search, category: searchParams?.category, pricingMode: searchParams?.pricing_mode, gap: searchParams?.gap, active: searchParams?.active, quoteable: searchParams?.quoteable, mode: normalizeMode(searchParams?.mode) }} />;
 }

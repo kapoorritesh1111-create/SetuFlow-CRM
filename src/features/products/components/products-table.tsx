@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ProductsGapBadge } from './products-gap-badge';
+import type { DrawerTab } from './product-detail-drawer';
 import { getProductGapActionLabel, getProductGapState } from '@/features/products/lib/products-gap-utils';
 import { updateProductDetail } from '@/features/products/api/update-product-detail';
 import type { PricingViewMode, ProductsSpreadsheetRow } from '@/types/products';
@@ -16,7 +17,7 @@ type Props = {
   sortBy: ProductsSortKey | '';
   sortOrder: 'asc' | 'desc';
   onSortChange: (nextSort: ProductsSortKey) => void;
-  onOpenProduct: (productId: string) => void;
+  onOpenProduct: (productId: string, initialTab?: DrawerTab, focusedVariantId?: string | null) => void;
   onQuickSaved: () => Promise<void> | void;
   canManageCatalog?: boolean;
   onActionBlocked?: (message: string) => void;
@@ -177,7 +178,7 @@ export function ProductsTable({ rows, loading, viewMode, sortBy, sortOrder, onSo
           const gapState = getProductGapState(row);
           const accent = categoryAccent(row.category_name);
           return (
-            <div key={row.product_variant_id} role="button" tabIndex={0} className={`grid grid-cols-[28px_minmax(260px,1fr)_140px_90px_120px_120px_110px_140px_110px] items-center border-b border-slate-100 px-4 py-3 transition last:border-b-0 hover:bg-slate-50 ${gapState !== 'complete' ? 'bg-amber-50/30' : 'bg-white'}`} onClick={() => onOpenProduct(row.product_id)} onKeyDown={(event) => { if (event.key === 'Enter') onOpenProduct(row.product_id); }}>
+            <div key={row.product_variant_id} role="button" tabIndex={0} className={`grid grid-cols-[28px_minmax(260px,1fr)_140px_90px_120px_120px_110px_140px_110px] items-center border-b border-slate-100 px-4 py-3 transition last:border-b-0 hover:bg-slate-50 ${gapState !== 'complete' ? 'bg-amber-50/30' : 'bg-white'}`} onClick={() => onOpenProduct(row.product_id, 'overview', row.product_variant_id)} onKeyDown={(event) => { if (event.key === 'Enter') onOpenProduct(row.product_id, 'overview', row.product_variant_id); }}>
               <div><input type="checkbox" className="h-4 w-4 rounded border-slate-300" onClick={(event) => event.stopPropagation()} aria-label={`Select ${row.product_name ?? 'product'}`} /></div>
               <div className="flex min-w-0 items-center gap-3">
                 <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${accent.split(' ')[0]}`} />
@@ -194,8 +195,8 @@ export function ProductsTable({ rows, loading, viewMode, sortBy, sortOrder, onSo
               <div className="flex justify-center"><ProductsGapBadge state={gapState} /></div>
               <div className="flex items-center justify-center gap-2">
                 <StatusDot active={row.is_active && row.is_quoteable} />
-                <button type="button" onClick={(event) => { event.stopPropagation(); onOpenProduct(row.product_id); }} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${workspaceSecondaryButtonClass}`}>{getProductGapActionLabel(row)}</button>
-                {row.is_active && row.is_quoteable && (row.ex_factory_value != null || row.fob_value != null) ? <Link href={`/leads?quickLead=1&sourceType=trade_show&sourceLabel=Trade%20show%20fast%20lane&autoQuote=1&productId=${encodeURIComponent(row.product_id)}`} onClick={(event) => event.stopPropagation()} className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Quick quote</Link> : null}
+                <button type="button" onClick={(event) => { event.stopPropagation(); onOpenProduct(row.product_id, 'pricing', row.product_variant_id); }} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${workspaceSecondaryButtonClass}`}>{getProductGapActionLabel(row)}</button>
+                {row.is_active && row.is_quoteable && (row.ex_factory_value != null || row.fob_value != null) ? <Link href={`/leads?quickLead=1&sourceType=trade_show&sourceLabel=Trade%20show%20fast%20lane&autoQuote=1&productId=${encodeURIComponent(row.product_id)}&productVariantId=${encodeURIComponent(row.product_variant_id)}`} onClick={(event) => event.stopPropagation()} className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Quick quote</Link> : null}
               </div>
             </div>
           );
