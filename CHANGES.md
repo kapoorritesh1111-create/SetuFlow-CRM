@@ -1,3 +1,9 @@
+## 2026-05-05 — V17.5.1 Add Product pricing unit hotfix
+
+- Fixed the Vercel TypeScript build error in `add-product-drawer.tsx` caused by referencing a non-existent `form.packSizeUnit` field.
+- The Add Product pricing calculator now derives the initial pack unit from the product pricing basis and pack label instead of an undefined form property.
+- Confirmed the live Supabase `pricing_calculator_default_rules` table includes the V17.5 pricing-default alignment column `internal_margin_percent` and no longer includes product UOM/pack-size fields.
+
 ## 2026-05-05 — V17.3 Admin Reference Pages cleanup
 
 - Reworked Admin → Product Management as a governance control center instead of a duplicate Products workspace. The page now focuses on catalog readiness, pricing gaps, variant coverage, trade attributes, approval posture, imports, and audit-oriented exceptions.

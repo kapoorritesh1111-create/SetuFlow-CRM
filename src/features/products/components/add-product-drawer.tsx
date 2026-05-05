@@ -263,7 +263,7 @@ export function AddProductDrawer({ open, onClose, onCreated }: Props) {
               marginMode: 'markup',
               defaultUnitOfMeasure: form.pricingModeDefault,
               packSize: form.unitsPerCase || form.packSizeValue,
-              packSizeUnit: form.packSizeUnit || form.pricingModeDefault,
+              packSizeUnit: form.pricingModeDefault === 'kg' ? 'kg' : form.packLabel || 'unit',
               pricingMode: form.pricingModeDefault,
             }}
             onApplyToLegacyPricing={({ exw, fob, snapshot }) => {

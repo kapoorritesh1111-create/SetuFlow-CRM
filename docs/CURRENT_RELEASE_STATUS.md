@@ -2,7 +2,7 @@
 
 ## Status
 
-Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, and cleaned Admin reference pages.
+Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, cleaned Admin reference pages, and the V17.5.1 Add Product pricing unit TypeScript hotfix.
 
 ## Current readiness
 
@@ -16,7 +16,7 @@ Setu Flow CRM is in an upgraded baseline state with public client onboarding, Se
 | Pricing rules | Product-level calculator added | Quote pricing rules remain the commercial SSOT; product records now have additive calculator fields for EXW/FOB/CIF/DDP/Distributor/Retail. V17.3 adds clearer help copy for defaults, category rules, and product overrides. |
 | DCC/reference HTML | Ready | Current internal and reference HTMLs are updated. |
 | Docs | Ready | Active docs are consolidated and current. |
-| Regression tests | Partially verified in sandbox | Typecheck could not complete because dependencies are not installed in this sandbox and `npm ci` was intentionally not run. |
+| Regression tests | Partially verified in sandbox | Typecheck could not complete in this sandbox because dependencies are not installed and `npm ci` was intentionally not run. V17.5.1 directly fixes the Vercel-reported `form.packSizeUnit` TypeScript error. |
 
 ## Test result
 
@@ -24,6 +24,15 @@ Setu Flow CRM is in an upgraded baseline state with public client onboarding, Se
 npm run typecheck
 Blocked: dependencies are not installed in the sandbox, and npm ci was intentionally not run per upgrade constraint.
 ```
+
+## V17.5.1 Add Product pricing unit hotfix
+
+Status: compile hotfix package ready for Vercel validation.
+
+Highlights:
+- Fixed `add-product-drawer.tsx` so it no longer references the missing `FormState.packSizeUnit` property.
+- Add Product now initializes calculator pack unit from product pricing basis and pack label.
+- Supabase mitigation confirmed: `pricing_calculator_default_rules` exists with `internal_margin_percent` and default pricing-rule fields only; product UOM/pack fields are not stored on the default-rule table.
 
 ## V17.3 Admin Reference Pages cleanup
 
