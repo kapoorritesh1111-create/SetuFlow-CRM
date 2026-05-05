@@ -34,7 +34,63 @@ function asProductLookup(value: unknown): ProductLookup | null {
   return typeof candidate.id === 'string' ? { id: candidate.id, name: candidate.name ?? null, sku: candidate.sku ?? null } : null;
 }
 
-function buildSimplePdf(lines: string[]) {
+type PdfTextItem = {
+  text: string;
+  x: number;
+  y: number;
+  size?: number;
+  bold?: boolean;
+  color?: string;
+};
+
+type PdfBox = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  fill?: string;
+  stroke?: string;
+};
+
+function rgb(hex: string) {
+  const clean = hex.replace('#', '');
+  const n = Number.parseInt(clean, 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  return `${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)}`;
+}
+
+function wrapText(value: string, maxChars: number) {
+  const words = String(value ?? '').split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > maxChars && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length ? lines : [''];
+}
+
+function buildQuotePdf(input: {
+  quoteTitle: string;
+  organizationName: string;
+  customerName: string;
+  contactLine: string;
+  statusLine: string;
+  approvalLine: string;
+  currency: string;
+  rows: QuotePdfLineRow[];
+  subtotal: number;
+  quoteTerms: string;
+  orderTerms: string;
+}) {
   const objects: string[] = [];
   const add = (body: string) => {
     objects.push(body);
@@ -42,16 +98,83 @@ function buildSimplePdf(lines: string[]) {
   };
   const fontId = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
   const boldFontId = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
-  const textOps: string[] = ['BT', '72 760 Td'];
-  lines.slice(0, 42).forEach((line, index) => {
-    const size = index === 0 ? 18 : index < 4 ? 11 : 9;
-    const font = index === 0 ? boldFontId : fontId;
-    textOps.push(`/${index === 0 ? 'F2' : 'F1'} ${size} Tf`);
-    if (index > 0) textOps.push('0 -18 Td');
-    textOps.push(`(${pdfEscape(line)}) Tj`);
-  });
-  textOps.push('ET');
-  const content = textOps.join('\n');
+  const boxes: PdfBox[] = [];
+  const text: PdfTextItem[] = [];
+  const pageW = 612;
+  const margin = 42;
+  let y = 750;
+  const addText = (item: PdfTextItem) => text.push(item);
+  const addBox = (box: PdfBox) => boxes.push(box);
+
+  addBox({ x: margin, y: 688, w: pageW - margin * 2, h: 86, fill: '#0b2e4a' });
+  addText({ text: input.organizationName || 'SETU Flow', x: margin + 18, y: 750, size: 10, bold: true, color: '#ffffff' });
+  addText({ text: input.quoteTitle, x: margin + 18, y: 728, size: 20, bold: true, color: '#ffffff' });
+  addText({ text: `Grand Total ${money(input.subtotal, input.currency)}`, x: 398, y: 728, size: 14, bold: true, color: '#ffffff' });
+  addText({ text: 'Commercial quotation', x: 398, y: 710, size: 9, color: '#ffffff' });
+
+  y = 660;
+  addBox({ x: margin, y: y - 52, w: 252, h: 66, fill: '#f8fafc', stroke: '#dbe4ef' });
+  addText({ text: 'BILL TO', x: margin + 12, y: y, size: 8, bold: true });
+  addText({ text: input.customerName, x: margin + 12, y: y - 16, size: 11, bold: true });
+  addText({ text: input.contactLine, x: margin + 12, y: y - 32, size: 9 });
+  addBox({ x: 330, y: y - 52, w: 240, h: 66, fill: '#f8fafc', stroke: '#dbe4ef' });
+  addText({ text: 'QUOTE STATUS', x: 342, y: y, size: 8, bold: true });
+  addText({ text: input.statusLine, x: 342, y: y - 16, size: 10, bold: true });
+  addText({ text: input.approvalLine, x: 342, y: y - 32, size: 9 });
+
+  y = 580;
+  addBox({ x: margin, y: y - 18, w: pageW - margin * 2, h: 24, fill: '#eaf4ff', stroke: '#dbe4ef' });
+  addText({ text: 'Product / Description', x: margin + 10, y: y - 3, size: 8, bold: true });
+  addText({ text: 'Qty', x: 314, y: y - 3, size: 8, bold: true });
+  addText({ text: 'Unit Price', x: 374, y: y - 3, size: 8, bold: true });
+  addText({ text: 'Total', x: 500, y: y - 3, size: 8, bold: true });
+  y -= 32;
+
+  for (const [index, row] of input.rows.entries()) {
+    if (y < 170) break;
+    const rowHeight = row.reason ? 48 : 36;
+    addBox({ x: margin, y: y - rowHeight + 12, w: pageW - margin * 2, h: rowHeight, fill: index % 2 ? '#ffffff' : '#fbfdff', stroke: '#edf2f7' });
+    addText({ text: `${index + 1}. ${row.name}`, x: margin + 10, y, size: 10, bold: true });
+    if (row.override) addText({ text: 'Quote-only adjusted', x: margin + 10, y: y - 14, size: 8, bold: true });
+    if (row.reason) addText({ text: `Note: ${row.reason}`.slice(0, 76), x: margin + 10, y: y - 28, size: 8 });
+    addText({ text: String(row.qty), x: 314, y, size: 9 });
+    addText({ text: money(row.unit, input.currency), x: 374, y, size: 9 });
+    addText({ text: money(row.total, input.currency), x: 500, y, size: 9, bold: true });
+    y -= rowHeight + 6;
+  }
+
+  addBox({ x: 370, y: y - 36, w: 200, h: 42, fill: '#0b2e4a' });
+  addText({ text: 'Grand total', x: 386, y: y - 10, size: 10, bold: true });
+  addText({ text: money(input.subtotal, input.currency), x: 470, y: y - 10, size: 12, bold: true });
+
+  y -= 74;
+  addText({ text: 'Terms & Conditions', x: margin, y, size: 12, bold: true });
+  y -= 16;
+  for (const line of wrapText(input.quoteTerms, 105).slice(0, 5)) {
+    addText({ text: line, x: margin, y, size: 8 });
+    y -= 11;
+  }
+  addText({ text: 'Order handoff terms', x: margin, y: y - 6, size: 10, bold: true });
+  y -= 22;
+  for (const line of wrapText(input.orderTerms, 105).slice(0, 3)) {
+    addText({ text: line, x: margin, y, size: 8 });
+    y -= 11;
+  }
+  addText({ text: 'Generated by SETU Flow. Review commercial terms, validity, pricing basis, and delivery method before sending.', x: margin, y: 42, size: 8 });
+
+  const ops: string[] = [];
+  for (const box of boxes) {
+    if (box.fill) ops.push(`${rgb(box.fill)} rg ${box.x} ${box.y} ${box.w} ${box.h} re f`);
+    if (box.stroke) ops.push(`${rgb(box.stroke)} RG ${box.x} ${box.y} ${box.w} ${box.h} re S`);
+  }
+  ops.push('BT');
+  for (const item of text) {
+    ops.push(`/${item.bold ? 'F2' : 'F1'} ${item.size ?? 9} Tf`);
+    ops.push(`${rgb(item.color ?? '#0f172a')} rg`);
+    ops.push(`1 0 0 1 ${item.x} ${item.y} Tm (${pdfEscape(item.text)}) Tj`);
+  }
+  ops.push('ET');
+  const content = ops.join('\n');
   const contentId = add(`<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream`);
   const pageId = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontId} 0 R /F2 ${boldFontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
   const pagesId = add(`<< /Type /Pages /Kids [${pageId} 0 R] /Count 1 >>`);
@@ -115,25 +238,27 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     };
   });
   const subtotal = rows.reduce((sum: number, row: QuotePdfLineRow) => sum + row.total, 0);
-  const pdfLines = [
-    `SETU Flow Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
-    `Customer: ${lead?.company_name ?? 'Unknown customer'}`,
-    `Contact: ${lead?.contact_name ?? '-'}  ${lead?.email ?? ''}`,
-    `Status: ${quote.status ?? 'draft'}  Currency: ${currency}  Updated: ${quote.updated_at ? new Date(quote.updated_at).toLocaleDateString('en-US') : '-'}`,
-    `Approval: ${quote.approval_required && !quote.approved_at ? 'Pending approval' : 'Cleared'}`,
-    ' ',
-    'Line items',
-    ...rows.flatMap((row: QuotePdfLineRow, index: number) => [
-      `${index + 1}. ${row.name}`,
-      `   Qty ${row.qty} x ${money(row.unit, currency)} = ${money(row.total, currency)}${row.override ? '  (quote-only adjusted)' : ''}`,
-      row.reason ? `   Note: ${row.reason}` : '',
-    ].filter(Boolean)),
-    ' ',
-    `Grand total: ${money(subtotal, currency)}`,
-    ' ',
-    'Generated by SETU Flow. Review commercial terms and delivery method before sending.',
-  ];
-  const pdf = buildSimplePdf(pdfLines);
+  const { data: organizationTerms } = await db
+    .from('organizations')
+    .select('id, name, quote_terms_conditions, order_terms_conditions')
+    .eq('id', organizationId)
+    .maybeSingle()
+    .then((result: any) => result?.error ? { data: null } : result);
+  const defaultQuoteTerms = 'Prices are valid only within the stated quote validity period. Final shipment, documentation, inspection, and bank charges are subject to agreed Incoterms and written confirmation. Quote-only discounts or markups do not change catalog defaults.';
+  const defaultOrderTerms = 'Orders are released after acceptance, payment term confirmation, and any required internal approval. Packaging, labeling, lead time, and delivery schedule are confirmed before dispatch.';
+  const pdf = buildQuotePdf({
+    quoteTitle: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
+    organizationName: organizationTerms?.name ?? 'SETU Flow',
+    customerName: lead?.company_name ?? 'Unknown customer',
+    contactLine: `${lead?.contact_name ?? '-'}  ${lead?.email ?? ''}`,
+    statusLine: `Status: ${quote.status ?? 'draft'} · Currency: ${currency} · Updated: ${quote.updated_at ? new Date(quote.updated_at).toLocaleDateString('en-US') : '-'}`,
+    approvalLine: `Approval: ${quote.approval_required && !quote.approved_at ? 'Pending approval' : 'Cleared'}`,
+    currency,
+    rows,
+    subtotal,
+    quoteTerms: organizationTerms?.quote_terms_conditions ?? defaultQuoteTerms,
+    orderTerms: organizationTerms?.order_terms_conditions ?? defaultOrderTerms,
+  });
 
   await db.from('documents').upsert({
     organization_id: organizationId,

@@ -852,6 +852,8 @@ export async function updateOrganizationProfile(formData: FormData): Promise<voi
     name,
     default_currency: (normalizeText(formData.get('default_currency')) ?? 'USD').toUpperCase(),
     logo_url: normalizeText(formData.get('logo_url')),
+    quote_terms_conditions: normalizeText(formData.get('quote_terms_conditions')),
+    order_terms_conditions: normalizeText(formData.get('order_terms_conditions')),
     updated_at: new Date().toISOString(),
   };
   await context.supabase.from('organizations').update(payload).eq('id', context.organization.id);

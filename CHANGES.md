@@ -1,3 +1,12 @@
+## 2026-05-05 — V17.6.8 Quote workspace, approval modal, PDF layout, and terms defaults
+
+- Verified live Supabase quote, quote line, organization, document, and lead activity fields before patching.
+- Improved the dependency-light quote PDF route with a more commercial quote layout: branded header, bill-to/status cards, line item table, quote-only adjustment flags, totals, and terms/footer sections. No heavy PDF dependency was added; this keeps the Vercel function bundle small.
+- Added editable organization-level quote and order terms defaults in Admin → Organization, backed by a new additive migration for `quote_terms_conditions` and `order_terms_conditions`.
+- Moved selected quote review in `/quotes?quoteId=...` into a modal-style workspace so the open quote can be reviewed, approved/rejected, PDF-previewed, or handed off without scrolling through the page.
+- Added direct approve and reject/revision forms in the Quotes workspace modal, including a required rejection reason.
+- Kept quote-only discounts/markups isolated to quote line items and preserved product/category/default pricing rules.
+
 ## 2026-05-05 — V17.6.4 Quote approval handler build hotfix
 
 - Verified the live Supabase `quotes` approval fields before patching: `approval_required`, `approved_at`, `approved_by`, and `notes_internal` exist and require no migration.

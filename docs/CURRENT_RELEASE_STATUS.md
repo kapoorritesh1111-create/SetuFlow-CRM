@@ -2,7 +2,7 @@
 
 ## Status
 
-Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, cleaned Admin reference pages, and the V17.6.5 Quote workflow cleanup, approval revision, and PDF preview pass.
+Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, cleaned Admin reference pages, and the V17.6.8 Quote workspace modal, approval revision, PDF layout, and terms defaults pass.
 
 ## Current readiness
 
@@ -16,7 +16,7 @@ Setu Flow CRM is in an upgraded baseline state with public client onboarding, Se
 | Pricing rules | Product-level calculator added | Quote pricing rules remain the commercial SSOT; product records now have additive calculator fields for EXW/FOB/CIF/DDP/Distributor/Retail. V17.3 adds clearer help copy for defaults, category rules, and product overrides. |
 | DCC/reference HTML | Ready | Current internal and reference HTMLs are updated. |
 | Docs | Ready | Active docs are consolidated and current. |
-| Regression tests | Partially verified in sandbox | Typecheck could not complete in this sandbox because dependencies are not installed and `npm ci` was intentionally not run. V17.6.5 continues quote workflow stabilization: toast feedback, hidden queue filters during quote work, approval revision handling, and a dependency-light PDF preview/export route. Typecheck still requires the Vercel dependency install environment because npm ci is not run in sandbox. |
+| Regression tests | Partially verified in sandbox | Typecheck could not complete in this sandbox because dependencies are not installed and `npm ci` was intentionally not run. V17.6.8 continues quote workflow stabilization: quote workspace modal, direct approve/reject forms, improved dependency-light PDF layout, and organization-level quote/order terms defaults. Typecheck still requires the Vercel dependency install environment because npm ci is not run in sandbox. |
 
 ## Test result
 
@@ -24,6 +24,18 @@ Setu Flow CRM is in an upgraded baseline state with public client onboarding, Se
 npm run typecheck
 Blocked: dependencies are not installed in the sandbox, and npm ci was intentionally not run per upgrade constraint.
 ```
+
+
+## V17.6.8 Quote workspace and PDF terms pass
+
+Status: package prepared for Vercel validation.
+
+Highlights:
+- Quotes workspace opens selected quotes in a modal when `quoteId` is present, avoiding page scroll/jump during search and review.
+- Quote approval/rejection can be handled from the Quotes workspace with a rejection reason.
+- PDF export uses an improved built-in PDF generator without adding heavy dependencies.
+- Admin → Organization includes editable quote and order terms defaults.
+- Additive migration added: `20260505_quote_terms_conditions_defaults.sql`.
 
 ## V17.5.1 Add Product pricing unit hotfix
 

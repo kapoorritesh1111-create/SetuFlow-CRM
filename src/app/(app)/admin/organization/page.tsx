@@ -148,6 +148,12 @@ export default async function AdminOrganizationPage() {
           <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 md:col-span-2">Logo URL
             <input name="logo_url" defaultValue={orgProfile.logo_url ?? ''} placeholder="https://..." className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
           </label>
+          <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 md:col-span-2">Default quote terms & conditions
+            <textarea name="quote_terms_conditions" rows={5} defaultValue={orgProfile.quote_terms_conditions ?? 'Prices are valid only within the stated quote validity period. Final shipment, documentation, inspection, and bank charges are subject to agreed Incoterms and written confirmation. Quote-only discounts or markups do not change catalog defaults.'} className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+          </label>
+          <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 md:col-span-2">Default order handoff terms
+            <textarea name="order_terms_conditions" rows={4} defaultValue={orgProfile.order_terms_conditions ?? 'Orders are released after acceptance, payment term confirmation, and any required internal approval. Packaging, labeling, lead time, and delivery schedule are confirmed before dispatch.'} className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+          </label>
           <div className="flex items-end justify-end md:col-span-2">
             <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Save organization profile</button>
           </div>
