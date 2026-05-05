@@ -125,3 +125,12 @@ This pass aligns Quote Preview workflow order with commercial logic: product loc
 ### V17.6.2 quote builder alignment
 
 The quote builder now locks commercial terms before pricing, explains incoterms, shows UOM/MOQ pricing basis, supports quote-only margin/discount adjustments, and routes >15% quote-only deviations to approval before send. No Supabase migration is required for this pass; it uses existing quote approval fields.
+
+## V17.6.3 Quote approval TypeScript schema alignment hotfix
+
+Status: compile hotfix package ready for Vercel validation.
+
+Highlights:
+- Confirmed Supabase `quotes` table has approval workflow fields: `approval_required`, `approved_at`, `approved_by`, and `notes_internal`.
+- Fixed the Vercel-reported TypeScript error in the Lead Follow-up Approval Queue by updating the shared `Quote` type.
+- No migration required; this is an app type alignment fix against the live schema.

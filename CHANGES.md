@@ -165,3 +165,10 @@
 - Added approval queue visibility and an approve action in the Follow-up quote preview flow.
 - Preserved product/category/default pricing rules when quote-only adjustments are made.
 - Updated quote help copy for incoterms, pricing basis, UOM/MOQ, FX reference, and approval handling.
+
+## V17.6.3 — Quote approval TypeScript schema alignment hotfix
+
+- Verified live Supabase `quotes` table includes `approval_required`, `approved_at`, `approved_by`, and `notes_internal` before patching.
+- Updated the shared Leads workspace `Quote` type so Approval Queue UI can safely read quote approval state.
+- Updated the legacy local database `QuoteRow` shape to include current quote workflow fields used by the app.
+- No Supabase migration required.
