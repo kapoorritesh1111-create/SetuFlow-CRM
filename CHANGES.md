@@ -1,3 +1,9 @@
+## 2026-05-05 — V17.6.4 Quote approval handler build hotfix
+
+- Verified the live Supabase `quotes` approval fields before patching: `approval_required`, `approved_at`, `approved_by`, and `notes_internal` exist and require no migration.
+- Fixed the Vercel TypeScript build error where the inline Quote Builder render was missing the required `onApproveQuoteAdjustment` prop.
+- No workflow behavior or database schema changes were made; this is a compile-only wiring fix for the quote approval UI.
+
 ## 2026-05-05 — V17.5.1 Add Product pricing unit hotfix
 
 - Fixed the Vercel TypeScript build error in `add-product-drawer.tsx` caused by referencing a non-existent `form.packSizeUnit` field.

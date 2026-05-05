@@ -1934,6 +1934,7 @@ function InlineLeadWorkspace({
           isInlineActionPending={isInlineActionPending}
           onOpenOrCreateQuote={onOpenOrCreateQuote}
           onRequestQuoteApproval={onRequestQuoteApproval}
+          onApproveQuoteAdjustment={onApproveQuoteAdjustment}
           onMarkDirectOrder={onMarkDirectOrder}
           onOpenCommandCenter={onOpenCommandCenter}
         />
