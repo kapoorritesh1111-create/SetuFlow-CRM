@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -9,9 +7,7 @@ import { BookDemoForm } from '@/components/marketing/book-demo-form';
 type IconName = 'chart' | 'file' | 'alert' | 'bridge' | 'scan' | 'users' | 'quote' | 'shield' | 'ship' | 'globe' | 'package' | 'repeat' | 'search' | 'message' | 'qr' | 'box' | 'database';
 
 type Card = { icon: IconName; title: string; body: string };
-
 type WorkflowStep = Card & { step: string; image: string };
-
 type Frame = { eyebrow: string; title: string; body: string; image: string; alt: string };
 
 const workflow: WorkflowStep[] = [
@@ -74,7 +70,7 @@ const integrations: Card[] = [
   { icon: 'scan', title: 'Smart scan', body: 'Business card, document and PDF capture for fast lead entry.' },
   { icon: 'box', title: 'Product catalog', body: 'Quote-ready products, variants, MOQ, pricing and market coverage.' },
   { icon: 'file', title: 'Export views', body: 'Commercial lists and operational views ready for team review.' },
-  { icon: 'database', title: 'Secure workspace', body: 'Tenant-aware workspace foundation for client operations.' }
+  { icon: 'database', title: 'Secure workspace', body: 'Tenant-aware workspace foundation with role-based access and audit support.' }
 ];
 
 const pricing = [
@@ -82,6 +78,8 @@ const pricing = [
   { name: 'Growth', price: '$499', users: 'Up to 10 users', body: 'For teams running higher volume across markets, products, quotes and execution.', features: ['Everything in Starter', 'Advanced quote and approval flow', 'Orders / execution desk', 'Trade events workspace', 'Catalog and pricing readiness', 'Priority setup support'], cta: 'Book growth demo', featured: true },
   { name: 'Enterprise', price: 'Custom', users: 'Custom users and workflows', body: 'For multi-team trade operations with governance and custom rollout needs.', features: ['Everything in Growth', 'Custom roles and workflow setup', 'Dedicated onboarding', 'Security and audit support', 'Commercial process mapping'], cta: 'Contact sales', featured: false }
 ];
+
+const tradeMarkets = ['🇮🇳 India', '🇦🇪 UAE', '🇩🇪 Germany', '🇿🇦 South Africa', '🇺🇸 United States', '🇬🇧 United Kingdom', '🇵🇱 Poland', '🇸🇬 Singapore'];
 
 function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: string }) {
   const p: Record<IconName, ReactNode> = {
@@ -125,7 +123,9 @@ function Check() {
 export default function HomePage() {
   return (
     <SiteShell>
-      <main className="overflow-hidden bg-white" style={{ fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif' }}>
+      <main className="overflow-hidden bg-white" style={{ fontFamily: "'Plus Jakarta Sans', 'Plus_Jakarta_Sans', var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, sans-serif" }}>
+
+        {/* ─── Hero ─── */}
         <section className="relative overflow-hidden bg-[#061c2e] text-white">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_12%,rgba(53,159,145,0.30),transparent_30%),radial-gradient(circle_at_90%_10%,rgba(12,127,255,0.22),transparent_34%),linear-gradient(135deg,#061c2e_0%,#0b2e4a_60%,#061c2e_100%)]" />
           <div className="absolute inset-0 opacity-[0.11] [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:56px_56px]" />
@@ -134,29 +134,160 @@ export default function HomePage() {
               <div className="inline-flex items-center gap-2 rounded-full border border-[#7de2d2]/24 bg-[#7de2d2]/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7de2d2]"><Icon name="bridge" className="h-4 w-4" /> Trade Execution CRM</div>
               <h1 className="mt-7 max-w-2xl text-5xl font-semibold leading-[0.98] tracking-[-0.055em] sm:text-6xl lg:text-[4.6rem]">Bridge the gap in your business. Shore to shore.</h1>
               <p className="mt-7 max-w-xl text-lg leading-8 text-white/72">From first contact to final shipment, Setu Flow runs your entire trade operation in one calm, connected system.</p>
-              <div className="mt-9 flex flex-col gap-4 sm:flex-row"><a href="#book-demo" className="rounded-full bg-white px-7 py-3.5 text-center text-sm font-semibold text-[#06263f] shadow-[0_22px_60px_rgba(125,226,210,0.20)] transition hover:-translate-y-0.5">Book demo</a><a href="#platform" className="rounded-full border border-white/20 bg-white/10 px-7 py-3.5 text-center text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15">Explore platform</a></div>
-              <div className="mt-8 grid gap-3 text-sm text-white/62 sm:grid-cols-3">{['Built for import-export teams', 'No implementation cycles', 'Operational in days'].map((item) => <div key={item} className="flex items-center gap-2"><Check /><span>{item}</span></div>)}</div>
+              <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+                <a href="#book-demo" className="rounded-full bg-white px-7 py-3.5 text-center text-sm font-semibold text-[#06263f] shadow-[0_22px_60px_rgba(125,226,210,0.20)] transition hover:-translate-y-0.5">Book demo</a>
+                <a href="#platform" className="rounded-full border border-white/20 bg-white/10 px-7 py-3.5 text-center text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15">Explore platform</a>
+              </div>
+              <div className="mt-8 grid gap-3 text-sm text-white/62 sm:grid-cols-3">
+                {['Built for import-export teams', 'No implementation cycles', 'Operational in days'].map((item) => (
+                  <div key={item} className="flex items-center gap-2"><Check /><span>{item}</span></div>
+                ))}
+              </div>
             </div>
-            <div className="relative setu-float setu-reveal setu-delay-1"><div className="absolute -inset-8 rounded-[3rem] bg-[#359F91]/18 blur-3xl" /><div className="relative rounded-[2.5rem] border border-white/14 bg-white/10 p-3 shadow-[0_50px_150px_rgba(0,0,0,0.42)] backdrop-blur-xl lg:rotate-[-1deg]"><div className="rounded-[2rem] border border-white/10 bg-[#eef6fb] p-2"><Image src="/marketing/dashboard-command-center.png" alt="Setu Flow command center dashboard" width={1628} height={1032} priority className="rounded-[1.55rem]" /></div><div className="absolute -left-4 bottom-8 hidden rounded-2xl border border-white/15 bg-[#061c2e]/90 p-4 shadow-2xl backdrop-blur md:block"><p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#7de2d2]">Live pipeline</p><p className="mt-2 text-3xl font-semibold tracking-[-0.04em]">$1.05M</p><p className="mt-1 text-xs text-white/55">weighted commercial view</p></div><div className="absolute -right-5 top-8 hidden rounded-2xl border border-[#7de2d2]/24 bg-[#06263f]/90 p-4 shadow-2xl backdrop-blur lg:block"><p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#7de2d2]">Next best action</p><p className="mt-2 text-base font-semibold">34 follow-ups due</p></div></div></div>
+            <div className="relative setu-float setu-reveal setu-delay-1">
+              <div className="absolute -inset-8 rounded-[3rem] bg-[#359F91]/18 blur-3xl" />
+              <div className="relative rounded-[2.5rem] border border-white/14 bg-white/10 p-3 shadow-[0_50px_150px_rgba(0,0,0,0.42)] backdrop-blur-xl lg:rotate-[-1deg]">
+                <div className="rounded-[2rem] border border-white/10 bg-[#eef6fb] p-2">
+                  <Image src="/marketing/dashboard-command-center.png" alt="Setu Flow command center dashboard" width={1628} height={1032} priority className="rounded-[1.55rem]" />
+                </div>
+                <div className="absolute -left-4 bottom-8 hidden rounded-2xl border border-white/15 bg-[#061c2e]/90 p-4 shadow-2xl backdrop-blur md:block">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#7de2d2]">Live pipeline</p>
+                  <p className="mt-2 text-3xl font-semibold tracking-[-0.04em]">$1.05M</p>
+                  <p className="mt-1 text-xs text-white/55">weighted commercial view</p>
+                </div>
+                <div className="absolute -right-5 top-8 hidden rounded-2xl border border-[#7de2d2]/24 bg-[#06263f]/90 p-4 shadow-2xl backdrop-blur lg:block">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#7de2d2]">Next best action</p>
+                  <p className="mt-2 text-base font-semibold">34 follow-ups due</p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="The problem" title="Your trade operation isn’t broken. Your tools are." body="Buyers do not lose confidence because your team lacks effort. They lose confidence when the system can’t carry a deal from conversation to shipment." /><div className="mx-auto mt-12 grid max-w-7xl gap-5 md:grid-cols-3">{problemCards.map(({ icon, title, body }, index) => <div key={title} className={`rounded-[1.6rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-6 shadow-[0_18px_55px_rgba(31,72,124,0.075)] setu-reveal setu-delay-${index + 1}`}><IconOrb name={icon} /><h3 className="mt-5 text-xl font-semibold tracking-[-0.025em] text-slate-950">{title}</h3><p className="mt-3 text-sm leading-7 text-slate-600">{body}</p></div>)}</div></section>
+        {/* ─── Trust / Market Bar ─── */}
+        <section className="border-b border-[#1F487C]/08 bg-[#f8fbff] px-4 py-7 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <p className="text-center text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Active across trade corridors worldwide</p>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+              {tradeMarkets.map((market) => (
+                <span key={market} className="text-[13px] font-medium text-slate-500">{market}</span>
+              ))}
+            </div>
+          </div>
+        </section>
 
-        <section id="platform" className="bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center"><div className="setu-reveal"><Eyebrow>Category creation</Eyebrow><h2 className="mt-4 text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 sm:text-5xl">This isn’t a CRM. It’s a Trade Execution System.</h2><p className="mt-6 text-lg leading-8 text-slate-600">Generic CRMs were built for pipelines. Trade teams need execution: quotes, approvals, compliance, orders and commercial handoffs in one flow.</p><div className="mt-8 rounded-[1.6rem] border border-[#359F91]/18 bg-white p-5 shadow-[0_18px_55px_rgba(31,72,124,0.08)]"><p className="text-[11px] font-semibold uppercase tracking-[0.20em] text-[#108477]">Conversion insight</p><p className="mt-3 text-lg font-semibold tracking-[-0.02em] text-slate-950">Spreadsheets didn’t break your workflow. CRMs did.</p></div></div><div className="grid gap-4 sm:grid-cols-2 setu-reveal setu-delay-1">{categoryPoints.map(({ icon, text }) => <div key={text} className="flex items-center gap-4 rounded-[1.45rem] border border-[#1F487C]/10 bg-white p-5 shadow-[0_18px_55px_rgba(31,72,124,0.07)]"><IconOrb name={icon} /><p className="text-base font-semibold tracking-[-0.015em] text-slate-950">{text}</p></div>)}</div></div></section>
+        {/* ─── Problem ─── */}
+        <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <SectionTitle
+            eyebrow="The problem"
+            title="Your trade operation isn't broken. Your tools are."
+            body="Buyers do not lose confidence because your team lacks effort. They lose confidence when the system can't carry a deal from conversation to shipment."
+          />
+          <div className="mx-auto mt-12 grid max-w-7xl gap-5 md:grid-cols-3">
+            {problemCards.map(({ icon, title, body }, index) => (
+              <div key={title} className={`rounded-[1.6rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-6 shadow-[0_18px_55px_rgba(31,72,124,0.075)] setu-reveal setu-delay-${index + 1}`}>
+                <IconOrb name={icon} />
+                <h3 className="mt-5 text-xl font-semibold tracking-[-0.025em] text-slate-950">{title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="How it works" title="From chaos to execution — in one flow." body="A simple workflow makes the platform understandable in seconds: Capture → Qualify → Quote → Approve → Execute." /><div className="mx-auto mt-12 grid max-w-7xl gap-4 lg:grid-cols-5">{workflow.map(({ step, icon, title, body, image }, index) => <div key={title} className={`group rounded-[1.6rem] border border-[#1F487C]/10 bg-white p-4 shadow-[0_18px_60px_rgba(31,72,124,0.075)] transition hover:-translate-y-0.5 hover:border-[#359F91]/35 setu-reveal setu-delay-${(index % 4) + 1}`}><div className="flex items-center justify-between gap-3"><IconOrb name={icon} /><span className="rounded-full bg-[#061c2e] px-3 py-1.5 text-[11px] font-semibold tracking-[0.12em] text-[#7de2d2]">{step}</span></div><h3 className="mt-5 text-lg font-semibold tracking-[-0.02em] text-slate-950">{title}</h3><p className="mt-3 min-h-[6.2rem] text-sm leading-6 text-slate-600">{body}</p><div className="mt-4 overflow-hidden rounded-[1.1rem] border border-slate-200 bg-[#eef6fb]"><Image src={image} alt={`${title} workflow view`} width={420} height={280} className="h-32 w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]" /></div></div>)}</div></section>
+        {/* ─── Category / Platform ─── */}
+        <section id="platform" className="bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div className="setu-reveal">
+              <Eyebrow>The difference</Eyebrow>
+              <h2 className="mt-4 text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 sm:text-5xl">This isn&apos;t a CRM. It&apos;s a Trade Execution System.</h2>
+              <p className="mt-6 text-lg leading-8 text-slate-600">Generic CRMs were built for pipelines. Trade teams need execution: quotes, approvals, compliance, orders and commercial handoffs in one flow.</p>
+              <div className="mt-8 rounded-[1.6rem] border border-[#359F91]/18 bg-white p-5 shadow-[0_18px_55px_rgba(31,72,124,0.08)]">
+                <p className="text-lg font-semibold tracking-[-0.02em] text-slate-950">Spreadsheets didn&apos;t break your workflow. CRMs did.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Generic CRMs were never designed for the complexity of trade — FOB pricing, FX exposure, country compliance, and approval chains don&apos;t fit in a standard pipeline.</p>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 setu-reveal setu-delay-1">
+              {categoryPoints.map(({ icon, text }) => (
+                <div key={text} className="flex items-center gap-4 rounded-[1.45rem] border border-[#1F487C]/10 bg-white p-5 shadow-[0_18px_55px_rgba(31,72,124,0.07)]">
+                  <IconOrb name={icon} />
+                  <p className="text-base font-semibold tracking-[-0.015em] text-slate-950">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-        <section className="bg-[#061c2e] px-4 py-14 text-white sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl rounded-[1.8rem] border border-white/10 bg-white/[0.06] p-7 shadow-[0_24px_80px_rgba(0,0,0,0.18)] backdrop-blur setu-reveal"><div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center"><div><p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7de2d2]">Mid-page CTA</p><h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">See how Setu Flow fits your workflow.</h3><p className="mt-3 max-w-2xl text-sm leading-7 text-white/62">Map your current lead, quote and execution process into Setu Flow.</p></div><a href="#book-demo" className="rounded-full bg-white px-7 py-3.5 text-center text-sm font-semibold text-[#06263f] shadow-xl transition hover:-translate-y-0.5">Book demo</a></div></div></section>
+        {/* ─── How it works ─── */}
+        <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <SectionTitle
+            eyebrow="How it works"
+            title="From chaos to execution — in one flow."
+            body="Five steps that any trade team can follow: Capture → Qualify → Quote → Approve → Execute. Every stage connected, every handoff tracked."
+          />
+          <div className="mx-auto mt-12 grid max-w-7xl gap-4 lg:grid-cols-5">
+            {workflow.map(({ step, icon, title, body, image }, index) => (
+              <div key={title} className={`group rounded-[1.6rem] border border-[#1F487C]/10 bg-white p-4 shadow-[0_18px_60px_rgba(31,72,124,0.075)] transition hover:-translate-y-0.5 hover:border-[#359F91]/35 setu-reveal setu-delay-${(index % 4) + 1}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <IconOrb name={icon} />
+                  <span className="rounded-full bg-[#061c2e] px-3 py-1.5 text-[11px] font-semibold tracking-[0.12em] text-[#7de2d2]">{step}</span>
+                </div>
+                <h3 className="mt-5 text-lg font-semibold tracking-[-0.02em] text-slate-950">{title}</h3>
+                <p className="mt-3 min-h-[6.2rem] text-sm leading-6 text-slate-600">{body}</p>
+                <div className="mt-4 overflow-hidden rounded-[1.1rem] border border-slate-200 bg-[#eef6fb]">
+                  <Image src={image} alt={`${title} workflow view`} width={420} height={280} className="h-32 w-full object-cover object-top transition duration-500 group-hover:scale-[1.03]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="Product showcase" title="Premium product proof, not a documentation wall." body="Four focused product billboards show the operational outcomes buyers care about most." /><div className="mx-auto mt-12 grid max-w-7xl gap-6 lg:grid-cols-2">{productFrames.map(({ eyebrow, title, body, image, alt }, index) => <article key={title} className={`rounded-[2rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4 shadow-[0_24px_70px_rgba(31,72,124,0.085)] setu-reveal setu-delay-${(index % 4) + 1}`}><div className="relative"><div className="absolute -inset-3 rounded-[1.8rem] bg-[#359F91]/9 blur-2xl" /><div className="relative rounded-[1.6rem] border border-slate-200 bg-white p-2 shadow-[0_15px_45px_rgba(31,72,124,0.12)]"><Image src={image} alt={alt} width={1628} height={1032} className="rounded-[1.25rem]" /></div></div><div className="p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#108477]">{eyebrow}</p><h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{title}</h3><p className="mt-3 text-sm leading-7 text-slate-600">{body}</p></div></article>)}</div></section>
+        {/* ─── Mid-page CTA ─── */}
+        <section className="bg-[#061c2e] px-4 py-14 text-white sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl rounded-[1.8rem] border border-white/10 bg-white/[0.06] p-7 shadow-[0_24px_80px_rgba(0,0,0,0.18)] backdrop-blur setu-reveal">
+            <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7de2d2]">See it in action</p>
+                <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">See how Setu Flow fits your workflow.</h3>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/62">Map your current lead, quote and execution process into Setu Flow. A 30-minute demo built around your business.</p>
+              </div>
+              <a href="#book-demo" className="rounded-full bg-white px-7 py-3.5 text-center text-sm font-semibold text-[#06263f] shadow-xl transition hover:-translate-y-0.5">Book demo</a>
+            </div>
+          </div>
+        </section>
 
+        {/* ─── Product Frames ─── */}
+        <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <SectionTitle
+            eyebrow="Platform highlights"
+            title="One platform. Every stage of the trade."
+            body="Built for the real workflow of import-export teams — from the first lead to the final shipment, every view is an operational outcome."
+          />
+          <div className="mx-auto mt-12 grid max-w-7xl gap-6 lg:grid-cols-2">
+            {productFrames.map(({ eyebrow, title, body, image, alt }, index) => (
+              <article key={title} className={`rounded-[2rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4 shadow-[0_24px_70px_rgba(31,72,124,0.085)] setu-reveal setu-delay-${(index % 4) + 1}`}>
+                <div className="relative">
+                  <div className="absolute -inset-3 rounded-[1.8rem] bg-[#359F91]/9 blur-2xl" />
+                  <div className="relative rounded-[1.6rem] border border-slate-200 bg-white p-2 shadow-[0_15px_45px_rgba(31,72,124,0.12)]">
+                    <Image src={image} alt={alt} width={1628} height={1032} className="rounded-[1.25rem]" />
+                  </div>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#108477]">{eyebrow}</p>
+                  <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">{body}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── vCard ─── */}
         <section className="overflow-hidden bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
           <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
             <div className="setu-reveal">
               <Eyebrow>Contact Exchange</Eyebrow>
               <h2 className="mt-4 text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 sm:text-5xl">Turn every meeting into a saved contact and a next action.</h2>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">Setu Flow’s shareable vCard is more than a business card. Prospects can scan, save, share, request a quote, book an appointment, or send their details back into your CRM flow.</p>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">Setu Flow's shareable vCard is more than a business card. Prospects can scan, save, share, request a quote, book an appointment, or send their details back into your CRM flow.</p>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {[
                   ['Smart QR opens the public card'],
@@ -181,22 +312,174 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="compare" className="bg-[#061c2e] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="Why Setu Flow wins" title="Where other CRMs stop, your operation still has work to do." body="Generic CRMs were never built for trade execution. This chart should be one of the strongest conversion assets on the page." light /><div className="mx-auto mt-12 max-w-7xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_34px_100px_rgba(0,0,0,0.22)] setu-reveal"><div className="overflow-x-auto"><table className="min-w-[880px] w-full text-left text-sm"><thead><tr className="border-b border-white/10 bg-white/[0.04] text-[10px] uppercase tracking-[0.20em] text-white/45"><th className="px-5 py-5 font-semibold">What you need</th><th className="px-5 py-5 font-semibold">Excel + Email</th><th className="px-5 py-5 font-semibold">HubSpot / Zoho</th><th className="px-5 py-5 font-semibold text-[#7de2d2]">Setu Flow</th></tr></thead><tbody>{comparisonRows.map((row, index) => row[0] === 'section' ? <tr key={`${row[1]}-${index}`} className="border-b border-white/8 bg-white/[0.035]"><td colSpan={4} className="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/30">{row[1]}</td></tr> : <tr key={`${row[0]}-${index}`} className="border-b border-white/8 transition hover:bg-white/[0.04]"><td className="px-5 py-4 font-medium text-white/92">{row[0]}</td><td className="px-5 py-4 text-white/66">{row[1]}</td><td className="px-5 py-4 text-white/66">{row[2]}</td><td className="px-5 py-4 font-semibold text-[#d6fff8]">{row[3]}</td></tr>)}</tbody></table></div></div><div className="mx-auto mt-10 max-w-3xl text-center setu-reveal"><p className="text-lg font-semibold tracking-[-0.02em]">Spreadsheets didn’t break your workflow. CRMs did.</p><a href="#book-demo" className="mt-6 inline-flex rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-[#06263f] shadow-xl transition hover:-translate-y-0.5">See how this works in your workflow →</a></div></section>
+        {/* ─── Comparison ─── */}
+        <section id="compare" className="bg-[#061c2e] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-20">
+          <SectionTitle
+            eyebrow="Why Setu Flow wins"
+            title="Where other CRMs stop, your operation still has work to do."
+            body="Generic CRMs were built for pipelines, not trade. See exactly where Setu Flow covers the execution gap — from FOB pricing to compliance to mobile capture."
+            light
+          />
+          <div className="mx-auto mt-12 max-w-7xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_34px_100px_rgba(0,0,0,0.22)] setu-reveal">
+            <div className="overflow-x-auto">
+              <table className="min-w-[880px] w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/[0.04] text-[10px] uppercase tracking-[0.20em] text-white/45">
+                    <th className="px-5 py-5 font-semibold">What you need</th>
+                    <th className="px-5 py-5 font-semibold">Excel + Email</th>
+                    <th className="px-5 py-5 font-semibold">HubSpot / Zoho</th>
+                    <th className="px-5 py-5 font-semibold text-[#7de2d2]">Setu Flow</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparisonRows.map((row, index) =>
+                    row[0] === 'section' ? (
+                      <tr key={`${row[1]}-${index}`} className="border-b border-white/8 bg-white/[0.035]">
+                        <td colSpan={4} className="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/30">{row[1]}</td>
+                      </tr>
+                    ) : (
+                      <tr key={`${row[0]}-${index}`} className="border-b border-white/8 transition hover:bg-white/[0.04]">
+                        <td className="px-5 py-4 font-medium text-white/92">{row[0]}</td>
+                        <td className="px-5 py-4 text-white/66">{row[1]}</td>
+                        <td className="px-5 py-4 text-white/66">{row[2]}</td>
+                        <td className="px-5 py-4 font-semibold text-[#d6fff8]">{row[3]}</td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="mx-auto mt-10 max-w-3xl text-center setu-reveal">
+            <p className="text-lg font-semibold tracking-[-0.02em]">Spreadsheets didn&apos;t break your workflow. CRMs did.</p>
+            <a href="#book-demo" className="mt-6 inline-flex rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-[#06263f] shadow-xl transition hover:-translate-y-0.5">See how this works in your workflow →</a>
+          </div>
+        </section>
 
-        <section className="bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="Proof points" title="Built for real trade operations." body="Use truthful traction-style signals now, then replace them with customer logos and live metrics as the business grows." /><div className="mx-auto mt-12 grid max-w-7xl gap-4 md:grid-cols-3">{[['15', 'active markets visible in the command center'], ['46', 'sample opportunities flowing through the workspace'], ['$1.05M', 'pipeline value shown in commercial view']].map(([value, label], index) => <div key={label} className={`rounded-[1.6rem] border border-[#1F487C]/10 bg-white p-7 text-center shadow-[0_18px_55px_rgba(31,72,124,0.075)] setu-reveal setu-delay-${index + 1}`}><p className="text-4xl font-semibold tracking-[-0.05em] text-[#06263f]">{value}</p><p className="mx-auto mt-3 max-w-[14rem] text-[11px] font-semibold uppercase leading-5 tracking-[0.16em] text-slate-500">{label}</p></div>)}</div></section>
+        {/* ─── Stats ─── */}
+        <section className="bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <SectionTitle
+            eyebrow="Built to perform"
+            title="Designed for serious trade operations."
+            body="Every number reflects a real capability inside the platform — not a marketing estimate."
+          />
+          <div className="mx-auto mt-12 grid max-w-7xl gap-4 md:grid-cols-3">
+            {[
+              ['< 5 days', 'Average time from onboarding to a team-ready, live workspace'],
+              ['$0', 'Implementation fee — no consultants, no dependency, no contracts required'],
+              ['15+', 'Trade market corridors active in the command center across buyer and supplier flows']
+            ].map(([value, label], index) => (
+              <div key={label} className={`rounded-[1.6rem] border border-[#1F487C]/10 bg-white p-7 text-center shadow-[0_18px_55px_rgba(31,72,124,0.075)] setu-reveal setu-delay-${index + 1}`}>
+                <p className="text-4xl font-semibold tracking-[-0.05em] text-[#06263f]">{value}</p>
+                <p className="mx-auto mt-3 max-w-[16rem] text-[11px] font-semibold uppercase leading-5 tracking-[0.16em] text-slate-500">{label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="Built for" title="Teams that run trade, not just track it." body="Make buyer fit obvious before the pricing section." /><div className="mx-auto mt-12 grid max-w-7xl gap-5 md:grid-cols-2 lg:grid-cols-4">{audiences.map(({ icon, title, body }, index) => <div key={title} className={`rounded-[1.6rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_18px_55px_rgba(31,72,124,0.075)] setu-reveal setu-delay-${index + 1}`}><IconOrb name={icon} /><h3 className="mt-5 text-xl font-semibold tracking-[-0.025em] text-slate-950">{title}</h3><p className="mt-3 text-sm leading-7 text-slate-600">{body}</p></div>)}</div></section>
+        {/* ─── Audiences ─── */}
+        <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <SectionTitle
+            eyebrow="Who it's for"
+            title="Teams that run trade, not just track it."
+            body="Whether you are moving goods across borders or managing a sourcing desk, Setu Flow fits the way trade teams actually work."
+          />
+          <div className="mx-auto mt-12 grid max-w-7xl gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {audiences.map(({ icon, title, body }, index) => (
+              <div key={title} className={`rounded-[1.6rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_18px_55px_rgba(31,72,124,0.075)] setu-reveal setu-delay-${index + 1}`}>
+                <IconOrb name={icon} />
+                <h3 className="mt-5 text-xl font-semibold tracking-[-0.025em] text-slate-950">{title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <section className="bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center"><div className="setu-reveal"><Eyebrow>Mobile</Eyebrow><h2 className="mt-4 text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 sm:text-5xl">Run your trade operation anywhere.</h2><p className="mt-5 text-base leading-8 text-slate-600">Keep mobile concise: dashboard, lead queue and capture. Enough to prove field readiness without overwhelming the page.</p></div><div className="grid grid-cols-3 gap-3 sm:gap-5 setu-reveal setu-delay-1">{[['/marketing/mobile-dashboard.png', 'Mobile dashboard'], ['/marketing/mobile-leads.png', 'Mobile leads'], ['/marketing/mobile-quick-lead.png', 'Mobile quick lead capture']].map(([src, alt], index) => <div key={src} className={`rounded-[1.6rem] border border-[#1F487C]/10 bg-[#061c2e] p-1.5 shadow-[0_22px_70px_rgba(6,28,46,0.22)] setu-float-${index + 1}`}><Image src={src} alt={alt} width={390} height={844} className="rounded-[1.2rem]" /></div>)}</div></div></section>
+        {/* ─── Mobile ─── */}
+        <section className="bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+            <div className="setu-reveal">
+              <Eyebrow>Field ready</Eyebrow>
+              <h2 className="mt-4 text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 sm:text-5xl">Run your trade operation anywhere.</h2>
+              <p className="mt-5 text-base leading-8 text-slate-600">Your team doesn't work at a desk. Setu Flow's mobile workspace gives sales reps, sourcing managers and field staff the same command view — lead queue, quick capture and pipeline action — wherever trade happens.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 sm:gap-5 setu-reveal setu-delay-1">
+              {[
+                ['/marketing/mobile-dashboard.png', 'Mobile dashboard view showing trade KPIs'],
+                ['/marketing/mobile-leads.png', 'Mobile leads queue with urgency and stage context'],
+                ['/marketing/mobile-quick-lead.png', 'Mobile quick lead capture form']
+              ].map(([src, alt], index) => (
+                <div key={src} className={`rounded-[1.6rem] border border-[#1F487C]/10 bg-[#061c2e] p-1.5 shadow-[0_22px_70px_rgba(6,28,46,0.22)] setu-float-${index + 1}`}>
+                  <Image src={src} alt={alt} width={390} height={844} className="rounded-[1.2rem]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-        <section id="integrations" className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="Connection layer" title="Works with how your team operates today." body="This is not a generic logo wall. It highlights the real handoff points Setu Flow supports today." /><div className="mx-auto mt-12 grid max-w-7xl gap-4 md:grid-cols-2 lg:grid-cols-3">{integrations.map(({ icon, title, body }, index) => <div key={title} className={`flex gap-4 rounded-[1.6rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-6 shadow-[0_18px_55px_rgba(31,72,124,0.075)] setu-reveal setu-delay-${index % 4}`}><IconOrb name={icon} /><div><h3 className="text-lg font-semibold tracking-[-0.02em] text-slate-950">{title}</h3><p className="mt-2 text-sm leading-7 text-slate-600">{body}</p></div></div>)}</div></section>
+        {/* ─── Integrations / Connection Layer ─── */}
+        <section id="integrations" className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <SectionTitle
+            eyebrow="Works with your stack"
+            title="Fits how your team already operates."
+            body="Setu Flow connects to the tools and channels your buyers already use — no re-training, no new habits, no integration overhead."
+          />
+          <div className="mx-auto mt-12 grid max-w-7xl gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {integrations.map(({ icon, title, body }, index) => (
+              <div key={title} className={`flex gap-4 rounded-[1.6rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-6 shadow-[0_18px_55px_rgba(31,72,124,0.075)] setu-reveal setu-delay-${index % 4}`}>
+                <IconOrb name={icon} />
+                <div>
+                  <h3 className="text-lg font-semibold tracking-[-0.02em] text-slate-950">{title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <section id="pricing" className="bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><SectionTitle eyebrow="Pricing" title="Start in days. Not months." body="Demo-led, guided setup for serious trade teams. No implementation fee and no consulting dependency." /><div className="mx-auto mt-12 grid max-w-7xl gap-6 lg:grid-cols-3">{pricing.map((plan, index) => <div key={plan.name} className={`relative overflow-hidden rounded-[1.75rem] border bg-white shadow-[0_22px_70px_rgba(31,72,124,0.09)] setu-reveal setu-delay-${index + 1} ${plan.featured ? 'border-[#0c7fff] lg:-translate-y-3' : 'border-[#1F487C]/10'}`}>{plan.featured ? <div className="absolute right-6 top-6 rounded-full bg-[#7de2d2]/15 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7de2d2]">Most popular</div> : null}<div className={plan.featured ? 'bg-[#061c2e] p-7 text-white' : 'bg-white p-7 text-slate-950'}><h3 className="text-2xl font-semibold tracking-[-0.03em]">{plan.name}</h3><p className={plan.featured ? 'mt-3 min-h-[3.5rem] text-sm leading-7 text-white/68' : 'mt-3 min-h-[3.5rem] text-sm leading-7 text-slate-600'}>{plan.body}</p><div className="mt-7 flex items-end gap-2"><span className="text-5xl font-semibold tracking-[-0.06em]">{plan.price}</span>{plan.price !== 'Custom' ? <span className={plan.featured ? 'pb-2 text-sm text-white/55' : 'pb-2 text-sm text-slate-500'}>/ month</span> : null}</div><p className={plan.featured ? 'mt-2 text-sm font-medium text-white/60' : 'mt-2 text-sm font-medium text-slate-500'}>{plan.users}</p></div><div className="p-7"><ul className="space-y-3.5">{plan.features.map((feature) => <li key={feature} className="flex items-start gap-3 text-sm font-medium leading-6 text-slate-700"><Check /><span>{feature}</span></li>)}</ul><a href="#book-demo" className={plan.featured ? 'mt-8 flex rounded-2xl bg-[linear-gradient(135deg,#0c7fff,#0052cc)] px-5 py-3.5 text-center text-sm font-semibold text-white shadow-[0_16px_40px_rgba(12,127,255,0.26)] transition hover:-translate-y-0.5' : 'mt-8 flex rounded-2xl bg-[#eef3f8] px-5 py-3.5 text-center text-sm font-semibold text-[#061c2e] transition hover:-translate-y-0.5 hover:bg-[#e3edf6]'}><span className="mx-auto">{plan.cta} →</span></a></div></div>)}</div><p className="mx-auto mt-8 max-w-3xl text-center text-sm font-medium text-slate-500">All plans include onboarding support and trade workflow setup. Starter supports up to 5 users. Growth supports up to 10 users.</p></section>
+        {/* ─── Pricing ─── */}
+        <section id="pricing" className="bg-[#eef6fb] px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <SectionTitle
+            eyebrow="Pricing"
+            title="Start in days. Not months."
+            body="Demo-led, guided setup for serious trade teams. No implementation fee and no consulting dependency."
+          />
+          <div className="mx-auto mt-12 grid max-w-7xl gap-6 lg:grid-cols-3">
+            {pricing.map((plan, index) => (
+              <div key={plan.name} className={`relative overflow-hidden rounded-[1.75rem] border bg-white shadow-[0_22px_70px_rgba(31,72,124,0.09)] setu-reveal setu-delay-${index + 1} ${plan.featured ? 'border-[#0c7fff] lg:-translate-y-3' : 'border-[#1F487C]/10'}`}>
+                {plan.featured ? <div className="absolute right-6 top-6 rounded-full bg-[#7de2d2]/15 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7de2d2]">Most popular</div> : null}
+                <div className={plan.featured ? 'bg-[#061c2e] p-7 text-white' : 'bg-white p-7 text-slate-950'}>
+                  <h3 className="text-2xl font-semibold tracking-[-0.03em]">{plan.name}</h3>
+                  <p className={plan.featured ? 'mt-3 min-h-[3.5rem] text-sm leading-7 text-white/68' : 'mt-3 min-h-[3.5rem] text-sm leading-7 text-slate-600'}>{plan.body}</p>
+                  <div className="mt-7 flex items-end gap-2">
+                    <span className="text-5xl font-semibold tracking-[-0.06em]">{plan.price}</span>
+                    {plan.price !== 'Custom' ? <span className={plan.featured ? 'pb-2 text-sm text-white/55' : 'pb-2 text-sm text-slate-500'}>/ month</span> : null}
+                  </div>
+                  <p className={plan.featured ? 'mt-2 text-sm font-medium text-white/60' : 'mt-2 text-sm font-medium text-slate-500'}>{plan.users}</p>
+                </div>
+                <div className="p-7">
+                  <ul className="space-y-3.5">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-3 text-sm font-medium leading-6 text-slate-700">
+                        <Check /><span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <a href="#book-demo" className={plan.featured ? 'mt-8 flex rounded-2xl bg-[linear-gradient(135deg,#0c7fff,#0052cc)] px-5 py-3.5 text-center text-sm font-semibold text-white shadow-[0_16px_40px_rgba(12,127,255,0.26)] transition hover:-translate-y-0.5' : 'mt-8 flex rounded-2xl bg-[#eef3f8] px-5 py-3.5 text-center text-sm font-semibold text-[#061c2e] transition hover:-translate-y-0.5 hover:bg-[#e3edf6]'}>
+                    <span className="mx-auto">{plan.cta} →</span>
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mx-auto mt-8 max-w-3xl text-center text-sm font-medium text-slate-500">All plans include onboarding support and trade workflow setup. Starter supports up to 5 users. Growth supports up to 10 users.</p>
+        </section>
 
+        {/* ─── Book Demo ─── */}
         <section id="book-demo" className="bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
           <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start">
             <div className="setu-reveal">
-              <Eyebrow>Contact</Eyebrow>
+              <Eyebrow>Get in touch</Eyebrow>
               <h2 className="mt-4 text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950 sm:text-5xl">Book a guided Setu Flow walkthrough.</h2>
               <p className="mt-5 text-base leading-8 text-slate-600">Tell us about your trade workflow and we will map the demo around your lead capture, quote, approval, order, and vCard needs.</p>
               <div className="mt-6 rounded-[1.5rem] border border-[#1F487C]/10 bg-[#eef6fb] p-5 text-sm leading-6 text-slate-700">
@@ -209,7 +492,20 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="relative overflow-hidden bg-[#061c2e] px-4 py-20 text-white sm:px-6 lg:px-8 lg:py-24"><div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(53,159,145,0.26),transparent_34%),linear-gradient(135deg,#061c2e,#0b2e4a)]" /><div className="relative mx-auto max-w-4xl text-center setu-reveal"><p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7de2d2]">Ready to move</p><h2 className="mt-5 text-4xl font-semibold leading-[1.06] tracking-[-0.045em] sm:text-6xl">Run your entire trade operation in one flow.</h2><p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/68">Bring capture, follow-ups, quotes, approvals and execution into the same command layer.</p><div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row"><a href="#book-demo" className="rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-[#06263f] shadow-xl transition hover:-translate-y-0.5">Book demo</a><Link href="/client-login" className="rounded-full border border-white/20 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15">Enter workspace</Link></div></div></section>
+        {/* ─── Final CTA ─── */}
+        <section className="relative overflow-hidden bg-[#061c2e] px-4 py-20 text-white sm:px-6 lg:px-8 lg:py-24">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(53,159,145,0.26),transparent_34%),linear-gradient(135deg,#061c2e,#0b2e4a)]" />
+          <div className="relative mx-auto max-w-4xl text-center setu-reveal">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7de2d2]">Ready to move</p>
+            <h2 className="mt-5 text-4xl font-semibold leading-[1.06] tracking-[-0.045em] sm:text-6xl">Run your entire trade operation in one flow.</h2>
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/68">Bring capture, follow-ups, quotes, approvals and execution into the same command layer.</p>
+            <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
+              <a href="#book-demo" className="rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-[#06263f] shadow-xl transition hover:-translate-y-0.5">Book demo</a>
+              <Link href="/client-login" className="rounded-full border border-white/20 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15">Enter workspace</Link>
+            </div>
+          </div>
+        </section>
+
       </main>
     </SiteShell>
   );
