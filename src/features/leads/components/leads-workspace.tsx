@@ -84,7 +84,7 @@ type QuoteVersion = { id: string; quote_id: string | null; version_no?: number |
 type ComplianceItem = { id: string; lead_id: string; compliance_item_id: string; status: string; created_at: string; submitted_at: string | null; approved_at: string | null };
 type ComplianceDefinition = { id: string; code: string; description: string };
 type LeadDocument = { id: string; related_entity?: string | null; related_id?: string | null; requirement_code: string | null; status: string | null; expires_at: string | null; uploaded_at?: string | null; doc_type?: string | null; file_name?: string | null; linked_quote_id?: string | null; source_related_entity?: string | null; review_notes?: string | null };
-type Variant = { id: string; name: string; product_id: string };
+type Variant = { id: string; name: string; product_id: string; sku_code?: string | null; pack_label?: string | null; pack_size_value?: number | null; pack_size_unit?: string | null; units_per_case?: number | null; moq_cases?: number | null; moq_kg?: number | null; pricing_mode_default?: string | null };
 type Price = { id: string; product_variant_id: string; market_id: string | null; price: number; currency: string; effective_from: string; effective_to: string | null };
 type PricingRule = { id: string; product_id?: string | null; product_variant_id?: string | null; effective_from?: string | null; effective_to?: string | null; ex_factory_usd?: number | null; fob_usd?: number | null; ex_factory_inr?: number | null; fob_inr?: number | null; ex_factory_usd_per_case?: number | null; ex_factory_usd_per_unit?: number | null; fob_usd_per_case?: number | null; fob_usd_per_unit?: number | null; bulk_usd_per_kg?: number | null; pricing_type?: string | null; product_name?: string | null; sku_code?: string | null };
 type FormState = { error?: string; success?: string };
@@ -93,6 +93,50 @@ type SortMode = 'follow-up' | 'created' | 'company' | 'health';
 type DrawerMode = 'quick' | 'full';
 type QuotePreviewSavePayload = { currency: string; lines: Array<{ id?: string; productId: string | null; productVariantId?: string | null; quantity: number; unitPrice: number | null; currency: string; catalogPriceAmount?: number | null; catalogPriceCurrency?: string | null; notes?: string | null; source?: string | null }> };
 type LeadOpenStep = 'basics' | 'workflow' | 'coverage' | 'quotes';
+
+
+const COUNTRY_CURRENCY: Record<string, string> = {
+  unitedstates: 'USD', usa: 'USD', us: 'USD', canada: 'CAD', mexico: 'MXN',
+  india: 'INR', unitedkingdom: 'GBP', uk: 'GBP', britain: 'GBP', england: 'GBP',
+  germany: 'EUR', france: 'EUR', italy: 'EUR', spain: 'EUR', netherlands: 'EUR', belgium: 'EUR',
+  japan: 'JPY', china: 'CNY', singapore: 'SGD', australia: 'AUD', newzealand: 'NZD',
+  ua: 'UAH', ukraine: 'UAH', uae: 'AED', unitedarabemirates: 'AED', saudiarabia: 'SAR',
+  qatar: 'QAR', kuwait: 'KWD', oman: 'OMR', bahrain: 'BHD', southafrica: 'ZAR',
+};
+
+function countryCurrency(country?: string | null) {
+  const key = String(country ?? '').toLowerCase().replace(/[^a-z]/g, '');
+  return COUNTRY_CURRENCY[key] ?? null;
+}
+
+function uniqueCurrencyOptions(...values: Array<string | null | undefined>) {
+  const defaults = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'JPY'];
+  const seen = new Set<string>();
+  return [...values, ...defaults]
+    .map((value) => String(value ?? '').trim().toUpperCase())
+    .filter((value) => value && !seen.has(value) && seen.add(value));
+}
+
+function variantPricingUnit(variant?: Variant | null) {
+  const mode = String(variant?.pricing_mode_default ?? '').trim().toLowerCase();
+  if (mode === 'kg' || mode === 'bulk') return 'kg';
+  if (mode === 'unit') return 'unit';
+  return 'case';
+}
+
+function variantPackSummary(variant?: Variant | null) {
+  if (!variant) return 'Catalog basis';
+  const packSize = variant.pack_size_value ? `${variant.pack_size_value} ${variant.pack_size_unit ?? ''}`.trim() : null;
+  const units = variant.units_per_case ? `${variant.units_per_case} units/case` : null;
+  return [packSize, units, variant.pack_label].filter(Boolean).join(' · ') || variant.name;
+}
+
+function defaultQuoteQuantity(variant?: Variant | null) {
+  const basis = variantPricingUnit(variant);
+  if (basis === 'kg') return Number(variant?.moq_kg ?? 0) > 0 ? Number(variant?.moq_kg) : 1;
+  if (basis === 'case') return Number(variant?.moq_cases ?? 0) > 0 ? Number(variant?.moq_cases) : 1;
+  return 1;
+}
 
 type SignalTone = 'slate' | 'blue' | 'emerald' | 'amber' | 'rose' | 'violet';
 type IconComponent = (props: SVGProps<SVGSVGElement>) => JSX.Element;
@@ -2380,7 +2424,7 @@ function InlineQuoteBuilder({
 }) {
   const [builderStep, setBuilderStep] = React.useState(1);
   const [directOrderNote, setDirectOrderNote] = React.useState('');
-  const steps = ['Product', 'Pricing', 'Terms', 'Review', 'Send gate'];
+  const steps = ['Product', 'Terms', 'Pricing', 'Review', 'Send gate'];
   const latestQuote = [...quotes].sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
   const latestVersion = latestQuote ? quoteVersions.filter((v) => v.quote_id === latestQuote.id).sort((a, b) => Number(b.version_no ?? 0) - Number(a.version_no ?? 0))[0] : null;
   type DisplayLine = {
@@ -2398,10 +2442,15 @@ function InlineQuoteBuilder({
     source: 'quote' | 'rfq' | 'coverage';
     priceStatus: 'priced' | 'missing';
     note?: string | null;
+    pricingBasis?: string | null;
+    uomLabel?: string | null;
+    moqLabel?: string | null;
+    packSummary?: string | null;
   };
 
   const productNameMap = React.useMemo(() => new Map(products.map((product) => [product.id, product.name])), [products]);
   const variantNameMap = React.useMemo(() => new Map(variants.map((variant) => [variant.id, variant.name])), [variants]);
+  const variantDetailMap = React.useMemo(() => new Map(variants.map((variant) => [variant.id, variant])), [variants]);
   const marketNameMap = React.useMemo(() => new Map(markets.map((market) => [market.id, market.name])), [markets]);
 
   const quoteItems = React.useMemo(() => latestQuote?.lineItems ?? [], [latestQuote?.lineItems]);
@@ -2411,8 +2460,9 @@ function InlineQuoteBuilder({
   const baseDisplayLines = React.useMemo<DisplayLine[]>(() => {
     if (sourceItems.length) {
       return sourceItems.map((item) => {
-        const qty = Number(item.quantity ?? 1) || 1;
         const variantIds = new Set(variants.filter((variant) => variant.product_id === item.product_id).map((variant) => variant.id));
+        const lineVariant = (item.product_variant_id ? variantDetailMap.get(item.product_variant_id) : null) ?? variants.find((variant) => variant.product_id === item.product_id) ?? null;
+        const qty = Number(item.quantity ?? defaultQuoteQuantity(lineVariant)) || 1;
         const fallbackPrice = prices.find((price) => variantIds.has(price.product_variant_id));
         const fallbackRule = pricingRules.find((rule) => rule.product_id === item.product_id || (rule.product_variant_id && variantIds.has(rule.product_variant_id)));
         const rulePrice = fallbackRule ? fallbackRule.fob_usd_per_case ?? fallbackRule.fob_usd_per_unit ?? fallbackRule.ex_factory_usd_per_case ?? fallbackRule.ex_factory_usd_per_unit ?? fallbackRule.bulk_usd_per_kg ?? fallbackRule.fob_usd ?? fallbackRule.ex_factory_usd ?? fallbackRule.fob_inr ?? fallbackRule.ex_factory_inr ?? null : null;
@@ -2434,6 +2484,10 @@ function InlineQuoteBuilder({
           source: quoteItems.length ? 'quote' : 'rfq',
           priceStatus: unitPrice != null && unitPrice > 0 ? 'priced' : 'missing',
           note: item.notes ?? null,
+          pricingBasis: variantPricingUnit(lineVariant),
+          uomLabel: variantPricingUnit(lineVariant),
+          moqLabel: variantPricingUnit(lineVariant) === 'kg' ? `${lineVariant?.moq_kg ?? 1} kg MOQ` : variantPricingUnit(lineVariant) === 'case' ? `${lineVariant?.moq_cases ?? 1} cases MOQ` : '1 unit MOQ',
+          packSummary: variantPackSummary(lineVariant),
         };
       });
     }
@@ -2465,26 +2519,32 @@ function InlineQuoteBuilder({
         : null;
       const unitPrice = selectedPrice ? Number(selectedPrice.price) : rulePrice == null ? null : Number(rulePrice);
       const lineCurrency = selectedPrice?.currency ?? (selectedRule?.fob_inr || selectedRule?.ex_factory_inr ? 'INR' : latestQuote?.currency ?? lead.deal_currency ?? 'USD');
-      const variantLabel = selectedPrice ? variantNameMap.get(selectedPrice.product_variant_id) ?? productVariants[0]?.name ?? null : productVariants[0]?.name ?? null;
+      const selectedVariant = (selectedPrice ? variantDetailMap.get(selectedPrice.product_variant_id) : null) ?? productVariants[0] ?? null;
+      const variantLabel = selectedVariant ? variantNameMap.get(selectedVariant.id) ?? selectedVariant.name ?? null : null;
       const marketLabel = selectedPrice?.market_id ? marketNameMap.get(selectedPrice.market_id) : selectedMarketNames[0];
+      const quantity = defaultQuoteQuantity(selectedVariant);
       return {
         id: `coverage-${productId}`,
         productId,
         productLabel: productLabel || 'Mapped product',
-        productVariantId: selectedPrice?.product_variant_id ?? productVariants[0]?.id ?? null,
+        productVariantId: selectedVariant?.id ?? null,
         variantLabel,
         catalogPriceAmount: unitPrice,
         catalogPriceCurrency: String(lineCurrency ?? 'USD'),
-        quantity: 1,
+        quantity,
         unitPrice,
         currency: String(lineCurrency ?? 'USD'),
-        total: unitPrice == null ? 0 : unitPrice,
+        total: unitPrice == null ? 0 : quantity * unitPrice,
         source: 'coverage',
         priceStatus: unitPrice != null && unitPrice > 0 ? 'priced' : 'missing',
         note: unitPrice == null ? `No catalog price found${marketLabel ? ` for ${marketLabel}` : ''}. Create/open draft preview creates the quote shell; fill price in saved quote workflow.` : `Catalog/reference price${marketLabel ? ` for ${marketLabel}` : ''}.`,
+        pricingBasis: variantPricingUnit(selectedVariant),
+        uomLabel: variantPricingUnit(selectedVariant),
+        moqLabel: variantPricingUnit(selectedVariant) === 'kg' ? `${selectedVariant?.moq_kg ?? 1} kg MOQ` : variantPricingUnit(selectedVariant) === 'case' ? `${selectedVariant?.moq_cases ?? 1} cases MOQ` : '1 unit MOQ',
+        packSummary: variantPackSummary(selectedVariant),
       };
     });
-  }, [lead.deal_currency, latestQuote?.currency, marketNameMap, prices, pricingRules, productNameMap, quoteItems.length, selectedMarketIds, selectedMarketNames, selectedProductIds, selectedProductNames, sourceItems, variantNameMap, variants]);
+  }, [lead.deal_currency, latestQuote?.currency, marketNameMap, prices, pricingRules, productNameMap, quoteItems.length, selectedMarketIds, selectedMarketNames, selectedProductIds, selectedProductNames, sourceItems, variantDetailMap, variantNameMap, variants]);
 
   const [editableLines, setEditableLines] = React.useState<DisplayLine[]>(baseDisplayLines);
   const [termsCurrency, setTermsCurrency] = React.useState(latestQuote?.currency ?? baseDisplayLines.find((item) => item.currency)?.currency ?? lead.deal_currency ?? 'USD');
@@ -2494,6 +2554,8 @@ function InlineQuoteBuilder({
   const [quoteValidityDays, setQuoteValidityDays] = React.useState('30');
   const [portOfLoading, setPortOfLoading] = React.useState('');
   const [deliveryNotes, setDeliveryNotes] = React.useState('');
+  const localCurrency = countryCurrency(lead.country);
+  const currencyOptions = React.useMemo(() => uniqueCurrencyOptions(termsCurrency, localCurrency, lead.deal_currency, baseDisplayLines.find((item) => item.currency)?.currency), [baseDisplayLines, lead.deal_currency, localCurrency, termsCurrency]);
 
   React.useEffect(() => {
     setEditableLines(baseDisplayLines);
@@ -2543,16 +2605,16 @@ function InlineQuoteBuilder({
   const validateStepAdvance = React.useCallback(() => {
     if (builderStep === 0 && !selectedProductIds.length && !displayLines.length) return 'Select at least one product before pricing.';
     if (builderStep === 1) {
-      if (!displayLines.length) return 'Add at least one priced line before continuing to terms.';
+      if (!termsCurrency.trim()) return 'Select a quote currency before pricing.';
+      if (!termsIncoterm.trim()) return 'Select an incoterm before pricing.';
+      if (!paymentTerms.trim()) return 'Add payment terms before pricing.';
+      if (!quoteValidityDays.trim()) return 'Add quote validity before pricing.';
+    }
+    if (builderStep === 2) {
+      if (!displayLines.length) return 'Add at least one priced line before continuing to review.';
       if (displayLines.some((line) => !line.productId)) return 'Every quote line needs a mapped product before continuing.';
       if (displayLines.some((line) => !line.quantity || line.quantity <= 0)) return 'Every quote line needs a quantity above zero.';
       if (displayLines.some((line) => line.unitPrice == null || line.unitPrice <= 0)) return 'Every quote line needs a unit price above zero.';
-    }
-    if (builderStep === 2) {
-      if (!termsCurrency.trim()) return 'Select a quote currency before review.';
-      if (!termsIncoterm.trim()) return 'Select an incoterm before review.';
-      if (!paymentTerms.trim()) return 'Add payment terms before review.';
-      if (!quoteValidityDays.trim()) return 'Add quote validity before review.';
     }
     return null;
   }, [builderStep, displayLines, paymentTerms, quoteValidityDays, selectedProductIds.length, termsCurrency, termsIncoterm]);
@@ -2629,8 +2691,8 @@ function InlineQuoteBuilder({
         <div className="rounded-[6px] border-l-[3px] border-[#0c7fff] bg-[#f8fafc] px-[12px] py-[8px] text-[11px] leading-[1.6] text-[#64748b]">
           <strong className="text-[#1e293b]">Step {builderStep + 1} — {steps[builderStep]}:</strong>{' '}
           {builderStep === 0 ? 'Confirm the product or category promise before pricing starts.' :
-           builderStep === 1 ? 'Build the quote line by line. Catalog baseline prices pre-fill from your reference pricing. Overrides above 10% require manager approval before send.' :
-           builderStep === 2 ? 'Lock currency, incoterm, payment terms, port context, and quote validity.' :
+           builderStep === 1 ? 'Lock the quote basis first: currency, incoterm, payment terms, port context, validity, and FX reference.' :
+           builderStep === 2 ? 'Build pricing lines after the commercial basis is known. Quantities follow the product UOM, pack size, and MOQ.' :
            builderStep === 3 ? 'Review pricing, compliance, and document posture before release.' :
            'Send only after blockers, approval posture, and audit records are clear.'}
         </div>
@@ -2645,7 +2707,7 @@ function InlineQuoteBuilder({
             <div>
               <div className="text-[9px] font-bold uppercase tracking-[.18em] text-[#0c7fff]">Step {builderStep + 1} — {steps[builderStep]}</div>
               <div className="text-[14px] font-bold text-[#0f172a]">
-                {builderStep === 0 ? 'Product & buyer lock' : builderStep === 1 ? 'Build pricing lines' : builderStep === 2 ? 'Set commercial terms' : builderStep === 3 ? 'Review quote package' : 'Approve and send safely'}
+                {builderStep === 0 ? 'Product & buyer lock' : builderStep === 1 ? 'Set commercial terms' : builderStep === 2 ? 'Build pricing lines' : builderStep === 3 ? 'Review quote package' : 'Approve and send safely'}
               </div>
             </div>
             <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
@@ -2671,12 +2733,13 @@ function InlineQuoteBuilder({
                   )) : <div className="text-[11px] text-[#94a3b8]">No products mapped yet</div>}
                 </div>
               </div>
-            ) : builderStep === 1 ? (
+            ) : builderStep === 2 ? (
               <div className="space-y-3">
                 <table className="w-full border-collapse text-[12px]">
                   <thead>
                     <tr className="bg-[#f8fafc] text-left text-[9px] font-extrabold uppercase tracking-[.12em] text-[#94a3b8]">
                       <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Product</th>
+                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Price basis</th>
                       <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Qty</th>
                       <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Unit price</th>
                       <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Total</th>
@@ -2689,13 +2752,14 @@ function InlineQuoteBuilder({
                       return (
                         <tr key={item.id} className="border-t border-[#f1f5f9] hover:bg-[#f8fafc]">
                           <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.productLabel}</div><div className="mt-1 text-[10px] text-[#64748b]">{item.variantLabel ? `${item.variantLabel} · ` : ''}{item.source === 'coverage' ? 'coverage/catalog fallback' : item.source === 'rfq' ? 'RFQ line' : 'quote draft line'}</div>{item.note ? <div className="mt-1 text-[10px] text-[#94a3b8]">{item.note}</div> : null}</td>
+                          <td className="px-[10px] py-[10px] text-[10px] text-[#475569]"><div className="font-extrabold uppercase tracking-[.08em] text-[#0f172a]">{item.pricingBasis ?? 'case'}</div><div>{item.packSummary ?? 'Pack not set'}</div><div>{item.moqLabel ?? 'MOQ not set'}</div></td>
                           <td className="px-[10px] py-[10px]"><input title="Quantity updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[68px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-center text-[12px] font-semibold text-[#0f172a] outline-none" value={qty} onChange={(event) => updateEditableLine(item.id, 'quantity', event.target.value)} /></td>
                           <td className="px-[10px] py-[10px]"><input title="Unit price updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[90px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px_7px] text-right text-[12px] font-bold text-[#0f172a] outline-none" value={price ?? ''} onChange={(event) => updateEditableLine(item.id, 'unitPrice', event.target.value)} placeholder="Price" /></td>
                           <td className="px-[10px] py-[10px] font-bold text-[#0f172a]">{item.currency} {formatPreviewAmount(item.total)}</td>
                         </tr>
                       );
                     }) : (
-                      <tr><td colSpan={4} className="px-[10px] py-[24px] text-center text-[12px] text-[#94a3b8]">No quote lines yet. Map products in Coverage or create/open a quote draft.</td></tr>
+                      <tr><td colSpan={5} className="px-[10px] py-[24px] text-center text-[12px] text-[#94a3b8]">No quote lines yet. Map products in Coverage or create/open a quote draft.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -2711,13 +2775,14 @@ function InlineQuoteBuilder({
                   <div className="rounded-[6px] border border-[#fde68a] bg-[#fffbeb] p-[9px_13px] text-[11px] leading-[1.55] text-[#92400e]">⚠ Pricing override detected — overrides above 10% require manager approval before send.</div>
                 ) : null}
               </div>
-            ) : builderStep === 2 ? (
+            ) : builderStep === 1 ? (
               <div className="grid grid-cols-2 gap-[10px]">
                 <div className="flex flex-col gap-[4px]">
                   <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Currency</label>
                   <select className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={termsCurrency} onChange={(event) => setTermsCurrency(event.target.value)}>
-                    {['USD', 'EUR', 'GBP', 'INR', 'CAD', 'JPY'].map((option) => <option key={option}>{option}</option>)}
+                    {currencyOptions.map((option) => <option key={option}>{option}</option>)}
                   </select>
+                  <p className="text-[10px] leading-[1.45] text-[#64748b]">Lead country currency {localCurrency ?? 'not mapped'} is included when available. Use quote validity days to lock the weekly average FX reference for this quote.</p>
                 </div>
                 <div className="flex flex-col gap-[4px]">
                   <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Incoterm</label>

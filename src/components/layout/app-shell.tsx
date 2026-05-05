@@ -109,11 +109,13 @@ function getShellHelp(pathname: string, fallbackDescription: string): { title: s
     ],
   };
   if (pathname.startsWith('/leads')) return {
-    title: 'Follow-up help',
-    intro: 'Use Follow-up for buyer/supplier qualification, product interest, next steps, and moving work toward quotes.',
+    title: 'Follow-up and Quote Builder help',
+    intro: 'Use Follow-up to qualify the buyer or supplier, map product interest, and build a governed quote preview without changing product defaults.',
     sections: [
+      { title: 'Quote Builder order', body: 'Lock commercial terms first: currency, incoterm, payment terms, port context, validity days, and FX reference. Then price the line items using the selected product UOM, pack size, and MOQ.' },
+      { title: 'Pricing basis', body: 'Each quote line should show whether it is priced per unit, per case, or per kg/bulk. Quantity should follow the product variant MOQ and pack setup.' },
+      { title: 'Currency and FX', body: 'The quote currency can use the lead country currency when mapped. Weekly average FX should be treated as a quote reference for the selected validity period.' },
       { title: 'Quick Lead', body: 'Quick Lead stays fast and should not require extra help clicks or confirmation steps.' },
-      { title: 'CTAs', body: 'Use follow-up actions to capture next contact, update qualification, map products, or prepare quote work.' },
     ],
   };
   if (pathname.startsWith('/quotes')) return {

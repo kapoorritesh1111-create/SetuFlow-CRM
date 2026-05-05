@@ -117,3 +117,7 @@ Status: implementation package prepared for Vercel validation.
 - Quick Lead remains frictionless and does not receive additional help/confirmation steps.
 
 No `npm ci` was run in the sandbox.
+
+### V17.6.1 Quote Builder workflow alignment
+
+This pass aligns Quote Preview workflow order with commercial logic: product lock -> terms/currency/incoterm/validity -> pricing lines. Pricing lines now surface variant UOM, pack, MOQ, and pricing basis so users know whether the quantity/price is by case, unit, or kg/bulk before editing line price. No Supabase migration is required; the patch uses existing `product_variants` fields verified in Supabase (`pack_size_value`, `pack_size_unit`, `units_per_case`, `moq_cases`, `moq_kg`, `pricing_mode_default`).

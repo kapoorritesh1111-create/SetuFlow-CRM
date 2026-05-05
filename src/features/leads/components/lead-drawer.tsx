@@ -72,7 +72,7 @@ type Product = {
   sku: string | null;
   category_id: string | null;
 };
-type Variant = { id: string; name: string; product_id: string };
+type Variant = { id: string; name: string; product_id: string; sku_code?: string | null; pack_label?: string | null; pack_size_value?: number | null; pack_size_unit?: string | null; units_per_case?: number | null; moq_cases?: number | null; moq_kg?: number | null; pricing_mode_default?: string | null };
 type Price = {
   id: string;
   product_variant_id: string;

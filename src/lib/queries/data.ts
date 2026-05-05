@@ -2600,7 +2600,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     supabase.from('compliance_checklist_items').select('id, code, description').order('created_at', { ascending: false }),
     supabase.from('documents').select('id, related_entity, related_id, file_name, doc_type, status, uploaded_at, uploaded_by, reviewer_user_id, reviewed_at, review_notes, expires_at, version, version_label, requirement_code').eq('organization_id', organizationId).eq('related_entity', 'lead').eq('related_id', leadId).order('uploaded_at', { ascending: false }),
     supabase.from('document_requirement_rules').select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, applies_to_entity, is_mandatory, is_active').eq('organization_id', organizationId).eq('is_active', true).order('progression_scope', { ascending: true }),
-    supabase.from('product_variants').select('id, name, product_id, is_quoteable, units_per_case, pricing_mode_default, sku_code, pack_label, moq_cases, moq_kg, products!inner(organization_id)').eq('products.organization_id', organizationId).order('created_at', { ascending: false }).limit(PRODUCT_VARIANTS_QUERY_LIMIT),
+    supabase.from('product_variants').select('id, name, product_id, is_quoteable, units_per_case, pricing_mode_default, sku_code, pack_label, pack_size_value, pack_size_unit, moq_cases, moq_kg, products!inner(organization_id)').eq('products.organization_id', organizationId).order('created_at', { ascending: false }).limit(PRODUCT_VARIANTS_QUERY_LIMIT),
     Promise.resolve({ data: [], error: null }),
     Promise.resolve({ data: [], error: null }),
     (supabase as any)

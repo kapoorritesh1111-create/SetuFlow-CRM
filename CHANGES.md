@@ -148,3 +148,11 @@
 - Expanded save/error notification behavior from selected pages to the app shell: any authenticated route using `?notice=` now receives a floating toast notification instead of an inline banner.
 - Added handoff toast support for routed workflow transitions such as Dashboard → Follow-up, Capture → Follow-up, and Quote/Approval → Orders.
 - Updated toast dismissal so clicking outside the toast clears the notification, while Quick Lead remains a direct quick-entry action without extra help or confirmation clicks.
+
+## V17.6.1 — Quote Builder workflow order, UOM, and FX clarity
+
+- Reordered inline Lead Quote Preview steps so commercial Terms are locked before Pricing.
+- Added quote-line pricing basis display for UOM/pack/MOQ context before quantity and unit price edits.
+- Enriched lead quote variant data with pack size/unit, pack label, MOQ, and pricing mode defaults from Supabase-backed product variants.
+- Added lead-country currency candidate to the Quote Terms currency selector when it can be mapped.
+- Updated Follow-up Help to describe the current Quote Builder workflow, pricing basis, UOM/MOQ handling, quote-only adjustments, and FX reference behavior.
