@@ -156,3 +156,9 @@ Highlights:
 - Opening Quote Preview scrolls to the quote workspace so the operator can see the active editor immediately.
 - Approval flow now requires saving quote-only discounts/markups before approval, includes an approval action, and adds a reject/request-revision action with a required reason.
 - Quote PDF preview/export now uses a lightweight built-in PDF response route and updates the Documents table with a quote PDF pointer. No new npm dependency was added.
+
+### V17.6.6 quote PDF product typing hotfix
+
+- Build hotfix for `src/app/api/quotes/[quoteId]/pdf/route.ts`.
+- Supabase schema listing confirms `products.id`, `products.name`, and legacy `products.sku` exist.
+- No new migration required.

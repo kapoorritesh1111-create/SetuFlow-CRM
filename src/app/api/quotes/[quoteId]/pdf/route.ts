@@ -12,6 +12,19 @@ function pdfEscape(value: string) {
   return value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[\r\n]+/g, ' ');
 }
 
+
+type ProductLookup = {
+  id: string;
+  name?: string | null;
+  sku?: string | null;
+};
+
+function asProductLookup(value: unknown): ProductLookup | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as Partial<ProductLookup>;
+  return typeof candidate.id === 'string' ? { id: candidate.id, name: candidate.name ?? null, sku: candidate.sku ?? null } : null;
+}
+
 function buildSimplePdf(lines: string[]) {
   const objects: string[] = [];
   const add = (body: string) => {
@@ -73,7 +86,11 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
   const { data: products } = productIds.length
     ? await db.from('products').select('id, name, sku').eq('organization_id', organizationId).in('id', productIds)
     : { data: [] };
-  const productMap = new Map((products ?? []).map((product: any) => [product.id, product]));
+  const productMap = new Map<string, ProductLookup>();
+  (products ?? []).forEach((product: unknown) => {
+    const normalized = asProductLookup(product);
+    if (normalized) productMap.set(normalized.id, normalized);
+  });
   const currency = String(quote.display_currency ?? quote.currency ?? 'USD');
   const rows = (lineItems ?? []).map((line: any) => {
     const product = productMap.get(line.product_id);

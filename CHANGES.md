@@ -189,3 +189,9 @@
 - Added quote PDF preview/export route without adding a new heavy PDF dependency; the route creates a valid PDF response and records a quote document pointer.
 - Updated Quotes workspace export action to open the generated PDF for the selected quote.
 
+
+## V17.6.6 - quote PDF product typing hotfix
+
+- Verified Supabase product columns through the schema listing before changing the PDF route.
+- Typed quote PDF product lookup rows defensively so Vercel does not infer joined product rows as `{}`.
+- No Supabase migration required.
