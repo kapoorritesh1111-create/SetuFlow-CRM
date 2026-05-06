@@ -43,6 +43,22 @@ function UserAvatar({ row, size = 'md' }: { row: AdminUserRow; size?: 'sm' | 'md
   return <SharedUserAvatar name={row.name} email={row.email} avatarUrl={row.avatarUrl} initials={row.initials} size={size} />;
 }
 
+type StateMessageTone = 'neutral' | 'warning' | 'danger';
+
+function StateMessage({ title, description, tone = 'neutral' }: { title: string; description: string; tone?: StateMessageTone }) {
+  const toneClasses: Record<StateMessageTone, string> = {
+    neutral: 'border-slate-200 bg-slate-50 text-slate-700',
+    warning: 'border-amber-200 bg-amber-50 text-amber-800',
+    danger: 'border-rose-200 bg-rose-50 text-rose-800',
+  };
+
+  return (
+    <div className={`rounded-[1.5rem] border p-4 ${toneClasses[tone]}`}>
+      <p className="text-sm font-semibold text-slate-900">{title}</p>
+      <p className="mt-1 text-sm leading-6">{description}</p>
+    </div>
+  );
+}
 
 export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: AdminUserRow[]; roles: RoleOption[]; canManageOwners: boolean }) {
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
@@ -72,8 +88,8 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
     <div className="space-y-4">
       {identityIssueCount > 0 ? (
         <StateMessage
-          title="Identity sync needs review"
-          description={`${identityIssueCount} user record${identityIssueCount === 1 ? '' : 's'} still need profile cleanup. Supabase now backfills auth email/name, and admins can complete display names from the drawer.`}
+          title="Profile details need review"
+          description={`${identityIssueCount} user record${identityIssueCount === 1 ? '' : 's'} need a completed name, email, or profile. Use the identity drawer to complete missing details.`}
           tone="warning"
         />
       ) : null}
@@ -82,7 +98,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">People access</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{rows.filter((row) => row.status === 'active').length}</p>
-          <p className="mt-1 text-sm text-slate-500">Active signed-in workspace users</p>
+          <p className="mt-1 text-sm text-slate-500">Active workspace users</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Open invitations</p>
@@ -95,7 +111,6 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
           <p className="mt-1 text-sm text-slate-500">Names, emails, and avatar readiness</p>
         </div>
       </div>
-
 
       <WorkspaceToolbar
         searchSlot={
@@ -244,13 +259,13 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
             <div className="flex items-center gap-4">
               <UserAvatar row={selected} size="lg" />
               <div className="min-w-0 space-y-2">
-              <p className="truncate text-sm text-slate-600">{selected.email ?? 'No email available'}</p>
-              <div className="flex flex-wrap gap-2">
-                <StatusBadge label={selected.status} tone={getStatusTone(selected.status)} />
-                {selected.roleName ? <StatusBadge label={selected.roleName} tone="info" /> : null}
-                {selected.identityHealth !== 'complete' ? <StatusBadge label={IDENTITY_COPY[selected.identityHealth]} tone="warning" /> : null}
-                {selected.canResendInvite ? <StatusBadge label="resend available" tone="warning" /> : null}
-              </div>
+                <p className="truncate text-sm text-slate-600">{selected.email ?? 'No email available'}</p>
+                <div className="flex flex-wrap gap-2">
+                  <StatusBadge label={selected.status} tone={getStatusTone(selected.status)} />
+                  {selected.roleName ? <StatusBadge label={selected.roleName} tone="info" /> : null}
+                  {selected.identityHealth !== 'complete' ? <StatusBadge label={IDENTITY_COPY[selected.identityHealth]} tone="warning" /> : null}
+                  {selected.canResendInvite ? <StatusBadge label="resend available" tone="warning" /> : null}
+                </div>
               </div>
             </div>
 
@@ -287,7 +302,6 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                         <input name="username" defaultValue={selected.username ?? ''} placeholder="Username" />
                       </label>
                     </div>
-                    <p className="text-xs text-slate-500">Admins can edit owner display names here. Role or final-owner protections still remain in the Role and Security tabs.</p>
                     <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Save identity</button>
                   </form>
                 ) : null}
@@ -317,8 +331,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
             ) : null}
 
             {activeTab === 'role' ? (
-              <DrawerSection title="Role" description="Adjust assigned access without leaving the members table.">
-
+              <DrawerSection title="Role" description="Adjust assigned workspace access.">
                 {selected.membershipId && selected.canChangeRole ? (
                   <form action={updateMemberRole} className="space-y-3">
                     <input type="hidden" name="membership_id" value={selected.membershipId} />
@@ -378,7 +391,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                       <input type="hidden" name="membership_id" value={selected.membershipId} />
                       <StateMessage
                         title="Reset password"
-                        description="This sends the standard account recovery email to the user's saved email address."
+                        description="Send an account recovery email to this user's saved email address."
                       />
                       <button
                         type="submit"
@@ -393,7 +406,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                       <input type="hidden" name="return_path" value="/admin/users" />
                       <StateMessage
                         title="Deactivate access"
-                        description="This disables workspace access and clears current role assignments for the selected member."
+                        description="Disable workspace access for this member."
                       />
                       <button
                         type="submit"
@@ -426,7 +439,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                   <div className="space-y-3">
                     <StateMessage
                       title="Invitation pending"
-                      description={selected.status === 'active' ? 'This reactivated user has a fresh access invitation available to resend.' : 'You can resend the invite or revoke it before the user accepts.'}
+                      description={selected.status === 'active' ? 'A fresh access invitation is available to resend.' : 'Resend or revoke this invitation before it is accepted.'}
                     />
 
                     <form action={resendInvitation}>
@@ -453,15 +466,13 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                   </div>
                 ) : null}
 
-
-
                 {selected.membershipId && selected.canDelete ? (
                   <form action={deleteMember} className="space-y-3 rounded-[1.5rem] border border-red-200 bg-red-50 p-4">
                     <input type="hidden" name="membership_id" value={selected.membershipId} />
                     <input type="hidden" name="return_path" value="/admin/users" />
                     <StateMessage
                       title="Delete from workspace"
-                      description="This removes the workspace membership and role links while leaving the underlying auth account and historical CRM records intact."
+                      description="Remove this workspace membership while preserving historical CRM records."
                       tone="danger"
                     />
                     <button
