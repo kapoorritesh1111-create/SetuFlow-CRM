@@ -196,6 +196,7 @@ export function AppShell({
   const workspaceMode = getWorkspaceModeFromLocation(pathname, searchParams.get('mode'));
   const workspaceBasePath = getWorkspaceBasePath(pathname);
   const showWorkspaceModeSwitch = routeMeta.showWorkspaceModeSwitch ?? true;
+  const showContextHelp = !pathname.startsWith('/admin/users');
   const desktopOnlyRoutes = ['/pipeline', '/quotes', '/products', '/admin', '/approval-send', '/reports'];
   const isDesktopOnlyRoute = desktopOnlyRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
 
@@ -388,7 +389,7 @@ export function AppShell({
 
       {shellNotice ? <NoticeToast key={noticeParam ?? shellNotice.title} title={shellNotice.title} description={shellNotice.description} tone={shellNotice.tone ?? 'neutral'} /> : null}
 
-      {helpOpen ? (
+      {showContextHelp && helpOpen ? (
         <div
           className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/50 px-4 py-8 backdrop-blur-sm"
           onClick={(event) => {
@@ -525,15 +526,17 @@ export function AppShell({
                   >
                     📇
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setHelpOpen(true)}
-                    className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-white/10 text-white/85 text-sm font-black"
-                    aria-label={`Open help for ${routeMeta.title}`}
-                    title="Help"
-                  >
-                    ?
-                  </button>
+                  {showContextHelp ? (
+                    <button
+                      type="button"
+                      onClick={() => setHelpOpen(true)}
+                      className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-white/10 text-white/85 text-sm font-black"
+                      aria-label={`Open help for ${routeMeta.title}`}
+                      title="Help"
+                    >
+                      ?
+                    </button>
+                  ) : null}
                   <ProfileMenu compact />
                 </div>
               </div>
@@ -601,10 +604,12 @@ export function AppShell({
                         <span>{pathname.startsWith('/trade-events') ? 'Add Event' : 'Events'}</span>
                       </a>
 
-                      <button type="button" onClick={() => setHelpOpen(true)} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" aria-label={`Open help for ${routeMeta.title}`}>
-                        <span className="grid h-5 w-5 place-items-center rounded-full bg-slate-900 text-[11px] font-black text-white">?</span>
-                        <span>Help</span>
-                      </button>
+                      {showContextHelp ? (
+                        <button type="button" onClick={() => setHelpOpen(true)} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" aria-label={`Open help for ${routeMeta.title}`}>
+                          <span className="grid h-5 w-5 place-items-center rounded-full bg-slate-900 text-[11px] font-black text-white">?</span>
+                          <span>Help</span>
+                        </button>
+                      ) : null}
 
                       <ProfileMenu />
                     </div>

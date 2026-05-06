@@ -30,7 +30,7 @@ export default async function ProfilePage({ searchParams }: { searchParams?: Rec
         actions={[{ label: 'My vCard', href: '/contact-exchange/vcard' }, { label: 'System settings', href: '/admin/organization', type: 'primary' }]}
       />
       <Notice notice={searchParams?.notice} />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="space-y-6">
         <SectionCard>
           <h2 className="text-lg font-semibold text-slate-900">Personal details</h2>
           <p className="mt-1 text-sm text-slate-600">Your full name is preferred everywhere a named user should appear; initials are only used as a visual fallback.</p>

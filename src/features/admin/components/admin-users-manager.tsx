@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import RightDrawer, { DrawerSection } from '@/components/RightDrawer';
-import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { UserAvatar as SharedUserAvatar } from '@/components/ui/user-avatar';
 import { formatDateTime } from '@/lib/utils';
@@ -97,13 +96,6 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
         </div>
       </div>
 
-      {!canManageOwners ? (
-        <StateMessage
-          title="Admin-view state"
-          description="You can review members, invitations, and security posture here, but owner-protected role changes remain intentionally contained. Use audit links to verify action history before escalating owner-only work."
-          tone="warning"
-        />
-      ) : null}
 
       <WorkspaceToolbar
         searchSlot={
@@ -244,7 +236,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
         open={Boolean(selected)}
         onClose={() => setSelectedRowId(null)}
         title={selected ? selected.name : 'User details'}
-        description="Review identity, access, security, invitation state, and recent activity without leaving People & Access."
+        description="Manage this person’s identity, role, status, and recent access details."
         widthClassName="sm:max-w-xl lg:max-w-2xl"
       >
         {selected ? (
