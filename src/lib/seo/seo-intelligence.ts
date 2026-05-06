@@ -18,45 +18,11 @@ export type SeoKeywordCluster = {
   currentCoverage: 'missing' | 'partial' | 'ready';
 };
 
-export type SeoTrendPoint = {
-  month: string;
-  combined: number;
-  commercial: number;
-  education: number;
-};
-
-export type SeoKeywordGroupSummary = {
-  group: string;
-  currentIndex: number;
-  trend: 'rising' | 'seasonal' | 'growing' | 'flat';
-  recommendedPage: string;
-  action: string;
-};
-
-export type SeoChangeProof = {
-  title: string;
-  description: string;
-  status: 'live' | 'next_pr' | 'pending' | 'missing';
-  icon: string;
-};
-
-export type SeoUpgradeAction = {
-  title: string;
-  type: 'metadata' | 'content' | 'schema' | 'internal_links' | 'automation';
-  priority: 'p0' | 'p1' | 'p2';
-  target: string;
-  expectedLift: string;
-  implementation: string;
-};
-
-export type SeoOpportunity = {
-  title: string;
-  impact: 'high' | 'medium' | 'low';
-  effort: 'high' | 'medium' | 'low';
-  owner: 'seo_bot' | 'content' | 'engineering' | 'sales';
-  action: string;
-  status: 'queued' | 'ready_for_pr' | 'needs_review';
-};
+export type SeoTrendPoint = { month: string; combined: number; commercial: number; education: number };
+export type SeoKeywordGroupSummary = { group: string; currentIndex: number; trend: 'rising' | 'seasonal' | 'growing' | 'flat'; recommendedPage: string; action: string };
+export type SeoChangeProof = { title: string; description: string; status: 'live' | 'next_pr' | 'pending' | 'missing'; icon: string };
+export type SeoUpgradeAction = { title: string; type: 'metadata' | 'content' | 'schema' | 'internal_links' | 'automation'; priority: 'p0' | 'p1' | 'p2'; target: string; expectedLift: string; implementation: string };
+export type SeoOpportunity = { title: string; impact: 'high' | 'medium' | 'low'; effort: 'high' | 'medium' | 'low'; owner: 'seo_bot' | 'content' | 'engineering' | 'sales'; action: string; status: 'queued' | 'ready_for_pr' | 'needs_review' };
 
 export const seoCompetitors: SeoCompetitor[] = [
   { name: 'CargoWise', url: 'https://www.cargowise.com/', category: 'logistics_trade', authorityScore: 83, relevanceScore: 72, setuOpportunityScore: 81, gap: 'Strong in logistics execution, but SETU can own exporter/importer CRM before freight and customs handoff.' },
@@ -68,18 +34,7 @@ export const seoCompetitors: SeoCompetitor[] = [
 ];
 
 export const seoTrendPoints: SeoTrendPoint[] = [
-  { month: 'Jun', combined: 33, commercial: 29, education: 24 },
-  { month: 'Jul', combined: 37, commercial: 33, education: 27 },
-  { month: 'Aug', combined: 40, commercial: 36, education: 30 },
-  { month: 'Sep', combined: 45, commercial: 42, education: 34 },
-  { month: 'Oct', combined: 51, commercial: 48, education: 40 },
-  { month: 'Nov', combined: 53, commercial: 50, education: 44 },
-  { month: 'Dec', combined: 58, commercial: 55, education: 49 },
-  { month: 'Jan', combined: 63, commercial: 61, education: 54 },
-  { month: 'Feb', combined: 68, commercial: 66, education: 58 },
-  { month: 'Mar', combined: 73, commercial: 71, education: 62 },
-  { month: 'Apr', combined: 79, commercial: 77, education: 67 },
-  { month: 'May', combined: 83, commercial: 81, education: 72 },
+  { month: 'Jun', combined: 33, commercial: 29, education: 24 }, { month: 'Jul', combined: 37, commercial: 33, education: 27 }, { month: 'Aug', combined: 40, commercial: 36, education: 30 }, { month: 'Sep', combined: 45, commercial: 42, education: 34 }, { month: 'Oct', combined: 51, commercial: 48, education: 40 }, { month: 'Nov', combined: 53, commercial: 50, education: 44 }, { month: 'Dec', combined: 58, commercial: 55, education: 49 }, { month: 'Jan', combined: 63, commercial: 61, education: 54 }, { month: 'Feb', combined: 68, commercial: 66, education: 58 }, { month: 'Mar', combined: 73, commercial: 71, education: 62 }, { month: 'Apr', combined: 79, commercial: 77, education: 67 }, { month: 'May', combined: 83, commercial: 81, education: 72 },
 ];
 
 export const seoKeywordGroupSummaries: SeoKeywordGroupSummary[] = [
@@ -92,8 +47,9 @@ export const seoKeywordGroupSummaries: SeoKeywordGroupSummary[] = [
 export const seoChangeProof: SeoChangeProof[] = [
   { title: 'SEO cockpit added', description: 'The admin SEO Intelligence page exists and is protected for the main organization.', status: 'live', icon: '📈' },
   { title: 'Daily monitoring enabled', description: 'The SEO Autobot GitHub Action runs every day and creates reviewable PRs.', status: 'live', icon: '🤖' },
-  { title: 'Schema upgrade ready', description: 'SoftwareApplication, Organization, FAQ, and Breadcrumb schema should be pushed next.', status: 'next_pr', icon: '🧩' },
-  { title: 'SEO landing pages needed', description: 'Import-export CRM, export quote, and comparison pages are still missing.', status: 'missing', icon: '📄' },
+  { title: 'Dashboard PR action added', description: 'Internal admins can create a reviewable SEO upgrade pull request directly from the SEO Intelligence page.', status: 'live', icon: '🚀' },
+  { title: 'Real Google data connection needed', description: 'The current chart is a SETU planning index, not Google Trends or Search Console data.', status: 'next_pr', icon: '🔌' },
+  { title: 'SEO landing pages needed', description: 'Import-export CRM, export quote, and comparison pages are generated through the dashboard PR action.', status: 'next_pr', icon: '📄' },
 ];
 
 export const seoKeywordClusters: SeoKeywordCluster[] = [
@@ -106,12 +62,10 @@ export const seoKeywordClusters: SeoKeywordCluster[] = [
 ];
 
 export const seoUpgradeActions: SeoUpgradeAction[] = [
-  { title: 'Publish import-export CRM solution page', type: 'content', priority: 'p0', target: '/solutions/import-export-crm', expectedLift: 'High-intent commercial visibility', implementation: 'Create a focused page with keyword-led title, H1, FAQs, SoftwareApplication schema, and internal links.' },
-  { title: 'Add export quote management feature page', type: 'content', priority: 'p0', target: '/features/export-quote-management', expectedLift: 'Capture quote workflow searches', implementation: 'Build content around FOB/CIF/EXW/DDP, FX, approvals, product catalog pricing, and quote-to-order handoff.' },
-  { title: 'Upgrade public homepage structured data', type: 'schema', priority: 'p0', target: '/', expectedLift: 'Cleaner entity understanding', implementation: 'Add WebSite SearchAction, Organization, SoftwareApplication, and FAQPage JSON-LD where visible copy supports it.' },
-  { title: 'Create fair CRM comparison hub', type: 'content', priority: 'p1', target: '/compare/crm-for-exporters', expectedLift: 'Comparison-intent traffic', implementation: 'Compare generic CRM, sales pipeline CRM, trade compliance software, and SETU Flow without unsupported competitor claims.' },
-  { title: 'Add export checklist resource pages', type: 'content', priority: 'p1', target: '/resources/export-compliance-checklist', expectedLift: 'Monthly informational traffic', implementation: 'Publish checklists that link into SETU Flow workflows for documents, compliance, orders, and shipment readiness.' },
-  { title: 'Create SEO PR action from dashboard', type: 'automation', priority: 'p1', target: '/admin/seo-intelligence', expectedLift: 'Faster controlled SEO publishing', implementation: 'Add a server action/API route that creates GitHub PRs from approved upgrade actions.' },
+  { title: 'Publish import-export CRM solution page', type: 'content', priority: 'p0', target: '/solutions/import-export-crm', expectedLift: 'High-intent commercial visibility', implementation: 'Use the Create PR button to generate the first reviewable landing page.' },
+  { title: 'Add export quote management feature page', type: 'content', priority: 'p0', target: '/features/export-quote-management', expectedLift: 'Capture quote workflow searches', implementation: 'Use the Create PR button to generate quote workflow content with FOB/CIF/EXW/DDP language.' },
+  { title: 'Create fair CRM comparison hub', type: 'content', priority: 'p1', target: '/compare/crm-for-exporters', expectedLift: 'Comparison-intent traffic', implementation: 'Use the Create PR button to generate a factual, reviewable comparison page.' },
+  { title: 'Connect real Google data', type: 'automation', priority: 'p1', target: 'Supabase + Google Search Console', expectedLift: 'Replace planning indexes with real impressions, clicks, CTR, and query trends', implementation: 'Add Supabase tables and scheduled ingestion after Google Search Console access is configured.' },
 ];
 
 export const seoOpportunities: SeoOpportunity[] = [
@@ -121,5 +75,5 @@ export const seoOpportunities: SeoOpportunity[] = [
 export const seoPageMetadata = {
   siteUrl: 'https://www.setuflowcrm.com',
   primaryPositioning: 'Trade Execution CRM for import-export teams',
-  analyticsNote: 'Trend scores are relative planning signals until Google Search Console, Google Ads Keyword Planner, or Google Trends feeds are connected.',
+  analyticsNote: 'This chart is a SETU planning index, not Google Trends or Search Console data. Connect Google Search Console later to replace estimates with real impressions, clicks, CTR, and query trends.',
 };
