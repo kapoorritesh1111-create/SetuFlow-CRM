@@ -178,3 +178,32 @@ Notes:
 - Keep `README.md`, `docs/DOCUMENT_INDEX.md`, `docs/CURRENT_RELEASE_STATUS.md`, and `docs/CURRENT_SCHEMA.md` aligned after every major repo or Supabase change.
 - Review live Supabase before claiming schema/readiness status in README.
 - Keep AI outputs draft/review based. No automatic sending, approval, or customer-facing action without operator review.
+
+
+## Setu Guru embedded help
+
+Setu Guru is the in-product CRM guide added to the authenticated app shell. It appears as a small bottom-right bot avatar, opens a right drawer with route-aware help, and can be hidden/restored from a right-edge tab.
+
+Key files:
+
+- `src/features/setu-guru/setu-guru-widget.tsx` — embedded widget and route-aware help topics.
+- `public/setu-guru/setu-guru-avatar.svg` — bot avatar used by the launcher.
+- `public/setu-guru/*.svg` — support diagrams available at runtime.
+- `docs/setu-guru/` — chatbot-ready knowledge base, diagrams, learning loop, and exact GPT build prompt.
+
+The first version uses curated route-aware guidance and local feedback capture. The next backend step is to persist Setu Guru feedback in Supabase and connect retrieved knowledge to a GPT-powered answer service while preserving the AI guardrails in `docs/setu-guru/SETU_GURU_GPT_BUILD_PROMPT.md`.
+
+
+## Setu Guru live research setup
+
+Setu Guru now includes a read-only live research backend hook at `POST /api/setu-guru/research`. Configure these in Vercel before using live industry, HS/HSN, tariff, duty, VAT, or compliance answers:
+
+```env
+OPENAI_API_KEY=...
+SETU_GURU_MODEL=gpt-4.1-mini
+SETU_GURU_LIVE_SEARCH=true
+SETU_GURU_ALLOW_WRITEBACK=false
+SETU_GURU_REQUIRE_ADMIN_APPROVAL=true
+```
+
+Use `docs/setu-guru/SETU_GURU_GPT_CREATION_EXACT_INSTRUCTIONS.md` when creating the Custom GPT. Keep product enrichment and compliance actions review-first: Setu Guru may suggest values with sources and confidence, but should not overwrite product master data, pricing defaults, approvals, sends, or compliance state without authorized review.

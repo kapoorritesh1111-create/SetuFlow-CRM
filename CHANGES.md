@@ -237,3 +237,25 @@
 - Verified live Supabase quote/PDF fields used by the PDF route.
 - Added explicit QuotePdfLineRow typing in the quote PDF API route so Vercel strict TypeScript does not infer reduce/flatMap callback parameters as any.
 - No Supabase migration required.
+
+## 2026-05-06 — Setu Guru embedded help and chatbot knowledge base
+
+- Reviewed the upgraded CRM source tree, route manifest, docs, tests, and Supabase mitigation migrations to build a current product understanding for chatbot support.
+- Added the embedded Setu Guru widget to the authenticated app shell so users can open route-aware CRM help from a small bottom-right bot avatar.
+- Added hide/restore behavior: users can hide Setu Guru from the drawer and restore it from a right-edge Guru tab.
+- Added route-aware Setu Guru guidance for onboarding, catalog/pricing, lead-to-order, quote approval, trade events/mobile, documents/compliance, roles/permissions, and AI guardrails.
+- Added local feedback capture so early Setu Guru usage can identify helpful answers and missing knowledge until a Supabase-backed learning loop is connected.
+- Added Setu Guru avatar and support diagrams to `public/setu-guru/` for UI/runtime access.
+- Added chatbot-ready knowledge files, repo review, learning-loop guidance, and exact GPT build prompt under `docs/setu-guru/`.
+
+## 2026-05-06 — Setu Guru live research expansion
+
+- Added Setu Guru documentation gap audit.
+- Added live research playbook for industry standards, margins, HS/HSN/commodity codes, tariffs, duties, VAT, and compliance document questions.
+- Added HS/HSN enrichment workflow with review-before-write-back guardrails.
+- Added margin benchmarking workflow for product/category/country/channel assumptions.
+- Added export/import compliance research workflow for destination-market document checks.
+- Added product enrichment workflow for missing classification and compliance fields.
+- Added exact GPT creation instructions for Custom GPT setup, knowledge upload, live web search behavior, and future Actions.
+- Added `POST /api/setu-guru/research` as the secure live research backend hook using OpenAI Responses API web search when configured.
+- Updated Setu Guru widget copy and local knowledge topics to include live industry research.

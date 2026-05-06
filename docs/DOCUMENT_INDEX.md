@@ -1,6 +1,6 @@
 # SETU Flow Documentation Index
 
-_Last updated: 2026-05-05_
+_Last updated: 2026-05-06_
 
 This is the active documentation set after the cleanup pass. Static reference HTML handoff files are paused and removed from the active repo package for now.
 
@@ -23,6 +23,7 @@ This is the active documentation set after the cleanup pass. Static reference HT
 | `docs/SECURITY_POLICY.md` | Security and access-control expectations. |
 | `docs/AI_GUARDRAILS.md` | AI review, draft, and operator-control boundaries. |
 | `docs/UX_RULES.md` | UX consistency and layout rules. |
+| `docs/setu-guru/` | Setu Guru chatbot knowledge base, onboarding/workflow/troubleshooting docs, diagrams, learning loop, GPT build prompt, live research playbooks, HS/HSN enrichment, margin benchmarking, compliance research, and exact GPT creation instructions. |
 | `mitigation/README.md` | Retained database mitigation notes for investigation context. |
 
 ## Removed from active package

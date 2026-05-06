@@ -12,6 +12,7 @@ import { getRouteMeta } from '@/components/shell/route-meta';
 import { getWorkspaceBasePath, getWorkspaceModeFromLocation, withWorkspaceMode, withWorkspaceModePreservedParams } from '@/components/shell/utils';
 import { cn, getInitials } from '@/lib/utils';
 import { MobileShell } from '@/features/mobile/components/mobile-shell';
+import { SetuGuruWidget } from '@/features/setu-guru/setu-guru-widget';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
@@ -627,6 +628,12 @@ export function AppShell({
       <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} aria-label="Quick Lead" className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#0c7fff] text-2xl font-semibold text-white shadow-[0_4px_16px_rgba(12,127,255,0.42)] md:hidden">＋</a>
       <MobileTabBar />
       </div>
+      <SetuGuruWidget
+        pathname={pathname}
+        routeTitle={routeMeta.title}
+        organizationName={organization?.name}
+        roleLabel={getWorkspaceRoleDisplayName(currentRole)}
+      />
     </>
   );
 }

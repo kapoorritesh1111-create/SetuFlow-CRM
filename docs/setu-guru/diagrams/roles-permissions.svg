@@ -1,0 +1,823 @@
+# SetuFlow CRM — Complete Chatbot Knowledge Base
+_Version: May 2026 · Built from full source review_
+
+---
+
+## 1. WHAT IS SETUFLOW CRM?
+
+SetuFlow CRM is a **trade-focused B2B SaaS platform** built for importers, exporters, distributors, and trade businesses. It manages the full commercial cycle: capturing leads, qualifying buyers/suppliers, generating priced quotes, getting approvals, tracking orders, and managing products and compliance.
+
+**Tech stack:** Next.js 14 (App Router) · TypeScript · Supabase (PostgreSQL + RLS) · Tailwind CSS · Vercel deployment
+
+**Key differentiator:** Governed commercial workflows — AI assists, but pricing, approvals, compliance, and execution remain under human control.
+
+---
+
+## 2. NAVIGATION MAP — ALL PAGES
+
+| Route | Page Name | What It Does |
+|---|---|---|
+| `/dashboard` | Dashboard | Command center: KPIs, activity, market coverage, priority actions (TodayBar) |
+| `/dashboard/buyers` | Buyers Dashboard | Dashboard filtered to buyer mode |
+| `/dashboard/suppliers` | Suppliers Dashboard | Dashboard filtered to supplier mode |
+| `/leads` | Leads | All leads list, buyer+supplier, filters, follow-up queue |
+| `/leads/buyers` | Buyer Leads | Leads filtered to buyers only |
+| `/leads/suppliers` | Supplier Leads | Leads filtered to suppliers only |
+| `/leads/[leadId]` | Lead Detail | Full lead workspace: profile, activities, quotes, pipeline, follow-ups |
+| `/leads/[leadId]/quote` | Quote Builder | Inline quote creation attached to a lead |
+| `/leads/[leadId]/rfq/new` | New RFQ | Create Request for Quote attached to a lead |
+| `/pipeline` | Pipeline | Kanban-style board for buyer+supplier stage management |
+| `/pipeline/buyers` | Buyers Pipeline | Pipeline filtered to buyers |
+| `/pipeline/suppliers` | Suppliers Pipeline | Pipeline filtered to suppliers |
+| `/quotes` | Quotes | All quotes list; select quote opens modal workspace for review/approve/PDF/send |
+| `/orders` | Orders | Order execution tracker: draft → ready → released → dispatched → completed |
+| `/products` | Products | Product catalog, variants, pricing calculator, import/export |
+| `/trade-events` | Trade Events | Trade show setup, lead capture, follow-up |
+| `/compliance` | Compliance | Document/compliance checklist management |
+| `/contracts` | Contracts | Contract records linked to accepted quotes |
+| `/documents` | Documents | Document versions and upload management |
+| `/approval-send` | Approval & Send | Route for quote approval and delivery workflow |
+| `/ai-suggestions` | AI Suggestions | AI-drafted messages, summaries, and suggestions for review |
+| `/reports` | Reports | Performance metrics, analytics summaries |
+| `/tasks` | Tasks | Task list and follow-up actions |
+| `/integrations` | Integrations | Webhook/integration management |
+| `/settings/lists` | Settings Lists | Editable reference lists (next steps, etc.) |
+| `/profile` | My Profile | User profile, avatar, My Card settings (vCard) |
+| `/contact-exchange/vcard` | My Card | Digital business card / vCard share setup |
+| `/contact-exchange/vcard/preview` | Card Preview | Preview public vCard before sharing |
+| `/contact-exchange/scan` | Scan Card | Business card camera scan → lead capture |
+| `/admin` | Admin Home | Admin hub |
+| `/admin/organization` | Organization Settings | Org name, logo, quote/order terms defaults |
+| `/admin/users` | User Management | View/edit user roles |
+| `/admin/invitations` | Invitations | Send and manage workspace invitations |
+| `/admin/pipelines` | Pipeline Admin | Create/edit pipeline definitions |
+| `/admin/stages` | Stage Admin | Create/edit pipeline stages |
+| `/admin/markets` | Markets Admin | Add/manage active markets |
+| `/admin/categories` | Category Admin | Product taxonomy governance |
+| `/admin/product-management` | Product Governance | Catalog readiness, pricing gaps, audit |
+| `/admin/trade-events` | Trade Events Admin | Set up official trade shows |
+| `/admin/client-onboarding` | Client Onboarding | (Setu internal) Review and provision new client workspaces |
+| `/admin/audit` | Audit Log | Activity audit trail |
+| `/admin/security` | Security Settings | Access control posture |
+| `/admin/ai-analytics` | AI Analytics | AI usage metrics |
+| `/admin/seo-intelligence` | SEO Intelligence | Content/SEO tools |
+| `/onboarding` | Public Onboarding Form | New client signup (no login required) |
+| `/mobile` | Mobile Dashboard | Phone-first entry |
+| `/mobile/leads` | Mobile Leads | Mobile lead list |
+| `/mobile/capture` | Mobile Capture | Fast lead/business-card capture |
+| `/mobile/quote` | Mobile Quote | Quick quote access |
+| `/mobile/notifications` | Mobile Notifications | Mobile notification shell |
+| `/mobile/settings` | Mobile Settings | Mobile settings |
+
+---
+
+## 3. ROLES & PERMISSIONS
+
+SetuFlow uses role-based access. Every user has one or more roles within their organization.
+
+### Role Hierarchy (highest → lowest)
+```
+owner → admin → manager → sales → operations → sourcing → procurement → contributor → viewer
+```
+
+### What Each Role Can Do
+
+| Role | Key Capabilities |
+|---|---|
+| **Owner** | Everything. Full workspace control. Only role that can manage billing/workspace-level settings. |
+| **Admin** | Everything except ownership transfer. Creates users, invitations, markets, pipelines, categories. |
+| **Manager** | Manages catalog, settings, leads, quotes. Can approve quotes. |
+| **Sales** | Manages leads, creates and sends quotes. Cannot change catalog/settings. |
+| **Operations** | Manages leads, reviews compliance and documents. Cannot send quotes. |
+| **Sourcing** | Manages leads (sourcing focus). |
+| **Procurement** | Manages leads (procurement focus). |
+| **Contributor** | Creates/edits leads. Cannot send quotes or change settings. |
+| **Viewer** | Read-only. Can view reports and most pages. Cannot create or edit. |
+
+### Capability Reference
+| Capability | Allowed Roles |
+|---|---|
+| `catalog.manage` | owner, admin, manager |
+| `settings.manage` | owner, admin, manager |
+| `lead.manage` | owner, admin, manager, sales, operations, sourcing, procurement, contributor |
+| `quote.send` | owner, admin, manager, sales |
+| `compliance.review` | owner, admin, manager, operations |
+| `reporting.view` | owner, admin, manager, sales, operations, contributor, viewer |
+
+---
+
+## 4. WORKSPACE MODES
+
+Every major workspace (Dashboard, Leads, Pipeline, Orders, Reports) supports three modes:
+
+| Mode | What It Shows |
+|---|---|
+| **All** | Both buyers and suppliers together |
+| **Buyers** | Only buyer relationships |
+| **Suppliers** | Only supplier relationships |
+
+Switch modes using the WorkspaceModeSwitch toggle at the top of each workspace.
+
+---
+
+## 5. LEAD LIFECYCLE — COMPLETE GUIDE
+
+### What is a Lead?
+A Lead is a buyer or supplier contact/company being managed through the CRM. Leads progress through pipeline stages.
+
+### Lead Fields (Key)
+- Company name, contact name, email, phone, WhatsApp
+- Market(s), country, lead type (buyer/supplier)
+- Pipeline stage
+- Qualification status: `not_started` → `in_review` → `qualified` → `disqualified`
+- Product mapping status: `pending` → `in_progress` → `ready`
+- Deal value, currency
+- Owner (assigned user)
+- Next action, next action date
+- Follow-up queue flags
+
+### Lead Qualification Flow
+1. **Not Started** — lead captured, not yet reviewed
+2. **In Review** — qualification in progress, notes being added
+3. **Qualified** — confirmed buyer/supplier match, ready for commercial action
+4. **Disqualified** — not a good fit (archived, not deleted)
+
+### Lead Follow-Up System (TodayBar)
+The TodayBar shows urgent lead signals filterable by:
+- **All Open** — everything active
+- **Overdue** — past next-action date
+- **Due Today** — due today
+- **Waiting** — waiting for response
+- **Blocked** — blocked by compliance/document issue
+- **High Value** — deal value above threshold
+- **Needs Reply** — requires operator action
+
+### Creating a Lead
+- Desktop: Click "+ New Lead" or "Quick Lead" from the Leads page header
+- Mobile: Use `/mobile/capture` for fast entry
+- Trade Event: Use trade-event capture during a show
+
+### Lead → Quote Flow (Most Important Workflow)
+1. Open the lead detail page
+2. Click **"Create Quote"** in the lead workspace
+3. The inline Quote Builder opens — **do not leave this page**
+4. Step 1: **Terms** — set incoterm, currency, payment terms
+5. Step 2: **Pricing** — add line items (products, quantities, prices)
+6. Step 3: **Review** — check totals, add adjustments if needed
+7. Save quote → it appears in the Quotes workspace and in the lead's quote history
+
+---
+
+## 6. PIPELINE — COMPLETE GUIDE
+
+### What is the Pipeline?
+A visual Kanban board showing leads organized by pipeline stage. Drag leads between columns to advance them.
+
+### Pipeline Concepts
+- **Pipeline**: A named workflow (e.g., "Buyers Pipeline", "Supplier Onboarding")
+- **Stage**: A column within a pipeline (e.g., "Prospecting", "Qualified", "Proposal Sent", "Negotiation", "Won")
+- Each organization configures their own pipelines and stages in Admin
+
+### Stage Gating
+Some stage moves are gated. A lead may be blocked from advancing if:
+- Missing required documents
+- Open compliance blockers
+- Quote not yet sent
+
+### Pipeline Actions
+- Drag a lead card to move stage
+- Batch-move multiple leads
+- View lead signals (deal value, next action, urgency indicator) on each card
+
+---
+
+## 7. QUOTES — COMPLETE GUIDE
+
+### Quote Statuses (in order)
+```
+draft → internal_review → pending_approval → approved → sent → accepted / rejected / expired
+```
+
+Also: `revised` (when a new version is created after feedback)
+
+### Quote Fields
+- Lead/buyer reference
+- Incoterm (EXW, FOB, CIF, DDP, etc.)
+- Currency
+- Payment terms
+- Line items: product, variant, quantity, unit price, pack size, MOQ, pricing basis
+- Quote-only adjustments (discounts/markups)
+- FX reference (source currency, quote currency, rate, valid until)
+- Approval status
+- PDF generation
+
+### Quote-Only Adjustments
+- Operators can apply **discount** or **markup** at quote level (% or flat amount)
+- Adjustments beyond **15%** require owner/admin approval
+- These adjustments do NOT change product/catalog pricing — they are quote-specific only
+
+### Quote Approval Flow
+1. Sales creates quote → status: `draft`
+2. If adjustment > 15%, system flags `pending_approval`
+3. Owner/Admin sees approval queue in Quotes workspace
+4. Approve → status: `approved`
+5. Reject → status back to `draft` with rejection reason required
+6. Send to customer → status: `sent`
+7. Customer accepts → status: `accepted`
+8. Accepted quote → **Create Order** handoff
+
+### Sending a Quote
+From the Quotes workspace modal:
+- **Send by Email** → routes through `/approval-send`
+- **Send by WhatsApp** → WhatsApp delivery workflow
+- **PDF Preview** → generates and opens customer-facing PDF
+
+### Quote PDF Layout
+The customer-facing PDF includes:
+- Branded header with organization logo
+- Bill-to / status cards
+- Line item table: SKU, product, pack, units/case, MOQ, basis, unit price, case price
+- Category grouping with subtotals (when multiple categories)
+- Quote-only discount/markup visibility with original prices
+- Quote total
+- Terms and conditions footer
+
+---
+
+## 8. PRICING ENGINE — COMPLETE GUIDE
+
+### Pricing Hierarchy (6 levels)
+```
+EXW → FOB → CIF → DDP → Distributor Price → Retail Price
+```
+
+| Level | Meaning |
+|---|---|
+| **EXW** | Ex-Works — price at factory gate, buyer handles all logistics |
+| **FOB** | Free on Board — price at port of origin, seller handles export |
+| **CIF** | Cost + Insurance + Freight — price delivered to destination port |
+| **DDP** | Delivered Duty Paid — full landed cost at buyer's door |
+| **Distributor** | DDP + internal margin applied for distributor channel |
+| **Retail** | Distributor price + retail margin |
+
+### Cost Layers (EXW → FOB → CIF → DDP)
+- EXW + Inland transport + Export customs + Port handling = **FOB**
+- FOB + Freight + Insurance = **CIF**
+- CIF + Import duty % + Destination charges + Local delivery = **DDP**
+- DDP + Internal margin = **Internal/Operator price**
+- Internal + Distributor margin = **Distributor price**
+- Distributor + Retail margin = **Retail price**
+
+### Margin Modes
+- **Markup**: Price = Base × (1 + margin%)
+- **Margin**: Price = Base ÷ (1 − margin%)
+
+### Pricing Rules Hierarchy (where prices come from)
+1. **Quote-level adjustment** (highest priority — overrides only for that quote)
+2. **Product variant pricing rule**
+3. **Product-level pricing rule**
+4. **Category-level default rules** (set in Admin → Categories)
+5. **Organization-level default rules** (set in Admin → Organization)
+
+### Pricing Calculator
+Available in Products workspace and product detail. Operators enter:
+- Starting level and price
+- Cost layer amounts
+- Margin mode and percentages
+
+System calculates all other levels automatically.
+
+---
+
+## 9. ORDERS — COMPLETE GUIDE
+
+### Order States (in order)
+```
+Draft → Ready → Released → Dispatched → Completed
+```
+
+### State Descriptions
+| State | Meaning |
+|---|---|
+| **Draft** | Order created from accepted quote, setup in progress |
+| **Ready** | All blockers cleared, ready to release to operations |
+| **Released** | Operations team has the order |
+| **Dispatched** | Goods/services dispatched to buyer |
+| **Completed** | Order fulfilled and closed |
+
+### Blockers That Prevent Advancement
+To move from Draft → Ready:
+- Quote must be accepted
+- Contract record must exist
+- Contract must be signed
+- Commercial lock must be set
+- Order must have line items
+- Open document blockers must be resolved
+- Open compliance blockers must be resolved
+
+### Order → Execution Workflow
+1. Quote accepted in Quotes workspace
+2. Click **"Create Order"** handoff from quote modal
+3. Order appears in `/orders` with Draft state
+4. Operations resolves blockers
+5. Admin/manager advances state through Ready → Released → Dispatched → Completed
+
+---
+
+## 10. PRODUCTS & CATALOG — COMPLETE GUIDE
+
+### Product Structure
+```
+Product Category
+  └── Product
+        └── Product Variant (SKU)
+              └── Pricing Rules
+```
+
+### Product Fields
+- Name, SKU, description
+- Category
+- Status (active/inactive)
+- Trade attributes (HS code, origin country)
+- Variants: pack size, units per case, MOQ, pricing basis, UOM
+
+### Catalog Import/Export
+From Products workspace → Catalog Command Center:
+- **Download CSV template** for products, categories, or pricing
+- **Upload CSV** with validation preview
+- **Review errors** before committing
+- Imports write product setup and starting prices; shared costs/margins stay in pricing defaults
+
+### Admin → Product Management (Governance)
+This is a governance view, NOT a day-to-day editing surface. Shows:
+- Catalog readiness score
+- Products with pricing gaps
+- Products without variants
+- Trade attribute coverage
+- Import/audit exceptions
+
+For day-to-day product editing → use `/products`
+
+### Admin → Categories (Taxonomy)
+- Create/edit product categories
+- Set category hierarchy (parent categories)
+- Set category-level pricing defaults
+- View category health metrics
+
+---
+
+## 11. TRADE EVENTS — COMPLETE GUIDE
+
+### What are Trade Events?
+Trade shows, conferences, or expos where the team captures leads and contacts in the field.
+
+### Trade Event Workflow
+1. **Admin → Trade Events**: Set up the official event (name, date, location)
+2. **Mobile `/mobile/capture`** or **Trade Events page**: Capture leads at the event
+3. Business card scan → AI extracts contact details → lead auto-created
+4. After the event: leads appear in follow-up queue for qualification
+
+### Business Card Scan (Mobile)
+- Uses AI vision (OpenAI GPT-4.1-mini) to extract contact info from photos
+- Fallback: manual entry
+- Check scan readiness: `/api/mobile/scan-readiness`
+
+---
+
+## 12. CONTACT EXCHANGE (SMART vCARD) — COMPLETE GUIDE
+
+### What is Contact Exchange?
+A digital business card system that lets SetuFlow users share their contact details via QR code, link, or .vcf file.
+
+### My Card Settings (`/profile` or `/contact-exchange/vcard`)
+Users configure:
+- Name, title, company, phone, email, website, address
+- Profile photo (compressed for iOS compatibility)
+- Share slug (custom URL)
+- Smart QR vs Offline QR toggle
+
+### Smart QR vs Offline QR
+| Mode | What it does |
+|---|---|
+| **Smart QR** | Scans opens the public card page — supports analytics, looks professional |
+| **Offline QR** | Scans downloads the .vcf file directly — works without internet |
+
+### Share Actions
+1. **Save Contact** — downloads .vcf file
+2. **Copy Link** — copies public card URL
+3. **Share Card** — native share sheet
+4. **Send Email** — email the contact card
+5. **Apple Wallet / Google Wallet** — premium pass placeholders (future)
+
+### Public Card
+Accessible without login at the saved share URL. Includes Open Graph metadata for social previews.
+
+---
+
+## 13. AI FEATURES — COMPLETE GUIDE
+
+### AI Position
+SetuFlow AI is **assistive, not autonomous**. AI helps draft and summarize; humans approve and execute.
+
+### What AI Can Do
+- Draft follow-up messages for leads
+- Draft introduction messages
+- Draft quote cover notes
+- Suggest compliance next steps
+- Summarize lead context
+- Explain the next safe action from workflow blockers
+
+### What AI Cannot Do
+- Set catalog prices
+- Approve quote overrides
+- Bypass approval thresholds
+- Clear compliance blockers
+- Advance workflow state automatically
+- Send final commercial terms
+- Dispatch or complete orders
+
+### AI Suggestions Workflow
+1. AI draft appears in `/ai-suggestions` for review
+2. Operator reviews, edits if needed
+3. Operator approves → suggestion becomes a communication or action
+4. AI provider: Anthropic Claude (primary), with safe fallback when disabled
+
+### AI Analytics (`/admin/ai-analytics`)
+Tracks AI usage metrics across the organization.
+
+---
+
+## 14. COMPLIANCE & DOCUMENTS — COMPLETE GUIDE
+
+### Documents
+- Uploaded at the lead or order level
+- Versioned (document_versions table)
+- Required documents are defined by `document_requirement_rules`
+- Missing required documents create **document blockers** that prevent order advancement
+
+### Compliance Checklist
+- Each lead can have compliance checklist items
+- Items link to `compliance_checklist_items` and `lead_compliance_items`
+- Open compliance blockers prevent order state advancement
+- Reviewed by roles with `compliance.review` capability (owner, admin, manager, operations)
+
+---
+
+## 15. ADMIN — COMPLETE GUIDE
+
+### Admin Hub (`/admin`)
+Central control center for workspace configuration. Only accessible to owner, admin, manager roles.
+
+### Key Admin Areas
+
+**Organization Settings** (`/admin/organization`)
+- Company name, logo, website
+- Default quote terms & conditions
+- Default order terms & conditions
+- Approval threshold settings
+
+**Users** (`/admin/users`)
+- View all workspace members
+- Edit user roles
+- Deactivate users
+
+**Invitations** (`/admin/invitations`)
+- Send email invitations to new users
+- Set invited user's role
+- Resend/cancel pending invitations
+
+**Pipelines & Stages** (`/admin/pipelines`, `/admin/stages`)
+- Create custom pipeline workflows
+- Add/rename/reorder stages
+- Configure stage gate rules
+
+**Markets** (`/admin/markets`)
+- Add focus markets (geographic regions)
+- Markets are used to tag leads and filter reports
+
+**Categories** (`/admin/categories`)
+- Create product category taxonomy
+- Set parent/child hierarchy
+- Set category-level pricing defaults
+
+**Product Management** (`/admin/product-management`)
+- Governance dashboard (NOT editing)
+- Pricing gap analysis
+- Variant coverage check
+- Import management
+- Audit-oriented view
+
+**Trade Events** (`/admin/trade-events`)
+- Set up official trade shows
+
+**Security** (`/admin/security`)
+- Access control posture overview
+
+**Audit Log** (`/admin/audit`)
+- Full activity audit trail
+- Structured audit events for all major actions
+
+**Client Onboarding** (`/admin/client-onboarding`)
+- Setu-internal only
+- Review new client onboarding requests
+- Run SaaS provisioning wizard
+- Create new tenant organizations
+- Send first admin invitations
+
+---
+
+## 16. NEW ORGANIZATION ONBOARDING (COMPLETE GUIDE)
+
+### For a Brand New Client Organization
+
+**Step 1: Public Form**
+1. Go to `[domain]/onboarding`
+2. Fill in: Company name, website, logo URL (optional), HQ country
+3. Fill in: First admin name and email
+4. Fill in: Desired markets, countries, pipelines, stages
+5. Fill in: Pricing notes, product/category notes
+6. Submit → confirmation page → Setu admin notified
+
+**Step 2: Setu Admin Provisions Workspace**
+1. Admin opens `/admin/client-onboarding`
+2. Reviews request details
+3. Runs provisioning wizard
+4. System creates: organization, markets, countries, pipelines, stages, roles, pricing defaults
+5. Admin sends first-admin invitation email
+
+**Step 3: First Admin Accepts Invitation**
+1. First admin receives invitation email
+2. Clicks secure link → creates Supabase Auth account + password
+3. Lands in workspace as Owner
+4. Begins workspace setup
+
+**Step 4: Workspace Setup (First Admin)**
+1. Go to `/admin/organization` → verify company details, add logo
+2. Go to `/admin/pipelines` → review/customize pipelines
+3. Go to `/admin/stages` → review/customize stages
+4. Go to `/admin/markets` → add/remove target markets
+5. Go to `/admin/categories` → create product categories
+6. Go to `/products` → add products and variants
+7. Go to `/admin/invitations` → invite team members
+8. Set roles for each team member
+
+**Step 5: First Lead**
+1. Go to `/leads` → click "+ New Lead"
+2. Enter buyer/supplier company details
+3. Set pipeline, stage, market, owner
+4. Save → lead appears in pipeline
+
+**Step 6: First Quote**
+1. Open the lead
+2. Click "Create Quote"
+3. Set incoterm, currency, payment terms
+4. Add line items (products + quantities)
+5. Save → quote in draft
+6. Review → send to customer
+
+---
+
+## 17. DASHBOARD — COMPLETE GUIDE
+
+The Dashboard is the command center. It shows:
+
+### KPI Cards
+- Total active leads (buyers/suppliers)
+- Quotes in progress
+- Orders in execution
+- Pipeline value
+- Market coverage
+
+### TodayBar
+A dynamic priority strip showing leads that need attention:
+- **Overdue** — past next-action date (red urgency)
+- **Due Today** — action due today (amber urgency)
+- **Waiting** — waiting for buyer/supplier response
+- **Blocked** — compliance or document blocker
+- **High Value** — deal value above org threshold
+- **Needs Reply** — operator action required
+
+### Activity Feed
+Recent events across the workspace: new leads, quote updates, order changes, AI suggestions.
+
+### Market Coverage Map
+Visual coverage of leads by geographic market.
+
+### Quick Actions
+- Quick Lead capture (no full form required)
+- Fast access to follow-up queue
+
+---
+
+## 18. NOTIFICATIONS & TOASTS
+
+### Global Toast System
+All save/error/success feedback appears as **floating toast notifications** (not inline banners).
+
+**Common toast triggers:**
+- Saving a record → "Saved successfully"
+- Quote approved → "Quote approved"
+- Quote rejected → "Quote rejected — revision required"
+- Order advanced → "Order state updated"
+- Invitation sent → "Invitation sent to [email]"
+- Import completed → "Import completed: X rows processed"
+- Error → "Something went wrong — please try again"
+
+### `?notice=` URL Parameter
+Routes use `?notice=success`, `?notice=error`, etc. to trigger toasts on redirect — so after a server action completes and redirects, the toast appears on the landing page.
+
+---
+
+## 19. MOBILE — COMPLETE GUIDE
+
+### Mobile Routes
+| Route | Purpose |
+|---|---|
+| `/mobile` | Mobile home dashboard |
+| `/mobile/leads` | Lead list (role-aware) |
+| `/mobile/capture` | Fast lead capture + business card scan |
+| `/mobile/quote` | Quick quote access |
+| `/mobile/notifications` | Notifications |
+| `/mobile/settings` | Settings |
+
+### Mobile Features
+- **Quick capture**: Enter lead details fast, syncs when back online
+- **Business card scan**: Take photo → AI extracts name, company, email, phone → creates lead
+- **Share vCard**: Access My Card QR and share sheet from mobile navigation
+- **Offline queue**: Captures while offline, syncs on reconnect
+
+### Mobile vCard Share
+The Share vCard button is always accessible from mobile navigation. It shows:
+- QR code (Smart or Offline mode)
+- Save Contact, Copy Link, Share Card, Send Email actions
+- Apple Wallet / Google Wallet icons
+
+---
+
+## 20. INTEGRATIONS & WEBHOOKS
+
+### Integrations Page (`/integrations`)
+Manages external service connections.
+
+### Webhook System
+- Route: `/api/integrations/webhooks/[provider]`
+- Supports incoming webhooks from external providers
+- Outgoing webhooks can be configured for order/lead/quote events
+
+---
+
+## 21. IMPORT/EXPORT
+
+### What Can Be Imported
+- Products + variants (CSV)
+- Product categories (CSV)
+- Pricing rules (CSV)
+- Leads (CSV, role-aware)
+
+### Import Workflow
+1. Go to `/products` → Catalog Command Center
+2. Download CSV template for the data type
+3. Fill in CSV with your data
+4. Upload → system validates and shows preview
+5. Review errors (shown inline before committing)
+6. Confirm import → data committed
+
+### Export
+- Products and pricing can be exported to CSV from the Products workspace
+- Quote PDFs generated from `/api/pdf/quote/[id]`
+
+---
+
+## 22. SECURITY ARCHITECTURE
+
+### Multi-tenant Isolation
+- Every organization has a unique `organization_id`
+- All operational tables have `organization_id` column
+- Row Level Security (RLS) enforces: users only see their own org's data
+- Key RLS functions: `is_org_member(org_id)`, `is_org_admin(org_id)`
+
+### Authentication
+- Supabase Auth (email + password)
+- Invitation-only workspace access
+- Invitation tokens expire
+- First admin sets password on invitation acceptance
+
+### Admin-Only Routes
+- `/admin/client-onboarding` — hidden from client workspaces
+- Guarded by Setu platform organization check
+
+---
+
+## 23. COMMON USER QUESTIONS & ANSWERS
+
+**Q: How do I add a new team member?**
+A: Go to Admin → Invitations (`/admin/invitations`). Enter their email, select their role, and click Send Invitation. They'll receive an email with a login link.
+
+**Q: How do I create a quote for a lead?**
+A: Open the lead → click "Create Quote" → complete the Terms step (incoterm, currency) → add products in the Pricing step → Save. The quote goes to Draft status.
+
+**Q: Why is my quote stuck in "Pending Approval"?**
+A: The quote has an adjustment (discount or markup) greater than 15%. An owner or admin needs to approve it in the Quotes workspace. They can find it in the approval queue.
+
+**Q: How do I move an order forward?**
+A: Go to Orders → open the order → check the blockers list. Resolve each blocker (sign contract, clear compliance items, upload required documents). When all blockers are cleared, the "Advance State" button becomes active.
+
+**Q: How do I set up my digital business card?**
+A: Go to Profile → My Card Settings (or `/contact-exchange/vcard`). Fill in your contact details, upload a photo, and save. Your QR code is immediately available to share.
+
+**Q: How do I import products?**
+A: Go to Products → Catalog Command Center → Download CSV template → Fill in your data → Upload → Review errors → Confirm import.
+
+**Q: What's the difference between Markup and Margin in the pricing calculator?**
+A: Markup adds a percentage ON TOP of the base (e.g., 20% markup on $100 = $120). Margin means the margin IS a percentage OF the final price (e.g., 20% margin on $100 base = $125, because $25/$125 = 20%).
+
+**Q: How do I set up a new client organization?**
+A: The client fills in the public form at `/onboarding`. Setu admins receive a notification, review the request at `/admin/client-onboarding`, run the provisioning wizard, and send the first admin invitation.
+
+**Q: Where do I see AI-drafted suggestions?**
+A: Go to `/ai-suggestions`. All AI drafts appear there for review before use. AI suggestions can also appear in lead detail pages as quick-draft options.
+
+**Q: Can AI approve quotes or send them automatically?**
+A: No. AI can draft messages and suggest actions, but pricing, approvals, and sending are always controlled by humans. This is by design.
+
+**Q: How do I filter leads to just my market?**
+A: Use the filter panel on the Leads page. Filter by Market to see only leads in your focus geography.
+
+**Q: What does "Blocked" mean for a lead in the TodayBar?**
+A: The lead has an open compliance or document blocker that prevents the order from advancing. Click the lead to see the specific blocker and resolve it.
+
+---
+
+## 24. GLOSSARY
+
+| Term | Definition |
+|---|---|
+| **Lead** | A buyer or supplier company being managed in the CRM |
+| **Pipeline** | A named sequence of stages for moving leads toward a commercial outcome |
+| **Stage** | A column in a pipeline (e.g., Prospecting, Qualified, Won) |
+| **Quote** | A priced commercial offer sent to a buyer |
+| **RFQ** | Request for Quotation — a buyer's request for prices from a supplier |
+| **Incoterm** | International commercial term defining delivery responsibility (EXW, FOB, CIF, DDP, etc.) |
+| **EXW** | Ex-Works — price at factory gate |
+| **FOB** | Free on Board — price at port of origin |
+| **CIF** | Cost, Insurance, Freight — price to destination port |
+| **DDP** | Delivered Duty Paid — full landed cost at buyer |
+| **MOQ** | Minimum Order Quantity |
+| **SKU** | Stock Keeping Unit — unique product variant identifier |
+| **UOM** | Unit of Measure (kg, pieces, case, etc.) |
+| **Contract** | Legal record created after a quote is accepted |
+| **vCard** | Digital contact card (.vcf file) that can be saved to a phone |
+| **Smart QR** | QR code that opens the public profile card page |
+| **Offline QR** | QR code that directly downloads the .vcf contact file |
+| **RLS** | Row Level Security — database-level data isolation per organization |
+| **Compliance Blocker** | An unresolved compliance checklist item that prevents order advancement |
+| **Document Blocker** | A missing required document that prevents order advancement |
+| **Approval Threshold** | The discount/markup % beyond which a quote requires human approval (default 15%) |
+| **Workspace Mode** | Buyer, Supplier, or All — filters all views to one relationship type |
+| **TodayBar** | Priority strip on Dashboard showing leads needing immediate action |
+| **Pricing SSOT** | Single Source of Truth — pricing lives in `pricing_rule_sets` + `product_pricing_rules` |
+| **Quote SSOT** | Commercial truth lives in `quote_versions` + `quote_version_line_items` |
+| **Tenant** | One client organization's isolated workspace |
+
+---
+
+## 25. WHAT'S NEW (V17 — Latest Release)
+
+### V17.6.x — Quote Workflow Major Upgrade
+- **Quote workspace modal**: Reviewing a quote opens a modal workspace (no page navigation needed)
+- **Approval in modal**: Approve/reject directly in the quote modal with required rejection reason
+- **PDF preview**: Generate and preview customer-facing quote PDF from the modal
+- **Send from modal**: Email and WhatsApp delivery accessible from the quote modal
+- **Create order from modal**: Accepted quotes can create orders directly from the quote workspace
+
+### V17.5.x — Pricing Calculator
+- Full pricing hierarchy calculator (EXW → FOB → CIF → DDP → Distributor → Retail)
+- Organization and category-level default rules
+- Product variant-level calculator saves
+- Markup vs. Margin mode selector
+- Inherited defaults (products start in inherited mode, require explicit override)
+
+### V17.3 — Admin Governance
+- Admin → Product Management redesigned as a governance center (not a duplicate editing surface)
+- Admin → Categories with taxonomy workbench and parent category support
+- Help drawers for complex admin pages
+
+### V17 — Catalog Import/Export
+- CSV template downloads for products, categories, pricing, leads
+- Import validation with error preview before committing
+- Safe import with staging tables
+
+### V16 — Homepage vCard Feature
+- Contact Exchange section on marketing homepage
+- Smart vCard positioning as a core product feature
+
+### V15 — Unified Mobile vCard
+- Consistent vCard share data across all mobile entry points
+
+### V14 — iPhone vCard Polish
+- Proper iOS contact format with structured N: fields
+- Compressed profile photo for iOS reliability
+
+---
+
+_This knowledge base is authoritative as of May 2026. When in doubt, route to the relevant page in the CRM and use the Help button (available on all authenticated pages) for in-context guidance._

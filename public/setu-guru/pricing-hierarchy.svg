@@ -1,0 +1,234 @@
+<svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="hG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0F2744"/>
+      <stop offset="100%" stop-color="#1A3F6F"/>
+    </linearGradient>
+    <filter id="s">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="620" fill="#F8FAFC" rx="12"/>
+
+  <!-- Header -->
+  <rect width="1000" height="65" rx="12" fill="url(#hG)"/>
+  <rect y="53" width="1000" height="12" fill="url(#hG)"/>
+  <text x="36" y="28" font-size="17" font-weight="700" fill="white">SetuFlow CRM — Roles &amp; Permissions</text>
+  <text x="36" y="48" font-size="11" fill="#93C5FD">9 roles · 6 capabilities · Multi-tenant workspace access control</text>
+
+  <!-- Role Cards - Left Column -->
+  <!-- Owner -->
+  <rect x="36" y="82" width="192" height="78" rx="8" fill="white" filter="url(#s)" stroke="#E2E8F0"/>
+  <rect x="36" y="82" width="192" height="6" rx="3" fill="#0F172A"/>
+  <text x="54" y="106" font-size="13" font-weight="700" fill="#0F172A">👑 Owner</text>
+  <text x="54" y="122" font-size="10" fill="#64748B">Full workspace control</text>
+  <text x="54" y="136" font-size="10" fill="#64748B">Billing &amp; ownership transfer</text>
+  <text x="54" y="150" font-size="10" fill="#64748B">All capabilities unlocked</text>
+
+  <!-- Admin -->
+  <rect x="36" y="170" width="192" height="78" rx="8" fill="white" filter="url(#s)" stroke="#E2E8F0"/>
+  <rect x="36" y="170" width="192" height="6" rx="3" fill="#1E3A5F"/>
+  <text x="54" y="194" font-size="13" font-weight="700" fill="#1E3A5F">🛡 Admin</text>
+  <text x="54" y="210" font-size="10" fill="#64748B">All except ownership transfer</text>
+  <text x="54" y="224" font-size="10" fill="#64748B">Creates users, invitations</text>
+  <text x="54" y="238" font-size="10" fill="#64748B">Manages markets, pipelines</text>
+
+  <!-- Manager -->
+  <rect x="36" y="258" width="192" height="78" rx="8" fill="white" filter="url(#s)" stroke="#E2E8F0"/>
+  <rect x="36" y="258" width="192" height="6" rx="3" fill="#7C3AED"/>
+  <text x="54" y="282" font-size="13" font-weight="700" fill="#7C3AED">📊 Manager</text>
+  <text x="54" y="298" font-size="10" fill="#64748B">Catalog, settings, leads</text>
+  <text x="54" y="312" font-size="10" fill="#64748B">Approves quotes</text>
+  <text x="54" y="326" font-size="10" fill="#64748B">Reviews compliance</text>
+
+  <!-- Sales -->
+  <rect x="36" y="346" width="192" height="78" rx="8" fill="white" filter="url(#s)" stroke="#E2E8F0"/>
+  <rect x="36" y="346" width="192" height="6" rx="3" fill="#2563EB"/>
+  <text x="54" y="370" font-size="13" font-weight="700" fill="#2563EB">💼 Sales</text>
+  <text x="54" y="386" font-size="10" fill="#64748B">Manages leads</text>
+  <text x="54" y="400" font-size="10" fill="#64748B">Creates &amp; sends quotes</text>
+  <text x="54" y="414" font-size="10" fill="#64748B">Cannot change catalog/settings</text>
+
+  <!-- Operations -->
+  <rect x="36" y="434" width="192" height="78" rx="8" fill="white" filter="url(#s)" stroke="#E2E8F0"/>
+  <rect x="36" y="434" width="192" height="6" rx="3" fill="#059669"/>
+  <text x="54" y="458" font-size="13" font-weight="700" fill="#059669">⚙️ Operations</text>
+  <text x="54" y="474" font-size="10" fill="#64748B">Manages leads</text>
+  <text x="54" y="488" font-size="10" fill="#64748B">Reviews compliance/docs</text>
+  <text x="54" y="502" font-size="10" fill="#64748B">Cannot send quotes</text>
+
+  <!-- Right small roles -->
+  <rect x="36" y="522" width="90" height="72" rx="8" fill="white" filter="url(#s)" stroke="#E2E8F0"/>
+  <rect x="36" y="522" width="90" height="5" rx="3" fill="#0891B2"/>
+  <text x="81" y="543" text-anchor="middle" font-size="11" font-weight="700" fill="#0891B2">Sourcing</text>
+  <text x="81" y="557" text-anchor="middle" font-size="9" fill="#64748B">Leads (sourcing</text>
+  <text x="81" y="569" text-anchor="middle" font-size="9" fill="#64748B">focus)</text>
+  <text x="81" y="583" text-anchor="middle" font-size="9" fill="#64748B">No quotes/admin</text>
+
+  <rect x="134" y="522" width="94" height="72" rx="8" fill="white" filter="url(#s)" stroke="#E2E8F0"/>
+  <rect x="134" y="522" width="94" height="5" rx="3" fill="#D97706"/>
+  <text x="181" y="543" text-anchor="middle" font-size="11" font-weight="700" fill="#D97706">Procurement</text>
+  <text x="181" y="557" text-anchor="middle" font-size="9" fill="#64748B">Leads (procure-</text>
+  <text x="181" y="569" text-anchor="middle" font-size="9" fill="#64748B">ment focus)</text>
+  <text x="181" y="583" text-anchor="middle" font-size="9" fill="#64748B">No quotes/admin</text>
+
+  <!-- Capability Matrix -->
+  <rect x="260" y="82" width="710" height="512" rx="10" fill="white" filter="url(#s)" stroke="#E2E8F0"/>
+  <text x="615" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#1E293B">Capability Matrix</text>
+
+  <!-- Column Headers -->
+  <text x="460" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#0F172A" transform="rotate(-30, 460, 136)">Owner</text>
+  <text x="518" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#1E3A5F" transform="rotate(-30, 518, 136)">Admin</text>
+  <text x="576" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#7C3AED" transform="rotate(-30, 576, 136)">Manager</text>
+  <text x="634" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#2563EB" transform="rotate(-30, 634, 136)">Sales</text>
+  <text x="692" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#059669" transform="rotate(-30, 692, 136)">Ops</text>
+  <text x="750" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#0891B2" transform="rotate(-30, 750, 136)">Sourcing</text>
+  <text x="808" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#D97706" transform="rotate(-30, 808, 136)">Procure</text>
+  <text x="866" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#64748B" transform="rotate(-30, 866, 136)">Contrib</text>
+  <text x="924" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#94A3B8" transform="rotate(-30, 924, 136)">Viewer</text>
+
+  <line x1="275" y1="148" x2="955" y2="148" stroke="#E2E8F0"/>
+
+  <!-- Row definitions and cells -->
+  <!-- Rows: capabilities -->
+  <!-- catalog.manage -->
+  <text x="275" y="175" font-size="11" font-weight="600" fill="#1E293B">catalog.manage</text>
+  <text x="275" y="190" font-size="9" fill="#64748B">Add/edit products &amp; pricing</text>
+  <text x="460" y="180" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="518" y="180" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="576" y="180" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="634" y="180" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="692" y="180" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="750" y="180" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="808" y="180" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="866" y="180" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="924" y="180" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <line x1="275" y1="200" x2="955" y2="200" stroke="#F1F5F9"/>
+
+  <!-- settings.manage -->
+  <text x="275" y="223" font-size="11" font-weight="600" fill="#1E293B">settings.manage</text>
+  <text x="275" y="238" font-size="9" fill="#64748B">Pipelines, markets, ref data</text>
+  <text x="460" y="228" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="518" y="228" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="576" y="228" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="634" y="228" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="692" y="228" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="750" y="228" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="808" y="228" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="866" y="228" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="924" y="228" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <line x1="275" y1="248" x2="955" y2="248" stroke="#F1F5F9"/>
+
+  <!-- lead.manage -->
+  <text x="275" y="271" font-size="11" font-weight="600" fill="#1E293B">lead.manage</text>
+  <text x="275" y="286" font-size="9" fill="#64748B">Create, edit, follow up on leads</text>
+  <text x="460" y="276" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="518" y="276" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="576" y="276" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="634" y="276" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="692" y="276" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="750" y="276" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="808" y="276" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="866" y="276" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="924" y="276" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <line x1="275" y1="296" x2="955" y2="296" stroke="#F1F5F9"/>
+
+  <!-- quote.send -->
+  <text x="275" y="319" font-size="11" font-weight="600" fill="#1E293B">quote.send</text>
+  <text x="275" y="334" font-size="9" fill="#64748B">Create, send &amp; finalize quotes</text>
+  <text x="460" y="324" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="518" y="324" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="576" y="324" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="634" y="324" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="692" y="324" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="750" y="324" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="808" y="324" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="866" y="324" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="924" y="324" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <line x1="275" y1="344" x2="955" y2="344" stroke="#F1F5F9"/>
+
+  <!-- compliance.review -->
+  <text x="275" y="367" font-size="11" font-weight="600" fill="#1E293B">compliance.review</text>
+  <text x="275" y="382" font-size="9" fill="#64748B">Clear blockers, review docs</text>
+  <text x="460" y="372" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="518" y="372" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="576" y="372" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="634" y="372" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="692" y="372" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="750" y="372" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="808" y="372" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="866" y="372" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="924" y="372" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <line x1="275" y1="392" x2="955" y2="392" stroke="#F1F5F9"/>
+
+  <!-- reporting.view -->
+  <text x="275" y="415" font-size="11" font-weight="600" fill="#1E293B">reporting.view</text>
+  <text x="275" y="430" font-size="9" fill="#64748B">View reports &amp; audit history</text>
+  <text x="460" y="420" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="518" y="420" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="576" y="420" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="634" y="420" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="692" y="420" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="750" y="420" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="808" y="420" text-anchor="middle" font-size="16" fill="#DC2626">✗</text>
+  <text x="866" y="420" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <text x="924" y="420" text-anchor="middle" font-size="16" fill="#059669">✓</text>
+  <line x1="275" y1="440" x2="955" y2="440" stroke="#E2E8F0"/>
+
+  <!-- Hierarchy strip -->
+  <text x="275" y="465" font-size="11" font-weight="700" fill="#1E293B">Role Hierarchy (highest → lowest authority)</text>
+  
+  <rect x="275" y="475" width="680" height="36" rx="6" fill="#F8FAFC" stroke="#E2E8F0"/>
+  
+  <rect x="280" y="479" width="62" height="24" rx="4" fill="#0F172A"/>
+  <text x="311" y="495" text-anchor="middle" font-size="10" font-weight="600" fill="white">Owner</text>
+  
+  <text x="346" y="497" font-size="12" fill="#94A3B8">›</text>
+  
+  <rect x="354" y="479" width="58" height="24" rx="4" fill="#1E3A5F"/>
+  <text x="383" y="495" text-anchor="middle" font-size="10" font-weight="600" fill="white">Admin</text>
+  
+  <text x="415" y="497" font-size="12" fill="#94A3B8">›</text>
+  
+  <rect x="423" y="479" width="70" height="24" rx="4" fill="#7C3AED"/>
+  <text x="458" y="495" text-anchor="middle" font-size="10" font-weight="600" fill="white">Manager</text>
+  
+  <text x="496" y="497" font-size="12" fill="#94A3B8">›</text>
+  
+  <rect x="504" y="479" width="54" height="24" rx="4" fill="#2563EB"/>
+  <text x="531" y="495" text-anchor="middle" font-size="10" font-weight="600" fill="white">Sales</text>
+  
+  <text x="561" y="497" font-size="12" fill="#94A3B8">›</text>
+  
+  <rect x="569" y="479" width="66" height="24" rx="4" fill="#059669"/>
+  <text x="602" y="495" text-anchor="middle" font-size="10" font-weight="600" fill="white">Operations</text>
+  
+  <text x="638" y="497" font-size="12" fill="#94A3B8">›</text>
+  
+  <rect x="646" y="479" width="66" height="24" rx="4" fill="#0891B2"/>
+  <text x="679" y="495" text-anchor="middle" font-size="10" font-weight="600" fill="white">Sourcing</text>
+  
+  <text x="715" y="497" font-size="12" fill="#94A3B8">›</text>
+  
+  <rect x="723" y="479" width="82" height="24" rx="4" fill="#D97706"/>
+  <text x="764" y="495" text-anchor="middle" font-size="10" font-weight="600" fill="white">Procurement</text>
+  
+  <text x="808" y="497" font-size="12" fill="#94A3B8">›</text>
+  
+  <rect x="816" y="479" width="78" height="24" rx="4" fill="#64748B"/>
+  <text x="855" y="495" text-anchor="middle" font-size="10" font-weight="600" fill="white">Contributor</text>
+
+  <text x="897" y="497" font-size="12" fill="#94A3B8">›</text>
+  
+  <rect x="905" y="479" width="56" height="24" rx="4" fill="#94A3B8"/>
+  <text x="933" y="495" text-anchor="middle" font-size="10" font-weight="600" fill="white">Viewer</text>
+
+  <!-- Tips -->
+  <rect x="275" y="520" width="680" height="60" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+  <text x="291" y="538" font-size="10" font-weight="600" fill="#1E40AF">Key Rules to Remember:</text>
+  <text x="291" y="553" font-size="10" fill="#1D4ED8">• Quote approval (>15% adjustment) requires Manager, Admin, or Owner</text>
+  <text x="291" y="567" font-size="10" fill="#1D4ED8">• Quote sending requires Sales, Manager, Admin, or Owner · Viewers can read but never write</text>
+
+  <text x="36" y="610" font-size="9" fill="#94A3B8">SetuFlow CRM · Roles &amp; Permissions Reference · Assign roles at Admin → Users</text>
+</svg>

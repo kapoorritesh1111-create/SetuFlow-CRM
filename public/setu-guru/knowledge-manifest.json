@@ -1,0 +1,45 @@
+{
+  "name": "Setu Guru",
+  "updated": "2026-05-06",
+  "purpose": "Embedded CRM help chatbot knowledge manifest for Setu Flow CRM.",
+  "primaryFlow": [
+    "Capture",
+    "Follow-up",
+    "Quote",
+    "Approvals & Sending",
+    "Orders / Execution"
+  ],
+  "runtimeAssets": [
+    "/setu-guru/setu-guru-avatar.svg",
+    "/setu-guru/navigation-map.svg",
+    "/setu-guru/pricing-hierarchy.svg",
+    "/setu-guru/roles-permissions.svg"
+  ],
+  "knowledgeFiles": [
+    "docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md",
+    "docs/setu-guru/SETUFLOW_ONBOARDING_GUIDE.md",
+    "docs/setu-guru/SETUFLOW_WORKFLOWS.md",
+    "docs/setu-guru/SETUFLOW_TROUBLESHOOTING.md",
+    "docs/setu-guru/SETU_GURU_REPO_REVIEW.md",
+    "docs/setu-guru/SETU_GURU_KNOWLEDGE_BASE_INSTRUCTIONS.md",
+    "docs/setu-guru/SETU_GURU_LEARNING_LOOP.md",
+    "docs/setu-guru/SETU_GURU_GPT_BUILD_PROMPT.md",
+    "docs/setu-guru/SETU_GURU_DOCUMENTATION_GAP_AUDIT.md",
+    "docs/setu-guru/SETU_GURU_LIVE_RESEARCH_PLAYBOOK.md",
+    "docs/setu-guru/SETU_GURU_HS_CODE_ENRICHMENT.md",
+    "docs/setu-guru/SETU_GURU_MARGIN_BENCHMARKING.md",
+    "docs/setu-guru/SETU_GURU_COMPLIANCE_RESEARCH.md",
+    "docs/setu-guru/SETU_GURU_PRODUCT_ENRICHMENT_WORKFLOW.md",
+    "docs/setu-guru/SETU_GURU_GPT_CREATION_EXACT_INSTRUCTIONS.md"
+  ],
+  "guardrails": [
+    "Do not approve quotes autonomously.",
+    "Do not change pricing defaults autonomously.",
+    "Do not send messages autonomously.",
+    "Do not advance order states autonomously.",
+    "Do not make compliance decisions autonomously.",
+    "Use live research for industry benchmarks, HS/HSN/commodity codes, tariffs, duties, and compliance questions.",
+    "Do not overwrite product master data without authorized approval and audit notes.",
+    "Always cite official or high-quality sources for live market, customs, tariff, and compliance answers."
+  ]
+}

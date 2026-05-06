@@ -1,0 +1,241 @@
+<svg viewBox="0 0 1100 680" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="headerGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0F2744"/>
+      <stop offset="100%" stop-color="#1A3F6F"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F8FAFC"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748B"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563EB"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="680" fill="#F1F5F9" rx="12"/>
+
+  <!-- Header -->
+  <rect width="1100" height="70" rx="12" fill="url(#headerGrad)"/>
+  <rect y="58" width="1100" height="12" fill="url(#headerGrad)"/>
+  <text x="40" y="30" font-size="18" font-weight="700" fill="white">SetuFlow CRM</text>
+  <text x="40" y="52" font-size="12" fill="#93C5FD">Lead-to-Order Workflow</text>
+  <text x="1060" y="40" font-size="11" fill="#93C5FD" text-anchor="end">v17.6 · May 2026</text>
+
+  <!-- Row 1: Capture Phase -->
+  <text x="40" y="110" font-size="11" font-weight="600" fill="#64748B" letter-spacing="1">CAPTURE</text>
+  <line x1="110" y1="107" x2="1060" y2="107" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- Box 1: Capture Lead -->
+  <rect x="40" y="120" width="140" height="70" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="40" y="120" width="140" height="6" rx="4" fill="#2563EB"/>
+  <text x="110" y="150" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Capture Lead</text>
+  <text x="110" y="165" text-anchor="middle" font-size="10" fill="#64748B">Desktop / Mobile /</text>
+  <text x="110" y="178" text-anchor="middle" font-size="10" fill="#64748B">Trade Show / Scan</text>
+
+  <!-- Box 2: Qualify -->
+  <rect x="230" y="120" width="140" height="70" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="230" y="120" width="140" height="6" rx="4" fill="#7C3AED"/>
+  <text x="300" y="150" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Qualify</text>
+  <text x="300" y="165" text-anchor="middle" font-size="10" fill="#64748B">In Review → Qualified</text>
+  <text x="300" y="178" text-anchor="middle" font-size="10" fill="#64748B">or Disqualified</text>
+
+  <!-- Box 3: Map Products -->
+  <rect x="420" y="120" width="140" height="70" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="420" y="120" width="140" height="6" rx="4" fill="#0891B2"/>
+  <text x="490" y="150" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Map Products</text>
+  <text x="490" y="165" text-anchor="middle" font-size="10" fill="#64748B">Category + Product</text>
+  <text x="490" y="178" text-anchor="middle" font-size="10" fill="#64748B">Interest Mapping</text>
+
+  <!-- Box 4: Move Pipeline -->
+  <rect x="610" y="120" width="140" height="70" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="610" y="120" width="140" height="6" rx="4" fill="#D97706"/>
+  <text x="680" y="150" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Move Pipeline</text>
+  <text x="680" y="165" text-anchor="middle" font-size="10" fill="#64748B">Kanban drag/drop</text>
+  <text x="680" y="178" text-anchor="middle" font-size="10" fill="#64748B">Stage gating active</text>
+
+  <!-- Arrows Row 1 -->
+  <line x1="180" y1="155" x2="228" y2="155" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="370" y1="155" x2="418" y2="155" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="560" y1="155" x2="608" y2="155" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Row 2: Quote Phase -->
+  <text x="40" y="230" font-size="11" font-weight="600" fill="#64748B" letter-spacing="1">QUOTE</text>
+  <line x1="87" y1="227" x2="1060" y2="227" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- Box 5: Create Quote -->
+  <rect x="40" y="240" width="155" height="80" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="40" y="240" width="155" height="6" rx="4" fill="#059669"/>
+  <text x="117" y="268" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Create Quote</text>
+  <text x="117" y="282" text-anchor="middle" font-size="10" fill="#64748B">Terms → Pricing →</text>
+  <text x="117" y="295" text-anchor="middle" font-size="10" fill="#64748B">Review → Save</text>
+  <text x="117" y="308" text-anchor="middle" font-size="9" fill="#059669">Status: draft</text>
+
+  <!-- Box 6: Approval Check -->
+  <rect x="245" y="240" width="155" height="80" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="245" y="240" width="155" height="6" rx="4" fill="#DC2626"/>
+  <text x="322" y="268" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Approval Check</text>
+  <text x="322" y="282" text-anchor="middle" font-size="10" fill="#64748B">Adjustment &gt; 15%?</text>
+  <text x="322" y="295" text-anchor="middle" font-size="10" fill="#64748B">Owner/Admin review</text>
+  <text x="322" y="308" text-anchor="middle" font-size="9" fill="#DC2626">Status: pending_approval</text>
+
+  <!-- Box 7: Send Quote -->
+  <rect x="450" y="240" width="155" height="80" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="450" y="240" width="155" height="6" rx="4" fill="#2563EB"/>
+  <text x="527" y="268" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Send Quote</text>
+  <text x="527" y="282" text-anchor="middle" font-size="10" fill="#64748B">Email / WhatsApp</text>
+  <text x="527" y="295" text-anchor="middle" font-size="10" fill="#64748B">PDF generated</text>
+  <text x="527" y="308" text-anchor="middle" font-size="9" fill="#2563EB">Status: sent</text>
+
+  <!-- Box 8: Quote Accepted -->
+  <rect x="655" y="240" width="155" height="80" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="655" y="240" width="155" height="6" rx="4" fill="#059669"/>
+  <text x="732" y="268" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Quote Accepted</text>
+  <text x="732" y="282" text-anchor="middle" font-size="10" fill="#64748B">Customer confirms</text>
+  <text x="732" y="295" text-anchor="middle" font-size="10" fill="#64748B">Quote locked</text>
+  <text x="732" y="308" text-anchor="middle" font-size="9" fill="#059669">Status: accepted</text>
+
+  <!-- Arrows Row 2 -->
+  <line x1="195" y1="280" x2="243" y2="280" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="400" y1="280" x2="448" y2="280" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="605" y1="280" x2="653" y2="280" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Row 3: Order Execution -->
+  <text x="40" y="365" font-size="11" font-weight="600" fill="#64748B" letter-spacing="1">ORDER EXECUTION</text>
+  <line x1="182" y1="362" x2="1060" y2="362" stroke="#E2E8F0" stroke-width="1"/>
+
+  <!-- Order States Row -->
+  <rect x="40" y="375" width="120" height="65" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="40" y="375" width="120" height="5" rx="3" fill="#94A3B8"/>
+  <text x="100" y="400" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Draft</text>
+  <text x="100" y="414" text-anchor="middle" font-size="10" fill="#64748B">Order created</text>
+  <text x="100" y="428" text-anchor="middle" font-size="10" fill="#64748B">Blockers check</text>
+
+  <rect x="200" y="375" width="120" height="65" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="200" y="375" width="120" height="5" rx="3" fill="#2563EB"/>
+  <text x="260" y="400" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Ready</text>
+  <text x="260" y="414" text-anchor="middle" font-size="10" fill="#64748B">All blockers</text>
+  <text x="260" y="428" text-anchor="middle" font-size="10" fill="#64748B">resolved</text>
+
+  <rect x="360" y="375" width="120" height="65" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="360" y="375" width="120" height="5" rx="3" fill="#7C3AED"/>
+  <text x="420" y="400" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Released</text>
+  <text x="420" y="414" text-anchor="middle" font-size="10" fill="#64748B">Ops team has</text>
+  <text x="420" y="428" text-anchor="middle" font-size="10" fill="#64748B">the order</text>
+
+  <rect x="520" y="375" width="120" height="65" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="520" y="375" width="120" height="5" rx="3" fill="#D97706"/>
+  <text x="580" y="400" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Dispatched</text>
+  <text x="580" y="414" text-anchor="middle" font-size="10" fill="#64748B">Goods sent</text>
+  <text x="580" y="428" text-anchor="middle" font-size="10" fill="#64748B">to buyer</text>
+
+  <rect x="680" y="375" width="120" height="65" rx="8" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="680" y="375" width="120" height="5" rx="3" fill="#059669"/>
+  <text x="740" y="400" text-anchor="middle" font-size="12" font-weight="600" fill="#1E293B">Completed</text>
+  <text x="740" y="414" text-anchor="middle" font-size="10" fill="#64748B">Order fulfilled</text>
+  <text x="740" y="428" text-anchor="middle" font-size="10" fill="#64748B">and closed</text>
+
+  <!-- Order Arrows -->
+  <line x1="160" y1="407" x2="198" y2="407" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="320" y1="407" x2="358" y2="407" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="480" y1="407" x2="518" y2="407" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="640" y1="407" x2="678" y2="407" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Create Order bridge arrow (from Quote Accepted to Draft Order) -->
+  <path d="M 732 322 L 732 350 L 100 350 L 100 373" stroke="#2563EB" stroke-width="2" fill="none" stroke-dasharray="6,3" marker-end="url(#arrowBlue)"/>
+  <rect x="350" y="338" width="130" height="20" rx="4" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="415" y="352" text-anchor="middle" font-size="10" font-weight="600" fill="#2563EB">Create Order →</text>
+
+  <!-- Right Side Panel: Blockers -->
+  <rect x="860" y="110" width="210" height="335" rx="10" fill="white" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="860" y="110" width="210" height="8" rx="5" fill="#DC2626"/>
+  <text x="965" y="138" text-anchor="middle" font-size="12" font-weight="700" fill="#1E293B">Order Blockers</text>
+  <text x="965" y="154" text-anchor="middle" font-size="10" fill="#64748B">Must resolve before Ready</text>
+  <line x1="875" y1="162" x2="1055" y2="162" stroke="#E2E8F0" stroke-width="1"/>
+
+  <text x="875" y="178" font-size="10" fill="#374151">✓ Quote accepted</text>
+  <text x="875" y="196" font-size="10" fill="#374151">✓ Contract exists</text>
+  <text x="875" y="214" font-size="10" fill="#374151">✓ Contract signed</text>
+  <text x="875" y="232" font-size="10" fill="#374151">✓ Commercial lock set</text>
+  <text x="875" y="250" font-size="10" fill="#374151">✓ Line items confirmed</text>
+  <text x="875" y="268" font-size="10" fill="#374151">✓ Documents uploaded</text>
+  <text x="875" y="286" font-size="10" fill="#374151">✓ Compliance cleared</text>
+
+  <!-- Role Badge Section -->
+  <rect x="860" y="460" width="210" height="210" rx="10" fill="white" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <rect x="860" y="460" width="210" height="8" rx="5" fill="#7C3AED"/>
+  <text x="965" y="488" text-anchor="middle" font-size="12" font-weight="700" fill="#1E293B">Who Can Do What</text>
+  <line x1="875" y1="496" x2="1055" y2="496" stroke="#E2E8F0" stroke-width="1"/>
+
+  <rect x="875" y="504" width="60" height="18" rx="3" fill="#FEF3C7"/>
+  <text x="905" y="516" text-anchor="middle" font-size="9" fill="#92400E">Sales</text>
+  <text x="942" y="516" font-size="9" fill="#374151">Create + Send quotes</text>
+
+  <rect x="875" y="528" width="60" height="18" rx="3" fill="#F3E8FF"/>
+  <text x="905" y="540" text-anchor="middle" font-size="9" fill="#6B21A8">Manager+</text>
+  <text x="942" y="540" font-size="9" fill="#374151">Approve quotes</text>
+
+  <rect x="875" y="552" width="60" height="18" rx="3" fill="#DCFCE7"/>
+  <text x="905" y="564" text-anchor="middle" font-size="9" fill="#14532D">Ops</text>
+  <text x="942" y="564" font-size="9" fill="#374151">Compliance review</text>
+
+  <rect x="875" y="576" width="60" height="18" rx="3" fill="#DBEAFE"/>
+  <text x="905" y="588" text-anchor="middle" font-size="9" fill="#1E40AF">Admin+</text>
+  <text x="942" y="588" font-size="9" fill="#374151">Full access</text>
+
+  <rect x="875" y="600" width="60" height="18" rx="3" fill="#F1F5F9"/>
+  <text x="905" y="612" text-anchor="middle" font-size="9" fill="#475569">Viewer</text>
+  <text x="942" y="612" font-size="9" fill="#374151">Read-only</text>
+
+  <!-- Quote Statuses Side Panel -->
+  <rect x="40" y="490" width="810" height="100" rx="10" fill="white" filter="url(#shadow)" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="60" y="514" font-size="11" font-weight="700" fill="#1E293B">Quote Status Flow</text>
+
+  <!-- Status pills -->
+  <rect x="60" y="524" width="82" height="22" rx="11" fill="#F1F5F9"/>
+  <text x="101" y="539" text-anchor="middle" font-size="10" fill="#475569">draft</text>
+
+  <text x="148" y="538" font-size="14" fill="#94A3B8">→</text>
+
+  <rect x="158" y="524" width="102" height="22" rx="11" fill="#FEF3C7"/>
+  <text x="209" y="539" text-anchor="middle" font-size="10" fill="#92400E">internal_review</text>
+
+  <text x="265" y="538" font-size="14" fill="#94A3B8">→</text>
+
+  <rect x="275" y="524" width="115" height="22" rx="11" fill="#FEE2E2"/>
+  <text x="332" y="539" text-anchor="middle" font-size="10" fill="#991B1B">pending_approval</text>
+
+  <text x="395" y="538" font-size="14" fill="#94A3B8">→</text>
+
+  <rect x="404" y="524" width="78" height="22" rx="11" fill="#DCFCE7"/>
+  <text x="443" y="539" text-anchor="middle" font-size="10" fill="#14532D">approved</text>
+
+  <text x="487" y="538" font-size="14" fill="#94A3B8">→</text>
+
+  <rect x="495" y="524" width="58" height="22" rx="11" fill="#DBEAFE"/>
+  <text x="524" y="539" text-anchor="middle" font-size="10" fill="#1E40AF">sent</text>
+
+  <text x="558" y="538" font-size="14" fill="#94A3B8">→</text>
+
+  <rect x="566" y="524" width="76" height="22" rx="11" fill="#D1FAE5"/>
+  <text x="604" y="539" text-anchor="middle" font-size="10" fill="#065F46">accepted</text>
+
+  <text x="640" y="514" font-size="10" fill="#64748B">Or can end in:</text>
+  <rect x="640" y="524" width="72" height="22" rx="11" fill="#FEE2E2"/>
+  <text x="676" y="539" text-anchor="middle" font-size="10" fill="#991B1B">rejected</text>
+  <rect x="720" y="524" width="68" height="22" rx="11" fill="#F1F5F9"/>
+  <text x="754" y="539" text-anchor="middle" font-size="10" fill="#475569">expired</text>
+
+  <text x="60" y="570" font-size="10" fill="#64748B">⚠ Adjustments &gt;15% → pending_approval required before sending. Approval authority: Owner, Admin, Manager.</text>
+  <text x="60" y="584" font-size="10" fill="#64748B">🔒 Once sent/accepted/rejected/expired — quote is LOCKED. Cannot be edited. Create a new revision instead.</text>
+
+  <!-- Footer -->
+  <text x="40" y="662" font-size="10" fill="#94A3B8">SetuFlow CRM · Lead-to-Order Workflow Diagram · setuflowcrm.com</text>
+</svg>

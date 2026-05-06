@@ -1,6 +1,6 @@
 # Current Release Status
 
-_Last updated: 2026-05-05_
+_Last updated: 2026-05-06_
 
 ## Status
 
@@ -42,3 +42,11 @@ The repo has completed a cleanup/documentation consolidation pass. The active pa
 ## Release posture
 
 This cleanup improves handoff quality and removes stale static artifacts, but it does not replace a dedicated database security-hardening migration or full production CI run.
+
+## 2026-05-06 Setu Guru update
+
+- Embedded Setu Guru is now wired into the authenticated app shell as a small bottom-right bot avatar with right-drawer help.
+- Users can hide Setu Guru and restore it from a right-edge Guru tab.
+- `docs/setu-guru/` now contains chatbot-ready onboarding, workflow, troubleshooting, repo-review, learning-loop, and GPT build instructions.
+- Runtime assets for the bot and diagrams live in `public/setu-guru/`.
+- Current widget uses route-aware static knowledge and local feedback capture; a future backend pass should persist feedback and connect live retrieval/generation.
