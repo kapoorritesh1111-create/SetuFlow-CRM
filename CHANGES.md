@@ -1,3 +1,20 @@
+## 2026-05-05 - V17.6.10 Customer-facing quote PDF layout and discount visibility
+
+- Verified live Supabase quote, quote line, product, variant, category, market, country, lead, and organization fields before patching. No new migration is required.
+- Reworked the dependency-light quote PDF route into a customer-facing price-list layout inspired by the supplied Roohted reference: header metadata, compact table, SKU, product, pack, units/case, MOQ, basis, unit price, case price, and quote total.
+- Added category grouping with category subtotals when a quote contains lines from more than one category.
+- Made quote-only discounts/markups visible in the PDF: adjusted lines show the quote price plus the original catalog/list price and adjustment reason.
+- Kept the PDF footer short so the quote remains clean; long organization terms remain available from Admin defaults without crowding the customer-facing quote page.
+
+## 2026-05-05 — V17.6.9 Quote modal send/approval/order handoff correction
+
+- Verified live Supabase quote, quote line, document, organization, and contract/order handoff fields before patching. No new migration is required.
+- Fixed the Quotes workspace modal close action by using a plain link back to the quote list while preserving the active buyer/supplier mode where possible.
+- Changed the modal approval panel so approve/reject actions only show while the quote is actually pending approval; approved quote-only adjustments now show a clear "Approval cleared" state instead of continuing to display an approval form.
+- Added explicit Send by email / WhatsApp handoff from the quote modal into the existing `/approval-send` workflow.
+- Added a Create order handoff action from the quote modal using the existing accepted-quote/order contract workflow, so accepted/direct quotes can appear in Orders.
+- Added toast-copy entries for quote approval, rejection, and order handoff errors so quote actions report through the global notification system.
+
 ## 2026-05-05 — V17.6.8 Quote workspace, approval modal, PDF layout, and terms defaults
 
 - Verified live Supabase quote, quote line, organization, document, and lead activity fields before patching.

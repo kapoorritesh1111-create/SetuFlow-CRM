@@ -12,6 +12,7 @@ import { QuoteHistoryList } from '@/features/quotes/ui/quote-history-list';
 import { formatQuoteMoney } from '@/features/quotes/logic/formatting';
 import { buildApprovalSendHref, buildLeadQuoteHref, buildOrdersHref } from '@/lib/workflow/handoffs';
 import { approveLeadQuoteAdjustment, rejectLeadQuoteAdjustment } from '@/features/leads/server/actions';
+import { markQuoteAsDirectOrder } from '@/features/quotes/server/actions';
 
 const FILTER_STATUSES = ['all','draft','internal_review','pending_approval','approved','sent','revised','accepted','rejected','expired'];
 const FILTER_MODES = ['all','buyers','suppliers'];
@@ -161,14 +162,17 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const selected = (selectedQuoteId ? viewModel.items.find(i => i.id === selectedQuoteId) : null) ?? filteredItems[0] ?? viewModel.selectedItem;
   const selectedMode = selected?.leadType === 'buyer' ? 'buyers' : selected?.leadType === 'supplier' ? 'suppliers' : null;
   const selectedApprovalHref = selected ? buildApprovalSendHref({queue:'approvals',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-approval-status'}, selectedMode) : PRODUCT_ROUTES.app.integrations;
-  const selectedOrderHref = selected ? buildOrdersHref({notice:'quote-accepted',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-to-orders'}, selectedMode) : PRODUCT_ROUTES.app.orders;
+  const selectedOrderHref = selected ? buildOrdersHref({notice:'quote-accepted',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-to-orders',openOrderId:selected.id}, selectedMode) : PRODUCT_ROUTES.app.orders;
+  const selectedSendHref = selected ? `/approval-send?quoteId=${encodeURIComponent(selected.id)}` : '/approval-send';
+  const closeHref = filters.mode !== 'all' ? `/quotes?mode=${encodeURIComponent(filters.mode)}` : '/quotes';
   const selectedHistory = selected ? (selected.id === viewModel.selectedItem?.id ? viewModel.selectedHistory : buildQuotesPageViewModel({...baseViewModelInput, selectedQuoteId:selected.id}).selectedHistory) : [];
 
   async function approveSelectedQuoteAction(formData: FormData) {
     'use server';
     const quoteId = String(formData.get('quote_id') ?? '');
     const leadId = String(formData.get('lead_id') ?? '');
-    await approveLeadQuoteAdjustment({ leadId, quoteId, note: 'Owner/admin approved quote-only adjustment from Quotes workspace.' });
+    const result = await approveLeadQuoteAdjustment({ leadId, quoteId, note: 'Owner/admin approved quote-only adjustment from Quotes workspace.' });
+    if (result?.error) redirect(`/quotes?quoteId=${quoteId}&notice=quote-approval-error`);
     redirect(`/quotes?quoteId=${quoteId}&notice=quote-approved`);
   }
 
@@ -177,8 +181,21 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     const quoteId = String(formData.get('quote_id') ?? '');
     const leadId = String(formData.get('lead_id') ?? '');
     const note = String(formData.get('rejection_reason') ?? '').trim() || 'Quote rejected from Quotes workspace. Revise before sending.';
-    await rejectLeadQuoteAdjustment({ leadId, quoteId, note });
+    const result = await rejectLeadQuoteAdjustment({ leadId, quoteId, note });
+    if (result?.error) redirect(`/quotes?quoteId=${quoteId}&notice=quote-rejection-error`);
     redirect(`/quotes?quoteId=${quoteId}&notice=quote-rejected`);
+  }
+
+
+
+  async function createOrderHandoffAction(formData: FormData) {
+    'use server';
+    const quoteId = String(formData.get('quote_id') ?? '').trim();
+    const notes = String(formData.get('notes') ?? '').trim() || 'Order handoff created from Quotes workspace.';
+    if (!quoteId) redirect('/quotes?notice=quote-order-missing');
+    const result = await markQuoteAsDirectOrder(undefined, formData);
+    if (result?.error) redirect(`/quotes?quoteId=${quoteId}&notice=quote-order-error`);
+    redirect(`/orders?notice=quote-accepted&quoteId=${quoteId}&openOrderId=${quoteId}`);
   }
 
   const approvalQueue = viewModel.items.filter(i => i.status === 'pending_approval');
@@ -347,7 +364,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
             </div>
             <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:'12px'}}>
               {/* Approval alert */}
-              {(selected.status==='pending_approval'||selected.hasPriceOverride)&&(
+              {selected.status==='pending_approval'&&(
                 <div style={{padding:'12px 14px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'12px'}}>
                   <div style={{fontSize:'12px',fontWeight:800,color:'#92400e',marginBottom:'4px'}}>Approval required — pricing override</div>
                   <div style={{fontSize:'11px',color:'#92400e',marginBottom:'10px'}}>One or more lines have manually overridden pricing. Approve or reject before sending.</div>
@@ -418,10 +435,10 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                   <div style={{fontSize:'12px',color:'#64748b'}}>{selected.quoteNumber ?? selected.id.slice(0,8)} · v{selected.totalVersions || 1} · {labelizeStatus(selected.status)}</div>
                 </div>
                 <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'flex-end'}}>
-                  <Link href="/quotes" style={{padding:'9px 14px',borderRadius:'14px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:800,color:'#334155',textDecoration:'none'}}>Close</Link>
+                  <a href={closeHref} style={{padding:'9px 14px',borderRadius:'14px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:800,color:'#334155',textDecoration:'none'}}>Close</a>
                   <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={{padding:'9px 14px',borderRadius:'14px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:800,color:'#334155',textDecoration:'none'}}>Edit quote</Link>
                   <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={{padding:'9px 14px',borderRadius:'14px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:800,color:'#334155',textDecoration:'none'}}>PDF preview</Link>
-                  <Link href={selectedOrderHref} style={{padding:'9px 16px',borderRadius:'14px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:900,textDecoration:'none'}}>Send / order handoff</Link>
+                  <Link href={selectedSendHref} style={{padding:'9px 16px',borderRadius:'14px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:900,textDecoration:'none'}}>Send workflow</Link>
                 </div>
               </div>
               <div style={{padding:'18px 22px',display:'grid',gridTemplateColumns:'1fr 310px',gap:'18px'}}>
@@ -454,7 +471,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                     <div style={{marginTop:'6px',fontSize:'18px',fontWeight:900,color:'#0f172a'}}>{labelizeStatus(selected.status)}</div>
                     <div style={{marginTop:'6px',fontSize:'12px',color:'#64748b'}}>Currency: {selected.currency ?? 'USD'} · Total: {formatQuoteMoney(selected.subtotal,selected.currency)}</div>
                   </div>
-                  {(selected.status === 'pending_approval' || selected.hasPriceOverride) ? (
+                  {selected.status === 'pending_approval' ? (
                     <div style={{border:'1px solid #fde68a',borderRadius:'18px',padding:'14px',background:'#fffbeb'}}>
                       <div style={{fontSize:'14px',fontWeight:900,color:'#92400e'}}>Approval review</div>
                       <p style={{fontSize:'12px',lineHeight:1.6,color:'#92400e'}}>Review quote-only adjustments before allowing this quote to be sent.</p>
@@ -468,11 +485,24 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                         <button type="submit" style={{border:'1px solid #fecaca',borderRadius:'12px',background:'white',color:'#dc2626',fontWeight:900,padding:'10px 12px'}}>Reject / request revision</button>
                       </form>
                     </div>
+                  ) : selected.hasPriceOverride ? (
+                    <div style={{border:'1px solid #a7f3d0',borderRadius:'18px',padding:'14px',background:'#ecfdf5'}}>
+                      <div style={{fontSize:'14px',fontWeight:900,color:'#047857'}}>Approval cleared</div>
+                      <p style={{fontSize:'12px',lineHeight:1.6,color:'#047857'}}>Quote-only adjustment was approved. The send gate can continue.</p>
+                    </div>
                   ) : null}
                   <div style={{border:'1px solid #dbe4ef',borderRadius:'18px',padding:'14px',background:'#ffffff'}}>
-                    <div style={{fontSize:'13px',fontWeight:900,color:'#0f172a'}}>Send options</div>
-                    <p style={{fontSize:'12px',lineHeight:1.6,color:'#64748b'}}>Use PDF preview to verify the customer-facing document. Send workflow can hand off to email or WhatsApp once approval and terms are clear.</p>
-                    <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={{display:'block',textAlign:'center',padding:'10px 12px',borderRadius:'12px',background:'#0b2e4a',color:'white',fontWeight:900,textDecoration:'none'}}>Open customer PDF</Link>
+                    <div style={{fontSize:'13px',fontWeight:900,color:'#0f172a'}}>Send and handoff</div>
+                    <p style={{fontSize:'12px',lineHeight:1.6,color:'#64748b'}}>Preview the customer PDF, then open the send workflow for email or WhatsApp. Use order handoff when the buyer accepted and you need an execution record.</p>
+                    <div style={{display:'grid',gap:'8px'}}>
+                      <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={{display:'block',textAlign:'center',padding:'10px 12px',borderRadius:'12px',background:'#0b2e4a',color:'white',fontWeight:900,textDecoration:'none'}}>Open customer PDF</Link>
+                      <Link href={selectedSendHref} style={{display:'block',textAlign:'center',padding:'10px 12px',borderRadius:'12px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Send by email / WhatsApp</Link>
+                      <form action={createOrderHandoffAction} style={{display:'grid',gap:'8px'}}>
+                        <input type="hidden" name="quote_id" value={selected.id}/>
+                        <input type="hidden" name="notes" value="Order handoff created from Quotes workspace."/>
+                        <button type="submit" style={{border:0,textAlign:'center',padding:'10px 12px',borderRadius:'12px',background:'#059669',color:'white',fontWeight:900}}>Create order handoff</button>
+                      </form>
+                    </div>
                   </div>
                 </aside>
               </div>

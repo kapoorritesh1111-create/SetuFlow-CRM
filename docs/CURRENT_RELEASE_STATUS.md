@@ -2,7 +2,7 @@
 
 ## Status
 
-Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, cleaned Admin reference pages, and the V17.6.8 Quote workspace modal, approval revision, PDF layout, and terms defaults pass.
+Setu Flow CRM is in an upgraded baseline state with public client onboarding, Setu-internal SaaS workspace provisioning, trade-events command center, mobile scan improvements, current DCC/reference HTML handoffs, catalog import/export, product pricing calculator workflows, cleaned Admin reference pages, and the V17.6.10 customer-facing quote PDF layout and discount visibility pass.
 
 ## Current readiness
 
@@ -16,7 +16,7 @@ Setu Flow CRM is in an upgraded baseline state with public client onboarding, Se
 | Pricing rules | Product-level calculator added | Quote pricing rules remain the commercial SSOT; product records now have additive calculator fields for EXW/FOB/CIF/DDP/Distributor/Retail. V17.3 adds clearer help copy for defaults, category rules, and product overrides. |
 | DCC/reference HTML | Ready | Current internal and reference HTMLs are updated. |
 | Docs | Ready | Active docs are consolidated and current. |
-| Regression tests | Partially verified in sandbox | Typecheck could not complete in this sandbox because dependencies are not installed and `npm ci` was intentionally not run. V17.6.8 continues quote workflow stabilization: quote workspace modal, direct approve/reject forms, improved dependency-light PDF layout, and organization-level quote/order terms defaults. Typecheck still requires the Vercel dependency install environment because npm ci is not run in sandbox. |
+| Regression tests | Partially verified in sandbox | Typecheck could not complete in this sandbox because dependencies are not installed and `npm ci` was intentionally not run. V17.6.10 continues quote workflow stabilization with a customer-facing price-list PDF layout, visible quote-only discounts/markups, category grouping/subtotals, and short quote footer terms while keeping the dependency-light PDF route. Typecheck still requires the Vercel dependency install environment because npm ci is not run in sandbox. |
 
 ## Test result
 
@@ -26,16 +26,29 @@ Blocked: dependencies are not installed in the sandbox, and npm ci was intention
 ```
 
 
-## V17.6.8 Quote workspace and PDF terms pass
+
+## V17.6.10 Customer-facing quote PDF layout and discount visibility
+
+Status: package prepared for Vercel validation.
+
+Highlights:
+- Quote PDF now follows a compact customer price-list layout with header metadata and table columns for SKU, product, pack, units/case, MOQ, basis, unit price, and case price.
+- Quote-only discounts or markups now show on the PDF line, including original catalog/list price and adjustment reason.
+- Quote lines are grouped by product category, with category subtotals shown when more than one category is present.
+- Footer terms are intentionally short to keep the customer-facing quote clean; full terms remain editable in Admin -> Organization.
+- No new Supabase migration is required.
+
+## V17.6.9 Quote modal send/approval/order handoff correction
 
 Status: package prepared for Vercel validation.
 
 Highlights:
 - Quotes workspace opens selected quotes in a modal when `quoteId` is present, avoiding page scroll/jump during search and review.
-- Quote approval/rejection can be handled from the Quotes workspace with a rejection reason.
+- Quote approval/rejection can be handled from the Quotes workspace with a rejection reason, and the modal now shows approval cleared after approval.
+- Quote modal now links to the existing email/WhatsApp send workflow and can create an accepted quote/order handoff using the existing order contract workflow.
 - PDF export uses an improved built-in PDF generator without adding heavy dependencies.
 - Admin → Organization includes editable quote and order terms defaults.
-- Additive migration added: `20260505_quote_terms_conditions_defaults.sql`.
+- Required migration remains: `20260505_quote_terms_conditions_defaults.sql` if not already applied.
 
 ## V17.5.1 Add Product pricing unit hotfix
 
