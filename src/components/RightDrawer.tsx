@@ -13,6 +13,7 @@ export interface RightDrawerProps {
   widthClassName?: string;
   headerActions?: React.ReactNode;
   bodyClassName?: string;
+  hideHeader?: boolean;
 }
 
 type DrawerSectionProps = {
@@ -39,20 +40,9 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
 
-export function DrawerSection({
-  title,
-  description,
-  action,
-  children,
-  className = '',
-}: DrawerSectionProps) {
+export function DrawerSection({ title, description, action, children, className = '' }: DrawerSectionProps) {
   return (
-    <section
-      className={[
-        'rounded-[1.75rem] border border-white/70 bg-white/90 p-5 shadow-soft ring-1 ring-slate-950/5 backdrop-blur',
-        className,
-      ].join(' ')}
-    >
+    <section className={['rounded-[1.75rem] border border-white/70 bg-white/90 p-5 shadow-soft ring-1 ring-slate-950/5 backdrop-blur', className].join(' ')}>
       {title || description || action ? (
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -69,12 +59,7 @@ export function DrawerSection({
 
 export function DrawerActionBar({ title, description, children, className = '' }: DrawerActionBarProps) {
   return (
-    <div
-      className={[
-        'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
-        className,
-      ].join(' ')}
-    >
+    <div className={['flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between', className].join(' ')}>
       {title || description ? (
         <div className="min-w-0 flex-1">
           {title ? <div className="text-sm font-semibold text-slate-900">{title}</div> : null}
@@ -96,6 +81,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   widthClassName = 'sm:max-w-xl lg:max-w-2xl',
   headerActions,
   bodyClassName = '',
+  hideHeader = false,
 }) => {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
@@ -105,9 +91,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   useEffect(() => {
     if (!open) return;
 
-    previouslyFocusedRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
+    previouslyFocusedRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.classList.add('drawer-open');
 
     const focusFirst = window.setTimeout(() => {
@@ -122,19 +106,12 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
         onClose();
         return;
       }
-
       if (event.key !== 'Tab' || !panelRef.current) return;
-
-      const focusable = Array.from(
-        panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-      ).filter((node) => !node.hasAttribute('disabled'));
-
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((node) => !node.hasAttribute('disabled'));
       if (!focusable.length) return;
-
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       const active = document.activeElement as HTMLElement | null;
-
       if (event.shiftKey && active === first) {
         event.preventDefault();
         last.focus();
@@ -145,7 +122,6 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
     };
 
     document.addEventListener('keydown', handleKeyDown);
-
     return () => {
       window.clearTimeout(focusFirst);
       document.removeEventListener('keydown', handleKeyDown);
@@ -158,12 +134,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
 
   const drawer = (
     <div className="fixed inset-0 z-[120] flex justify-end" role="presentation">
-      <button
-        type="button"
-        className="flex-1 bg-slate-950/55 backdrop-blur-[2px] transition-opacity duration-200"
-        onClick={onClose}
-        aria-label="Close drawer"
-      />
+      <button type="button" className="flex-1 bg-slate-950/55 backdrop-blur-[2px] transition-opacity duration-200" onClick={onClose} aria-label="Close drawer" />
       <div
         ref={panelRef}
         className={[
@@ -176,37 +147,20 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
         aria-labelledby={title ? titleId : undefined}
         aria-describedby={description ? descriptionId : undefined}
       >
-        <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur sm:px-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              {title ? (
-                <h2 id={titleId} className="truncate text-lg font-semibold text-slate-900 sm:text-xl">
-                  {title}
-                </h2>
-              ) : null}
-              {description ? (
-                <p id={descriptionId} className="mt-1 max-w-2xl text-sm text-slate-600">
-                  {description}
-                </p>
-              ) : null}
-              {headerActions ? <div className="mt-3">{headerActions}</div> : null}
+        {!hideHeader ? (
+          <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur sm:px-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                {title ? <h2 id={titleId} className="truncate text-lg font-semibold text-slate-900 sm:text-xl">{title}</h2> : null}
+                {description ? <p id={descriptionId} className="mt-1 max-w-2xl text-sm text-slate-600">{description}</p> : null}
+                {headerActions ? <div className="mt-3">{headerActions}</div> : null}
+              </div>
+              <button type="button" onClick={onClose} aria-label="Close drawer" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><span aria-hidden="true">×</span></button>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close drawer"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          </div>
-        </div>
-        <div className={[ 'flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5', bodyClassName ].join(' ')}>{children}</div>
-        {footer ? (
-          <div className="sticky bottom-0 border-t border-slate-200/80 bg-white/92 px-4 py-4 backdrop-blur sm:px-5">
-            {footer}
           </div>
         ) : null}
+        <div className={['flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5', bodyClassName].join(' ')}>{children}</div>
+        {footer ? <div className="sticky bottom-0 border-t border-slate-200/80 bg-white/92 px-4 py-4 backdrop-blur sm:px-5">{footer}</div> : null}
       </div>
     </div>
   );
