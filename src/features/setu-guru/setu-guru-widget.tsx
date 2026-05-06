@@ -265,7 +265,7 @@ export function SetuGuruWidget({
     <>
       {launcher}
       <RightDrawer
-        isOpen={drawerOpen}
+        open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         title="Setu Guru"
         description={`Your route-aware CRM guide for ${routeTitle}.`}
