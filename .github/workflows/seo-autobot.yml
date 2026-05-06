@@ -1,0 +1,61 @@
+name: SEO Autobot
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 10 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  seo-autobot:
+    name: Generate SEO intelligence report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate SEO report
+        run: npm run seo:bot
+        env:
+          SEO_SITE_URL: https://www.setuflowcrm.com
+
+      - name: Upload SEO report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-autobot-report
+          path: |
+            docs/seo/SEO_BOT_REPORT.md
+            docs/seo/seo-bot-data.json
+
+      - name: Open reviewable SEO PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: seo/autobot-report
+          delete-branch: true
+          commit-message: 'chore(seo): refresh autobot report'
+          title: 'chore(seo): refresh autobot intelligence report'
+          body: |
+            Automated SEO monitoring update.
+
+            This PR refreshes the generated SEO intelligence report and JSON snapshot under `docs/seo/`.
+
+            Review required before merging:
+            - Competitor descriptions and detected metadata
+            - Keyword cluster recommendations
+            - Any generated content or schema recommendations before publishing
+          labels: |
+            seo
+            automation
