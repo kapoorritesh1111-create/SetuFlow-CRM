@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import RightDrawer, { DrawerSection } from '@/components/RightDrawer';
 import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { UserAvatar as SharedUserAvatar } from '@/components/ui/user-avatar';
 import { formatDateTime } from '@/lib/utils';
 import { ToolbarField, ToolbarSearchInput, ToolbarSelect, ToolbarStat, WorkspaceToolbar } from '@/components/ui/workspace-toolbar';
 import {
@@ -19,6 +20,13 @@ import {
 } from '@/features/admin/server/actions';
 import type { AdminUserRow, RoleOption, UserDrawerTab } from '@/features/admin/view-model';
 
+const IDENTITY_COPY: Record<AdminUserRow['identityHealth'], string> = {
+  complete: 'Identity complete',
+  missing_name: 'Name missing',
+  missing_email: 'Email missing',
+  missing_profile: 'Profile missing',
+};
+
 const TAB_LABELS: Record<UserDrawerTab, string> = {
   profile: 'Profile',
   role: 'Role',
@@ -33,18 +41,18 @@ function getStatusTone(status: AdminUserRow['status']) {
 }
 
 function UserAvatar({ row, size = 'md' }: { row: AdminUserRow; size?: 'sm' | 'md' | 'lg' }) {
-  const sizeClass = size === 'lg' ? 'h-14 w-14 text-base' : size === 'sm' ? 'h-9 w-9 text-xs' : 'h-11 w-11 text-sm';
-  if (row.avatarUrl) {
-    return <img src={row.avatarUrl} alt={row.name} className={`${sizeClass} shrink-0 rounded-full object-cover ring-1 ring-slate-200`} />;
-  }
-  return <div className={`${sizeClass} flex shrink-0 items-center justify-center rounded-full bg-slate-900 font-semibold text-white ring-1 ring-slate-200`}>{row.initials}</div>;
+  return <SharedUserAvatar name={row.name} email={row.email} avatarUrl={row.avatarUrl} initials={row.initials} size={size} />;
 }
+
 
 export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: AdminUserRow[]; roles: RoleOption[]; canManageOwners: boolean }) {
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | AdminUserRow['status']>('all');
   const [activeTab, setActiveTab] = useState<UserDrawerTab>('profile');
+
+  const identityIssueCount = rows.filter((row) => row.identityHealth !== 'complete').length;
+  const pendingInviteCount = rows.filter((row) => row.status === 'invited').length;
 
   const filteredRows = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
@@ -63,6 +71,32 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
 
   return (
     <div className="space-y-4">
+      {identityIssueCount > 0 ? (
+        <StateMessage
+          title="Identity sync needs review"
+          description={`${identityIssueCount} user record${identityIssueCount === 1 ? '' : 's'} still need profile cleanup. Supabase now backfills auth email/name, and admins can complete display names from the drawer.`}
+          tone="warning"
+        />
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">People access</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">{rows.filter((row) => row.status === 'active').length}</p>
+          <p className="mt-1 text-sm text-slate-500">Active signed-in workspace users</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Open invitations</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">{pendingInviteCount}</p>
+          <p className="mt-1 text-sm text-slate-500">Pending onboarding and reactivation links</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Identity health</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">{identityIssueCount === 0 ? 'Clean' : `${identityIssueCount} gaps`}</p>
+          <p className="mt-1 text-sm text-slate-500">Names, emails, and avatar readiness</p>
+        </div>
+      </div>
+
       {!canManageOwners ? (
         <StateMessage
           title="Admin-view state"
@@ -127,6 +161,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                       <UserAvatar row={row} />
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-slate-900">{row.name}</p>
+                        {row.identityHealth !== 'complete' ? <p className="mt-1 text-xs font-semibold text-amber-700">{IDENTITY_COPY[row.identityHealth]}</p> : null}
                         {row.detailNote ? <p className="mt-1 truncate text-xs text-slate-500">{row.detailNote}</p> : null}
                       </div>
                     </div>
@@ -149,7 +184,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                         }}
                         className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                       >
-                        Edit
+                        Edit identity
                       </button>
 
                       {row.status === 'active' && row.membershipId && row.email ? (
@@ -209,7 +244,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
         open={Boolean(selected)}
         onClose={() => setSelectedRowId(null)}
         title={selected ? selected.name : 'User details'}
-        description="Review membership, role, and invitation state in a shared drawer layout that preserves the current admin flow."
+        description="Review identity, access, security, invitation state, and recent activity without leaving People & Access."
         widthClassName="sm:max-w-xl lg:max-w-2xl"
       >
         {selected ? (
@@ -221,6 +256,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
               <div className="flex flex-wrap gap-2">
                 <StatusBadge label={selected.status} tone={getStatusTone(selected.status)} />
                 {selected.roleName ? <StatusBadge label={selected.roleName} tone="info" /> : null}
+                {selected.identityHealth !== 'complete' ? <StatusBadge label={IDENTITY_COPY[selected.identityHealth]} tone="warning" /> : null}
                 {selected.canResendInvite ? <StatusBadge label="resend available" tone="warning" /> : null}
               </div>
               </div>
@@ -259,7 +295,8 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                         <input name="username" defaultValue={selected.username ?? ''} placeholder="Username" />
                       </label>
                     </div>
-                    <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Save profile name</button>
+                    <p className="text-xs text-slate-500">Admins can edit owner display names here. Role or final-owner protections still remain in the Role and Security tabs.</p>
+                    <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Save identity</button>
                   </form>
                 ) : null}
                 <div className="flex flex-wrap gap-2">

@@ -13,7 +13,7 @@ function getFirstParam(searchParams: SearchParams, key: string) {
 
 function isShareSafeImage(value?: string | null) {
   const trimmed = String(value ?? '').trim();
-  return /^https?:\/\//i.test(trimmed) && trimmed.length < 1000;
+  return (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('/')) && trimmed.length < 1000;
 }
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {

@@ -92,13 +92,13 @@ export default async function AdminUsersPage({
   const canManageOwners = myRoleNames.includes('owner');
 
   return (
-    <AdminSettingsShell active="users" organizationName={organization.name} missingCount={0} sectionTitle="Team members" navCounts={{ users: summary.totalUsers, invitations: summary.invitedUsers }}>
+    <AdminSettingsShell active="users" organizationName={organization.name} missingCount={0} sectionTitle="People & access" navCounts={{ users: summary.totalUsers, invitations: summary.invitedUsers }}>
       <div className="space-y-6">
       <PageHeader
         eyebrow="Admin"
-        title="Workspace users"
+        title="People & access"
         badge={organization.name}
-        description="Review active members, pending invitations, and access controls from one workspace management screen."
+        description="Enterprise-grade workspace identity, invitations, roles, status controls, and recovery actions in one command center."
         actions={[
           { label: 'Organization', href: '/admin/organization' },
           { label: 'Invitations', href: '/admin/invitations' },
@@ -109,7 +109,7 @@ export default async function AdminUsersPage({
 
       <div className="grid gap-4 md:grid-cols-4">
         <SectionCard className="p-4">
-          <p className="text-sm text-slate-500">Total users</p>
+          <p className="text-sm text-slate-500">People records</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{summary.totalUsers}</p>
         </SectionCard>
         <SectionCard className="p-4">

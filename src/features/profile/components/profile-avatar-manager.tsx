@@ -1,22 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { isSetuFlowAvatarPresetUrl } from '@/lib/profile/avatar-presets';
+import { SetuFlowAvatarPicker } from './setu-flow-avatar-picker';
 
 type Props = { initialAvatarUrl?: string | null; fullName?: string | null; email?: string | null };
-
-const avatarStyles = ['bottts-neutral', 'initials', 'adventurer-neutral', 'lorelei-neutral', 'thumbs'];
-
-function seedFrom(value?: string | null) {
-  return encodeURIComponent((value || 'Setu Flow User').trim() || 'Setu Flow User');
-}
 
 export function ProfileAvatarManager({ initialAvatarUrl, fullName, email }: Props) {
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? '');
   const [message, setMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [query, setQuery] = useState(`${fullName || email || 'professional'} profile avatar`);
-  const seed = seedFrom(fullName || email);
-  const suggestions = useMemo(() => avatarStyles.map((style) => `https://api.dicebear.com/9.x/${style}/svg?seed=${seed}`), [seed]);
+  const [query, setQuery] = useState(`${fullName || email || 'professional'} illustrated avatar`);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   async function saveAvatar(payload: Record<string, string>) {
     setIsSaving(true);
@@ -26,8 +22,9 @@ export function ProfileAvatarManager({ initialAvatarUrl, fullName, email }: Prop
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || 'Could not save avatar.');
       setAvatarUrl(result.avatarUrl || payload.avatarUrl || '');
-      setMessage('Avatar saved to your profile.');
-      window.setTimeout(() => setMessage(''), 2200);
+      setPreviewUrl(null);
+      setMessage('Avatar saved. It will now appear across Setu Flow and your digital vCard.');
+      window.setTimeout(() => setMessage(''), 2600);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save avatar.');
     } finally {
@@ -37,53 +34,44 @@ export function ProfileAvatarManager({ initialAvatarUrl, fullName, email }: Prop
 
   function handleFile(file?: File | null) {
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setMessage('Choose an image file.');
-      return;
-    }
-    if (file.size > 4_000_000) {
-      setMessage('Choose an image under 4MB.');
-      return;
-    }
+    if (!file.type.startsWith('image/')) { setMessage('Choose an image file.'); return; }
+    if (file.size > 5_000_000) { setMessage('Choose an image under 5MB.'); return; }
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
     const reader = new FileReader();
     reader.onload = () => void saveAvatar({ imageDataUrl: String(reader.result || ''), fileName: file.name });
     reader.readAsDataURL(file);
   }
 
   function openWebSearch() {
-    const search = query.trim() || 'professional avatar headshot';
+    const search = query.trim() || 'illustrated avatar for business profile';
     window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(search)}`, '_blank', 'noopener,noreferrer');
   }
 
   return (
     <div className="space-y-5 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-soft">
       <div className="flex items-center gap-4">
-        {avatarUrl ? <img src={avatarUrl} alt="Profile avatar" className="h-20 w-20 rounded-full object-cover ring-1 ring-slate-200" /> : <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-900 text-lg font-bold text-white">SF</div>}
+        <div className="relative">
+          {previewUrl ? <img src={previewUrl} alt="Profile avatar preview" className="h-24 w-24 rounded-full object-cover ring-4 ring-white shadow-soft" /> : <UserAvatar name={fullName} email={email} avatarUrl={avatarUrl} size="xl" className="ring-4 ring-white shadow-soft" />}
+          <span className="absolute -bottom-1 -right-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">Live</span>
+        </div>
         <div>
           <p className="text-sm font-semibold text-slate-900">Avatar & image</p>
-          <p className="mt-1 text-sm text-slate-600">Uploaded images are saved through the Supabase avatars bucket and synced back to your profile.</p>
+          <p className="mt-1 text-sm text-slate-600">Use a photo, pick a Setu Flow exclusive avatar, or search the web for inspiration.</p>
         </div>
       </div>
-
       <label className="block rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-        Upload avatar image
-        <input type="file" accept="image/*" className="mt-2 block w-full text-sm text-slate-600" disabled={isSaving} onChange={(event) => handleFile(event.target.files?.[0])} />
+        Upload profile image
+        <span className="mt-1 block text-xs font-normal text-slate-500">PNG, JPG, WEBP, or GIF. Stored in Supabase Storage under your own avatar folder.</span>
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="mt-3 block w-full text-sm text-slate-600" disabled={isSaving} onChange={(event) => handleFile(event.target.files?.[0])} />
       </label>
-
+      <SetuFlowAvatarPicker selectedUrl={isSetuFlowAvatarPresetUrl(avatarUrl) ? avatarUrl : null} onSelect={(nextUrl) => void saveAvatar({ avatarUrl: nextUrl })} disabled={isSaving} />
       <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search web for avatar inspiration" aria-label="Search web for avatars" />
-          <button type="button" onClick={openWebSearch} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Search web</button>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {suggestions.map((url, index) => (
-            <button key={url} type="button" disabled={isSaving} onClick={() => void saveAvatar({ avatarUrl: url })} className="rounded-2xl border border-slate-200 bg-white p-2 transition hover:border-slate-400 disabled:opacity-60">
-              <img src={url} alt={`Recommended avatar ${index + 1}`} className="mx-auto h-14 w-14 rounded-full object-cover" />
-              <span className="mt-2 block text-[11px] font-semibold text-slate-600">Use avatar</span>
-            </button>
-          ))}
-        </div>
+        <p className="text-sm font-semibold text-slate-900">Search the web</p>
+        <p className="text-sm text-slate-600">Temporary helper for sourcing outside inspiration before the full avatar library expands.</p>
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search web for avatar inspiration" aria-label="Search web for avatars" /><button type="button" onClick={openWebSearch} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Search web</button></div>
       </div>
+      {avatarUrl ? <button type="button" disabled={isSaving} onClick={() => void saveAvatar({ avatarUrl: '/avatars/setu-flow-exclusive/avatar-15-monogram-classic.svg' })} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60">Use Setu Flow monogram</button> : null}
       {message ? <p className="text-sm font-medium text-slate-600">{message}</p> : null}
     </div>
   );

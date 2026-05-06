@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import { ProfessionalDigitalCard } from '@/components/contact-exchange/professional-digital-card';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { isSetuFlowAvatarPresetUrl } from '@/lib/profile/avatar-presets';
+import { SetuFlowAvatarPicker } from '@/features/profile/components/setu-flow-avatar-picker';
 import {
   EMPTY_CARD_SETTINGS,
   mergeIdentityWithCardSettings,
@@ -227,6 +230,23 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
     }
   }
 
+  async function savePresetAvatar(nextAvatarUrl: string) {
+    setAvatarSaving(true);
+    setAvatarMessage('Saving Setu Flow avatar...');
+    try {
+      const response = await fetch('/api/profile/avatar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatarUrl: nextAvatarUrl }) });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.error || 'Could not save avatar.');
+      setAvatarUrl(payload.avatarUrl || nextAvatarUrl);
+      setAvatarMessage('Setu Flow avatar saved for your public card and vCard.');
+      window.setTimeout(() => setAvatarMessage(''), 2400);
+    } catch (error) {
+      setAvatarMessage(error instanceof Error ? error.message : 'Could not save avatar.');
+    } finally {
+      setAvatarSaving(false);
+    }
+  }
+
   async function persistSettings(nextOverrides = overrides) {
     try {
       setIsSaving(true);
@@ -296,9 +316,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
           <div className="mt-6 rounded-[1.5rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-xl font-semibold text-slate-700 shadow-sm">
-                  {avatarUrl ? <img src={avatarUrl} alt={identity.fullName} className="h-full w-full object-cover" /> : identity.fullName.slice(0, 1).toUpperCase()}
-                </div>
+                <UserAvatar name={identity.fullName} email={identity.email} avatarUrl={avatarUrl} size="xl" className="h-20 w-20 border border-slate-200 shadow-sm" />
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Profile photo</p>
                   <p className="mt-1 max-w-md text-sm leading-6 text-slate-600">Large phone photos are welcome. Setu Flow crops and compresses them before saving.</p>
@@ -310,6 +328,10 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
                 <input type="file" accept="image/*" className="sr-only" onChange={(event) => handleAvatarFile(event.target.files?.[0])} />
               </label>
             </div>
+          </div>
+
+          <div className="mt-5">
+            <SetuFlowAvatarPicker compact selectedUrl={isSetuFlowAvatarPresetUrl(avatarUrl) ? avatarUrl : null} onSelect={(nextUrl) => void savePresetAvatar(nextUrl)} disabled={avatarSaving} title="Setu Flow avatar library" description="Pick from 20 exclusive illustrated avatars for workspace and public vCard sharing." />
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">

@@ -54,6 +54,12 @@ function dataImageToVCardPhoto(value?: string | null) {
   return { type, base64 };
 }
 
+function photoUriForVCard(value?: string | null) {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed || !/^https?:\/\//i.test(trimmed)) return null;
+  return trimmed.length <= 500 ? trimmed : null;
+}
+
 function foldLine(line: string) {
   if (line.length <= 75) return line;
   const parts: string[] = [];
@@ -95,7 +101,12 @@ export function buildVCard(identity: VCardIdentity) {
   if (hasRealValue(identity.address)) lines.push(`ADR;TYPE=WORK:;;${escapeVCardValue(String(identity.address).trim())};;;;`);
 
   const photo = dataImageToVCardPhoto(identity.avatarUrl);
-  if (photo) lines.push(`PHOTO;TYPE=${photo.type};ENCODING=BASE64:${photo.base64}`);
+  if (photo) {
+    lines.push(`PHOTO;TYPE=${photo.type};ENCODING=BASE64:${photo.base64}`);
+  } else {
+    const photoUri = photoUriForVCard(identity.avatarUrl);
+    if (photoUri) lines.push(`PHOTO;VALUE=URI:${escapeVCardValue(photoUri)}`);
+  }
 
   lines.push('NOTE:Shared via Setu Flow');
   lines.push(`REV:${now}`);

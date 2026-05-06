@@ -1,3 +1,4 @@
+import { UserAvatar } from '@/components/ui/user-avatar';
 import type { PublicCardIdentity } from '@/lib/contact-exchange/public-card';
 
 type ProfessionalDigitalCardProps = {
@@ -95,15 +96,7 @@ export function ProfessionalDigitalCard({
       <div className="relative overflow-hidden bg-[linear-gradient(135deg,#1F487C_0%,#359F91_100%)] px-6 pb-10 pt-8 text-white sm:px-10">
         <div className="absolute inset-0 opacity-20 [background:radial-gradient(circle_at_top_right,_rgba(255,255,255,0.55),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(255,255,255,0.25),_transparent_30%)]" />
         <div className="relative flex flex-col items-center text-center">
-          <div className="h-52 w-52 overflow-hidden rounded-full border border-white/35 bg-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.15)] backdrop-blur sm:h-60 sm:w-60">
-            {identity.avatarUrl ? (
-              <img src={identity.avatarUrl} alt={identity.fullName} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(255,255,255,0.3)_0%,rgba(255,255,255,0.12)_100%)] text-6xl font-semibold text-white">
-                {identity.fullName.slice(0, 1).toUpperCase()}
-              </div>
-            )}
-          </div>
+          <UserAvatar name={identity.fullName} email={identity.email} avatarUrl={identity.avatarUrl} size="2xl" className="border border-white/35 bg-white/15 shadow-[0_20px_60px_rgba(15,23,42,0.15)] backdrop-blur ring-0" />
           <p className="mt-8 text-xs font-semibold uppercase tracking-[0.32em] text-white/75">{identity.roleLabel}</p>
           <h1 className="mt-4 text-5xl font-semibold tracking-[-0.06em] text-white sm:text-6xl">{identity.fullName}</h1>
           <p className="mt-3 text-2xl font-medium tracking-[-0.03em] text-white/85">{identity.organizationName}</p>

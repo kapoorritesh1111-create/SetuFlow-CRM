@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { isSetuFlowAvatarPresetUrl } from '@/lib/profile/avatar-presets';
 
 export const dynamic = 'force-dynamic';
 
-const MAX_IMAGE_BYTES = 4_000_000;
-const REMOTE_AVATAR_HOSTS = new Set(['api.dicebear.com', 'ui-avatars.com', 'images.unsplash.com', 'plus.unsplash.com']);
+const MAX_IMAGE_BYTES = 5_000_000;
+const REMOTE_AVATAR_HOSTS = new Set(['api.dicebear.com', 'ui-avatars.com']);
 
 type AvatarPayload = { avatarUrl?: string; imageDataUrl?: string; fileName?: string };
 
@@ -18,10 +19,10 @@ function isAllowedRemoteAvatar(value: string) {
 }
 
 function parseDataUrl(value: string) {
-  const match = value.match(/^data:(image\/(png|jpeg|jpg|webp|gif|svg\+xml));base64,(.+)$/i);
+  const match = value.match(/^data:(image\/(png|jpeg|jpg|webp|gif));base64,(.+)$/i);
   if (!match) return null;
   const mimeType = match[1].toLowerCase().replace('image/jpg', 'image/jpeg');
-  const extension = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : mimeType.includes('gif') ? 'gif' : mimeType.includes('svg') ? 'svg' : 'jpg';
+  const extension = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : mimeType.includes('gif') ? 'gif' : 'jpg';
   const buffer = Buffer.from(match[3], 'base64');
   return { mimeType, extension, buffer };
 }
@@ -37,7 +38,9 @@ export async function PUT(request: NextRequest) {
   let nextAvatarUrl = '';
 
   if (remoteAvatarUrl) {
-    if (!isAllowedRemoteAvatar(remoteAvatarUrl)) return NextResponse.json({ error: 'Use one of the recommended avatar sources or upload an image.' }, { status: 400 });
+    if (!isAllowedRemoteAvatar(remoteAvatarUrl) && !isSetuFlowAvatarPresetUrl(remoteAvatarUrl)) {
+      return NextResponse.json({ error: 'Use a Setu Flow preset avatar, a recommended avatar source, or upload an image.' }, { status: 400 });
+    }
     nextAvatarUrl = remoteAvatarUrl;
   } else {
     const imageDataUrl = String(body.imageDataUrl ?? '').trim() || String((body as any).avatarUrl ?? '').trim();
@@ -54,8 +57,7 @@ export async function PUT(request: NextRequest) {
     });
     if (uploadError) return NextResponse.json({ error: uploadError.message || 'Could not upload avatar to storage.' }, { status: 500 });
 
-    const { data: signed } = await supabase.storage.from('avatars').createSignedUrl(storagePath, 60 * 60 * 24 * 365);
-    nextAvatarUrl = signed?.signedUrl || supabase.storage.from('avatars').getPublicUrl(storagePath).data.publicUrl;
+    nextAvatarUrl = supabase.storage.from('avatars').getPublicUrl(storagePath).data.publicUrl;
   }
 
   const { error } = await (supabase.from('profiles') as any).update({ avatar_url: nextAvatarUrl, updated_at: new Date().toISOString() }).eq('id', userId);

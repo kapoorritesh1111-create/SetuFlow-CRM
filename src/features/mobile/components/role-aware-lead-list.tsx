@@ -10,6 +10,7 @@ import {
   type MobileUserRole,
 } from '../lib/role-aware-leads';
 import { LeadStatusCard } from './lead-status-card';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 type SignedInSummary = {
   name: string;
@@ -17,6 +18,7 @@ type SignedInSummary = {
   roleLabel: string;
   organizationName?: string | null;
   shareHref?: string;
+  avatarUrl?: string | null;
 };
 
 function SignedInCard({ signedIn }: { signedIn?: SignedInSummary }) {
@@ -31,9 +33,7 @@ function SignedInCard({ signedIn }: { signedIn?: SignedInSummary }) {
   return (
     <section className="rounded-[1.75rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
       <div className="flex items-center gap-3">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-sm font-black text-white shadow-lg ring-1 ring-white/20">
-          {initials}
-        </div>
+        <UserAvatar name={signedIn.name} email={signedIn.email} avatarUrl={signedIn.avatarUrl} initials={initials} size="md" className="h-12 w-12 shadow-lg ring-1 ring-white/20" />
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Signed in</p>
           <h2 className="truncate text-base font-black text-slate-950 dark:text-white">{signedIn.name}</h2>

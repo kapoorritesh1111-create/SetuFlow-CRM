@@ -22,6 +22,7 @@ export type AdminUserRow = {
   canDelete: boolean;
   canResendInvite: boolean;
   resendInviteLabel: string;
+  identityHealth: 'complete' | 'missing_name' | 'missing_email' | 'missing_profile';
   tabs: UserDrawerTab[];
 };
 
@@ -68,6 +69,13 @@ function normalizeRole(record: RoleRecord): RoleOption | null {
   return { id, name, organizationId: asOptionalString(record.organization_id) };
 }
 
+function memberIdentityHealth(fullName: string | null, email: string | null, userId: string | null) {
+  if (!userId) return 'missing_profile' as const;
+  if (!email) return 'missing_email' as const;
+  if (!fullName) return 'missing_name' as const;
+  return 'complete' as const;
+}
+
 function buildMemberRow(member: MemberRecord, reactivationInvite?: InvitationRecord | null): AdminUserRow | null {
   const membershipId = asOptionalString(member.id);
   if (!membershipId) return null;
@@ -103,6 +111,7 @@ function buildMemberRow(member: MemberRecord, reactivationInvite?: InvitationRec
     canDelete: true,
     canResendInvite: Boolean(invitationId),
     resendInviteLabel: invitationId ? 'Resend reactivation invite' : 'Resend invite',
+    identityHealth: memberIdentityHealth(fullName, email, asOptionalString(member.user_id)),
     tabs: ['profile', 'role', 'security', 'activity'],
   };
 }
@@ -138,6 +147,7 @@ function buildInvitationRow(invitation: InvitationRecord): AdminUserRow | null {
     canDelete: false,
     canResendInvite: true,
     resendInviteLabel: 'Resend invite',
+    identityHealth: email ? 'missing_name' : 'missing_email',
     tabs: ['profile', 'security', 'activity'],
   };
 }

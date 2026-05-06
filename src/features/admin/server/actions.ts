@@ -331,11 +331,22 @@ export async function updateMemberProfile(formData: FormData): Promise<void> {
   const targetMembership = await getTargetMembershipSnapshot(supabase, membershipId);
   if (!targetMembership || targetMembership.organization_id !== organization.id || !targetMembership.user_id) redirectWithNotice(returnPath, 'user-not-found');
 
-  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  payload.full_name = fullName;
-  if (username) payload.username = username;
+  const previousProfile = Array.isArray(targetMembership.profiles) ? targetMembership.profiles[0] : targetMembership.profiles;
+  const currentFullName = normalizeName(previousProfile?.full_name ?? null);
+  const currentUsername = normalizeName(previousProfile?.username ?? null);
+  const currentEmail = normalizeEmail(previousProfile?.email ?? null);
+  const payload: Record<string, unknown> = {
+    full_name: fullName ?? currentFullName,
+    updated_at: new Date().toISOString(),
+  };
 
-  const { error } = await supabase.from('profiles').update(payload).eq('id', targetMembership.user_id);
+  if (username) payload.username = username;
+  if (currentEmail) payload.email = currentEmail;
+
+  const db = createAdminSupabaseClient() ?? supabase;
+  const { error } = await db
+    .from('profiles')
+    .upsert({ id: targetMembership.user_id, ...payload }, { onConflict: 'id' });
   if (error) redirectWithNotice(returnPath, 'profile-update-failed');
 
   await logAdminAuditAction({
@@ -344,7 +355,9 @@ export async function updateMemberProfile(formData: FormData): Promise<void> {
     entityType: 'profile',
     entityId: targetMembership.user_id,
     actorUserId: currentMembership.user_id ?? null,
-    metadata: { profile_update: true, full_name: fullName, username },
+    previousValue: { full_name: currentFullName, username: currentUsername },
+    newValue: { full_name: payload.full_name, username: payload.username ?? currentUsername },
+    metadata: { profile_update: true, editable_owner_identity: true },
   });
 
   revalidatePath('/admin/users');

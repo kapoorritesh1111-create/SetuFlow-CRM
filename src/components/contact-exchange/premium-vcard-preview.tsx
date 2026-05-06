@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 type PremiumVCardPreviewProps = {
@@ -21,22 +22,9 @@ type PremiumVCardPreviewProps = {
 };
 
 function Avatar({ fullName, avatarUrl }: { fullName: string; avatarUrl?: string | null }) {
-  if (avatarUrl) {
-    return (
-      <img
-        src={avatarUrl}
-        alt={fullName}
-        className="h-24 w-24 rounded-full border border-white/80 object-cover shadow-[0_18px_50px_rgba(15,23,42,0.18)] sm:h-28 sm:w-28"
-      />
-    );
-  }
-
-  return (
-    <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/80 bg-[linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] text-3xl font-semibold text-slate-800 shadow-[0_18px_50px_rgba(15,23,42,0.18)] sm:h-28 sm:w-28">
-      {fullName.slice(0, 1).toUpperCase()}
-    </div>
-  );
+  return <UserAvatar name={fullName} avatarUrl={avatarUrl} size="xl" className="border border-white/80 shadow-[0_18px_50px_rgba(15,23,42,0.18)] sm:h-28 sm:w-28" />;
 }
+
 
 function LogoBadge({ organizationName, logoUrl }: { organizationName: string; logoUrl?: string | null }) {
   if (logoUrl) {

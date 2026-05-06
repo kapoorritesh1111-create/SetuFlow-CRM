@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import type { MobileSignedInIdentity } from './mobile-shell';
 
 function buildIntro(identity?: MobileSignedInIdentity, publicCardUrl = '') {
@@ -86,7 +87,7 @@ export function MobileVCardShareSheet({
         <section className="w-full overflow-hidden rounded-[2rem] border border-sky-300/40 bg-white shadow-[0_24px_90px_rgba(15,23,42,.36)] dark:border-sky-800/60 dark:bg-slate-950" onClick={(event) => event.stopPropagation()}>
           <div className="bg-[linear-gradient(145deg,#071827_0%,#0b2e4a_58%,#1267b5_120%)] p-7 text-white">
             <div className="flex items-start justify-between gap-4">
-              <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-full border border-white/35 bg-[linear-gradient(135deg,#20a4ff,#0c7fff)] text-base font-black shadow-xl shadow-sky-950/40">{avatarUrl ? <img src={avatarUrl} alt={signedIn?.name ?? 'SETU Flow user'} className="h-full w-full object-cover" /> : initials}</div>
+              <UserAvatar name={signedIn?.name} email={signedIn?.email} avatarUrl={avatarUrl} initials={initials} size="lg" className="border border-white/35 shadow-xl shadow-sky-950/40" />
               <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full bg-white/15 text-2xl text-white" aria-label="Close Share vCard">×</button>
             </div>
             <h2 className="mt-5 text-2xl font-black tracking-tight">{signedIn?.name ?? 'SETU Flow user'}</h2>

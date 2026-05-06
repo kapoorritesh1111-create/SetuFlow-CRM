@@ -1,0 +1,14 @@
+'use client';
+import { useMemo, useState } from 'react';
+import { AVATAR_PRESET_CATEGORIES, SETU_FLOW_AVATAR_PRESETS, type AvatarPresetCategory } from '@/lib/profile/avatar-presets';
+
+type Props = { selectedUrl?: string | null; onSelect: (avatarUrl: string) => void; disabled?: boolean; compact?: boolean; title?: string; description?: string };
+export function SetuFlowAvatarPicker({ selectedUrl, onSelect, disabled = false, compact = false, title = 'Setu Flow exclusive avatars', description = 'Brand-owned default avatars available to every user and every organization in Setu Flow.' }: Props) {
+  const [activeCategory, setActiveCategory] = useState<'all' | AvatarPresetCategory>('all');
+  const filtered = useMemo(() => activeCategory === 'all' ? SETU_FLOW_AVATAR_PRESETS : SETU_FLOW_AVATAR_PRESETS.filter((item) => item.category === activeCategory), [activeCategory]);
+  return <div className={`rounded-[1.5rem] border border-slate-200 bg-slate-50/85 ${compact ? 'p-4' : 'p-5'}`}>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-semibold text-slate-900">{title}</p><p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">{description}</p></div><span className="rounded-full border border-brand-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700">20 presets</span></div>
+    <div className="mt-4 flex flex-wrap gap-2">{AVATAR_PRESET_CATEGORIES.map((category) => <button key={category.id} type="button" disabled={disabled} onClick={() => setActiveCategory(category.id)} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${activeCategory === category.id ? 'bg-slate-900 text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-100'} disabled:opacity-60`}>{category.label}</button>)}</div>
+    <div className={`mt-4 grid gap-3 ${compact ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4'}`}>{filtered.map((preset) => { const selected = selectedUrl === preset.url; return <button key={preset.id} type="button" disabled={disabled} onClick={() => onSelect(preset.url)} className={`rounded-[1.25rem] border bg-white p-3 text-left transition ${selected ? 'border-[#1F487C] ring-2 ring-[#1F487C]/15' : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'} disabled:opacity-60`} aria-pressed={selected}><div className="relative overflow-hidden rounded-[1rem] border border-slate-100 bg-slate-50"><img src={preset.url} alt={preset.name} className="aspect-square w-full object-contain" />{selected ? <span className="absolute right-2 top-2 rounded-full bg-[#1F487C] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">Selected</span> : null}</div><p className="mt-3 text-sm font-semibold text-slate-900">{preset.name}</p><p className="mt-1 text-xs leading-5 text-slate-500">{preset.description}</p></button>; })}</div>
+  </div>;
+}

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ThreeDIconOrb } from "./icon-3d-orb";
 import { MobileVCardShareSheet } from "./mobile-vcard-share-sheet";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 
 const standaloneTabs = [
@@ -107,11 +108,11 @@ export function BrandedMobileTopBar({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="grid h-11 w-11 place-items-center rounded-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b2e4a_55%,#0c7fff_130%)] text-xs font-black ring-1 ring-white/20"
+            className="grid h-11 w-11 place-items-center rounded-full"
             title={`Signed in as ${displayName}`}
             aria-label="Open profile and quick actions"
           >
-            {initials}
+            <UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" />
           </button>
         </div>
       </header>

@@ -13,6 +13,7 @@ import { getWorkspaceBasePath, getWorkspaceModeFromLocation, withWorkspaceMode, 
 import { cn, getInitials } from '@/lib/utils';
 import { MobileShell } from '@/features/mobile/components/mobile-shell';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 import type { Database } from '@/types/database';
 import type { MyCardSettingsInput } from '@/lib/contact-exchange/my-card-settings-shared';
@@ -154,6 +155,7 @@ type Membership = Database['public']['Tables']['organization_members']['Row'] | 
 function addShareSafeAssetParam(params: URLSearchParams, key: string, value?: string | null) {
   const trimmed = String(value ?? '').trim();
   if (!trimmed || /^data:/i.test(trimmed) || /^blob:/i.test(trimmed) || trimmed.length > 500) return;
+  if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith('/')) return;
   params.set(key, trimmed);
 }
 
@@ -306,12 +308,12 @@ export function AppShell({
         aria-label="Open profile menu"
         aria-expanded={profileMenuOpen}
       >
-        {profile?.avatar_url ? <img src={profile.avatar_url} alt={profileDisplayName} className="h-full w-full rounded-full object-cover" /> : profileInitials}
+        <UserAvatar name={profileDisplayName} email={profileEmail} avatarUrl={profile?.avatar_url} initials={profileInitials} size="sm" className="h-full w-full rounded-full ring-0" />
       </button>
       {profileMenuOpen ? (
         <div className={cn("absolute right-0 z-[90] mt-2 w-72 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white text-left shadow-[0_28px_70px_rgba(15,23,42,0.22)] ring-1 ring-slate-950/5", compact && "right-[-4px]")}>
           <div className="bg-[linear-gradient(135deg,#061c2e_0%,#0b2e4a_70%,#0c7fff_150%)] px-4 py-4 text-white">
-            <div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/12 text-sm font-bold ring-1 ring-white/20">{profile?.avatar_url ? <img src={profile.avatar_url} alt={profileDisplayName} className="h-full w-full object-cover" /> : profileInitials}</div><div className="min-w-0"><p className="truncate text-sm font-bold">{profileDisplayName}</p><p className="mt-0.5 truncate text-xs text-white/65">{profileEmail}</p></div></div>
+            <div className="flex items-center gap-3"><UserAvatar name={profileDisplayName} email={profileEmail} avatarUrl={profile?.avatar_url} initials={profileInitials} size="md" className="bg-white/12 ring-1 ring-white/20" /><div className="min-w-0"><p className="truncate text-sm font-bold">{profileDisplayName}</p><p className="mt-0.5 truncate text-xs text-white/65">{profileEmail}</p></div></div>
             <div className="mt-3 inline-flex rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">{getWorkspaceRoleDisplayName(currentRole)} · {organization?.name ?? 'SETU Flow'}</div>
           </div>
           <div className="p-2">
@@ -427,7 +429,7 @@ export function AppShell({
                 ✕
               </button>
               <div className="mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-white/25 bg-[linear-gradient(135deg,#0c7fff,#38bdf8)] text-lg font-bold shadow-[0_14px_40px_rgba(0,0,0,0.18)]">
-                {profile?.avatar_url ? <img src={profile.avatar_url} alt={profileDisplayName} className="h-full w-full object-cover" /> : profileInitials}
+                <UserAvatar name={profileDisplayName} email={profileEmail} avatarUrl={profile?.avatar_url} initials={profileInitials} size="2xl" className="h-full w-full bg-white/12 text-white ring-0" />
               </div>
               <p className="text-xl font-semibold tracking-tight">{profile?.full_name ?? profile?.username ?? 'SETU Flow user'}</p>
               <p className="mt-1 text-sm text-white/70">{getWorkspaceRoleDisplayName(currentRole)} · {organization?.name ?? 'SETU Flow'}</p>

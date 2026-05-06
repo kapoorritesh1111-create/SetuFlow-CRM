@@ -27,9 +27,10 @@ function isShareSafeAssetUrl(value?: string | null) {
   const trimmed = String(value ?? '').trim();
   if (!trimmed) return false;
   // Data URLs from phone uploads can be thousands of characters long and break
-  // QR, .vcf and copied links. Only stable http(s) assets belong in URLs.
+  // QR, .vcf and copied links. Stable http(s) assets or app-hosted root-relative
+  // assets are safe to include in share links.
   if (/^data:/i.test(trimmed) || /^blob:/i.test(trimmed)) return false;
-  if (!/^https?:\/\//i.test(trimmed)) return false;
+  if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith('/')) return false;
   return trimmed.length <= 500;
 }
 

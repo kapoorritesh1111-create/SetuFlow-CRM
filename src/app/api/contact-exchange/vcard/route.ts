@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentWorkspace, getWorkspaceRoleNames } from '@/lib/workspace/auth';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName } from '@/lib/workspace/roles';
 import { buildVCard, getVCardFilename } from '@/lib/contact-exchange/vcard';
 import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const workspace = await getCurrentWorkspace();
   if (!workspace.user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
   if (!workspace.membership || !workspace.organization) return NextResponse.json({ error: 'Active workspace membership required.' }, { status: 403 });
@@ -17,6 +17,8 @@ export async function GET() {
   const username = workspace.profile?.username || null;
   const settings = await getMyCardSettingsForUser(workspace.user.id);
 
+  const origin = request.nextUrl.origin;
+  const avatarUrl = workspace.profile?.avatar_url?.startsWith('/') ? `${origin}${workspace.profile.avatar_url}` : workspace.profile?.avatar_url ?? null;
   const vcard = buildVCard({
     fullName,
     email,
@@ -24,7 +26,7 @@ export async function GET() {
     roleLabel,
     username,
     previewPath: null,
-    avatarUrl: workspace.profile?.avatar_url ?? null,
+    avatarUrl,
     primaryPhone: settings?.primary_phone ?? null,
     secondaryPhone: settings?.secondary_phone ?? null,
     website: settings?.website ?? null,

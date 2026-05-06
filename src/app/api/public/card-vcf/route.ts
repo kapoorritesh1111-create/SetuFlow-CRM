@@ -7,13 +7,14 @@ export async function GET(request: NextRequest) {
   const share = request.nextUrl.searchParams.get('share');
   const sharedCard = share ? await getPublicCardByShareSlug(share) : null;
   const identity = sharedCard?.identity ?? parsePublicCardSearchParams(Object.fromEntries(request.nextUrl.searchParams.entries()));
+  const avatarUrl = identity.avatarUrl?.startsWith('/') ? `${request.nextUrl.origin}${identity.avatarUrl}` : identity.avatarUrl;
   const vcard = buildVCard({
     fullName: identity.fullName,
     email: identity.email,
     organizationName: identity.organizationName,
     roleLabel: identity.roleLabel,
     previewPath: null,
-    avatarUrl: identity.avatarUrl,
+    avatarUrl,
     primaryPhone: identity.primaryPhone,
     secondaryPhone: identity.secondaryPhone,
     website: identity.website,
