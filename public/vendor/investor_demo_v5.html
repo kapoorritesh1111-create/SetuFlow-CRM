@@ -1,0 +1,3178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Setu Flow · $1M Seed Round · Trade Execution for the World's Exporters</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --blue:       #1F487C;
+  --blue-dark:  #142d52;
+  --teal:       #359F91;
+  --teal-d:     #279491;
+  --grad:       linear-gradient(135deg, #1F487C 0%, #359F91 100%);
+  --grad-light: linear-gradient(135deg, rgba(31,72,124,0.08) 0%, rgba(53,159,145,0.10) 100%);
+  --gold:       #F5A623;
+  --page-bg:    #F4F8FB;
+  --white:      #ffffff;
+  --ink-950:    #0B1628;
+  --ink-800:    #1e2d42;
+  --ink-600:    #3d5166;
+  --ink-400:    #7a93a8;
+  --ink-200:    #d0dce8;
+  --ink-100:    #e8f0f7;
+  --line:       rgba(31,72,124,0.09);
+  --line-mid:   rgba(31,72,124,0.16);
+  --shadow-xs:  0 1px 4px rgba(11,22,40,0.05);
+  --shadow-sm:  0 4px 16px rgba(11,22,40,0.07);
+  --shadow-md:  0 12px 36px rgba(11,22,40,0.09);
+  --shadow-lg:  0 24px 64px rgba(11,22,40,0.11);
+  --shadow-xl:  0 40px 96px rgba(11,22,40,0.14);
+  --r:          1rem;
+  --r-lg:       1.5rem;
+  --r-xl:       2rem;
+  --r-2xl:      2.5rem;
+  --max:        1280px;
+  --font:       'Sora', ui-sans-serif, system-ui, sans-serif;
+  --mono:       'DM Mono', ui-monospace, monospace;
+  --body:       'DM Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--body);
+  background: var(--page-bg);
+  color: var(--ink-950);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--blue); color: white; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; border: none; background: none; padding: 0; }
+img, svg { max-width: 100%; display: block; }
+h1,h2,h3,h4,h5,h6 { margin: 0; font-family: var(--font); font-weight: 700; letter-spacing: -0.025em; color: var(--ink-950); }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  position: sticky; top: 0; z-index: 80;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(14px) saturate(180%);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: var(--max); margin: 0 auto;
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.brand { display: flex; align-items: center; gap: 11px; }
+.brand-logo { width: 40px; height: 40px; }
+.brand-name { font-family: var(--font); font-size: 17px; font-weight: 700; color: var(--blue); letter-spacing: -0.01em; }
+.brand-name em { color: var(--teal-d); font-style: normal; font-weight: 600; }
+.nav { display: flex; gap: 24px; }
+.nav a { font-size: 13px; font-weight: 500; color: var(--ink-600); transition: color .15s; }
+.nav a:hover { color: var(--blue); }
+.topbar-cta {
+  background: var(--grad);
+  color: white;
+  padding: 9px 20px;
+  border-radius: 999px;
+  font-family: var(--font);
+  font-size: 13px; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(31,72,124,0.24);
+  transition: transform .15s, box-shadow .15s;
+  white-space: nowrap;
+}
+.topbar-cta:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(31,72,124,0.32); }
+@media (max-width: 900px) { .nav { display: none; } }
+
+/* ─── SECTION SHELL ─── */
+.shell { max-width: var(--max); margin: 0 auto; padding: 96px 24px; }
+.shell-sm { max-width: var(--max); margin: 0 auto; padding: 64px 24px; }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--teal-d);
+  margin-bottom: 16px;
+}
+.eyebrow-blue { color: var(--blue); }
+.eyebrow-white { color: #6EE7B7; }
+
+/* ─── REVEAL ANIM ─── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity .65s ease, transform .65s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ─── BTN ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 26px;
+  border-radius: 999px;
+  font-family: var(--font);
+  font-size: 14px; font-weight: 600;
+  transition: transform .15s, box-shadow .15s;
+}
+.btn-primary { background: var(--grad); color: white; box-shadow: 0 14px 36px rgba(31,72,124,0.28); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 48px rgba(31,72,124,0.36); }
+.btn-ghost { background: white; color: var(--blue); border: 1.5px solid var(--line-mid); }
+.btn-ghost:hover { border-color: var(--blue); background: rgba(31,72,124,0.04); }
+.arr { transition: transform .15s; }
+.btn:hover .arr { transform: translateX(3px); }
+
+/* ─── HERO ─── */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: white;
+  border-bottom: 1px solid var(--line);
+}
+.hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 100% 0%, rgba(53,159,145,0.13), transparent),
+    radial-gradient(ellipse 50% 60% at 0% 100%, rgba(31,72,124,0.12), transparent);
+  pointer-events: none;
+}
+.hero-inner {
+  position: relative;
+  max-width: var(--max); margin: 0 auto;
+  padding: 80px 24px 100px;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 64px; align-items: center;
+}
+.raise-badge {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: white;
+  border: 1.5px solid var(--line-mid);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--blue);
+  box-shadow: var(--shadow-sm);
+}
+.raise-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); animation: blink 1.8s ease infinite; box-shadow: 0 0 8px var(--teal); }
+@keyframes blink { 50% { opacity: 0.35; } }
+
+.hero h1 {
+  margin-top: 22px;
+  font-size: clamp(38px, 5.2vw, 66px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: var(--ink-950);
+}
+.hero h1 .grad {
+  background: var(--grad);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero-lede {
+  margin-top: 22px;
+  font-size: 18px;
+  color: var(--ink-600);
+  max-width: 560px;
+  line-height: 1.65;
+}
+.hero-lede strong { color: var(--ink-800); }
+.hero-actions { margin-top: 36px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+.hero-kpis {
+  display: flex; gap: 28px; flex-wrap: wrap;
+  margin-top: 48px;
+  padding-top: 36px;
+  border-top: 1px solid var(--line);
+}
+.kpi-item { }
+.kpi-num { font-family: var(--font); font-size: 28px; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; }
+.kpi-lbl { font-size: 12px; color: var(--ink-400); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.14em; margin-top: 2px; }
+
+/* Hero right side: live product preview */
+.hero-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2xl);
+  padding: 28px;
+  box-shadow: var(--shadow-xl);
+}
+.hero-card-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--ink-100);
+  margin-bottom: 20px;
+}
+.hero-card-head .ttl { font-size: 14px; font-weight: 600; color: var(--ink-950); }
+.hero-card-head .sub { font-size: 12px; color: var(--ink-400); margin-top: 3px; }
+.live-pill {
+  background: rgba(53,159,145,0.12); color: var(--teal-d);
+  padding: 4px 11px; border-radius: 999px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mini-card {
+  background: var(--page-bg);
+  border: 1px solid var(--ink-100);
+  border-radius: var(--r);
+  padding: 14px;
+}
+.mini-card.span2 { grid-column: 1 / -1; background: var(--grad-light); border-color: rgba(53,159,145,0.2); }
+.mini-card .mk { font-family: var(--mono); font-size: 9.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.18em; color: var(--blue); }
+.mini-card .mv { font-family: var(--font); font-size: 15px; font-weight: 600; color: var(--ink-950); margin-top: 6px; line-height: 1.2; }
+.mini-card .mb { font-size: 12px; color: var(--ink-600); margin-top: 6px; line-height: 1.5; }
+.mini-card ul { margin: 8px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--ink-600); line-height: 1.7; }
+.mini-card li::before { content: "→ "; color: var(--teal-d); font-weight: 700; }
+
+.hero-tags {
+  display: flex; flex-wrap: wrap; gap: 7px;
+  margin-top: 48px; padding-top: 28px;
+  border-top: 1px solid var(--ink-100);
+}
+.tag {
+  background: white; border: 1px solid var(--line-mid);
+  color: var(--blue);
+  padding: 5px 12px; border-radius: 999px;
+  font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.14em;
+}
+
+@media (max-width: 980px) { .hero-inner { grid-template-columns: 1fr; } }
+
+/* ─── IMPACT STRIP ─── */
+.impact-strip {
+  background: var(--ink-950);
+  color: white;
+}
+.impact-inner {
+  max-width: var(--max); margin: 0 auto;
+  padding: 56px 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  position: relative;
+}
+.impact-inner::before {
+  content: "";
+  position: absolute; inset: 56px 0;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, transparent 1px, transparent calc(25% + 0px));
+  pointer-events: none;
+}
+.impact-item {
+  padding: 32px 28px;
+  text-align: center;
+}
+.impact-num {
+  font-family: var(--font);
+  font-size: clamp(36px, 4vw, 56px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, #6EE7B7 0%, #5DD4F0 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  line-height: 1;
+}
+.impact-lbl {
+  font-size: 13px; color: rgba(255,255,255,0.6);
+  margin-top: 10px; line-height: 1.45;
+  font-family: var(--body);
+}
+@media (max-width: 700px) {
+  .impact-inner { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── PROBLEM ─── */
+.problem-layout {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: start;
+}
+.problem-layout h2 { font-size: clamp(32px, 3.8vw, 52px); line-height: 1.05; }
+.problem-layout h2 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.problem-layout .lede { color: var(--ink-600); font-size: 17px; margin-top: 20px; line-height: 1.65; }
+
+.pain-items { margin-top: 36px; display: grid; gap: 0; border-top: 1px solid var(--ink-100); }
+.pain-item {
+  display: grid; grid-template-columns: 48px 1fr;
+  gap: 20px; padding: 24px 0;
+  border-bottom: 1px solid var(--ink-100);
+  align-items: start;
+}
+.pain-n {
+  font-family: var(--mono); font-weight: 500; font-size: 16px;
+  color: var(--teal-d); padding-top: 2px;
+}
+.pain-h { font-size: 15px; font-weight: 600; font-family: var(--font); margin: 0 0 5px; }
+.pain-p { font-size: 13.5px; color: var(--ink-600); line-height: 1.55; margin: 0; }
+
+.receipt-box {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2xl);
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  font-family: var(--mono);
+}
+.receipt-box::before {
+  content: "TODAY'S REALITY";
+  position: absolute; top: -13px; left: 24px;
+  background: var(--grad);
+  color: white; padding: 5px 16px; border-radius: 999px;
+  font-size: 9.5px; letter-spacing: 0.22em; font-weight: 500;
+}
+.receipt-head { font-family: var(--body); font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-400); font-weight: 600; margin-bottom: 14px; }
+.receipt-row {
+  display: grid; grid-template-columns: 90px 1fr auto;
+  gap: 10px; padding: 9px 0; font-size: 11.5px;
+  border-bottom: 1px dashed var(--ink-100);
+  align-items: center;
+}
+.receipt-row:last-of-type { border-bottom: none; }
+.receipt-row .rt { color: var(--ink-400); }
+.receipt-row .ra { color: var(--ink-800); }
+.receipt-row .rw {
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--teal-d); text-align: right;
+}
+.receipt-total {
+  margin-top: 18px; padding-top: 16px;
+  border-top: 2px solid var(--blue);
+  display: flex; justify-content: space-between;
+  font-size: 12px; font-weight: 500;
+}
+.receipt-total strong { color: #EF4444; font-size: 16px; letter-spacing: -0.02em; }
+
+@media (max-width: 880px) { .problem-layout { grid-template-columns: 1fr; gap: 40px; } }
+
+/* ─── MARKET ─── */
+.market-layout {
+  display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 72px; align-items: start;
+}
+.market-layout h2 { font-size: clamp(30px, 3.5vw, 48px); line-height: 1.05; }
+.market-layout .lede { color: var(--ink-600); font-size: 16.5px; margin-top: 18px; line-height: 1.65; }
+.source-note { font-family: var(--mono); font-size: 10px; color: var(--ink-400); letter-spacing: 0.06em; margin-top: 24px; line-height: 1.8; }
+
+.tam-bars { display: grid; gap: 14px; }
+.tam-bar {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  display: grid; grid-template-columns: 90px 1fr auto; gap: 20px; align-items: center;
+}
+.tam-bar.tam { background: var(--grad-light); }
+.tam-bar.sam { margin-left: 28px; background: linear-gradient(135deg, rgba(31,72,124,0.11) 0%, rgba(53,159,145,0.15) 100%); }
+.tam-bar.som {
+  margin-left: 56px;
+  background: var(--grad); color: white;
+  border-color: var(--blue);
+  box-shadow: 0 16px 36px rgba(31,72,124,0.22);
+}
+.tam-bar .tl { font-family: var(--mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.18em; color: var(--blue); }
+.tam-bar.som .tl { color: rgba(255,255,255,0.8); }
+.tam-bar .tn { font-family: var(--font); font-size: 30px; font-weight: 700; color: var(--ink-950); letter-spacing: -0.03em; line-height: 1; }
+.tam-bar.som .tn { color: white; }
+.tam-bar .td { font-size: 12.5px; color: var(--ink-600); margin-top: 5px; line-height: 1.5; }
+.tam-bar.som .td { color: rgba(255,255,255,0.82); }
+.tam-bar .tm { font-family: var(--mono); font-size: 10.5px; color: var(--ink-400); text-align: right; line-height: 1.55; }
+.tam-bar.som .tm { color: rgba(255,255,255,0.75); }
+
+@media (max-width: 880px) {
+  .market-layout { grid-template-columns: 1fr; gap: 36px; }
+  .tam-bar { grid-template-columns: 1fr; }
+  .tam-bar.sam, .tam-bar.som { margin-left: 0; }
+}
+
+/* ─── WHY NOW ─── */
+.whynow-bg {
+  background: white;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.whynow-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+  margin-top: 40px;
+}
+.whynow-card {
+  background: var(--page-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2xl);
+  padding: 30px 26px;
+  box-shadow: var(--shadow-sm);
+}
+.whynow-card .wyr {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  color: var(--teal-d);
+}
+.whynow-card h4 { font-size: 20px; line-height: 1.2; margin: 12px 0 12px; }
+.whynow-card p { color: var(--ink-600); font-size: 14px; line-height: 1.65; }
+.whynow-card .wsrc {
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px dashed var(--ink-100);
+  font-family: var(--mono); font-size: 10px; color: var(--ink-400); letter-spacing: 0.06em;
+}
+@media (max-width: 880px) { .whynow-grid { grid-template-columns: 1fr; } }
+
+/* ─── CATEGORY / VS ─── */
+.vs-wrap {
+  background: var(--blue-dark);
+  color: white;
+}
+.vs-inner {
+  max-width: var(--max); margin: 0 auto;
+  padding: 100px 24px;
+}
+.vs-wrap h2 {
+  color: white;
+  font-size: clamp(30px, 3.8vw, 52px); line-height: 1.05;
+  max-width: 860px;
+}
+.vs-wrap h2 .grad {
+  background: linear-gradient(135deg, #6EE7B7 0%, #5DD4F0 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.vs-wrap .sub { color: rgba(255,255,255,0.72); font-size: 17px; max-width: 680px; margin-top: 18px; line-height: 1.65; }
+.vs-table {
+  width: 100%; border-collapse: collapse;
+  margin-top: 48px; font-size: 13.5px;
+}
+.vs-table th, .vs-table td {
+  padding: 18px 16px; text-align: left; vertical-align: top;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.vs-table thead th {
+  font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.16em;
+  color: rgba(255,255,255,0.55); border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.vs-table thead th.us { color: #6EE7B7; }
+.vs-table tbody td:first-child { color: white; font-weight: 600; width: 28%; font-size: 14px; }
+.vs-table tbody td { color: rgba(255,255,255,0.65); }
+.vs-table tbody td.us { color: white; background: rgba(53,159,145,0.07); }
+.vs-table tbody td.fail::before { content: "✕  "; color: #FCA5A5; font-weight: 700; }
+.vs-table tbody td.partial::before { content: "≈  "; color: #FCD34D; font-weight: 700; }
+.vs-table tbody td.us::before { content: "●  "; color: #6EE7B7; font-weight: 700; }
+.vs-legend { margin-top: 24px; font-family: var(--mono); font-size: 11.5px; color: rgba(255,255,255,0.65); letter-spacing: 0.06em; }
+.vs-legend span { margin-right: 24px; }
+@media (max-width: 800px) { .vs-table { font-size: 12px; } .vs-table th, .vs-table td { padding: 10px 8px; } }
+
+/* ─── PRODUCT WALKTHROUGH ─── */
+.wf-head { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: end; margin-bottom: 40px; }
+.wf-head h2 { font-size: clamp(30px, 3.8vw, 50px); line-height: 1.05; }
+.wf-head p { color: var(--ink-600); font-size: 16.5px; }
+
+.stage-rail { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.stage-tab {
+  background: white; border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 18px; text-align: left;
+  transition: all .18s; box-shadow: var(--shadow-xs); cursor: pointer;
+}
+.stage-tab:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.stage-tab.active { background: var(--grad); color: white; border-color: var(--blue); box-shadow: 0 16px 36px rgba(31,72,124,0.28); }
+.stage-tab .st-n { font-family: var(--mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal-d); }
+.stage-tab.active .st-n { color: rgba(255,255,255,0.8); }
+.stage-tab .st-t { font-family: var(--font); font-size: 16px; font-weight: 700; margin-top: 8px; color: var(--ink-950); letter-spacing: -0.02em; }
+.stage-tab.active .st-t { color: white; }
+.stage-tab .st-s { font-size: 12px; color: var(--ink-400); margin-top: 5px; }
+.stage-tab.active .st-s { color: rgba(255,255,255,0.8); }
+
+.stage-frame {
+  background: white; border: 1px solid var(--line);
+  border-radius: var(--r-2xl); overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+.frame-bar {
+  background: #F1F5F9; border-bottom: 1px solid var(--ink-100);
+  padding: 12px 18px; display: flex; align-items: center; gap: 8px;
+}
+.fdot { width: 10px; height: 10px; border-radius: 50%; background: #CBD5E1; }
+.fdot.r { background: #FB7185; } .fdot.y { background: #FCD34D; } .fdot.g { background: #6EE7B7; }
+.frame-url {
+  margin-left: 14px; flex: 1; max-width: 380px;
+  background: white; border: 1px solid var(--ink-100);
+  border-radius: 6px; padding: 5px 12px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--ink-600);
+}
+.frame-body { padding: 28px; min-height: 360px; }
+
+.stage-body { display: none; }
+.stage-body.active { display: block; }
+
+/* ─── FEATURES DEEP DIVE ─── */
+.features-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  margin-top: 48px;
+}
+.feature-card {
+  background: white; border: 1px solid var(--line);
+  border-radius: var(--r-xl); padding: 28px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s, box-shadow .2s;
+}
+.feature-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.feat-icon {
+  width: 44px; height: 44px; border-radius: var(--r);
+  background: var(--grad-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; margin-bottom: 18px;
+}
+.feat-h { font-family: var(--font); font-size: 16px; font-weight: 700; color: var(--ink-950); margin-bottom: 10px; }
+.feat-p { font-size: 13.5px; color: var(--ink-600); line-height: 1.65; }
+.feat-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.feat-tag {
+  background: var(--page-bg); border: 1px solid var(--ink-100);
+  color: var(--ink-600); padding: 3px 10px;
+  border-radius: 999px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+}
+@media (max-width: 900px) { .features-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .features-grid { grid-template-columns: 1fr; } }
+
+/* ─── ROI CALCULATOR ─── */
+.roi-wrap {
+  background: white;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.roi-layout {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+}
+.roi-layout h2 { font-size: clamp(30px, 3.5vw, 48px); line-height: 1.05; }
+.roi-layout p { color: var(--ink-600); font-size: 16.5px; margin-top: 18px; line-height: 1.65; }
+.roi-card {
+  background: var(--page-bg); border: 1px solid var(--line);
+  border-radius: var(--r-2xl); padding: 32px;
+  box-shadow: var(--shadow-md);
+}
+.roi-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 0; border-bottom: 1px solid var(--ink-100);
+  font-size: 14px;
+}
+.roi-row:last-of-type { border-bottom: none; }
+.roi-row .rl { color: var(--ink-600); }
+.roi-row .rv { font-family: var(--font); font-weight: 700; color: var(--ink-950); font-size: 16px; }
+.roi-row .rv.pos { color: #10B981; }
+.roi-row .rv.neg { color: #EF4444; }
+.roi-total {
+  margin-top: 16px; padding: 20px;
+  background: var(--grad); border-radius: var(--r-lg);
+  display: flex; justify-content: space-between; align-items: center;
+  color: white;
+}
+.roi-total .rtl { font-size: 14px; opacity: 0.85; }
+.roi-total .rtv { font-family: var(--font); font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
+@media (max-width: 880px) { .roi-layout { grid-template-columns: 1fr; gap: 36px; } }
+
+/* ─── GLOBAL REACH ─── */
+.reach-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 44px; }
+.reach-card {
+  background: white; border: 1px solid var(--line);
+  border-radius: var(--r-xl); padding: 24px 22px;
+  box-shadow: var(--shadow-sm);
+}
+.reach-flag { font-size: 28px; margin-bottom: 12px; }
+.reach-region { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal-d); }
+.reach-h { font-family: var(--font); font-size: 16px; font-weight: 700; margin: 8px 0 10px; }
+.reach-p { font-size: 12.5px; color: var(--ink-600); line-height: 1.55; }
+.reach-stage {
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ink-100);
+  font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ink-400);
+}
+.stage-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 9.5px;
+  font-weight: 500;
+}
+.stage-badge.launch { background: rgba(16,185,129,0.12); color: #10B981; }
+.stage-badge.q3 { background: rgba(245,166,35,0.14); color: #D97706; }
+.stage-badge.q1 { background: rgba(99,102,241,0.12); color: #6366F1; }
+.stage-badge.yr3 { background: rgba(31,72,124,0.10); color: var(--blue); }
+@media (max-width: 900px) { .reach-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 500px) { .reach-grid { grid-template-columns: 1fr; } }
+
+/* ─── BUSINESS MODEL ─── */
+.biz-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: start; }
+.biz-layout h2 { font-size: clamp(30px, 3.5vw, 48px); line-height: 1.05; }
+.biz-layout p { color: var(--ink-600); font-size: 16.5px; margin-top: 18px; }
+.pricing-cards { display: grid; gap: 14px; }
+.pricing-card {
+  background: white; border: 1px solid var(--line);
+  border-radius: var(--r-xl); padding: 24px 26px;
+  box-shadow: var(--shadow-sm);
+  display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+}
+.pricing-card.highlight {
+  background: var(--grad); color: white;
+  border-color: var(--blue);
+  box-shadow: 0 16px 40px rgba(31,72,124,0.24);
+}
+.pricing-card .pn { font-family: var(--font); font-size: 16px; font-weight: 700; }
+.pricing-card .pd { font-size: 13px; color: var(--ink-600); margin-top: 4px; }
+.pricing-card.highlight .pd { color: rgba(255,255,255,0.8); }
+.pricing-card .pp { font-family: var(--font); font-size: 24px; font-weight: 700; letter-spacing: -0.03em; text-align: right; white-space: nowrap; }
+.pricing-card .ppsub { font-family: var(--mono); font-size: 10px; color: var(--ink-400); letter-spacing: 0.12em; text-align: right; }
+.pricing-card.highlight .ppsub { color: rgba(255,255,255,0.7); }
+.unit-econ {
+  margin-top: 24px; background: var(--page-bg); border: 1px solid var(--line);
+  border-radius: var(--r-xl); padding: 24px;
+}
+.ue-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--ink-100); font-size: 14px;
+}
+.ue-row:last-of-type { border-bottom: none; }
+.ue-row .ul { color: var(--ink-600); }
+.ue-row .uv { font-family: var(--font); font-weight: 700; color: var(--ink-950); }
+@media (max-width: 880px) { .biz-layout { grid-template-columns: 1fr; gap: 36px; } }
+
+/* ─── TRACTION ─── */
+.traction-bg { background: var(--page-bg); border-top: 1px solid var(--line); }
+.traction-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 44px; }
+.traction-card {
+  background: white; border: 1px solid var(--line);
+  border-radius: var(--r-xl); padding: 28px 24px;
+  box-shadow: var(--shadow-sm); text-align: center;
+}
+.traction-card .tc-n {
+  font-family: var(--font); font-size: 44px; font-weight: 800;
+  letter-spacing: -0.04em; color: var(--blue); line-height: 1;
+}
+.traction-card .tc-n em { font-style: normal; font-size: 24px; }
+.traction-card .tc-l { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-400); margin-top: 8px; }
+.traction-card .tc-d { font-size: 12.5px; color: var(--ink-600); line-height: 1.5; margin-top: 8px; }
+@media (max-width: 700px) { .traction-grid { grid-template-columns: 1fr 1fr; } }
+
+/* ─── ROADMAP ─── */
+.roadmap-line {
+  position: relative;
+  margin-top: 48px;
+  padding-left: 24px;
+}
+.roadmap-line::before {
+  content: "";
+  position: absolute; left: 0; top: 12px; bottom: 12px;
+  width: 2px; background: var(--grad);
+}
+.roadmap-milestone {
+  position: relative;
+  padding: 0 0 36px 32px;
+}
+.roadmap-milestone::before {
+  content: "";
+  position: absolute; left: -5px; top: 10px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--grad); border: 2px solid white;
+  box-shadow: 0 0 0 3px rgba(31,72,124,0.2);
+}
+.rm-when { font-family: var(--mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal-d); }
+.rm-what { font-family: var(--font); font-size: 17px; font-weight: 700; color: var(--ink-950); margin: 6px 0 6px; }
+.rm-detail { font-size: 14px; color: var(--ink-600); line-height: 1.55; }
+.rm-badges { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.rm-badge {
+  background: white; border: 1px solid var(--line-mid); color: var(--blue);
+  padding: 3px 10px; border-radius: 999px; font-family: var(--mono); font-size: 10px;
+}
+
+/* ─── TEAM ─── */
+.team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 44px; }
+.person-card {
+  background: white; border: 1px solid var(--line);
+  border-radius: var(--r-xl); padding: 28px;
+  box-shadow: var(--shadow-sm);
+  display: flex; gap: 20px; align-items: flex-start;
+}
+.person-av {
+  width: 52px; height: 52px; border-radius: var(--r);
+  background: var(--grad); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font); font-size: 20px; font-weight: 700;
+  flex-shrink: 0;
+}
+.person-av.hire { background: var(--grad-light); color: var(--blue); }
+.person-role { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal-d); }
+.person-role.hire { color: var(--gold); }
+.person-name { font-family: var(--font); font-size: 18px; font-weight: 700; margin: 5px 0 8px; }
+.person-bio { font-size: 13.5px; color: var(--ink-600); line-height: 1.65; }
+@media (max-width: 700px) { .team-grid { grid-template-columns: 1fr; } }
+
+/* ─── THE ASK ─── */
+.ask-wrap { background: var(--blue-dark); color: white; }
+.ask-inner { max-width: var(--max); margin: 0 auto; padding: 100px 24px; }
+.ask-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+.ask-wrap h2 { color: white; font-size: clamp(36px, 4.5vw, 60px); line-height: 1.02; }
+.ask-wrap h2 .em { background: linear-gradient(135deg, #FCD34D 0%, #F5A623 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.ask-wrap .lede { color: rgba(255,255,255,0.75); font-size: 17px; margin-top: 22px; line-height: 1.65; max-width: 560px; }
+.ask-actions { margin-top: 36px; display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-gold {
+  background: linear-gradient(135deg, #F5A623 0%, #FCD34D 100%);
+  color: var(--ink-950); padding: 14px 26px; border-radius: 999px;
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  box-shadow: 0 12px 32px rgba(245,166,35,0.36);
+  transition: transform .15s, box-shadow .15s;
+}
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 18px 44px rgba(245,166,35,0.44); }
+.btn-ghost-white { background: rgba(255,255,255,0.1); color: white; border: 1.5px solid rgba(255,255,255,0.25); padding: 14px 26px; border-radius: 999px; font-family: var(--font); font-size: 14px; font-weight: 600; transition: background .15s; }
+.btn-ghost-white:hover { background: rgba(255,255,255,0.18); }
+
+.ask-fund-card {
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14);
+  border-radius: var(--r-2xl); padding: 32px;
+  backdrop-filter: blur(8px);
+}
+.ask-fund-card h4 { font-size: 15px; color: rgba(255,255,255,0.75); font-weight: 500; font-family: var(--body); margin-bottom: 20px; }
+.use-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 14px;
+}
+.use-row:last-of-type { border-bottom: none; }
+.use-row .ul { }
+.use-row .ul small { display: block; font-size: 12px; opacity: 0.6; margin-top: 2px; }
+.use-row .up {
+  font-family: var(--font); font-size: 20px; font-weight: 700;
+  background: linear-gradient(135deg, #6EE7B7 0%, #5DD4F0 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.milestones { margin-top: 28px; }
+.milestones h5 { font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.18em; opacity: 0.65; margin-bottom: 14px; }
+.ms-row { display: grid; grid-template-columns: 80px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 13.5px; align-items: baseline; }
+.ms-row:last-of-type { border-bottom: none; }
+.ms-when { font-family: var(--mono); font-size: 10.5px; color: #6EE7B7; letter-spacing: 0.12em; }
+.ms-what { opacity: 0.82; }
+@media (max-width: 880px) { .ask-layout { grid-template-columns: 1fr; gap: 40px; } }
+
+/* ─── FOOTER ─── */
+.foot { background: var(--ink-950); color: rgba(255,255,255,0.5); }
+.foot-inner {
+  max-width: var(--max); margin: 0 auto; padding: 36px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  flex-wrap: wrap;
+}
+.foot-brand { display: flex; align-items: center; gap: 12px; }
+.foot-mk { width: 32px; height: 32px; }
+.foot-text { font-size: 13.5px; }
+.foot-text strong { color: rgba(255,255,255,0.75); }
+.foot-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; }
+
+/* ─── Stage body content ─── */
+.sb-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 32px; align-items: start; }
+.sb-left h3 { font-size: 22px; font-weight: 700; font-family: var(--font); }
+.sb-left .sl { font-size: 14px; color: var(--ink-600); margin-top: 8px; line-height: 1.65; }
+.sb-steps { margin-top: 20px; display: grid; gap: 12px; }
+.sb-step {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--page-bg); border: 1px solid var(--ink-100);
+  border-radius: var(--r); padding: 12px 14px; font-size: 13.5px;
+}
+.sb-step-n {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--grad); color: white; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+}
+.sb-step-t { color: var(--ink-600); line-height: 1.55; }
+.sb-step-t strong { color: var(--ink-950); }
+.screen-mock {
+  background: var(--page-bg); border: 1px solid var(--ink-100);
+  border-radius: var(--r-lg); overflow: hidden;
+}
+.screen-mock .sm-head {
+  background: white; border-bottom: 1px solid var(--ink-100);
+  padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+}
+.sm-title { font-family: var(--font); font-size: 13px; font-weight: 600; }
+.sm-badge { background: rgba(53,159,145,0.12); color: var(--teal-d); padding: 3px 10px; border-radius: 999px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; }
+.sm-body { padding: 16px; }
+.sm-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; background: white; border: 1px solid var(--ink-100);
+  border-radius: 8px; margin-bottom: 8px; font-size: 12.5px;
+}
+.sm-row .sr-l { color: var(--ink-950); font-weight: 500; }
+.sm-row .sr-r { font-family: var(--mono); font-size: 11px; }
+.sm-row .pill { padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 500; }
+.pill-new { background: rgba(59,130,246,0.12); color: #3B82F6; }
+.pill-q { background: rgba(245,158,11,0.12); color: #D97706; }
+.pill-won { background: rgba(16,185,129,0.12); color: #10B981; }
+.pill-ap { background: rgba(168,85,247,0.12); color: #A855F7; }
+.sm-kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.sm-kpi-item { background: white; border: 1px solid var(--ink-100); border-radius: 8px; padding: 10px; text-align: center; }
+.sm-kpi-n { font-family: var(--font); font-size: 20px; font-weight: 700; color: var(--blue); }
+.sm-kpi-l { font-size: 10px; color: var(--ink-400); margin-top: 2px; }
+@media (max-width: 700px) { .sb-grid { grid-template-columns: 1fr; } }
+
+/* ─── APP MOCKUP SCREENS ─── */
+.app-mock-wrap {
+  display: flex;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f8fafc;
+  box-shadow: 0 8px 32px rgba(15,23,42,0.1), 0 2px 8px rgba(15,23,42,0.06);
+  min-height: 380px;
+}
+.app-sidebar {
+  width: 120px;
+  flex-shrink: 0;
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+  padding: 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.app-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 8px;
+}
+.app-logo-dot {
+  width: 18px; height: 18px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #1F487C, #359F91);
+  flex-shrink: 0;
+}
+.app-logo-name {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.01em;
+  font-family: var(--font);
+}
+.app-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.app-nav-item {
+  padding: 7px 8px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-family: var(--font);
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: background .12s;
+  letter-spacing: 0.01em;
+}
+.app-nav-active {
+  background: rgba(255,255,255,0.12);
+  color: white !important;
+}
+.app-content {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+  overflow: hidden;
+}
+.app-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.app-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--teal-d);
+  margin-bottom: 3px;
+}
+.app-page-title {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+.app-badge-green {
+  background: rgba(16,185,129,0.12);
+  color: #065f46;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.app-btn-sm {
+  background: #1f487c;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.app-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.app-kpi-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.app-kpi-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 10px 10px 0 0;
+}
+.app-kpi-sky .app-kpi-bar { background: #38bdf8; }
+.app-kpi-emerald .app-kpi-bar { background: #34d399; }
+.app-kpi-amber .app-kpi-bar { background: #fbbf24; }
+.app-kpi-rose .app-kpi-bar { background: #fb7185; }
+.app-kpi-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+.app-kpi-val {
+  font-family: var(--font);
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.app-kpi-sub {
+  font-size: 9px;
+  color: #64748b;
+  margin-top: 4px;
+}
+.app-section-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #94a3b8;
+}
+.app-list { display: flex; flex-direction: column; gap: 6px; }
+.app-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.app-list-row-danger {
+  background: #fff5f5;
+  border-color: #fecaca;
+}
+.app-list-av {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  flex-shrink: 0;
+}
+.app-list-info { flex: 1; min-width: 0; }
+.app-list-name {
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-list-sub {
+  font-size: 9.5px;
+  color: #64748b;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-pill {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.app-pill-blue { background: #dbeafe; color: #1d4ed8; }
+.app-pill-amber { background: #fef3c7; color: #92400e; }
+.app-ai-panel {
+  background: rgba(53,159,145,0.06);
+  border: 1px solid rgba(53,159,145,0.22);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: auto;
+}
+.app-ai-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--teal-d);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.app-ai-text {
+  font-size: 10.5px;
+  color: #475569;
+  line-height: 1.55;
+}
+.app-btn-approve {
+  background: rgba(53,159,145,0.15);
+  color: #0f766e;
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.app-btn-dismiss {
+  color: #94a3b8;
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-family: var(--font);
+  font-size: 10px;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  background: white;
+}
+.app-tab {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+.app-tab-active {
+  background: #0f172a;
+  color: white;
+  border-color: #0f172a;
+}
+.app-quote-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.app-quote-block {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+}
+.app-quote-section-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+.app-quote-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px dashed #f1f5f9;
+  font-size: 10.5px;
+  gap: 8px;
+}
+.app-quote-row:last-child { border-bottom: none; }
+.app-qrl { color: #64748b; flex-shrink: 0; }
+.app-qrv { font-weight: 600; color: #0f172a; text-align: right; }
+.app-qrv-hl { color: #1d4ed8; }
+.app-quote-total {
+  background: linear-gradient(135deg, #1F487C, #359F91);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+.app-approval-gate {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: auto;
+}
+</style>
+</head>
+<body>
+
+<!-- ─── TOPBAR ─── -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top">
+      <div class="brand-logo">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="lg1" x1="187" y1="491" x2="772" y2="491" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#1F487C"/><stop offset="1" stop-color="#359F91"/>
+            </linearGradient>
+          </defs>
+          <g>
+            <path fill="url(#lg1)" d="M80.9,631.6c0.3-2.5,0.4-4.2,0.8-5.8c3-12.4,6.1-24.8,9.1-36.5c4.6-3,82.2-31.6,90.3-33.4c35.3,27,72.7,28.9,107.9,1.5c34.2-26.6,41.2-62.6,24.2-103.7c53.3-17.5,107.4-26.8,163.4-29.9c2-18.6,3.9-36.2,5.8-54.2c7.4-6.3,14.9-12.6,23.4-18.1c9.3,4.2,15.6,12.2,23.7,16.9c3.6,18.3,3.4,36.5,6.8,55.4c55.5,2.8,109.8,12.8,163.3,29.9c-16.7,42.3-9.4,78.8,26.7,106c26,19.6,64.7,27.7,106.1-3.4c5,0.6,82.2,28.5,90,32.7c3.2,13.5,6.6,27.6,10,41.4c-2.4,1.9-4,0.8-5.5,0.4c-51.2-14.1-103.4-23.7-155.9-31.5c-31.7-4.7-63.6-8.3-95.5-10.8c-46.2-3.7-92.4-5.5-138.8-6.6c-35.3-0.8-70.5-0.2-105.6,1c-54.2,1.9-108.4,5.7-162.3,12.9c-62,8.3-123.5,18.9-183.9,35.4C83.9,631.5,82.9,631.4,80.9,631.6z M668.2,575.7c-33.4-53.3-96.4-97.4-179.6-89.8c-61.7,5.7-108.5,37.2-142.4,88.4C453.4,565.8,560.3,566.4,668.2,575.7z"/>
+            <path fill="url(#lg1)" d="M308.9,492.5c-0.1,39.6-31.6,70.2-72,70c-39.4-0.2-71.7-33.1-70.2-73.5c1.5-39,32.8-67.8,72.1-67.7C274.3,421.4,309.9,449.1,308.9,492.5z"/>
+            <path fill="url(#lg1)" d="M845.1,491.7c-0.1,40.9-30.3,70.7-71.6,70.6c-38.9-0.1-69.7-31.5-69.7-71c0-39.2,31.4-70.3,72.2-69.8C816.2,422.1,846.4,454.9,845.1,491.7z"/>
+            <path fill="url(#lg1)" d="M506.1,330.1c-25.7,17.5-77,51.1-77.5,50.7c25.5-59.8,50.9-119.5,76.4-179.3c0.8-0.1,52.8,119.1,78.1,178.8C582.5,380.6,531.6,347.4,506.1,330.1z"/>
+          </g>
+        </svg>
+      </div>
+      <div class="brand-name">Setu <em>Flow</em></div>
+    </a>
+    <nav class="nav">
+      <a href="#problem">Problem</a>
+      <a href="#category">Why us</a>
+      <a href="#product">Product</a>
+      <a href="#impact">Impact</a>
+      <a href="#reach">Global</a>
+      <a href="#business">Model</a>
+      <a href="#ask">The ask</a>
+    </nav>
+    <a href="#ask" class="topbar-cta">Invest · $1M Seed →</a>
+  </div>
+</header>
+
+<!-- ─── HERO ─── -->
+<section class="hero" id="top">
+  <div class="hero-inner">
+    <div>
+      <div class="raise-badge"><span class="raise-dot"></span> Raising $1M Seed · April 2026</div>
+      <h1>The missing operating layer for the world's <span class="grad">$10T trade economy.</span></h1>
+      <p class="hero-lede">
+        80% of import-export companies still run on Excel, email, and WhatsApp. Generic CRMs don't understand freight, FX, or commercial trade. Enterprise tools cost $50k to implement. <strong>Setu Flow is the purpose-built gap in the middle — and it's shipping now.</strong>
+      </p>
+      <p class="hero-lede" style="margin-top: 10px; font-size: 16px;">
+        One locked commercial flow: <strong>Capture → Lead → Quote → Order.</strong> Built for the 50–500-person trading company that moves physical goods across borders and has been waiting for software that actually understands how they work.
+      </p>
+      <div class="hero-actions">
+        <a href="#product" class="btn btn-primary">See the live product <span class="arr">→</span></a>
+        <a href="#category" class="btn btn-ghost">Why we win this category</a>
+      </div>
+      <div class="hero-kpis">
+        <div class="kpi-item">
+          <div class="kpi-num">$2.8B</div>
+          <div class="kpi-lbl">Market size today</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-num">$42M</div>
+          <div class="kpi-lbl">5-year ARR target</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-num">8+</div>
+          <div class="kpi-lbl">Modules shipped</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-num">&lt;5 days</div>
+          <div class="kpi-lbl">Time to value</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-card-head">
+        <div>
+          <div class="ttl">Setu Flow · Live product</div>
+          <div class="sub">Commercial operating system for global trade teams</div>
+        </div>
+        <span class="live-pill">Shipping now</span>
+      </div>
+
+      <!-- Mini app screenshot preview -->
+      <div style="background:#0f172a;border-radius:12px;padding:10px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:5px;width:80px;flex-shrink:0;">
+          <div style="background:rgba(255,255,255,0.12);border-radius:6px;padding:5px 7px;font-size:8px;font-weight:700;color:white;font-family:var(--font);">⬛ Dashboard</div>
+          <div style="padding:5px 7px;font-size:8px;color:rgba(255,255,255,0.45);font-family:var(--font);">◈ Pipeline</div>
+          <div style="padding:5px 7px;font-size:8px;color:rgba(255,255,255,0.45);font-family:var(--font);">⬡ Capture</div>
+          <div style="padding:5px 7px;font-size:8px;color:rgba(255,255,255,0.45);font-family:var(--font);">◎ Quote</div>
+          <div style="padding:5px 7px;font-size:8px;color:rgba(255,255,255,0.45);font-family:var(--font);">✓ Orders</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+            <div style="background:white;border-radius:6px;padding:7px;border-top:2px solid #fb7185;">
+              <div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;font-family:monospace;">Overdue</div>
+              <div style="font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-.02em;line-height:1;margin-top:2px;">5</div>
+            </div>
+            <div style="background:white;border-radius:6px;padding:7px;border-top:2px solid #fbbf24;">
+              <div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;font-family:monospace;">Quotes</div>
+              <div style="font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-.02em;line-height:1;margin-top:2px;">8</div>
+            </div>
+            <div style="background:white;border-radius:6px;padding:7px;border-top:2px solid #38bdf8;">
+              <div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;font-family:monospace;">Pipeline</div>
+              <div style="font-size:14px;font-weight:700;color:#0f172a;letter-spacing:-.02em;line-height:1;margin-top:2px;">$2.4M</div>
+            </div>
+          </div>
+          <div style="background:white;border-radius:6px;padding:7px;">
+            <div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;font-family:monospace;margin-bottom:5px;">Active pipeline · Buyer leads</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:9px;">
+              <span style="color:#0f172a;font-weight:600;">Al Marwah Trading · UAE</span>
+              <span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:999px;font-size:8.5px;">Quote sent</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:9px;">
+              <span style="color:#dc2626;font-weight:600;">Kimura Import Co. · ⚠ Overdue</span>
+              <span style="background:#fee2e2;color:#dc2626;padding:2px 7px;border-radius:999px;font-size:8.5px;">Follow up now</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:9px;">
+              <span style="color:#0f172a;font-weight:600;">Nordic Organics · Sweden</span>
+              <span style="background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:999px;font-size:8.5px;">Sample sent</span>
+            </div>
+          </div>
+          <div style="background:rgba(53,159,145,0.12);border:1px solid rgba(53,159,145,0.25);border-radius:6px;padding:7px 9px;font-size:9px;color:#0f766e;">
+            <strong style="font-size:8.5px;font-family:monospace;letter-spacing:.1em;text-transform:uppercase;">✦ AI suggestion</strong> — "Follow up with Kimura Import within 4 hours — their sourcing cycle closes today."
+            <span style="color:#0f766e;font-weight:700;margin-left:4px;">→ Approve</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mini-cards">
+        <div class="mini-card">
+          <div class="mk">The gap we fill</div>
+          <div class="mv">CRMs stop at contacts. Trade needs pricing logic, FX, freight, compliance, approvals.</div>
+        </div>
+        <div class="mini-card">
+          <div class="mk">Who it's for</div>
+          <div class="mv">50–500 person trading companies. Priced out of SAP. Underserved by HubSpot.</div>
+        </div>
+        <div class="mini-card span2">
+          <div class="mk">Built and shipped</div>
+          <div class="mv" style="font-size:13px;">9 modules live. Next.js + Supabase. Self-serve onboarding. A 20-person trade team is fully operational in under 5 days — no implementation fee, no consultant required.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: var(--max); margin: 0 auto; padding: 0 24px 56px;">
+    <div class="hero-tags">
+      <span class="tag">Multi-currency FX</span>
+      <span class="tag">Freight · Port + Container</span>
+      <span class="tag">FOB · CIF · Ex-Factory</span>
+      <span class="tag">Approval gates + audit trail</span>
+      <span class="tag">AI assistive · operator decides</span>
+      <span class="tag">Buyer + Supplier dual mode</span>
+      <span class="tag">vCard · QR · OCR capture</span>
+      <span class="tag">Country compliance</span>
+      <span class="tag">Trade-show capture</span>
+      <span class="tag">Role-based permissions</span>
+      <span class="tag">Lead health scoring</span>
+      <span class="tag">RFQ workflow</span>
+      <span class="tag">Product catalog + variants</span>
+      <span class="tag">Market-aware pricing</span>
+      <span class="tag">HS codes + duties</span>
+      <span class="tag">Contracts + commercial lock</span>
+      <span class="tag">AI quote risk scoring</span>
+      <span class="tag">Order delay prediction</span>
+      <span class="tag">Kanban pipeline board</span>
+      <span class="tag">Activity timeline per deal</span>
+    </div>
+  </div>
+</section>
+
+<!-- ─── IMPACT STRIP ─── -->
+<div class="impact-strip">
+  <div class="impact-inner">
+    <div class="impact-item reveal">
+      <div class="impact-num">3–5×</div>
+      <div class="impact-lbl">Faster quote turnaround for trade teams using structured flow vs. email + spreadsheet</div>
+    </div>
+    <div class="impact-item reveal">
+      <div class="impact-num">40%</div>
+      <div class="impact-lbl">Revenue uplift potential from faster follow-up on qualified inbound — the metric buyers care about most</div>
+    </div>
+    <div class="impact-item reveal">
+      <div class="impact-num">$1T</div>
+      <div class="impact-lbl">India's export target by 2030 — the bottleneck is quoting speed, not demand</div>
+    </div>
+    <div class="impact-item reveal">
+      <div class="impact-num">80%</div>
+      <div class="impact-lbl">Of SMB exporters still run commercial pipelines on Excel and email in 2025</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── INVESTMENT THESIS BANNER ─── -->
+<section style="background:linear-gradient(135deg,#0f172a 0%,#1e2d42 100%);padding:56px 0;border-top:1px solid rgba(255,255,255,0.06);">
+  <div style="max-width:var(--max);margin:0 auto;padding:0 24px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(255,255,255,0.06);border-radius:20px;overflow:hidden;">
+      <div style="background:#0f172a;padding:32px 28px;">
+        <div style="font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.22em;color:#6EE7B7;margin-bottom:14px;">The market gap</div>
+        <div style="font-family:var(--font);font-size:17px;font-weight:700;color:white;line-height:1.3;margin-bottom:10px;">A $2.8B category with no winner in the SMB tier</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.65;">Oracle, SAP, E2open dominate enterprise. HubSpot, Salesforce serve SaaS. The 250,000+ SMB trading companies — the actual engine of world trade — have no category-native software. That's the gap Setu Flow is built to own.</div>
+      </div>
+      <div style="background:#0f172a;padding:32px 28px;border-left:1px solid rgba(255,255,255,0.06);">
+        <div style="font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.22em;color:#6EE7B7;margin-bottom:14px;">The moat</div>
+        <div style="font-family:var(--font);font-size:17px;font-weight:700;color:white;line-height:1.3;margin-bottom:10px;">Trade logic is hard to replicate in a generic tool</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.65;">FX calculations, freight basis selection, margin approval gates, country compliance checklists, and dual buyer/supplier pipelines — each is a feature that a generic CRM cannot add via a plugin. Setu Flow is native to this workflow. The first 9 modules are shipped and live.</div>
+      </div>
+      <div style="background:#0f172a;padding:32px 28px;border-left:1px solid rgba(255,255,255,0.06);">
+        <div style="font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.22em;color:#6EE7B7;margin-bottom:14px;">The timing</div>
+        <div style="font-family:var(--font);font-size:17px;font-weight:700;color:white;line-height:1.3;margin-bottom:10px;">Post-COVID trade digitization is half-done, and India is at $1T</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.65;">Trade teams moved off paper in 2020. They landed on general CRMs that don't fit. Now they're actively switching — and India's $1T export target is funneling policy support and demand into the exact SMB exporter segment Setu Flow serves.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PROBLEM ─── -->
+<section class="shell" id="problem">
+  <div class="problem-layout">
+    <div class="reveal">
+      <div class="eyebrow">The problem</div>
+      <h2>International trade teams are drowning in <span class="grad">manual commercial work.</span></h2>
+      <p class="lede">
+        A 30-person food export company receives 80 inbound inquiries a week from trade shows, emails, referrals, and WhatsApp. They close maybe 12. The gap isn't demand — it's how long it takes to qualify, quote, and follow up.
+      </p>
+      <ul class="pain-items" style="list-style:none;padding:0;margin:0;">
+        <li class="pain-item">
+          <span class="pain-n">01</span>
+          <div>
+            <h4 class="pain-h">Contacts captured on business cards that never enter a system</h4>
+            <p class="pain-p">Trade show leads written on paper, photographed, then emailed to someone who may or may not enter them. 40–60% are never followed up within 72 hours — the critical window.</p>
+          </div>
+        </li>
+        <li class="pain-item">
+          <span class="pain-n">02</span>
+          <div>
+            <h4 class="pain-h">Quoting done in Excel with no freight, FX, or approval logic</h4>
+            <p class="pain-p">Sales teams manually calculate FOB vs. CIF pricing, convert currencies, estimate freight, and email a PDF — every time, from scratch. No version control, no audit trail, no manager visibility.</p>
+          </div>
+        </li>
+        <li class="pain-item">
+          <span class="pain-n">03</span>
+          <div>
+            <h4 class="pain-h">No visibility into pipeline until it's already lost</h4>
+            <p class="pain-p">Management gets a weekly status call. By the time overdue follow-ups are visible, the buyer has moved on. CRMs show a contact list — they don't show which deal needs action today.</p>
+          </div>
+        </li>
+        <li class="pain-item">
+          <span class="pain-n">04</span>
+          <div>
+            <h4 class="pain-h">Compliance and document checklists managed in email threads</h4>
+            <p class="pain-p">Phytosanitary certificates, country-specific import regulations, LC requirements — tracked across email chains, WhatsApp groups, and shared folders with no system of record.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="reveal">
+      <div class="receipt-box">
+        <div class="receipt-head">A typical inbound inquiry · no Setu Flow</div>
+        <div class="receipt-row">
+          <span class="rt">Day 0</span>
+          <span class="ra">Buyer emails from trade show. Contact saved in phone.</span>
+          <span class="rw">Sales rep</span>
+        </div>
+        <div class="receipt-row">
+          <span class="rt">Day 2</span>
+          <span class="ra">WhatsApp follow-up sent. No record in any system.</span>
+          <span class="rw">Sales rep</span>
+        </div>
+        <div class="receipt-row">
+          <span class="rt">Day 4</span>
+          <span class="ra">Manager asks for update. Sales rep opens inbox to search.</span>
+          <span class="rw">Manager</span>
+        </div>
+        <div class="receipt-row">
+          <span class="rt">Day 6</span>
+          <span class="ra">Pricing requested. Excel quote started — needs freight checked.</span>
+          <span class="rw">Sales rep</span>
+        </div>
+        <div class="receipt-row">
+          <span class="rt">Day 9</span>
+          <span class="ra">Quote sent. Wrong currency rate used. Needs revision.</span>
+          <span class="rw">Finance</span>
+        </div>
+        <div class="receipt-row">
+          <span class="rt">Day 12</span>
+          <span class="ra">Revised quote sent. Buyer has already responded to competitor.</span>
+          <span class="rw">Lost</span>
+        </div>
+        <div class="receipt-total">
+          <span>Cost of delay</span>
+          <strong>Deal lost · $18k+ revenue gone</strong>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; background: rgba(31,72,124,0.05); border: 1px solid rgba(53,159,145,0.25); border-radius: var(--r-xl); padding: 24px;">
+        <div style="font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal-d); margin-bottom: 12px;">With Setu Flow</div>
+        <div style="font-family: var(--font); font-size: 16px; font-weight: 700; color: var(--ink-950); margin-bottom: 10px;">Day 0 → Quote sent by Day 2. Deal tracked. Margin approved. Audit logged.</div>
+        <div style="font-size: 13.5px; color: var(--ink-600); line-height: 1.6;">Contact captured from vCard or QR at the show → qualified → quote auto-structured with live FX + freight → approval checkpoint → sent. Every step visible to management in real time.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── MARKET ─── -->
+<section class="shell" id="market" style="background: white; max-width: 100%; padding: 96px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+  <div class="shell" style="padding-top: 0; padding-bottom: 0;">
+    <div class="market-layout">
+      <div class="reveal">
+        <div class="eyebrow">Market opportunity</div>
+        <h2>A $2.8B category growing 10–12% a year, with no clear winner for SMB exporters.</h2>
+        <p class="lede">
+          The global trade management software market is dominated by enterprise vendors built for Fortune 500 logistics teams — Oracle, SAP, E2open, Descartes. Minimum viable contract: $50,000 and 6 months of implementation.
+        </p>
+        <p class="lede" style="margin-top: 12px;">
+          The 50–500-person import-export operator — the engine of world trade — is left to Excel, email, and general CRMs that don't understand freight, FX, or how commercial trade actually works.
+        </p>
+        <p class="lede" style="margin-top: 12px; font-weight: 600; color: var(--ink-800);">
+          That's the gap Setu Flow is built to own.
+        </p>
+        <div class="source-note">SOURCES · COHERENT MARKET INSIGHTS 2025 · MORDOR INTELLIGENCE 2025<br>FORTUNE BUSINESS INSIGHTS 2026 · WORLD TRADE ORGANIZATION 2025 · INTERNAL MODEL</div>
+      </div>
+      <div class="tam-bars reveal">
+        <div class="tam-bar tam">
+          <div>
+            <div class="tl">TAM</div>
+          </div>
+          <div>
+            <div class="tn">$2.8B</div>
+            <div class="td">Global trade management software market · 2025 · projected ~$5.7B by 2032 at 10.6% CAGR</div>
+          </div>
+          <div class="tm">Coherent<br>2025</div>
+        </div>
+        <div class="tam-bar sam">
+          <div>
+            <div class="tl">SAM</div>
+          </div>
+          <div>
+            <div class="tn">$680M</div>
+            <div class="td">SMB & mid-market import-export operators in India, MENA, SEA, EU — quoting, capture, execution layer</div>
+          </div>
+          <div class="tm">~24% of TAM<br>internal model</div>
+        </div>
+        <div class="tam-bar som">
+          <div>
+            <div class="tl">SOM · 5yr</div>
+          </div>
+          <div>
+            <div class="tn">$42M ARR</div>
+            <div class="td">~3,500 trade SMBs at $1,000/mo blended ACV — India + GCC first, EU expansion year 3</div>
+          </div>
+          <div class="tm">~6% SAM<br>year 5 target</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── WHY NOW ─── -->
+<section class="whynow-bg">
+  <div class="shell">
+    <div class="reveal">
+      <div class="eyebrow">Why now</div>
+      <h2 style="font-size: clamp(30px, 3.5vw, 48px); line-height: 1.05; max-width: 760px;">Three macro forces converging — the window to build the dominant trade OS is open right now.</h2>
+    </div>
+    <div class="whynow-grid reveal">
+      <div class="whynow-card">
+        <div class="wyr">2024–2025</div>
+        <h4>Post-COVID trade digitization is real — but half-done</h4>
+        <p>COVID forced global trade teams off spreadsheets onto whatever SaaS tools were available. They adopted general CRMs that handled contacts but not trade logic. Now they're stuck with tools that don't fit — and actively looking for category-specific alternatives.</p>
+        <div class="wsrc">Source · McKinsey Global Trade Report 2024</div>
+      </div>
+      <div class="whynow-card">
+        <div class="wyr">2024–2030</div>
+        <h4>India's $1T export mission needs faster quoting, not more demand</h4>
+        <p>The Government of India's $1T exports-by-2030 target is funneling policy support, credit lines, and trade-show subsidies to mid-market exporters. The bottleneck isn't demand — it's how slowly small teams can qualify, quote, and convert buyer inquiries into confirmed orders.</p>
+        <div class="wsrc">Source · Ministry of Commerce, GoI 2024 directive</div>
+      </div>
+      <div class="whynow-card">
+        <div class="wyr">2025</div>
+        <h4>Assistive AI + operator approval is the enterprise-ready pattern</h4>
+        <p>Generic AI agents make headlines but break inside regulated, multi-party workflows like trade. The winning pattern — assistive AI + locked operator approval + audit trail — is exactly what enterprise buyers are demanding. Setu Flow was built for this from day one. Our AI suggestions queue drafts, operators approve, every action is logged.</p>
+        <div class="wsrc">Source · Anthropic enterprise reports 2025</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CATEGORY / VS ─── -->
+<div class="vs-wrap" id="category">
+  <div class="vs-inner">
+    <div class="reveal">
+      <div class="eyebrow eyebrow-white">The category insight</div>
+      <h2>Generic CRMs sell pipelines.<br>Trade teams need <span class="grad">execution.</span></h2>
+      <p class="sub">
+        Salesforce, HubSpot, and Zoho were built for SaaS sales — predictable products, fixed pricing, domestic delivery. None of those assumptions hold for international trade. Enterprise tools (SAP, E2open) solve it — but cost $50k+ to implement and take 6 months. We sit exactly in the gap.
+      </p>
+    </div>
+
+    <table class="vs-table reveal">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Generic CRM<br><span style="font-weight:400;font-size:10px;opacity:0.5">HubSpot · Salesforce · Zoho</span></th>
+          <th>Enterprise trade tools<br><span style="font-weight:400;font-size:10px;opacity:0.5">SAP GTS · E2open · Descartes</span></th>
+          <th class="us">Setu Flow</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:rgba(99,102,241,0.04);">
+          <td colspan="4" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,0.4);padding:10px 16px;">Pricing &amp; quoting</td>
+        </tr>
+        <tr>
+          <td>Quote with live FX, freight, container basis</td>
+          <td class="fail">Plugin or spreadsheet</td>
+          <td class="partial">Enterprise-only · 6mo onboarding</td>
+          <td class="us">Native: FX + freight profiles per port, auto recalc</td>
+        </tr>
+        <tr>
+          <td>FOB / CIF / Ex-Factory pricing basis logic</td>
+          <td class="fail">Custom field, no logic</td>
+          <td class="partial">Heavy ERP module</td>
+          <td class="us">First-class basis selection with automatic recalculation</td>
+        </tr>
+        <tr>
+          <td>Product catalog with variants, MOQ &amp; SKU per market</td>
+          <td class="fail">Basic product list</td>
+          <td class="partial">Separate master data module</td>
+          <td class="us">Catalog-driven: variants, pack sizes, MOQ, SKU, market price tiers</td>
+        </tr>
+        <tr>
+          <td>Market-aware pricing — different price tier per destination country</td>
+          <td class="fail">Single price list</td>
+          <td class="partial">Price list management (complex setup)</td>
+          <td class="us">Per-market price rules with FX and freight auto-applied per basis</td>
+        </tr>
+        <tr>
+          <td>HS codes + duties built into product record</td>
+          <td class="fail">Not present</td>
+          <td class="us" style="background:rgba(53,159,145,0.07)">Yes (requires customs module)</td>
+          <td class="us">HSN/HS code + duty rates on product — feeds compliance &amp; export docs</td>
+        </tr>
+        <tr>
+          <td>Quote versioning — every revision tracked &amp; diffable</td>
+          <td class="partial">Revision notes only</td>
+          <td class="partial">Document versioning (ERP-level)</td>
+          <td class="us">Full version history: v1→v2→v3 with sent/approved states per version</td>
+        </tr>
+        <tr>
+          <td>RFQ capture → structured quote creation workflow</td>
+          <td class="fail">Manual copy-paste</td>
+          <td class="partial">Separate procurement module</td>
+          <td class="us">RFQ module captures line items → auto-populates quote builder</td>
+        </tr>
+        <tr style="background:rgba(99,102,241,0.04);">
+          <td colspan="4" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,0.4);padding:10px 16px;">Approvals &amp; governance</td>
+        </tr>
+        <tr>
+          <td>Approval gates with margin thresholds + audit trail</td>
+          <td class="partial">Workflow add-on</td>
+          <td class="us" style="background:rgba(53,159,145,0.07)">Yes (legacy UX)</td>
+          <td class="us">Built into every quote send checkpoint, role-gated</td>
+        </tr>
+        <tr>
+          <td>Quote lifecycle management — 10 status states from draft to executed</td>
+          <td class="fail">Open/Closed only</td>
+          <td class="partial">Status field (flat)</td>
+          <td class="us">draft → internal review → pending approval → approved → sent → revised → accepted → rejected → expired</td>
+        </tr>
+        <tr>
+          <td>Approval queue — dedicated banner with direct review actions</td>
+          <td class="fail">Not present</td>
+          <td class="partial">Approval module (separate)</td>
+          <td class="us">Prominent queue: count + review links blocked at send gate until cleared</td>
+        </tr>
+        <tr>
+          <td>Pipeline → Quote → Approval → Send → Orders handoff chain</td>
+          <td class="fail">Manual navigation</td>
+          <td class="partial">Module links (complex)</td>
+          <td class="us">One-click handoff URLs at every stage transition — no lost context</td>
+        </tr>
+        <tr>
+          <td>Contracts + commercial lock — pricing frozen once signed</td>
+          <td class="fail">Deal stage only</td>
+          <td class="partial">Contract module (enterprise)</td>
+          <td class="us">Commercial snapshot locked at signing — no retroactive price changes</td>
+        </tr>
+        <tr>
+          <td>Full audit log — every action with actor, timestamp, previous value</td>
+          <td class="partial">Activity log (no diff)</td>
+          <td class="us" style="background:rgba(53,159,145,0.07)">Yes (compliance grade)</td>
+          <td class="us">Audit history drawer per record — previous value vs. new value logged</td>
+        </tr>
+        <tr>
+          <td>Role-based permissions — admin, sales, sourcing, compliance, finance</td>
+          <td class="partial">Basic user roles</td>
+          <td class="us" style="background:rgba(53,159,145,0.07)">Yes (complex RBAC)</td>
+          <td class="us">Granular capability model: lead.manage, quote.send, reporting.view</td>
+        </tr>
+        <tr style="background:rgba(99,102,241,0.04);">
+          <td colspan="4" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,0.4);padding:10px 16px;">Lead management &amp; pipeline</td>
+        </tr>
+        <tr>
+          <td>Buyer + Supplier dual pipeline in one workspace</td>
+          <td class="fail">Single pipeline only</td>
+          <td class="partial">Separate modules</td>
+          <td class="us">Role-aware dashboard switches between buyer/supplier mode</td>
+        </tr>
+        <tr>
+          <td>Stage Move Readiness — hard gate before any stage advance</td>
+          <td class="fail">Free-move</td>
+          <td class="fail">Not present at SMB tier</td>
+          <td class="us">Checks: qualification, product linkage, market, compliance, overdue FU, pricing, RFQ, quote, contract</td>
+        </tr>
+        <tr>
+          <td>Today Layer — smart pipeline filter (overdue / blocked / high-value / needs-reply)</td>
+          <td class="fail">Manual date filter only</td>
+          <td class="fail">Not present</td>
+          <td class="us">Live filter: overdue · due today · waiting · blocked · high-value · needs reply · all-open</td>
+        </tr>
+        <tr>
+          <td>Blocker-First pipeline command header — $value at risk surfaced</td>
+          <td class="fail">Not present</td>
+          <td class="fail">Not present</td>
+          <td class="us">Dark command header: move-blocked count, overdue FUs, pipeline $ at risk — visible before any stage move</td>
+        </tr>
+        <tr>
+          <td>Lead health scoring — fresh / overdue / stalled / at_risk</td>
+          <td class="fail">Due date only</td>
+          <td class="fail">Not present</td>
+          <td class="us">Algorithmic health: days stale, follow-up overdue, compliance blocking</td>
+        </tr>
+        <tr>
+          <td>AI lead priority — critical / high / medium / low with reasons</td>
+          <td class="fail">Not present</td>
+          <td class="fail">Not present</td>
+          <td class="us">Scored from overdue FUs, open compliance, RFQ without quote, staleness</td>
+        </tr>
+        <tr>
+          <td>Activity timeline per lead — full history of every action</td>
+          <td class="partial">Activity log (flat)</td>
+          <td class="partial">Audit trail (system-level)</td>
+          <td class="us">Deal-level timeline: captures, quotes, comms, approvals, doc uploads</td>
+        </tr>
+        <tr>
+          <td>Kanban pipeline board with drag-drop stage progression</td>
+          <td class="us" style="background:rgba(53,159,145,0.07)">Yes (generic stages)</td>
+          <td class="fail">Not present</td>
+          <td class="us">Kanban with trade-native stages + compliance + follow-up signals per card</td>
+        </tr>
+        <tr style="background:rgba(99,102,241,0.04);">
+          <td colspan="4" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,0.4);padding:10px 16px;">Capture &amp; contact exchange</td>
+        </tr>
+        <tr>
+          <td>Capture business card → lead with context inherited</td>
+          <td class="partial">3rd-party scan app</td>
+          <td class="fail">No capture layer</td>
+          <td class="us">In-app OCR, vCard, QR public card, trade-show batch</td>
+        </tr>
+        <tr>
+          <td>Two-way: outward My Card + inbound capture in one loop</td>
+          <td class="fail">Outward only via marketing</td>
+          <td class="fail">No outward layer</td>
+          <td class="us">Public card + QR code + VCF download + capture form → instant lead</td>
+        </tr>
+        <tr>
+          <td>Trade event tracking — show-level analytics, batch entry</td>
+          <td class="fail">Campaign tag only</td>
+          <td class="fail">Not present</td>
+          <td class="us">Events with entry count, pipeline value, conversion rate per show</td>
+        </tr>
+        <tr style="background:rgba(99,102,241,0.04);">
+          <td colspan="4" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,0.4);padding:10px 16px;">AI &amp; intelligence</td>
+        </tr>
+        <tr>
+          <td>AI assist that drafts but never auto-sends</td>
+          <td class="partial">Black-box agents</td>
+          <td class="fail">Not present</td>
+          <td class="us">AI suggestions queue · operator decides · all prompts logged</td>
+        </tr>
+        <tr>
+          <td>AI quote risk scoring — which quotes are about to go cold</td>
+          <td class="fail">Not present</td>
+          <td class="fail">Not present</td>
+          <td class="us">Scored from version count, negotiation rounds, staleness, comms gap</td>
+        </tr>
+        <tr>
+          <td>AI order delay prediction — risk flag before shipment stalls</td>
+          <td class="fail">Not present</td>
+          <td class="partial">Logistics BI (enterprise)</td>
+          <td class="us">Scored from compliance blockers, doc gaps, shipment control state</td>
+        </tr>
+        <tr style="background:rgba(99,102,241,0.04);">
+          <td colspan="4" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,0.4);padding:10px 16px;">Compliance &amp; execution</td>
+        </tr>
+        <tr>
+          <td>Country compliance + document checklist by destination</td>
+          <td class="fail">External tool</td>
+          <td class="us" style="background:rgba(53,159,145,0.07)">Yes (enterprise pricing)</td>
+          <td class="us">Driven by destination + product + trade event scope</td>
+        </tr>
+        <tr>
+          <td>Document expiry tracking — certs flagged before they lapse</td>
+          <td class="fail">Not present</td>
+          <td class="partial">Compliance module</td>
+          <td class="us">Expiry date per document, flagged as blocker before order ships</td>
+        </tr>
+        <tr>
+          <td>Geographic trade map with country drill-down dashboard</td>
+          <td class="fail">Reports tab only</td>
+          <td class="partial">BI export required</td>
+          <td class="us">Interactive map — click country → leads, active quotes, compliance state</td>
+        </tr>
+        <tr>
+          <td>Time to value for a 20-person trade team</td>
+          <td class="partial">2–4 weeks (missing trade logic)</td>
+          <td class="fail">3–6 months · $50k+ implementation</td>
+          <td class="us">Under 5 days · self-serve onboarding · no implementation fee</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="vs-legend reveal">
+      <span><strong style="color:#6EE7B7">●</strong> Setu Flow — built and shipped</span>
+      <span><strong style="color:#FCD34D">≈</strong> Adjacent tools — partial coverage</span>
+      <span><strong style="color:#FCA5A5">✕</strong> Generic CRMs — not built for this</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PRODUCT WALKTHROUGH ─── -->
+<section class="shell" id="product">
+  <div class="wf-head reveal">
+    <div>
+      <div class="eyebrow">Live product</div>
+      <h2>One locked flow. Every step connected.</h2>
+    </div>
+    <p>Setu Flow isn't a collection of disconnected modules — it's a single commercial operating flow where each step feeds the next, with full visibility at every stage.</p>
+  </div>
+
+  <div class="stage-rail reveal">
+    <button class="stage-tab active" data-stage="capture">
+      <div class="st-n">Stage 01</div>
+      <div class="st-t">Capture</div>
+      <div class="st-s">Turn any touchpoint into a structured lead</div>
+    </button>
+    <button class="stage-tab" data-stage="qualify">
+      <div class="st-n">Stage 02</div>
+      <div class="st-t">Qualify</div>
+      <div class="st-s">Score, assign, and move leads forward</div>
+    </button>
+    <button class="stage-tab" data-stage="quote">
+      <div class="st-n">Stage 03</div>
+      <div class="st-t">Quote</div>
+      <div class="st-s">FX + freight + approval in one flow</div>
+    </button>
+    <button class="stage-tab" data-stage="execute">
+      <div class="st-n">Stage 04</div>
+      <div class="st-t">Execute</div>
+      <div class="st-s">Orders, compliance, documents, reporting</div>
+    </button>
+  </div>
+
+  <div class="stage-frame reveal">
+    <div class="frame-bar">
+      <span class="fdot r"></span><span class="fdot y"></span><span class="fdot g"></span>
+      <div class="frame-url" id="frameUrl">setuflow.com/contact-exchange/vcard</div>
+    </div>
+    <div class="frame-body">
+
+      <!-- CAPTURE -->
+      <div class="stage-body active" data-body="capture">
+        <div class="sb-grid">
+          <div class="sb-left">
+            <h3>Smart capture — any touchpoint, instant lead</h3>
+            <p class="sl">At a trade show, a conference, or from an inbound email — every contact becomes a qualified lead with inherited context before the salesperson leaves the booth.</p>
+            <div class="sb-steps">
+              <div class="sb-step"><span class="sb-step-n">1</span><span class="sb-step-t"><strong>My Card (outward)</strong> — your branded digital card with QR code and public capture form. Buyers scan and submit — you get a lead instantly.</span></div>
+              <div class="sb-step"><span class="sb-step-n">2</span><span class="sb-step-t"><strong>vCard / OCR capture</strong> — scan a business card or import a vCard. Contact details + trade event source auto-populated into a new lead.</span></div>
+              <div class="sb-step"><span class="sb-step-n">3</span><span class="sb-step-t"><strong>Trade-show batch entry</strong> — end of day, enter 20 contacts from a show. Each one inherits the event name, date, and booth as source context.</span></div>
+              <div class="sb-step"><span class="sb-step-n">4</span><span class="sb-step-t"><strong>AI suggestions queue</strong> — AI drafts follow-up suggestions for new leads. Operator reviews and approves — nothing auto-sends.</span></div>
+            </div>
+          </div>
+          <div class="app-mock-wrap">
+            <div class="app-sidebar">
+              <div class="app-logo-row">
+                <div class="app-logo-dot"></div>
+                <span class="app-logo-name">Setu Flow</span>
+              </div>
+              <div class="app-nav">
+                <div class="app-nav-item">⬛ Dashboard</div>
+                <div class="app-nav-item">◈ Pipeline</div>
+                <div class="app-nav-item app-nav-active">⬡ Capture</div>
+                <div class="app-nav-item">✉ Follow-up</div>
+                <div class="app-nav-item">◎ Quote</div>
+                <div class="app-nav-item">✓ Orders</div>
+                <div class="app-nav-item" style="margin-top:auto;">★ AI assist</div>
+                <div class="app-nav-item">◻ My Card</div>
+              </div>
+            </div>
+            <div class="app-content">
+              <div class="app-page-header">
+                <div>
+                  <div class="app-eyebrow">Contact Exchange</div>
+                  <div class="app-page-title">My Card · Live</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <div class="app-badge-green">● Card active</div>
+                  <div class="app-btn-sm">Share card</div>
+                </div>
+              </div>
+              <div class="app-kpi-row">
+                <div class="app-kpi-card app-kpi-sky">
+                  <div class="app-kpi-bar"></div>
+                  <div class="app-kpi-label">Today's captures</div>
+                  <div class="app-kpi-val">24</div>
+                  <div class="app-kpi-sub">↑ 8 from QR scans</div>
+                </div>
+                <div class="app-kpi-card app-kpi-emerald">
+                  <div class="app-kpi-bar"></div>
+                  <div class="app-kpi-label">This week</div>
+                  <div class="app-kpi-val">87</div>
+                  <div class="app-kpi-sub">SIAL Dubai 2026</div>
+                </div>
+                <div class="app-kpi-card app-kpi-amber">
+                  <div class="app-kpi-bar"></div>
+                  <div class="app-kpi-label">Pending AI action</div>
+                  <div class="app-kpi-val">6</div>
+                  <div class="app-kpi-sub">Approve or dismiss</div>
+                </div>
+              </div>
+              <div class="app-section-label">Recent captures — SIAL Dubai 2026</div>
+              <div class="app-list">
+                <div class="app-list-row">
+                  <div class="app-list-av" style="background:#dbeafe;color:#1d4ed8;">A</div>
+                  <div class="app-list-info">
+                    <div class="app-list-name">Al Marwah Trading LLC</div>
+                    <div class="app-list-sub">Khalid Hassan · Head of Procurement · Dubai, UAE</div>
+                  </div>
+                  <div class="app-pill app-pill-blue">QR scan</div>
+                </div>
+                <div class="app-list-row">
+                  <div class="app-list-av" style="background:#d1fae5;color:#065f46;">S</div>
+                  <div class="app-list-info">
+                    <div class="app-list-name">Sunrise Commodities · Kenya</div>
+                    <div class="app-list-sub">Amara Osei · Import Director · Nairobi</div>
+                  </div>
+                  <div class="app-pill app-pill-blue">Public form</div>
+                </div>
+                <div class="app-list-row">
+                  <div class="app-list-av" style="background:#fef3c7;color:#92400e;">K</div>
+                  <div class="app-list-info">
+                    <div class="app-list-name">Kimura Import Co.</div>
+                    <div class="app-list-sub">Takeshi Kimura · Sourcing Lead · Tokyo, Japan</div>
+                  </div>
+                  <div class="app-pill app-pill-blue">vCard import</div>
+                </div>
+              </div>
+              <div class="app-ai-panel">
+                <div class="app-ai-label">✦ AI suggestion — pending approval</div>
+                <div class="app-ai-text">"Al Marwah Trading has an active inquiry history. Recommend sending your product catalog and port terms within 24 hours to match their sourcing cycle."</div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                  <div class="app-btn-approve">✓ Approve send</div>
+                  <div class="app-btn-dismiss">Dismiss</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUALIFY -->
+      <div class="stage-body" data-body="qualify">
+        <div class="sb-grid">
+          <div class="sb-left">
+            <h3>Pipeline Execution Board — blockers visible before every stage move</h3>
+            <p class="sl">Sprint 35 upgraded the kanban into a full execution board. The pipeline now enforces stage gating, surfaces blockers before any advance, and filters the entire board by urgency signal in real time.</p>
+            <div class="sb-steps">
+              <div class="sb-step"><span class="sb-step-n">1</span><span class="sb-step-t"><strong>Stage Move Readiness</strong> — the system checks 9 conditions before allowing any forward move: qualification status, product linkage, market coverage, compliance gate, overdue follow-ups, pricing readiness, RFQ, quote, and contract state.</span></div>
+              <div class="sb-step"><span class="sb-step-n">2</span><span class="sb-step-t"><strong>Today Layer filters</strong> — one click filters the board to: overdue · due today · waiting · blocked · high-value · needs reply. No page reload — live filter across all lanes.</span></div>
+              <div class="sb-step"><span class="sb-step-n">3</span><span class="sb-step-t"><strong>Blocker-first command header</strong> — the dark header shows move-blocked record count, overdue follow-up count, and pipeline $ at risk before you touch a single card.</span></div>
+              <div class="sb-step"><span class="sb-step-n">4</span><span class="sb-step-t"><strong>Quote &amp; Order handoff</strong> — each card has direct handoff buttons: open in quote builder, advance to approval-send, convert accepted quote to order. No lost context between modules.</span></div>
+            </div>
+          </div>
+          <div class="app-mock-wrap" style="flex-direction:column;min-height:440px;">
+            <!-- Command header (dark) -->
+            <div style="background:linear-gradient(135deg,#0f172a 0%,#0b2e4a 100%);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div>
+                <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:#60a5fa;margin-bottom:4px;">Pipeline execution board</div>
+                <div style="font-size:13px;font-weight:700;color:white;letter-spacing:-.02em;">Advance the right account — blocker visible first.</div>
+                <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:3px;">NorthStar: lane work stays stage-led. Quote readiness, order handoff, owner accountability, follow-up pressure — one operator workspace.</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-shrink:0;">
+                <div style="background:#0f172a;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 12px;text-align:center;">
+                  <div style="font-size:16px;font-weight:800;color:#f87171;line-height:1;">5</div>
+                  <div style="font-size:8px;color:rgba(255,255,255,.5);margin-top:2px;">Move blocked</div>
+                </div>
+                <div style="background:#0f172a;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 12px;text-align:center;">
+                  <div style="font-size:16px;font-weight:800;color:#fbbf24;line-height:1;">11</div>
+                  <div style="font-size:8px;color:rgba(255,255,255,.5);margin-top:2px;">Overdue FU</div>
+                </div>
+                <div style="background:#0f172a;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 12px;text-align:center;">
+                  <div style="font-size:14px;font-weight:800;color:#34d399;line-height:1;">$420k</div>
+                  <div style="font-size:8px;color:rgba(255,255,255,.5);margin-top:2px;">Value at risk</div>
+                </div>
+              </div>
+            </div>
+            <!-- Today Layer filter strip -->
+            <div style="background:#1e293b;padding:7px 16px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(255,255,255,.06);">
+              <div style="font-size:8px;text-transform:uppercase;letter-spacing:.16em;color:rgba(255,255,255,.4);font-weight:700;margin-right:4px;">Today</div>
+              <div style="background:rgba(255,255,255,.12);color:white;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:700;cursor:pointer;">All open</div>
+              <div style="color:rgba(255,255,255,.4);padding:3px 10px;border-radius:999px;font-size:9px;font-weight:600;cursor:pointer;">Overdue</div>
+              <div style="color:rgba(255,255,255,.4);padding:3px 10px;border-radius:999px;font-size:9px;font-weight:600;cursor:pointer;">Due today</div>
+              <div style="color:rgba(255,255,255,.4);padding:3px 10px;border-radius:999px;font-size:9px;font-weight:600;cursor:pointer;">Blocked</div>
+              <div style="color:rgba(255,255,255,.4);padding:3px 10px;border-radius:999px;font-size:9px;font-weight:600;cursor:pointer;">High-value</div>
+              <div style="color:rgba(255,255,255,.4);padding:3px 10px;border-radius:999px;font-size:9px;font-weight:600;cursor:pointer;">Needs reply</div>
+            </div>
+            <!-- Kanban board -->
+            <div style="flex:1;display:flex;gap:8px;padding:10px;overflow:hidden;background:#f0f4f8;">
+              <!-- New Lead lane -->
+              <div style="width:25%;display:flex;flex-direction:column;gap:6px;">
+                <div style="background:white;border-radius:10px;padding:8px 10px;border:1px solid #e2e8f0;">
+                  <div style="height:2px;background:#0c7fff;border-radius:2px;margin-bottom:6px;"></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="font-size:10px;font-weight:800;color:#0f172a;">New Lead</div>
+                    <div style="background:#f1f5f9;border-radius:999px;padding:1px 6px;font-size:8px;font-weight:700;color:#64748b;">8</div>
+                  </div>
+                  <div style="display:flex;gap:6px;margin-top:4px;">
+                    <div style="font-size:8px;font-weight:700;color:#ef4444;">2 overdue</div>
+                  </div>
+                </div>
+                <!-- Card: overdue -->
+                <div style="background:white;border-radius:8px;padding:8px;border:1px solid #e2e8f0;border-left:2px solid #ef4444;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:5px;">
+                    <div style="font-size:9.5px;font-weight:800;color:#0f172a;line-height:1.2;">Pacific Foods JP</div>
+                    <div style="font-size:9px;">🇯🇵</div>
+                  </div>
+                  <div style="background:#fee2e2;border-radius:999px;display:inline-block;padding:1px 7px;font-size:8px;font-weight:700;color:#dc2626;margin-bottom:5px;">⚠ 5d overdue</div>
+                  <div style="font-size:8px;color:#64748b;">$18k · Grains</div>
+                  <div style="margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;padding:4px 6px;font-size:8px;color:#64748b;">Readiness: <span style="color:#10b981;font-weight:700;">Catalog ✓</span> <span style="color:#ef4444;font-weight:700;">Market ✗</span></div>
+                </div>
+                <!-- Card: healthy -->
+                <div style="background:white;border-radius:8px;padding:8px;border:1px solid #e2e8f0;border-left:2px solid #10b981;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:5px;">
+                    <div style="font-size:9.5px;font-weight:800;color:#0f172a;line-height:1.2;">Kimura Import</div>
+                    <div style="font-size:9px;">🇯🇵</div>
+                  </div>
+                  <div style="font-size:8px;color:#10b981;font-weight:600;margin-bottom:5px;">● Fresh · 1d ago</div>
+                  <div style="font-size:8px;color:#64748b;">$12k · Spices</div>
+                </div>
+              </div>
+              <!-- Qualified lane -->
+              <div style="width:25%;display:flex;flex-direction:column;gap:6px;">
+                <div style="background:white;border-radius:10px;padding:8px 10px;border:1px solid #e2e8f0;">
+                  <div style="height:2px;background:#f59e0b;border-radius:2px;margin-bottom:6px;"></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="font-size:10px;font-weight:800;color:#0f172a;">Qualified</div>
+                    <div style="background:#f1f5f9;border-radius:999px;padding:1px 6px;font-size:8px;font-weight:700;color:#64748b;">6</div>
+                  </div>
+                  <div style="display:flex;gap:6px;margin-top:4px;">
+                    <div style="font-size:8px;font-weight:700;color:#ef4444;">3 overdue</div>
+                    <div style="font-size:8px;font-weight:700;color:#f59e0b;"> · 1 blocked</div>
+                  </div>
+                </div>
+                <!-- Card: RFQ due -->
+                <div style="background:white;border-radius:8px;padding:8px;border:1px solid #e2e8f0;border-left:2px solid #f59e0b;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:5px;">
+                    <div style="font-size:9.5px;font-weight:800;color:#0f172a;line-height:1.2;">Al Marwah Trading</div>
+                    <div style="font-size:9px;">🇦🇪</div>
+                  </div>
+                  <div style="background:#fef3c7;border-radius:999px;display:inline-block;padding:1px 7px;font-size:8px;font-weight:700;color:#92400e;margin-bottom:5px;">📅 RFQ due today</div>
+                  <div style="font-size:8px;color:#64748b;">$42k · Agri</div>
+                  <div style="margin-top:6px;display:flex;gap:4px;">
+                    <div style="background:#0b2e4a;color:white;padding:3px 7px;border-radius:4px;font-size:8px;font-weight:700;cursor:pointer;">→ Open quote</div>
+                  </div>
+                </div>
+                <!-- Card: blocked -->
+                <div style="background:#fff5f5;border-radius:8px;padding:8px;border:1px solid #fecaca;border-left:2px solid #ef4444;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:5px;">
+                    <div style="font-size:9.5px;font-weight:800;color:#0f172a;line-height:1.2;">GreenSource SG</div>
+                    <div style="font-size:9px;">🇸🇬</div>
+                  </div>
+                  <div style="background:#fee2e2;border-radius:999px;display:inline-block;padding:1px 7px;font-size:8px;font-weight:700;color:#dc2626;margin-bottom:4px;">🚫 Compliance</div>
+                  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:5px;padding:4px 6px;font-size:8px;color:#dc2626;">Move blocked — FSSAI cert missing</div>
+                  <div style="margin-top:5px;">
+                    <div style="background:#fee2e2;color:#dc2626;padding:3px 7px;border-radius:4px;font-size:8px;font-weight:700;opacity:.6;cursor:not-allowed;">→ Sample sent (blocked)</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Sample Sent lane -->
+              <div style="width:25%;display:flex;flex-direction:column;gap:6px;">
+                <div style="background:white;border-radius:10px;padding:8px 10px;border:1px solid #e2e8f0;">
+                  <div style="height:2px;background:#7c3aed;border-radius:2px;margin-bottom:6px;"></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="font-size:10px;font-weight:800;color:#0f172a;">Sample sent</div>
+                    <div style="background:#f1f5f9;border-radius:999px;padding:1px 6px;font-size:8px;font-weight:700;color:#64748b;">4</div>
+                  </div>
+                </div>
+                <div style="background:white;border-radius:8px;padding:8px;border:1px solid #e2e8f0;border-left:2px solid #7c3aed;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:5px;">
+                    <div style="font-size:9.5px;font-weight:800;color:#0f172a;line-height:1.2;">Nordic Organics</div>
+                    <div style="font-size:9px;">🇸🇪</div>
+                  </div>
+                  <div style="font-size:8px;color:#7c3aed;font-weight:600;margin-bottom:5px;">Sample delivered</div>
+                  <div style="font-size:8px;color:#64748b;">$24k · Organic</div>
+                </div>
+              </div>
+              <!-- Quote Sent lane -->
+              <div style="width:25%;display:flex;flex-direction:column;gap:6px;">
+                <div style="background:white;border-radius:10px;padding:8px 10px;border:1px solid #e2e8f0;">
+                  <div style="height:2px;background:#10b981;border-radius:2px;margin-bottom:6px;"></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="font-size:10px;font-weight:800;color:#0f172a;">Negotiation</div>
+                    <div style="background:#f1f5f9;border-radius:999px;padding:1px 6px;font-size:8px;font-weight:700;color:#64748b;">3</div>
+                  </div>
+                </div>
+                <div style="background:white;border-radius:8px;padding:8px;border:1px solid #e2e8f0;border-left:2px solid #10b981;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:5px;">
+                    <div style="font-size:9.5px;font-weight:800;color:#0f172a;line-height:1.2;">BioTrade GmbH</div>
+                    <div style="font-size:9px;">🇩🇪</div>
+                  </div>
+                  <div style="font-size:8px;color:#10b981;font-weight:600;margin-bottom:5px;">v3 counter sent</div>
+                  <div style="font-size:8px;color:#64748b;">$88k · $2.4M pipeline</div>
+                  <div style="margin-top:6px;display:flex;gap:4px;">
+                    <div style="background:#0b2e4a;color:white;padding:3px 7px;border-radius:4px;font-size:8px;font-weight:700;cursor:pointer;">→ Approval</div>
+                    <div style="background:#d1fae5;color:#065f46;padding:3px 7px;border-radius:4px;font-size:8px;font-weight:700;cursor:pointer;">→ Orders</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- QUOTE -->
+      <div class="stage-body" data-body="quote">
+        <div class="sb-grid">
+          <div class="sb-left">
+            <h3>Quotes Workspace — 10 status states, approval queue, full lifecycle</h3>
+            <p class="sl">Sprint 35 rebuilt the quotes workspace into a full commercial command center. Quote lifecycle runs from draft to executed order through 10 tracked states, with an approval queue that blocks send until reviewed.</p>
+            <div class="sb-steps">
+              <div class="sb-step"><span class="sb-step-n">1</span><span class="sb-step-t"><strong>10-state quote lifecycle</strong> — draft → internal review → pending approval → approved → sent → revised → accepted → rejected → expired. Every transition is timestamped and audit-logged.</span></div>
+              <div class="sb-step"><span class="sb-step-n">2</span><span class="sb-step-t"><strong>Approval queue banner</strong> — a prominent amber alert surfaces all quotes awaiting review with direct review links. Send is gated until the approval is logged.</span></div>
+              <div class="sb-step"><span class="sb-step-n">3</span><span class="sb-step-t"><strong>Pricing basis + FX + freight</strong> — FOB/CIF/Ex-Factory basis, locked or live FX rates, freight profiles per port, and per-market catalog pricing. Override logged with reason.</span></div>
+              <div class="sb-step"><span class="sb-step-n">4</span><span class="sb-step-t"><strong>One-click handoff chain</strong> — from quote workspace: → Approval-send → Send → accepted quote converts to Order in one click. No context lost between modules.</span></div>
+            </div>
+          </div>
+          <div class="app-mock-wrap" style="flex-direction:column;min-height:400px;">
+            <!-- Quote workspace header -->
+            <div style="background:#0f172a;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:#60a5fa;margin-bottom:3px;">Commercial</div>
+                <div style="font-size:14px;font-weight:700;color:white;letter-spacing:-.02em;">Quotes Workspace</div>
+                <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">Quote list · approval queue · version history · FX context · builder handoff</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <div style="display:flex;background:rgba(255,255,255,.1);border-radius:7px;padding:2px;gap:1px;">
+                  <div style="background:rgba(255,255,255,.15);color:white;padding:3px 8px;border-radius:5px;font-size:8px;font-weight:700;">All</div>
+                  <div style="color:rgba(255,255,255,.5);padding:3px 8px;border-radius:5px;font-size:8px;font-weight:700;">Buyers</div>
+                  <div style="color:rgba(255,255,255,.5);padding:3px 8px;border-radius:5px;font-size:8px;font-weight:700;">Suppliers</div>
+                </div>
+                <div style="background:#0c7fff;color:white;padding:5px 10px;border-radius:7px;font-size:9px;font-weight:700;">+ New quote</div>
+              </div>
+            </div>
+            <!-- Approval queue banner -->
+            <div style="background:#fffbeb;border-bottom:1px solid #fde68a;padding:10px 16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div>
+                  <div style="font-size:10px;font-weight:800;color:#92400e;margin-bottom:3px;">3 quotes pending your approval — pricing override review required</div>
+                  <div style="font-size:9px;color:#a16207;line-height:1.5;">Review overrides, approve or reject, and keep the send gate blocked until approval is logged. Send is disabled until cleared.</div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                  <div style="background:#92400e;color:white;padding:5px 10px;border-radius:6px;font-size:9px;font-weight:700;cursor:pointer;">Review SF-0184 →</div>
+                  <div style="background:white;border:1px solid #fde68a;color:#92400e;padding:5px 10px;border-radius:6px;font-size:9px;font-weight:700;cursor:pointer;">Review SF-0181</div>
+                </div>
+              </div>
+            </div>
+            <!-- Status filter bar -->
+            <div style="background:white;border-bottom:1px solid #e2e8f0;padding:7px 16px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              <div style="background:#fef3c7;border:1px solid #fde68a;color:#92400e;padding:2px 9px;border-radius:999px;font-size:8.5px;font-weight:700;">Pending approval (3)</div>
+              <div style="background:#fee2e2;border:1px solid #fecaca;color:#dc2626;padding:2px 9px;border-radius:999px;font-size:8.5px;font-weight:700;">Expiring soon (2)</div>
+              <div style="margin-left:auto;font-size:8.5px;font-weight:600;color:#94a3b8;">14 quotes · $188k total value</div>
+            </div>
+            <!-- Quote table rows -->
+            <div style="flex:1;background:#f8fafc;overflow:hidden;">
+              <div style="background:#f1f5f9;padding:6px 16px;display:grid;grid-template-columns:1fr 80px 90px 70px 80px 85px;gap:4px;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;">
+                <div>Company / Quote ref</div><div>Value</div><div>Status</div><div>Basis</div><div>Versions</div><div>Actions</div>
+              </div>
+              <!-- Row: pending approval (amber left border) -->
+              <div style="background:white;padding:10px 16px;display:grid;grid-template-columns:1fr 80px 90px 70px 80px 85px;gap:4px;align-items:center;border-bottom:1px solid #f1f5f9;border-left:3px solid #f59e0b;">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:#0f172a;">Al Marwah Trading LLC</div>
+                  <div style="font-size:8.5px;color:#94a3b8;font-family:monospace;">SF-2026-0184</div>
+                </div>
+                <div style="font-size:10px;font-weight:700;color:#0f172a;">$10,400</div>
+                <div><span style="background:#fef3c7;border:1px solid #fde68a;color:#92400e;padding:2px 7px;border-radius:999px;font-size:8px;font-weight:700;">Pending approval</span></div>
+                <div style="font-size:9px;color:#0c7fff;font-weight:600;">CIF Dubai</div>
+                <div style="font-size:9px;color:#64748b;">v3 · current</div>
+                <div style="display:flex;gap:3px;">
+                  <div style="background:#0b2e4a;color:white;padding:3px 7px;border-radius:4px;font-size:8px;font-weight:700;">Review</div>
+                </div>
+              </div>
+              <!-- Row: approved -->
+              <div style="background:white;padding:10px 16px;display:grid;grid-template-columns:1fr 80px 90px 70px 80px 85px;gap:4px;align-items:center;border-bottom:1px solid #f1f5f9;">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:#0f172a;">BioTrade GmbH</div>
+                  <div style="font-size:8.5px;color:#94a3b8;font-family:monospace;">SF-2026-0179</div>
+                </div>
+                <div style="font-size:10px;font-weight:700;color:#0f172a;">$88,200</div>
+                <div><span style="background:#d1fae5;border:1px solid #a7f3d0;color:#065f46;padding:2px 7px;border-radius:999px;font-size:8px;font-weight:700;">Approved</span></div>
+                <div style="font-size:9px;color:#0c7fff;font-weight:600;">FOB Hamburg</div>
+                <div style="font-size:9px;color:#64748b;">v2 · approved</div>
+                <div style="display:flex;gap:3px;">
+                  <div style="background:#059669;color:white;padding:3px 7px;border-radius:4px;font-size:8px;font-weight:700;">Send →</div>
+                </div>
+              </div>
+              <!-- Row: accepted → convert to order -->
+              <div style="background:#ecfdf5;padding:10px 16px;display:grid;grid-template-columns:1fr 80px 90px 70px 80px 85px;gap:4px;align-items:center;border-bottom:1px solid #f1f5f9;">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:#0f172a;">Nordic Organics AB</div>
+                  <div style="font-size:8.5px;color:#94a3b8;font-family:monospace;">SF-2026-0171</div>
+                </div>
+                <div style="font-size:10px;font-weight:700;color:#0f172a;">$24,000</div>
+                <div><span style="background:#ede9fe;border:1px solid #c4b5fd;color:#5b21b6;padding:2px 7px;border-radius:999px;font-size:8px;font-weight:700;">Accepted ✓</span></div>
+                <div style="font-size:9px;color:#0c7fff;font-weight:600;">CIF Gothenburg</div>
+                <div style="font-size:9px;color:#64748b;">v1 · accepted</div>
+                <div style="display:flex;gap:3px;">
+                  <div style="background:#059669;color:white;padding:3px 7px;border-radius:4px;font-size:8px;font-weight:700;">→ Orders</div>
+                </div>
+              </div>
+              <!-- Row: expired -->
+              <div style="background:white;padding:10px 16px;display:grid;grid-template-columns:1fr 80px 90px 70px 80px 85px;gap:4px;align-items:center;opacity:.6;">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:#0f172a;">Gulf Foods DMCC</div>
+                  <div style="font-size:8.5px;color:#94a3b8;font-family:monospace;">SF-2026-0164</div>
+                </div>
+                <div style="font-size:10px;font-weight:700;color:#0f172a;">$31,500</div>
+                <div><span style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;padding:2px 7px;border-radius:999px;font-size:8px;font-weight:700;">Expired</span></div>
+                <div style="font-size:9px;color:#94a3b8;">FOB Jebel Ali</div>
+                <div style="font-size:9px;color:#64748b;">v1</div>
+                <div><div style="background:#f1f5f9;color:#64748b;padding:3px 7px;border-radius:4px;font-size:8px;font-weight:700;">Revise</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXECUTE -->
+      <div class="stage-body" data-body="execute">
+        <div class="sb-grid">
+          <div class="sb-left">
+            <h3>Execute — orders, compliance, documents, reports</h3>
+            <p class="sl">Once a quote is accepted, Setu Flow tracks the commercial execution — order status, compliance blockers, document checklists, and financial reporting — all in one place.</p>
+            <div class="sb-steps">
+              <div class="sb-step"><span class="sb-step-n">1</span><span class="sb-step-t"><strong>Orders module</strong> — confirmed orders tracked with delivery dates, quantities, and shipment status. Pipeline → Order in one click.</span></div>
+              <div class="sb-step"><span class="sb-step-n">2</span><span class="sb-step-t"><strong>Compliance workspace</strong> — country-specific checklists driven by destination and product. Blockers surface before they stall shipment.</span></div>
+              <div class="sb-step"><span class="sb-step-n">3</span><span class="sb-step-t"><strong>Documents workspace</strong> — proforma invoices, LC documents, phytosanitary certs — all uploaded against the deal, not lost in email.</span></div>
+              <div class="sb-step"><span class="sb-step-n">4</span><span class="sb-step-t"><strong>Reports + trade map</strong> — geographic breakdown of pipeline by country, win rate by product category, and revenue forecasting for management.</span></div>
+            </div>
+          </div>
+          <div class="app-mock-wrap">
+            <div class="app-sidebar">
+              <div class="app-logo-row">
+                <div class="app-logo-dot"></div>
+                <span class="app-logo-name">Setu Flow</span>
+              </div>
+              <div class="app-nav">
+                <div class="app-nav-item app-nav-active">⬛ Dashboard</div>
+                <div class="app-nav-item">◈ Pipeline</div>
+                <div class="app-nav-item">⬡ Capture</div>
+                <div class="app-nav-item">✉ Follow-up</div>
+                <div class="app-nav-item">◎ Quote</div>
+                <div class="app-nav-item">✓ Orders</div>
+                <div class="app-nav-item" style="margin-top:auto;">★ AI assist</div>
+                <div class="app-nav-item">◻ My Card</div>
+              </div>
+            </div>
+            <div class="app-content">
+              <div class="app-page-header">
+                <div>
+                  <div class="app-eyebrow">Dashboard · Executive view</div>
+                  <div class="app-page-title">Commercial signals — today</div>
+                </div>
+                <div class="app-badge-green">● Live · 09:41 AM</div>
+              </div>
+              <div class="app-kpi-row" style="grid-template-columns:repeat(5,1fr);">
+                <div class="app-kpi-card app-kpi-sky">
+                  <div class="app-kpi-bar"></div>
+                  <div class="app-kpi-label">Open leads</div>
+                  <div class="app-kpi-val" style="font-size:20px;">34</div>
+                </div>
+                <div class="app-kpi-card app-kpi-amber">
+                  <div class="app-kpi-bar"></div>
+                  <div class="app-kpi-label">Active quotes</div>
+                  <div class="app-kpi-val" style="font-size:20px;">8</div>
+                </div>
+                <div class="app-kpi-card app-kpi-rose">
+                  <div class="app-kpi-bar"></div>
+                  <div class="app-kpi-label">Overdue f/u</div>
+                  <div class="app-kpi-val" style="font-size:20px;">5</div>
+                </div>
+                <div class="app-kpi-card app-kpi-rose">
+                  <div class="app-kpi-bar"></div>
+                  <div class="app-kpi-label">Compliance</div>
+                  <div class="app-kpi-val" style="font-size:20px;">3</div>
+                </div>
+                <div class="app-kpi-card app-kpi-emerald">
+                  <div class="app-kpi-bar"></div>
+                  <div class="app-kpi-label">Pipeline</div>
+                  <div class="app-kpi-val" style="font-size:16px;">$2.4M</div>
+                </div>
+              </div>
+              <div class="app-section-label">Active orders &amp; blockers</div>
+              <div class="app-list">
+                <div class="app-list-row">
+                  <div class="app-list-av" style="background:#d1fae5;color:#065f46;">✓</div>
+                  <div class="app-list-info">
+                    <div class="app-list-name">Al Marwah Trading · Order #52 · UAE</div>
+                    <div class="app-list-sub">Confirmed · Dispatch Apr 30 · CIF Dubai</div>
+                  </div>
+                  <div class="app-pill" style="background:#d1fae5;color:#065f46;">Confirmed</div>
+                </div>
+                <div class="app-list-row app-list-row-danger">
+                  <div class="app-list-av" style="background:#fee2e2;color:#b91c1c;">!</div>
+                  <div class="app-list-info">
+                    <div class="app-list-name" style="color:#dc2626;">Nordic Organics · Sweden — Compliance blocker</div>
+                    <div class="app-list-sub">Phytosanitary certificate missing · Shipment at risk</div>
+                  </div>
+                  <div class="app-pill" style="background:#fee2e2;color:#dc2626;">Blocker</div>
+                </div>
+                <div class="app-list-row">
+                  <div class="app-list-av" style="background:#fef3c7;color:#92400e;">K</div>
+                  <div class="app-list-info">
+                    <div class="app-list-name">Kimura Import Co. · Japan</div>
+                    <div class="app-list-sub">LC documents pending upload · Order #48</div>
+                  </div>
+                  <div class="app-pill app-pill-amber">Pending docs</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ─── -->
+<div style="background: white; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+
+<!-- ─── PLATFORM SCREENSHOTS FROM LIVE PRODUCT ─── -->
+<section class="shell" style="padding-bottom:48px;">
+  <div class="reveal">
+    <div class="eyebrow">Inside the product</div>
+    <h2 style="font-size:clamp(28px,3.2vw,44px);line-height:1.05;max-width:720px;">Every screen is shipping. This is the live product — not a mockup.</h2>
+    <p style="color:var(--ink-600);font-size:16px;margin-top:16px;max-width:680px;line-height:1.65;">Below are representative screens drawn directly from SETU Flow's reference HTML library — the same design language the engineering team builds from. These show capabilities no competitor has in a single product.</p>
+  </div>
+
+  <!-- 3-column screen gallery -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:44px;">
+
+    <!-- Screen 1: Dashboard + world map + KPI strip -->
+    <div style="border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(15,23,42,0.1);border:1px solid #e2e8f0;">
+      <div style="background:#0f172a;padding:7px 12px;display:flex;align-items:center;gap:6px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;"></span>
+        <span style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.4);margin-left:8px;">setuflow.com/dashboard</span>
+      </div>
+      <div style="display:flex;background:#f0f4f8;min-height:320px;">
+        <!-- mini sidebar -->
+        <div style="width:50px;background:linear-gradient(180deg,#061c2e,#0b2e4a);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px;flex-shrink:0;">
+          <div style="width:28px;height:28px;background:linear-gradient(135deg,#1F487C,#359F91);border-radius:7px;margin-bottom:6px;"></div>
+          <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;">⬛</div>
+          <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,0.4);">◈</div>
+          <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,0.4);">◎</div>
+          <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,0.4);">✓</div>
+        </div>
+        <!-- main content -->
+        <div style="flex:1;padding:10px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;">
+            <div style="background:white;border-radius:8px;padding:7px;border-top:2px solid #ef4444;border:1px solid #e2e8f0;border-top-color:#ef4444;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Open leads</div>
+              <div style="font-size:16px;font-weight:800;color:#0f172a;line-height:1;">47</div>
+              <div style="font-size:8px;color:#64748b;margin-top:2px;">↑ 6 this week</div>
+            </div>
+            <div style="background:white;border-radius:8px;padding:7px;border-top:2px solid #f59e0b;border:1px solid #e2e8f0;border-top-color:#f59e0b;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Overdue</div>
+              <div style="font-size:16px;font-weight:800;color:#d97706;line-height:1;">11</div>
+              <div style="font-size:8px;color:#64748b;margin-top:2px;">4 critical</div>
+            </div>
+            <div style="background:white;border-radius:8px;padding:7px;border-top:2px solid #0c7fff;border:1px solid #e2e8f0;border-top-color:#0c7fff;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Quotes</div>
+              <div style="font-size:16px;font-weight:800;color:#0f172a;line-height:1;">14</div>
+              <div style="font-size:8px;color:#64748b;margin-top:2px;">3 pending</div>
+            </div>
+            <div style="background:white;border-radius:8px;padding:7px;border-top:2px solid #10b981;border:1px solid #e2e8f0;border-top-color:#10b981;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Pipeline</div>
+              <div style="font-size:13px;font-weight:800;color:#0f172a;line-height:1;">$1.2M</div>
+              <div style="font-size:8px;color:#64748b;margin-top:2px;">↑ 18%</div>
+            </div>
+            <div style="background:white;border-radius:8px;padding:7px;border-top:2px solid #7c3aed;border:1px solid #e2e8f0;border-top-color:#7c3aed;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Compliance</div>
+              <div style="font-size:16px;font-weight:800;color:#7c3aed;line-height:1;">3</div>
+              <div style="font-size:8px;color:#64748b;margin-top:2px;">1 critical</div>
+            </div>
+          </div>
+          <!-- world map placeholder -->
+          <div style="background:white;border-radius:10px;border:1px solid #e2e8f0;flex:1;padding:10px;display:flex;flex-direction:column;">
+            <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#64748b;margin-bottom:6px;">Trade map · 12 active markets · click any dot to drill in</div>
+            <div style="flex:1;background:linear-gradient(135deg,#0b2e4a 0%,#0a4060 100%);border-radius:8px;position:relative;overflow:hidden;min-height:100px;">
+              <!-- Simplified continent shapes via CSS -->
+              <div style="position:absolute;top:35%;left:22%;width:18%;height:25%;background:rgba(255,255,255,0.08);border-radius:4px;"></div>
+              <div style="position:absolute;top:30%;left:43%;width:12%;height:35%;background:rgba(255,255,255,0.08);border-radius:4px;"></div>
+              <div style="position:absolute;top:20%;left:58%;width:25%;height:30%;background:rgba(255,255,255,0.08);border-radius:4px;"></div>
+              <!-- Market dots -->
+              <div style="position:absolute;top:38%;left:54%;width:9px;height:9px;background:#ef4444;border-radius:50%;box-shadow:0 0 0 3px rgba(239,68,68,.3);"></div>
+              <div style="position:absolute;top:42%;left:59%;width:8px;height:8px;background:#f59e0b;border-radius:50%;box-shadow:0 0 0 3px rgba(245,158,11,.3);"></div>
+              <div style="position:absolute;top:28%;left:65%;width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 0 3px rgba(16,185,129,.3);"></div>
+              <div style="position:absolute;top:35%;left:71%;width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 0 3px rgba(16,185,129,.3);"></div>
+              <div style="position:absolute;top:30%;left:48%;width:6px;height:6px;background:#0c7fff;border-radius:50%;box-shadow:0 0 0 3px rgba(12,127,255,.3);"></div>
+              <div style="position:absolute;bottom:8px;left:10px;font-size:8px;color:rgba(255,255,255,0.5);font-family:monospace;">CLICK ANY MARKET TO DRILL DOWN</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#0f172a;padding:8px 12px;">
+        <div style="font-family:monospace;font-size:9px;color:rgba(255,255,255,.5);">Dashboard · KPI strip + interactive world trade map</div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Pipeline kanban board with lead health -->
+    <div style="border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(15,23,42,0.1);border:1px solid #e2e8f0;">
+      <div style="background:#0f172a;padding:7px 12px;display:flex;align-items:center;gap:6px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;"></span>
+        <span style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.4);margin-left:8px;">setuflow.com/pipeline/buyers</span>
+      </div>
+      <div style="display:flex;background:#f0f4f8;min-height:320px;">
+        <div style="width:50px;background:linear-gradient(180deg,#061c2e,#0b2e4a);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px;flex-shrink:0;">
+          <div style="width:28px;height:28px;background:linear-gradient(135deg,#1F487C,#359F91);border-radius:7px;margin-bottom:6px;"></div>
+          <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,0.4);">⬛</div>
+          <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:11px;">◈</div>
+          <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,0.4);">◎</div>
+        </div>
+        <div style="flex:1;padding:10px;overflow:hidden;">
+          <!-- Kanban columns -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;height:100%;">
+            <!-- New column -->
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="background:white;border-radius:8px;padding:6px 8px;border:1px solid #e2e8f0;">
+                <div style="height:2px;background:#0c7fff;border-radius:2px;margin-bottom:5px;"></div>
+                <div style="font-size:9px;font-weight:800;color:#0f172a;">New <span style="background:#f1f5f9;border-radius:999px;padding:1px 5px;font-size:8px;color:#64748b;margin-left:3px;">8</span></div>
+                <div style="font-size:8px;color:#ef4444;font-weight:600;margin-top:2px;">2 overdue</div>
+              </div>
+              <div style="background:white;border-radius:7px;padding:7px;border:1px solid #e2e8f0;border-left:2px solid #ef4444;">
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <div style="width:16px;height:16px;border-radius:4px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:9px;">🇦🇪</div>
+                  <div style="font-size:9px;font-weight:800;color:#0f172a;line-height:1.2;">Gulf Foods DMCC</div>
+                </div>
+                <div style="font-size:8px;color:#ef4444;font-weight:600;">⚠ Overdue 4d</div>
+                <div style="font-size:8px;color:#64748b;margin-top:2px;">$28k · Bulk agri</div>
+              </div>
+              <div style="background:white;border-radius:7px;padding:7px;border:1px solid #e2e8f0;border-left:2px solid #10b981;">
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <div style="width:16px;height:16px;border-radius:4px;background:#d1fae5;display:flex;align-items:center;justify-content:center;font-size:9px;">🇯🇵</div>
+                  <div style="font-size:9px;font-weight:800;color:#0f172a;line-height:1.2;">Kimura Import</div>
+                </div>
+                <div style="font-size:8px;color:#10b981;font-weight:600;">● Fresh · 1d ago</div>
+                <div style="font-size:8px;color:#64748b;margin-top:2px;">$15k · Spices</div>
+              </div>
+            </div>
+            <!-- Qualified column -->
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="background:white;border-radius:8px;padding:6px 8px;border:1px solid #e2e8f0;">
+                <div style="height:2px;background:#f59e0b;border-radius:2px;margin-bottom:5px;"></div>
+                <div style="font-size:9px;font-weight:800;color:#0f172a;">Qualified <span style="background:#f1f5f9;border-radius:999px;padding:1px 5px;font-size:8px;color:#64748b;margin-left:3px;">5</span></div>
+                <div style="font-size:8px;color:#f59e0b;font-weight:600;margin-top:2px;">RFQ due today</div>
+              </div>
+              <div style="background:white;border-radius:7px;padding:7px;border:1px solid #e2e8f0;border-left:2px solid #f59e0b;">
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <div style="width:16px;height:16px;border-radius:4px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:9px;">🇸🇦</div>
+                  <div style="font-size:9px;font-weight:800;color:#0f172a;line-height:1.2;">Al Marwah Trading</div>
+                </div>
+                <div style="font-size:8px;color:#f59e0b;font-weight:600;">📅 RFQ due today</div>
+                <div style="font-size:8px;color:#64748b;margin-top:2px;">$42k · Grains</div>
+              </div>
+              <div style="background:white;border-radius:7px;padding:7px;border:1px solid #e2e8f0;border-left:2px solid #10b981;">
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <div style="width:16px;height:16px;border-radius:4px;background:#d1fae5;display:flex;align-items:center;justify-content:center;font-size:9px;">🇸🇪</div>
+                  <div style="font-size:9px;font-weight:800;color:#0f172a;line-height:1.2;">Nordic Organics</div>
+                </div>
+                <div style="font-size:8px;color:#10b981;font-weight:600;">● Fresh · 2d ago</div>
+                <div style="font-size:8px;color:#64748b;margin-top:2px;">$19k · Organic</div>
+              </div>
+            </div>
+            <!-- Sample column -->
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="background:white;border-radius:8px;padding:6px 8px;border:1px solid #e2e8f0;">
+                <div style="height:2px;background:#7c3aed;border-radius:2px;margin-bottom:5px;"></div>
+                <div style="font-size:9px;font-weight:800;color:#0f172a;">Sample sent <span style="background:#f1f5f9;border-radius:999px;padding:1px 5px;font-size:8px;color:#64748b;margin-left:3px;">3</span></div>
+              </div>
+              <div style="background:white;border-radius:7px;padding:7px;border:1px solid #e2e8f0;border-left:2px solid #7c3aed;">
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <div style="width:16px;height:16px;border-radius:4px;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:9px;">🇺🇸</div>
+                  <div style="font-size:9px;font-weight:800;color:#0f172a;line-height:1.2;">Metro Natural Foods</div>
+                </div>
+                <div style="font-size:8px;color:#7c3aed;font-weight:600;">Sample delivered</div>
+                <div style="font-size:8px;color:#64748b;margin-top:2px;">$55k · Specialty</div>
+              </div>
+            </div>
+            <!-- Negotiation column -->
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="background:white;border-radius:8px;padding:6px 8px;border:1px solid #e2e8f0;">
+                <div style="height:2px;background:#10b981;border-radius:2px;margin-bottom:5px;"></div>
+                <div style="font-size:9px;font-weight:800;color:#0f172a;">Negotiation <span style="background:#f1f5f9;border-radius:999px;padding:1px 5px;font-size:8px;color:#64748b;margin-left:3px;">2</span></div>
+              </div>
+              <div style="background:white;border-radius:7px;padding:7px;border:1px solid #e2e8f0;border-left:2px solid #10b981;">
+                <div style="display:flex;gap:4px;margin-bottom:4px;">
+                  <div style="width:16px;height:16px;border-radius:4px;background:#d1fae5;display:flex;align-items:center;justify-content:center;font-size:9px;">🇩🇪</div>
+                  <div style="font-size:9px;font-weight:800;color:#0f172a;line-height:1.2;">BioTrade GmbH</div>
+                </div>
+                <div style="font-size:8px;color:#10b981;font-weight:600;">v3 counter sent</div>
+                <div style="font-size:8px;color:#64748b;margin-top:2px;">$88k · Organic</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#0f172a;padding:8px 12px;">
+        <div style="font-family:monospace;font-size:9px;color:rgba(255,255,255,.5);">Pipeline · Kanban board with lead health signals + compliance flags</div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Product catalog with variants + pricing gaps -->
+    <div style="border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(15,23,42,0.1);border:1px solid #e2e8f0;">
+      <div style="background:#0f172a;padding:7px 12px;display:flex;align-items:center;gap:6px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;"></span>
+        <span style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.4);margin-left:8px;">setuflow.com/products</span>
+      </div>
+      <div style="display:flex;background:#f0f4f8;min-height:320px;">
+        <div style="width:50px;background:linear-gradient(180deg,#061c2e,#0b2e4a);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px;flex-shrink:0;">
+          <div style="width:28px;height:28px;background:linear-gradient(135deg,#1F487C,#359F91);border-radius:7px;margin-bottom:6px;"></div>
+          <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,0.4);">⬛</div>
+          <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,0.4);">◎</div>
+          <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:11px;">📦</div>
+        </div>
+        <div style="flex:1;padding:10px;display:flex;flex-direction:column;gap:8px;">
+          <!-- Stats strip -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;">
+            <div style="background:white;border-radius:8px;padding:7px;border-top:2px solid #0c7fff;border:1px solid #e2e8f0;border-top-color:#0c7fff;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Quote-ready</div>
+              <div style="font-size:16px;font-weight:800;color:#059669;line-height:1;">36</div>
+            </div>
+            <div style="background:white;border-radius:8px;padding:7px;border-top:2px solid #f59e0b;border:1px solid #e2e8f0;border-top-color:#f59e0b;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Pricing gaps</div>
+              <div style="font-size:16px;font-weight:800;color:#d97706;line-height:1;">11</div>
+            </div>
+            <div style="background:white;border-radius:8px;padding:7px;border:1px solid #e2e8f0;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Variants</div>
+              <div style="font-size:16px;font-weight:800;color:#0f172a;line-height:1;">142</div>
+            </div>
+            <div style="background:white;border-radius:8px;padding:7px;border-top:2px solid #7c3aed;border:1px solid #e2e8f0;border-top-color:#7c3aed;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Markets</div>
+              <div style="font-size:16px;font-weight:800;color:#7c3aed;line-height:1;">9</div>
+            </div>
+          </div>
+          <!-- Product table -->
+          <div style="background:white;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;flex:1;">
+            <div style="display:grid;grid-template-columns:16px 1fr 40px 55px 55px 60px;gap:4px;padding:6px 8px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;">
+              <div></div><div>Product / SKU</div><div style="text-align:center;">Var</div><div>Ex-Factory</div><div>FOB</div><div>Markets</div>
+            </div>
+            <div style="display:grid;grid-template-columns:16px 1fr 40px 55px 55px 60px;gap:4px;padding:7px 8px;border-bottom:1px solid #f1f5f9;align-items:center;">
+              <div style="width:8px;height:8px;border-radius:2px;background:#f59e0b;"></div>
+              <div><div style="font-size:9px;font-weight:700;color:#0f172a;">Agri Commodity A</div><div style="font-size:8px;color:#94a3b8;font-family:monospace;">SKU-001 · HSN 0803</div></div>
+              <div style="text-align:center;font-size:9px;color:#64748b;">4</div>
+              <div style="font-size:9px;font-weight:600;color:#0f172a;">$3.20/kg</div>
+              <div style="font-size:9px;font-weight:600;color:#0f172a;">$3.65/kg</div>
+              <div><span style="background:#d1fae5;color:#065f46;font-size:7.5px;padding:1px 5px;border-radius:4px;font-weight:700;">✓ 9/9</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:16px 1fr 40px 55px 55px 60px;gap:4px;padding:7px 8px;border-bottom:1px solid #f1f5f9;align-items:center;">
+              <div style="width:8px;height:8px;border-radius:2px;background:#10b981;"></div>
+              <div><div style="font-size:9px;font-weight:700;color:#0f172a;">Specialty Spice Blend</div><div style="font-size:8px;color:#94a3b8;font-family:monospace;">SKU-042 · HSN 0910</div></div>
+              <div style="text-align:center;font-size:9px;color:#64748b;">3</div>
+              <div style="font-size:9px;font-weight:600;color:#0f172a;">$8.40/kg</div>
+              <div style="font-size:9px;font-weight:600;color:#0f172a;">$9.10/kg</div>
+              <div><span style="background:#d1fae5;color:#065f46;font-size:7.5px;padding:1px 5px;border-radius:4px;font-weight:700;">✓ 9/9</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:16px 1fr 40px 55px 55px 60px;gap:4px;padding:7px 8px;border-bottom:1px solid #f1f5f9;align-items:center;">
+              <div style="width:8px;height:8px;border-radius:2px;background:#f59e0b;"></div>
+              <div><div style="font-size:9px;font-weight:700;color:#0f172a;">Organic Grain Powder</div><div style="font-size:8px;color:#94a3b8;font-family:monospace;">SKU-078 · HSN 1102</div></div>
+              <div style="text-align:center;font-size:9px;color:#64748b;">2</div>
+              <div style="font-size:9px;font-weight:600;color:#0f172a;">$5.80/kg</div>
+              <div style="font-size:9px;color:#f59e0b;">—</div>
+              <div><span style="background:#fef3c7;color:#92400e;font-size:7.5px;padding:1px 5px;border-radius:4px;font-weight:700;">⚠ 6/9</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:16px 1fr 40px 55px 55px 60px;gap:4px;padding:7px 8px;align-items:center;">
+              <div style="width:8px;height:8px;border-radius:2px;background:#0c7fff;"></div>
+              <div><div style="font-size:9px;font-weight:700;color:#0f172a;">Dehydrated Vegetable Mix</div><div style="font-size:8px;color:#94a3b8;font-family:monospace;">SKU-103 · HSN 0712</div></div>
+              <div style="text-align:center;font-size:9px;color:#64748b;">5</div>
+              <div style="font-size:9px;font-weight:600;color:#0f172a;">$6.20/kg</div>
+              <div style="font-size:9px;font-weight:600;color:#0f172a;">$6.85/kg</div>
+              <div><span style="background:#d1fae5;color:#065f46;font-size:7.5px;padding:1px 5px;border-radius:4px;font-weight:700;">✓ 9/9</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#0f172a;padding:8px 12px;">
+        <div style="font-family:monospace;font-size:9px;color:rgba(255,255,255,.5);">Product catalog · Variants, SKU, HS codes, MOQ, market pricing gaps surfaced</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Second row: Quote builder + AI suggestions -->
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:20px;margin-top:20px;">
+
+    <!-- Quote builder with version timeline + approval gate -->
+    <div style="border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(15,23,42,0.1);border:1px solid #e2e8f0;">
+      <div style="background:#0f172a;padding:7px 12px;display:flex;align-items:center;gap:6px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;"></span>
+        <span style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.4);margin-left:8px;">setuflow.com/leads/al-marwah/quote/SF-2026-0184</span>
+      </div>
+      <div style="background:#f0f4f8;padding:14px;display:flex;flex-direction:column;gap:10px;">
+        <!-- Quote header -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-size:9px;text-transform:uppercase;letter-spacing:.18em;color:#0c7fff;font-weight:700;margin-bottom:3px;">Quote · SF-2026-0184</div>
+            <div style="font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.02em;">Al Marwah Trading LLC · Dubai, UAE</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:700;border:1px solid #fde68a;">Pending approval</span>
+          </div>
+        </div>
+        <!-- Version timeline -->
+        <div style="background:white;border-radius:10px;border:1px solid #e2e8f0;padding:10px 12px;">
+          <div style="font-size:8px;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:7px;">Version history</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;">v1 · sent</span>
+            <span style="color:#94a3b8;font-size:9px;">→</span>
+            <span style="background:#fef3c7;border:1px solid #fde68a;color:#92400e;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;">v2 · counter</span>
+            <span style="color:#94a3b8;font-size:9px;">→</span>
+            <span style="background:#0c7fff;border-color:#0c7fff;color:white;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;">v3 · current</span>
+          </div>
+        </div>
+        <!-- Line items -->
+        <div style="background:white;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1fr 60px 70px 70px 70px 60px;gap:0;padding:6px 10px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;">
+            <div>Product</div><div>Qty</div><div>Unit (FOB)</div><div>Freight</div><div>CIF</div><div>Override</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 60px 70px 70px 70px 60px;gap:0;padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:10px;align-items:center;">
+            <div style="font-weight:700;color:#0f172a;">Agri Commodity A</div>
+            <div style="color:#64748b;">2,000 kg</div>
+            <div style="color:#0f172a;font-weight:600;">$3.65</div>
+            <div style="color:#0f172a;font-weight:600;">$0.32</div>
+            <div style="color:#0f172a;font-weight:700;">$3.97</div>
+            <div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 60px 70px 70px 70px 60px;gap:0;padding:8px 10px;font-size:10px;align-items:center;">
+            <div style="font-weight:700;color:#0f172a;">Specialty Spice Blend</div>
+            <div style="color:#64748b;">500 kg</div>
+            <div style="color:#0f172a;font-weight:600;">$9.10</div>
+            <div style="color:#0f172a;font-weight:600;">$0.41</div>
+            <div style="color:#0f172a;font-weight:700;">$9.51</div>
+            <div><span style="background:#fef3c7;color:#92400e;font-size:7px;padding:1px 5px;border-radius:4px;font-weight:700;">override</span></div>
+          </div>
+        </div>
+        <!-- FX + total row -->
+        <div style="display:flex;gap:8px;">
+          <div style="background:white;border-radius:8px;border:1px solid #e2e8f0;padding:8px 10px;flex:1;">
+            <div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">FX rate · locked</div>
+            <div style="font-size:11px;font-weight:700;color:#0f172a;">1 USD = 83.4 INR</div>
+          </div>
+          <div style="background:white;border-radius:8px;border:1px solid #e2e8f0;padding:8px 10px;flex:1;">
+            <div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:3px;">Basis</div>
+            <div style="font-size:11px;font-weight:700;color:#0c7fff;">CIF Dubai</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#1F487C,#359F91);border-radius:8px;padding:8px 12px;flex:1;">
+            <div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.7);margin-bottom:3px;">Total CIF</div>
+            <div style="font-size:13px;font-weight:800;color:white;">$10,988</div>
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;flex:1;">
+            <div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.12em;color:#92400e;margin-bottom:3px;">Margin</div>
+            <div style="font-size:13px;font-weight:800;color:#d97706;">14.2% ⚠</div>
+          </div>
+        </div>
+        <!-- Approval gate -->
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:10px 12px;display:flex;align-items:flex-start;gap:8px;">
+          <div style="font-size:14px;flex-shrink:0;">⚠</div>
+          <div style="flex:1;">
+            <div style="font-size:10px;font-weight:800;color:#92400e;margin-bottom:3px;">Approval gate triggered — margin below 15% threshold</div>
+            <div style="font-size:9px;color:#a16207;line-height:1.5;">This version cannot be sent until a manager with quote.approve permission reviews and countersigns. All actions are audit-logged with actor name, timestamp, and version delta.</div>
+          </div>
+          <div style="background:#0b2e4a;color:white;padding:6px 12px;border-radius:6px;font-size:10px;font-weight:700;flex-shrink:0;cursor:pointer;">Request →</div>
+        </div>
+      </div>
+      <div style="background:#0f172a;padding:8px 12px;">
+        <div style="font-family:monospace;font-size:9px;color:rgba(255,255,255,.5);">Quote builder · Version timeline + line items + FX + approval gate</div>
+      </div>
+    </div>
+
+    <!-- AI suggestions panel -->
+    <div style="border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(15,23,42,0.1);border:1px solid #e2e8f0;display:flex;flex-direction:column;">
+      <div style="background:#0f172a;padding:7px 12px;display:flex;align-items:center;gap:6px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;"></span>
+        <span style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.4);margin-left:8px;">setuflow.com/ai-suggestions</span>
+      </div>
+      <div style="background:#f0f4f8;flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;">
+        <div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.18em;color:#0c7fff;font-weight:700;margin-bottom:3px;">AI Assist · Contextual guidance</div>
+          <div style="font-size:13px;font-weight:800;color:#0f172a;letter-spacing:-.02em;">Operator reviews every suggestion</div>
+        </div>
+        <!-- AI card: critical -->
+        <div style="background:white;border:1px solid #fecaca;border-left:3px solid #ef4444;border-radius:10px;padding:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+            <span style="background:#fee2e2;color:#dc2626;padding:2px 7px;border-radius:999px;font-size:8px;font-weight:700;">Critical · Lead priority</span>
+            <span style="font-size:8px;color:#94a3b8;">2h ago</span>
+          </div>
+          <div style="font-size:10px;color:#0f172a;line-height:1.55;margin-bottom:8px;">"Gulf Foods DMCC follow-up is 4 days overdue. Their procurement cycle closes on Friday. Immediate outreach recommended — drafting email now."</div>
+          <div style="display:flex;gap:6px;">
+            <div style="background:#0b2e4a;color:white;padding:5px 10px;border-radius:6px;font-size:9px;font-weight:700;cursor:pointer;">✓ Approve draft</div>
+            <div style="background:white;border:1px solid #e2e8f0;color:#64748b;padding:5px 10px;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;">Dismiss</div>
+          </div>
+        </div>
+        <!-- AI card: quote risk -->
+        <div style="background:white;border:1px solid #fde68a;border-left:3px solid #f59e0b;border-radius:10px;padding:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+            <span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:999px;font-size:8px;font-weight:700;">High · Quote risk</span>
+            <span style="font-size:8px;color:#94a3b8;">5h ago</span>
+          </div>
+          <div style="font-size:10px;color:#0f172a;line-height:1.55;margin-bottom:8px;">"Quote SF-2026-0181 has been in negotiation for 14 days across 3 versions. No communication in 5 days. Risk of buyer disengagement is elevated."</div>
+          <div style="display:flex;gap:6px;">
+            <div style="background:#0b2e4a;color:white;padding:5px 10px;border-radius:6px;font-size:9px;font-weight:700;cursor:pointer;">✓ Send check-in</div>
+            <div style="background:white;border:1px solid #e2e8f0;color:#64748b;padding:5px 10px;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;">Dismiss</div>
+          </div>
+        </div>
+        <!-- AI card: order delay -->
+        <div style="background:white;border:1px solid #c4b5fd;border-left:3px solid #7c3aed;border-radius:10px;padding:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+            <span style="background:#ede9fe;color:#5b21b6;padding:2px 7px;border-radius:999px;font-size:8px;font-weight:700;">Medium · Order delay risk</span>
+            <span style="font-size:8px;color:#94a3b8;">1d ago</span>
+          </div>
+          <div style="font-size:10px;color:#0f172a;line-height:1.55;margin-bottom:8px;">"Order #52 has 2 compliance blockers open — phytosanitary cert missing and LC documents pending. Dispatch is in 6 days. Risk of delay is watchlist."</div>
+          <div style="display:flex;gap:6px;">
+            <div style="background:#0b2e4a;color:white;padding:5px 10px;border-radius:6px;font-size:9px;font-weight:700;cursor:pointer;">→ Open compliance</div>
+            <div style="background:white;border:1px solid #e2e8f0;color:#64748b;padding:5px 10px;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;">Dismiss</div>
+          </div>
+        </div>
+        <div style="background:rgba(53,159,145,0.06);border:1px solid rgba(53,159,145,0.2);border-radius:8px;padding:8px 10px;font-size:9px;color:#0f766e;text-align:center;">
+          ✦ AI never auto-sends · operator approves every action · all prompts logged for audit
+        </div>
+      </div>
+      <div style="background:#0f172a;padding:8px 12px;">
+        <div style="font-family:monospace;font-size:9px;color:rgba(255,255,255,.5);">AI Assist · Priority scoring · Quote risk · Order delay prediction</div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="shell">
+  <div class="reveal">
+    <div class="eyebrow">Platform depth</div>
+    <h2 style="font-size: clamp(28px, 3.2vw, 44px); line-height: 1.05; max-width: 720px;">10 modules shipped · 9 sprints closed. Every one purpose-built for how trade teams actually work.</h2>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <div class="feat-icon">📡</div>
+      <div class="feat-h">Contact Exchange · My Card</div>
+      <p class="feat-p">Branded digital card with public QR capture form. Buyers scan → lead created instantly with source context. Two-way: outward promotion + inbound capture in one loop.</p>
+      <div class="feat-tags"><span class="feat-tag">QR code</span><span class="feat-tag">vCard import</span><span class="feat-tag">OCR scan</span></div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feat-icon">🗂️</div>
+      <div class="feat-h">Pipeline · Buyer + Supplier</div>
+      <p class="feat-p">Dual-mode pipeline with role-aware views. Buyers for sales teams, suppliers for procurement. Stage progression, follow-up scheduling, overdue urgency flags surfaced to management.</p>
+      <div class="feat-tags"><span class="feat-tag">Dual mode</span><span class="feat-tag">Follow-up dates</span><span class="feat-tag">RFQ capture</span></div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feat-icon">💹</div>
+      <div class="feat-h">Quote Builder — trade-aware pricing</div>
+      <p class="feat-p">FOB / CIF / Ex-Factory basis. Live or locked FX rates. Freight profiles per port. Margin threshold approval gates. Versioned quotes with send controls and audit log.</p>
+      <div class="feat-tags"><span class="feat-tag">FX rates</span><span class="feat-tag">Freight logic</span><span class="feat-tag">Approval gate</span><span class="feat-tag">Version control</span></div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feat-icon">🗺️</div>
+      <div class="feat-h">Dashboard · Action + Trade Map</div>
+      <p class="feat-p">Action-first: overdue follow-ups, pending approvals, and recent inbound surface immediately. Geographic trade map shows pipeline distribution by country with drill-down to active leads.</p>
+      <div class="feat-tags"><span class="feat-tag">Country map</span><span class="feat-tag">Urgency layer</span><span class="feat-tag">Role-aware</span></div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-h">AI Suggestions · Assistive, not autonomous</div>
+      <p class="feat-p">AI drafts follow-up messages, pricing summaries, and next actions based on lead context. Operator reviews every suggestion before it's acted on. All prompts and decisions are logged for audit.</p>
+      <div class="feat-tags"><span class="feat-tag">Draft suggestions</span><span class="feat-tag">Operator approval</span><span class="feat-tag">Prompt logging</span></div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feat-icon">🏛️</div>
+      <div class="feat-h">Compliance + Documents workspace</div>
+      <p class="feat-p">Country-specific compliance checklists driven by destination and product type. Document workspace for proformas, LCs, certs — uploaded against the deal. Blockers surface before they stall shipments.</p>
+      <div class="feat-tags"><span class="feat-tag">Country-driven</span><span class="feat-tag">Blocker tracking</span><span class="feat-tag">Document log</span></div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feat-icon">🎪</div>
+      <div class="feat-h">Trade Events · Show-floor capture</div>
+      <p class="feat-p">Log trade shows and capture batch leads tied to each event. Every contact inherits show name, date, and booth source. Event-level reporting shows which shows generate the best pipeline.</p>
+      <div class="feat-tags"><span class="feat-tag">Batch entry</span><span class="feat-tag">Event tagging</span><span class="feat-tag">Source analytics</span></div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feat-icon">📦</div>
+      <div class="feat-h">Products + Orders</div>
+      <p class="feat-p">Catalog-driven product pricing with base prices, specifications, and override controls. Confirmed quotes convert to orders tracked with delivery dates, quantities, and shipment status.</p>
+      <div class="feat-tags"><span class="feat-tag">Catalog pricing</span><span class="feat-tag">Override log</span><span class="feat-tag">Order tracking</span></div>
+    </div>
+    <div class="feature-card reveal" style="background: var(--grad-light); border-color: rgba(53,159,145,0.2);">
+      <div class="feat-icon">📊</div>
+      <div class="feat-h">Reports · Roadmap Q3 2026</div>
+      <p class="feat-p">Full financial reporting layer: revenue by country, win rate by product category, pipeline velocity, and quota tracking. Designed to replace the weekly status call with a live management view.</p>
+      <div class="feat-tags"><span class="feat-tag">Revenue analytics</span><span class="feat-tag">Win rate</span><span class="feat-tag">Quota tracking</span></div>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ─── ROI / IMPACT ON TRADERS ─── -->
+<section class="roi-wrap" id="impact">
+  <div class="shell">
+    <div class="roi-layout">
+      <div class="reveal">
+        <div class="eyebrow">Revenue impact</div>
+        <h2>Setu Flow doesn't reduce costs. It increases revenue.</h2>
+        <p>
+          For a 30-person food export company doing $2M in annual revenue with 80 inbound inquiries per month — the math on faster quoting and follow-up is significant.
+        </p>
+        <p style="margin-top: 14px;">
+          The typical trade team responds to inbound in 5–12 days. Industry data shows that responding within 24 hours increases conversion by 3–5×. Setu Flow makes 24-hour responses the default, not the exception.
+        </p>
+        <p style="margin-top: 14px; font-size: 14px; color: var(--ink-400);">
+          All figures are estimated based on industry benchmarks and customer discovery interviews. Individual results vary based on team size, market, and product category.
+        </p>
+      </div>
+      <div class="roi-card reveal">
+        <div style="font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal-d); margin-bottom: 20px;">Estimated impact · 30-person food exporter · $2M ARR baseline</div>
+        <div class="roi-row">
+          <span class="rl">Monthly inbound inquiries</span>
+          <span class="rv">80</span>
+        </div>
+        <div class="roi-row">
+          <span class="rl">Current close rate (slow follow-up)</span>
+          <span class="rv neg">~15%</span>
+        </div>
+        <div class="roi-row">
+          <span class="rl">Target close rate (24hr response)</span>
+          <span class="rv pos">~28%</span>
+        </div>
+        <div class="roi-row">
+          <span class="rl">Average deal value</span>
+          <span class="rv">$12,000</span>
+        </div>
+        <div class="roi-row">
+          <span class="rl">Additional deals closed / month</span>
+          <span class="rv pos">+10 deals</span>
+        </div>
+        <div class="roi-row">
+          <span class="rl">Additional revenue / month</span>
+          <span class="rv pos">+$120,000</span>
+        </div>
+        <div class="roi-row">
+          <span class="rl">Setu Flow cost / month</span>
+          <span class="rv neg">$800 – $1,200</span>
+        </div>
+        <div class="roi-total">
+          <span class="rtl">Estimated net revenue uplift / month</span>
+          <span class="rtv">+$118k+</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── GLOBAL REACH ─── -->
+<section class="shell" id="reach">
+  <div class="reveal">
+    <div class="eyebrow">Global market strategy</div>
+    <h2 style="font-size: clamp(28px, 3.2vw, 44px); line-height: 1.05; max-width: 760px;">Built for where trade actually happens — with a wedge strategy that scales across corridors.</h2>
+    <p style="color: var(--ink-600); font-size: 16.5px; margin-top: 18px; max-width: 680px; line-height: 1.65;">
+      We launch in the India → GCC trade corridor — one of the world's highest-volume, fastest-growing SMB export routes — then expand across corridors where the same workflow pain exists at scale.
+    </p>
+  </div>
+  <div class="reach-grid reveal">
+    <div class="reach-card">
+      <div class="reach-flag">🇮🇳</div>
+      <div class="reach-region">Launch · Q2 2026</div>
+      <div class="reach-h">India — the origin wedge</div>
+      <p class="reach-p">250,000+ active exporters. Government export promotion mission. High density of food, textile, chemical, and industrial goods traders. Target: design partners in Mumbai, Ahmedabad, Delhi NCR.</p>
+      <div class="reach-stage"><span class="stage-badge launch">Active GTM</span></div>
+    </div>
+    <div class="reach-card">
+      <div class="reach-flag">🇦🇪</div>
+      <div class="reach-region">Expand · Q3 2026</div>
+      <div class="reach-h">GCC — the destination corridor</div>
+      <p class="reach-p">UAE, Saudi Arabia, Kuwait — the largest destination for Indian exports. Trade shows: Gulfood, Automechanika Dubai. High concentration of import traders buying from India, SEA, and EU suppliers.</p>
+      <div class="reach-stage"><span class="stage-badge q3">Q3 2026</span></div>
+    </div>
+    <div class="reach-card">
+      <div class="reach-flag">🌏</div>
+      <div class="reach-region">Expand · Q1 2027</div>
+      <div class="reach-h">Southeast Asia</div>
+      <p class="reach-p">Vietnam, Indonesia, Thailand — massive food and manufactured goods export corridors. Same workflow pain as India. English-language product with familiar trade show touchpoints (FoodEx, THAIFEX).</p>
+      <div class="reach-stage"><span class="stage-badge q1">Q1 2027</span></div>
+    </div>
+    <div class="reach-card">
+      <div class="reach-flag">🇪🇺</div>
+      <div class="reach-region">Expand · Year 3</div>
+      <div class="reach-h">Europe</div>
+      <p class="reach-p">EU trade compliance complexity (GDPR, product standards, customs documentation) amplifies the value of Setu Flow's compliance workspace. Target: food importers in Germany, Netherlands, UK.</p>
+      <div class="reach-stage"><span class="stage-badge yr3">Year 3</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── BUSINESS MODEL ─── -->
+<div style="background: white; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+<section class="shell" id="business">
+  <div class="biz-layout">
+    <div class="reveal">
+      <div class="eyebrow">Business model</div>
+      <h2>Simple SaaS pricing. Built to scale with the team.</h2>
+      <p>Per-seat monthly SaaS with an annual discount. No implementation fees. No per-quote charges. The pricing model is designed so a 10-person team can start immediately, and a 200-person enterprise unlocks volume pricing and SSO.</p>
+      <p style="margin-top: 14px; color: var(--ink-600); font-size: 16px;">The wedge is design partners at introductory pricing — 10 confirmed at <strong style="color: var(--ink-800);">$400–800/mo</strong> — converting to standard pricing post-design-partner phase.</p>
+
+      <div class="unit-econ" style="margin-top: 28px;">
+        <div style="font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal-d); margin-bottom: 16px;">Unit economics · standard tier</div>
+        <div class="ue-row"><span class="ul">Blended ACV (standard tier)</span><span class="uv">$9,600 / yr ($800/mo)</span></div>
+        <div class="ue-row"><span class="ul">Target gross margin</span><span class="uv">78–82%</span></div>
+        <div class="ue-row"><span class="ul">Target CAC (vertical sales + trade events)</span><span class="uv">$2,400 – $3,600</span></div>
+        <div class="ue-row"><span class="ul">LTV / CAC (at 24-mo avg retention)</span><span class="uv">5.3× – 8×</span></div>
+        <div class="ue-row"><span class="ul">Payback period</span><span class="uv">3 – 5 months</span></div>
+        <div class="ue-row"><span class="ul">Net Revenue Retention target (Y2)</span><span class="uv">&gt; 110%</span></div>
+      </div>
+    </div>
+
+    <div class="pricing-cards reveal">
+      <div class="pricing-card">
+        <div>
+          <div class="pn">Starter</div>
+          <div class="pd">Up to 5 users · Core capture + pipeline + quote</div>
+        </div>
+        <div>
+          <div class="pp">$299<span style="font-size:16px;font-weight:400;">/mo</span></div>
+          <div class="ppsub">per workspace</div>
+        </div>
+      </div>
+      <div class="pricing-card highlight">
+        <div>
+          <div class="pn">Growth</div>
+          <div class="pd" style="color:rgba(255,255,255,0.8);">Up to 25 users · All modules + AI + Trade map</div>
+        </div>
+        <div>
+          <div class="pp">$799<span style="font-size:16px;font-weight:400;">/mo</span></div>
+          <div class="ppsub">per workspace · most popular</div>
+        </div>
+      </div>
+      <div class="pricing-card">
+        <div>
+          <div class="pn">Scale</div>
+          <div class="pd">Unlimited users · SSO + Compliance + API access</div>
+        </div>
+        <div>
+          <div class="pp">$1,499<span style="font-size:16px;font-weight:400;">/mo</span></div>
+          <div class="ppsub">per workspace</div>
+        </div>
+      </div>
+      <div class="pricing-card" style="background: var(--page-bg);">
+        <div>
+          <div class="pn">Enterprise</div>
+          <div class="pd">Multi-org · Custom workflows · Dedicated success</div>
+        </div>
+        <div>
+          <div class="pp" style="font-size:18px;">Custom</div>
+          <div class="ppsub">contact us</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; padding: 20px 24px; background: rgba(53,159,145,0.08); border: 1px solid rgba(53,159,145,0.2); border-radius: var(--r-lg);">
+        <div style="font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal-d); margin-bottom: 10px;">Revenue milestones · seed deployment</div>
+        <div style="font-size: 14px; color: var(--ink-800); line-height: 1.8;">
+          <strong>Q3 2026</strong> — 10 paying partners · $200k ARR<br>
+          <strong>Q1 2027</strong> — 50 customers · $800k ARR<br>
+          <strong>Q3 2027</strong> — 120 customers · $1.4M ARR<br>
+          <strong>Q4 2027</strong> — $2M ARR run-rate · Series A ready
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ─── TRACTION ─── -->
+<section class="traction-bg" id="traction">
+  <div class="shell">
+    <div class="reveal">
+      <div class="eyebrow">Traction</div>
+      <h2 style="font-size: clamp(28px, 3.2vw, 44px); line-height: 1.05; max-width: 760px;">A working product, a real schema, and a commercial workflow an investor can stress-test.</h2>
+      <p style="color: var(--ink-600); font-size: 16.5px; margin-top: 18px; max-width: 680px; line-height: 1.65;">
+        Setu Flow is not a pitch deck. It's a live Next.js + Supabase application built across 9 development sprints, with a complete database schema, role-based permissions, stage gating, and every module accessible for review.
+      </p>
+    </div>
+    <div class="traction-grid">
+      <div class="traction-card reveal">
+        <div class="tc-n">9</div>
+        <div class="tc-l">Sprints closed</div>
+        <div class="tc-d">Foundation → Dashboard → Pipeline Execution Board → Quote Workspace → Capture → AI → Compliance → Documents → Products</div>
+      </div>
+      <div class="traction-card reveal">
+        <div class="tc-n">100<em>%</em></div>
+        <div class="tc-l">Audit-traced events</div>
+        <div class="tc-d">Every commercial action logged with timestamp, role, and context — designed for buyer due diligence</div>
+      </div>
+      <div class="traction-card reveal">
+        <div class="tc-n">10</div>
+        <div class="tc-l">Core modules</div>
+        <div class="tc-d">Dashboard · Pipeline Execution Board · Quotes Workspace · Capture · AI Assist · Trade Events · Compliance · Documents · Products · Catalog</div>
+      </div>
+      <div class="traction-card reveal">
+        <div class="tc-n">&lt;5<em>d</em></div>
+        <div class="tc-l">Time to value</div>
+        <div class="tc-d">Self-serve onboarding. No implementation fee. A 10-person team can be fully operational in under 5 days.</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div class="reveal" style="background: white; border: 1px solid var(--line); border-radius: var(--r-xl); padding: 28px; box-shadow: var(--shadow-sm);">
+        <div class="eyebrow eyebrow-blue" style="margin-bottom: 14px;">Technical foundation</div>
+        <div style="font-size: 14px; color: var(--ink-600); line-height: 2;">
+          <strong style="color:var(--ink-950);">Stack</strong> — Next.js 15 · Supabase (Postgres) · TypeScript<br>
+          <strong style="color:var(--ink-950);">Auth</strong> — Role-based (admin, sales, sourcing, compliance, finance)<br>
+          <strong style="color:var(--ink-950);">Database</strong> — Full schema + RLS policies + table constraints defined<br>
+          <strong style="color:var(--ink-950);">AI</strong> — AI suggestions queue with prompt logging and operator approval<br>
+          <strong style="color:var(--ink-950);">Compliance</strong> — SOC 2 pathway planned · GDPR-ready architecture<br>
+          <strong style="color:var(--ink-950);">Hosting</strong> — Multi-region deployment ready via Supabase + Vercel
+        </div>
+      </div>
+      <div class="reveal" style="background: white; border: 1px solid var(--line); border-radius: var(--r-xl); padding: 28px; box-shadow: var(--shadow-sm);">
+        <div class="eyebrow eyebrow-blue" style="margin-bottom: 14px;">Roadmap to Series A</div>
+        <div class="roadmap-line" style="margin-top: 0; padding-left: 20px;">
+          <div class="roadmap-milestone">
+            <div class="rm-when">Q2 2026</div>
+            <div class="rm-what">10 design partners signed</div>
+            <div class="rm-detail">India + GCC first cohort · introductory pricing · weekly feedback loops</div>
+          </div>
+          <div class="roadmap-milestone">
+            <div class="rm-when">Q3 2026</div>
+            <div class="rm-what">$200k ARR · NPS &gt; 50</div>
+            <div class="rm-detail">Vertical sales hire ramped · trade show GTM in Gulfood + SIAL</div>
+          </div>
+          <div class="roadmap-milestone">
+            <div class="rm-when">Q1 2027</div>
+            <div class="rm-what">50 customers · $800k ARR</div>
+            <div class="rm-detail">Reports module live · API layer open · SEA expansion begins</div>
+          </div>
+          <div class="roadmap-milestone" style="padding-bottom: 0;">
+            <div class="rm-when">Q4 2027</div>
+            <div class="rm-what">$2M ARR · Series A ready</div>
+            <div class="rm-detail">NRR &gt; 110% · 120+ customers · EU pipeline started</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TEAM ─── -->
+<section class="shell" id="team" style="background: white; max-width: 100%; padding: 96px 0; border-top: 1px solid var(--line);">
+  <div class="shell" style="padding-top: 0; padding-bottom: 0;">
+    <div class="reveal">
+      <div class="eyebrow">Team</div>
+      <h2 style="font-size: clamp(28px, 3.2vw, 44px); line-height: 1.05; max-width: 720px;">Operators who have lived this problem — building the tool we wish we had.</h2>
+      <p style="color: var(--ink-600); font-size: 16.5px; margin-top: 18px; max-width: 620px; line-height: 1.65;">
+        The seed round funds key hires across product, engineering, and go-to-market. Founder-market fit is the single most important signal for investors in this category.
+      </p>
+    </div>
+    <div class="team-grid">
+      <div class="person-card reveal">
+        <div class="person-av">R</div>
+        <div>
+          <div class="person-role">Founder · CEO</div>
+          <div class="person-name">Ritesh Kapoor</div>
+          <p class="person-bio">[1–2 sentence bio: trade industry experience, prior company, and what made you start Setu Flow. Investors care about founder-market fit above all else for vertical SaaS in this category.]</p>
+        </div>
+      </div>
+      <div class="person-card reveal">
+        <div class="person-av">M</div>
+        <div>
+          <div class="person-role">Co-founder · CTO</div>
+          <div class="person-name">Mayank Kumar</div>
+          <p class="person-bio">[Engineering background, scale experience, relevant prior build. If solo-founder, replace this card with "Key engineering hire post-seed" framing to show hiring readiness.]</p>
+        </div>
+      </div>
+      <div class="person-card reveal">
+        <div class="person-av hire">+</div>
+        <div>
+          <div class="person-role hire">Hiring with seed round</div>
+          <div class="person-name">Head of Sales · India + GCC</div>
+          <p class="person-bio">Vertical sales lead with 10+ years selling enterprise SaaS or trade software into trading houses, importers, and exporters. Books design partners, converts to wedge customers. <strong>Q3 2026.</strong></p>
+        </div>
+      </div>
+      <div class="person-card reveal">
+        <div class="person-av hire">+</div>
+        <div>
+          <div class="person-role hire">Hiring with seed round</div>
+          <div class="person-name">Founding Engineers · 3 roles</div>
+          <p class="person-bio">Senior full-stack (Next.js + Postgres + Supabase) with bias for shipping. Trade or fintech domain background a strong plus. Product-minded engineers who build toward outcomes. <strong>Q2–Q4 2026.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── THE ASK ─── -->
+<div class="ask-wrap" id="ask">
+  <div class="ask-inner">
+    <div class="ask-layout">
+      <div class="reveal">
+        <div class="eyebrow eyebrow-white">The ask</div>
+        <h2>$<span class="em">1M</span> Seed.<br>10 months runway.<br>Path to <span class="em">$1M ARR.</span></h2>
+        <p class="lede">
+          Capital deployed across product depth, GTM in India + GCC, and a 4-person engineering pod to ship the integration and enterprise layer that unlocks Series A at $2M ARR run-rate.
+        </p>
+        <p class="lede" style="margin-top: 16px; font-size: 15px; opacity: 0.85;">
+          We are not raising on a vision. We are raising on a working product, a proven workflow, a clear market gap, and a founder who has operated inside this pain. This is the moment to build the dominant trade execution system for the world's exporters.
+        </p>
+        <div class="ask-actions">
+          <a href="mailto:hello@setuflow.com" class="btn-gold">Talk to the founder <span class="arr">→</span></a>
+          <a href="#product" class="btn-ghost-white">Replay product walkthrough</a>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="ask-fund-card">
+          <h4>Use of funds · 10 months</h4>
+          <div class="use-row">
+            <div class="ul">Engineering & product<small>4 founding engineers + design</small></div>
+            <div class="up">52%</div>
+          </div>
+          <div class="use-row">
+            <div class="ul">Sales & marketing<small>2 vertical leads · trade-event GTM · partnerships</small></div>
+            <div class="up">28%</div>
+          </div>
+          <div class="use-row">
+            <div class="ul">Customer success & onboarding<small>Design-partner success · India + GCC</small></div>
+            <div class="up">10%</div>
+          </div>
+          <div class="use-row">
+            <div class="ul">Infrastructure & compliance<small>SOC 2 · GDPR · multi-region hosting</small></div>
+            <div class="up">7%</div>
+          </div>
+          <div class="use-row">
+            <div class="ul">Reserve<small>Opportunistic hires + runway buffer</small></div>
+            <div class="up">3%</div>
+          </div>
+
+          <div class="milestones">
+            <h5>Milestones to Series A</h5>
+            <div class="ms-row">
+              <div class="ms-when">Q3 2026</div>
+              <div class="ms-what">10 paying design partners · $200k ARR · NPS > 50</div>
+            </div>
+            <div class="ms-row">
+              <div class="ms-when">Q1 2027</div>
+              <div class="ms-what">50 paying customers · $800k ARR · vertical sales hire ramped</div>
+            </div>
+            <div class="ms-row">
+              <div class="ms-when">Q3 2027</div>
+              <div class="ms-what">120 customers · $1.4M ARR · NRR > 110%</div>
+            </div>
+            <div class="ms-row">
+              <div class="ms-when">Q4 2027</div>
+              <div class="ms-what">$2M ARR run-rate · ready to raise Series A</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="foot-mk">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ftg" x1="187" y1="491" x2="772" y2="491" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#5DD4F0"/><stop offset="1" stop-color="#6EE7B7"/>
+            </linearGradient>
+          </defs>
+          <g>
+            <path fill="url(#ftg)" d="M80.9,631.6c0.3-2.5,0.4-4.2,0.8-5.8c3-12.4,6.1-24.8,9.1-36.5c4.6-3,82.2-31.6,90.3-33.4c35.3,27,72.7,28.9,107.9,1.5c34.2-26.6,41.2-62.6,24.2-103.7c53.3-17.5,107.4-26.8,163.4-29.9c2-18.6,3.9-36.2,5.8-54.2c7.4-6.3,14.9-12.6,23.4-18.1c9.3,4.2,15.6,12.2,23.7,16.9c3.6,18.3,3.4,36.5,6.8,55.4c55.5,2.8,109.8,12.8,163.3,29.9c-16.7,42.3-9.4,78.8,26.7,106c26,19.6,64.7,27.7,106.1-3.4c5,0.6,82.2,28.5,90,32.7c3.2,13.5,6.6,27.6,10,41.4c-2.4,1.9-4,0.8-5.5,0.4c-51.2-14.1-103.4-23.7-155.9-31.5c-31.7-4.7-63.6-8.3-95.5-10.8c-46.2-3.7-92.4-5.5-138.8-6.6c-35.3-0.8-70.5-0.2-105.6,1c-54.2,1.9-108.4,5.7-162.3,12.9c-62,8.3-123.5,18.9-183.9,35.4C83.9,631.5,82.9,631.4,80.9,631.6z M668.2,575.7c-33.4-53.3-96.4-97.4-179.6-89.8c-61.7,5.7-108.5,37.2-142.4,88.4C453.4,565.8,560.3,566.4,668.2,575.7z"/>
+            <path fill="url(#ftg)" d="M308.9,492.5c-0.1,39.6-31.6,70.2-72,70c-39.4-0.2-71.7-33.1-70.2-73.5c1.5-39,32.8-67.8,72.1-67.7C274.3,421.4,309.9,449.1,308.9,492.5z"/>
+            <path fill="url(#ftg)" d="M845.1,491.7c-0.1,40.9-30.3,70.7-71.6,70.6c-38.9-0.1-69.7-31.5-69.7-71c0-39.2,31.4-70.3,72.2-69.8C816.2,422.1,846.4,454.9,845.1,491.7z"/>
+            <path fill="url(#ftg)" d="M506.1,330.1c-25.7,17.5-77,51.1-77.5,50.7c25.5-59.8,50.9-119.5,76.4-179.3c0.8-0.1,52.8,119.1,78.1,178.8C582.5,380.6,531.6,347.4,506.1,330.1z"/>
+          </g>
+        </svg>
+      </div>
+      <div class="foot-text"><strong>Setu Flow</strong> · Trade execution system for import-export sales teams</div>
+    </div>
+    <div class="foot-meta">Capture → Lead → Quote → Order · Investor deck · April 2026</div>
+  </div>
+</footer>
+
+<script>
+  // ─── Stage tabs ─────────────────────────────────────────
+  const urls = {
+    capture: 'setuflow.com/contact-exchange/vcard',
+    qualify: 'setuflow.com/pipeline/buyers',
+    quote:   'setuflow.com/leads/al-marwah/quote/SF-2026-0184',
+    execute: 'setuflow.com/dashboard',
+  };
+  document.querySelectorAll('.stage-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const stage = tab.dataset.stage;
+      document.querySelectorAll('.stage-tab').forEach(t => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.stage-body').forEach(b => b.classList.toggle('active', b.dataset.body === stage));
+      const url = document.getElementById('frameUrl');
+      if (url) url.textContent = urls[stage] || 'setuflow.com';
+    });
+  });
+
+  // ─── Scroll reveal ───────────────────────────────────────
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // ─── Smooth scroll ───────────────────────────────────────
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 68, behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>
