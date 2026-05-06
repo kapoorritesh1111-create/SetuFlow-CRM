@@ -11,6 +11,7 @@ export type LiveTrendResult = {
   points: LiveTrendPoint[];
   averages: Array<{ query: string; value: number }>;
   updatedAt: string;
+  degraded?: boolean;
 };
 
 const defaultTrendQueries = [
@@ -22,8 +23,13 @@ const defaultTrendQueries = [
 ] as const;
 
 export function getSeoTrendQueries() {
-  const configured = process.env.SEO_TREND_QUERIES?.split(',').map((query) => query.trim()).filter(Boolean).slice(0, 5);
-  return configured && configured.length > 0 ? configured : [...defaultTrendQueries];
+  const rawQueries = process.env.SEO_TREND_QUERIES ?? '';
+  const configured = rawQueries
+    .split(',')
+    .map((query: string) => query.trim())
+    .filter(Boolean)
+    .slice(0, 5);
+  return configured.length > 0 ? configured : [...defaultTrendQueries];
 }
 
 function emptyResult(status: LiveTrendResult['status'], provider: LiveTrendResult['provider'], message: string): LiveTrendResult {
@@ -35,26 +41,92 @@ function normalizeNumber(value: unknown) {
   return Number.isFinite(parsed) ? Math.max(0, Math.min(100, parsed)) : 0;
 }
 
-function parseSerpApiPayload(payload: any, queries: string[]): LiveTrendResult {
-  const timeline = payload?.interest_over_time?.timeline_data ?? [];
-  const averages = payload?.interest_over_time?.averages ?? [];
-  const points: LiveTrendPoint[] = timeline.map((item: any) => {
-    const values: Record<string, number> = {};
-    for (const value of item.values ?? []) values[String(value.query)] = normalizeNumber(value.extracted_value ?? value.value);
-    return { label: String(item.date ?? item.timestamp ?? ''), values };
-  }).filter((point: LiveTrendPoint) => point.label);
-  return { status: 'connected', provider: 'serpapi', message: 'Live Google Trends data loaded through SerpApi.', queries, points, averages: averages.map((item: any) => ({ query: String(item.query), value: normalizeNumber(item.value) })), updatedAt: new Date().toISOString() };
+function valueQuery(value: any, fallbackQuery?: string) {
+  return String(value?.query ?? value?.keyword ?? value?.term ?? fallbackQuery ?? '');
 }
 
-function parseSearchApiPayload(payload: any, queries: string[]): LiveTrendResult {
-  const timeline = payload?.interest_over_time?.timeline_data ?? [];
-  const averages = payload?.interest_over_time?.averages ?? [];
-  const points: LiveTrendPoint[] = timeline.map((item: any) => {
+function valueNumber(value: any) {
+  return normalizeNumber(value?.extracted_value ?? value?.value ?? value?.interest ?? value);
+}
+
+function readTimeline(payload: any) {
+  return payload?.interest_over_time?.timeline_data
+    ?? payload?.interest_over_time?.timeline
+    ?? payload?.interest_over_time
+    ?? payload?.timeline_data
+    ?? [];
+}
+
+function readAverages(payload: any) {
+  return payload?.interest_over_time?.averages ?? payload?.averages ?? [];
+}
+
+function parseTimelinePayload(payload: any, queries: string[], provider: 'serpapi' | 'searchapi', message: string, degraded = false): LiveTrendResult {
+  const timeline = readTimeline(payload);
+  const averages = readAverages(payload);
+  const points: LiveTrendPoint[] = Array.isArray(timeline) ? timeline.map((item: any) => {
     const values: Record<string, number> = {};
-    for (const value of item.values ?? []) values[String(value.query)] = normalizeNumber(value.extracted_value ?? value.value);
-    return { label: String(item.date ?? item.timestamp ?? ''), values };
-  }).filter((point: LiveTrendPoint) => point.label);
-  return { status: 'connected', provider: 'searchapi', message: 'Live Google Trends data loaded through SearchApi.', queries, points, averages: averages.map((item: any) => ({ query: String(item.query), value: normalizeNumber(item.value) })), updatedAt: new Date().toISOString() };
+    const rawValues = item?.values ?? item?.value ?? item?.extracted_value ?? [];
+    if (Array.isArray(rawValues)) {
+      for (const value of rawValues) {
+        const query = valueQuery(value, queries.length === 1 ? queries[0] : undefined);
+        if (query) values[query] = valueNumber(value);
+      }
+    } else if (queries.length === 1) {
+      values[queries[0]] = valueNumber(rawValues);
+    }
+    return { label: String(item?.date ?? item?.time ?? item?.timestamp ?? ''), values };
+  }).filter((point: LiveTrendPoint) => point.label) : [];
+
+  return {
+    status: 'connected',
+    provider,
+    message,
+    queries,
+    points,
+    averages: Array.isArray(averages) ? averages.map((item: any) => ({ query: valueQuery(item), value: valueNumber(item) })).filter((item) => item.query) : [],
+    updatedAt: new Date().toISOString(),
+    degraded,
+  };
+}
+
+function mergeSingleQueryResults(results: LiveTrendResult[]): LiveTrendResult {
+  const byLabel = new Map<string, LiveTrendPoint>();
+  const queries = results.flatMap((result) => result.queries);
+  const averages: Array<{ query: string; value: number }> = [];
+
+  for (const result of results) {
+    averages.push(...result.averages);
+    for (const point of result.points) {
+      const existing = byLabel.get(point.label) ?? { label: point.label, values: {} };
+      existing.values = { ...existing.values, ...point.values };
+      byLabel.set(point.label, existing);
+    }
+  }
+
+  return {
+    status: 'connected',
+    provider: 'searchapi',
+    message: 'Live Google Trends data loaded through SearchApi. Combined comparison failed, so the dashboard used one-query fallback requests.',
+    queries,
+    points: Array.from(byLabel.values()),
+    averages,
+    updatedAt: new Date().toISOString(),
+    degraded: true,
+  };
+}
+
+async function fetchSearchApi(searchApiKey: string, queries: string[]) {
+  const url = new URL('https://www.searchapi.io/api/v1/search');
+  url.searchParams.set('engine', 'google_trends');
+  url.searchParams.set('data_type', 'TIMESERIES');
+  url.searchParams.set('q', queries.join(','));
+  url.searchParams.set('time', 'today 12-m');
+  url.searchParams.set('api_key', searchApiKey);
+  const response = await fetch(url);
+  const payload = await response.json();
+  if (!response.ok || payload?.error) throw new Error(payload?.error || `SearchApi returned ${response.status}`);
+  return payload;
 }
 
 export async function getLiveGoogleTrends(): Promise<LiveTrendResult> {
@@ -71,23 +143,29 @@ export async function getLiveGoogleTrends(): Promise<LiveTrendResult> {
       url.searchParams.set('q', queries.join(','));
       url.searchParams.set('date', 'today 12-m');
       url.searchParams.set('api_key', serpApiKey);
-      const response = await fetch(url, { next: { revalidate: 60 * 60 * 6 } });
+      const response = await fetch(url);
       const payload = await response.json();
       if (!response.ok || payload?.error) throw new Error(payload?.error || `SerpApi returned ${response.status}`);
-      return parseSerpApiPayload(payload, queries);
+      return parseTimelinePayload(payload, queries, 'serpapi', 'Live Google Trends data loaded through SerpApi.');
     }
 
     if (searchApiKey) {
-      const url = new URL('https://www.searchapi.io/api/v1/search');
-      url.searchParams.set('engine', 'google_trends');
-      url.searchParams.set('data_type', 'TIMESERIES');
-      url.searchParams.set('q', queries.join(','));
-      url.searchParams.set('time', 'today 12-m');
-      url.searchParams.set('api_key', searchApiKey);
-      const response = await fetch(url, { next: { revalidate: 60 * 60 * 6 } });
-      const payload = await response.json();
-      if (!response.ok || payload?.error) throw new Error(payload?.error || `SearchApi returned ${response.status}`);
-      return parseSearchApiPayload(payload, queries);
+      try {
+        const payload = await fetchSearchApi(searchApiKey, queries);
+        return parseTimelinePayload(payload, queries, 'searchapi', 'Live Google Trends data loaded through SearchApi.');
+      } catch (combinedError) {
+        const singleResults: LiveTrendResult[] = [];
+        for (const query of queries) {
+          try {
+            const payload = await fetchSearchApi(searchApiKey, [query]);
+            singleResults.push(parseTimelinePayload(payload, [query], 'searchapi', `Loaded ${query} through SearchApi.`, true));
+          } catch {
+            // Keep trying the remaining keywords. SearchApi/Google Trends can fail on individual low-volume terms.
+          }
+        }
+        if (singleResults.length > 0) return mergeSingleQueryResults(singleResults);
+        throw combinedError;
+      }
     }
 
     if (alphaConfigured) return emptyResult('not_configured', 'google-trends-alpha', 'Google Trends API alpha key detected, but the public alpha endpoint is not configured in this app yet. Use SERPAPI_API_KEY or SEARCHAPI_API_KEY for live data now.');

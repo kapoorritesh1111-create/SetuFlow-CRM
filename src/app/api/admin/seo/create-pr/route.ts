@@ -50,50 +50,38 @@ export default function SeoLandingPage() {
 }
 
 function plannedFiles(): GitHubContentFile[] {
+  const stamp = nowStamp();
   const date = new Date().toISOString();
   return [
     {
-      path: 'src/app/resources/export-compliance-checklist/page.tsx',
+      path: 'src/app/resources/export-document-checklist/page.tsx',
       content: seoPage(
-        'Export Compliance Checklist for Trade Teams',
-        'Export Compliance Resource',
-        'Use this export compliance checklist to organize buyer details, product requirements, trade documents, approvals, and shipment readiness before orders move forward.',
-        ['Capture buyer, consignee, and destination-country requirements.', 'Track product, HS code, certification, and documentation readiness.', 'Connect compliance checks to quotes, orders, and shipment handoff.', 'Reduce missed steps before export execution begins.'],
+        'Export Document Checklist for Import Export Teams',
+        'Export Documents',
+        'Use this export document checklist to organize invoice, packing, certificate, compliance, shipping, and payment documents before handoff.',
+        ['Track commercial invoice and packing list readiness.', 'Review certificates, compliance notes, and buyer requirements.', 'Connect missing documents to owners and next actions.', 'Use the checklist as an internal link target from compliance and order pages.'],
         [
-          { question: 'What should an export compliance checklist include?', answer: 'An export compliance checklist should include buyer and consignee details, destination-country requirements, product information, HS codes, certifications, trade documents, payment terms, and shipment readiness checks.' },
-          { question: 'How does SETU Flow support export compliance workflows?', answer: 'SETU Flow helps teams keep compliance-related tasks connected to leads, quotes, documents, approvals, and order handoff so steps are not lost in spreadsheets or email threads.' },
+          { question: 'What documents are usually needed for export shipments?', answer: 'Common export documents include a commercial invoice, packing list, certificates, buyer or consignee details, shipping instructions, and payment or compliance records. Requirements vary by country, product, and buyer.' },
+          { question: 'Why add document checklists to an export CRM?', answer: 'Document checklists help sales and operations teams keep missing documents visible before orders move to shipment handoff.' },
         ],
       ),
     },
     {
-      path: 'src/app/features/trade-show-lead-capture/page.tsx',
+      path: 'src/app/resources/import-export-crm-keyword-guide/page.tsx',
       content: seoPage(
-        'Trade Show Lead Capture CRM for Exporters',
-        'Trade Show Lead Capture',
-        'Capture trade show leads, scan business cards, organize event contacts, and move export opportunities into follow-up workflows with SETU Flow CRM.',
-        ['Capture business cards, QR contacts, and event leads quickly.', 'Tag leads by trade show, country, product interest, and follow-up stage.', 'Move captured contacts into buyer, supplier, quote, and task workflows.', 'Reduce post-event lead leakage after exhibitions and trade fairs.'],
+        'Import Export CRM Keyword Guide',
+        'SEO Keyword Guide',
+        'A practical guide to how buyers search for import export CRM, export management software, trade show lead capture, and quote management tools.',
+        ['Group keywords by buyer intent, comparison intent, and operational intent.', 'Use solution pages for high-intent CRM and export software searches.', 'Use feature pages for quote, trade show, and workflow searches.', 'Use resource pages for checklist and compliance searches.'],
         [
-          { question: 'What is trade show lead capture for exporters?', answer: 'Trade show lead capture for exporters is the process of collecting buyer, supplier, distributor, and partner contacts during exhibitions and moving them into structured CRM follow-up.' },
-          { question: 'Why use a CRM after a trade show?', answer: 'A CRM helps exporters avoid losing event leads by assigning follow-ups, tracking product interest, organizing contacts, and moving qualified opportunities toward quotes and orders.' },
+          { question: 'Which CRM keywords should import export teams target first?', answer: 'Start with high-intent phrases such as import export CRM, CRM for exporters, export management software, export quote software, and trade show lead capture CRM.' },
+          { question: 'How should SETU Flow use keyword data?', answer: 'SETU Flow should use keyword data to decide page priority, internal linking, schema improvements, and content depth upgrades.' },
         ],
       ),
     },
     {
-      path: 'src/app/solutions/export-management-software/page.tsx',
-      content: seoPage(
-        'Export Management Software for Growing Trade Teams',
-        'Export Management Software',
-        'SETU Flow helps exporters manage leads, buyers, quotes, documents, tasks, approvals, and order handoff from one export management workspace.',
-        ['Manage export sales follow-up and buyer communication.', 'Connect quotes, documents, tasks, and approvals in one workflow.', 'Support growing export teams that are moving beyond spreadsheets.', 'Keep sales and execution teams aligned from inquiry to order handoff.'],
-        [
-          { question: 'What is export management software?', answer: 'Export management software helps trade teams organize export sales, buyer follow-up, quotations, documentation, approvals, tasks, and order handoff in a controlled workflow.' },
-          { question: 'Who should use SETU Flow for export management?', answer: 'SETU Flow is useful for exporters and import-export teams that need CRM, quote control, trade show lead capture, and execution visibility in one workspace.' },
-        ],
-      ),
-    },
-    {
-      path: `docs/seo/seo-next-batch-request-${nowStamp()}.md`,
-      content: `# SEO Next Batch PR Request\n\nGenerated from the SETU Flow SEO Intelligence dashboard on ${date}.\n\n## Included\n\n- Export compliance checklist resource page\n- Trade show lead capture feature page\n- Export management software solution page\n\n## Review checklist\n\n- Verify claims are accurate and supportable.\n- Confirm routes match SETU Flow positioning.\n- Confirm Vercel build passes before merging.\n- Review page copy before publishing to production.\n`,
+      path: `docs/seo/seo-quality-improvement-request-${stamp}.md`,
+      content: `# SEO Quality Improvement PR Request\n\nGenerated from the SETU Flow SEO Intelligence dashboard on ${date}.\n\n## Current state\n\n- First SEO batch is merged and deployed.\n- Second SEO batch is merged and deployed.\n- All first-wave keyword clusters are marked ready in the SEO Intelligence dashboard.\n\n## Included in this PR\n\n- Export document checklist resource page\n- Import export CRM keyword guide resource page\n- Review note for internal linking, schema, and Search Console follow-up\n\n## Next manual review\n\n- Add internal links from homepage and existing SEO pages to all resources.\n- Validate FAQPage/BreadcrumbList/SoftwareApplication schema.\n- Connect Google Search Console for impressions, clicks, CTR, and query trend history.\n`,
     },
   ];
 }
@@ -142,25 +130,21 @@ export async function POST() {
     if (context.missingEnv) return NextResponse.json({ error: 'Supabase environment is not configured.' }, { status: 500 });
     if (!githubToken()) return NextResponse.json({ error: 'Missing SEO_GITHUB_TOKEN, GITHUB_TOKEN, or GH_TOKEN in Vercel environment variables.' }, { status: 500 });
 
-    const branch = `seo/next-content-batch-${nowStamp()}`;
+    const branch = `seo/quality-improvement-${nowStamp()}`;
     const mainRef = await githubFetch(`/repos/${repoFullName}/git/ref/heads/main`);
     const baseSha = mainRef?.object?.sha;
     if (!baseSha) throw new Error('Unable to read main branch SHA.');
 
-    await githubFetch(`/repos/${repoFullName}/git/refs`, {
-      method: 'POST',
-      body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }),
-    });
-
+    await githubFetch(`/repos/${repoFullName}/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }) });
     for (const file of plannedFiles()) await createOrUpdateFile(branch, file);
 
     const pr = await githubFetch(`/repos/${repoFullName}/pulls`, {
       method: 'POST',
       body: JSON.stringify({
-        title: 'SEO next batch: add export resources and trade show pages',
+        title: 'SEO quality improvement: add supporting resources',
         head: branch,
         base: 'main',
-        body: 'Created from the SETU Flow SEO Intelligence dashboard. This PR adds the next SEO content batch: export compliance checklist, trade show lead capture, and export management software pages. Please review claims and wait for Vercel before merging.',
+        body: 'Created from the SETU Flow SEO Intelligence dashboard. All first-wave SEO pages are live; this PR adds supporting resource pages and a quality-improvement review note for internal links, schema, and Search Console follow-up.',
       }),
     });
 
