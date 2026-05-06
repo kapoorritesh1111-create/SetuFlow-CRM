@@ -20,8 +20,8 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
     items: [
       { key: 'overview', href: '/admin/organization', icon: '🏢', label: 'Organization' },
       { key: 'client-onboarding', href: '/admin/client-onboarding', icon: '🚀', label: 'Client onboarding' },
-      { key: 'users', href: '/admin/users', icon: '👥', label: 'Team members', badge: '5', badgeTone: 'success' },
-      { key: 'invitations', href: '/admin/invitations', icon: '✉', label: 'Invitations', badge: '2', badgeTone: 'warning' },
+      { key: 'users', href: '/admin/users', icon: '👥', label: 'Team members' },
+      { key: 'invitations', href: '/admin/invitations', icon: '✉', label: 'Invitations' },
     ],
   },
   {
@@ -46,7 +46,7 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
     items: [
       { key: 'audit', href: '/admin/audit', icon: '📋', label: 'Audit log' },
       { key: 'ai-analytics', href: '/admin/ai-analytics', icon: '✦', label: 'AI analytics' },
-      { key: 'security', href: '/admin/security', icon: '🔒', label: 'Security & roles', badge: '!', badgeTone: 'danger' },
+      { key: 'security', href: '/admin/security', icon: '🔒', label: 'Security & roles' },
     ],
   },
 ] as const;
@@ -66,7 +66,7 @@ function AdminNavBadge({ label, tone = 'success' }: { label: string; tone?: 'suc
   );
 }
 
-export function AdminSettingsShell({ active, organizationName, missingCount = 0, sectionTitle, gapItems = [], children }: { active: AdminNavKey; organizationName: string; missingCount?: number; sectionTitle?: string; gapItems?: AdminGapItem[]; children: ReactNode }) {
+export function AdminSettingsShell({ active, organizationName, missingCount = 0, sectionTitle, gapItems = [], navCounts, children }: { active: AdminNavKey; organizationName: string; missingCount?: number; sectionTitle?: string; gapItems?: AdminGapItem[]; navCounts?: Partial<Record<'users' | 'invitations' | 'security', number>>; children?: ReactNode }) {
   const normalizedOrgName = organizationName.trim().toLowerCase();
   const showMainOrgOnlyTools = normalizedOrgName === 'setu flow' || normalizedOrgName === 'setuflow' || normalizedOrgName.includes('setu');
   return (
@@ -79,6 +79,9 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
               <div className="mt-4 space-y-2">
                 {section.items.filter((item) => showMainOrgOnlyTools || !['client-onboarding', 'seo'].includes(item.key)).map((item) => {
                   const isActive = item.key === active;
+                  const dynamicCount = item.key === 'users' ? navCounts?.users : item.key === 'invitations' ? navCounts?.invitations : item.key === 'security' ? navCounts?.security : undefined;
+                  const badgeLabel = dynamicCount === undefined ? item.badge : String(dynamicCount);
+                  const badgeTone = item.key === 'invitations' ? (Number(dynamicCount ?? 0) > 0 ? 'warning' : 'success') : item.key === 'security' ? (Number(dynamicCount ?? 0) > 0 ? 'danger' : 'success') : item.badgeTone;
                   return (
                     <Link
                       key={item.href}
@@ -92,7 +95,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
                     >
                       <span className="w-5 text-center text-[15px]" aria-hidden="true">{item.icon}</span>
                       <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                      {item.badge ? <AdminNavBadge label={item.badge} tone={item.badgeTone} /> : null}
+                      {badgeLabel ? <AdminNavBadge label={badgeLabel} tone={badgeTone} /> : null}
                     </Link>
                   );
                 })}
@@ -111,7 +114,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
 }
 
 export function AdminPageHero({ title, description, badge, cta, stats }: { title: string; description: string; badge?: string; cta?: ReactNode; stats?: Array<{ label: string; value: string | number; tone?: 'default' | 'success' | 'warning' | 'danger' | 'info' }> }) {
-  return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description={description} badge={badge} actions={cta} meta={stats?.map((stat) => <ToolbarStat key={stat.label} label={stat.label} value={String(stat.value)} tone={stat.tone ?? 'default'} />)} />;
+  return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description={description} badge={badge} actions={cta} meta={stats?.map((stat) => <span key={stat.label}><ToolbarStat label={stat.label} value={String(stat.value)} tone={(stat.tone ?? 'default') as any} /></span>)} />;
 }
 
 function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: number; gapItems?: AdminGapItem[] }) {

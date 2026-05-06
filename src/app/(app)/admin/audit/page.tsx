@@ -4,6 +4,7 @@ import { canViewAuditLogs } from '@/lib/permissionGuards';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { AdminAuditWorkspace, type AuditViewKey } from '@/features/admin/components/admin-audit-workspace';
 import { StateMessage } from '@/components/ui/state-message';
+import { AdminSettingsShell, AdminPageHero } from '@/features/admin/components/admin-settings-shell';
 
 type SearchParams = {
   event?: string;
@@ -261,7 +262,9 @@ export default async function AdminAuditLogPage({
   ];
 
   return (
-    <AdminAuditWorkspace
+    <AdminSettingsShell active="audit" organizationName={organization.name} missingCount={0} sectionTitle="Audit log">
+      <AdminPageHero title="Audit log" description="Review invitation, access, role, and workflow history without leaving the admin shell." badge={organization.name} stats={[{ label: 'Events', value: events.length, tone: 'info' }] as any} />
+      <AdminAuditWorkspace
       organizationName={organization.name}
       events={events}
       eventTypeOptions={EVENT_TYPE_OPTIONS}
@@ -273,6 +276,7 @@ export default async function AdminAuditLogPage({
       summaryStats={summaryStats}
       selectedView={selectedView}
       readOnlyMessage={currentRoles.includes('owner') ? null : 'Admin-view state keeps audit exploration visible while owner-sensitive governance actions stay contained elsewhere.'}
-    />
+      />
+    </AdminSettingsShell>
   );
 }

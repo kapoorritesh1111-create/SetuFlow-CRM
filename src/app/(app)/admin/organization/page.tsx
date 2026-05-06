@@ -121,7 +121,7 @@ export default async function AdminOrganizationPage() {
   const setupCompleteCount = setupChecklist.filter((item) => item.done).length;
 
   return (
-    <AdminSettingsShell active="overview" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="SaaS onboarding" gapItems={gapItems}>
+    <AdminSettingsShell active="overview" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="SaaS onboarding" gapItems={gapItems} navCounts={{ users: summary.totalUsers, invitations: openInvitations, security: gapItems.length }}>
       <AdminPageHero
         title="Organization Setup"
         description="Customer onboarding cockpit for company profile, commercial defaults, team access, reference data, catalog readiness, and governance. Start at the top, then use Admin overview below for deeper controls."

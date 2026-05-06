@@ -55,6 +55,8 @@ export default async function InviteTokenPage({ params }: { params: { token: str
   const inviteEmail = normalizeEmail(invite.email);
   const emailMatches = Boolean(signedInEmail && inviteEmail && signedInEmail === inviteEmail);
   const inviteBlocked = invite.status === 'accepted' || Boolean(invite.accepted_at) || invite.status === 'revoked' || Boolean(invite.revoked_at) || isExpired;
+  const inviteMetadata = invite.metadata && typeof invite.metadata === 'object' && !Array.isArray(invite.metadata) ? invite.metadata as Record<string, any> : {};
+  const invitedFullName = typeof inviteMetadata.invitee?.full_name === 'string' ? inviteMetadata.invitee.full_name : '';
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-10">
@@ -117,7 +119,7 @@ export default async function InviteTokenPage({ params }: { params: { token: str
                   </div>
                   <input type="hidden" name="token" value={token} />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Full name" name="full_name" placeholder="Full name" />
+                    <label className="space-y-2 text-sm text-slate-700"><span className="block font-medium text-slate-800">Full name</span><input name="full_name" defaultValue={invitedFullName} placeholder="Full name" autoComplete="name" /></label>
                     <Field label="Username" name="username" placeholder="Choose a username" required />
                   </div>
                   <Field label="Password" name="password" type="password" placeholder="Create a password" required />

@@ -12,6 +12,7 @@ import {
   resendInvitation,
   revokeInvitation,
   sendMemberPasswordReset,
+  updateMemberProfile,
   updateInvitationRole,
   updateMemberRole,
 } from '@/features/admin/server/actions';
@@ -47,8 +48,8 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
   }, [rows, searchValue, statusFilter]);
 
   const selected =
-    filteredRows.find((row) => row.id === selectedRowId) ??
-    rows.find((row) => row.id === selectedRowId) ??
+    filteredRows.find((row: AdminUserRow) => row.id === selectedRowId) ??
+    rows.find((row: AdminUserRow) => row.id === selectedRowId) ??
     null;
 
   return (
@@ -67,7 +68,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
             <ToolbarField label="Search users">
               <ToolbarSearchInput
                 value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
+                onChange={(event: any) => setSearchValue(event.target.value)}
                 placeholder="Search users, emails, roles, or IDs"
                 aria-label="Search users"
               />
@@ -75,7 +76,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
             <ToolbarField label="Status">
               <ToolbarSelect
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as 'all' | AdminUserRow['status'])}
+                onChange={(event: any) => setStatusFilter(event.target.value as 'all' | AdminUserRow['status'])}
                 aria-label="Filter users by status"
               >
                 <option value="all">All statuses</option>
@@ -110,7 +111,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
-              {filteredRows.map((row) => (
+              {filteredRows.map((row: AdminUserRow) => (
                 <tr key={row.id} className="align-top hover:bg-slate-50">
                   <td className="px-5 py-4 text-sm text-slate-800">
                     <div>
@@ -210,7 +211,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
             </div>
 
             <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
-              {selected.tabs.map((tab) => (
+              {selected.tabs.map((tab: UserDrawerTab) => (
                 <button
                   key={tab}
                   type="button"
@@ -228,10 +229,23 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
 
             {activeTab === 'profile' ? (
               <DrawerSection title="Profile" description="Member identity and recent access details.">
-                <StateMessage
-                  title="Audit visibility"
-                  description="Use the audit link below to verify role changes, password resets, invitation actions, and recoverable admin failures for this record."
-                />
+                {selected.membershipId && selected.userId ? (
+                  <form action={updateMemberProfile} className="space-y-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                    <input type="hidden" name="membership_id" value={selected.membershipId} />
+                    <input type="hidden" name="return_path" value="/admin/users" />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="space-y-1 text-sm font-medium text-slate-700">
+                        <span>Full name</span>
+                        <input name="full_name" defaultValue={selected.name === selected.email ? '' : selected.name} placeholder="Full name" />
+                      </label>
+                      <label className="space-y-1 text-sm font-medium text-slate-700">
+                        <span>Username</span>
+                        <input name="username" defaultValue={selected.username ?? ''} placeholder="Username" />
+                      </label>
+                    </div>
+                    <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Save profile name</button>
+                  </form>
+                ) : null}
                 <div className="flex flex-wrap gap-2">
                   <a href={`/admin/audit?view=access${selected.userId ? `&actor=${encodeURIComponent(selected.userId)}` : ''}`} className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open audit trail</a>
                   <a href="/admin/organization" className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Back to organization</a>

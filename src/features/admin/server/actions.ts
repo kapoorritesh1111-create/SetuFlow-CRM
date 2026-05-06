@@ -9,6 +9,7 @@ import { type AuditEventType, writeAuditLog } from '@/lib/auditLog';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { buildInvitationAcceptUrl, createInvitationToken, hashInvitationToken } from '@/lib/invitationTokens';
 import { env } from '@/lib/env';
+import { sendInvitationEmail } from '@/features/admin/server/invitation-email';
 
 async function logAdminAuditAction(input: {
   organizationId: string;
@@ -39,6 +40,88 @@ function normalizeEmail(value?: string | null) {
   return String(value ?? '').trim().toLowerCase();
 }
 
+
+function normalizeName(value?: FormDataEntryValue | null) {
+  const text = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+  return text.length > 0 ? text.slice(0, 120) : null;
+}
+
+function mergeInvitationMetadata(base: Record<string, unknown> | null | undefined, patch: Record<string, unknown>) {
+  return {
+    ...(base ?? {}),
+    ...patch,
+  };
+}
+
+async function sendPreparedInvitationEmail(input: {
+  supabase: any;
+  organizationId: string;
+  actorUserId: string | null;
+  invitationId: string;
+  organizationName: string;
+  email: string;
+  roleName?: string | null;
+  expiresAt?: string | null;
+  metadata: Record<string, unknown>;
+  auditAction: 'invitation_sent' | 'invitation_resent';
+}) {
+  const rawToken = createInvitationToken();
+  const tokenHash = hashInvitationToken(rawToken);
+  const acceptUrl = buildInvitationAcceptUrl(rawToken);
+  const invitee = (input.metadata.invitee && typeof input.metadata.invitee === 'object' ? input.metadata.invitee : {}) as Record<string, unknown>;
+  const fullName = typeof invitee.full_name === 'string' ? invitee.full_name : null;
+  const deliveryBase = (input.metadata.delivery && typeof input.metadata.delivery === 'object' ? input.metadata.delivery : {}) as Record<string, unknown>;
+  const deliveryMetadata = {
+    ...deliveryBase,
+    accept_url: acceptUrl,
+    generated_at: new Date().toISOString(),
+    provider: 'email',
+    email_status: 'queued',
+  };
+
+  const { error: finalizeError } = await finalizeInvitationDelivery({
+    supabase: input.supabase,
+    organizationId: input.organizationId,
+    actorUserId: input.actorUserId,
+    invitationId: input.invitationId,
+    status: 'sent',
+    metadata: mergeInvitationMetadata(input.metadata, { delivery: deliveryMetadata }),
+    auditAction: input.auditAction,
+    tokenHash,
+  });
+
+  if (finalizeError) {
+    return { ok: false, provider: 'database', error: finalizeError.message ?? 'Could not finalize invitation delivery.' };
+  }
+
+  const emailResult = await sendInvitationEmail({
+    to: input.email,
+    fullName,
+    organizationName: input.organizationName,
+    acceptUrl,
+    roleName: input.roleName ?? null,
+    expiresAt: input.expiresAt ?? null,
+  });
+
+  const nextMetadata = mergeInvitationMetadata(input.metadata, {
+    delivery: {
+      ...deliveryMetadata,
+      email_status: emailResult.ok ? 'sent' : 'failed',
+      email_provider: emailResult.provider,
+      email_sent_at: emailResult.ok ? new Date().toISOString() : null,
+      email_error: emailResult.ok ? null : emailResult.error,
+    },
+  });
+
+  await input.supabase
+    .from('organization_invitations')
+    .update({ metadata: nextMetadata })
+    .eq('id', input.invitationId)
+    .eq('organization_id', input.organizationId);
+
+  return emailResult;
+}
+
 function getBaseAppUrl() {
   const requestOrigin = headers().get('origin')?.trim();
   if (requestOrigin && /^https?:\/\//i.test(requestOrigin)) {
@@ -60,9 +143,11 @@ function sanitizeReturnPath(value: FormDataEntryValue | null | undefined, fallba
 function redirectWithNotice(path: '/admin/users' | '/admin/invitations', notice?: string): never {
   if (!notice) {
     redirect(path);
+    throw new Error('Redirect failed');
   }
-  const params = new URLSearchParams({ notice });
+  const params = new URLSearchParams({ notice: notice ?? '' });
   redirect(`${path}?${params.toString()}`);
+  throw new Error('Redirect failed');
 }
 
 function extractRoleNames(rows: any): string[] {
@@ -232,6 +317,39 @@ async function finalizeInvitationDelivery(input: {
   });
 }
 
+export async function updateMemberProfile(formData: FormData): Promise<void> {
+  const membershipId = formData.get('membership_id');
+  const fullName = normalizeName(formData.get('full_name'));
+  const username = normalizeName(formData.get('username'));
+  const returnPath = sanitizeReturnPath(formData.get('return_path'), '/admin/users');
+
+  if (!membershipId || typeof membershipId !== 'string') return;
+  const context = await getAdminContext();
+  if (!context) return;
+  const { supabase, membership: currentMembership, organization } = context;
+  const targetMembership = await getTargetMembershipSnapshot(supabase, membershipId);
+  if (!targetMembership || targetMembership.organization_id !== organization.id || !targetMembership.user_id) redirectWithNotice(returnPath, 'user-not-found');
+
+  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  payload.full_name = fullName;
+  if (username) payload.username = username;
+
+  const { error } = await supabase.from('profiles').update(payload).eq('id', targetMembership.user_id);
+  if (error) redirectWithNotice(returnPath, 'profile-update-failed');
+
+  await logAdminAuditAction({
+    organizationId: organization.id,
+    action: 'role_changed',
+    entityType: 'profile',
+    entityId: targetMembership.user_id,
+    actorUserId: currentMembership.user_id ?? null,
+    metadata: { profile_update: true, full_name: fullName, username },
+  });
+
+  revalidatePath('/admin/users');
+  redirectWithNotice(returnPath, 'profile-updated');
+}
+
 export async function updateMemberRole(formData: FormData): Promise<void> {
   const membershipId = formData.get('membership_id');
   const roleIdRaw = formData.get('role_id');
@@ -353,6 +471,7 @@ export async function updateInvitationRole(formData: FormData): Promise<void> {
 
 export async function inviteMember(formData: FormData): Promise<void> {
   const emailRaw = formData.get('email');
+  const fullName = normalizeName(formData.get('full_name'));
   const roleIdRaw = formData.get('role_id');
   const expiresInDaysRaw = formData.get('expires_in_days');
   const returnPath = sanitizeReturnPath(formData.get('return_path'), '/admin/invitations');
@@ -368,20 +487,12 @@ export async function inviteMember(formData: FormData): Promise<void> {
   const { supabase, membership: currentMembership, organization, isOwner } = context;
 
   const nextRole = await getAssignableRole(supabase, organization.id, roleId);
-  if (roleId && !nextRole) {
-    redirectWithNotice(returnPath, 'role-invalid');
-  }
-  if (nextRole?.name === 'owner' && !isOwner) {
-    redirectWithNotice(returnPath, 'owner-role-requires-owner');
-  }
+  if (roleId && !nextRole) redirectWithNotice(returnPath, 'role-invalid');
+  if (nextRole?.name === 'owner' && !isOwner) redirectWithNotice(returnPath, 'owner-role-requires-owner');
 
   const existingMembership = await getMembershipByEmail(supabase, organization.id, email);
-  if (existingMembership?.is_active) {
-    redirectWithNotice(returnPath, 'member-already-active');
-  }
-  if (existingMembership && !existingMembership.is_active) {
-    redirectWithNotice(returnPath, 'member-disabled-exists');
-  }
+  if (existingMembership?.is_active) redirectWithNotice(returnPath, 'member-already-active');
+  if (existingMembership && !existingMembership.is_active) redirectWithNotice(returnPath, 'member-disabled-exists');
 
   const safeExpiresInDays = Number.isFinite(expiresInDays) && expiresInDays > 0 ? expiresInDays : 7;
   const expiresAt = new Date();
@@ -389,6 +500,14 @@ export async function inviteMember(formData: FormData): Promise<void> {
   const expiresAtIso = expiresAt.toISOString();
 
   const existingInvite = await getOpenInvitationByEmail(supabase, organization.id, email);
+  const existingMetadata = existingInvite?.metadata ?? {};
+  const metadata = mergeInvitationMetadata(existingMetadata, {
+    invitee: {
+      ...(((existingMetadata as any).invitee ?? {}) as Record<string, unknown>),
+      full_name: fullName,
+    },
+  });
+
   const { data: invitationResult, error } = await supabase.rpc('app_upsert_invitation_tx', {
     p_payload: {
       organization_id: organization.id,
@@ -398,24 +517,34 @@ export async function inviteMember(formData: FormData): Promise<void> {
       email,
       role_id: roleId,
       expires_at: expiresAtIso,
-      metadata: existingInvite?.metadata ?? {},
-      audit_previous: existingInvite
-        ? { role_id: existingInvite.role_id ?? null, expires_at: existingInvite.expires_at ?? null }
-        : null,
-      audit_new: { email, role_id: roleId, role_name: nextRole?.name ?? null, expires_at: expiresAtIso },
+      metadata,
+      audit_previous: existingInvite ? { role_id: existingInvite.role_id ?? null, expires_at: existingInvite.expires_at ?? null } : null,
+      audit_new: { email, full_name: fullName, role_id: roleId, role_name: nextRole?.name ?? null, expires_at: expiresAtIso },
     },
   });
 
-  if (error) {
-    redirectWithNotice(returnPath, existingInvite ? 'invite-create-failed' : 'invite-create-failed');
-  }
+  if (error) redirectWithNotice(returnPath, 'invite-create-failed');
 
   const result = Array.isArray(invitationResult) ? invitationResult[0] : invitationResult;
-  const operation = String(result?.operation ?? (existingInvite ? 'updated' : 'created'));
+  const invitationId = String(result?.invitation_id ?? result?.id ?? existingInvite?.id ?? '');
+  if (!invitationId) redirectWithNotice(returnPath, 'invite-create-failed');
+
+  const emailResult = await sendPreparedInvitationEmail({
+    supabase,
+    organizationId: organization.id,
+    actorUserId: currentMembership.user_id ?? null,
+    invitationId,
+    organizationName: organization.name,
+    email,
+    roleName: nextRole?.name ?? null,
+    expiresAt: expiresAtIso,
+    metadata,
+    auditAction: existingInvite ? 'invitation_resent' : 'invitation_sent',
+  });
 
   revalidatePath('/admin/invitations');
   revalidatePath('/admin/users');
-  redirectWithNotice(returnPath, operation === 'updated' ? 'invite-already-open' : 'invite-created');
+  redirectWithNotice(returnPath, emailResult.ok ? 'invite-created-and-sent' : 'invite-email-failed');
 }
 
 export async function removeMember(formData: FormData): Promise<void> {
@@ -568,45 +697,30 @@ export async function sendInvitation(formData: FormData): Promise<void> {
 
   const { data: existingInvite } = await supabase
     .from('organization_invitations')
-    .select('metadata, status')
+    .select('id, email, expires_at, metadata, status, roles(name)')
     .eq('id', inviteId)
     .eq('organization_id', organization.id)
     .maybeSingle();
 
-  if (!existingInvite || !['draft', 'pending', 'sent'].includes(String(existingInvite.status ?? ''))) {
-    redirectWithNotice(returnPath, 'invite-not-open');
-  }
+  if (!existingInvite || !['draft', 'pending', 'sent'].includes(String(existingInvite.status ?? ''))) redirectWithNotice(returnPath, 'invite-not-open');
 
-  const rawToken = createInvitationToken();
-  const tokenHash = hashInvitationToken(rawToken);
-  const acceptUrl = buildInvitationAcceptUrl(rawToken);
-  const nextMetadata = {
-    ...(existingInvite?.metadata ?? {}),
-    delivery: {
-      accept_url: acceptUrl,
-      generated_at: new Date().toISOString(),
-      provider: 'manual_link',
-    },
-  };
-
-  const { error } = await finalizeInvitationDelivery({
+  const roleName = Array.isArray(existingInvite.roles) ? existingInvite.roles[0]?.name : existingInvite.roles?.name;
+  const result = await sendPreparedInvitationEmail({
     supabase,
     organizationId: organization.id,
     actorUserId: currentMembership.user_id ?? null,
     invitationId: inviteId,
-    status: 'sent',
-    metadata: nextMetadata,
+    organizationName: organization.name,
+    email: normalizeEmail(existingInvite.email),
+    roleName: roleName ?? null,
+    expiresAt: existingInvite.expires_at ?? null,
+    metadata: existingInvite.metadata ?? {},
     auditAction: 'invitation_sent',
-    tokenHash,
   });
-
-  if (error) {
-    redirectWithNotice(returnPath, 'invite-send-failed');
-  }
 
   revalidatePath('/admin/invitations');
   revalidatePath('/admin/users');
-  redirectWithNotice(returnPath, 'invite-sent');
+  redirectWithNotice(returnPath, result.ok ? 'invite-sent' : 'invite-email-failed');
 }
 
 export async function resendInvitation(formData: FormData): Promise<void> {
@@ -620,46 +734,30 @@ export async function resendInvitation(formData: FormData): Promise<void> {
 
   const { data: existingInvite } = await supabase
     .from('organization_invitations')
-    .select('metadata, status')
+    .select('id, email, expires_at, metadata, status, roles(name)')
     .eq('id', inviteId)
     .eq('organization_id', organization.id)
     .maybeSingle();
 
-  if (!existingInvite || !['draft', 'pending', 'sent'].includes(String(existingInvite.status ?? ''))) {
-    redirectWithNotice(returnPath, 'invite-not-open');
-  }
+  if (!existingInvite || !['draft', 'pending', 'sent'].includes(String(existingInvite.status ?? ''))) redirectWithNotice(returnPath, 'invite-not-open');
 
-  const rawToken = createInvitationToken();
-  const tokenHash = hashInvitationToken(rawToken);
-  const acceptUrl = buildInvitationAcceptUrl(rawToken);
-  const nextMetadata = {
-    ...(existingInvite?.metadata ?? {}),
-    delivery: {
-      accept_url: acceptUrl,
-      generated_at: new Date().toISOString(),
-      provider: 'manual_link',
-      resent: true,
-    },
-  };
-
-  const { error } = await finalizeInvitationDelivery({
+  const roleName = Array.isArray(existingInvite.roles) ? existingInvite.roles[0]?.name : existingInvite.roles?.name;
+  const result = await sendPreparedInvitationEmail({
     supabase,
     organizationId: organization.id,
     actorUserId: currentMembership.user_id ?? null,
     invitationId: inviteId,
-    status: 'sent',
-    metadata: nextMetadata,
+    organizationName: organization.name,
+    email: normalizeEmail(existingInvite.email),
+    roleName: roleName ?? null,
+    expiresAt: existingInvite.expires_at ?? null,
+    metadata: existingInvite.metadata ?? {},
     auditAction: 'invitation_resent',
-    tokenHash,
   });
-
-  if (error) {
-    redirectWithNotice(returnPath, 'invite-send-failed');
-  }
 
   revalidatePath('/admin/invitations');
   revalidatePath('/admin/users');
-  redirectWithNotice(returnPath, 'invite-resent');
+  redirectWithNotice(returnPath, result.ok ? 'invite-resent' : 'invite-email-failed');
 }
 
 export async function revokeInvitation(formData: FormData): Promise<void> {
@@ -746,7 +844,7 @@ export async function acceptInvitationByToken(formData: FormData): Promise<void>
       organization_id: invitation.organization_id,
       user_id: user.id,
       email: user.email ?? invitation.email,
-      full_name: (user.user_metadata as Record<string, unknown> | undefined)?.full_name ?? null,
+      full_name: (user.user_metadata as Record<string, unknown> | undefined)?.full_name ?? ((invitation.metadata as Record<string, any> | null)?.invitee?.full_name ?? null),
       accepted_via: 'existing_session',
     },
   });
@@ -762,7 +860,7 @@ export async function acceptInvitationByToken(formData: FormData): Promise<void>
 
 export async function registerAndAcceptInvitation(formData: FormData): Promise<void> {
   const token = String(formData.get('token') ?? '').trim();
-  const fullName = String(formData.get('full_name') ?? '').trim();
+  let fullName = String(formData.get('full_name') ?? '').trim();
   const username = String(formData.get('username') ?? '').trim();
   const password = String(formData.get('password') ?? '');
 
@@ -778,6 +876,7 @@ export async function registerAndAcceptInvitation(formData: FormData): Promise<v
     .eq('token_hash', tokenHash)
     .maybeSingle();
   if (invitationError || !invitation) return;
+  if (!fullName) fullName = String((invitation.metadata as Record<string, any> | null)?.invitee?.full_name ?? '').trim();
 
   const expiresAt = invitation.expires_at ? new Date(invitation.expires_at) : null;
   const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
@@ -836,8 +935,9 @@ function sanitizeAdminReturnPath(value: FormDataEntryValue | null | undefined): 
 }
 
 function redirectWithAdminNotice(path: '/admin/product-management' | '/admin/categories', notice: string): never {
-  const params = new URLSearchParams({ notice });
+  const params = new URLSearchParams({ notice: notice ?? '' });
   redirect(`${path}?${params.toString()}`);
+  throw new Error('Redirect failed');
 }
 async function getAdminMutationContext() { return getAdminContext(); }
 async function revalidateAdminReferencePaths(extraPath?: string) { ['/admin/organization','/admin/markets','/admin/stages','/admin/pipelines','/admin/trade-events','/admin/security'].forEach((path) => revalidatePath(path)); if (extraPath) revalidatePath(extraPath); }

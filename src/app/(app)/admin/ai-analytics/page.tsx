@@ -1,5 +1,6 @@
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { AdminAiAnalyticsWorkspace } from '@/features/admin/components/admin-ai-analytics-workspace';
+import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { getAiAnalyticsData } from '@/lib/queries/ai-analytics';
 import { canViewAuditLogs } from '@/lib/permissionGuards';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
@@ -28,5 +29,5 @@ export default async function AdminAiAnalyticsPage({
     return <WorkspaceState eyebrow="AI analytics" title="AI analytics unavailable" description="The AI analytics dashboard could not load because the data layer is unavailable in this environment." primaryActionHref="/dashboard" primaryActionLabel="Return to dashboard" />;
   }
 
-  return <AdminAiAnalyticsWorkspace data={data} />;
+  return <AdminSettingsShell active="ai-analytics" organizationName={organization.name} missingCount={0} sectionTitle="AI analytics"><AdminPageHero title="AI analytics" description="Review AI suggestion generation, review, approval, dismissal, and applied-action performance in the admin shell." badge={organization.name} stats={[{ label: 'Window', value: `${parseWindow(searchParams?.window)} days`, tone: 'info' }] as any} /><AdminAiAnalyticsWorkspace data={data} /></AdminSettingsShell>;
 }

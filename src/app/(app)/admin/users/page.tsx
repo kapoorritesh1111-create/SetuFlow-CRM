@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/ui/page-header';
+import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionCard } from '@/components/ui/section-card';
 import { StateMessage } from '@/components/ui/state-message';
@@ -91,7 +92,8 @@ export default async function AdminUsersPage({
   const canManageOwners = myRoleNames.includes('owner');
 
   return (
-    <div className="space-y-6">
+    <AdminSettingsShell active="users" organizationName={organization.name} missingCount={0} sectionTitle="Team members" navCounts={{ users: summary.totalUsers, invitations: summary.invitedUsers }}>
+      <div className="space-y-6">
       <PageHeader
         eyebrow="Admin"
         title="Workspace users"
@@ -129,6 +131,7 @@ export default async function AdminUsersPage({
       ) : (
         <AdminUsersManager rows={rows} roles={roles} canManageOwners={canManageOwners} />
       )}
-    </div>
+      </div>
+    </AdminSettingsShell>
   );
 }
