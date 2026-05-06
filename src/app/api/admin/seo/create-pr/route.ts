@@ -3,10 +3,7 @@ import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
 
 export const runtime = 'nodejs';
 
-type GitHubContentFile = {
-  path: string;
-  content: string;
-};
+type GitHubContentFile = { path: string; content: string };
 
 const repoFullName = process.env.SEO_GITHUB_REPOSITORY || process.env.GITHUB_REPOSITORY || 'kapoorritesh1111-create/SetuFlow-CRM';
 const githubApi = 'https://api.github.com';
@@ -56,47 +53,47 @@ function plannedFiles(): GitHubContentFile[] {
   const date = new Date().toISOString();
   return [
     {
-      path: 'src/app/solutions/import-export-crm/page.tsx',
+      path: 'src/app/resources/export-compliance-checklist/page.tsx',
       content: seoPage(
-        'Import Export CRM for Global Trade Teams',
-        'Import Export CRM',
-        'SETU Flow CRM helps importers, exporters, and global trade teams manage leads, quotes, documents, approvals, and shipment handoff in one operating workflow.',
-        ['Track buyers, suppliers, and trade-show leads in one CRM.', 'Manage FOB, CIF, EXW, and DDP quote workflows.', 'Keep document readiness and order handoff connected to the sales pipeline.', 'Replace scattered spreadsheets with reviewable trade execution steps.'],
+        'Export Compliance Checklist for Trade Teams',
+        'Export Compliance Resource',
+        'Use this export compliance checklist to organize buyer details, product requirements, trade documents, approvals, and shipment readiness before orders move forward.',
+        ['Capture buyer, consignee, and destination-country requirements.', 'Track product, HS code, certification, and documentation readiness.', 'Connect compliance checks to quotes, orders, and shipment handoff.', 'Reduce missed steps before export execution begins.'],
         [
-          { question: 'What is an import export CRM?', answer: 'An import export CRM is a customer relationship system designed around global trade workflows such as buyer follow-up, supplier coordination, quote approvals, trade documents, and order handoff.' },
-          { question: 'How is SETU Flow different from a generic CRM?', answer: 'Generic CRMs mainly track contacts and deals. SETU Flow focuses on trade execution after the lead is captured, including export quotes, approvals, documents, and operational readiness.' },
+          { question: 'What should an export compliance checklist include?', answer: 'An export compliance checklist should include buyer and consignee details, destination-country requirements, product information, HS codes, certifications, trade documents, payment terms, and shipment readiness checks.' },
+          { question: 'How does SETU Flow support export compliance workflows?', answer: 'SETU Flow helps teams keep compliance-related tasks connected to leads, quotes, documents, approvals, and order handoff so steps are not lost in spreadsheets or email threads.' },
         ],
       ),
     },
     {
-      path: 'src/app/features/export-quote-management/page.tsx',
+      path: 'src/app/features/trade-show-lead-capture/page.tsx',
       content: seoPage(
-        'Export Quote Management Software',
-        'Export Quote Workflow',
-        'Create, review, and manage export quotations with product pricing, incoterms, approvals, and quote-to-order handoff built for trade teams.',
-        ['Support quote workflows for FOB, CIF, EXW, and DDP terms.', 'Keep pricing, approvals, and buyer follow-up connected.', 'Reduce rework from scattered spreadsheets and manual quote versions.', 'Move approved quotes toward order execution and shipment readiness.'],
+        'Trade Show Lead Capture CRM for Exporters',
+        'Trade Show Lead Capture',
+        'Capture trade show leads, scan business cards, organize event contacts, and move export opportunities into follow-up workflows with SETU Flow CRM.',
+        ['Capture business cards, QR contacts, and event leads quickly.', 'Tag leads by trade show, country, product interest, and follow-up stage.', 'Move captured contacts into buyer, supplier, quote, and task workflows.', 'Reduce post-event lead leakage after exhibitions and trade fairs.'],
         [
-          { question: 'What is export quote management software?', answer: 'Export quote management software helps trade teams create and control quotations with pricing, incoterms, approval steps, and order handoff.' },
-          { question: 'Why do exporters need quote workflow controls?', answer: 'Export quotes often depend on freight, insurance, duties, payment terms, and approvals. A controlled workflow reduces mistakes before the quote reaches the buyer.' },
+          { question: 'What is trade show lead capture for exporters?', answer: 'Trade show lead capture for exporters is the process of collecting buyer, supplier, distributor, and partner contacts during exhibitions and moving them into structured CRM follow-up.' },
+          { question: 'Why use a CRM after a trade show?', answer: 'A CRM helps exporters avoid losing event leads by assigning follow-ups, tracking product interest, organizing contacts, and moving qualified opportunities toward quotes and orders.' },
         ],
       ),
     },
     {
-      path: 'src/app/compare/crm-for-exporters/page.tsx',
+      path: 'src/app/solutions/export-management-software/page.tsx',
       content: seoPage(
-        'Best CRM for Exporters: Generic CRM vs Trade Execution CRM',
-        'CRM Comparison',
-        'Compare generic CRM tools with a trade execution CRM built for exporters that need buyer follow-up, quotes, documents, approvals, and shipment handoff.',
-        ['Generic CRMs are strong for pipeline tracking and sales activity.', 'Trade execution CRMs add export quote, document, approval, and handoff workflows.', 'SETU Flow is positioned for import-export teams that need operational follow-through after the lead is captured.', 'Use this page to decide when trade-specific workflows matter more than broad CRM features.'],
+        'Export Management Software for Growing Trade Teams',
+        'Export Management Software',
+        'SETU Flow helps exporters manage leads, buyers, quotes, documents, tasks, approvals, and order handoff from one export management workspace.',
+        ['Manage export sales follow-up and buyer communication.', 'Connect quotes, documents, tasks, and approvals in one workflow.', 'Support growing export teams that are moving beyond spreadsheets.', 'Keep sales and execution teams aligned from inquiry to order handoff.'],
         [
-          { question: 'Can exporters use a generic CRM?', answer: 'Yes, exporters can use generic CRM tools for basic contacts and pipeline tracking, but trade teams often need additional workflows for quotes, documents, approvals, and shipment readiness.' },
-          { question: 'When should exporters consider SETU Flow?', answer: 'Exporters should consider SETU Flow when leads, trade-show contacts, quotes, and order handoff need to be managed as one connected workflow.' },
+          { question: 'What is export management software?', answer: 'Export management software helps trade teams organize export sales, buyer follow-up, quotations, documentation, approvals, tasks, and order handoff in a controlled workflow.' },
+          { question: 'Who should use SETU Flow for export management?', answer: 'SETU Flow is useful for exporters and import-export teams that need CRM, quote control, trade show lead capture, and execution visibility in one workspace.' },
         ],
       ),
     },
     {
-      path: `docs/seo/seo-upgrade-request-${nowStamp()}.md`,
-      content: `# SEO Upgrade PR Request\n\nGenerated from the SETU Flow SEO Intelligence dashboard on ${date}.\n\n## Included\n\n- Import-export CRM solution page\n- Export quote management feature page\n- CRM for exporters comparison page\n\n## Review checklist\n\n- Verify claims are accurate and supportable.\n- Confirm new routes match product positioning.\n- Confirm Vercel build passes before merging.\n- Review page copy before publishing to production.\n`,
+      path: `docs/seo/seo-next-batch-request-${nowStamp()}.md`,
+      content: `# SEO Next Batch PR Request\n\nGenerated from the SETU Flow SEO Intelligence dashboard on ${date}.\n\n## Included\n\n- Export compliance checklist resource page\n- Trade show lead capture feature page\n- Export management software solution page\n\n## Review checklist\n\n- Verify claims are accurate and supportable.\n- Confirm routes match SETU Flow positioning.\n- Confirm Vercel build passes before merging.\n- Review page copy before publishing to production.\n`,
     },
   ];
 }
@@ -115,9 +112,7 @@ async function githubFetch(path: string, init: RequestInit = {}) {
   });
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
-  if (!response.ok) {
-    throw new Error(data?.message || `GitHub request failed: ${response.status}`);
-  }
+  if (!response.ok) throw new Error(data?.message || `GitHub request failed: ${response.status}`);
   return data;
 }
 
@@ -130,7 +125,6 @@ async function createOrUpdateFile(branch: string, file: GitHubContentFile) {
   } catch {
     sha = undefined;
   }
-
   await githubFetch(`/repos/${repoFullName}/contents/${encodedPath}`, {
     method: 'PUT',
     body: JSON.stringify({
@@ -146,12 +140,9 @@ export async function POST() {
   try {
     const context = await requireSetuInternalAdminWorkspace();
     if (context.missingEnv) return NextResponse.json({ error: 'Supabase environment is not configured.' }, { status: 500 });
+    if (!githubToken()) return NextResponse.json({ error: 'Missing SEO_GITHUB_TOKEN, GITHUB_TOKEN, or GH_TOKEN in Vercel environment variables.' }, { status: 500 });
 
-    if (!githubToken()) {
-      return NextResponse.json({ error: 'Missing SEO_GITHUB_TOKEN, GITHUB_TOKEN, or GH_TOKEN in Vercel environment variables.' }, { status: 500 });
-    }
-
-    const branch = `seo/dashboard-upgrade-${nowStamp()}`;
+    const branch = `seo/next-content-batch-${nowStamp()}`;
     const mainRef = await githubFetch(`/repos/${repoFullName}/git/ref/heads/main`);
     const baseSha = mainRef?.object?.sha;
     if (!baseSha) throw new Error('Unable to read main branch SHA.');
@@ -161,17 +152,15 @@ export async function POST() {
       body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }),
     });
 
-    for (const file of plannedFiles()) {
-      await createOrUpdateFile(branch, file);
-    }
+    for (const file of plannedFiles()) await createOrUpdateFile(branch, file);
 
     const pr = await githubFetch(`/repos/${repoFullName}/pulls`, {
       method: 'POST',
       body: JSON.stringify({
-        title: 'SEO upgrade: add trade-focused landing pages',
+        title: 'SEO next batch: add export resources and trade show pages',
         head: branch,
         base: 'main',
-        body: 'Created from the SETU Flow SEO Intelligence dashboard. This PR adds reviewable SEO landing pages for import-export CRM, export quote management, and CRM for exporters comparison intent. Please review claims and wait for Vercel before merging.',
+        body: 'Created from the SETU Flow SEO Intelligence dashboard. This PR adds the next SEO content batch: export compliance checklist, trade show lead capture, and export management software pages. Please review claims and wait for Vercel before merging.',
       }),
     });
 

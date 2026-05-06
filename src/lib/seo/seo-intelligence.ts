@@ -38,34 +38,34 @@ export const seoTrendPoints: SeoTrendPoint[] = [
 ];
 
 export const seoKeywordGroupSummaries: SeoKeywordGroupSummary[] = [
-  { group: 'Import-export CRM', currentIndex: 92, trend: 'rising', recommendedPage: '/solutions/import-export-crm', action: 'Create a dedicated solution page first.' },
-  { group: 'Export quote software', currentIndex: 86, trend: 'rising', recommendedPage: '/features/export-quote-management', action: 'Publish quote workflow content with FOB/CIF/EXW/DDP language.' },
-  { group: 'Trade show lead capture', currentIndex: 78, trend: 'seasonal', recommendedPage: '/features/trade-show-lead-capture', action: 'Use event-season campaigns and internal links.' },
-  { group: 'Export checklist and compliance', currentIndex: 74, trend: 'growing', recommendedPage: '/resources/export-compliance-checklist', action: 'Use checklist content to capture top-of-funnel searches.' },
+  { group: 'Import-export CRM', currentIndex: 92, trend: 'rising', recommendedPage: '/solutions/import-export-crm', action: 'First SEO page is live; expand internal links and schema next.' },
+  { group: 'Export quote software', currentIndex: 86, trend: 'rising', recommendedPage: '/features/export-quote-management', action: 'First feature page is live; add use-case examples and quote workflow screenshots next.' },
+  { group: 'Trade show lead capture', currentIndex: 78, trend: 'seasonal', recommendedPage: '/features/trade-show-lead-capture', action: 'Create this in the next SEO PR batch.' },
+  { group: 'Export checklist and compliance', currentIndex: 74, trend: 'growing', recommendedPage: '/resources/export-compliance-checklist', action: 'Create this in the next SEO PR batch.' },
 ];
 
 export const seoChangeProof: SeoChangeProof[] = [
   { title: 'SEO cockpit added', description: 'The admin SEO Intelligence page exists and is protected for the main organization.', status: 'live', icon: '📈' },
   { title: 'Daily monitoring enabled', description: 'The SEO Autobot GitHub Action runs every day and creates reviewable PRs.', status: 'live', icon: '🤖' },
   { title: 'Dashboard PR action added', description: 'Internal admins can create a reviewable SEO upgrade pull request directly from the SEO Intelligence page.', status: 'live', icon: '🚀' },
-  { title: 'Real Google data connection needed', description: 'The current chart is a SETU planning index, not Google Trends or Search Console data.', status: 'next_pr', icon: '🔌' },
-  { title: 'SEO landing pages needed', description: 'Import-export CRM, export quote, and comparison pages are generated through the dashboard PR action.', status: 'next_pr', icon: '📄' },
+  { title: 'First SEO landing pages deployed', description: 'Import-export CRM, export quote management, and CRM for exporters comparison pages are merged and deployed.', status: 'live', icon: '✅' },
+  { title: 'Next SEO batch ready', description: 'The Create PR button now generates export compliance, trade show lead capture, and export management software pages.', status: 'next_pr', icon: '📄' },
 ];
 
 export const seoKeywordClusters: SeoKeywordCluster[] = [
-  { cluster: 'Import export CRM', intent: 'commercial', priority: 'high', examples: ['import export CRM', 'CRM for import export business', 'CRM for exporters', 'CRM for importers', 'EXIM CRM software'], recommendedPage: '/solutions/import-export-crm', contentAngle: 'Explain why generic CRM breaks when quotes, incoterms, documents, compliance, and shipment follow-up live outside the pipeline.', currentCoverage: 'partial' },
+  { cluster: 'Import export CRM', intent: 'commercial', priority: 'high', examples: ['import export CRM', 'CRM for import export business', 'CRM for exporters', 'CRM for importers', 'EXIM CRM software'], recommendedPage: '/solutions/import-export-crm', contentAngle: 'Explain why generic CRM breaks when quotes, incoterms, documents, compliance, and shipment follow-up live outside the pipeline.', currentCoverage: 'ready' },
   { cluster: 'Export management software for SMEs', intent: 'commercial', priority: 'high', examples: ['export management software', 'export software for small business', 'software for exporters', 'export sales CRM'], recommendedPage: '/solutions/export-management-software', contentAngle: 'Position Setu Flow as the fast-start operating layer for exporters who need buyer follow-up, quote governance, and order readiness.', currentCoverage: 'missing' },
-  { cluster: 'Trade show lead capture CRM', intent: 'transactional', priority: 'high', examples: ['trade show lead capture app', 'business card scanner CRM', 'trade fair lead management', 'lead capture for exporters'], recommendedPage: '/features/trade-show-lead-capture', contentAngle: 'Show the mobile capture-to-follow-up workflow, including QR/vCard, OCR, event attribution, and post-show queue management.', currentCoverage: 'partial' },
-  { cluster: 'Quote management for trade teams', intent: 'commercial', priority: 'high', examples: ['quote management software', 'export quote software', 'FOB CIF quote software', 'quotation software for exporters'], recommendedPage: '/features/export-quote-management', contentAngle: 'Own FOB/CIF/EXW/DDP, FX locking, approval threshold, product catalog pricing, and quote versioning.', currentCoverage: 'partial' },
+  { cluster: 'Trade show lead capture CRM', intent: 'transactional', priority: 'high', examples: ['trade show lead capture app', 'business card scanner CRM', 'trade fair lead management', 'lead capture for exporters'], recommendedPage: '/features/trade-show-lead-capture', contentAngle: 'Show the mobile capture-to-follow-up workflow, including QR/vCard, OCR, event attribution, and post-show queue management.', currentCoverage: 'missing' },
+  { cluster: 'Quote management for trade teams', intent: 'commercial', priority: 'high', examples: ['quote management software', 'export quote software', 'FOB CIF quote software', 'quotation software for exporters'], recommendedPage: '/features/export-quote-management', contentAngle: 'Own FOB/CIF/EXW/DDP, FX locking, approval threshold, product catalog pricing, and quote versioning.', currentCoverage: 'ready' },
   { cluster: 'Trade compliance and document readiness', intent: 'informational', priority: 'medium', examples: ['export compliance checklist', 'shipment document checklist', 'export documents CRM', 'country compliance checklist export'], recommendedPage: '/resources/export-compliance-checklist', contentAngle: 'Create practical checklists that attract informational searches and route users into Setu Flow execution workflows.', currentCoverage: 'missing' },
-  { cluster: 'CRM alternatives for trade teams', intent: 'comparison', priority: 'medium', examples: ['HubSpot alternative for exporters', 'Zoho CRM for export business', 'Pipedrive alternative for import export', 'best CRM for exporters'], recommendedPage: '/compare/crm-for-exporters', contentAngle: 'Compare Setu Flow against generic CRM categories without negative claims: pipeline CRM vs trade execution CRM.', currentCoverage: 'missing' },
+  { cluster: 'CRM alternatives for trade teams', intent: 'comparison', priority: 'medium', examples: ['HubSpot alternative for exporters', 'Zoho CRM for export business', 'Pipedrive alternative for import export', 'best CRM for exporters'], recommendedPage: '/compare/crm-for-exporters', contentAngle: 'Compare Setu Flow against generic CRM categories without negative claims: pipeline CRM vs trade execution CRM.', currentCoverage: 'ready' },
 ];
 
 export const seoUpgradeActions: SeoUpgradeAction[] = [
-  { title: 'Publish import-export CRM solution page', type: 'content', priority: 'p0', target: '/solutions/import-export-crm', expectedLift: 'High-intent commercial visibility', implementation: 'Use the Create PR button to generate the first reviewable landing page.' },
-  { title: 'Add export quote management feature page', type: 'content', priority: 'p0', target: '/features/export-quote-management', expectedLift: 'Capture quote workflow searches', implementation: 'Use the Create PR button to generate quote workflow content with FOB/CIF/EXW/DDP language.' },
-  { title: 'Create fair CRM comparison hub', type: 'content', priority: 'p1', target: '/compare/crm-for-exporters', expectedLift: 'Comparison-intent traffic', implementation: 'Use the Create PR button to generate a factual, reviewable comparison page.' },
-  { title: 'Connect real Google data', type: 'automation', priority: 'p1', target: 'Supabase + Google Search Console', expectedLift: 'Replace planning indexes with real impressions, clicks, CTR, and query trends', implementation: 'Add Supabase tables and scheduled ingestion after Google Search Console access is configured.' },
+  { title: 'Add export compliance checklist resource', type: 'content', priority: 'p0', target: '/resources/export-compliance-checklist', expectedLift: 'Capture informational searches and route them into execution workflows', implementation: 'Use the Create PR button to generate the checklist resource page in the next SEO batch.' },
+  { title: 'Add trade show lead capture feature page', type: 'content', priority: 'p0', target: '/features/trade-show-lead-capture', expectedLift: 'Capture seasonal trade fair and exhibition lead searches', implementation: 'Use the Create PR button to generate the event lead capture page in the next SEO batch.' },
+  { title: 'Add export management software solution page', type: 'content', priority: 'p0', target: '/solutions/export-management-software', expectedLift: 'Capture SME exporter software category searches', implementation: 'Use the Create PR button to generate the export management software page in the next SEO batch.' },
+  { title: 'Connect real Google data', type: 'automation', priority: 'p1', target: 'SearchApi or Google Search Console', expectedLift: 'Replace planning indexes with real interest, impressions, clicks, CTR, and query trends', implementation: 'Add SEARCHAPI_API_KEY in Vercel for Trends now, and add Search Console ingestion later for query performance.' },
 ];
 
 export const seoOpportunities: SeoOpportunity[] = [
@@ -75,5 +75,5 @@ export const seoOpportunities: SeoOpportunity[] = [
 export const seoPageMetadata = {
   siteUrl: 'https://www.setuflowcrm.com',
   primaryPositioning: 'Trade Execution CRM for import-export teams',
-  analyticsNote: 'This chart is a SETU planning index, not Google Trends or Search Console data. Connect Google Search Console later to replace estimates with real impressions, clicks, CTR, and query trends.',
+  analyticsNote: 'Live Trends data appears when SearchApi or SerpApi is configured. Search Console ingestion can be added later for impressions, clicks, CTR, and query trends.',
 };
