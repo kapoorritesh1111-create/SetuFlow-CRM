@@ -1,32 +1,40 @@
-# Document Index
+# SETU Flow Documentation Index
 
-This repo now keeps only current, decision-useful documentation in the active tree. Historical pass/archive files were removed so the repo can be treated as the current baseline.
+_Last updated: 2026-05-05_
 
-| Document | Purpose |
-|---|---|
-| `README.md` | Primary setup, routes, environment variables, verification, and clean-baseline policy. |
-| `CHANGES.md` | Current baseline changelog and verification note. |
-| `docs/CURRENT_RELEASE_STATUS.md` | Current readiness status and known verification posture. |
-| `docs/CLIENT_ONBOARDING.md` | Public onboarding form, admin notification/resend, workspace draft, and first-admin handoff. |
-| `docs/PRODUCT_OVERVIEW.md` | Product scope and operating model. |
-| `docs/OPERATIONS_RUNBOOK.md` | Operational setup and support guidance. |
-| `docs/RELEASE_READINESS.md` | Readiness checklist and release gate. |
-| `docs/RELEASE_PROOF.md` | Verification evidence and release proof marker. |
-| `docs/ARCHITECTURE.md` | App architecture and route/shell overview. |
-| `docs/CURRENT_SCHEMA.md` | Current schema reference retained from the working baseline. |
-| `docs/SECURITY_POLICY.md` | Current security posture and guardrails. |
-| `docs/UX_RULES.md` | UX consistency rules. |
-| `docs/AI_GUARDRAILS.md` | AI feature guardrails. |
+This is the active documentation set after the cleanup pass. Static reference HTML handoff files are paused and removed from the active repo package for now.
 
-## HTML handoff surfaces
+## Active docs
 
-| File | Purpose |
-|---|---|
-| `public/internal-dcc/index.html` | Current internal Development Control Center with test results. |
-| `public/internal-dcc/mobile-blueprint.html` | Current mobile blueprint reference. |
-| `public/reference-html/*.html` | Current reference HTMLs for key product surfaces. |
-| `public/setuflow-architecture.html` | Current architecture reference HTML. |
+| File | Use it for |
+| --- | --- |
+| `README.md` | Main repo handoff, setup, cleanup notes, and Supabase review summary. |
+| `CHANGES.md` | Chronological changes and release notes. |
+| `docs/CURRENT_RELEASE_STATUS.md` | Current release posture, readiness, and known follow-ups. |
+| `docs/CURRENT_SCHEMA.md` | Live Supabase schema summary and database source-of-truth notes. |
+| `docs/ARCHITECTURE.md` | App architecture, route/data patterns, and ownership boundaries. |
+| `docs/PRODUCT_OVERVIEW.md` | Product surfaces and module responsibilities. |
+| `docs/MOBILE.md` | Mobile app, canonical mobile shell, Share vCard, and signed-in identity behavior. |
+| `docs/MOBILE_SCAN_PRODUCTION.md` | Production business-card scan configuration and readiness checks. |
+| `docs/CLIENT_ONBOARDING.md` | Public onboarding and admin setup workflow. |
+| `docs/OPERATIONS_RUNBOOK.md` | Operational checks, deployment posture, and Supabase advisor follow-ups. |
+| `docs/RELEASE_READINESS.md` | Release gate checklist and open hardening items. |
+| `docs/RELEASE_PROOF.md` | Proof commands and expected regression evidence. |
+| `docs/SECURITY_POLICY.md` | Security and access-control expectations. |
+| `docs/AI_GUARDRAILS.md` | AI review, draft, and operator-control boundaries. |
+| `docs/UX_RULES.md` | UX consistency and layout rules. |
+| `mitigation/README.md` | Retained database mitigation notes for investigation context. |
 
-## Clean-baseline rule
+## Removed from active package
 
-Do not add new archive folders or pass-numbered docs. Update the current docs and HTML handoff files directly.
+The following were removed during cleanup and should stay absent unless a future sprint intentionally regenerates them:
+
+- static reference HTML handoff pages
+- internal DCC static HTML pages
+- local Supabase CLI temp state
+- root one-off patch scripts
+- duplicate root mobile docs now covered under `docs/`
+
+## Update rule
+
+Before updating the README with schema or readiness claims, review the live Supabase project and update `docs/CURRENT_SCHEMA.md` first.

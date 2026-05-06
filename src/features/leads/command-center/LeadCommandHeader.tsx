@@ -2,7 +2,7 @@ import { formatDate } from '@/lib/utils'
 import type { GateStatus, LeadProfileSnapshot, PricingReadiness, QuoteFocusSummary } from './types'
 
 /**
- * PR03 spec match: Lead header card (.lead-header-card) from SetuFlow-Leads-Redesign_Updated.html
+ * PR03 spec match: Lead header card styling from the approved command-center design spec
  * Structure:
  *   .lhc-top
  *     .lhc-chips  — status chip row

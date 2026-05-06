@@ -1,152 +1,180 @@
-# Setu Flow CRM
+# SETU Flow CRM
 
-Setu Flow CRM is the current baseline for a trade-focused CRM used by import/export teams. It combines lead capture, buyer/supplier follow-up, quotes, approvals, orders/execution, trade events, catalog governance, and client workspace onboarding.
+SETU Flow CRM is a Next.js CRM for export-led sales teams. It combines lead intake, pipeline management, RFQ/quote workflows, pricing/catalog operations, compliance/document readiness, trade-event capture, mobile field workflows, onboarding, and admin setup into one Supabase-backed workspace.
 
 ## Current baseline
 
-This repo is now treated as the clean baseline. Historical pass/archive documents and duplicate DCC/reference files have been removed from the active tree. The active source of truth is:
+- **Cleanup pass:** 2026-05-05
+- **Working package:** `SetuFlow-CRM-Current 55.zip`
+- **Primary app stack:** Next.js App Router, TypeScript, Tailwind, Supabase, Vercel
+- **Database reviewed before this README update:** live Supabase project `SETU Flow CRM` (`sjzfzloggabsmcuxktnl`), status `ACTIVE_HEALTHY`, region `us-west-2`, Postgres `17.6.1.063`
+- **Reference HTML status:** paused and removed from the active repo package for now. Product truth now lives in React source, tests, and Markdown docs.
 
-- `README.md`
-- `CHANGES.md`
-- `docs/DOCUMENT_INDEX.md`
-- `docs/CURRENT_RELEASE_STATUS.md`
-- `docs/CLIENT_ONBOARDING.md`
-- `docs/PRODUCT_OVERVIEW.md`
-- `docs/OPERATIONS_RUNBOOK.md`
-- `docs/RELEASE_READINESS.md`
-- `docs/RELEASE_PROOF.md`
-- `docs/ARCHITECTURE.md`
-- `docs/CURRENT_SCHEMA.md`
-- `public/internal-dcc/index.html`
-- `public/internal-dcc/mobile-blueprint.html`
-- `public/reference-html/*.html`
+## What this cleanup pass changed
 
-## Primary routes
+The active repo has been consolidated around source-controlled app code and Markdown documentation.
 
-| Route | Purpose | Access |
-|---|---|---|
-| `/onboarding` | Public client workspace request form | No login required |
-| `/onboarding/received` | Public confirmation after form submission | No login required |
-| `/admin/client-onboarding` | Setu-internal SaaS provisioning wizard for onboarding requests | Setu platform admin only |
-| `/admin/invitations` | Send first admin login after workspace setup | Admin login required |
-| `/dashboard` | Leadership overview | Authenticated |
-| `/leads` | Follow-up workspace | Authenticated |
-| `/quotes` | Quote workspace | Authenticated |
-| `/approval-send` | Approval and send readiness | Authenticated |
-| `/orders` | Order/execution workspace | Authenticated |
-| `/pipeline` | Pipeline/risk view | Authenticated |
-| `/trade-events` | Trade event command center | Authenticated |
-| `/products` | Catalog workspace | Authenticated |
+| Area | Cleanup result |
+| --- | --- |
+| Reference HTMLs | Removed `public/reference-html/`, `public/internal-dcc/`, and `public/setuflow-architecture.html`. |
+| Local Supabase state | Removed `supabase/.temp/` so local CLI/project metadata is not shipped in repo packages. |
+| One-off patch scripts | Removed root patch scripts that were no longer part of the active development workflow. |
+| Mobile docs | Consolidated root `MOBILE_README.md` into `docs/MOBILE.md`. |
+| Scan production docs | Moved root `MOBILE_SCAN_PRODUCTION.md` into `docs/MOBILE_SCAN_PRODUCTION.md`. |
+| Tests | Updated smoke tests so they protect the no-reference-HTML cleanup policy instead of requiring deleted handoff pages. |
+| README/docs | Rebuilt the documentation map around the live Supabase schema review and current repo structure. |
 
-## Client onboarding behavior
+## Product modules
 
-The client onboarding flow is intentionally controlled:
+| Module | Current role |
+| --- | --- |
+| Dashboard | Leadership view for pipeline health, follow-ups, market/country coverage, and operational alerts. |
+| Leads | Buyer/supplier lead management, stage movement, owner assignment, product/market interests, activities, and follow-ups. |
+| Pipeline | Stage-based operating surface over the same lead truth. |
+| RFQs | Supplier request workflow with line items and fanout/audit support. |
+| Quotes | Versioned quote workflow with approval, negotiation, send, and accepted-version continuity. |
+| Orders / Contracts | Accepted quote handoff into execution readiness and contract/order state. |
+| Products / Catalog | Product, variant, pricing, category, and import surfaces. |
+| Pricing | Catalog pricing SSOT, freight profiles, calculator defaults, and quote-version line calculation records. |
+| Documents / Compliance | Document review, requirement rules, and compliance workflow support. |
+| Trade Events | Event setup and raw booth/field intake before qualification/conversion. |
+| AI Assist | Reviewable AI draft/suggestion workflow. AI does not auto-send. |
+| Mobile | Phone-first dashboard/leads/capture/quote/notifications/settings plus Share vCard and signed-in identity preservation. |
+| Client Onboarding | Public intake, admin notification, and workspace/admin setup flow. |
 
-1. Client submits `/onboarding` without logging in.
-2. The request saves through `POST /api/public/client-onboarding`.
-3. Admin notification is sent to `admin@setugroups.com` when email configuration is present, and admins can resend that notification from `/admin/client-onboarding` if an earlier attempt failed or environment variables were added later.
-4. The notification includes a setup link to `/admin/client-onboarding?request=<request_id>`.
-5. Setu Flow admin runs the SaaS provisioning wizard.
-6. The wizard creates a unique organization ID, seeds all countries and editable reference defaults, creates the first owner invitation, and the client lands in their own workspace after accepting the invite.
+## Live Supabase review summary
 
-Workspace URL format:
+The README was updated after reviewing the live Supabase project, not just the checked-in files.
+
+### Project
+
+| Item | Value |
+| --- | --- |
+| Project | `SETU Flow CRM` |
+| Ref | `sjzfzloggabsmcuxktnl` |
+| Status | `ACTIVE_HEALTHY` |
+| Region | `us-west-2` |
+| Postgres | `17.6.1.063` |
+| Applied migration reported by Supabase | `20260504022303_fix_client_onboarding_notification_columns` |
+
+### Schema shape
+
+The live database currently exposes a broad public schema with tables covering:
+
+- organization/profile/membership/role permissions
+- lead, pipeline, follow-up, product-interest, market, activity, and audit flows
+- RFQ, quote, quote version, quote line, negotiation, contract, and order/execution continuity
+- product, variant, category, pricing rule, pricing engine, freight, and calculator defaults
+- documents, requirement rules, compliance, communication history, AI suggestions, trade events, onboarding requests, imports/staging, and saved view preferences
+
+Important source-of-truth guidance from the live schema:
+
+| Data area | Current SSOT guidance |
+| --- | --- |
+| Catalog pricing | `pricing_rule_sets` + `product_pricing_rules` are the authoritative pricing model. |
+| Legacy prices | `product_prices` is compatibility-only and should not be the primary runtime pricing truth. |
+| Quote commercial truth | `quote_versions` + `quote_version_line_items` are the primary versioned quote truth. |
+| Legacy quote/RFQ/contract lines | `quote_line_items`, `rfq_line_items`, and `contract_line_items` remain compatibility tables. |
+| Communications | `communications` is the Phase 1 SSOT for intro, follow-up, quote, and compliance communication history. |
+| AI drafts | `ai_suggestions` is the Phase 4 SSOT for reviewable AI-assisted drafts and operator decisions. |
+| Trade-show intake | `trade_event_entries` is the SSOT for raw booth/field intake before lead conversion. |
+| Public onboarding | `client_onboarding_requests` stores submitted onboarding requests and admin notification state. |
+
+### Supabase advisor follow-ups
+
+No database DDL was changed in this cleanup pass. The live advisor review shows follow-up work remains:
+
+- Several RLS-enabled tables have no policies yet.
+- `active_product_pricing_rules_v` is flagged as a security-definer view.
+- Multiple functions need explicit immutable search paths.
+- Multiple `SECURITY DEFINER` RPCs are executable by `anon` and/or `authenticated` roles and should be reviewed deliberately before release hardening.
+- Leaked password protection is currently disabled in Auth.
+
+Treat these as security/backlog items for a dedicated database-hardening migration, not as README-only work.
+
+## Documentation map
+
+| File | Purpose |
+| --- | --- |
+| `README.md` | Main consolidated repo handoff and runbook entry point. |
+| `CHANGES.md` | Change history and cleanup notes. |
+| `docs/DOCUMENT_INDEX.md` | Canonical active documentation list. |
+| `docs/CURRENT_RELEASE_STATUS.md` | Current release posture, readiness, and known follow-ups. |
+| `docs/CURRENT_SCHEMA.md` | Live Supabase schema summary and SSOT notes. |
+| `docs/ARCHITECTURE.md` | System architecture and route/data-flow guidance. |
+| `docs/PRODUCT_OVERVIEW.md` | Product/module overview. |
+| `docs/MOBILE.md` | Mobile app scope, routes, identity, vCard, and field capture notes. |
+| `docs/MOBILE_SCAN_PRODUCTION.md` | Production setup for mobile business-card scanning. |
+| `docs/CLIENT_ONBOARDING.md` | Public onboarding and admin setup workflow. |
+| `docs/OPERATIONS_RUNBOOK.md` | Operator runbook and production checks. |
+| `docs/RELEASE_READINESS.md` | Release gate status and outstanding hardening work. |
+| `docs/RELEASE_PROOF.md` | Proof commands and regression evidence structure. |
+| `docs/SECURITY_POLICY.md` | Security expectations. |
+| `docs/AI_GUARDRAILS.md` | AI usage and review boundaries. |
+| `docs/UX_RULES.md` | UX consistency rules. |
+| `mitigation/README.md` | Legacy SQL mitigation package notes retained for database investigation context. |
+
+## Repo structure
 
 ```text
-companyname.setuflowcrm.com
+src/                  Application routes, features, shared UI, server helpers, and route manifest
+docs/                 Active Markdown documentation
+scripts/              Verification and production-readiness scripts
+tests/                Node smoke/regression tests
+supabase/migrations/  Source-controlled SQL migrations and database history
+public/               Icons, logos, manifest, static app assets, service worker, and map data
+mitigation/           Retained SQL mitigation notes and scripts for DB investigation context
 ```
 
-If the client does not provide a logo, the Setu Flow logo is used as the default workspace logo.
+Reference HTML handoff folders are intentionally absent from the active structure.
 
-Defaults preloaded during setup:
+## Environment
 
-- All countries from the Setu platform country reference list
-- Markets
-- Pipelines
-- Pipeline stages
-- Next steps
-- Owner/admin/sales/operations/viewer roles
-- Pricing engine starter settings
+Use `.env.production.example` as the checklist source. Core variables include:
 
-Client-created after login:
-
-- Product categories
-- Product records
-- Client-specific pricing rules
-
-## Environment variables
-
-Core production variables:
-
-```text
+```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_APP_URL=https://setuflowcrm.com
+NEXT_PUBLIC_APP_URL=
+NEXT_PUBLIC_FEATURE_MOBILE_APP_V1=
+OPENAI_API_KEY=
+OPENAI_CONTACT_SCAN_MODEL=
+CONTACT_SCAN_PROVIDER=
+CONTACT_SCAN_FALLBACK_PROVIDER=
+GOOGLE_CLOUD_VISION_API_KEY=
 ```
 
-Onboarding notifications:
+See `docs/MOBILE_SCAN_PRODUCTION.md` for the mobile scan provider matrix and readiness endpoint.
 
-```text
-SETU_EMAIL_PROVIDER=mailtrap
-MAILTRAP_API_KEY=
-MAILTRAP_USE_SANDBOX=false
-MAILTRAP_SANDBOX_ID=
-SETU_NOTIFICATION_FROM_EMAIL=Setu Flow <help@setugroups.com>
-SETU_ONBOARDING_ADMIN_EMAIL=admin@setugroups.com
-# Optional fallback only if switching SETU_EMAIL_PROVIDER=resend
-RESEND_API_KEY=
-SETU_INTERNAL_ORG_SLUG=setu-flow
-```
-
-`SETU_EMAIL_PROVIDER=mailtrap` makes onboarding alerts use Mailtrap. `SETU_NOTIFICATION_FROM_EMAIL` must be a sender on a Mailtrap-verified domain, and `SETU_ONBOARDING_ADMIN_EMAIL` is the internal recipient. Use `MAILTRAP_USE_SANDBOX=true` only when you want messages captured in the sandbox instead of delivered to real inboxes.
-
-Mobile scan provider variables are documented in `MOBILE_SCAN_PRODUCTION.md`.
-
-## Install and run
+## Local development
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Verification
+Do not commit local Supabase CLI state from `supabase/.temp/`.
 
-Primary repo verification:
+## Verification
 
 ```bash
 npm test
-```
-
-Current expected test summary for this baseline:
-
-```text
-68/68 tests passed
-```
-
-Full release verification script:
-
-```bash
+npm run clean:verification
 npm run verify
+npm run build
 ```
 
-The release verification script runs clean verification, typecheck, contract checks, dashboard freeze checks, tests, and build. In constrained containers, `npm run typecheck` or `npm run build` may time out if dependencies are not fully installed or the build process exceeds the execution window.
+Notes:
 
-## Repo structure
+- `npm test` runs checked-in Node smoke tests.
+- `npm run verify` is the release-proof wrapper and should remain the pre-build gate.
+- `npm run build` should be run in a normal development/CI environment with dependencies installed.
 
-```text
-src/                    Next.js app, components, features, libraries
-supabase/migrations/    Database migrations retained as deployment history
-public/internal-dcc/    Current internal DCC and mobile blueprint HTML
-public/reference-html/  Current reference HTML surfaces
-docs/                   Current product, release, architecture, and operations docs
-tests/                  Current regression tests
-scripts/                Verification and smoke-check scripts
-mitigation/             Retained SQL mitigation assets and execution notes
-```
+## Cleanup policy going forward
 
-## Clean-baseline policy
-
-- Do not add pass-numbered docs for new work.
-- Do not reintroduce archive folders, duplicate DCC files, or retired reference HTMLs.
-- Keep the README, CHANGES, current docs, DCC HTML, and reference HTMLs updated together.
-- Keep old implementation history out of the active repo unless it is required migration history or an active regression test.
+- Keep source truth in React/TypeScript, Supabase migrations, tests, and Markdown docs.
+- Do not reintroduce static reference HTMLs unless a future sprint explicitly restores them as generated artifacts.
+- Keep `README.md`, `docs/DOCUMENT_INDEX.md`, `docs/CURRENT_RELEASE_STATUS.md`, and `docs/CURRENT_SCHEMA.md` aligned after every major repo or Supabase change.
+- Review live Supabase before claiming schema/readiness status in README.
+- Keep AI outputs draft/review based. No automatic sending, approval, or customer-facing action without operator review.

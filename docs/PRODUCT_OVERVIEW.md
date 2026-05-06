@@ -43,3 +43,8 @@ Readiness endpoint:
 ## Current release principle
 
 Keep customer-facing pages polished, operational, and free of debug/prototype language. Keep historical proof in the archive and keep current implementation guidance consolidated in the active docs.
+
+
+## 2026-05-05 mobile/reference update
+
+The mobile experience must preserve signed-in identity and **Share vCard** access. Static reference HTML product pages are paused and removed for now; product truth lives in React source, tests, and active Markdown docs.

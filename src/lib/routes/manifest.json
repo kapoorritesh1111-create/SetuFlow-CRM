@@ -1,5 +1,4 @@
 {
-  "internalDccPath": "/internal-dcc/",
   "lockedProductFlow": [
     "Capture",
     "Follow-up",
@@ -450,11 +449,11 @@
     "Do not bury the pipeline view behind language that hides the actual pipeline.",
     "Treat dashboard as a leadership support surface with geo, market, and country visibility, not as a leftover report page.",
     "Admin and Settings must stay unified as one workspace; /settings/lists is a compatibility redirect only.",
-    "Keep the DCC as the single source of truth for readiness, PR-UX status, and workflow direction.",
+    "Keep README, current docs, source, tests, and Supabase review notes aligned as the source of truth for readiness and workflow direction.",
     "Catalog base price remains the system default; manual overrides require an auditable reason.",
     "Approval remains mandatory when the configured threshold is met, and send surfaces must not outrun that truth.",
     "Orders and execution must show release and dispatch readiness from the accepted quote instead of splitting into competing stories.",
-    "The DCC must label workflow confidence honestly: core flow, support surface, or unclear / mixed."
+    "Current docs must label workflow confidence honestly: core flow, support surface, or unclear / mixed."
   ],
   "tests": {
     "requiredFiles": [
@@ -465,7 +464,6 @@
       "src/app/(app)/orders/page.tsx",
       "src/app/(app)/contact-exchange/vcard/page.tsx",
       "src/app/(app)/contact-exchange/scan/page.tsx",
-      "public/internal-dcc/index.html",
       "src/app/page.tsx",
       "src/app/(app)/approval-send/page.tsx"
     ],
@@ -485,7 +483,7 @@
       "typescript typecheck",
       "dashboard freeze check",
       "repo alignment tests",
-      "docs and DCC consistency tests",
+      "docs consistency tests",
       "route manifest consistency tests",
       "production build"
     ]

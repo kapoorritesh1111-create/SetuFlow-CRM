@@ -23,7 +23,7 @@ test('mobile OpenAI Vision baseline readiness reports openai-vision active provi
 
 test('mobile OpenAI Vision baseline production docs and env example instruct investor demo provider', () => {
   const env = read('.env.production.example');
-  const docs = read('MOBILE_SCAN_PRODUCTION.md');
+  const docs = read('docs/MOBILE_SCAN_PRODUCTION.md');
   const script = read('scripts/check-mobile-scan-prod.mjs');
   assert.match(env, /CONTACT_SCAN_PROVIDER=openai-vision/);
   assert.match(docs, /CONTACT_SCAN_PROVIDER=openai-vision/);

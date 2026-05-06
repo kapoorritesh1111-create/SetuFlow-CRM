@@ -51,10 +51,10 @@ test('mobile Share vCard uses desktop-grade share system actions', () => {
   const sheet = readFileSync('src/features/mobile/components/mobile-vcard-share-sheet.tsx', 'utf8');
   const shell = readFileSync('src/components/layout/app-shell.tsx', 'utf8');
   const nav = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
-  assert.match(sheet, /QRCode\.toDataURL/);
+  assert.match(sheet, /qrImageUrl/);
   assert.match(sheet, /navigator\.share/);
-  assert.match(sheet, /Copy intro/);
-  assert.match(sheet, /Download \.vcf/);
+  assert.match(sheet, /Copy link/);
+  assert.match(sheet, /Save contact/);
   assert.match(shell, /downloadVcfHref/);
   assert.match(nav, /MobileVCardShareSheet/);
   assert.match(nav, /onShareVCard/);

@@ -69,13 +69,13 @@ test('canonical dashboard and leads use the blueprint-grade mobile shell on phon
   assert.match(mobileNav, /Share vCard/);
 });
 
-test('mobile docs and html preserve signed-in identity and Share vCard', () => {
-  const readme = readFileSync('MOBILE_README.md', 'utf8');
-  const dcc = readFileSync('public/internal-dcc/index.html', 'utf8');
-  const architecture = readFileSync('public/setuflow-architecture.html', 'utf8');
-  const blueprint = readFileSync('public/internal-dcc/mobile-blueprint.html', 'utf8');
-  for (const source of [readme, dcc, architecture, blueprint]) {
+test('mobile docs preserve signed-in identity and Share vCard without reference HTML handoff files', () => {
+  const mobileDocs = readFileSync('docs/MOBILE.md', 'utf8');
+  const productOverview = readFileSync('docs/PRODUCT_OVERVIEW.md', 'utf8');
+  for (const source of [mobileDocs, productOverview]) {
     assert.match(source, /Share vCard/);
     assert.match(source, /signed-in|Signed-in|Signed in/);
   }
+  assert.equal(existsSync('public/internal-dcc/index.html'), false);
+  assert.equal(existsSync('public/setuflow-architecture.html'), false);
 });

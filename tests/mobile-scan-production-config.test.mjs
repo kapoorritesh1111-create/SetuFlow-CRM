@@ -25,9 +25,9 @@ test('mobile OCR provider uses OPENAI_API_KEY directly for contact scan OCR', ()
 });
 
 test('production scan setup docs and env example document required variables', () => {
-  assert.equal(existsSync('MOBILE_SCAN_PRODUCTION.md'), true);
+  assert.equal(existsSync('docs/MOBILE_SCAN_PRODUCTION.md'), true);
   assert.equal(existsSync('.env.production.example'), true);
-  const docs = readFileSync('MOBILE_SCAN_PRODUCTION.md', 'utf8');
+  const docs = readFileSync('docs/MOBILE_SCAN_PRODUCTION.md', 'utf8');
   const env = readFileSync('.env.production.example', 'utf8');
   for (const name of ['OPENAI_API_KEY', 'OPENAI_CONTACT_SCAN_MODEL', 'NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'NEXT_PUBLIC_APP_URL', 'NEXT_PUBLIC_FEATURE_MOBILE_APP_V1']) {
     assert.match(docs, new RegExp(name));

@@ -28,3 +28,11 @@
 - Public form access issues: confirm `/onboarding` remains outside authenticated route groups.
 - Missing onboarding emails: confirm `SETU_EMAIL_PROVIDER`, `MAILTRAP_API_KEY`, `SETU_NOTIFICATION_FROM_EMAIL`, and `SETU_ONBOARDING_ADMIN_EMAIL`. If `MAILTRAP_USE_SANDBOX=true`, emails are captured in the Mailtrap sandbox rather than delivered to the admin inbox.
 - Scan issues: check `/api/mobile/scan-readiness` and OpenAI API credentials.
+
+
+## 2026-05-05 cleanup operating notes
+
+- Reference HTML handoff pages are paused and removed from the active repo package.
+- Use Markdown docs, React source, route manifest checks, and Node smoke tests as the operational truth.
+- Supabase advisor findings from the cleanup pass must be handled as a dedicated database-hardening workstream: missing RLS policies, security-definer view exposure, mutable function search paths, exposed security-definer RPCs, and leaked-password protection.
+- Do not ship `supabase/.temp/` or one-off root patch scripts in repo packages.

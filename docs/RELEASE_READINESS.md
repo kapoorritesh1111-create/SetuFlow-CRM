@@ -1,39 +1,37 @@
 # Release Readiness
 
-## Summary
+_Last updated: 2026-05-05_
 
-The repo is ready to be treated as the current clean baseline for continued Setu Flow development with onboarding Mailtrap notification resend. Old pass/archive files and duplicate retired HTMLs have been removed from the active tree.
+## Current readiness
 
-## Readiness checklist
+| Gate | Status | Notes |
+| --- | --- | --- |
+| Repo cleanup | Ready | Static reference HTMLs, local Supabase temp state, duplicate root mobile docs, and one-off patch scripts were removed. |
+| Documentation consolidation | Ready | README and active docs now point to Markdown/source/tests as the package truth. |
+| Supabase reviewed | Ready for documentation | Live schema and advisors were reviewed before README update. No DDL was changed. |
+| Mobile docs/tests | Ready for smoke tests | Mobile docs now live under `docs/`; Share vCard and signed-in identity remain required behavior. |
+| Database security hardening | Follow-up required | RLS policies, security-definer exposure, function search paths, and Auth leaked-password protection need dedicated hardening. |
+| Full build | Requires CI/local dependency install | Run `npm run verify` and `npm run build` in a normal dependency-installed environment. |
 
-| Check | Status | Evidence |
-|---|---|---|
-| Active README updated | Ready | `README.md` describes the current baseline. |
-| Active docs updated | Ready | `docs/DOCUMENT_INDEX.md` lists current docs only. |
-| Internal DCC updated | Ready | `public/internal-dcc/index.html` shows current test results and baseline scope. |
-| Reference HTMLs updated | Ready | `public/reference-html/*.html` have current baseline handoff notes. |
-| Public onboarding remains public | Ready | `/onboarding` stays outside authenticated app shell. |
-| Admin onboarding remains protected | Ready | `/admin/client-onboarding` uses admin workspace guard and exposes Mailtrap admin email. |
-| Hydration guard retained | Ready | Desktop redirect avoids first-render browser-only reads. |
-| Tests | Ready | `npm test` passes. |
+## Reference HTML status
 
-## Current verification
+Reference HTML handoff pages are intentionally removed from the active package for now. Do not restore them unless a future sprint explicitly reintroduces generated/static reference artifacts.
 
-```text
-npm test
-68/68 tests passed
-```
-
-## Release gate
-
-Use:
+## Release commands
 
 ```bash
+npm test
+npm run clean:verification
 npm run verify
+npm run build
 ```
 
-The verification command includes clean verification, typecheck, contract checks, dashboard check, regression tests, and production build.
+## Definition of ready
 
-## release:proof
+A release candidate is ready only when:
 
-The release proof marker remains `release:proof` through the package script and route manifest contract.
+1. smoke tests pass,
+2. clean verification passes,
+3. TypeScript/build pass in CI or local dev,
+4. Supabase security advisor items are accepted or addressed for the target release,
+5. docs match the live schema and route behavior.

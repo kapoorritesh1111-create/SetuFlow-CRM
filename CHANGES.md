@@ -1,3 +1,14 @@
+# Changes
+
+## 2026-05-05 — Cleanup and documentation consolidation
+
+- Reviewed the uploaded repo package and live Supabase project before updating README.
+- Removed static reference HTML handoff artifacts from `public/` for now.
+- Removed local Supabase CLI temp state and root one-off patch scripts from the active package.
+- Consolidated mobile docs into `docs/MOBILE.md` and `docs/MOBILE_SCAN_PRODUCTION.md`.
+- Updated README, document index, release status, schema, readiness, and proof docs around the current source/test/Supabase truth.
+- Updated smoke tests and route manifest expectations so the repo guards against accidental reference HTML reintroduction.
+
 ## 2026-05-05 - V17.6.10 Customer-facing quote PDF layout and discount visibility
 
 - Verified live Supabase quote, quote line, product, variant, category, market, country, lead, and organization fields before patching. No new migration is required.

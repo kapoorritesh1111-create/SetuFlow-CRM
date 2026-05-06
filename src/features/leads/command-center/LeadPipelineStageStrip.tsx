@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { PipelineStageItem } from './types'
 
 /**
- * PR03 spec match: .pipeline-strip from SetuFlow-Leads-Redesign_Updated.html
+ * PR03 spec match: pipeline strip styling from the approved command-center design spec
  *
  * Spec structure:
  *   horizontal flex of .ps-stage + .ps-arrow between each

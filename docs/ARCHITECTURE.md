@@ -29,3 +29,8 @@ The desktop redirect component initializes server-safe values and reads `window.
 ## Documentation architecture
 
 Active docs live in the top-level README/CHANGES files and the current `docs/` set. The repo no longer keeps pass-by-pass archive files in the active tree.
+
+
+## 2026-05-05 cleanup note
+
+Static architecture/reference HTML pages are no longer part of the active package. Architecture truth should stay in this document, route/source files, Supabase migrations, and tests.

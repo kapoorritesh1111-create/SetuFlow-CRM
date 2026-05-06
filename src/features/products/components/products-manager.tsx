@@ -659,7 +659,7 @@ export function ProductsManager({
         ))}
       </div>
 
-      {/* ── CATEGORY VIEW TABS — matches reference setuflow-catalog-redesign.html .view-tabs ── */}
+      {/* ── CATEGORY VIEW TABS — matches approved catalog workbench .view-tabs behavior ── */}
       <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',alignItems:'stretch',gap:'0',overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
         {([
           { id: 'all',   icon: '▦', label: 'All products', count: filteredProducts.length },
@@ -770,7 +770,7 @@ export function ProductsManager({
 
             {filteredProducts.length ? (
               <div style={{overflowX:'auto',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white'}}>
-                {/* 9-col table header matching setuflow-catalog-redesign.html */}
+                {/* 9-col table header matching approved catalog workbench layout */}
                 <div style={{display:'grid',gridTemplateColumns:'28px 1fr 100px 68px 88px 88px 88px 110px 76px',padding:'8px 14px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'9px',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',alignItems:'center',minWidth:'860px'}}>
                   <div><input type="checkbox" style={{width:'13px',height:'13px'}} onChange={()=>{}} /></div>
                   <div>Product / SKU</div>

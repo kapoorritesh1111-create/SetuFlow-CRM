@@ -24,7 +24,7 @@ test('mobile scan vCard quote baseline: vCard sharing uses public card query con
   assert.match(shell, /params\.set\('name'/, 'mobile shell share URL must send name=');
   assert.match(shell, /params\.set\('org'/, 'mobile shell share URL must send org=');
   assert.match(shell, /params\.set\('role'/, 'mobile shell share URL must send role=');
-  assert.match(mobileLeads, /params\.set\('name'/, 'mobile leads summary share URL must send name=');
+  assert.match(mobileLeads, /buildPublicCardSearchParams/, 'mobile leads summary share URL must use the public card query contract');
   assert.match(publicCard, /get\('name'\) \|\| get\('fullName'\)/, 'public parser should stay backwards compatible with old fullName URLs');
 });
 

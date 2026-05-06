@@ -28,7 +28,7 @@ test('mobile scan readiness exposes requested and active scanner provider state'
 
 test('production env and docs include exact Google Vision variables', () => {
   const env = read('.env.production.example');
-  const docs = read('MOBILE_SCAN_PRODUCTION.md');
+  const docs = read('docs/MOBILE_SCAN_PRODUCTION.md');
   for (const token of ['CONTACT_SCAN_PROVIDER=google-vision', 'CONTACT_SCAN_FALLBACK_PROVIDER=openai', 'GOOGLE_CLOUD_VISION_API_KEY']) {
     assert.match(env, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.match(docs, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));

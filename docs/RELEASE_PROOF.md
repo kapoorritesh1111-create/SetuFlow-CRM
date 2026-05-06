@@ -1,24 +1,37 @@
 # Release Proof
 
-Current proof baseline: clean current repository baseline.
+_Last updated: 2026-05-05_
 
-## Verification commands
+Use this file to capture proof for each release candidate.
 
-```text
+## Required proof commands
+
+```bash
 npm test
-68/68 tests passed
+npm run clean:verification
+npm run verify
+npm run build
 ```
 
-The `release:proof` command remains wired through `package.json` and the route manifest contract.
+The `verify` script must continue to include `clean:verification` before build/release handoff.
 
-## Proof scope
+## Cleanup proof expectations
 
-- Public onboarding form is unauthenticated.
-- Onboarding submission persists through the public API route.
-- Admin notification handoff points to the admin onboarding setup route and can be resent from the admin command center.
-- Admin onboarding remains protected.
-- Workspace URL format is `companyname.setuflowcrm.com`.
-- Default workflow setup data is editable/removable by admin.
-- Product categories remain client-created.
-- Internal DCC and reference HTMLs are current.
-- Old archive and retired files are removed from the active repo.
+- No static reference HTML directories/files are present in the active package.
+- No `supabase/.temp/` local CLI state is present.
+- Mobile docs resolve under `docs/MOBILE.md` and `docs/MOBILE_SCAN_PRODUCTION.md`.
+- README includes the latest live Supabase review summary before claiming schema readiness.
+
+## Proof log template
+
+| Check | Result | Notes |
+| --- | --- | --- |
+| `npm test` | Passed | 69/69 Node smoke tests passed during cleanup package verification. |
+| `npm run clean:verification` | Passed | Verification artifacts are clean. |
+| `npm run verify` | Not run in cleanup sandbox | Requires full typecheck/build dependency context. |
+| `npm run build` | Not run in cleanup sandbox | Run in Vercel/CI or a full local dependency-installed environment. |
+| Supabase advisor review | Reviewed | Follow-up hardening remains. |
+
+## release:proof
+
+The release proof flow should stay source-controlled and repeatable. Do not replace it with static HTML screenshots or manual-only notes.

@@ -6,7 +6,7 @@ const manifest = JSON.parse(readFileSync(new URL('../src/lib/routes/manifest.jso
 const { requiredFiles, forbiddenPaths } = manifest.tests;
 const primaryNav = manifest.primaryNav.map((item) => item.href);
 
-test('canonical product routes and internal DCC exist', () => {
+test('canonical product routes and cleanup docs exist', () => {
   requiredFiles.forEach((route) => assert.equal(existsSync(route), true, `${route} should exist`));
 });
 
