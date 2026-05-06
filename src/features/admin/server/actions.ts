@@ -206,7 +206,7 @@ async function getAssignableRole(supabase: any, organizationId: string, roleId: 
 async function getTargetMembershipSnapshot(supabase: any, membershipId: string) {
   const { data, error } = await supabase
     .from('organization_members')
-    .select('id, organization_id, is_active, user_id, user_roles(roles(name))')
+    .select('id, organization_id, is_active, user_id, profiles(email, full_name, username), user_roles(role_id, roles(name))')
     .eq('id', membershipId)
     .maybeSingle();
 
@@ -216,7 +216,8 @@ async function getTargetMembershipSnapshot(supabase: any, membershipId: string) 
     organization_id: string;
     is_active: boolean;
     user_id: string | null;
-    user_roles?: Array<{ roles?: { name?: string | null } | null }> | null;
+    profiles?: { email?: string | null; full_name?: string | null; username?: string | null } | Array<{ email?: string | null; full_name?: string | null; username?: string | null }> | null;
+    user_roles?: Array<{ role_id?: string | null; roles?: { name?: string | null } | null }> | null;
   };
 }
 
@@ -597,6 +598,48 @@ export async function removeMember(formData: FormData): Promise<void> {
   redirectWithNotice(returnPath, 'user-deactivated');
 }
 
+
+export async function deleteMember(formData: FormData): Promise<void> {
+  const membershipId = formData.get('membership_id');
+  const returnPath = sanitizeReturnPath(formData.get('return_path'), '/admin/users');
+
+  if (!membershipId || typeof membershipId !== 'string') return;
+  const context = await getAdminContext();
+  if (!context) return;
+
+  const { supabase, membership: currentMembership, organization, isOwner } = context;
+  const targetMembership = await getTargetMembershipSnapshot(supabase, membershipId);
+
+  if (!targetMembership || targetMembership.organization_id !== organization.id) redirectWithNotice(returnPath, 'user-not-found');
+  if (targetMembership.id === currentMembership.id) redirectWithNotice(returnPath, 'self-delete-blocked');
+
+  const targetRoleNames = extractRoleNames(targetMembership.user_roles ?? []);
+  if (targetRoleNames.includes('owner')) {
+    if (!isOwner) redirectWithNotice(returnPath, 'owner-protected');
+    const activeOwnerCount = await getActiveOwnerCount(supabase, organization.id);
+    if (targetMembership.is_active && activeOwnerCount <= 1) redirectWithNotice(returnPath, 'last-owner-protected');
+  }
+
+  const db = createAdminSupabaseClient() ?? supabase;
+  await logAdminAuditAction({
+    organizationId: organization.id,
+    action: 'membership_removed',
+    entityType: 'organization_member',
+    entityId: membershipId,
+    actorUserId: currentMembership.user_id ?? null,
+    metadata: { delete_from_workspace: true, user_id: targetMembership.user_id ?? null, previous_roles: targetRoleNames },
+  });
+
+  await db.from('user_roles').delete().eq('organization_member_id', membershipId);
+  await db.from('view_preferences').delete().eq('organization_member_id', membershipId);
+  await db.from('saved_views').delete().eq('created_by_membership_id', membershipId);
+  const { error } = await db.from('organization_members').delete().eq('id', membershipId).eq('organization_id', organization.id);
+  if (error) redirectWithNotice(returnPath, 'user-delete-failed');
+
+  revalidatePath('/admin/users');
+  redirectWithNotice(returnPath, 'user-deleted');
+}
+
 export async function reactivateMember(formData: FormData): Promise<void> {
   const membershipId = formData.get('membership_id');
   const returnPath = sanitizeReturnPath(formData.get('return_path'), '/admin/users');
@@ -607,16 +650,9 @@ export async function reactivateMember(formData: FormData): Promise<void> {
   if (!context) return;
 
   const { supabase, membership: currentMembership, organization } = context;
+  const targetMembership = await getTargetMembershipSnapshot(supabase, membershipId);
 
-  const { data: targetMembership, error: targetError } = await supabase
-    .from('organization_members')
-    .select('id, organization_id, is_active, user_id')
-    .eq('id', membershipId)
-    .maybeSingle();
-
-  if (targetError || !targetMembership || targetMembership.organization_id !== organization.id) {
-    redirectWithNotice(returnPath, 'user-not-found');
-  }
+  if (!targetMembership || targetMembership.organization_id !== organization.id) redirectWithNotice(returnPath, 'user-not-found');
 
   const { error: updateError } = await supabase.rpc('app_set_membership_active_tx', {
     p_payload: {
@@ -629,10 +665,66 @@ export async function reactivateMember(formData: FormData): Promise<void> {
     },
   });
 
-  if (updateError) {
-    redirectWithNotice(returnPath, 'user-reactivate-failed');
+  if (updateError) redirectWithNotice(returnPath, 'user-reactivate-failed');
+
+  const profile = Array.isArray(targetMembership.profiles) ? targetMembership.profiles[0] : targetMembership.profiles;
+  const email = normalizeEmail(profile?.email);
+  const fullName = normalizeName(profile?.full_name ?? profile?.username ?? null);
+  const roleWrapper = Array.isArray(targetMembership.user_roles) ? targetMembership.user_roles[0] : null;
+  const roleId = roleWrapper?.role_id ?? null;
+  const roleName = roleWrapper?.roles?.name ?? null;
+
+  if (email) {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    const expiresAtIso = expiresAt.toISOString();
+    const existingInvite = await getOpenInvitationByEmail(supabase, organization.id, email);
+    const existingMetadata = existingInvite?.metadata ?? {};
+    const metadata = mergeInvitationMetadata(existingMetadata, {
+      access_flow: 'reactivation',
+      reactivation_resend_allowed: true,
+      reactivated_member_id: membershipId,
+      reactivated_user_id: targetMembership.user_id ?? null,
+      invitee: {
+        ...(((existingMetadata as any).invitee ?? {}) as Record<string, unknown>),
+        full_name: fullName,
+      },
+    });
+
+    const { data: invitationResult, error: inviteError } = await supabase.rpc('app_upsert_invitation_tx', {
+      p_payload: {
+        organization_id: organization.id,
+        actor_user_id: currentMembership.user_id ?? null,
+        invited_by_membership_id: currentMembership.id,
+        existing_invitation_id: existingInvite?.id ?? null,
+        email,
+        role_id: roleId,
+        expires_at: expiresAtIso,
+        metadata,
+        audit_previous: existingInvite ? { status: existingInvite.status, role_id: existingInvite.role_id ?? null } : null,
+        audit_new: { email, role_id: roleId, role_name: roleName, expires_at: expiresAtIso, access_flow: 'reactivation' },
+      },
+    });
+
+    const result = Array.isArray(invitationResult) ? invitationResult[0] : invitationResult;
+    const invitationId = String(result?.invitation_id ?? result?.id ?? existingInvite?.id ?? '');
+    if (!inviteError && invitationId) {
+      await sendPreparedInvitationEmail({
+        supabase,
+        organizationId: organization.id,
+        actorUserId: currentMembership.user_id ?? null,
+        invitationId,
+        organizationName: organization.name,
+        email,
+        roleName,
+        expiresAt: expiresAtIso,
+        metadata,
+        auditAction: existingInvite ? 'invitation_resent' : 'invitation_sent',
+      });
+    }
   }
 
+  revalidatePath('/admin/invitations');
   revalidatePath('/admin/users');
   redirectWithNotice(returnPath, 'user-reactivated');
 }
@@ -704,6 +796,12 @@ export async function sendInvitation(formData: FormData): Promise<void> {
 
   if (!existingInvite || !['draft', 'pending', 'sent'].includes(String(existingInvite.status ?? ''))) redirectWithNotice(returnPath, 'invite-not-open');
 
+  const inviteMetadata = (existingInvite.metadata && typeof existingInvite.metadata === 'object' && !Array.isArray(existingInvite.metadata) ? existingInvite.metadata : {}) as Record<string, unknown>;
+  const accessFlow = String(inviteMetadata.access_flow ?? '');
+  const memberForEmail = await getMembershipByEmail(supabase, organization.id, normalizeEmail(existingInvite.email));
+  if (memberForEmail?.is_active && accessFlow !== 'reactivation') redirectWithNotice(returnPath, 'member-already-active');
+  if (memberForEmail && !memberForEmail.is_active) redirectWithNotice(returnPath, 'member-disabled-exists');
+
   const roleName = Array.isArray(existingInvite.roles) ? existingInvite.roles[0]?.name : existingInvite.roles?.name;
   const result = await sendPreparedInvitationEmail({
     supabase,
@@ -740,6 +838,12 @@ export async function resendInvitation(formData: FormData): Promise<void> {
     .maybeSingle();
 
   if (!existingInvite || !['draft', 'pending', 'sent'].includes(String(existingInvite.status ?? ''))) redirectWithNotice(returnPath, 'invite-not-open');
+
+  const inviteMetadata = (existingInvite.metadata && typeof existingInvite.metadata === 'object' && !Array.isArray(existingInvite.metadata) ? existingInvite.metadata : {}) as Record<string, unknown>;
+  const accessFlow = String(inviteMetadata.access_flow ?? '');
+  const memberForEmail = await getMembershipByEmail(supabase, organization.id, normalizeEmail(existingInvite.email));
+  if (memberForEmail?.is_active && accessFlow !== 'reactivation') redirectWithNotice(returnPath, 'member-already-active');
+  if (memberForEmail && !memberForEmail.is_active) redirectWithNotice(returnPath, 'member-disabled-exists');
 
   const roleName = Array.isArray(existingInvite.roles) ? existingInvite.roles[0]?.name : existingInvite.roles?.name;
   const result = await sendPreparedInvitationEmail({

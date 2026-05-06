@@ -54,7 +54,7 @@ export default async function AdminUsersPage({
     supabase
       .from('organization_members')
       .select(
-        'id, user_id, is_active, created_at, updated_at, profiles(id, full_name, username, email), user_roles(id, role_id, roles(id, name))',
+        'id, user_id, is_active, created_at, updated_at, profiles(id, full_name, username, email, avatar_url), user_roles(id, role_id, roles(id, name))',
       )
       .eq('organization_id', organization.id)
       .order('created_at', { ascending: true }),
@@ -65,7 +65,7 @@ export default async function AdminUsersPage({
       .order('name'),
     supabase
       .from('organization_invitations')
-      .select('id, email, status, created_at, updated_at, expires_at, last_sent_at, accepted_at, role_id, roles(id, name)')
+      .select('id, email, status, created_at, updated_at, expires_at, last_sent_at, accepted_at, role_id, metadata, roles(id, name)')
       .eq('organization_id', organization.id)
       .order('created_at', { ascending: false }),
   ]);
@@ -102,7 +102,7 @@ export default async function AdminUsersPage({
         actions={[
           { label: 'Organization', href: '/admin/organization' },
           { label: 'Invitations', href: '/admin/invitations' },
-          { label: 'My Card settings', href: '/contact-exchange/vcard', type: 'primary' },
+          { label: 'Profile', href: '/profile', type: 'primary' },
         ]}
       />
 

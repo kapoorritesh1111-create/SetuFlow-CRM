@@ -212,7 +212,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
       const response = await fetch('/api/profile/avatar', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ avatarUrl: dataUrl }),
+        body: JSON.stringify({ imageDataUrl: dataUrl, fileName: 'vcard-avatar.jpg' }),
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.error || 'Could not save photo.');

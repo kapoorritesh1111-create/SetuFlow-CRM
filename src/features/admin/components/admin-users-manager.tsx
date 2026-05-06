@@ -7,6 +7,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { formatDateTime } from '@/lib/utils';
 import { ToolbarField, ToolbarSearchInput, ToolbarSelect, ToolbarStat, WorkspaceToolbar } from '@/components/ui/workspace-toolbar';
 import {
+  deleteMember,
   reactivateMember,
   removeMember,
   resendInvitation,
@@ -29,6 +30,14 @@ function getStatusTone(status: AdminUserRow['status']) {
   if (status === 'active') return 'success' as const;
   if (status === 'invited') return 'warning' as const;
   return 'neutral' as const;
+}
+
+function UserAvatar({ row, size = 'md' }: { row: AdminUserRow; size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClass = size === 'lg' ? 'h-14 w-14 text-base' : size === 'sm' ? 'h-9 w-9 text-xs' : 'h-11 w-11 text-sm';
+  if (row.avatarUrl) {
+    return <img src={row.avatarUrl} alt={row.name} className={`${sizeClass} shrink-0 rounded-full object-cover ring-1 ring-slate-200`} />;
+  }
+  return <div className={`${sizeClass} flex shrink-0 items-center justify-center rounded-full bg-slate-900 font-semibold text-white ring-1 ring-slate-200`}>{row.initials}</div>;
 }
 
 export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: AdminUserRow[]; roles: RoleOption[]; canManageOwners: boolean }) {
@@ -114,9 +123,12 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
               {filteredRows.map((row: AdminUserRow) => (
                 <tr key={row.id} className="align-top hover:bg-slate-50">
                   <td className="px-5 py-4 text-sm text-slate-800">
-                    <div>
-                      <p className="font-semibold text-slate-900">{row.name}</p>
-                      {row.detailNote ? <p className="mt-1 text-xs text-slate-500">{row.detailNote}</p> : null}
+                    <div className="flex items-center gap-3">
+                      <UserAvatar row={row} />
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-900">{row.name}</p>
+                        {row.detailNote ? <p className="mt-1 truncate text-xs text-slate-500">{row.detailNote}</p> : null}
+                      </div>
                     </div>
                   </td>
                   <td className="px-5 py-4 text-sm text-slate-600">{row.email ?? '—'}</td>
@@ -172,7 +184,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                         Audit link
                       </a>
 
-                      {row.status === 'invited' && row.invitationId ? (
+                      {row.canResendInvite && row.invitationId ? (
                         <form action={resendInvitation}>
                           <input type="hidden" name="invitation_id" value={row.invitationId} />
                           <input type="hidden" name="return_path" value="/admin/users" />
@@ -180,7 +192,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                             type="submit"
                             className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                           >
-                            Resend invite
+                            {row.resendInviteLabel}
                           </button>
                         </form>
                       ) : null}
@@ -202,11 +214,15 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
       >
         {selected ? (
           <div className="space-y-6">
-            <div className="space-y-2">
-              <p className="text-sm text-slate-600">{selected.email ?? 'No email available'}</p>
+            <div className="flex items-center gap-4">
+              <UserAvatar row={selected} size="lg" />
+              <div className="min-w-0 space-y-2">
+              <p className="truncate text-sm text-slate-600">{selected.email ?? 'No email available'}</p>
               <div className="flex flex-wrap gap-2">
                 <StatusBadge label={selected.status} tone={getStatusTone(selected.status)} />
                 {selected.roleName ? <StatusBadge label={selected.roleName} tone="info" /> : null}
+                {selected.canResendInvite ? <StatusBadge label="resend available" tone="warning" /> : null}
+              </div>
               </div>
             </div>
 
@@ -381,7 +397,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                   <div className="space-y-3">
                     <StateMessage
                       title="Invitation pending"
-                      description="You can resend the invite or revoke it before the user accepts."
+                      description={selected.status === 'active' ? 'This reactivated user has a fresh access invitation available to resend.' : 'You can resend the invite or revoke it before the user accepts.'}
                     />
 
                     <form action={resendInvitation}>
@@ -391,7 +407,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                         type="submit"
                         className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                       >
-                        Resend invite
+                        {selected.resendInviteLabel}
                       </button>
                     </form>
 
@@ -406,6 +422,26 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                       </button>
                     </form>
                   </div>
+                ) : null}
+
+
+
+                {selected.membershipId && selected.canDelete ? (
+                  <form action={deleteMember} className="space-y-3 rounded-[1.5rem] border border-red-200 bg-red-50 p-4">
+                    <input type="hidden" name="membership_id" value={selected.membershipId} />
+                    <input type="hidden" name="return_path" value="/admin/users" />
+                    <StateMessage
+                      title="Delete from workspace"
+                      description="This removes the workspace membership and role links while leaving the underlying auth account and historical CRM records intact."
+                      tone="danger"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-2xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
+                    >
+                      Delete user
+                    </button>
+                  </form>
                 ) : null}
 
                 {!selected.membershipId && !selected.invitationId ? (

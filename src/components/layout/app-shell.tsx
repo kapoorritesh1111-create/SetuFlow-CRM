@@ -306,17 +306,17 @@ export function AppShell({
         aria-label="Open profile menu"
         aria-expanded={profileMenuOpen}
       >
-        {profileInitials}
+        {profile?.avatar_url ? <img src={profile.avatar_url} alt={profileDisplayName} className="h-full w-full rounded-full object-cover" /> : profileInitials}
       </button>
       {profileMenuOpen ? (
         <div className={cn("absolute right-0 z-[90] mt-2 w-72 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white text-left shadow-[0_28px_70px_rgba(15,23,42,0.22)] ring-1 ring-slate-950/5", compact && "right-[-4px]")}>
           <div className="bg-[linear-gradient(135deg,#061c2e_0%,#0b2e4a_70%,#0c7fff_150%)] px-4 py-4 text-white">
-            <div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/12 text-sm font-bold ring-1 ring-white/20">{profileInitials}</div><div className="min-w-0"><p className="truncate text-sm font-bold">{profileDisplayName}</p><p className="mt-0.5 truncate text-xs text-white/65">{profileEmail}</p></div></div>
+            <div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/12 text-sm font-bold ring-1 ring-white/20">{profile?.avatar_url ? <img src={profile.avatar_url} alt={profileDisplayName} className="h-full w-full object-cover" /> : profileInitials}</div><div className="min-w-0"><p className="truncate text-sm font-bold">{profileDisplayName}</p><p className="mt-0.5 truncate text-xs text-white/65">{profileEmail}</p></div></div>
             <div className="mt-3 inline-flex rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">{getWorkspaceRoleDisplayName(currentRole)} · {organization?.name ?? 'SETU Flow'}</div>
           </div>
           <div className="p-2">
-            <a href={PRODUCT_ROUTES.app.myCard} onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><FaIcon icon="user-o" fixedWidth className="text-[#1F487C]" /><span>Profile</span></a>
-            <a href={PRODUCT_ROUTES.app.myCard} onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><FaIcon icon="cog" fixedWidth className="text-[#1F487C]" /><span>Settings</span></a>
+            <a href="/profile" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><FaIcon icon="user-o" fixedWidth className="text-[#1F487C]" /><span>Profile</span></a>
+            <a href="/admin/organization" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><FaIcon icon="cog" fixedWidth className="text-[#1F487C]" /><span>Settings</span></a>
             <button type="button" onClick={() => { setProfileMenuOpen(false); setVcardModalOpen(true); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><FaIcon icon="address-card-o" fixedWidth className="text-[#1F487C]" /><span>Share my vCard</span></button>
             <div className="my-2 border-t border-slate-100" />
             <form action="/api/logout" method="post"><button type="submit" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-rose-600 transition hover:bg-rose-50"><FaIcon icon="sign-out" fixedWidth /><span>Sign out</span></button></form>
