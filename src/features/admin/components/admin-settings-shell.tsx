@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { WorkspaceHeader, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { cn } from '@/lib/utils';
 
-export type AdminNavKey = 'overview' | 'client-onboarding' | 'users' | 'invitations' | 'markets' | 'categories' | 'stages' | 'pipelines' | 'trade-events' | 'product-management' | 'security' | 'audit' | 'ai-analytics';
+export type AdminNavKey = 'overview' | 'client-onboarding' | 'users' | 'invitations' | 'markets' | 'categories' | 'stages' | 'pipelines' | 'trade-events' | 'product-management' | 'security' | 'audit' | 'ai-analytics' | 'seo';
 
 type AdminNavItem = {
   key: AdminNavKey;
@@ -36,6 +36,12 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
     ],
   },
   {
+    label: 'Growth',
+    items: [
+      { key: 'seo', href: '/admin/seo-intelligence', icon: '📈', label: 'SEO intelligence' },
+    ],
+  },
+  {
     label: 'Governance',
     items: [
       { key: 'audit', href: '/admin/audit', icon: '📋', label: 'Audit log' },
@@ -61,7 +67,8 @@ function AdminNavBadge({ label, tone = 'success' }: { label: string; tone?: 'suc
 }
 
 export function AdminSettingsShell({ active, organizationName, missingCount = 0, sectionTitle, gapItems = [], children }: { active: AdminNavKey; organizationName: string; missingCount?: number; sectionTitle?: string; gapItems?: AdminGapItem[]; children: ReactNode }) {
-  const showClientOnboarding = organizationName.trim().toLowerCase() === 'setu flow' || organizationName.trim().toLowerCase() === 'setuflow';
+  const normalizedOrgName = organizationName.trim().toLowerCase();
+  const showMainOrgOnlyTools = normalizedOrgName === 'setu flow' || normalizedOrgName === 'setuflow' || normalizedOrgName.includes('setu');
   return (
     <div className="grid gap-6 xl:grid-cols-[216px_minmax(0,1fr)]">
       <aside className="rounded-none border-r border-slate-200 bg-white px-2 py-5 shadow-[4px_0_18px_rgba(15,23,42,0.04)] xl:sticky xl:top-16 xl:min-h-[calc(100vh-4rem)] xl:self-start">
@@ -70,7 +77,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
             <div key={section.label} className={cn(index > 0 && 'border-t border-slate-200 pt-7')}>
               <p className="px-2 text-[9px] font-extrabold uppercase tracking-[0.24em] text-slate-400">{section.label}</p>
               <div className="mt-4 space-y-2">
-                {section.items.filter((item) => showClientOnboarding || item.key !== 'client-onboarding').map((item) => {
+                {section.items.filter((item) => showMainOrgOnlyTools || !['client-onboarding', 'seo'].includes(item.key)).map((item) => {
                   const isActive = item.key === active;
                   return (
                     <Link
@@ -104,7 +111,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
 }
 
 export function AdminPageHero({ title, description, badge, cta, stats }: { title: string; description: string; badge?: string; cta?: ReactNode; stats?: Array<{ label: string; value: string | number; tone?: 'default' | 'success' | 'warning' | 'danger' | 'info' }> }) {
-  return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description="" badge={badge} actions={cta} meta={stats?.map((stat) => <ToolbarStat key={stat.label} label={stat.label} value={String(stat.value)} tone={stat.tone ?? 'default'} />)} />;
+  return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description={description} badge={badge} actions={cta} meta={stats?.map((stat) => <ToolbarStat key={stat.label} label={stat.label} value={String(stat.value)} tone={stat.tone ?? 'default'} />)} />;
 }
 
 function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: number; gapItems?: AdminGapItem[] }) {

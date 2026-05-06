@@ -15,6 +15,7 @@
     "release:proof": "npm run verify",
     "clean:verification": "node scripts/clean-verification.mjs",
     "check:contracts": "node scripts/check-contract-boundaries.mjs",
+    "seo:bot": "node scripts/seo-autobot.mjs",
     "test:pricing": "tsx --test tests/pricing/fx-resolution.helpers.test.ts tests/pricing/freight-calculation.helpers.test.ts tests/pricing/quote-compilation.helpers.test.ts tests/pricing/fx-resolution.service.test.ts tests/pricing/quote-compilation.service.test.ts",
     "test:workspace": "tsx --test tests/workspace/rls-permissions.test.ts",
     "test:orders": "tsx --test tests/orders/order-execution.test.ts",

@@ -1,15 +1,21 @@
 import manifest from '@/lib/routes/manifest.json';
 
-export const LOCKED_PRODUCT_FLOW = manifest.lockedProductFlow as readonly string[];
+type RouteManifest = typeof manifest & {
+  internalDccPath?: string;
+};
 
-export const INTERNAL_DCC_PATH = manifest.internalDccPath;
-export const APPROVED_REWORK_PHASE = manifest.approvedReworkPhase;
-export const APPROVED_REWORK_TITLE = manifest.approvedReworkTitle;
-export const RELEASE_GATE_CONTRACT = manifest.releaseGate;
+const routeManifest = manifest as RouteManifest;
 
-export const PRODUCT_ROUTE_LABELS = manifest.routeLabels;
-export const PRODUCT_ROUTES = manifest.routes;
-export const PRODUCT_SHELL_LABELS = manifest.productShellLabels;
+export const LOCKED_PRODUCT_FLOW = routeManifest.lockedProductFlow as readonly string[];
+
+export const INTERNAL_DCC_PATH = routeManifest.internalDccPath ?? routeManifest.routes.internal.dcc;
+export const APPROVED_REWORK_PHASE = routeManifest.approvedReworkPhase;
+export const APPROVED_REWORK_TITLE = routeManifest.approvedReworkTitle;
+export const RELEASE_GATE_CONTRACT = routeManifest.releaseGate;
+
+export const PRODUCT_ROUTE_LABELS = routeManifest.routeLabels;
+export const PRODUCT_ROUTES = routeManifest.routes;
+export const PRODUCT_SHELL_LABELS = routeManifest.productShellLabels;
 
 export type ProductNavLink = {
   href: string;
@@ -30,9 +36,9 @@ export type ProductNavSection = {
   items: ProductNavLink[];
 };
 
-export const primaryAppShellNav = manifest.primaryNav as ProductNavLink[];
-export const adminAppShellTabs = manifest.adminTabs as ProductNavLink[];
-export const hiddenFromPrimaryNav = manifest.hiddenFromPrimaryNav;
-export const driftGuardrails = manifest.driftGuardrails;
-export const canonicalShellSections = manifest.shellSections as ProductNavSection[];
-export const routeManifest = manifest;
+export const primaryAppShellNav = routeManifest.primaryNav as ProductNavLink[];
+export const adminAppShellTabs = routeManifest.adminTabs as ProductNavLink[];
+export const hiddenFromPrimaryNav = routeManifest.hiddenFromPrimaryNav;
+export const driftGuardrails = routeManifest.driftGuardrails;
+export const canonicalShellSections = routeManifest.shellSections as ProductNavSection[];
+export { routeManifest };
