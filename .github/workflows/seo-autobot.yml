@@ -3,7 +3,7 @@ name: SEO Autobot
 on:
   workflow_dispatch:
   schedule:
-    - cron: '15 10 * * 1'
+    - cron: '15 10 * * *'
 
 permissions:
   contents: write
@@ -45,8 +45,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: seo/autobot-report
           delete-branch: true
-          commit-message: 'chore(seo): refresh autobot report'
-          title: 'chore(seo): refresh autobot intelligence report'
+          commit-message: 'chore(seo): refresh daily autobot report'
+          title: 'chore(seo): refresh daily SEO intelligence report'
           body: |
             Automated SEO monitoring update.
 
