@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import RightDrawer from '@/components/RightDrawer';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,14 @@ type SetuGuruTopic = {
   nextActions: string[];
 };
 
+type ChatMessage = {
+  id: string;
+  role: 'assistant' | 'user';
+  content: string;
+  actions?: string[];
+  topicId?: string;
+};
+
 const STORAGE_KEY = 'setu-guru-widget-hidden';
 
 const TOPICS: SetuGuruTopic[] = [
@@ -23,26 +31,26 @@ const TOPICS: SetuGuruTopic[] = [
     title: 'Start a new organization',
     routes: ['/admin/organization', '/admin/pipelines', '/admin/stages', '/admin/markets'],
     tags: ['onboarding', 'organization', 'setup', 'first admin', 'workspace'],
-    summary: 'Verify org defaults, pipeline/stage setup, markets, terms, and approval threshold before inviting the team.',
+    summary: 'Verify org defaults, pipelines, stages, markets, terms, and approval threshold before inviting the team.',
     answer: [
-      'Open Admin > Organization and confirm company name, logo, website, headquarters country, quote terms, order terms, default currency, and approval threshold.',
-      'Review Admin > Pipelines, Admin > Stages, and Admin > Markets so the workspace matches the customer journey before users start entering records.',
-      'After the commercial structure is right, invite users from Admin > Invitations and assign roles based on actual work responsibility.'
+      'Start in Admin > Organization. Confirm company details, logo, website, headquarters country, quote terms, order terms, default currency, and approval threshold.',
+      'Then review Admin > Pipelines, Admin > Stages, and Admin > Markets so the workspace matches your real commercial journey.',
+      'Invite users only after the structure is ready. Use Admin > Invitations and assign roles based on each person’s actual responsibility.',
     ],
-    nextActions: ['Open Admin > Organization', 'Review pipeline/stage names', 'Invite first team members'],
+    nextActions: ['Open Admin > Organization', 'Review pipelines and stages', 'Invite first team members'],
   },
   {
     id: 'catalog-pricing',
     title: 'Set up catalog and pricing',
     routes: ['/products', '/admin/categories', '/admin/product-management'],
     tags: ['products', 'catalog', 'pricing', 'category', 'variant', 'import', 'margin'],
-    summary: 'Create categories first, add products and variants, then apply inherited pricing defaults or explicit product overrides.',
+    summary: 'Create categories first, add products and variants, then apply inherited defaults or deliberate product overrides.',
     answer: [
-      'Start with Admin > Categories so product taxonomy and category pricing defaults are ready before product import.',
-      'In Products, each operational row should have variant context such as pack size, UOM, MOQ, SKU, and pricing basis.',
-      'Use organization or category pricing defaults for shared freight, duty, margin, and landed-cost assumptions. Product-level pricing overrides should be deliberate and reasoned.'
+      'You are on the catalog side. Build categories first in Admin > Categories, then add products and variants in Products.',
+      'Every quote-ready product should have variant context such as pack size, UOM, MOQ, SKU, and pricing basis.',
+      'Use organization or category defaults for shared pricing assumptions. Product-level overrides should be intentional and reviewed.',
     ],
-    nextActions: ['Create parent categories', 'Add product variants', 'Run Catalog Command Center import validation'],
+    nextActions: ['Create parent categories', 'Add product variants', 'Validate imports before saving'],
   },
   {
     id: 'lead-to-order',
@@ -52,10 +60,10 @@ const TOPICS: SetuGuruTopic[] = [
     summary: 'Capture, qualify, map products, quote, approve/send, accept, then execute the order with blockers resolved.',
     answer: [
       'Capture the buyer or supplier in Leads, qualify the record, map product interests, and move it through the pipeline only when the next stage is valid.',
-      'Create a quote from the lead, lock commercial terms first, then price lines with the correct UOM, pack, MOQ, incoterm, FX, and quote-only adjustments.',
-      'Once accepted, create the order and use Orders to resolve contract, document, compliance, and release blockers before advancing execution state.'
+      'Create a quote from the lead. Lock commercial terms first, then price lines with the correct UOM, pack, MOQ, incoterm, FX, and quote-only adjustments.',
+      'After acceptance, create the order and resolve contract, document, compliance, and commercial-lock blockers before advancing execution.',
     ],
-    nextActions: ['Create or open the lead', 'Lock quote terms before pricing', 'Check order blockers before release'],
+    nextActions: ['Open the lead', 'Create or review quote', 'Check order blockers'],
   },
   {
     id: 'quote-approval',
@@ -64,11 +72,11 @@ const TOPICS: SetuGuruTopic[] = [
     tags: ['quote', 'approval', 'discount', 'markup', 'pdf', 'send', 'whatsapp'],
     summary: 'Quote-only adjustments beyond the threshold require approval before sending or acceptance.',
     answer: [
-      'Discounts and markups entered in a quote do not rewrite product, category, or organization pricing defaults.',
+      'Quote adjustments do not rewrite product, category, or organization pricing defaults.',
       'Adjustments beyond the configured threshold route the quote into pending approval for owner, admin, or manager review.',
-      'Use the quote PDF preview/export before sending. If rejected, revise the draft with the rejection reason before requesting approval again.'
+      'Preview the quote PDF before sending. If rejected, revise the draft with the rejection reason before requesting approval again.',
     ],
-    nextActions: ['Save quote adjustments', 'Open approval queue', 'Preview the quote PDF'],
+    nextActions: ['Open approval queue', 'Preview PDF', 'Revise rejected quote'],
   },
   {
     id: 'trade-events-mobile',
@@ -77,24 +85,24 @@ const TOPICS: SetuGuruTopic[] = [
     tags: ['trade show', 'mobile', 'business card', 'scan', 'vcard', 'qr', 'event'],
     summary: 'Set up events before the show, capture leads on mobile, and share Smart vCards from the field.',
     answer: [
-      'Create the trade event, assign team members, and confirm mobile scan readiness before going to the booth.',
+      'Create the trade event, assign team members, and confirm mobile scan readiness before the booth goes live.',
       'Use mobile capture for business-card scan or quick manual entry. Review extracted details before creating the lead.',
-      'Each field user should complete Profile > My Card so their Smart QR and vCard share actions are ready during conversations.'
+      'Each field user should complete Profile > My Card so their Smart QR and vCard share actions are ready.',
     ],
     nextActions: ['Create trade event', 'Check scan readiness', 'Set up My Card'],
   },
   {
     id: 'documents-compliance',
-    title: 'Documents, compliance, and blockers',
+    title: 'Documents and compliance',
     routes: ['/documents', '/compliance', '/orders', '/leads'],
     tags: ['documents', 'compliance', 'blocker', 'contract', 'order state'],
     summary: 'Document and compliance blockers prevent unsafe stage or order progression until evidence is complete.',
     answer: [
-      'A document blocker means a required file is missing or not tagged correctly. Upload the document and attach the correct document type.',
-      'A compliance blocker means the required checklist or review action is not resolved. Operations, managers, admins, or owners usually clear these checks.',
-      'Orders should not move from Draft to Ready or onward until accepted quote, contract, document, compliance, and commercial-lock blockers are clean.'
+      'A document blocker means a required file is missing or not tagged correctly. Upload the document and attach the right document type.',
+      'A compliance blocker means the checklist or review action is not resolved. Operations, managers, admins, or owners usually clear these checks.',
+      'Orders should not move forward until accepted quote, contract, document, compliance, and commercial-lock blockers are clean.',
     ],
-    nextActions: ['Open the blockers panel', 'Upload missing document evidence', 'Resolve compliance checklist items'],
+    nextActions: ['Open blockers panel', 'Upload missing evidence', 'Resolve compliance checklist'],
   },
   {
     id: 'roles-permissions',
@@ -105,9 +113,9 @@ const TOPICS: SetuGuruTopic[] = [
     answer: [
       'If a user cannot see Admin pages, they likely do not have owner, admin, or manager-level access.',
       'If a user cannot edit leads or quotes, verify their role in Admin > Users and confirm they are an active organization member.',
-      'Invitation acceptance creates access only when the invitation and role assignment complete successfully; admins can resend or manually correct role assignment.'
+      'If invitation acceptance did not assign access correctly, admins can resend the invitation or manually correct the user role.',
     ],
-    nextActions: ['Open Admin > Users', 'Verify membership is active', 'Resend expired invitations'],
+    nextActions: ['Open Admin > Users', 'Verify membership', 'Resend expired invitation'],
   },
   {
     id: 'live-industry-research',
@@ -116,11 +124,11 @@ const TOPICS: SetuGuruTopic[] = [
     tags: ['live search', 'industry standard', 'margin', 'markup', 'hsn', 'hs code', 'commodity code', 'tariff', 'duty', 'vat', 'uk', 'ireland', 'compliance', 'documents', 'export', 'import'],
     summary: 'Use live source-backed research for margin benchmarks, HS/HSN codes, commodity codes, duties, tariffs, and shipment document requirements.',
     answer: [
-      'Ask Setu Guru for live research when the answer depends on country, product, date, tariff rules, or industry benchmarks, such as Ireland margin ranges, UK import documents, or missing HS/HSN codes.',
-      'For HS/HSN enrichment, Setu Guru should prepare candidate codes with confidence and sources first. Product master data should only be updated after an authorized user reviews and approves the rows.',
-      'For compliance and pricing benchmarks, Setu Guru should cite official or high-quality sources, explain assumptions, and treat recommendations as draft guidance until managers, brokers, or compliance owners confirm.'
+      'Use live research when the answer depends on country, product, date, tariff rules, or industry benchmarks.',
+      'For HS/HSN enrichment, prepare candidate codes with confidence and sources first. Product master data should only be updated after authorized review.',
+      'For compliance and pricing benchmarks, cite official or high-quality sources and treat recommendations as draft guidance until confirmed.',
     ],
-    nextActions: ['Ask for live research', 'Review sources and confidence', 'Approve before write-back'],
+    nextActions: ['Ask for live research', 'Review confidence and sources', 'Approve before write-back'],
   },
   {
     id: 'ai-guardrails',
@@ -131,9 +139,9 @@ const TOPICS: SetuGuruTopic[] = [
     answer: [
       'Use AI suggestions as drafts or guidance, not autonomous actions. Operators must review and edit before use.',
       'AI should never approve quotes, change governed pricing, send messages without review, advance orders, or make compliance decisions.',
-      'Setu Guru should improve from feedback by logging unclear answers, missing docs, repeated questions, and unresolved topics for admin review.'
+      'Setu Guru should improve from feedback by logging unclear answers, missing docs, repeated questions, and unresolved topics for admin review.',
     ],
-    nextActions: ['Review AI draft context', 'Edit before using', 'Log missing help content'],
+    nextActions: ['Review AI draft', 'Edit before using', 'Log missing help content'],
   },
 ];
 
@@ -163,6 +171,16 @@ function getBestTopic(query: string, pathname: string) {
   return ranked[0]?.score > 0 ? ranked[0].topic : getRouteTopics(pathname)[0];
 }
 
+function buildAssistantMessage(topic: SetuGuruTopic, routeTitle: string): ChatMessage {
+  return {
+    id: `${topic.id}-${Date.now()}`,
+    role: 'assistant',
+    topicId: topic.id,
+    content: [`Here’s the path for **${topic.title}** on **${routeTitle}**.`, ...topic.answer].join('\n\n'),
+    actions: topic.nextActions,
+  };
+}
+
 export function SetuGuruWidget({
   pathname,
   routeTitle,
@@ -176,30 +194,29 @@ export function SetuGuruWidget({
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [query, setQuery] = useState('');
-  const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState('');
   const [feedbackSaved, setFeedbackSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   useEffect(() => {
     setHidden(localStorage.getItem(STORAGE_KEY) === 'true');
   }, []);
 
   const routeTopics = useMemo(() => getRouteTopics(pathname), [pathname]);
-  const activeTopic = useMemo(() => {
-    if (activeTopicId) return TOPICS.find((topic) => topic.id === activeTopicId) ?? routeTopics[0];
-    return getBestTopic(query, pathname);
-  }, [activeTopicId, pathname, query, routeTopics]);
 
-  const searchResults = useMemo(() => {
-    const ranked = [...TOPICS]
-      .map((topic) => ({ topic, score: scoreTopic(topic, query, pathname) }))
-      .filter((entry) => entry.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 4)
-      .map((entry) => entry.topic);
-    return ranked.length ? ranked : routeTopics;
-  }, [pathname, query, routeTopics]);
+  useEffect(() => {
+    const welcomeTopic = getRouteTopics(pathname)[0];
+    setMessages([
+      {
+        id: `welcome-${pathname}`,
+        role: 'assistant',
+        topicId: welcomeTopic.id,
+        content: `Hi, I’m Setu Guru. I can help with **${routeTitle}**, CRM workflows, pricing, HS codes, and export compliance. What would you like to do?`,
+      },
+    ]);
+  }, [pathname, routeTitle]);
 
   function setWidgetHidden(nextHidden: boolean) {
     setHidden(nextHidden);
@@ -207,16 +224,31 @@ export function SetuGuruWidget({
     if (nextHidden) setDrawerOpen(false);
   }
 
+  function askTopic(topic: SetuGuruTopic) {
+    setMessages((current) => [
+      ...current,
+      { id: `user-${topic.id}-${Date.now()}`, role: 'user', content: topic.title },
+      buildAssistantMessage(topic, routeTitle),
+    ]);
+  }
+
   function handleAsk(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setActiveTopicId(null);
+    const question = inputValue.trim();
+    if (!question) return;
+    const topic = getBestTopic(question, pathname);
+    setMessages((current) => [
+      ...current,
+      { id: `user-${Date.now()}`, role: 'user', content: question },
+      buildAssistantMessage(topic, routeTitle),
+    ]);
+    setInputValue('');
   }
 
   function saveFeedback(label: 'helpful' | 'missing') {
     const feedback = {
       label,
-      topicId: activeTopic.id,
-      query,
+      lastMessage: messages[messages.length - 1]?.content ?? '',
       pathname,
       routeTitle,
       createdAt: new Date().toISOString(),
@@ -225,39 +257,33 @@ export function SetuGuruWidget({
     const existing = existingRaw ? (JSON.parse(existingRaw) as unknown[]) : [];
     localStorage.setItem('setu-guru-feedback-log', JSON.stringify([feedback, ...existing].slice(0, 50)));
     setFeedbackSaved(true);
-    window.setTimeout(() => setFeedbackSaved(false), 2400);
-  }
-
-  async function copyBuildPrompt() {
-    const prompt = [
-      'Build Setu Guru, the embedded Setu Flow CRM help chatbot with live industry research.',
-      'Use docs/setu-guru as the primary knowledge base and follow docs/setu-guru/SETU_GURU_GPT_CREATION_EXACT_INSTRUCTIONS.md exactly.',
-      'Connect live research through /api/setu-guru/research for margins, HS/HSN/commodity codes, tariffs, duties, and compliance documents.',
-      'Keep the bot route-aware, role-aware, organization-safe, source-backed, and human-in-control for pricing, approvals, sends, compliance, and product master-data write-back.',
-    ].join(' ');
-    await navigator.clipboard?.writeText(prompt);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2400);
+    window.setTimeout(() => setFeedbackSaved(false), 2200);
   }
 
   const launcher = hidden ? (
     <button
       type="button"
       onClick={() => setWidgetHidden(false)}
-      className="fixed right-0 top-1/2 z-[310] flex -translate-y-1/2 items-center gap-2 rounded-l-2xl border border-r-0 border-amber-200 bg-white px-3 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#0b2e4a] shadow-[0_16px_44px_rgba(15,23,42,0.18)] hover:bg-amber-50"
+      className="fixed right-0 top-1/2 z-[310] flex -translate-y-1/2 items-center rounded-l-2xl border border-r-0 border-sky-200 bg-white px-3 py-4 text-xs font-black uppercase tracking-[0.14em] text-sky-900 shadow-[0_16px_44px_rgba(15,23,42,0.18)] hover:bg-sky-50"
       aria-label="Show Setu Guru"
     >
-      <span className="writing-mode-vertical">Guru</span>
+      Guru
     </button>
   ) : (
     <button
       type="button"
       onClick={() => setDrawerOpen(true)}
-      className="fixed bottom-[calc(140px+env(safe-area-inset-bottom))] right-4 z-[310] flex h-[70px] w-[70px] items-center justify-center rounded-[1.35rem] border border-amber-200 bg-[linear-gradient(135deg,#071a2c_0%,#0b2e4a_52%,#0c7fff_145%)] p-1.5 shadow-[0_18px_44px_rgba(12,47,79,0.34)] ring-2 ring-white/80 transition hover:-translate-y-0.5 hover:shadow-[0_22px_52px_rgba(12,47,79,0.42)] md:bottom-6 md:right-6"
+      className="fixed bottom-[calc(110px+env(safe-area-inset-bottom))] right-4 z-[310] group flex items-center gap-3 rounded-[1.6rem] border border-white/80 bg-white/95 p-2 pr-4 shadow-[0_18px_50px_rgba(15,23,42,0.22)] ring-1 ring-sky-100/80 backdrop-blur transition hover:-translate-y-0.5 hover:shadow-[0_24px_60px_rgba(15,23,42,0.28)] md:bottom-6 md:right-6"
       aria-label="Open Setu Guru help"
     >
-      <img src="/setu-guru/setu-guru-avatar.svg" alt="Setu Guru" className="h-full w-full rounded-[1rem] object-cover" />
-      <span className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border border-white bg-amber-300 text-[10px] font-black text-[#0b2e4a]">?</span>
+      <span className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 p-1 shadow-inner">
+        <img src="/setu-guru/setu-guru-avatar.svg" alt="Setu Guru" className="h-full w-full rounded-[1rem] object-cover" />
+        <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-400" />
+      </span>
+      <span className="hidden text-left sm:block">
+        <span className="block text-sm font-black text-slate-950">Setu Guru</span>
+        <span className="block text-xs font-semibold text-slate-500">Ask CRM help</span>
+      </span>
     </button>
   );
 
@@ -266,109 +292,114 @@ export function SetuGuruWidget({
       {launcher}
       <RightDrawer
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        title="Setu Guru"
-        description={`Your route-aware CRM guide for ${routeTitle}.`}
-        widthClassName="sm:max-w-[500px]"
+        onClose={closeDrawer}
+        title={undefined}
+        widthClassName="sm:max-w-[430px]"
+        bodyClassName="!p-0"
       >
-        <div className="space-y-5">
-          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-[linear-gradient(135deg,#071a2c_0%,#0b2e4a_58%,#0c7fff_150%)] p-4 text-white shadow-[0_16px_44px_rgba(15,23,42,0.16)]">
-            <div className="flex items-center gap-4">
-              <img src="/setu-guru/setu-guru-avatar.svg" alt="Setu Guru avatar" className="h-20 w-20 rounded-2xl border border-white/15 object-cover shadow-lg" />
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-amber-200">Setu Guru</p>
-                <h3 className="mt-1 text-xl font-semibold">Ask me CRM, pricing, HS code, and compliance questions safely.</h3>
-                <p className="mt-2 text-xs leading-5 text-white/70">Workspace: {organizationName ?? 'Setu Flow'} · Role: {roleLabel}</p>
+        <div className="flex h-full min-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden bg-gradient-to-b from-sky-50 via-white to-white">
+          <header className="border-b border-slate-200/80 bg-white/95 px-5 py-4 backdrop-blur">
+            <div className="flex items-center gap-3">
+              <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 p-1 shadow-sm">
+                <img src="/setu-guru/setu-guru-avatar.svg" alt="Setu Guru avatar" className="h-full w-full rounded-[0.9rem] object-cover" />
+                <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="truncate text-base font-black text-slate-950">Setu Guru</h2>
+                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-emerald-700">Online</span>
+                </div>
+                <p className="truncate text-xs font-semibold text-slate-500">{routeTitle} · {roleLabel} · {organizationName ?? 'Setu Flow'}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWidgetHidden(true)}
+                className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-50"
+              >
+                Hide
+              </button>
+            </div>
+          </header>
+
+          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+            <div className="rounded-[1.4rem] border border-sky-100 bg-white p-4 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-600">Try asking</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {routeTopics.slice(0, 3).map((topic) => (
+                  <button
+                    key={topic.id}
+                    type="button"
+                    onClick={() => askTopic(topic)}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800"
+                  >
+                    {topic.title}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => askTopic(TOPICS.find((topic) => topic.id === 'live-industry-research') ?? routeTopics[0])}
+                  className="rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100"
+                >
+                  Live research
+                </button>
               </div>
             </div>
+
+            <div className="space-y-3">
+              {messages.map((message) => (
+                <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
+                  <div
+                    className={cn(
+                      'max-w-[88%] rounded-[1.35rem] px-4 py-3 text-sm leading-6 shadow-sm',
+                      message.role === 'user'
+                        ? 'rounded-br-md bg-sky-600 text-white'
+                        : 'rounded-bl-md border border-slate-200 bg-white text-slate-700'
+                    )}
+                  >
+                    {message.content.split('\n\n').map((paragraph) => (
+                      <p key={paragraph} className="mb-2 last:mb-0">{paragraph}</p>
+                    ))}
+                    {message.actions?.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                        {message.actions.map((action) => (
+                          <span key={action} className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-700">{action}</span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <form onSubmit={handleAsk} className="rounded-[1.35rem] border border-slate-200 bg-white p-3 shadow-sm">
-            <label htmlFor="setu-guru-query" className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Ask Setu Guru</label>
-            <div className="mt-2 flex gap-2">
-              <input
-                id="setu-guru-query"
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setActiveTopicId(null);
+          <footer className="border-t border-slate-200/80 bg-white/95 px-4 py-4 backdrop-blur">
+            <div className="mb-3 flex items-center justify-between gap-2 text-xs text-slate-500">
+              <div className="flex gap-2">
+                <button type="button" onClick={() => saveFeedback('helpful')} className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700">Helpful</button>
+                <button type="button" onClick={() => saveFeedback('missing')} className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 font-bold text-amber-800">Missing detail</button>
+              </div>
+              {feedbackSaved ? <span className="font-bold text-emerald-700">Saved</span> : null}
+            </div>
+            <form onSubmit={handleAsk} className="flex items-end gap-2 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-2 focus-within:border-sky-300 focus-within:ring-4 focus-within:ring-sky-100">
+              <textarea
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
                 }}
-                placeholder="Example: Find missing HSN codes or UK shipment documents"
-                className="min-h-11 flex-1 rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none focus:border-[#0c7fff] focus:ring-2 focus:ring-[#0c7fff]/20"
+                rows={1}
+                placeholder="Ask Setu Guru..."
+                className="max-h-28 min-h-10 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400"
               />
-              <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[#0b2e4a] px-4 text-sm font-bold text-white hover:bg-[#061c2e]">
+              <button type="submit" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-sky-600 text-white shadow-sm hover:bg-sky-700" aria-label="Send message">
                 <FaIcon icon="send" />
-                <span>Ask</span>
               </button>
-            </div>
-          </form>
-
-          <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Context shortcuts</p>
-            <div className="flex flex-wrap gap-2">
-              {routeTopics.map((topic) => (
-                <button
-                  key={topic.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveTopicId(topic.id);
-                    setQuery('');
-                  }}
-                  className={cn(
-                    'rounded-full border px-3 py-2 text-xs font-bold transition',
-                    activeTopic.id === topic.id ? 'border-[#0b2e4a] bg-[#0b2e4a] text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-[#0c7fff] hover:text-[#0b2e4a]'
-                  )}
-                >
-                  {topic.title}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <section className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#0c7fff]">Best answer</p>
-            <h3 className="mt-2 text-lg font-semibold text-slate-950">{activeTopic.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{activeTopic.summary}</p>
-            <div className="mt-4 space-y-3">
-              {activeTopic.answer.map((paragraph) => (
-                <p key={paragraph} className="rounded-2xl border border-white bg-white px-4 py-3 text-sm leading-6 text-slate-700 shadow-sm">{paragraph}</p>
-              ))}
-            </div>
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-700">Suggested next actions</p>
-              <ul className="mt-2 space-y-1 text-sm text-amber-950">
-                {activeTopic.nextActions.map((action) => <li key={action}>• {action}</li>)}
-              </ul>
-            </div>
-          </section>
-
-          <div className="grid gap-3 rounded-[1.35rem] border border-slate-200 bg-white p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Related knowledge</p>
-            {searchResults.map((topic) => (
-              <button
-                key={topic.id}
-                type="button"
-                onClick={() => setActiveTopicId(topic.id)}
-                className="rounded-2xl border border-slate-200 px-4 py-3 text-left hover:border-[#0c7fff] hover:bg-slate-50"
-              >
-                <span className="block text-sm font-bold text-slate-950">{topic.title}</span>
-                <span className="mt-1 block text-xs leading-5 text-slate-500">{topic.summary}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="grid gap-2 rounded-[1.35rem] border border-slate-200 bg-white p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Make Setu Guru smarter</p>
-            <p className="text-sm leading-6 text-slate-600">Feedback is saved locally for now. Connect this log and /api/setu-guru/research to the future chatbot backend so repeated misses become knowledge-base updates.</p>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => saveFeedback('helpful')} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Helpful</button>
-              <button type="button" onClick={() => saveFeedback('missing')} className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">Missing detail</button>
-              <button type="button" onClick={copyBuildPrompt} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700">Copy GPT build note</button>
-              <button type="button" onClick={() => setWidgetHidden(true)} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500">Hide bot</button>
-            </div>
-            {feedbackSaved ? <p className="text-xs font-semibold text-emerald-700">Feedback saved for review.</p> : null}
-            {copied ? <p className="text-xs font-semibold text-[#0c7fff]">Build note copied.</p> : null}
-          </div>
+            </form>
+            <p className="mt-2 text-center text-[11px] text-slate-400">AI gives guidance. Humans approve prices, compliance, sends, and write-backs.</p>
+          </footer>
         </div>
       </RightDrawer>
     </>
