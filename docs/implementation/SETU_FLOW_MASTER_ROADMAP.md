@@ -45,6 +45,14 @@ Setu Guru must become smarter on every pass. Every UX change must include matchi
 
 ## 3. Operating principles
 
+### Approval and direct-main principle
+
+- Before every implementation pass, ask Ritesh for explicit approval before changing GitHub.
+- After approval, make the approved change directly to GitHub `main` unless Ritesh explicitly requests a branch or pull request.
+- Keep the approved scope tight. Do not drift into unrelated features.
+- Record approval/process decisions in `docs/implementation/CHANGELOG_DECISIONS.md`.
+- See `docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md`.
+
 ### UX principles
 
 - Keep daily work clean and action-led.
@@ -79,6 +87,7 @@ Deliverables:
 - `docs/implementation/PASS_CHECKLIST.md`
 - `docs/implementation/DO_NOT_REGRESS.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
+- `docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md`
 - New-chat continuation prompt stored in the roadmap and summarized to the user.
 
 Definition of done:
@@ -86,14 +95,15 @@ Definition of done:
 - Every future pass can start from these files.
 - Every future pass reports readiness %, sprint %, build status, and next pass.
 - A new ChatGPT session can resume work from these docs.
+- Future passes require Ritesh approval before GitHub writes.
 
-Progress: 70%
+Progress: 85%
 
 ---
 
 ### Sprint 2 — Setu Guru knowledge base foundation
 
-Status: `PLANNED`
+Status: `IN PROGRESS`
 
 Deliverables:
 
@@ -111,12 +121,18 @@ Deliverables:
 - `src/lib/setu-guru/help-registry.ts`
 - `src/lib/setu-guru/guru-response-policy.ts`
 
+Completed in this pass:
+
+- Added route help docs for Dashboard, Follow-up, Products, Quotes, Orders, Compliance, Trade events, Admin / Organization, Pricing calculator, and Setu Guru.
+- Added typed Setu Guru page context, help registry, and response policy modules.
+- Added tests that protect the new route help files and Setu Guru runtime registry files.
+
 Definition of done:
 
 - Every main route has a help topic, common blockers, data sources, allowed actions, and approval rules.
 - Setu Guru can answer from route-specific help before falling back to generic topics.
 
-Progress: 0%
+Progress: 65%
 
 ---
 
@@ -279,10 +295,11 @@ Progress: 10%
 
 Current readiness snapshot:
 
-- Overall CRM readiness: 78%
-- Current anti-drift sprint completion: 70%
-- Setu Guru intelligence readiness: 45%
-- UX cleanup readiness: 42%
+- Overall CRM readiness: 79%
+- Current anti-drift sprint completion: 85%
+- Current Setu Guru knowledge sprint completion: 65%
+- Setu Guru intelligence readiness: 55%
+- UX cleanup readiness: 43%
 - Quote/compliance maturity: 44%
 - Product catalog maturity: 55%
 
@@ -321,6 +338,7 @@ Before making any changes, read these roadmap files from the repo:
 - docs/implementation/PASS_CHECKLIST.md
 - docs/implementation/DO_NOT_REGRESS.md
 - docs/implementation/CHANGELOG_DECISIONS.md
+- docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md
 
 Rules:
 1. Do not drift from the roadmap.
@@ -331,21 +349,22 @@ Rules:
 6. Use Supabase and Vercel tools to verify schema/build when needed.
 7. Never put dev/debug notes on user-facing screens; put them in docs and Setu Guru knowledge.
 8. Protect previous fixes listed in DO_NOT_REGRESS.md.
-9. At the end, report build status, files changed, readiness %, sprint %, and the next pass.
+9. Ask Ritesh for explicit approval before making GitHub repo changes.
+10. After approval, make approved changes directly to GitHub main unless Ritesh asks for a branch or PR.
+11. At the end, report build status, files changed, readiness %, sprint %, and the next pass.
 
-Current direction: continue UX cleanup and Setu Guru intelligence. Next recommended pass is Sprint 2: create docs/help route knowledge files and Setu Guru page context/help registry.
+Current direction: continue UX cleanup and Setu Guru intelligence. Sprint 2 route help docs and Setu Guru registry foundation are in progress. Next recommended pass is to wire Setu Guru static fallback and `/api/setu-guru/org-search` page_help/live context modes to the new registry.
 ```
 
 ---
 
 ## 8. Next recommended pass
 
-Start Sprint 2:
+Continue Sprint 2:
 
-1. Create route help docs in `docs/help/*`.
-2. Add `src/lib/setu-guru/page-context.ts`.
-3. Add `src/lib/setu-guru/help-registry.ts`.
-4. Add `src/lib/setu-guru/guru-response-policy.ts`.
-5. Wire Setu Guru static topic fallback to the registry.
-6. Check Vercel build.
-7. Update this roadmap and changelog.
+1. Wire Setu Guru widget static fallback to `src/lib/setu-guru/help-registry.ts`.
+2. Add `/api/setu-guru/org-search` support for `page_help` and richer route context modes.
+3. Expand Setu Guru live research routing for HS/HSN, document requirements, duties, and margin benchmarks.
+4. Add source-backed help topic responses where live external rules are needed.
+5. Check Vercel build after merge.
+6. Update this roadmap and changelog.
