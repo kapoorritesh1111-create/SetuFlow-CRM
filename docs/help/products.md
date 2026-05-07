@@ -40,6 +40,16 @@ Setu Guru should make the Products area feel action-led, not generic. Use these 
 - **Open Product Management** for governance, imports, category defaults, organization defaults, setup health, approval posture, and audit review.
 - **Ask live research** for HSN/HS code, duties/tariffs, document requirements, and margin benchmark questions.
 
+## Product Management action rows
+
+Product Management is an admin workbench. Action rows should tell users whether the next step belongs in Products, Product Management, or Quotes:
+
+- Pricing-gap rows should open Products and remind users that quote-only discounts stay inside Quotes.
+- Variant setup rows should open Products because variants are edited in the operating catalog.
+- Trade-attribute rows should open Products for edits and Setu Guru live research for HSN review.
+- Import rows should stay inside Product Management.
+- Approval-posture rows should monitor governed rows and avoid automatic write-back.
+
 ## Product default boundary
 
 - Product-default changes belong in Products only when they should affect future quotes.

@@ -103,55 +103,61 @@ export function ProductGovernanceWorkbench({
   const rows = useMemo(() => [
     {
       title: `${pricingGaps} products are missing governed pricing`,
-      note: pricingGaps ? "Open Products with the pricing-gap filter to fix product pricing or import corrected starting prices." : "Products with variants match the Products page pricing-gap filter.",
+      note: pricingGaps ? "Open Products with the pricing-gap filter to review product-default pricing. Quote-only discounts stay inside Quotes." : "Products with variants match the Products page pricing-gap filter.",
       status: pricingGaps ? "Action needed" : "Covered",
       statusTone: pricingGaps ? "warning" : "success",
       area: "Pricing",
       href: "/products?gap=has_gap",
+      actionLabel: pricingGaps ? "Open pricing gaps" : "Open Products",
       showIn: ["setup", "pricing"] as Tab[],
     },
     {
       title: `${variantSetupGaps} product masters need variant setup`,
-      note: variantSetupGaps ? "These catalog masters do not appear in the Products variant grid until at least one variant is created." : "Every active product master has at least one variant.",
+      note: variantSetupGaps ? "Create or edit variants in Products. Product Management only monitors this setup gap." : "Every active product master has at least one variant.",
       status: variantSetupGaps ? "Setup needed" : "Covered",
       statusTone: variantSetupGaps ? "warning" : "success",
       area: "Variants",
       href: "/products",
+      actionLabel: "Open variant setup",
       showIn: ["setup"] as Tab[],
     },
     {
       title: `${Math.max(activeProducts.length - tradeReadyCount, 0)} products are missing full trade attributes`,
-      note: "HS code and packaging fields affect export readiness and quote confidence.",
+      note: "HS code, packaging, origin, and pack fields affect quote confidence. Use Products for edits and Setu Guru live research for HS/HSN review.",
       status: tradeReadyCount === activeProducts.length ? "Complete" : "Incomplete",
       statusTone: tradeReadyCount === activeProducts.length ? "success" : "warning",
       area: "Compliance",
       href: "/products",
+      actionLabel: "Review trade fields",
       showIn: ["setup"] as Tab[],
     },
     {
       title: "Client onboarding import tools are ready",
-      note: "Categories, products, leads, and starting product prices can be imported here or during new client setup.",
+      note: "Use imports for bulk setup. Review high-impact defaults before applying them to the catalog.",
       status: importReady ? "Ready" : "Needs setup",
       statusTone: importReady ? "success" : "warning",
       area: "Imports",
+      actionLabel: "Open imports",
       onClick: () => setTab("imports"),
       showIn: ["setup", "imports"] as Tab[],
     },
     {
       title: "Product calculator is active in product workflows",
-      note: "Use Add Product, Edit Product, and Product Detail for product-specific pricing changes.",
+      note: "Use Products for product-specific pricing. Category and organization defaults belong in Product Management. Quote-only changes stay in Quotes.",
       status: "Promoted",
       statusTone: "success",
       area: "Products",
       href: "/products",
+      actionLabel: "Open Products",
       showIn: ["setup", "pricing"] as Tab[],
     },
     {
       title: "Approval posture is monitored from governed pricing rows",
-      note: `${approvalProtectedCount} active products have governed rows available to quote workflows.`,
+      note: `${approvalProtectedCount} active products have governed rows available to quote workflows. Review exceptions before saving defaults or sharing pricing.` ,
       status: approvalProtectedCount ? "Active" : "Review",
       statusTone: approvalProtectedCount ? "info" : "warning",
       area: "Approvals",
+      actionLabel: "Review posture",
       showIn: ["approvals"] as Tab[],
     },
   ], [activeProducts.length, approvalProtectedCount, importReady, pricingGaps, tradeReadyCount, variantSetupGaps]);
@@ -185,9 +191,31 @@ export function ProductGovernanceWorkbench({
         <div className={metricClass("slate")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Approval posture</p><p className="mt-2 text-2xl font-semibold text-slate-950">{approvalProtectedCount}</p><p className="mt-1 text-xs text-slate-500">governed rows</p></div>
       </section>
 
+      <section className="rounded-[1.5rem] border border-blue-100 bg-blue-50/70 p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">Action map</p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-950">Use the right workspace for the right catalog action</h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Product Management governs readiness and defaults. Products is where teams edit product rows, variants, trade fields, and product-default pricing. Quote-only customer terms stay in Quotes.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/products" className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-blue-900 shadow-sm ring-1 ring-blue-100">Daily product edits</Link>
+            <button type="button" onClick={() => setTab("pricing")} className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-blue-900 shadow-sm ring-1 ring-blue-100">Default rules</button>
+            <button type="button" onClick={() => setTab("imports")} className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-blue-900 shadow-sm ring-1 ring-blue-100">Bulk imports</button>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {[
+            ["Products", "Edit product rows, variants, trade fields, and product-specific pricing snapshots."],
+            ["Product Management", "Review governance, imports, category/organization defaults, readiness gaps, and audit posture."],
+            ["Quotes", "Keep customer-specific discounts, one-off prices, and quote-only commercial terms out of catalog defaults."],
+          ].map(([title, body]) => <div key={title} className="rounded-2xl bg-white p-3 ring-1 ring-blue-100"><p className="font-semibold text-slate-950">{title}</p><p className="mt-1 text-sm leading-5 text-slate-500">{body}</p></div>)}
+        </div>
+      </section>
+
       <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-4 border-b border-slate-200 p-5 lg:flex-row lg:items-center lg:justify-between">
-          <div><h2 className="text-xl font-semibold tracking-tight text-slate-950">Governance workbench</h2><p className="mt-1 text-sm text-slate-500">Only action-focused controls that belong in Admin.</p></div>
+          <div><h2 className="text-xl font-semibold tracking-tight text-slate-950">Governance workbench</h2><p className="mt-1 text-sm text-slate-500">Action-focused controls for readiness, imports, defaults, approvals, and audit review.</p></div>
           <div className="flex flex-wrap gap-2">
             {(["setup", "pricing", "imports", "approvals", "audit"] as Tab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-full px-3 py-2 text-xs font-semibold capitalize ${tab === item ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{item === "setup" ? "Setup gaps" : item === "pricing" ? "Pricing rules" : item}</button>)}
           </div>
@@ -201,7 +229,7 @@ export function ProductGovernanceWorkbench({
               <div><h3 className="font-semibold text-slate-950">{row.title}</h3><p className="mt-1 text-sm text-slate-500">{row.note}</p></div>
               <span className={statusClass(row.statusTone as any)}>{row.status}</span>
               <span className={statusClass("neutral")}>{row.area}</span>
-              {row.href ? <Link href={row.href} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 shadow-sm">Review</Link> : row.onClick ? <button type="button" onClick={row.onClick} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">Review</button> : <span />}
+              {row.href ? <Link href={row.href} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 shadow-sm">{row.actionLabel ?? "Review"}</Link> : row.onClick ? <button type="button" onClick={row.onClick} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">{row.actionLabel ?? "Review"}</button> : <span className="text-sm text-slate-400">{row.actionLabel ?? "Monitor"}</span>}
             </div>
           ))}
         </div>

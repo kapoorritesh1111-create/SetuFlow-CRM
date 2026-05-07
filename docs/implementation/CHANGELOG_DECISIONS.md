@@ -105,22 +105,39 @@ Decision:
 - Products help now documents the product default, category default, organization default, and quote-only boundary.
 - No product pricing save path, quote-specific pricing path, HSN apply API, schema, or product drawer tab behavior was changed.
 
+Build:
+
+- READY
+- Commit: `88ca1f62a18e80e9a90ca6c78ed9fcb9dd69daa5`
+
+---
+
+## 2026-05-07 — Sprint 4 Product Management action-map clarity
+
+Decision:
+
+- Verified `88ca1f62a18e80e9a90ca6c78ed9fcb9dd69daa5` is READY before continuing Sprint 4.
+- Product Management now shows an action map that separates Products, Product Management, and Quotes responsibilities.
+- Governance workbench rows now use clearer action labels for pricing gaps, variant setup, trade fields, imports, product calculator access, and approval posture.
+- Products help records the Product Management action-row policy so Setu Guru can guide users without mixing product defaults and quote-only pricing.
+- No product save handler, pricing save handler, quote-specific pricing path, HSN apply API, database schema, or product drawer tab behavior was changed.
+
 Files:
 
-- `src/lib/setu-guru/help-registry.ts`
+- `src/features/admin/components/product-governance-workbench.tsx`
 - `docs/help/products.md`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Reason:
 
-- Ritesh approved beginning Sprint 4 Product catalog UX cleanup after Sprint 3 closure reached READY.
-- The safest first UX improvement is action clarity before touching the product drawer or pricing logic.
+- Ritesh approved improving Product Management and Products action-row clarity while preserving quote-specific pricing behavior.
+- Product Management action-row clarity was the smallest safe UI improvement before touching the larger Products workspace component.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `27a4d981d037a1d1d0741e5b8d35d3efebdc2f10`
+- Baseline before pass: `88ca1f62a18e80e9a90ca6c78ed9fcb9dd69daa5`
 
 ---
 
