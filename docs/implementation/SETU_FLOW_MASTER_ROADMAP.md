@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `d602a5ae7bffbd991276b211427968f8547d071d`
-- Commit message: `Remove duplicate Products shortcut panel`
+- Latest verified production READY commit before this pass: `9a671811c7b36931a3e8b13da5c21425c21b51c2`
+- Commit message: `Redesign quote PDF price list`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -68,17 +68,18 @@ Protected for future passes:
 ### Sprint 5 — Quote builder and quote PDF maturity
 
 Status: `IN PROGRESS`
-Progress: 52%
+Progress: 57%
 
-Completed in this pass:
+Completed:
 
 - Verified duplicate Products shortcut cleanup commit `d602a5ae7bffbd991276b211427968f8547d071d` is READY before starting Sprint 5.
 - Redesigned quote PDF away from heavy saturated blue blocks into a professional white/slate layout with restrained navy accents.
-- Quote PDF line table now includes SKU, Product, Pack (g), Units/Case, MOQ (cases), Basis, selected-currency Unit price, selected-currency Case price, and selected-currency line total.
-- Line total now calculates as MOQ cases × case price.
-- Case price now derives from quote unit price × units per case.
+- Quote PDF line table now includes SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, selected-currency Unit price, selected-currency Case price, and selected-currency line total.
+- Line total calculates as MOQ cases × case price.
+- Case price derives from quote unit price × units per case.
 - Quote PDF currency labels use the quote builder display currency/currency instead of hardcoded USD columns.
-- Quotes help and tests document the buyer-facing PDF table and selected-currency rule.
+- Production smoke check of `9a671811c7b36931a3e8b13da5c21425c21b51c2` confirmed the PDF styling improved, then found two table-fit issues: MOQ/Basis crowding and clipped Total column.
+- PDF table grid was tightened so all required commercial columns fit inside the page width.
 
 Recommended focus:
 
@@ -117,10 +118,10 @@ Progress: 10%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
-- Current Sprint 5 Quote builder and quote PDF maturity: 52%
+- Current Sprint 5 Quote builder and quote PDF maturity: 57%
 - Setu Guru intelligence readiness: 96%
 - UX cleanup readiness: 62%
-- Quote/compliance maturity: 60%
+- Quote/compliance maturity: 62%
 - Product catalog maturity: 83%
 
 ---
@@ -157,7 +158,7 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is active at 52%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Quote PDF must stay professional, light, selected-currency aware, and include SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Unit price, Case price, and line total. Avoid duplicate work surfaces.
+Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is active at 57%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Quote PDF must stay professional, light, selected-currency aware, and include SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Unit price, Case price, and line total without clipping or crowded columns. Avoid duplicate work surfaces.
 ```
 
 ---
@@ -166,6 +167,6 @@ Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Qu
 
 Continue Sprint 5 Quote builder and quote PDF maturity:
 
-1. Verify this quote PDF redesign deployment is READY.
-2. Smoke-check a generated quote PDF in production for professional color, expected columns, selected currency labels, and line totals.
+1. Verify this quote PDF table-fit deployment is READY.
+2. Re-smoke-check a generated quote PDF in production for visible Total column, separated MOQ/Basis columns, selected currency labels, and line totals.
 3. Tighten quote builder action clarity without adding duplicate quote action surfaces.

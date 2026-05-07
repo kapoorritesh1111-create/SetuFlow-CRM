@@ -132,29 +132,44 @@ Decision:
 
 - Verified `d602a5ae7bffbd991276b211427968f8547d071d` is READY before starting the Sprint 5 PDF pass.
 - Quote PDF now uses a professional white/slate layout with restrained navy accents instead of heavy saturated blue panels.
-- Quote PDF line table now includes SKU, Product, Pack (g), Units/Case, MOQ (cases), Basis, selected-currency Unit price, selected-currency Case price, and selected-currency Line total.
+- Quote PDF line table now includes SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, selected-currency Unit price, selected-currency Case price, and selected-currency Line total.
 - Line total is calculated as MOQ cases × Case price.
 - Case price is calculated as Unit price × Units/Case.
 - Currency labels use `quote.display_currency ?? quote.currency ?? organization.default_currency`, not hardcoded USD columns.
 - Quote help and tests now document the professional PDF table and selected-currency rule.
 - No quote-only pricing write-back, product default write-back, HSN API, schema, or duplicate quote action surface was added.
 
+Build:
+
+- READY
+- Commit: `9a671811c7b36931a3e8b13da5c21425c21b51c2`
+
+---
+
+## 2026-05-07 — Sprint 5 quote PDF table-fit correction
+
+Decision:
+
+- Verified `9a671811c7b36931a3e8b13da5c21425c21b51c2` is READY before applying the table-fit correction.
+- Production smoke check confirmed improved PDF color/professionalism but found the price-list table still had two layout defects: `MOQ (cases)`/`Basis` crowding and clipped `Total` column.
+- Tightened the quote PDF table grid, shortened the MOQ header to `MOQ cases`, widened the printable table area, and adjusted column widths/font sizes so SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, selected-currency Unit price, selected-currency Case price, and Total all fit on page.
+- No quote-only pricing write-back, product default write-back, HSN API, schema, or duplicate quote action surface was added.
+
 Files:
 
 - `src/app/api/quotes/[quoteId]/pdf/route.ts`
-- `docs/help/quotes.md`
 - `tests/quote-pdf-layout.test.mjs`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Reason:
 
-- Ritesh showed the current PDF was visually unprofessional and missing the buyer-facing price list fields expected in quote exports.
+- Ritesh supplied the generated PDF screenshot after the first Sprint 5 PDF pass; it showed a remaining table-fit issue despite improved styling.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `d602a5ae7bffbd991276b211427968f8547d071d`
+- Baseline before pass: `9a671811c7b36931a3e8b13da5c21425c21b51c2`
 
 ---
 

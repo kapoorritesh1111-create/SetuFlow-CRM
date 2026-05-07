@@ -9,7 +9,6 @@ const NAVY = '#0b2e4a';
 const BLUE = '#1d4ed8';
 const LINE = '#cbd5e1';
 const PANEL = '#f8fafc';
-const SOFT = '#eef2f7';
 
 function n(v: unknown, f = 0) { const x = Number(v ?? f); return Number.isFinite(x) ? x : f; }
 function s(v: unknown, f = '-') { const t = String(v ?? '').trim(); return t || f; }
@@ -72,25 +71,25 @@ function buildPdf(data: { quoteNo: string; org: any; buyer: any; market: string;
   box(408, 612, 180, 92, PANEL, LINE); [['Destination', data.destination], ['Market', data.market], ['Basis', `${data.basis} (Incoterms 2020)`], ['Named place', data.place], ['Currency', data.currency], ['Lead time', leadSummary]].forEach(([k, v], i) => { const yy = 688 - i * 12; txt(420, yy, k, 5.3, true, MUTED); txt(578, yy, c(v, 23), 5.7, false, INK, true); });
   box(24, 590, 564, 14, '#eef6ff', '#bfdbfe'); txt(36, 594, 'Taxes, duties and destination charges follow the agreed Incoterm. Unless included, buyer pays import duty, VAT/GST, clearance and destination handling.', 5.45, false, '#1e3a8a');
 
-  const tableX = 24; let y = 558; const rowH = 24;
+  const tableX = 18; const tableW = 576; let y = 558; const rowH = 24;
   const cols = [
-    ['#', 24, 'left'], ['SKU', 70, 'left'], ['Product', 112, 'left'], ['Pack (g)', 48, 'right'], ['Units/Case', 56, 'right'], ['MOQ (cases)', 58, 'right'], ['Basis', 42, 'left'], [`${data.currency}/Unit`, 62, 'right'], [`${data.currency}/Case`, 62, 'right'], [`Total (${data.currency})`, 68, 'right'],
+    ['#', 18, 'left'], ['SKU', 64, 'left'], ['Product', 100, 'left'], ['Pack (g)', 42, 'right'], ['Units/Case', 45, 'right'], ['MOQ cases', 48, 'right'], ['Basis', 32, 'left'], [`${data.currency}/Unit`, 60, 'right'], [`${data.currency}/Case`, 60, 'right'], [`Total (${data.currency})`, 80, 'right'],
   ] as const;
-  box(tableX, y - 17, 564, 20, '#e2e8f0', LINE);
-  let x = tableX + 8;
-  cols.forEach(([h, w, align]) => { txt(align === 'right' ? x + Number(w) - 6 : x, y - 10, h, 5.55, true, NAVY, align === 'right'); x += Number(w); });
+  box(tableX, y - 17, tableW, 20, '#e2e8f0', LINE);
+  let x = tableX + 6;
+  cols.forEach(([h, w, align]) => { txt(align === 'right' ? x + Number(w) - 4 : x, y - 10, h, 4.7, true, NAVY, align === 'right'); x += Number(w); });
   y -= 24;
   data.rows.slice(0, 10).forEach((r, i) => {
-    box(tableX, y - 17, 564, rowH, i % 2 ? '#ffffff' : '#f8fafc', LINE);
-    x = tableX + 8;
+    box(tableX, y - 17, tableW, rowH, i % 2 ? '#ffffff' : '#f8fafc', LINE);
+    x = tableX + 6;
     const cells: Array<[string, number, 'left' | 'right']> = [
-      [String(i + 1), 24, 'left'], [c(r.sku, 15), 70, 'left'], [c(r.product, 22), 112, 'left'], [r.packGrams, 48, 'right'], [String(r.unitsPerCase || '-'), 56, 'right'], [String(r.moqCases || '-'), 58, 'right'], [r.basis, 42, 'left'], [money(r.unitPrice, data.currency), 62, 'right'], [money(r.casePrice, data.currency), 62, 'right'], [money(r.total, data.currency), 68, 'right'],
+      [String(i + 1), 18, 'left'], [c(r.sku, 14), 64, 'left'], [c(r.product, 20), 100, 'left'], [r.packGrams, 42, 'right'], [String(r.unitsPerCase || '-'), 45, 'right'], [String(r.moqCases || '-'), 48, 'right'], [r.basis, 32, 'left'], [money(r.unitPrice, data.currency), 60, 'right'], [money(r.casePrice, data.currency), 60, 'right'], [money(r.total, data.currency), 80, 'right'],
     ];
-    cells.forEach(([value, w, align]) => { txt(align === 'right' ? x + w - 6 : x, y - 7, value, 5.65, i === 0 && (align === 'left' || value.includes(data.currency)), INK, align === 'right'); x += w; });
+    cells.forEach(([value, w, align]) => { txt(align === 'right' ? x + w - 4 : x, y - 7, value, 5.15, i === 0 && (align === 'left' || value.includes(data.currency)), INK, align === 'right'); x += w; });
     y -= rowH;
   });
-  line(tableX, y + 4, tableX + 564, y + 4, NAVY, 1.1);
-  txt(380, y - 8, 'Grand Total', 8.5, true, NAVY); txt(580, y - 8, money(total, data.currency), 9, true, NAVY, true);
+  line(tableX, y + 4, tableX + tableW, y + 4, NAVY, 1.1);
+  txt(392, y - 8, 'Grand Total', 8.5, true, NAVY); txt(590, y - 8, money(total, data.currency), 9, true, NAVY, true);
 
   y -= 32;
   box(24, y - 78, 274, 78, PANEL, LINE); txt(36, y - 14, 'COMMERCIAL & COMPLIANCE', 7, true, NAVY); [`Country of origin: ${originSummary}`, `Shelf life: ${shelfSummary}`, 'Specs, ingredients and nutrition available on request.', 'HS codes are indicative and should be validated for destination market.'].forEach((l, i) => txt(36, y - 29 - i * 11, `- ${c(l, 72)}`, 5.7, false, MUTED));
