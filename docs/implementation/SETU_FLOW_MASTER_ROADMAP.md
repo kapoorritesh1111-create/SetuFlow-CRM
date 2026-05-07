@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `be19063efa8f703c6c1144b36638c2817ecd55ff`
-- Commit message: `Clarify product drawer action guidance`
+- Latest verified production READY commit before this pass: `93891e419853309942c9d9deac627a83f87c54d1`
+- Commit message: `Tighten product table readiness UI`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -51,8 +51,8 @@ Progress: 100%
 
 ### Sprint 4 — Product catalog UX maturity
 
-Status: `IN PROGRESS`
-Progress: 78%
+Status: `CLOSURE CANDIDATE`
+Progress: 92%
 
 Completed:
 
@@ -64,13 +64,20 @@ Completed:
 - Products workspace now shows compact operational shortcuts before the spreadsheet/table so users can jump to catalog gaps, quote-ready products, product setup, or pricing coverage without changing product save behavior.
 - Product detail drawer preserves protected tabs and now uses concise business labels only; explanatory help/policy stays in docs and Setu Guru knowledge.
 - Product table row actions and readiness cues now use clearer operational labels without adding help or development text to product screens.
+- Production commit `93891e419853309942c9d9deac627a83f87c54d1` is READY.
+- Closure-candidate review confirmed product save handlers, drawer tabs, table actions, pricing calculator save behavior, quote-only pricing boundaries, and HSN apply protections remain intact.
+
+Remaining before 100% closure:
+
+- One final production smoke check on Products and Product Management UI after this closure-readiness doc commit reaches READY.
+- Confirm no product-screen help/development text is visible in production.
+- Confirm Product Management and Products shortcuts route to the intended existing views.
 
 Next focus:
 
-- Continue variant/pricing readiness states and product drawer polish.
+- Close Sprint 4 after the smoke check if no defects appear.
 - Preserve the wide, calm product drawer and pricing tab improvements.
 - Keep Setu Guru catalog actions source-backed and approval-safe.
-- Improve product/variant action clarity without rewriting quote-specific pricing.
 - Keep product screens and drawers free of help-style or development-style text.
 
 ### Sprint 5 — Quote builder and quote PDF maturity
@@ -102,15 +109,15 @@ Progress: 10%
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 92%
+- Overall CRM readiness: 93%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
-- Current Sprint 4 Product catalog UX maturity: 78%
+- Current Sprint 4 Product catalog UX maturity: 92%
 - Setu Guru intelligence readiness: 96%
-- UX cleanup readiness: 56%
+- UX cleanup readiness: 58%
 - Quote/compliance maturity: 54%
-- Product catalog maturity: 74%
+- Product catalog maturity: 78%
 
 ---
 
@@ -146,15 +153,15 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, and Sprint 3 are 100%. Sprint 4 Product catalog UX maturity is active at 78%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Keep product screens and drawers free of help-style or development-style text; put policy in docs and Setu Guru knowledge only.
+Current status: Sprint 1, Sprint 2, and Sprint 3 are 100%. Sprint 4 Product catalog UX maturity is a closure candidate at 92%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Keep product screens and drawers free of help-style or development-style text; put policy in docs and Setu Guru knowledge only.
 ```
 
 ---
 
 ## 7. Next recommended pass
 
-Continue Sprint 4 Product catalog UX cleanup:
+Prepare Sprint 4 final closure:
 
-1. Verify this strict product UI polish deployment is READY.
-2. Tighten remaining product blocked states and pricing readiness cues.
-3. Prepare Sprint 4 closure candidate after product save/drawer/table protections are checked.
+1. Verify this Sprint 4 closure-readiness documentation deployment is READY.
+2. Smoke-check Products and Product Management production behavior.
+3. If no defects appear, close Sprint 4 at 100% and move to the next roadmap UX cleanup area.

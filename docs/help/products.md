@@ -73,6 +73,16 @@ Product Management is an admin workbench. Action rows should tell users whether 
 - Import rows should stay inside Product Management.
 - Approval-posture rows should monitor governed rows and avoid automatic write-back.
 
+## Sprint 4 closure candidate rules
+
+Setu Guru should keep Sprint 4 product guidance in chat and docs, not as long text on product screens. For product questions, answer using this order:
+
+1. Identify whether the user is asking about product defaults, governed defaults, quote-only pricing, HSN/live research, or catalog readiness.
+2. Route daily catalog edits to Products.
+3. Route governance/default/import/audit work to Product Management.
+4. Route customer-specific discounts and one-off commercial terms to Quotes.
+5. Require human approval before saved product/category/organization default changes.
+
 ## Product default boundary
 
 - Product-default changes belong in Products only when they should affect future quotes.

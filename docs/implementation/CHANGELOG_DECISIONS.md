@@ -10,11 +10,13 @@ Decision:
 
 - Treat the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 - Sprint 1, Sprint 2, and Sprint 3 are complete at 100% after the Sprint 3 production drawer verification pass.
+- Sprint 4 is a closure candidate after the product save/drawer/table protection review.
 
 Reason:
 
 - Production is advancing through small approved one-commit passes on `main`.
-- Sprint 3 Setu Guru routing/live-context behavior is now deployed and verification found no blocking defects.
+- Sprint 3 Setu Guru routing/live-context behavior is deployed and verified.
+- Sprint 4 product catalog UX work is now ready for final production smoke check before full closure.
 
 ---
 
@@ -96,103 +98,56 @@ Build:
 
 ---
 
-## 2026-05-07 — Sprint 4 catalog action clarity kickoff
+## 2026-05-07 — Sprint 4 product catalog UX sequence
 
 Decision:
 
-- Start Sprint 4 from verified READY production commit `27a4d981d037a1d1d0741e5b8d35d3efebdc2f10`.
-- Setu Guru product guidance now separates daily Products editing, Product Management governance/import/default work, catalog readiness checks, and source-backed live research.
-- Products help now documents the product default, category default, organization default, and quote-only boundary.
-- No product pricing save path, quote-specific pricing path, HSN apply API, schema, or product drawer tab behavior was changed.
+- Sprint 4 started from verified READY production commit `27a4d981d037a1d1d0741e5b8d35d3efebdc2f10`.
+- Product guidance separates Products, Product Management, catalog readiness, and source-backed research.
+- Products help documents product-default, category-default, organization-default, and quote-only boundaries.
+- Product Management gained action-map and clearer governance row CTAs.
+- Products workspace gained compact operational shortcuts.
+- Product detail drawer preserved protected tabs and stayed business-label focused.
+- Product table row actions/readiness cues use compact operational labels.
+- Product screens and drawer must not carry help-style or development-style explanatory text; policy belongs in docs and Setu Guru knowledge.
 
-Build:
+Builds:
 
-- READY
-- Commit: `88ca1f62a18e80e9a90ca6c78ed9fcb9dd69daa5`
+- READY `88ca1f62a18e80e9a90ca6c78ed9fcb9dd69daa5` — Clarify Setu Guru catalog actions
+- READY `d6c2a3e1c12aeebfdf4bd1ab0052d806e7621e45` — Clarify Product Management action rows
+- READY `2811ebb2d76a407beff3ec241ca9777654fd8ba7` — Add Products workspace action map
+- READY `be19063efa8f703c6c1144b36638c2817ecd55ff` — Clarify product drawer action guidance
+- READY `93891e419853309942c9d9deac627a83f87c54d1` — Tighten product table readiness UI
 
 ---
 
-## 2026-05-07 — Sprint 4 Product Management action-map clarity
+## 2026-05-07 — Sprint 4 closure candidate protection review
 
 Decision:
 
-- Verified `88ca1f62a18e80e9a90ca6c78ed9fcb9dd69daa5` is READY before continuing Sprint 4.
-- Product Management now shows an action map that separates Products, Product Management, and Quotes responsibilities.
-- Governance workbench rows now use clearer action labels for pricing gaps, variant setup, trade fields, imports, product calculator access, and approval posture.
-- Products help records the Product Management action-row policy so Setu Guru can guide users without mixing product defaults and quote-only pricing.
-- No product save handler, pricing save handler, quote-specific pricing path, HSN apply API, database schema, or product drawer tab behavior was changed.
-
-Build:
-
-- READY
-- Commit: `d6c2a3e1c12aeebfdf4bd1ab0052d806e7621e45`
-
----
-
-## 2026-05-07 — Sprint 4 Products workspace action map
-
-Decision:
-
-- Verified `d6c2a3e1c12aeebfdf4bd1ab0052d806e7621e45` is READY before continuing Sprint 4.
-- Products workspace now renders an action map before the spreadsheet/table so users can choose catalog gaps, quote-ready products, product setup, or pricing coverage explicitly.
-- The action map routes through existing query filters and does not add product save, pricing save, delete, distribution, or quote-pricing behavior.
-- Products help documents how Setu Guru should explain the Products workspace action map.
-
-Build:
-
-- READY
-- Commit: `2811ebb2d76a407beff3ec241ca9777654fd8ba7`
-
----
-
-## 2026-05-07 — Sprint 4 product detail drawer guidance
-
-Decision:
-
-- Verified `2811ebb2d76a407beff3ec241ca9777654fd8ba7` is READY before continuing Sprint 4.
-- Product detail drawer explains each tab's action purpose and boundary before showing tab content.
-- Pricing tab copy reinforces that saved calculator changes are product defaults future quotes can inherit.
-- Variant tab clarifies SKU/pack/MOQ/quote-ready review versus customer-specific quote pricing.
-- No product save handler, delete handler, pricing calculator save behavior, quote-specific pricing path, HSN apply API, database schema, or drawer tab removal was changed.
-
-Build:
-
-- READY
-- Commit: `be19063efa8f703c6c1144b36638c2817ecd55ff`
-
----
-
-## 2026-05-07 — Sprint 4 strict product UI polish
-
-Decision:
-
-- Verified `be19063efa8f703c6c1144b36638c2817ecd55ff` is READY before continuing Sprint 4.
-- Product screens and drawer should not carry help-style or development-style explanatory text; business UI should stay compact and operational.
-- Products workspace shortcuts now use concise labels instead of explanatory help copy.
-- Product detail drawer guidance card was removed from the screen; Setu Guru/Product help keeps that policy instead.
-- Product table row actions and readiness cues now use clearer operational labels: readiness, action, open pricing/open product, and quick quote.
-- No product save handler, delete handler, pricing calculator save behavior, quote-specific pricing path, HSN apply API, database schema, or drawer tab removal was changed.
+- Verified `93891e419853309942c9d9deac627a83f87c54d1` is READY before preparing the closure candidate.
+- Reviewed product drawer, product table, and pricing calculator code paths for protected behavior.
+- Product drawer still uses the existing `updateProductDetail` and `deleteProduct` paths and preserves Overview, Pricing, Variants, Trade, and History tabs.
+- Product table row actions remain inline product-default price edits, drawer routing, and quick quote links; no new save/delete/distribution paths were introduced.
+- Product pricing calculator still saves product-default snapshots through `savePricingCalculatorSnapshot`; quote-only pricing remains in Quotes.
+- No product UI behavior was changed in this closure-readiness pass.
 
 Files:
 
-- `src/features/products/components/products-workspace-action-map.tsx`
-- `src/features/products/components/products-table.tsx`
-- `src/features/products/components/product-detail-drawer.tsx`
-- `src/features/products/lib/products-gap-utils.ts`
-- `docs/help/products.md`
-- `tests/product-detail-drawer-guidance.test.mjs`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
+- `docs/implementation/SPRINT_4_COMPLETION_READINESS.md`
+- `docs/help/products.md`
 
 Reason:
 
-- Ritesh approved tightening product table row actions, empty/blocked states, and variant/pricing readiness cues with the explicit instruction that product screens and drawer should not gain help or development text.
-- The safest implementation keeps UI copy operational and moves explanatory policy into docs and Setu Guru knowledge.
+- Ritesh approved preparing Sprint 4 closure candidate after verifying product save/drawer/table protections.
+- This pass documents readiness only and keeps product screens unchanged.
 
 Build:
 
-- BUILDING / pending after this pass
-- Baseline before pass: `be19063efa8f703c6c1144b36638c2817ecd55ff`
+- BUILDING / pending after this documentation pass
+- Baseline before pass: `93891e419853309942c9d9deac627a83f87c54d1`
 
 ---
 
