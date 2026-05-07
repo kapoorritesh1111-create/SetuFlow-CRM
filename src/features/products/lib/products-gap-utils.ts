@@ -15,8 +15,8 @@ export function getProductGapState(row: ProductsSpreadsheetRow): ProductGapState
 
 export function getProductGapLabel(state: ProductGapState) {
   switch (state) {
-    case 'complete': return 'Complete';
-    case 'pricing_gap': return 'Pricing gap';
+    case 'complete': return 'Ready';
+    case 'pricing_gap': return 'Price gap';
     case 'bulk_gap': return 'Bulk gap';
     case 'inactive': return 'Inactive';
     default: return 'Review';
@@ -25,7 +25,7 @@ export function getProductGapLabel(state: ProductGapState) {
 
 export function getProductGapActionLabel(row: ProductsSpreadsheetRow) {
   const gap = getProductGapState(row);
-  if (gap === 'pricing_gap' || gap === 'bulk_gap') return 'Fix pricing';
-  if (gap === 'inactive') return 'Review row';
-  return 'Edit product';
+  if (gap === 'pricing_gap' || gap === 'bulk_gap') return 'Open pricing';
+  if (gap === 'inactive') return 'Review product';
+  return 'Open product';
 }

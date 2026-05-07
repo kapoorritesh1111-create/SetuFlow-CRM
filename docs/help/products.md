@@ -42,20 +42,22 @@ Setu Guru should make the Products area feel action-led, not generic. Use these 
 
 ## Products workspace action map
 
-The Products workspace should show action-led choices before the large table so users know which action row to use:
+The Products workspace should show compact operational shortcuts only:
 
-- **Fix catalog gaps** opens the gap view for missing HSN, pack, MOQ, origin, shelf life, lead time, category, and product-pricing assumptions.
-- **Review quote-ready products** opens the quote-ready view for active products that can support sales and quoting.
-- **Edit product defaults** opens product setup, variants, trade details, and product-specific pricing snapshots.
-- **Work pricing coverage** opens the pricing view with gap filtering. This is not the same as a quote-only discount or customer-specific price.
+- **Catalog gaps** opens the gap view for missing product readiness and pricing assumptions.
+- **Quote-ready** opens the quote-ready view for active products that can support sales and quoting.
+- **Product setup** opens product setup, variants, trade details, and product-specific pricing snapshots.
+- **Pricing coverage** opens the pricing view with gap filtering.
+
+Do not add help-style or development-style explanations on the product screen. Keep explanatory policy here in docs and in Setu Guru responses.
 
 ## Product drawer guidance
 
-The product detail drawer must remain wide, calm, and tab-led. Setu Guru should describe each tab with a simple action boundary:
+The product detail drawer must remain wide, calm, and tab-led. Product screens should show concise business UI only. Setu Guru can explain each tab boundary in chat, but the drawer should not display long help text.
 
-- **Overview** changes product identity, brand, description, status, and master data confidence. It does not change quote-only discounts.
-- **Pricing** changes product-default assumptions and saved calculator snapshots for future quotes. Quote-only overrides stay in Quotes.
-- **Variants** reviews SKU, pack, MOQ, and quote-ready status. Variant readiness is not the same as customer-specific pricing.
+- **Overview** changes product identity, brand, description, status, and master data confidence.
+- **Pricing** changes product-default assumptions and saved calculator snapshots for future quotes.
+- **Variants** reviews SKU, pack, MOQ, and quote-ready status.
 - **Trade** routes downstream to quick quote, leads, pipeline, or quotes only when product readiness supports the handoff.
 - **History** reviews saved catalog posture and does not perform write-back actions.
 

@@ -150,14 +150,35 @@ Build:
 Decision:
 
 - Verified `2811ebb2d76a407beff3ec241ca9777654fd8ba7` is READY before continuing Sprint 4.
-- Product detail drawer now explains each tab's action purpose and boundary before showing tab content.
-- Pricing tab copy now reinforces that saved calculator changes are product defaults future quotes can inherit.
-- Variant tab now clarifies SKU/pack/MOQ/quote-ready review versus customer-specific quote pricing.
+- Product detail drawer explains each tab's action purpose and boundary before showing tab content.
+- Pricing tab copy reinforces that saved calculator changes are product defaults future quotes can inherit.
+- Variant tab clarifies SKU/pack/MOQ/quote-ready review versus customer-specific quote pricing.
+- No product save handler, delete handler, pricing calculator save behavior, quote-specific pricing path, HSN apply API, database schema, or drawer tab removal was changed.
+
+Build:
+
+- READY
+- Commit: `be19063efa8f703c6c1144b36638c2817ecd55ff`
+
+---
+
+## 2026-05-07 — Sprint 4 strict product UI polish
+
+Decision:
+
+- Verified `be19063efa8f703c6c1144b36638c2817ecd55ff` is READY before continuing Sprint 4.
+- Product screens and drawer should not carry help-style or development-style explanatory text; business UI should stay compact and operational.
+- Products workspace shortcuts now use concise labels instead of explanatory help copy.
+- Product detail drawer guidance card was removed from the screen; Setu Guru/Product help keeps that policy instead.
+- Product table row actions and readiness cues now use clearer operational labels: readiness, action, open pricing/open product, and quick quote.
 - No product save handler, delete handler, pricing calculator save behavior, quote-specific pricing path, HSN apply API, database schema, or drawer tab removal was changed.
 
 Files:
 
+- `src/features/products/components/products-workspace-action-map.tsx`
+- `src/features/products/components/products-table.tsx`
 - `src/features/products/components/product-detail-drawer.tsx`
+- `src/features/products/lib/products-gap-utils.ts`
 - `docs/help/products.md`
 - `tests/product-detail-drawer-guidance.test.mjs`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
@@ -165,13 +186,13 @@ Files:
 
 Reason:
 
-- Ritesh approved drawer-level product/variant guidance while protecting save handlers and quote-specific pricing behavior.
-- The safest implementation is copy/guidance and tests around existing tabs and boundaries, not changing write paths.
+- Ritesh approved tightening product table row actions, empty/blocked states, and variant/pricing readiness cues with the explicit instruction that product screens and drawer should not gain help or development text.
+- The safest implementation keeps UI copy operational and moves explanatory policy into docs and Setu Guru knowledge.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `2811ebb2d76a407beff3ec241ca9777654fd8ba7`
+- Baseline before pass: `be19063efa8f703c6c1144b36638c2817ecd55ff`
 
 ---
 
