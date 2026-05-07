@@ -20,6 +20,7 @@ export const SETU_GURU_RESPONSE_POLICY = {
   useLiveResearchFor: [
     'HSN',
     'HS code',
+    'HSN code',
     'tariff',
     'duty',
     'customs',
@@ -29,6 +30,8 @@ export const SETU_GURU_RESPONSE_POLICY = {
   ],
   humanApprovalRequiredFor: [
     'approve',
+    'apply',
+    'update catalog',
     'waive',
     'write back',
     'send',
@@ -46,7 +49,32 @@ export const SETU_GURU_RESPONSE_POLICY = {
 } as const;
 
 const COMPLIANCE_WORDS = ['compliance', 'blocker', 'document', 'evidence', 'certificate', 'coa', 'packing list', 'dispatch', 'ignore', 'waive', 'fix this', 'fix compliance', 'required document'];
-const ORG_SEARCH_PHRASES = ['how many product', 'how many buyer', 'how many supplier', 'how many lead', 'in my catalog', 'find buyer', 'find supplier', 'find lead', 'find product', 'search buyer', 'search supplier', 'missing hsn', 'missing hs code', 'filter', 'listed products', 'category'];
+const ORG_SEARCH_PHRASES = [
+  'how many product',
+  'how many buyer',
+  'how many supplier',
+  'how many lead',
+  'in my catalog',
+  'find buyer',
+  'find supplier',
+  'find lead',
+  'find product',
+  'search buyer',
+  'search supplier',
+  'missing hsn',
+  'missing hs code',
+  'what is hsn',
+  'what is hs code',
+  'hsn code for',
+  'hs code for',
+  'tariff for',
+  'duty for',
+  'document requirements for',
+  'margin benchmark for',
+  'filter',
+  'listed products',
+  'category',
+];
 const PRICING_DEFAULT_PHRASES = ['pricing calculator', 'calculator default', 'price calculator', 'default margin', 'default markup', 'distributor margin', 'retail margin'];
 
 function includesAny(value: string, phrases: readonly string[]) {
@@ -58,20 +86,20 @@ export function isSetuGuruComplianceQuestion(question: string) {
   return includesAny(question, COMPLIANCE_WORDS);
 }
 
-export function isSetuGuruOrgSearchQuestion(question: string) {
-  return isSetuGuruComplianceQuestion(question) || includesAny(question, ORG_SEARCH_PHRASES);
-}
-
-export function isSetuGuruPricingDefaultQuestion(question: string) {
-  return includesAny(question, PRICING_DEFAULT_PHRASES);
-}
-
 export function shouldUseLiveOrganizationData(question: string) {
   return includesAny(question, SETU_GURU_RESPONSE_POLICY.useLiveOrgDataFor);
 }
 
 export function shouldUseLiveResearch(question: string) {
   return includesAny(question, SETU_GURU_RESPONSE_POLICY.useLiveResearchFor);
+}
+
+export function isSetuGuruOrgSearchQuestion(question: string) {
+  return isSetuGuruComplianceQuestion(question) || includesAny(question, ORG_SEARCH_PHRASES) || shouldUseLiveResearch(question);
+}
+
+export function isSetuGuruPricingDefaultQuestion(question: string) {
+  return includesAny(question, PRICING_DEFAULT_PHRASES);
 }
 
 export function requiresHumanApproval(question: string) {

@@ -20,6 +20,15 @@ export type SetuGuruResearchEntityContext = {
   source?: 'active_product' | 'active_lead' | 'active_quote' | 'visible_page' | 'fallback';
 };
 
+export type SetuGuruHsnCatalogReview = {
+  productName: string;
+  currentHsn: string;
+  suggestedHsn: string;
+  suggestedBasis: string;
+  matchesCatalog: boolean;
+  needsApproval: boolean;
+};
+
 export type SetuGuruResearchContext = {
   product: string;
   country: string;
@@ -35,6 +44,7 @@ export type SetuGuruLiveResearchInput = {
   pageText?: string;
   mode: SetuGuruLiveResearchMode;
   entityContext?: SetuGuruResearchEntityContext | null;
+  hsnCatalogReview?: SetuGuruHsnCatalogReview | null;
 };
 
 const RESEARCH_SOURCES: Record<SetuGuruLiveResearchMode, ResearchSourceSeed[]> = {
@@ -147,7 +157,7 @@ function getResearchSubject(context: SetuGuruResearchContext, question: string) 
 
 function getResearchSteps(mode: SetuGuruLiveResearchMode) {
   if (mode === 'hsn_enrichment') {
-    return ['Confirm product composition, use case, form, packaging, and destination country.', 'Compare candidate HS chapters/headings against official notes before choosing a code.', 'Treat the suggested code as draft until a human reviews the official source and product facts.'];
+    return ['Confirm product composition, use case, form, packaging, and destination country.', 'Compare candidate HS chapters/headings against official notes before choosing a code.', 'Check the live catalog HSN before asking for approval to update product defaults.'];
   }
   if (mode === 'document_requirements') {
     return ['Confirm product, destination country, buyer/supplier role, and workflow stage: quote, order, or dispatch.', 'Separate mandatory quote-send blockers from order/dispatch and advisory documents.', 'Treat source-backed requirements as draft until a human reviews and updates organization policy.'];
@@ -159,6 +169,14 @@ function hydrateSources(mode: SetuGuruLiveResearchMode): SetuGuruResearchSource[
   return RESEARCH_SOURCES[mode].map((source, index) => ({ ...source, id: `S${index + 1}`, citation: `[S${index + 1}]` }));
 }
 
+function catalogReviewParagraph(review: SetuGuruHsnCatalogReview | null | undefined) {
+  if (!review) return null;
+  const current = review.currentHsn || 'not assigned';
+  const status = review.matchesCatalog ? `Catalog check: ${review.productName} already has HSN ${current}, which matches the draft candidate.` : `Catalog check: ${review.productName} currently has HSN ${current}. Draft candidate is ${review.suggestedHsn}.`;
+  const approval = review.needsApproval ? `Human approval required: should I apply ${review.suggestedHsn} to ${review.productName} in the catalog?` : 'No catalog update is needed unless you want to override it after review.';
+  return `Draft HSN candidate: ${review.suggestedHsn}. Basis: ${review.suggestedBasis}. ${status} ${approval}`;
+}
+
 export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInput) {
   const mode = input.mode;
   const label = MODE_LABELS[mode];
@@ -167,14 +185,16 @@ export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInpu
   const sources = hydrateSources(mode);
   const steps = getResearchSteps(mode);
   const sourceSummary = sources.map((source) => `${source.citation} ${source.title}`).join('; ');
+  const hsnReview = mode === 'hsn_enrichment' ? catalogReviewParagraph(input.hsnCatalogReview) : null;
   const answer = [
     `I prepared a source-backed draft research brief for ${label}.`,
     `Detected context: Product: ${context.product}. Country/market: ${context.country}. Role/stage: ${context.role}. Active source: ${context.entityLabel} (${context.source}). Route: ${context.route}.`,
     `Research scope: ${subject}.`,
+    hsnReview,
     `Reviewable sources: ${sourceSummary}.`,
     `Recommended review path: ${steps.map((step, index) => `${index + 1}. ${step}`).join(' ')}`,
     'No CRM values were saved. Human approval is required before saving HS/HSN codes, document rules, duties/tariffs, margin defaults, compliance policies, quote sends, waivers, or write-backs.',
-  ].join('\n\n');
+  ].filter(Boolean).join('\n\n');
 
   return {
     answer,
@@ -184,8 +204,9 @@ export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInpu
     requiresHumanApproval: true,
     subject,
     context,
+    hsnCatalogReview: input.hsnCatalogReview ?? null,
     citations: sources,
     rows: sources.map((source) => ({ id: source.id, name: source.title, type: source.sourceType, url: source.url, citation: source.citation, next: source.why })),
-    actions: ['Review sources', 'Ask live research follow-up', mode === 'margin_benchmark' ? 'Review pricing defaults' : 'Open compliance'],
+    actions: input.hsnCatalogReview?.needsApproval ? ['Review sources', 'Approve catalog HSN update', 'Open Product Management'] : ['Review sources', 'Ask live research follow-up', mode === 'margin_benchmark' ? 'Review pricing defaults' : 'Open compliance'],
   };
 }

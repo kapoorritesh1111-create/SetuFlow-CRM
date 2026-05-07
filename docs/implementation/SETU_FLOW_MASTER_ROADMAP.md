@@ -13,353 +13,106 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `4c52b51c7b97e3c9192ba87a2ac124bf62a5dec6`
-- Commit message: `Close completed Sprint 1 and Sprint 2`
-- Previous product-stability baseline: `770244eba3a973aab7b27290e05de7f0779dc245`
+- Latest verified production READY commit before this pass: `324491837b1000349ecba6cc0ac83a19418cb3a9`
+- Commit message: `Ground Setu Guru research in active records`
 - Vercel status before this update: `READY`
-- Included recent improvements:
-  - Sprint 1 implementation controls closed at 100%
-  - Sprint 2 Setu Guru knowledge foundation closed at 100%
-  - Setu Guru modern drawer redesign
-  - Setu Guru live organization search foundations
-  - Setu Guru route help docs and help registry foundation
-  - Setu Guru widget wired to route help registry and page context collector
-  - `/api/setu-guru/org-search` supports `page_help` before live database lookup
-  - `/api/setu-guru/org-search` normalizes roadmap mode aliases for catalog, buyer, supplier, lead, quote compliance, HSN, document requirements, margins, and page help
-  - Source-backed live research draft execution for HS/HSN, document requirements, duties/tariffs, and margin benchmarks
-  - Quote PDF improvements for pack, MOQ, origin, shelf life, lead time, and tax wording
-  - AUD quote save compatibility
-  - Advisory compliance documents no longer blocking quote send
-  - Compliance Assist page and quote-prep CTA
-  - Product edit drawer widened and pricing calculator made lighter
-  - One-final-commit implementation rule to reduce Vercel deployment noise
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
 ---
 
-## 2. Product direction
+## 2. Operating principles
 
-SETU Flow CRM is a trade-focused CRM for importers, exporters, distributors, and sales/operations teams. The app should feel like a premium SaaS workspace that helps the user answer:
-
-1. What should I do next?
-2. What is blocking this workflow?
-3. What data is missing?
-4. What can Setu Guru help with?
-5. What requires human approval before the system writes or sends anything?
-
-Setu Guru must become smarter on every pass. Every UX change must include matching bot knowledge, help docs, route context, or answer policy updates.
+- Ask Ritesh for approval before GitHub writes.
+- After approval, prepare the full pass and make one final commit to GitHub `main` unless Ritesh asks for a branch or PR.
+- Do not run `npm ci` in the sandbox.
+- Do not put dev/debug notes on user-facing screens.
+- Every pass must improve Setu Guru through help docs, route context, response policy, API behavior, or bot UI.
+- Before moving to a next roadmap pass, ensure earlier sprints are 100% complete or explicitly active with a reason.
 
 ---
 
-## 3. Operating principles
-
-### Approval and direct-main principle
-
-- Before every implementation pass, ask Ritesh for explicit approval before changing GitHub.
-- After approval, make the approved change directly to GitHub `main` unless Ritesh explicitly requests a branch or pull request.
-- Prepare the full approved pass before committing.
-- Make one final commit per normal implementation pass so Vercel receives one deployment trigger.
-- Keep the approved scope tight. Do not drift into unrelated features.
-- Record approval/process decisions in `docs/implementation/CHANGELOG_DECISIONS.md`.
-- See `docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md`.
-
-### UX principles
-
-- Keep daily work clean and action-led.
-- Keep setup/governance separate from daily work.
-- Replace long forms with snapshot + essentials + advanced collapsible sections.
-- Use sticky save/action bars in drawers and multi-step workspaces.
-- Show status pills and health summaries before forms.
-- Make blockers actionable exactly where the user sees them.
-- Avoid dev/debug language on the screen; store technical guidance in help docs and Setu Guru knowledge.
-
-### Setu Guru principles
-
-- Never answer generic workflow guidance when live page context is available.
-- Route page-specific questions through page context first.
-- Use live organization data for catalog, leads, buyers, suppliers, quotes, compliance, and documents.
-- Use source-backed live research for HSN/HS codes, margins, duties, tariffs, country rules, and compliance/document requirements.
-- Human approval is required for write-back, send, waive, approve, delete, saved HSN/HS codes, tariff assumptions, margin defaults, pricing changes, and compliance decisions.
-- Every implementation pass must update Setu Guru knowledge or page context.
-
----
-
-## 4. Sprint roadmap
+## 3. Sprint roadmap
 
 ### Sprint 1 — Implementation control and anti-drift system
 
 Status: `DONE`
-Target completion: completed before further roadmap expansion.
-
-Deliverables:
-
-- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
-- `docs/implementation/PASS_CHECKLIST.md`
-- `docs/implementation/DO_NOT_REGRESS.md`
-- `docs/implementation/CHANGELOG_DECISIONS.md`
-- `docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md`
-- New-chat continuation prompt stored in the roadmap and summarized to the user.
-- One-final-commit workflow documented in implementation controls.
-
-Definition of done:
-
-- Every future pass can start from these files.
-- Every future pass reports readiness %, sprint %, build status, and next pass.
-- A new ChatGPT session can resume work from these docs.
-- Future passes require Ritesh approval before GitHub writes.
-- Future normal passes commit once to `main` and trigger one Vercel deployment.
-
-Completion audit:
-
-- Required control docs exist and are current.
-- Approval-before-GitHub-write rule is documented.
-- Direct-main and one-final-commit expectations are documented.
-- New-chat continuation prompt is embedded below.
-- Latest production deployment is READY.
-
 Progress: 100%
-
----
 
 ### Sprint 2 — Setu Guru knowledge base foundation
 
 Status: `DONE`
-
-Deliverables:
-
-- `docs/help/dashboard.md`
-- `docs/help/leads.md`
-- `docs/help/products.md`
-- `docs/help/quotes.md`
-- `docs/help/orders.md`
-- `docs/help/compliance.md`
-- `docs/help/trade-events.md`
-- `docs/help/admin-organization.md`
-- `docs/help/pricing-calculator.md`
-- `docs/help/setu-guru.md`
-- `src/lib/setu-guru/page-context.ts`
-- `src/lib/setu-guru/help-registry.ts`
-- `src/lib/setu-guru/guru-response-policy.ts`
-
-Completed:
-
-- Added route help docs for Dashboard, Follow-up, Products, Quotes, Orders, Compliance, Trade events, Admin / Organization, Pricing calculator, and Setu Guru.
-- Added typed Setu Guru page context, help registry, and response policy modules.
-- Added tests that protect the new route help files and Setu Guru runtime registry files.
-- Wired the Setu Guru widget to the registry and page context collector.
-- Added `/api/setu-guru/org-search` `page_help` support before live database lookup.
-- Added tests that protect registry wiring and page-help API behavior.
-
-Definition of done:
-
-- Every main route has a help topic, common blockers, data sources, allowed actions, and approval rules.
-- Setu Guru can answer from route-specific help before falling back to generic topics.
-- Widget fallback and page-help API path are covered by tests.
-
-Completion audit:
-
-- All required `docs/help/*` files exist.
-- All required `src/lib/setu-guru/*` registry/context/policy files exist.
-- Setu Guru widget uses the registry and page context collector.
-- `/api/setu-guru/org-search` can answer `page_help` before Supabase lookup.
-- Tests protect the docs, registry, widget wiring, and page-help behavior.
-- Latest production deployment is READY.
-
 Progress: 100%
-
----
 
 ### Sprint 3 — Smarter Setu Guru routing and live context
 
 Status: `IN PROGRESS`
 
-Deliverables:
-
-- Upgrade Setu Guru request payload to include route, visible page text, organization, role, active entity, visible record, and flags.
-- Upgrade `/api/setu-guru/org-search` modes:
-  - `catalog_search`
-  - `buyer_search`
-  - `supplier_search`
-  - `lead_search`
-  - `quote_compliance`
-  - `pricing_defaults`
-  - `hsn_enrichment`
-  - `document_requirements`
-  - `margin_benchmark`
-  - `page_help`
-- Add a safe live-research mode with source-backed answers.
-
 Completed:
 
-- Page context collector is now sent from the widget.
-- `page_help` is supported by `/api/setu-guru/org-search` without requiring Supabase access.
-- `/api/setu-guru/org-search` now normalizes old aliases (`catalog`, `buyers`, `suppliers`, `leads`, `hsn`) into roadmap mode names.
-- Research-intent routing now gives safe source-backed guidance boundaries for HS/HSN, document requirements, duties/tariffs, and margin benchmarks before any write-back.
-- Added `src/lib/setu-guru/live-research.ts` to return source-backed draft research briefs with source rows/citation markers.
-- Wired source-backed research execution into `/api/setu-guru/org-search` for HS/HSN, document requirements, duties/tariffs, and margin benchmark modes.
-- Updated Setu Guru help to document source-backed live research and approval boundaries.
-- Tests protect mode aliases, research execution, source rows, and no-write-back approval language.
+- Page context collector is sent from the widget.
+- `page_help` is supported before Supabase lookup.
+- `/api/setu-guru/org-search` normalizes roadmap mode aliases.
+- Source-backed draft research execution exists for HS/HSN, document requirements, duties/tariffs, and margin benchmarks.
+- Research source rows render in the Setu Guru drawer.
+- Research can use active product, lead, and quote records before visible text fallback.
+- HSN code questions now route to live research instead of generic Products help.
+- HSN research checks the matching catalog product, returns a draft candidate, compares current catalog HSN, and asks for approval before any update.
 
 Definition of done:
 
 - Bot answers are contextual on Products, Leads, Quotes, Compliance, Admin, and Orders.
-- Bot stops giving generic answers for active blockers.
+- Bot stops giving generic answers for active blockers and HSN/live research questions.
 - Source-backed research answers return reviewable sources and human approval boundaries before write-back.
 
-Progress: 55%
-
----
+Progress: 78%
 
 ### Sprint 4 — Product catalog UX maturity
 
 Status: `IN PROGRESS`
-
-Completed:
-
-- Product edit drawer widened and cleaned.
-- Pricing calculator reduced density.
-- Saved pricing snapshot added.
-- Essential inputs and advanced collapsible pricing sections added.
-- Product help topic added to Setu Guru knowledge.
-
-Next:
-
-- Clean variants tab.
-- Clean trade tab.
-- Add quote-ready checklist.
-- Add HSN/compliance readiness indicator.
-
-Progress: 48%
-
----
+Progress: 50%
 
 ### Sprint 5 — Quote builder and quote PDF maturity
 
 Status: `IN PROGRESS`
-
-Completed:
-
-- Quote PDF improved with product data, pack, MOQ, origin, shelf life, lead time, and better tax wording.
-- AUD save issue fixed.
-- Advisory compliance documents moved away from quote-send blockers.
-- Quote help topic added to Setu Guru knowledge.
-
-Next:
-
-- Clean quote builder layout.
-- Add quote health bar.
-- Separate quote currency from catalog/reference currency.
-- Add Compliance Assist and approval explanation inline.
-- Improve quote PDF alignment further.
-
 Progress: 40%
-
----
 
 ### Sprint 6 — Compliance Assist maturity
 
 Status: `IN PROGRESS`
-
-Completed:
-
-- Compliance Assist page created.
-- Evidence/waiver actions created.
-- Quote prep checklist now links to Compliance Assist.
-- Compliance help topic added to Setu Guru knowledge.
-- Safe research-routing boundaries added for document requirements, duties, and tariffs.
-- Source-backed draft research execution added for document requirements and duties/tariffs.
-
-Next:
-
-- Improve evidence upload UI.
-- Add evidence timeline.
-- Add AI-suggested evidence checklist by product and country.
-- Separate quote-send, order, dispatch, and advisory requirements clearly.
-- Add true external retrieval/citation verification when a browsing-capable backend is available.
-
 Progress: 50%
-
----
 
 ### Sprint 7 — Lead command center cleanup
 
 Status: `PLANNED`
-
-Goals:
-
-- Make the lead workspace answer:
-  - What should I do next?
-  - Can I quote now?
-  - What is blocking this lead?
-  - What is missing before order/dispatch?
-- Clean lead quick edit drawer.
-- Improve quote prep queue and right rail.
-- Add route-specific Setu Guru help.
-
 Progress: 15%
-
----
 
 ### Sprint 8 — Orders and execution readiness
 
 Status: `PLANNED`
-
-Goals:
-
-- Order status and execution readiness.
-- Payment/commercial lock.
-- Dispatch documents.
-- Shipment notes.
-- Buyer/supplier handoff.
-- Setu Guru order help and dispatch blockers.
-
 Progress: 0%
-
----
 
 ### Sprint 9 — Admin and organization setup cleanup
 
 Status: `PLANNED`
-
-Goals:
-
-- Guided organization setup checklist:
-  - Company profile
-  - Address and default country
-  - Default currency
-  - Markets and countries
-  - Default ports
-  - Pricing defaults
-  - Quote/order terms
-  - Compliance rules
-  - Users and roles
-- Setu Guru admin setup guidance.
-
 Progress: 10%
 
 ---
 
-## 5. Readiness tracking
+## 4. Readiness tracking
 
-Current readiness snapshot:
-
-- Overall CRM readiness: 83%
+- Overall CRM readiness: 86%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
-- Current Sprint 3 Setu Guru routing completion: 55%
-- Setu Guru intelligence readiness: 70%
-- UX cleanup readiness: 44%
-- Quote/compliance maturity: 48%
-- Product catalog maturity: 56%
-
-Update these numbers after every implementation pass.
+- Current Sprint 3 Setu Guru routing completion: 78%
+- Setu Guru intelligence readiness: 82%
+- UX cleanup readiness: 45%
+- Quote/compliance maturity: 49%
+- Product catalog maturity: 58%
 
 ---
 
-## 6. Required summary format after every pass
-
-Every implementation pass must end with:
+## 5. Required summary format after every pass
 
 ```text
 Build status: READY / BUILDING / ERROR
@@ -376,45 +129,28 @@ Next pass:
 
 ---
 
-## 7. New chat continuation prompt
-
-Paste this into a new ChatGPT chat to continue safely:
+## 6. New chat continuation prompt
 
 ```text
 We are continuing SETU Flow CRM development. Use GitHub repo `kapoorritesh1111-create/SetuFlow-CRM`, Vercel project `setu-flow-crm`, Supabase project `sjzfzloggabsmcuxktnl`, production domain `https://www.setuflowcrm.com/`.
 
-Before making any changes, read these roadmap files from the repo:
+Before making changes, read:
 - docs/implementation/SETU_FLOW_MASTER_ROADMAP.md
 - docs/implementation/PASS_CHECKLIST.md
 - docs/implementation/DO_NOT_REGRESS.md
 - docs/implementation/CHANGELOG_DECISIONS.md
 - docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md
 
-Rules:
-1. Do not drift from the roadmap.
-2. Check latest Vercel build status first.
-3. Treat latest READY production commit as baseline unless roadmap says otherwise.
-4. Every UX/code pass must also make Setu Guru smarter by updating docs/help, docs/setu-guru, page context, or bot response policy.
-5. Do not run npm ci in the sandbox.
-6. Use Supabase and Vercel tools to verify schema/build when needed.
-7. Never put dev/debug notes on user-facing screens; put them in docs and Setu Guru knowledge.
-8. Protect previous fixes listed in DO_NOT_REGRESS.md.
-9. Ask Ritesh for explicit approval before making GitHub repo changes.
-10. After approval, prepare the full approved pass and make one final commit directly to GitHub main unless Ritesh asks for a branch or PR.
-11. Before moving to the next roadmap pass, ensure all earlier sprints are either 100% complete or explicitly marked as still active with a reason.
-12. At the end, report build status, files changed, readiness %, sprint %, and the next pass.
+Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current direction: Sprint 1 and Sprint 2 are complete at 100%. Continue Sprint 3 live route context and source-backed research execution next.
+Current direction: Sprint 1 and Sprint 2 are 100%. Continue Sprint 3 Setu Guru live context. HSN code questions should use live research, check catalog HSN, and ask for approval before any catalog update.
 ```
 
 ---
 
-## 8. Next recommended pass
+## 7. Next recommended pass
 
-Continue Sprint 3:
-
-1. Add UI rendering support for research source rows/citation markers in Setu Guru answers if the current drawer needs a richer display.
-2. Add backend retrieval/citation verification when a browsing-capable or research API backend is available.
-3. Add tighter context extraction for product, destination country, and buyer/supplier role from visible page context.
-4. Check Vercel build after the final commit.
-5. Update this roadmap and changelog.
+1. Verify the HSN live-research/catalog-check deployment is READY.
+2. Add an approval-safe API/action path for applying a reviewed HSN to a catalog product.
+3. Add UI affordance in Setu Guru for “approve catalog HSN update” that cannot write without owner approval.
+4. Continue tightening live context for quote/order/compliance routes.

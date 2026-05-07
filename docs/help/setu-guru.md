@@ -9,30 +9,6 @@ Purpose: Setu Guru is the embedded CRM assistant. It should be contextual, safe,
 - Searching live organization data for products, leads, buyers, suppliers, quotes, compliance, and documents.
 - Researching HS/HSN codes, tariffs, duties, margins, and country compliance rules with reviewable sources.
 
-## Common questions Setu Guru should answer
-
-- What can you help me with on this page?
-- What is blocking this record?
-- What data is missing?
-- Which action needs human approval?
-- What should I research before changing product, pricing, or compliance setup?
-
-## Common blockers
-
-- Page context is available but the answer is generic.
-- User asks Setu Guru to approve, waive, send, delete, write back, or clear compliance.
-- Live organization data is needed but not searched.
-- Live research is needed but no sources are used.
-- Advisory guidance is mixed up with mandatory blockers.
-
-## Data sources
-
-- Current route, visible page text, organization, role, active entity, visible record, and flags.
-- Help registry and route help topics.
-- Live organization search APIs.
-- Active product, lead, and quote records for research context when the route includes an entity ID.
-- Live research sources for customs, tariffs, HS/HSN, compliance, margins, and market context.
-
 ## Source-backed live research behavior
 
 When a user asks about HS/HSN, document requirements, duties/tariffs, or margin benchmarks, Setu Guru should return a draft research brief that includes:
@@ -47,6 +23,19 @@ When a user asks about HS/HSN, document requirements, duties/tariffs, or margin 
 
 Research answers are not write-backs. They are decision support for review.
 
+## HSN catalog review behavior
+
+For questions like “what is HSN code for vacuum cooked banana chips,” Setu Guru must not fall back to generic Products help. It should:
+
+1. route the question to live organization search and source-backed research,
+2. provide a draft HSN candidate with review sources,
+3. check the matching catalog product, such as Banana Chips,
+4. compare the current catalog HSN with the draft candidate,
+5. say no update is needed if the catalog already matches,
+6. or ask for explicit human approval before applying any HSN change to the catalog.
+
+Current built-in draft guidance for banana chips is HSN `2008.99.99` as a review candidate for prepared/preserved fruit products. This must remain draft guidance until reviewed against the destination market and official tariff source.
+
 ## Active entity context policy
 
 For research questions, Setu Guru should prefer live route records over visible text when safe and available:
@@ -56,18 +45,9 @@ For research questions, Setu Guru should prefer live route records over visible 
 3. Lead route → use lead company/contact, lead type, country, and product interests.
 4. If no active record can be resolved, fall back to visible page text and the user's question.
 
-This keeps research briefs grounded in the actual CRM record while preserving the no-write-back boundary.
-
 ## Research source row rendering
 
 Setu Guru source rows should be rendered as review cards in the drawer when row data includes a source URL or citation marker. Each source card should make the source title, source type, citation marker, and next review step visible. External source URLs may open in a new tab; internal `internal:*` source references should be shown as review context, not external links.
-
-## Allowed actions
-
-- Answer from route-specific help first.
-- Use live organization context when the question mentions records, blockers, documents, products, buyers, suppliers, leads, quotes, compliance, or counts.
-- Use source-backed live research for country, tariff, duty, HS/HSN, compliance, document requirement, and margin benchmark questions.
-- Draft recommendations for human review.
 
 ## Approval rules
 
