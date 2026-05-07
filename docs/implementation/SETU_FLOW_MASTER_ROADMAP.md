@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit: `32707ec295175b55e17cce71e970fd00ec08c7b0`
-- Commit message: `Require one final commit per implementation pass`
+- Latest verified production READY commit: `8b9600c1c40b93424be2b76d0c40388bafda2432`
+- Commit message: `Document Setu Guru page help wiring`
 - Previous product-stability baseline: `770244eba3a973aab7b27290e05de7f0779dc245`
 - Vercel status at this update: `READY`
 - Included recent improvements:
@@ -23,6 +23,8 @@ Use the latest Vercel READY production commit as the working baseline unless Rit
   - Setu Guru route help docs and help registry foundation
   - Setu Guru widget wired to route help registry and page context collector
   - `/api/setu-guru/org-search` supports `page_help` before live database lookup
+  - `/api/setu-guru/org-search` normalizes roadmap mode aliases for catalog, buyer, supplier, lead, quote compliance, HSN, document requirements, margins, and page help
+  - Safe research-intent routing now points HS/HSN, document requirement, duty/tariff, and margin questions toward source-backed review before write-back
   - Quote PDF improvements for pack, MOQ, origin, shelf life, lead time, and tax wording
   - AUD quote save compatibility
   - Advisory compliance documents no longer blocking quote send
@@ -145,7 +147,7 @@ Definition of done:
 - Setu Guru can answer from route-specific help before falling back to generic topics.
 - Widget fallback and page-help API path are covered by tests.
 
-Progress: 80%
+Progress: 82%
 
 ---
 
@@ -173,13 +175,16 @@ Completed:
 
 - Page context collector is now sent from the widget.
 - `page_help` is supported by `/api/setu-guru/org-search` without requiring Supabase access.
+- `/api/setu-guru/org-search` now normalizes old aliases (`catalog`, `buyers`, `suppliers`, `leads`, `hsn`) into roadmap mode names.
+- Research-intent routing now gives safe source-backed guidance boundaries for HS/HSN, document requirements, duties/tariffs, and margin benchmarks before any write-back.
+- Tests protect mode aliases and safe research routing text.
 
 Definition of done:
 
 - Bot answers are contextual on Products, Leads, Quotes, Compliance, Admin, and Orders.
 - Bot stops giving generic answers for active blockers.
 
-Progress: 15%
+Progress: 30%
 
 ---
 
@@ -239,6 +244,7 @@ Completed:
 - Evidence/waiver actions created.
 - Quote prep checklist now links to Compliance Assist.
 - Compliance help topic added to Setu Guru knowledge.
+- Safe research-routing boundaries added for document requirements, duties, and tariffs.
 
 Next:
 
@@ -246,9 +252,9 @@ Next:
 - Add evidence timeline.
 - Add AI-suggested evidence checklist by product and country.
 - Separate quote-send, order, dispatch, and advisory requirements clearly.
-- Add live research rules for source-backed compliance answers.
+- Add live research execution with citations for source-backed compliance answers.
 
-Progress: 43%
+Progress: 45%
 
 ---
 
@@ -314,12 +320,13 @@ Progress: 10%
 
 Current readiness snapshot:
 
-- Overall CRM readiness: 80%
+- Overall CRM readiness: 81%
 - Current anti-drift sprint completion: 95%
-- Current Setu Guru knowledge sprint completion: 80%
-- Setu Guru intelligence readiness: 60%
+- Current Setu Guru knowledge sprint completion: 82%
+- Current Setu Guru routing sprint completion: 30%
+- Setu Guru intelligence readiness: 63%
 - UX cleanup readiness: 44%
-- Quote/compliance maturity: 46%
+- Quote/compliance maturity: 47%
 - Product catalog maturity: 56%
 
 Update these numbers after every implementation pass.
@@ -372,7 +379,7 @@ Rules:
 10. After approval, prepare the full approved pass and make one final commit directly to GitHub main unless Ritesh asks for a branch or PR.
 11. At the end, report build status, files changed, readiness %, sprint %, and the next pass.
 
-Current direction: continue UX cleanup and Setu Guru intelligence. Sprint 2 route help docs and registry are mostly complete, and Sprint 3 live route context has started. Next recommended pass is to expand `/api/setu-guru/org-search` with richer mode aliases and source-backed live research routing.
+Current direction: continue UX cleanup and Setu Guru intelligence. Sprint 2 route help docs and registry are mostly complete, and Sprint 3 live route context has started. Next recommended pass is to turn safe research routing into source-backed live research execution with citations for HS/HSN, duties, document requirements, and margins.
 ```
 
 ---
@@ -381,8 +388,8 @@ Current direction: continue UX cleanup and Setu Guru intelligence. Sprint 2 rout
 
 Continue Sprint 3:
 
-1. Normalize `/api/setu-guru/org-search` mode aliases to roadmap names: `catalog_search`, `buyer_search`, `supplier_search`, `lead_search`, `quote_compliance`, `page_help`, and `document_requirements`.
-2. Add tests for mode aliases and no-database `page_help` behavior.
-3. Start safe live-research routing for HS/HSN, document requirements, duties, and margin benchmarks.
-4. Check Vercel build after the one final commit.
+1. Add source-backed live research execution for HS/HSN, document requirements, duties/tariffs, and margin benchmarks.
+2. Keep research answers draft-only until human approval.
+3. Add tests for live-research routing and approval boundaries.
+4. Check Vercel build after the final commit.
 5. Update this roadmap and changelog.
