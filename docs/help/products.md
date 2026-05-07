@@ -31,6 +31,22 @@ Purpose: Use Products as the operating catalog. Products should be quote-ready, 
 - Lead product interests and quotes using the product.
 - Document requirement rules when product and destination matter.
 
+## Sprint 4 catalog action clarity
+
+Setu Guru should make the Products area feel action-led, not generic. Use these routes clearly:
+
+- **Open Products** for daily product editing, product rows, variants, trade details, and product-specific pricing snapshots.
+- **Check catalog readiness** for product gaps such as missing HSN, pack, MOQ, origin, shelf life, lead time, category, or pricing assumptions.
+- **Open Product Management** for governance, imports, category defaults, organization defaults, setup health, approval posture, and audit review.
+- **Ask live research** for HSN/HS code, duties/tariffs, document requirements, and margin benchmark questions.
+
+## Product default boundary
+
+- Product-default changes belong in Products only when they should affect future quotes.
+- Category and organization defaults belong in Product Management or Admin setup.
+- Quote-only price changes, discounts, and customer-specific commercial terms stay inside the quote workspace.
+- Setu Guru can explain the right place for a change, but saved defaults require explicit authorized approval.
+
 ## Allowed actions
 
 - Summarize product readiness and missing fields.

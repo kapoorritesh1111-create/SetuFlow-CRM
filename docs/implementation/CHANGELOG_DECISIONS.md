@@ -89,20 +89,38 @@ Decision:
 - Closed Sprint 3 at 100% and moved the roadmap focus to Sprint 4 Product catalog UX maturity.
 - No product, quote, order, compliance, or Supabase schema write-back changes were made in this closure pass.
 
+Build:
+
+- READY
+- Commit: `27a4d981d037a1d1d0741e5b8d35d3efebdc2f10`
+
+---
+
+## 2026-05-07 — Sprint 4 catalog action clarity kickoff
+
+Decision:
+
+- Start Sprint 4 from verified READY production commit `27a4d981d037a1d1d0741e5b8d35d3efebdc2f10`.
+- Setu Guru product guidance now separates daily Products editing, Product Management governance/import/default work, catalog readiness checks, and source-backed live research.
+- Products help now documents the product default, category default, organization default, and quote-only boundary.
+- No product pricing save path, quote-specific pricing path, HSN apply API, schema, or product drawer tab behavior was changed.
+
 Files:
 
+- `src/lib/setu-guru/help-registry.ts`
+- `docs/help/products.md`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
-- `docs/implementation/SPRINT_3_PRODUCTION_VERIFICATION.md`
 
 Reason:
 
-- Ritesh approved closing Sprint 3 remaining gaps after production verification, then moving to the next roadmap UX cleanup pass if no defects appeared.
+- Ritesh approved beginning Sprint 4 Product catalog UX cleanup after Sprint 3 closure reached READY.
+- The safest first UX improvement is action clarity before touching the product drawer or pricing logic.
 
 Build:
 
-- BUILDING / pending after closure-doc commit
-- Baseline before closure pass: `fbbc8349069d6de6546c039227eef27a453568d5`
+- BUILDING / pending after this pass
+- Baseline before pass: `27a4d981d037a1d1d0741e5b8d35d3efebdc2f10`
 
 ---
 

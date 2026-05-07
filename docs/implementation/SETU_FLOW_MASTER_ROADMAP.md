@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this closure pass: `fbbc8349069d6de6546c039227eef27a453568d5`
-- Commit message: `Add guidance-only Setu Guru order actions`
+- Latest verified production READY commit before this pass: `27a4d981d037a1d1d0741e5b8d35d3efebdc2f10`
+- Commit message: `Close Sprint 3 Setu Guru verification`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -49,35 +49,18 @@ Progress: 100%
 Status: `DONE`
 Progress: 100%
 
-Completed and verified:
-
-- Page context collector is sent from the widget.
-- `page_help` is supported before Supabase lookup.
-- `/api/setu-guru/org-search` normalizes roadmap mode aliases.
-- Source-backed draft research execution exists for HS/HSN, document requirements, duties/tariffs, and margin benchmarks.
-- Research source rows render in the Setu Guru drawer.
-- Research can use active product, lead, and quote records before visible text fallback.
-- HSN code questions route to live research instead of generic Products help.
-- HSN research checks the matching catalog product, returns a draft candidate, compares current catalog HSN, and asks for approval before any update.
-- Approval-safe `/api/setu-guru/apply-hsn` applies a reviewed HSN only after human confirmation, `catalog.manage` permission, exact product identity, stale-value check, and audit logging.
-- Setu Guru action buttons support per-action href maps for quote/compliance routes and avoid dead clicks.
-- Order action buttons provide guidance-only blocker checks, dispatch evidence checklist prompts, and approval-boundary explanations without order write-back.
-- Setu Guru action success/failure messages explain when an action was queued, routed, or blocked by human-approval policy.
-- Production deployment for the last Sprint 3 behavior commit is READY.
-
-Definition of done result:
-
-- Bot answers are contextual on Products, Leads, Quotes, Compliance, Admin, and Orders.
-- Bot stops giving generic answers for active blockers and HSN/live research questions.
-- Source-backed research answers return reviewable sources and human approval boundaries before write-back.
-- Approval actions require explicit human confirmation and record audit trails.
-
 ### Sprint 4 — Product catalog UX maturity
 
-Status: `NEXT`
-Progress: 50%
+Status: `IN PROGRESS`
+Progress: 55%
 
-Recommended focus:
+Completed:
+
+- Sprint 4 started from verified READY commit `27a4d981d037a1d1d0741e5b8d35d3efebdc2f10`.
+- Setu Guru product guidance now separates daily Products work, Product Management governance, catalog readiness checks, and live research.
+- Products help documents the product-default/category-default/organization-default/quote-only boundary.
+
+Next focus:
 
 - Continue product catalog UX cleanup.
 - Preserve the wide, calm product drawer and pricing tab improvements.
@@ -117,10 +100,11 @@ Progress: 10%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
-- Setu Guru intelligence readiness: 94%
-- UX cleanup readiness: 50%
+- Current Sprint 4 Product catalog UX maturity: 55%
+- Setu Guru intelligence readiness: 95%
+- UX cleanup readiness: 51%
 - Quote/compliance maturity: 54%
-- Product catalog maturity: 62%
+- Product catalog maturity: 64%
 
 ---
 
@@ -156,15 +140,15 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, and Sprint 3 are 100%. Continue with Sprint 4 Product catalog UX maturity unless Ritesh gives a higher-priority fix. Preserve all Sprint 3 Setu Guru behavior: approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions.
+Current status: Sprint 1, Sprint 2, and Sprint 3 are 100%. Sprint 4 Product catalog UX maturity is active. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions.
 ```
 
 ---
 
 ## 7. Next recommended pass
 
-Start Sprint 4 Product catalog UX cleanup:
+Continue Sprint 4 Product catalog UX cleanup:
 
-1. Verify the Sprint 3 closure deployment is READY.
-2. Inspect Product Management and product drawer UX against DO_NOT_REGRESS.
-3. Improve product/variant action clarity and Setu Guru catalog guidance without changing quote-specific pricing behavior.
+1. Verify this Sprint 4 catalog guidance deployment is READY.
+2. Inspect Product Management and Products workspace action rows.
+3. Improve product/variant action clarity in the UI without changing quote-specific pricing behavior.
