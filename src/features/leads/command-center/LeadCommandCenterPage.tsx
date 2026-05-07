@@ -134,7 +134,6 @@ function buildLiveWorkflowCards(snapshot: LeadProfileSnapshot, input: {
   })
 }
 
-
 export default function LeadCommandCenterPage({
   snapshot,
   availableProducts,
@@ -220,8 +219,6 @@ export default function LeadCommandCenterPage({
     setActiveWorkflowPanel(null)
     setSupportingRecordExpanded(false)
   }, [availableProducts, initialOpsHistory, initialTab, latestQuoteId, pendingFollowUpId, selectedMarketIds, selectedProductIds, snapshot])
-
-
 
   useEffect(() => {
     const currentValue = searchParams?.get('tab') ?? null
@@ -424,7 +421,6 @@ export default function LeadCommandCenterPage({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px] xl:gap-6">
         <main className="space-y-6">
-          {/* ── Tab bar — Command center / Quote record / Lead log ── */}
           <LeadCommandTabs
             tabs={getVisibleLeadTabs(liveSnapshot, hasActiveQuoteRecord)}
             activeTab={activeTab}
@@ -468,6 +464,7 @@ export default function LeadCommandCenterPage({
         </main>
 
         <LeadRightRail
+          leadId={leadState.id}
           nextAction={liveSnapshot.nextAction}
           quoteFocus={liveSnapshot.quoteFocus}
           compliance={liveSnapshot.compliance}
