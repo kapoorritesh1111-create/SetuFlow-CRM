@@ -6,7 +6,7 @@ const pdfRoute = readFileSync('src/app/api/quotes/[quoteId]/pdf/route.ts', 'utf8
 const quotesHelp = readFileSync('docs/help/quotes.md', 'utf8');
 
 test('quote pdf table uses buyer-facing price list columns', () => {
-  for (const label of ['SKU', 'Product', 'Pack (g)', 'Units/Case', 'MOQ cases', 'Basis', '/Unit', '/Case', 'Total (']) {
+  for (const label of ['SKU', 'Product', 'Pack (g)', 'Units/Case', 'MOQ', 'Basis', '/Unit', '/Case', 'Total (']) {
     assert.match(pdfRoute, new RegExp(label.replace(/[()]/g, '\\$&')));
   }
 });
@@ -14,7 +14,17 @@ test('quote pdf table uses buyer-facing price list columns', () => {
 test('quote pdf table columns fit inside the printable width', () => {
   assert.match(pdfRoute, /const tableX = 18; const tableW = 576/);
   assert.match(pdfRoute, /\['Total \(\$\{data\.currency\}\)', 80, 'right'\]/);
+  assert.match(pdfRoute, /\['MOQ', 44, 'center'\]/);
+  assert.match(pdfRoute, /\['Basis', 36, 'center'\]/);
   assert.doesNotMatch(pdfRoute, /\['MOQ \(cases\)', 58, 'right'\]/);
+  assert.doesNotMatch(pdfRoute, /\['MOQ cases', 48, 'right'\]/);
+});
+
+test('quote pdf keeps MOQ and Basis visually separated', () => {
+  assert.match(pdfRoute, /align === 'center'/);
+  assert.match(pdfRoute, /x \+ width \/ 2/);
+  assert.match(pdfRoute, /String\(r\.moqCases \|\| '-'\), 44, 'center'/);
+  assert.match(pdfRoute, /r\.basis, 36, 'center'/);
 });
 
 test('quote pdf includes seller address and tax lines', () => {

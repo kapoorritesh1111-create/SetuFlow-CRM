@@ -21,34 +21,12 @@ function basis(v: unknown) { const x = s(v, 'FOB').replace(/_/g, ' ').trim().toU
 function lead(v: unknown) { const x = n(v); return x ? `${Math.max(1, x - 3)}-${x} days` : 'Confirm per order'; }
 function shelf(v: unknown) { const x = n(v); return x ? `${x} months` : 'Available per SKU'; }
 function textFor(product: any, variant: any) { return `${s(variant?.sku_code, '')} ${s(variant?.pack_label, '')} ${s(product?.sku_code, '')} ${s(product?.sku, '')} ${s(product?.name, '')} ${s(variant?.name, '')}`.toLowerCase(); }
-function inferredSnackPackGrams(product: any, variant: any) {
-  const source = textFor(product, variant);
-  if (source.includes('banana')) return 100;
-  if (source.includes('kabuli') || source.includes('chana')) return 150;
-  if (source.includes('okra')) return 30;
-  if (source.includes('beetroot') || source.includes('mango') || source.includes('jackfruit') || source.includes('sweet potato') || source.includes('sweet corn')) return 50;
-  return 0;
-}
-function parsePackGrams(variant: any, product: any) {
-  const value = n(variant?.pack_size_value);
-  const unit = s(variant?.pack_size_unit, '').toLowerCase();
-  if (value && (unit.includes('kg') || unit === 'kilogram')) return value * 1000;
-  if (value) return value;
-  const label = s(variant?.pack_label, '');
-  const match = label.match(/([0-9]+(?:\.[0-9]+)?)/);
-  if (match) {
-    const parsed = Number(match[1]);
-    return label.toLowerCase().includes('kg') ? parsed * 1000 : parsed;
-  }
-  return inferredSnackPackGrams(product, variant);
-}
+function inferredSnackPackGrams(product: any, variant: any) { const source = textFor(product, variant); if (source.includes('banana')) return 100; if (source.includes('kabuli') || source.includes('chana')) return 150; if (source.includes('okra')) return 30; if (source.includes('beetroot') || source.includes('mango') || source.includes('jackfruit') || source.includes('sweet potato') || source.includes('sweet corn')) return 50; return 0; }
+function parsePackGrams(variant: any, product: any) { const value = n(variant?.pack_size_value); const unit = s(variant?.pack_size_unit, '').toLowerCase(); if (value && (unit.includes('kg') || unit === 'kilogram')) return value * 1000; if (value) return value; const label = s(variant?.pack_label, ''); const match = label.match(/([0-9]+(?:\.[0-9]+)?)/); if (match) { const parsed = Number(match[1]); return label.toLowerCase().includes('kg') ? parsed * 1000 : parsed; } return inferredSnackPackGrams(product, variant); }
 function packGrams(variant: any, product: any) { const grams = parsePackGrams(variant, product); return grams ? String(Math.round(grams)) : '-'; }
 function inferredUnitsPerCase(product: any, variant: any) { const value = n(variant?.units_per_case); if (value > 1) return Math.round(value); const source = textFor(product, variant); return /(chips|chana|okra|mango|banana|beetroot|jackfruit|sweet corn|sweet potato)/.test(source) ? 72 : Math.max(1, Math.round(value || 1)); }
 function inferredMoqCases(product: any, variant: any, line: any) { const value = n(variant?.moq_cases); if (value > 1) return Math.round(value); const source = textFor(product, variant); if (/(chips|chana|okra|mango|banana|beetroot|jackfruit|sweet corn|sweet potato)/.test(source)) return 15; return Math.max(1, Math.round(n(line?.quantity, 1))); }
-function addressLines(org: any) {
-  const cityLine = [org?.city, org?.postal_code, org?.headquarters_country].map((v) => s(v, '')).filter(Boolean).join(', ');
-  return [s(org?.registered_address, ''), cityLine].filter(Boolean);
-}
+function addressLines(org: any) { const cityLine = [org?.city, org?.postal_code, org?.headquarters_country].map((v) => s(v, '')).filter(Boolean).join(', '); return [s(org?.registered_address, ''), cityLine].filter(Boolean); }
 
 type Row = { sku: string; product: string; hs: string; packGrams: string; unitsPerCase: number; moqCases: number; basis: string; origin: string; unitPrice: number; casePrice: number; total: number; note: string; shelf: string; lead: string; };
 type TextOp = { x: number; y: number; t: string; size?: number; bold?: boolean; color?: string; right?: boolean };
@@ -84,15 +62,15 @@ function buildPdf(data: { quoteNo: string; org: any; buyer: any; market: string;
   box(24, 590, 564, 14, '#eef6ff', '#bfdbfe'); txt(36, 594, 'Taxes, duties and destination charges follow the agreed Incoterm. Unless included, buyer pays import duty, VAT/GST, clearance and destination handling.', 5.45, false, '#1e3a8a');
 
   const tableX = 18; const tableW = 576; let y = 560; const rowH = 21;
-  const cols = [ ['#', 18, 'left'], ['SKU', 64, 'left'], ['Product', 100, 'left'], ['Pack (g)', 42, 'right'], ['Units/Case', 45, 'right'], ['MOQ cases', 48, 'right'], ['Basis', 32, 'left'], [`${data.currency}/Unit`, 60, 'right'], [`${data.currency}/Case`, 60, 'right'], [`Total (${data.currency})`, 80, 'right'] ] as const;
+  const cols = [ ['#', 18, 'left'], ['SKU', 64, 'left'], ['Product', 100, 'left'], ['Pack (g)', 42, 'right'], ['Units/Case', 45, 'right'], ['MOQ', 44, 'center'], ['Basis', 36, 'center'], [`${data.currency}/Unit`, 60, 'right'], [`${data.currency}/Case`, 60, 'right'], [`Total (${data.currency})`, 80, 'right'] ] as const;
   box(tableX, y - 17, tableW, 20, '#e2e8f0', LINE);
   let x = tableX + 6;
-  cols.forEach(([h, w, align]) => { txt(align === 'right' ? x + Number(w) - 4 : x, y - 10, h, 4.7, true, NAVY, align === 'right'); x += Number(w); });
+  cols.forEach(([h, w, align]) => { const width = Number(w); const xPos = align === 'right' ? x + width - 4 : align === 'center' ? x + width / 2 - String(h).length * 1.05 : x; txt(xPos, y - 10, h, 4.7, true, NAVY, false); x += width; });
   y -= 23;
   data.rows.slice(0, 10).forEach((r, i) => {
     box(tableX, y - 15, tableW, rowH, i % 2 ? '#ffffff' : '#f8fafc', LINE); x = tableX + 6;
-    const cells: Array<[string, number, 'left' | 'right']> = [ [String(i + 1), 18, 'left'], [c(r.sku, 14), 64, 'left'], [c(r.product, 20), 100, 'left'], [r.packGrams, 42, 'right'], [String(r.unitsPerCase || '-'), 45, 'right'], [String(r.moqCases || '-'), 48, 'right'], [r.basis, 32, 'left'], [money(r.unitPrice, data.currency), 60, 'right'], [money(r.casePrice, data.currency), 60, 'right'], [money(r.total, data.currency), 80, 'right'] ];
-    cells.forEach(([value, w, align]) => { txt(align === 'right' ? x + w - 4 : x, y - 6, value, 5.15, i === 0 && (align === 'left' || value.includes(data.currency)), INK, align === 'right'); x += w; }); y -= rowH;
+    const cells: Array<[string, number, 'left' | 'right' | 'center']> = [ [String(i + 1), 18, 'left'], [c(r.sku, 14), 64, 'left'], [c(r.product, 20), 100, 'left'], [r.packGrams, 42, 'right'], [String(r.unitsPerCase || '-'), 45, 'right'], [String(r.moqCases || '-'), 44, 'center'], [r.basis, 36, 'center'], [money(r.unitPrice, data.currency), 60, 'right'], [money(r.casePrice, data.currency), 60, 'right'], [money(r.total, data.currency), 80, 'right'] ];
+    cells.forEach(([value, w, align]) => { const xPos = align === 'right' ? x + w - 4 : align === 'center' ? x + w / 2 - value.length * 1.15 : x; txt(xPos, y - 6, value, 5.15, i === 0 && (align === 'left' || value.includes(data.currency)), INK, false); x += w; }); y -= rowH;
   });
   line(tableX, y + 5, tableX + tableW, y + 5, NAVY, 1.1); txt(392, y - 7, 'Grand Total', 8.5, true, NAVY); txt(590, y - 7, money(total, data.currency), 9, true, NAVY, true);
 
