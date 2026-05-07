@@ -79,3 +79,17 @@ test('Setu Guru org search supports page help before live database lookup', () =
   assert.match(orgSearchRoute, /classifySetuGuruResponse/);
   assert.match(orgSearchRoute, /Ask “what can you do on this page\?” for route help/);
 });
+
+test('Setu Guru org search normalizes roadmap mode aliases', () => {
+  assert.match(orgSearchRoute, /normalizeSetuGuruOrgSearchMode/);
+  ['catalog_search', 'buyer_search', 'supplier_search', 'lead_search', 'quote_compliance', 'pricing_defaults', 'hsn_enrichment', 'document_requirements', 'margin_benchmark', 'page_help'].forEach((mode) => assert.match(orgSearchRoute, new RegExp(mode)));
+  assert.match(orgSearchRoute, /MODE_ALIASES/);
+});
+
+test('Setu Guru org search routes research intent safely', () => {
+  assert.match(orgSearchRoute, /buildResearchRoutingAnswer/);
+  assert.match(orgSearchRoute, /isResearchRoutingMode/);
+  assert.match(orgSearchRoute, /Official or reviewable sources required/);
+  assert.match(orgSearchRoute, /Human review before write-back/);
+  assert.match(orgSearchRoute, /Ask live research/);
+});
