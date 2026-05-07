@@ -265,8 +265,40 @@ Reason:
 
 Build:
 
-- BUILDING / pending after this documentation update
-- Baseline before update: `36d2905254a3ddcbeac73dbe89c542feea860dd0`
+- READY
+- Commit: `4c52b51c7b97e3c9192ba87a2ac124bf62a5dec6`
+
+---
+
+## 2026-05-07 — Source-backed Setu Guru live research execution
+
+Decision:
+
+- Add `src/lib/setu-guru/live-research.ts` as the first source-backed live research execution helper.
+- Wire `/api/setu-guru/org-search` research modes to return source-backed draft research briefs instead of only generic safe-routing text.
+- Return source rows, citation markers, recommended review paths, and `requiresHumanApproval: true` for HS/HSN, document requirements, duties/tariffs, and margin benchmark questions.
+- Keep all research output draft-only and block automatic write-back for HSN/HS codes, duties/tariffs, margin defaults, document rules, compliance policies, quote sends, waivers, and pricing decisions.
+- Update Setu Guru help docs and tests for the new live research behavior.
+
+Files:
+
+- `src/lib/setu-guru/live-research.ts`
+- `src/app/api/setu-guru/org-search/route.ts`
+- `tests/setu-guru.test.mjs`
+- `docs/help/setu-guru.md`
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Reason:
+
+- Sprint 3 requires safe live-research mode with source-backed answers.
+- Setu Guru needs reviewable source rows and approval boundaries before users save trade/compliance/pricing assumptions.
+- This pass adds deterministic source-backed draft execution without schema changes or unsafe automatic writes.
+
+Build:
+
+- BUILDING / pending after this pass
+- Baseline before pass: `4c52b51c7b97e3c9192ba87a2ac124bf62a5dec6`
 
 ---
 
