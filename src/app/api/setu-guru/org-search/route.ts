@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { getProductsData } from '@/lib/queries/products';
 import { hasSupabaseEnv } from '@/lib/env';
 
 function asText(value: unknown) {
@@ -12,17 +13,29 @@ function questionMode(question: string) {
   if (q.includes('buyer')) return 'buyers';
   if (q.includes('supplier')) return 'suppliers';
   if (q.includes('category')) return 'categories';
-  if (q.includes('hsn') || q.includes('hs code') || q.includes('hs code')) return 'hsn';
+  if (q.includes('hsn') || q.includes('hs code') || q.includes('hs-code')) return 'hsn';
   if (q.includes('lead') || q.includes('contact') || q.includes('company')) return 'leads';
   return 'catalog';
 }
 
-function extractSearchTerm(question: string) {
-  const cleaned = question
-    .replace(/how many|count|show me|find|search|filter|buyer|buyers|supplier|suppliers|lead|leads|product|products|catalog|category|categories|named|called|by name|in my|are in|there are|\?/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+function isPureCountQuestion(question: string) {
+  const q = question.toLowerCase();
+  return /how many|count|total/.test(q) && !/named|called|find|search|filter|missing/.test(q);
+}
+
+function extractSearchTerm(question: string, mode: string) {
+  if (isPureCountQuestion(question)) return '';
+  const filler = ['how many', 'count', 'total', 'show me', 'find', 'search', 'filter', 'buyer', 'buyers', 'supplier', 'suppliers', 'lead', 'leads', 'product', 'products', 'catalog', 'category', 'categories', 'named', 'called', 'by name', 'in my', 'my', 'are in', 'there are', 'missing', 'hsn', 'hs code', 'hs-code', mode];
+  let cleaned = question.toLowerCase();
+  for (const word of filler) cleaned = cleaned.replaceAll(word, ' ');
+  cleaned = cleaned.replace(/[^a-z0-9\s-]/gi, ' ').replace(/\s+/g, ' ').trim();
   return cleaned.length >= 2 ? cleaned : '';
+}
+
+function includesTerm(row: Record<string, unknown>, term: string) {
+  if (!term) return true;
+  const haystack = Object.values(row).map((value) => String(value ?? '').toLowerCase()).join(' ');
+  return haystack.includes(term.toLowerCase());
 }
 
 export async function POST(request: Request) {
@@ -43,54 +56,32 @@ export async function POST(request: Request) {
     }
 
     const organizationId = workspace.organization.id;
-    const supabase = await createClient();
-    const db = supabase as any;
+    const organizationName = workspace.organization.name ?? 'this organization';
     const mode = asText(body.mode) || questionMode(question);
-    const term = asText(body.term) || extractSearchTerm(question);
+    const term = asText(body.term) || extractSearchTerm(question, mode);
 
-    if (mode === 'catalog' || mode === 'products' || mode === 'hsn') {
-      const { count: totalProducts, error: countError } = await db
-        .from('products')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', organizationId)
-        .eq('is_active', true);
-      if (countError) throw countError;
-
-      const { count: missingHsnCount } = await db
-        .from('products')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', organizationId)
-        .eq('is_active', true)
-        .or('hsn_code.is.null,hsn_code.eq.');
-
-      let query = db
-        .from('products')
-        .select('id, name, sku, sku_code, hsn_code, category_id, is_active, product_categories(name)')
-        .eq('organization_id', organizationId)
-        .eq('is_active', true)
-        .order('name', { ascending: true })
-        .limit(8);
-
-      if (term) query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%,sku_code.ilike.%${term}%,hsn_code.ilike.%${term}%`);
-      if (mode === 'hsn') query = query.or('hsn_code.is.null,hsn_code.eq.');
-
-      const { data: products, error } = await query;
-      if (error) throw error;
-
-      const rows = (products ?? []).map((product: any) => ({
-        id: product.id,
-        name: product.name,
-        sku: product.sku ?? product.sku_code ?? null,
-        hsnCode: product.hsn_code ?? null,
-        category: product.product_categories?.name ?? null,
-      }));
+    if (mode === 'catalog' || mode === 'products' || mode === 'hsn' || mode === 'categories') {
+      const workspaceData = await getProductsData(organizationId);
+      const products = workspaceData?.products ?? [];
+      const categories = workspaceData?.categories ?? [];
+      const categoryNameById = new Map(categories.map((category: any) => [category.id, category.name]));
+      const visibleProducts = products.filter((product: any) => product.is_active !== false);
+      const missingHsnProducts = visibleProducts.filter((product: any) => !asText(product.hsn_code));
+      const sourceProducts = mode === 'hsn' ? missingHsnProducts : visibleProducts;
+      const matchedProducts = term ? sourceProducts.filter((product: any) => includesTerm({ name: product.name, sku: product.sku, sku_code: product.sku_code, hsn_code: product.hsn_code, category: categoryNameById.get(product.category_id) }, term)) : sourceProducts;
+      const rows = matchedProducts.slice(0, 8).map((product: any) => ({ id: product.id, name: product.name, sku: product.sku ?? product.sku_code ?? null, hsnCode: product.hsn_code ?? null, category: categoryNameById.get(product.category_id) ?? null }));
 
       const answer = mode === 'hsn'
-        ? `I found ${missingHsnCount ?? 0} active product(s) missing HSN/HS codes in ${workspace.organization.name}. I listed the first ${rows.length} for review.`
-        : `You have ${totalProducts ?? 0} active product(s) in ${workspace.organization.name}. ${term ? `I found ${rows.length} matching product(s) for "${term}".` : `I listed the first ${rows.length} alphabetically.`}`;
+        ? `I found ${missingHsnProducts.length} catalog product(s) missing HSN/HS codes in ${organizationName}. I listed ${rows.length} row(s) for review.`
+        : term
+          ? `I found ${matchedProducts.length} matching catalog product(s) for "${term}" in ${organizationName}. There are ${visibleProducts.length} catalog product(s) total.`
+          : `You have ${visibleProducts.length} catalog product(s) in ${organizationName}. I did not apply any search filter.`;
 
-      return NextResponse.json({ answer, confidence: 'high', mode, term, rows, metrics: { totalProducts: totalProducts ?? 0, missingHsnCount: missingHsnCount ?? 0 }, nextAction: mode === 'hsn' ? 'Review missing-code rows before enrichment or write-back.' : 'Open Products to apply page filters or edit rows.' });
+      return NextResponse.json({ answer, confidence: 'high', mode, term, rows, metrics: { catalogProducts: visibleProducts.length, categories: categories.length, missingHsnCount: missingHsnProducts.length }, nextAction: mode === 'hsn' ? 'Open Products filtered to missing HSN codes.' : 'Open Products to review the catalog.', actionHref: mode === 'hsn' ? '/products?guru=missing-hsn' : '/products' });
     }
+
+    const supabase = await createClient();
+    const db = supabase as any;
 
     if (mode === 'buyers' || mode === 'suppliers' || mode === 'leads') {
       let countQuery = db.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId);
@@ -99,41 +90,19 @@ export async function POST(request: Request) {
       const { count, error: countError } = await countQuery;
       if (countError) throw countError;
 
-      let query = db
-        .from('leads')
-        .select('id, company_name, contact_name, email, phone, lead_type, country, updated_at')
-        .eq('organization_id', organizationId)
-        .order('updated_at', { ascending: false })
-        .limit(8);
+      let query = db.from('leads').select('id, company_name, contact_name, email, phone, lead_type, country, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(8);
       if (mode === 'buyers') query = query.eq('lead_type', 'buyer');
       if (mode === 'suppliers') query = query.eq('lead_type', 'supplier');
       if (term) query = query.or(`company_name.ilike.%${term}%,contact_name.ilike.%${term}%,email.ilike.%${term}%,country.ilike.%${term}%`);
 
       const { data: leads, error } = await query;
       if (error) throw error;
-
-      const rows = (leads ?? []).map((lead: any) => ({
-        id: lead.id,
-        company: lead.company_name,
-        contact: lead.contact_name,
-        email: lead.email,
-        phone: lead.phone,
-        type: lead.lead_type,
-        country: lead.country,
-      }));
-
-      return NextResponse.json({
-        answer: `${workspace.organization.name} has ${count ?? 0} ${mode === 'buyers' ? 'buyer' : mode === 'suppliers' ? 'supplier' : 'lead'} record(s). ${term ? `I found ${rows.length} matching record(s) for "${term}".` : `I listed the latest ${rows.length}.`}`,
-        confidence: 'high',
-        mode,
-        term,
-        rows,
-        metrics: { count: count ?? 0 },
-        nextAction: mode === 'buyers' ? 'Open Leads in Buyers mode to work this list.' : mode === 'suppliers' ? 'Open Leads in Suppliers mode to work this list.' : 'Open Leads to filter or edit records.',
-      });
+      const rows = (leads ?? []).map((lead: any) => ({ id: lead.id, company: lead.company_name, contact: lead.contact_name, email: lead.email, phone: lead.phone, type: lead.lead_type, country: lead.country }));
+      const label = mode === 'buyers' ? 'buyer' : mode === 'suppliers' ? 'supplier' : 'lead';
+      return NextResponse.json({ answer: term ? `I found ${rows.length} matching ${label} record(s) for "${term}" in ${organizationName}. There are ${count ?? 0} ${label} record(s) total.` : `${organizationName} has ${count ?? 0} ${label} record(s). I listed the latest ${rows.length}.`, confidence: 'high', mode, term, rows, metrics: { count: count ?? 0 }, nextAction: mode === 'buyers' ? 'Open Leads in Buyers mode.' : mode === 'suppliers' ? 'Open Leads in Suppliers mode.' : 'Open Leads to filter or edit records.', actionHref: mode === 'buyers' ? '/leads?mode=buyers' : mode === 'suppliers' ? '/leads?mode=suppliers' : '/leads' });
     }
 
-    return NextResponse.json({ answer: 'I can search live products, HSN gaps, buyers, suppliers, and leads. Try asking “how many products are in my catalog?” or “find buyer by name”.', confidence: 'medium', rows: [] });
+    return NextResponse.json({ answer: 'I can search live products, HSN gaps, buyers, suppliers, and leads. Try “how many products are in my catalog?” or “find buyer by name”.', confidence: 'medium', rows: [] });
   } catch (error) {
     return NextResponse.json({ answer: error instanceof Error ? error.message : 'Setu Guru organization search failed.', confidence: 'low', rows: [] }, { status: 500 });
   }
