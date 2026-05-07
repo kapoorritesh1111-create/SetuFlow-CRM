@@ -99,6 +99,7 @@ export function buildLeadDocumentRequirementState(input: {
   scope?: 'general' | 'quote_send' | 'contract_progression';
 }): LeadRequirementState {
   const applicableRules = getApplicableRequirementRules(input);
+  const mandatoryApplicableRules = applicableRules.filter((rule) => rule.is_mandatory === true);
   const documents = input.documents ?? [];
   const today = new Date().toISOString().slice(0, 10);
 
@@ -109,11 +110,7 @@ export function buildLeadDocumentRequirementState(input: {
   const pendingLabels: string[] = [];
   const expiredLabels: string[] = [];
 
-  for (const rule of applicableRules) {
-    // Advisory quote documents should guide the user but not block quote creation/send.
-    // Only mandatory rules become blockers.
-    if (rule.is_mandatory !== true) continue;
-
+  for (const rule of mandatoryApplicableRules) {
     const code = String(rule.requirement_code ?? '').trim();
     if (!code) continue;
     const label = requirementLabel(rule);
@@ -142,8 +139,10 @@ export function buildLeadDocumentRequirementState(input: {
   if (expiredLabels.length) blockerReasons.push(`Required document expired: ${expiredLabels.slice(0, 3).join(', ')}${expiredLabels.length > 3 ? ' +' + (expiredLabels.length - 3) + ' more' : ''}`);
 
   return {
-    applicableRuleCount: applicableRules.length,
-    satisfiedRuleCount: Math.max(0, applicableRules.filter((rule) => rule.is_mandatory === true).length - missingRequirementCodes.length - pendingRequirementCodes.length - expiredRequirementCodes.length),
+    // This count is intentionally mandatory-only. Advisory documents can guide dispatch preparation,
+    // but they must not create the red quote-prep "items need attention" state.
+    applicableRuleCount: mandatoryApplicableRules.length,
+    satisfiedRuleCount: Math.max(0, mandatoryApplicableRules.length - missingRequirementCodes.length - pendingRequirementCodes.length - expiredRequirementCodes.length),
     missingRuleCount: missingRequirementCodes.length,
     pendingRuleCount: pendingRequirementCodes.length,
     expiredRuleCount: expiredRequirementCodes.length,
