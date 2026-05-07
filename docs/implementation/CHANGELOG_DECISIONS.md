@@ -9,70 +9,63 @@ This log records important implementation decisions so future chats and passes c
 Decision:
 
 - Treat the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
-- Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are complete at 100% after Sprint 4 final closure.
+- Sprint 1, Sprint 2, Sprint 3, Sprint 4, and Sprint 5 are complete at 100%.
 - UI cleanup should reduce duplicate work surfaces, not add repeated shortcut cards or redundant buttons.
-- Sprint 5 Quote builder and quote PDF maturity is active.
+- Sprint 6 Compliance Assist maturity is active.
 
 Reason:
 
 - Production is advancing through small approved one-commit passes on `main`.
-- Quote PDFs and quote share links must be buyer-ready, professional, selected-currency aware, branded, and complete enough for client sharing.
+- Sprint 5 quote PDF/share/send work is closed and protected.
+- Compliance Assist now becomes the next maturity focus for blocker/advisory/waiver clarity.
 
 ---
 
-## 2026-05-07 — Sprint 5 professional quote PDF price-list table
+## 2026-05-07 — Sprint 5 professional quote PDF, send, and share closure
 
 Decision:
 
-- Quote PDF now uses a professional white/slate layout with restrained navy accents instead of heavy saturated blue panels.
-- Quote PDF line table includes SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, selected-currency Unit price, selected-currency Case price, and selected-currency Line total.
+- Quote PDF now uses a professional white/slate layout with restrained navy accents and includes SKU, Product, Pack (g), Units/Case, MOQ, Basis, selected-currency Unit price, selected-currency Case price, and selected-currency Line total.
 - Line total is calculated as MOQ cases × Case price.
 - Currency labels use `quote.display_currency ?? quote.currency ?? organization.default_currency`, not hardcoded USD columns.
-- Production smoke checks corrected clipped Total and crowded MOQ/Basis columns.
-- Seller block now includes organization address details and a visible Tax ID line.
-- Pack, units/case, and MOQ use catalog data first and safe SKU/product fallbacks when older records are sparse.
-- Quote line price is treated as case price for price-list exports, with unit price derived by dividing by units/case.
-- Vertical whitespace between quote PDF sections was tightened.
-- No quote-only pricing write-back, product default write-back, HSN API, schema, or duplicate quote action surface was added.
+- Seller block includes organization address details and a visible Tax ID line.
+- Quote builder/send/share controls use one clear sequence and no duplicate quote action surfaces.
+- Quote share links use production-domain buyer-facing HTML pages with **Open quote PDF**, organization branding where available, and no raw JSON placeholder output.
+- Sprint 5 was closed at 100% in `7747aaf816c28b77dd8af67600c6e2544b11a9b8`.
 
-Builds:
+Protected:
 
-- READY `9a671811c7b36931a3e8b13da5c21425c21b51c2` — Redesign quote PDF price list
-- READY `8d24fa9857fd19d04872c257efc5fe156fab6c72` — Fit quote PDF price columns
-- READY `4b0be38ec0215fd4299e77d4c2394376f66cbbbd` — Polish quote PDF seller and pack details
-- READY `e7124880fa8b2afd7b1f4702f587747948c0d3c1` — Clarify quote builder action steps
-- READY `e4df72ebf04ba61117495f9d2fa54734652764d3` — Clarify quote send approval checkpoint
+- Do not reintroduce heavy saturated PDF panels.
+- Do not remove quote PDF pack, units/case, MOQ, Basis, unit price, case price, line total, seller address, or Tax ID details.
+- Do not expose Vercel preview URLs or raw JSON placeholders in buyer-facing quote share links.
+- Do not write quote-only prices back to product/category/organization defaults.
 
 ---
 
-## 2026-05-07 — Sprint 5 professional quote share flow
+## 2026-05-07 — Sprint 6 Compliance Assist blocker/advisory/waiver clarity
 
 Decision:
 
-- Verified `09ac180a8bec9a96c7af60ded4321e1101e6b452` is READY before this pass.
-- Production smoke check confirmed the share link opens `https://www.setuflowcrm.com/api/quotes/[quoteId]/share`, returns branded HTML, includes **Open quote PDF**, and no longer shows raw JSON.
-- Smoke check also found the page showed fallback SETU branding instead of the org logo because anonymous public reads cannot reliably resolve private org profile fields.
-- Fixed this by making the authenticated WhatsApp/share generator embed safe org branding fields in the share URL: buyer name, org name, safe HTTPS logo URL, and org website.
-- Public share page can now render org logo/name/website from safe URL fields without requiring buyer authentication.
-- The fallback SETU mark remains for missing or unsafe logo URLs.
-- No quote-only pricing write-back, product default write-back, HSN API, schema, send endpoint duplication, or duplicate quote action surface was added.
+- Verified `7747aaf816c28b77dd8af67600c6e2544b11a9b8` is READY before starting Sprint 6.
+- Inspected Compliance Assist route, quote/lead compliance entry points, Setu Guru compliance help, and Setu Guru compliance policy.
+- Compliance Assist now labels and explains three states clearly: required quote-send blocker, advisory dispatch prep, and human-reviewed waiver decision.
+- Added a compact decision guide in the existing Compliance Assist flow so users understand what blocks quote send, what is later dispatch/order prep, and what requires human review.
+- Evidence submission copy now states it is review intake and does not auto-approve evidence.
+- Waiver copy now states it is a reviewed human decision requiring permission and a reason.
+- Updated `docs/help/compliance.md` so Setu Guru uses the same blocker/advisory/waiver language.
+- No schema, quote send behavior, waiver backend, approval backend, compliance policy, or silent write-back behavior was changed.
 
 Files:
 
-- `src/features/quotes/server/whatsapp-delivery.ts`
-- `tests/quote-share-flow.test.mjs`
-- `docs/help/quotes.md`
+- `src/app/(app)/compliance/assist/page.tsx`
+- `docs/help/compliance.md`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
-
-Reason:
-
-- Ritesh approved verifying the production share page and explicitly asked for org-logo branding on the buyer-facing page.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `09ac180a8bec9a96c7af60ded4321e1101e6b452`
+- Baseline before pass: `7747aaf816c28b77dd8af67600c6e2544b11a9b8`
 
 ---
 
@@ -83,4 +76,4 @@ Build:
 - Do not run `npm ci` in sandbox.
 - Do not put dev/debug notes on user-facing screens.
 - Do not write back without explicit human approval.
-- Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100% complete.
+- Sprint 1, Sprint 2, Sprint 3, Sprint 4, and Sprint 5 are 100% complete.
