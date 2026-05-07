@@ -110,9 +110,16 @@ function getBestTopic(query: string, pathname: string) {
   return ranked[0]?.score > 0 ? ranked[0].topic : getRouteTopics(pathname)[0];
 }
 
-function isOrgSearchQuestion(question: string) {
+function isQuoteComplianceQuestion(question: string, pathname: string) {
   const q = question.toLowerCase();
-  return ['how many product', 'how many buyer', 'how many supplier', 'how many lead', 'in my catalog', 'find buyer', 'find supplier', 'find lead', 'find product', 'search buyer', 'search supplier', 'missing hsn', 'missing hs code', 'filter', 'listed products', 'category'].some((phrase) => q.includes(phrase));
+  const inQuoteSpace = pathname.includes('/quote') || pathname.includes('/quotes') || pathname.includes('/approval-send');
+  const complianceWords = ['compliance', 'blocker', 'document', 'evidence', 'certificate', 'coa', 'packing list', 'dispatch', 'ignore', 'waive', 'fix this'];
+  return inQuoteSpace && complianceWords.some((phrase) => q.includes(phrase));
+}
+
+function isOrgSearchQuestion(question: string, pathname = '') {
+  const q = question.toLowerCase();
+  return isQuoteComplianceQuestion(question, pathname) || ['how many product', 'how many buyer', 'how many supplier', 'how many lead', 'in my catalog', 'find buyer', 'find supplier', 'find lead', 'find product', 'search buyer', 'search supplier', 'missing hsn', 'missing hs code', 'filter', 'listed products', 'category'].some((phrase) => q.includes(phrase));
 }
 
 function isPricingDefaultQuestion(question: string) {
@@ -127,9 +134,11 @@ function getActionHref(action: string) {
   if (normalized.includes('product management') || normalized.includes('set calculator') || normalized.includes('calculator default')) return '/admin/product-management';
   if (normalized.includes('open products')) return '/products';
   if (normalized.includes('organization profile') || normalized.includes('admin organization')) return '/admin/organization#company-profile';
-  if (normalized.includes('open leads')) return '/leads';
+  if (normalized.includes('open leads') || normalized.includes('lead documents')) return '/leads';
   if (normalized.includes('quote terms') || normalized.includes('review changes') || normalized.includes('preview pdf')) return '/quotes';
   if (normalized.includes('approval queue') || normalized.includes('approval')) return '/approval-send';
+  if (normalized.includes('compliance')) return '/compliance';
+  if (normalized.includes('document')) return '/documents';
   if (normalized.includes('blocker')) return '/orders';
   if (normalized.includes('market')) return '/admin/markets';
   if (normalized.includes('categories') || normalized.includes('variants') || normalized.includes('imports')) return '/admin/product-management';
@@ -229,13 +238,14 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     setIsThinking(true);
     setMessages((current) => [...current, { id: loadingId, role: 'assistant', content: 'Searching your live organization data…', tone: 'loading' }]);
     try {
-      const response = await fetch('/api/setu-guru/org-search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, route: pathname }) });
+      const mode = isQuoteComplianceQuestion(question, pathname) ? 'quote_compliance' : undefined;
+      const response = await fetch('/api/setu-guru/org-search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, route: pathname, mode }) });
       const payload = await response.json();
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({
         id: `org-${Date.now()}`,
         role: 'assistant',
         content: payload.answer ?? 'I searched your organization data, but did not find a matching answer.',
-        actions: payload.nextAction ? [payload.nextAction] : undefined,
+        actions: Array.isArray(payload.actions) ? payload.actions : payload.nextAction ? [payload.nextAction] : undefined,
         actionHref: typeof payload.actionHref === 'string' ? payload.actionHref : null,
         rows: Array.isArray(payload.rows) ? payload.rows : [],
         tone: response.ok ? 'normal' : 'error',
@@ -283,7 +293,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       void runPricingDefaults(question);
       return;
     }
-    if (isOrgSearchQuestion(question)) {
+    if (isOrgSearchQuestion(question, pathname)) {
       void runOrgSearch(question);
       return;
     }
