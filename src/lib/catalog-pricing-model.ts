@@ -13,7 +13,7 @@ export const DEFERRED_CATALOG_PRICING_GAPS = [
   'Lead, RFQ, and quote pricing context now stays linked through the current line-item and catalog coverage model.',
 ] as const;
 
-export const SUPPORTED_QUOTE_DISPLAY_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'AED'] as const;
+export const SUPPORTED_QUOTE_DISPLAY_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'AED', 'AUD', 'CAD', 'NZD', 'SGD', 'JPY', 'CHF', 'ZAR'] as const;
 export type SupportedQuoteDisplayCurrency = (typeof SUPPORTED_QUOTE_DISPLAY_CURRENCIES)[number];
 
 export function normalizeCurrencyCode(value: string | null | undefined) {
@@ -182,7 +182,6 @@ function chooseBasisAmount(rule: CatalogPricingRuleLike | null | undefined, vari
   return amounts.fob;
 }
 
-
 function getActiveCatalogRules(input: {
   rules?: CatalogPricingRuleLike[];
   productId: string;
@@ -289,63 +288,25 @@ export function buildCatalogProductOptions(input: {
   });
 }
 
-export async function validateOrganizationProductIds(
-  db: { from: (table: string) => any },
-  organizationId: string,
-  productIds: string[],
-): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function validateOrganizationProductIds(db: { from: (table: string) => any }, organizationId: string, productIds: string[]): Promise<{ ok: true } | { ok: false; error: string }> {
   const uniqueIds = Array.from(new Set(productIds.map((id) => id.trim()).filter(Boolean)));
   if (!uniqueIds.length) return { ok: true };
-
-  const { data, error } = await db
-    .from('products')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .in('id', uniqueIds);
-
+  const { data, error } = await db.from('products').select('id').eq('organization_id', organizationId).in('id', uniqueIds);
   if (error) return { ok: false, error: error.message };
-
-  const foundIds = new Set(
-    Array.isArray(data)
-      ? data.map((row) => (row && typeof row.id === 'string' ? row.id : null)).filter((id): id is string => Boolean(id))
-      : [],
-  );
-
+  const foundIds = new Set(Array.isArray(data) ? data.map((row) => (row && typeof row.id === 'string' ? row.id : null)).filter((id): id is string => Boolean(id)) : []);
   const missingIds = uniqueIds.filter((id) => !foundIds.has(id));
-  if (missingIds.length) {
-    return { ok: false, error: 'One or more selected products are not available in the active organization.' };
-  }
-
+  if (missingIds.length) return { ok: false, error: 'One or more selected products are not available in the active organization.' };
   return { ok: true };
 }
 
-export async function validateOrganizationVariantIds(
-  db: { from: (table: string) => any },
-  organizationId: string,
-  variantIds: string[],
-): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function validateOrganizationVariantIds(db: { from: (table: string) => any }, organizationId: string, variantIds: string[]): Promise<{ ok: true } | { ok: false; error: string }> {
   const uniqueIds = Array.from(new Set(variantIds.map((id) => id.trim()).filter(Boolean)));
   if (!uniqueIds.length) return { ok: true };
-
-  const { data, error } = await db
-    .from('product_variants')
-    .select('id, products!inner(organization_id)')
-    .eq('products.organization_id', organizationId)
-    .in('id', uniqueIds);
-
+  const { data, error } = await db.from('product_variants').select('id, products!inner(organization_id)').eq('products.organization_id', organizationId).in('id', uniqueIds);
   if (error) return { ok: false, error: error.message };
-
-  const foundIds = new Set(
-    Array.isArray(data)
-      ? data.map((row) => (row && typeof row.id === 'string' ? row.id : null)).filter((id): id is string => Boolean(id))
-      : [],
-  );
-
+  const foundIds = new Set(Array.isArray(data) ? data.map((row) => (row && typeof row.id === 'string' ? row.id : null)).filter((id): id is string => Boolean(id)) : []);
   const missingIds = uniqueIds.filter((id) => !foundIds.has(id));
-  if (missingIds.length) {
-    return { ok: false, error: 'One or more selected product variants are not available in the active organization.' };
-  }
-
+  if (missingIds.length) return { ok: false, error: 'One or more selected product variants are not available in the active organization.' };
   return { ok: true };
 }
 
@@ -371,33 +332,16 @@ type VariantLike = { id: string; product_id: string; is_quoteable?: boolean | nu
 type PriceLike = { id: string; product_variant_id: string; market_id: string | null };
 type LineItemLike = { product_id: string | null };
 
-export function buildCatalogPricingSnapshot(input: {
-  linkedProducts: ProductLike[];
-  variants: VariantLike[];
-  prices: PriceLike[];
-  rules?: CatalogPricingRuleLike[];
-  rfqLineItems: LineItemLike[];
-  quoteLineItems: LineItemLike[];
-}): CatalogPricingSnapshot {
+export function buildCatalogPricingSnapshot(input: { linkedProducts: ProductLike[]; variants: VariantLike[]; prices: PriceLike[]; rules?: CatalogPricingRuleLike[]; rfqLineItems: LineItemLike[]; quoteLineItems: LineItemLike[]; }): CatalogPricingSnapshot {
   const linkedProductIds = Array.from(new Set(input.linkedProducts.map((item) => item.id).filter(Boolean)));
   const linkedProductIdSet = new Set(linkedProductIds);
   const linkedVariants = input.variants.filter((variant) => linkedProductIdSet.has(variant.product_id) && variant.is_quoteable !== false);
   const linkedVariantIdSet = new Set(linkedVariants.map((variant) => variant.id));
   const linkedPrices = input.prices.filter((price) => linkedVariantIdSet.has(price.product_variant_id));
   const activeRules = (input.rules ?? []).filter((rule) => rule.is_active !== false && rule.is_quoteable !== false);
-  const ruleBackedVariantIdSet = new Set(
-    activeRules
-      .map((rule) => rule.product_variant_id ?? null)
-      .filter((variantId): variantId is string => typeof variantId === 'string' && linkedVariantIdSet.has(variantId)),
-  );
-  const ruleBackedProductIdSet = new Set(
-    activeRules
-      .map((rule) => rule.product_id ?? null)
-      .filter((productId): productId is string => typeof productId === 'string' && linkedProductIdSet.has(productId)),
-  );
-  for (const variant of linkedVariants) {
-    if (ruleBackedVariantIdSet.has(variant.id)) ruleBackedProductIdSet.add(variant.product_id);
-  }
+  const ruleBackedVariantIdSet = new Set(activeRules.map((rule) => rule.product_variant_id ?? null).filter((variantId): variantId is string => typeof variantId === 'string' && linkedVariantIdSet.has(variantId)));
+  const ruleBackedProductIdSet = new Set(activeRules.map((rule) => rule.product_id ?? null).filter((productId): productId is string => typeof productId === 'string' && linkedProductIdSet.has(productId)));
+  for (const variant of linkedVariants) if (ruleBackedVariantIdSet.has(variant.id)) ruleBackedProductIdSet.add(variant.product_id);
   const pricedProductIdSet = new Set([...ruleBackedProductIdSet]);
   const coveredMarkets = new Set(linkedPrices.map((price) => price.market_id).filter((id): id is string => Boolean(id)));
   const rfqLinkedLineItems = input.rfqLineItems.filter((item) => Boolean(item.product_id));
@@ -407,174 +351,46 @@ export function buildCatalogPricingSnapshot(input: {
   let pricingReadiness: CatalogPricingSnapshot['pricingReadiness'] = 'missing';
   if (linkedProductIds.length > 0 && pricedProductIdSet.size === linkedProductIds.length) pricingReadiness = 'ready';
   else if (pricedProductIdSet.size > 0 || rfqPricedLineCount > 0 || quotePricedLineCount > 0) pricingReadiness = 'partial';
-  return {
-    linkedProductCount: linkedProductIds.length,
-    linkedPricedProductCount: pricedProductIdSet.size,
-    linkedVariantCount: linkedVariants.length,
-    linkedPriceCount: linkedPrices.length,
-    coveredMarketCount: coveredMarkets.size,
-    rfqLinkedLineCount: rfqLinkedLineItems.length,
-    rfqPricedLineCount,
-    quoteLinkedLineCount: quoteLinkedLineItems.length,
-    quotePricedLineCount,
-    pricingReadiness,
-  };
+  return { linkedProductCount: linkedProductIds.length, linkedPricedProductCount: pricedProductIdSet.size, linkedVariantCount: linkedVariants.length, linkedPriceCount: linkedPrices.length, coveredMarketCount: coveredMarkets.size, rfqLinkedLineCount: rfqLinkedLineItems.length, rfqPricedLineCount, quoteLinkedLineCount: quoteLinkedLineItems.length, quotePricedLineCount, pricingReadiness };
 }
 
-export function getPricingReadinessLabel(value: CatalogPricingSnapshot['pricingReadiness']) {
-  switch (value) {
-    case 'ready': return 'Pricing ready';
-    case 'partial': return 'Pricing partial';
-    default: return 'Pricing missing';
-  }
-}
+export function getPricingReadinessLabel(value: CatalogPricingSnapshot['pricingReadiness']) { switch (value) { case 'ready': return 'Pricing ready'; case 'partial': return 'Pricing partial'; default: return 'Pricing missing'; } }
+export function getPricingReadinessClasses(value: CatalogPricingSnapshot['pricingReadiness']) { switch (value) { case 'ready': return 'border-emerald-200 bg-emerald-50 text-emerald-700'; case 'partial': return 'border-amber-200 bg-amber-50 text-amber-700'; default: return 'border-slate-200 bg-slate-100 text-slate-700'; } }
 
-export function getPricingReadinessClasses(value: CatalogPricingSnapshot['pricingReadiness']) {
-  switch (value) {
-    case 'ready': return 'border-emerald-200 bg-emerald-50 text-emerald-700';
-    case 'partial': return 'border-amber-200 bg-amber-50 text-amber-700';
-    default: return 'border-slate-200 bg-slate-100 text-slate-700';
-  }
-}
+export type LeadCommercialReadiness = CatalogPricingSnapshot & { missingLinkedProductCount: number; missingRfqLineCount: number; missingQuoteLineCount: number; overrideLineCount: number; blockerCount: number; blockerReasons: string[]; };
+type ReadinessLineItemLike = { product_id: string | null; catalog_price_id?: string | null; catalog_price_amount?: number | null; unit_price?: number | null; is_price_overridden?: boolean | null; };
+function countPricedItems(items: ReadinessLineItemLike[], pricedProductIds: Set<string>) { return items.filter((item) => item.product_id && (typeof item.unit_price === 'number' || pricedProductIds.has(item.product_id))).length; }
 
-
-export type LeadCommercialReadiness = CatalogPricingSnapshot & {
-  missingLinkedProductCount: number;
-  missingRfqLineCount: number;
-  missingQuoteLineCount: number;
-  overrideLineCount: number;
-  blockerCount: number;
-  blockerReasons: string[];
-};
-
-type ReadinessLineItemLike = {
-  product_id: string | null;
-  catalog_price_id?: string | null;
-  catalog_price_amount?: number | null;
-  unit_price?: number | null;
-  is_price_overridden?: boolean | null;
-};
-
-function countPricedItems(items: ReadinessLineItemLike[], pricedProductIds: Set<string>) {
-  return items.filter((item) => item.product_id && (typeof item.unit_price === 'number' || pricedProductIds.has(item.product_id))).length;
-}
-
-export function buildLeadCommercialReadiness(input: {
-  linkedProducts: ProductLike[];
-  variants: VariantLike[];
-  prices: PriceLike[];
-  rules?: CatalogPricingRuleLike[];
-  rfqLineItems: ReadinessLineItemLike[];
-  quoteLineItems: ReadinessLineItemLike[];
-  complianceStatuses?: Array<string | null | undefined>;
-}): LeadCommercialReadiness {
-  const snapshot = buildCatalogPricingSnapshot({
-    linkedProducts: input.linkedProducts,
-    variants: input.variants,
-    prices: input.prices,
-    rules: input.rules,
-    rfqLineItems: input.rfqLineItems,
-    quoteLineItems: input.quoteLineItems,
-  });
-
+export function buildLeadCommercialReadiness(input: { linkedProducts: ProductLike[]; variants: VariantLike[]; prices: PriceLike[]; rules?: CatalogPricingRuleLike[]; rfqLineItems: ReadinessLineItemLike[]; quoteLineItems: ReadinessLineItemLike[]; complianceStatuses?: Array<string | null | undefined>; }): LeadCommercialReadiness {
+  const snapshot = buildCatalogPricingSnapshot({ linkedProducts: input.linkedProducts, variants: input.variants, prices: input.prices, rules: input.rules, rfqLineItems: input.rfqLineItems, quoteLineItems: input.quoteLineItems });
   const linkedProductIds = new Set(input.linkedProducts.map((item) => item.id).filter(Boolean));
   const linkedVariants = input.variants.filter((variant) => linkedProductIds.has(variant.product_id) && variant.is_quoteable !== false);
   const linkedVariantIdSet = new Set(linkedVariants.map((variant) => variant.id));
-  const ruleBackedVariantIdSet = new Set(
-    (input.rules ?? [])
-      .filter((rule) => rule.is_active !== false && rule.is_quoteable !== false)
-      .map((rule) => rule.product_variant_id ?? null)
-      .filter((variantId): variantId is string => typeof variantId === 'string' && linkedVariantIdSet.has(variantId)),
-  );
-  const ruleBackedProductIds = new Set(
-    (input.rules ?? [])
-      .filter((rule) => rule.is_active !== false && rule.is_quoteable !== false)
-      .map((rule) => rule.product_id ?? null)
-      .filter((productId): productId is string => typeof productId === 'string' && linkedProductIds.has(productId)),
-  );
-  for (const variant of linkedVariants) {
-    if (ruleBackedVariantIdSet.has(variant.id)) ruleBackedProductIds.add(variant.product_id);
-  }
+  const ruleBackedVariantIdSet = new Set((input.rules ?? []).filter((rule) => rule.is_active !== false && rule.is_quoteable !== false).map((rule) => rule.product_variant_id ?? null).filter((variantId): variantId is string => typeof variantId === 'string' && linkedVariantIdSet.has(variantId)));
+  const ruleBackedProductIds = new Set((input.rules ?? []).filter((rule) => rule.is_active !== false && rule.is_quoteable !== false).map((rule) => rule.product_id ?? null).filter((productId): productId is string => typeof productId === 'string' && linkedProductIds.has(productId)));
+  for (const variant of linkedVariants) if (ruleBackedVariantIdSet.has(variant.id)) ruleBackedProductIds.add(variant.product_id);
   const pricedProductIds = new Set(Array.from(ruleBackedProductIds));
-
   const rfqLinkedLineItems = input.rfqLineItems.filter((item) => Boolean(item.product_id));
   const quoteLinkedLineItems = input.quoteLineItems.filter((item) => Boolean(item.product_id));
   const rfqPricedLineCount = countPricedItems(rfqLinkedLineItems, pricedProductIds);
   const quotePricedLineCount = countPricedItems(quoteLinkedLineItems, pricedProductIds);
   const overrideLineCount = [...rfqLinkedLineItems, ...quoteLinkedLineItems].filter((item) => Boolean(item.is_price_overridden)).length;
   const openComplianceCount = (input.complianceStatuses ?? []).filter((status) => !['approved', 'complete', 'completed', 'waived'].includes(String(status ?? '').toLowerCase())).length;
-
   const blockerReasons: string[] = [];
   const missingLinkedProductCount = Math.max(0, snapshot.linkedProductCount - snapshot.linkedPricedProductCount);
   const missingRfqLineCount = Math.max(0, rfqLinkedLineItems.length - rfqPricedLineCount);
   const missingQuoteLineCount = Math.max(0, quoteLinkedLineItems.length - quotePricedLineCount);
-
   if (missingLinkedProductCount > 0) blockerReasons.push(`${missingLinkedProductCount} linked product${missingLinkedProductCount === 1 ? '' : 's'} missing pricing-rule coverage`);
   if (missingRfqLineCount > 0) blockerReasons.push(`${missingRfqLineCount} RFQ line${missingRfqLineCount === 1 ? '' : 's'} missing price coverage`);
   if (missingQuoteLineCount > 0) blockerReasons.push(`${missingQuoteLineCount} quote line${missingQuoteLineCount === 1 ? '' : 's'} missing price coverage`);
   if (openComplianceCount > 0) blockerReasons.push(`${openComplianceCount} compliance blocker${openComplianceCount === 1 ? '' : 's'} still open`);
-
-  return {
-    ...snapshot,
-    rfqPricedLineCount,
-    quotePricedLineCount,
-    missingLinkedProductCount,
-    missingRfqLineCount,
-    missingQuoteLineCount,
-    overrideLineCount,
-    blockerCount: blockerReasons.length,
-    blockerReasons,
-  };
+  return { ...snapshot, rfqPricedLineCount, quotePricedLineCount, missingLinkedProductCount, missingRfqLineCount, missingQuoteLineCount, overrideLineCount, blockerCount: blockerReasons.length, blockerReasons };
 }
 
-export function getCommercialBlockerTone(blockerCount: number) {
-  return blockerCount > 0
-    ? 'border-rose-200 bg-rose-50 text-rose-700'
-    : 'border-emerald-200 bg-emerald-50 text-emerald-700';
-}
-
-export type QuoteVersionLinePriceLike = {
-  source_ex_factory_usd?: number | null;
-  source_fob_usd?: number | null;
-  source_bulk_usd_per_kg?: number | null;
-  freight_add_on_usd?: number | null;
-};
-
+export function getCommercialBlockerTone(blockerCount: number) { return blockerCount > 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'; }
+export type QuoteVersionLinePriceLike = { source_ex_factory_usd?: number | null; source_fob_usd?: number | null; source_bulk_usd_per_kg?: number | null; freight_add_on_usd?: number | null; };
 export { getPricingBasisLabel } from '@/lib/pricing-basis-contract';
-
-
-export function detectMissingPrice(basis: QuotePricingBasis, lineItem: QuoteVersionLinePriceLike) {
-  const hasPositive = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value > 0;
-  if (basis === 'ex_factory') return !hasPositive(lineItem.source_ex_factory_usd);
-  if (basis === 'bulk_chips') return !hasPositive(lineItem.source_bulk_usd_per_kg);
-  if (basis === 'cif') return !hasPositive(lineItem.source_fob_usd) || !hasPositive(lineItem.freight_add_on_usd);
-  return !hasPositive(lineItem.source_fob_usd);
-}
-
-export type CatalogPriceStalenessLineLike = {
-  product_variant_id?: string | null;
-  catalog_price_amount?: number | null;
-  catalog_price_currency?: string | null;
-};
-
-export type CurrentCatalogPriceLike = {
-  product_variant_id?: string | null;
-  price?: number | null;
-  currency?: string | null;
-  effective_from?: string | null;
-  effective_to?: string | null;
-};
-
-export function isCatalogPriceStale(lineItem: CatalogPriceStalenessLineLike, currentPrices: CurrentCatalogPriceLike[] = [], today: Date = new Date()) {
-  if (!lineItem.product_variant_id || typeof lineItem.catalog_price_amount !== 'number') return false;
-  const todayKey = today.toISOString().slice(0, 10);
-  const current = currentPrices.find((price) => {
-    if (price.product_variant_id !== lineItem.product_variant_id) return false;
-    const effectiveFrom = String(price.effective_from ?? '0000-01-01').slice(0, 10);
-    const effectiveTo = price.effective_to ? String(price.effective_to).slice(0, 10) : '9999-12-31';
-    return effectiveFrom <= todayKey && todayKey <= effectiveTo;
-  });
-  if (!current || typeof current.price !== 'number') return false;
-  const sameCurrency = !lineItem.catalog_price_currency || !current.currency || String(lineItem.catalog_price_currency).toUpperCase() === String(current.currency).toUpperCase();
-  return sameCurrency && Number(current.price.toFixed(4)) !== Number(lineItem.catalog_price_amount.toFixed(4));
-}
+export function detectMissingPrice(basis: QuotePricingBasis, lineItem: QuoteVersionLinePriceLike) { const hasPositive = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value > 0; if (basis === 'ex_factory') return !hasPositive(lineItem.source_ex_factory_usd); if (basis === 'bulk_chips') return !hasPositive(lineItem.source_bulk_usd_per_kg); if (basis === 'cif') return !hasPositive(lineItem.source_fob_usd) || !hasPositive(lineItem.freight_add_on_usd); return !hasPositive(lineItem.source_fob_usd); }
+export type CatalogPriceStalenessLineLike = { product_variant_id?: string | null; catalog_price_amount?: number | null; catalog_price_currency?: string | null; };
+export type CurrentCatalogPriceLike = { product_variant_id?: string | null; price?: number | null; currency?: string | null; effective_from?: string | null; effective_to?: string | null; };
+export function isCatalogPriceStale(lineItem: CatalogPriceStalenessLineLike, currentPrices: CurrentCatalogPriceLike[] = [], today: Date = new Date()) { if (!lineItem.product_variant_id || typeof lineItem.catalog_price_amount !== 'number') return false; const todayKey = today.toISOString().slice(0, 10); const current = currentPrices.find((price) => { if (price.product_variant_id !== lineItem.product_variant_id) return false; const effectiveFrom = String(price.effective_from ?? '0000-01-01').slice(0, 10); const effectiveTo = price.effective_to ? String(price.effective_to).slice(0, 10) : '9999-12-31'; return effectiveFrom <= todayKey && todayKey <= effectiveTo; }); if (!current || typeof current.price !== 'number') return false; const sameCurrency = !lineItem.catalog_price_currency || !current.currency || String(lineItem.catalog_price_currency).toUpperCase() === String(current.currency).toUpperCase(); return sameCurrency && Number(current.price.toFixed(4)) !== Number(lineItem.catalog_price_amount.toFixed(4)); }
