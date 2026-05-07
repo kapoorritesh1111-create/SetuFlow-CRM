@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit: `8b9600c1c40b93424be2b76d0c40388bafda2432`
-- Commit message: `Document Setu Guru page help wiring`
+- Latest verified production READY commit: `36d2905254a3ddcbeac73dbe89c542feea860dd0`
+- Commit message: `Record Setu Guru mode alias routing pass`
 - Previous product-stability baseline: `770244eba3a973aab7b27290e05de7f0779dc245`
 - Vercel status at this update: `READY`
 - Included recent improvements:
@@ -87,8 +87,8 @@ Setu Guru must become smarter on every pass. Every UX change must include matchi
 
 ### Sprint 1 — Implementation control and anti-drift system
 
-Status: `IN PROGRESS`
-Target completion: 100% before major new UX work.
+Status: `DONE`
+Target completion: completed before further roadmap expansion.
 
 Deliverables:
 
@@ -108,13 +108,21 @@ Definition of done:
 - Future passes require Ritesh approval before GitHub writes.
 - Future normal passes commit once to `main` and trigger one Vercel deployment.
 
-Progress: 95%
+Completion audit:
+
+- Required control docs exist and are current.
+- Approval-before-GitHub-write rule is documented.
+- Direct-main and one-final-commit expectations are documented.
+- New-chat continuation prompt is embedded below.
+- Latest production deployment is READY.
+
+Progress: 100%
 
 ---
 
 ### Sprint 2 — Setu Guru knowledge base foundation
 
-Status: `IN PROGRESS`
+Status: `DONE`
 
 Deliverables:
 
@@ -147,7 +155,16 @@ Definition of done:
 - Setu Guru can answer from route-specific help before falling back to generic topics.
 - Widget fallback and page-help API path are covered by tests.
 
-Progress: 82%
+Completion audit:
+
+- All required `docs/help/*` files exist.
+- All required `src/lib/setu-guru/*` registry/context/policy files exist.
+- Setu Guru widget uses the registry and page context collector.
+- `/api/setu-guru/org-search` can answer `page_help` before Supabase lookup.
+- Tests protect the docs, registry, widget wiring, and page-help behavior.
+- Latest production deployment is READY.
+
+Progress: 100%
 
 ---
 
@@ -320,11 +337,11 @@ Progress: 10%
 
 Current readiness snapshot:
 
-- Overall CRM readiness: 81%
-- Current anti-drift sprint completion: 95%
-- Current Setu Guru knowledge sprint completion: 82%
-- Current Setu Guru routing sprint completion: 30%
-- Setu Guru intelligence readiness: 63%
+- Overall CRM readiness: 82%
+- Completed Sprint 1 anti-drift/control: 100%
+- Completed Sprint 2 Setu Guru knowledge foundation: 100%
+- Current Sprint 3 Setu Guru routing completion: 30%
+- Setu Guru intelligence readiness: 65%
 - UX cleanup readiness: 44%
 - Quote/compliance maturity: 47%
 - Product catalog maturity: 56%
@@ -377,9 +394,10 @@ Rules:
 8. Protect previous fixes listed in DO_NOT_REGRESS.md.
 9. Ask Ritesh for explicit approval before making GitHub repo changes.
 10. After approval, prepare the full approved pass and make one final commit directly to GitHub main unless Ritesh asks for a branch or PR.
-11. At the end, report build status, files changed, readiness %, sprint %, and the next pass.
+11. Before moving to the next roadmap pass, ensure all earlier sprints are either 100% complete or explicitly marked as still active with a reason.
+12. At the end, report build status, files changed, readiness %, sprint %, and the next pass.
 
-Current direction: continue UX cleanup and Setu Guru intelligence. Sprint 2 route help docs and registry are mostly complete, and Sprint 3 live route context has started. Next recommended pass is to turn safe research routing into source-backed live research execution with citations for HS/HSN, duties, document requirements, and margins.
+Current direction: Sprint 1 and Sprint 2 are complete at 100%. Continue Sprint 3 live route context and source-backed research execution next.
 ```
 
 ---
