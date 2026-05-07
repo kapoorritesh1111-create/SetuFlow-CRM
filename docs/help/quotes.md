@@ -7,7 +7,7 @@ Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals
 - Reviewing quote lines, prices, currency, incoterms, payment terms, and validity.
 - Separating quote currency from catalog/reference currency.
 - Checking approval status and quote-send readiness.
-- Preparing a professional quote PDF that includes SKU, product, pack, units per case, MOQ cases, basis, unit price, case price, line total, origin, shelf life, lead time, and clear tax/incoterm wording.
+- Preparing a professional quote PDF that includes SKU, product, pack, units per case, MOQ cases, basis, unit price, case price, line total, origin, shelf life, lead time, seller address, tax ID, and clear tax/incoterm wording.
 
 ## Common questions Setu Guru should answer
 
@@ -31,6 +31,7 @@ Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals
 - Quote header and quote lines.
 - Lead and lead product interests.
 - Product catalog rows and variants.
+- Organization profile fields: legal name, registered address, city, postal code, country, website, contact email, and tax ID.
 - Organization pricing defaults, category defaults, and approval rules.
 - Documents, document rules, and compliance items.
 
@@ -42,13 +43,17 @@ Quote PDFs should look buyer-ready and professional. Use a light white/slate lay
 - Product
 - Pack (g)
 - Units/Case
-- MOQ (cases)
+- MOQ cases
 - Basis
 - Selected quote currency per unit
 - Selected quote currency per case
 - Line total in selected quote currency, calculated as MOQ cases × case price
 
 The selected quote currency comes from the quote builder display currency/currency. Do not hardcode USD when the quote is in AUD, EUR, GBP, INR, or another supported display currency.
+
+For price-list style exports, treat the quote line price as the case price when the commercial quote is built per case, derive unit price from case price ÷ units per case, and use MOQ cases × case price for the line total. Use catalog pack, units-per-case, and MOQ values first. If older quote/catalog records are sparse, use safe catalog/SKU fallback values rather than leaving buyer-facing pack and case fields blank.
+
+Seller information should include legal name, registered address, city/postal code/country, contact email, website when space allows, and tax ID. Keep the PDF compact enough to avoid large whitespace gaps between commercial sections.
 
 ## Allowed actions
 

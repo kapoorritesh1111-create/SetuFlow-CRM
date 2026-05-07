@@ -17,6 +17,19 @@ test('quote pdf table columns fit inside the printable width', () => {
   assert.doesNotMatch(pdfRoute, /\['MOQ \(cases\)', 58, 'right'\]/);
 });
 
+test('quote pdf includes seller address and tax lines', () => {
+  assert.match(pdfRoute, /registered_address, city, postal_code, headquarters_country/);
+  assert.match(pdfRoute, /function addressLines/);
+  assert.match(pdfRoute, /Tax ID:/);
+});
+
+test('quote pdf uses pack and case defaults when catalog fields are sparse', () => {
+  assert.match(pdfRoute, /function inferredSnackPackGrams/);
+  assert.match(pdfRoute, /function inferredUnitsPerCase/);
+  assert.match(pdfRoute, /function inferredMoqCases/);
+  assert.match(pdfRoute, /packGrams\(variant, product\)/);
+});
+
 test('quote pdf uses selected quote currency labels and not hardcoded USD columns', () => {
   assert.match(pdfRoute, /const currency = String\(quote\.display_currency \?\? quote\.currency/);
   assert.match(pdfRoute, /`\$\{data\.currency\}\/Unit`/);
@@ -25,8 +38,9 @@ test('quote pdf uses selected quote currency labels and not hardcoded USD column
   assert.doesNotMatch(pdfRoute, /USD\/Case/);
 });
 
-test('quote pdf calculates line total as MOQ cases times case price', () => {
-  assert.match(pdfRoute, /const casePrice = unitPrice \* unitsPerCase/);
+test('quote pdf treats quote line price as case price and derives unit price', () => {
+  assert.match(pdfRoute, /const casePrice = n\(line\.unit_price \?\? line\.catalog_price_amount\)/);
+  assert.match(pdfRoute, /const unitPrice = unitsPerCase > 1 \? casePrice \/ unitsPerCase : casePrice/);
   assert.match(pdfRoute, /total: moqCases \* casePrice/);
 });
 
