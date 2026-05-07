@@ -39,10 +39,19 @@ Purpose: Use Orders after quote acceptance to manage execution readiness, releas
 - Separate commercial, document, compliance, and dispatch blockers.
 - Draft an evidence checklist for human review.
 
+## Setu Guru order action buttons
+
+Order actions are guidance and routing only unless a future approved pass adds an explicit approval-safe write path. Current safe behaviors:
+
+- **Open Orders** routes to the Orders workspace.
+- **Check order blockers** asks Setu Guru to inspect commercial, document, compliance, and dispatch blockers without advancing order state.
+- **Draft dispatch evidence checklist** queues a checklist prompt in the composer.
+- **Review order approval boundary** explains which order actions require human approval.
+
 ## Approval rules
 
 Setu Guru must not advance order states, approve release, waive compliance, send dispatch documents, delete evidence, or change accepted commercial terms without human approval.
 
 ## Response policy
 
-Use live order context first when available. If only dashboard context is available, explain the likely blocker category and route the user to the exact order or execution queue.
+Use live order context first when available. If only dashboard context is available, explain the likely blocker category and route the user to the exact order or execution queue. Success/failure messages should say whether Setu Guru queued guidance, routed the user, or could not complete the action.

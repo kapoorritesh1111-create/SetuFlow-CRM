@@ -56,27 +56,40 @@ Decision:
 - `/api/setu-guru/org-search` now returns `actionHrefs` for quote/compliance answers so each action can route to its own destination.
 - The Setu Guru drawer reads `actionHrefs` and still falls back to route registry mapping or composer queueing when no route is available.
 
+Build:
+
+- BUILDING / pending after this pass
+- Baseline before pass: `e7feb89de0caa18c53e005b8c9f12bc959880241`
+
+---
+
+## 2026-05-07 — Order action routing remains guidance-only
+
+Decision:
+
+- Order Setu Guru actions now include `Check order blockers`, `Draft dispatch evidence checklist`, and `Review order approval boundary`.
+- The drawer handles these actions by running blocker guidance, queueing a dispatch checklist prompt, or explaining approval boundaries.
+- No order write-back endpoint or order state mutation was added.
+- Action feedback now tells the user whether Setu Guru queued guidance, routed the user, or stopped at a human-approval boundary.
+
 Files:
 
-- `src/lib/setu-guru/live-research.ts`
-- `src/app/api/setu-guru/apply-hsn/route.ts`
-- `src/app/api/setu-guru/org-search/route.ts`
+- `src/lib/setu-guru/help-registry.ts`
 - `src/features/setu-guru/setu-guru-widget.tsx`
+- `docs/help/orders.md`
 - `tests/setu-guru.test.mjs`
-- `docs/help/setu-guru.md`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Reason:
 
-- Ritesh asked to test the HSN drawer flow and ensure assigned Setu Guru actions work.
-- Product names can repeat, so approval-safe HSN updates should use exact product IDs where possible.
-- Quote/compliance buttons need per-action destinations instead of one shared fallback URL.
+- Ritesh approved tightening order route actions and richer success/failure states.
+- Order execution actions are high-impact and must stay guidance-only until an explicit approval-safe write path is designed.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `e7feb89de0caa18c53e005b8c9f12bc959880241`
+- Baseline before pass: `8a2d8d866cc5e11ca9edddf4a23a73f84f635b31`
 
 ---
 
