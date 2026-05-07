@@ -1,51 +1,11 @@
 export type SetuGuruLiveResearchMode = 'hsn_enrichment' | 'document_requirements' | 'margin_benchmark';
 
-type ResearchSourceSeed = {
-  title: string;
-  url: string;
-  sourceType: 'official' | 'trade_reference' | 'market_reference' | 'internal_review';
-  why: string;
-};
-
-export type SetuGuruResearchSource = ResearchSourceSeed & {
-  id: string;
-  citation: string;
-};
-
-export type SetuGuruResearchEntityContext = {
-  product?: string;
-  country?: string;
-  role?: string;
-  entityLabel?: string;
-  source?: 'active_product' | 'active_lead' | 'active_quote' | 'visible_page' | 'fallback';
-};
-
-export type SetuGuruHsnCatalogReview = {
-  productName: string;
-  currentHsn: string;
-  suggestedHsn: string;
-  suggestedBasis: string;
-  matchesCatalog: boolean;
-  needsApproval: boolean;
-};
-
-export type SetuGuruResearchContext = {
-  product: string;
-  country: string;
-  role: string;
-  route: string;
-  entityLabel: string;
-  source: string;
-};
-
-export type SetuGuruLiveResearchInput = {
-  question: string;
-  route?: string;
-  pageText?: string;
-  mode: SetuGuruLiveResearchMode;
-  entityContext?: SetuGuruResearchEntityContext | null;
-  hsnCatalogReview?: SetuGuruHsnCatalogReview | null;
-};
+type ResearchSourceSeed = { title: string; url: string; sourceType: 'official' | 'trade_reference' | 'market_reference' | 'internal_review'; why: string };
+export type SetuGuruResearchSource = ResearchSourceSeed & { id: string; citation: string };
+export type SetuGuruResearchEntityContext = { product?: string; country?: string; role?: string; entityLabel?: string; source?: 'active_product' | 'active_lead' | 'active_quote' | 'visible_page' | 'fallback' };
+export type SetuGuruHsnCatalogReview = { productId?: string; productName: string; currentHsn: string; suggestedHsn: string; suggestedBasis: string; matchesCatalog: boolean; needsApproval: boolean };
+export type SetuGuruResearchContext = { product: string; country: string; role: string; route: string; entityLabel: string; source: string };
+export type SetuGuruLiveResearchInput = { question: string; route?: string; pageText?: string; mode: SetuGuruLiveResearchMode; entityContext?: SetuGuruResearchEntityContext | null; hsnCatalogReview?: SetuGuruHsnCatalogReview | null };
 
 const RESEARCH_SOURCES: Record<SetuGuruLiveResearchMode, ResearchSourceSeed[]> = {
   hsn_enrichment: [
@@ -67,146 +27,19 @@ const RESEARCH_SOURCES: Record<SetuGuruLiveResearchMode, ResearchSourceSeed[]> =
     { title: 'SETU Flow pricing defaults and quote history', url: 'internal:setu-flow-pricing-defaults', sourceType: 'internal_review', why: 'Use internal organization defaults and prior quote context before saving any new margin assumption.' },
   ],
 };
-
-const MODE_LABELS: Record<SetuGuruLiveResearchMode, string> = {
-  hsn_enrichment: 'HS/HSN enrichment',
-  document_requirements: 'document requirements and duties/tariffs',
-  margin_benchmark: 'margin benchmark research',
-};
-
+const MODE_LABELS: Record<SetuGuruLiveResearchMode, string> = { hsn_enrichment: 'HS/HSN enrichment', document_requirements: 'document requirements and duties/tariffs', margin_benchmark: 'margin benchmark research' };
 const COUNTRY_HINTS = ['India', 'United States', 'USA', 'US', 'United Kingdom', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'Netherlands', 'Spain', 'Italy', 'United Arab Emirates', 'UAE', 'Saudi Arabia', 'Singapore', 'Japan', 'South Korea', 'Vietnam', 'Thailand', 'Malaysia', 'Indonesia', 'China', 'Mexico', 'Brazil', 'South Africa', 'European Union', 'EU'];
-
-function compactText(value: string) {
-  return value.replace(/\s+/g, ' ').trim();
-}
-
-function titleCase(value: string) {
-  return value.replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function firstMatch(text: string, patterns: RegExp[]) {
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    const value = match?.[1]?.trim();
-    if (value) return compactText(value).slice(0, 80);
-  }
-  return '';
-}
-
-function normalizeCountry(country: string) {
-  if (country === 'USA' || country === 'US') return 'United States';
-  if (country === 'UK') return 'United Kingdom';
-  if (country === 'EU') return 'European Union';
-  return country;
-}
-
-function inferCountry(text: string) {
-  const lower = text.toLowerCase();
-  const country = COUNTRY_HINTS.find((item) => lower.includes(item.toLowerCase()));
-  return country ? normalizeCountry(country) : 'not detected';
-}
-
-function inferRole(text: string) {
-  const lower = text.toLowerCase();
-  if (/\bbuyer\b|\bimporter\b|\bdistributor\b|\bcustomer\b/.test(lower)) return 'buyer/importer';
-  if (/\bsupplier\b|\bexporter\b|\bmanufacturer\b|\bvendor\b/.test(lower)) return 'supplier/exporter';
-  if (/\bquote\b|\border\b|\bdispatch\b/.test(lower)) return 'commercial workflow';
-  return 'not detected';
-}
-
-function inferProduct(question: string, pageText = '') {
-  const text = compactText(`${question} ${pageText.slice(0, 900)}`);
-  const explicit = firstMatch(text, [
-    /(?:product|item|sku|hsn for|hs code for|margin for|documents for)\s*[:\-]?\s*([a-z0-9][a-z0-9\s/&()\-]{2,80})/i,
-    /(?:export|import|ship|quote|sell|buy)\s+([a-z0-9][a-z0-9\s/&()\-]{2,80})\s+(?:to|from|in|for)/i,
-  ]);
-  if (explicit) return titleCase(explicit.replace(/\b(to|from|in|for|with|and|or)\b.*$/i, '').trim() || explicit);
-  const cleaned = text
-    .replace(/\b(what|which|how|many|do|does|should|need|needed|please|find|research|source|sources|citation|citations|hsn|hs code|hs-code|tariff|tariffs|duty|duties|document|documents|requirement|requirements|margin|benchmark|country|buyer|supplier|importer|exporter)\b/gi, ' ')
-    .replace(/[^a-z0-9\s/&()-]/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return titleCase(cleaned.slice(0, 80)) || 'not detected';
-}
-
-function preferEntityValue(value: string | undefined, fallback: string) {
-  const clean = compactText(String(value ?? ''));
-  return clean || fallback;
-}
-
-function getResearchContext(input: SetuGuruLiveResearchInput): SetuGuruResearchContext {
-  const text = compactText(`${input.question} ${input.pageText?.slice(0, 1500) ?? ''}`);
-  const inferredProduct = inferProduct(input.question, input.pageText);
-  const inferredCountry = inferCountry(text);
-  const inferredRole = inferRole(text);
-  const entity = input.entityContext ?? null;
-  return {
-    product: preferEntityValue(entity?.product, inferredProduct),
-    country: preferEntityValue(entity?.country, inferredCountry),
-    role: preferEntityValue(entity?.role, inferredRole),
-    route: input.route || '/dashboard',
-    entityLabel: preferEntityValue(entity?.entityLabel, 'visible page context'),
-    source: entity?.source ?? 'visible_page',
-  };
-}
-
-function getResearchSubject(context: SetuGuruResearchContext, question: string) {
-  const parts = [context.product !== 'not detected' ? context.product : '', context.country !== 'not detected' ? context.country : '', context.role !== 'not detected' ? context.role : ''].filter(Boolean);
-  return parts.length ? parts.join(' · ') : question.slice(0, 140) || 'current product, country, and route context';
-}
-
-function getResearchSteps(mode: SetuGuruLiveResearchMode) {
-  if (mode === 'hsn_enrichment') {
-    return ['Confirm product composition, use case, form, packaging, and destination country.', 'Compare candidate HS chapters/headings against official notes before choosing a code.', 'Check the live catalog HSN before asking for approval to update product defaults.'];
-  }
-  if (mode === 'document_requirements') {
-    return ['Confirm product, destination country, buyer/supplier role, and workflow stage: quote, order, or dispatch.', 'Separate mandatory quote-send blockers from order/dispatch and advisory documents.', 'Treat source-backed requirements as draft until a human reviews and updates organization policy.'];
-  }
-  return ['Confirm product category, buyer market, channel role, landed-cost assumptions, and quote currency.', 'Compare internal pricing defaults with market/channel references before using an external benchmark.', 'Keep the benchmark quote-only unless a human approves saving product/category/organization defaults.'];
-}
-
-function hydrateSources(mode: SetuGuruLiveResearchMode): SetuGuruResearchSource[] {
-  return RESEARCH_SOURCES[mode].map((source, index) => ({ ...source, id: `S${index + 1}`, citation: `[S${index + 1}]` }));
-}
-
-function catalogReviewParagraph(review: SetuGuruHsnCatalogReview | null | undefined) {
-  if (!review) return null;
-  const current = review.currentHsn || 'not assigned';
-  const status = review.matchesCatalog ? `Catalog check: ${review.productName} already has HSN ${current}, which matches the draft candidate.` : `Catalog check: ${review.productName} currently has HSN ${current}. Draft candidate is ${review.suggestedHsn}.`;
-  const approval = review.needsApproval ? `Human approval required: should I apply ${review.suggestedHsn} to ${review.productName} in the catalog?` : 'No catalog update is needed unless you want to override it after review.';
-  return `Draft HSN candidate: ${review.suggestedHsn}. Basis: ${review.suggestedBasis}. ${status} ${approval}`;
-}
-
-export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInput) {
-  const mode = input.mode;
-  const label = MODE_LABELS[mode];
-  const context = getResearchContext(input);
-  const subject = getResearchSubject(context, input.question);
-  const sources = hydrateSources(mode);
-  const steps = getResearchSteps(mode);
-  const sourceSummary = sources.map((source) => `${source.citation} ${source.title}`).join('; ');
-  const hsnReview = mode === 'hsn_enrichment' ? catalogReviewParagraph(input.hsnCatalogReview) : null;
-  const answer = [
-    `I prepared a source-backed draft research brief for ${label}.`,
-    `Detected context: Product: ${context.product}. Country/market: ${context.country}. Role/stage: ${context.role}. Active source: ${context.entityLabel} (${context.source}). Route: ${context.route}.`,
-    `Research scope: ${subject}.`,
-    hsnReview,
-    `Reviewable sources: ${sourceSummary}.`,
-    `Recommended review path: ${steps.map((step, index) => `${index + 1}. ${step}`).join(' ')}`,
-    'No CRM values were saved. Human approval is required before saving HS/HSN codes, document rules, duties/tariffs, margin defaults, compliance policies, quote sends, waivers, or write-backs.',
-  ].filter(Boolean).join('\n\n');
-
-  return {
-    answer,
-    confidence: context.product === 'not detected' || context.country === 'not detected' ? 'medium' : 'high',
-    mode,
-    researchStatus: 'source_backed_draft',
-    requiresHumanApproval: true,
-    subject,
-    context,
-    hsnCatalogReview: input.hsnCatalogReview ?? null,
-    citations: sources,
-    rows: sources.map((source) => ({ id: source.id, name: source.title, type: source.sourceType, url: source.url, citation: source.citation, next: source.why })),
-    actions: input.hsnCatalogReview?.needsApproval ? ['Review sources', 'Approve catalog HSN update', 'Open Product Management'] : ['Review sources', 'Ask live research follow-up', mode === 'margin_benchmark' ? 'Review pricing defaults' : 'Open compliance'],
-  };
-}
+function compactText(value: string) { return value.replace(/\s+/g, ' ').trim(); }
+function titleCase(value: string) { return value.replace(/\b\w/g, (char) => char.toUpperCase()); }
+function firstMatch(text: string, patterns: RegExp[]) { for (const pattern of patterns) { const match = text.match(pattern); const value = match?.[1]?.trim(); if (value) return compactText(value).slice(0, 80); } return ''; }
+function normalizeCountry(country: string) { if (country === 'USA' || country === 'US') return 'United States'; if (country === 'UK') return 'United Kingdom'; if (country === 'EU') return 'European Union'; return country; }
+function inferCountry(text: string) { const lower = text.toLowerCase(); const country = COUNTRY_HINTS.find((item) => lower.includes(item.toLowerCase())); return country ? normalizeCountry(country) : 'not detected'; }
+function inferRole(text: string) { const lower = text.toLowerCase(); if (/\bbuyer\b|\bimporter\b|\bdistributor\b|\bcustomer\b/.test(lower)) return 'buyer/importer'; if (/\bsupplier\b|\bexporter\b|\bmanufacturer\b|\bvendor\b/.test(lower)) return 'supplier/exporter'; if (/\bquote\b|\border\b|\bdispatch\b/.test(lower)) return 'commercial workflow'; return 'not detected'; }
+function inferProduct(question: string, pageText = '') { const text = compactText(`${question} ${pageText.slice(0, 900)}`); const explicit = firstMatch(text, [/(?:product|item|sku|hsn for|hs code for|margin for|documents for)\s*[:\-]?\s*([a-z0-9][a-z0-9\s/&()\-]{2,80})/i, /(?:export|import|ship|quote|sell|buy)\s+([a-z0-9][a-z0-9\s/&()\-]{2,80})\s+(?:to|from|in|for)/i]); if (explicit) return titleCase(explicit.replace(/\b(to|from|in|for|with|and|or)\b.*$/i, '').trim() || explicit); const cleaned = text.replace(/\b(what|which|how|many|do|does|should|need|needed|please|find|research|source|sources|citation|citations|hsn|hs code|hs-code|tariff|tariffs|duty|duties|document|documents|requirement|requirements|margin|benchmark|country|buyer|supplier|importer|exporter)\b/gi, ' ').replace(/[^a-z0-9\s/&()-]/gi, ' ').replace(/\s+/g, ' ').trim(); return titleCase(cleaned.slice(0, 80)) || 'not detected'; }
+function preferEntityValue(value: string | undefined, fallback: string) { const clean = compactText(String(value ?? '')); return clean || fallback; }
+function getResearchContext(input: SetuGuruLiveResearchInput): SetuGuruResearchContext { const text = compactText(`${input.question} ${input.pageText?.slice(0, 1500) ?? ''}`); const entity = input.entityContext ?? null; return { product: preferEntityValue(entity?.product, inferProduct(input.question, input.pageText)), country: preferEntityValue(entity?.country, inferCountry(text)), role: preferEntityValue(entity?.role, inferRole(text)), route: input.route || '/dashboard', entityLabel: preferEntityValue(entity?.entityLabel, 'visible page context'), source: entity?.source ?? 'visible_page' }; }
+function getResearchSubject(context: SetuGuruResearchContext, question: string) { const parts = [context.product !== 'not detected' ? context.product : '', context.country !== 'not detected' ? context.country : '', context.role !== 'not detected' ? context.role : ''].filter(Boolean); return parts.length ? parts.join(' · ') : question.slice(0, 140) || 'current product, country, and route context'; }
+function getResearchSteps(mode: SetuGuruLiveResearchMode) { if (mode === 'hsn_enrichment') return ['Confirm product composition, use case, form, packaging, and destination country.', 'Compare candidate HS chapters/headings against official notes before choosing a code.', 'Check the live catalog HSN before asking for approval to update product defaults.']; if (mode === 'document_requirements') return ['Confirm product, destination country, buyer/supplier role, and workflow stage: quote, order, or dispatch.', 'Separate mandatory quote-send blockers from order/dispatch and advisory documents.', 'Treat source-backed requirements as draft until a human reviews and updates organization policy.']; return ['Confirm product category, buyer market, channel role, landed-cost assumptions, and quote currency.', 'Compare internal pricing defaults with market/channel references before using an external benchmark.', 'Keep the benchmark quote-only unless a human approves saving product/category/organization defaults.']; }
+function hydrateSources(mode: SetuGuruLiveResearchMode): SetuGuruResearchSource[] { return RESEARCH_SOURCES[mode].map((source, index) => ({ ...source, id: `S${index + 1}`, citation: `[S${index + 1}]` })); }
+function catalogReviewParagraph(review: SetuGuruHsnCatalogReview | null | undefined) { if (!review) return null; const current = review.currentHsn || 'not assigned'; const identity = review.productId ? `${review.productName} (${review.productId})` : review.productName; const status = review.matchesCatalog ? `Catalog check: ${identity} already has HSN ${current}, which matches the draft candidate.` : `Catalog check: ${identity} currently has HSN ${current}. Draft candidate is ${review.suggestedHsn}.`; const approval = review.needsApproval ? `Human approval required: should I apply ${review.suggestedHsn} to ${review.productName} in the catalog?` : 'No catalog update is needed unless you want to override it after review.'; return `Draft HSN candidate: ${review.suggestedHsn}. Basis: ${review.suggestedBasis}. ${status} ${approval}`; }
+export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInput) { const mode = input.mode; const label = MODE_LABELS[mode]; const context = getResearchContext(input); const subject = getResearchSubject(context, input.question); const sources = hydrateSources(mode); const steps = getResearchSteps(mode); const sourceSummary = sources.map((source) => `${source.citation} ${source.title}`).join('; '); const hsnReview = mode === 'hsn_enrichment' ? catalogReviewParagraph(input.hsnCatalogReview) : null; const answer = [`I prepared a source-backed draft research brief for ${label}.`, `Detected context: Product: ${context.product}. Country/market: ${context.country}. Role/stage: ${context.role}. Active source: ${context.entityLabel} (${context.source}). Route: ${context.route}.`, `Research scope: ${subject}.`, hsnReview, `Reviewable sources: ${sourceSummary}.`, `Recommended review path: ${steps.map((step, index) => `${index + 1}. ${step}`).join(' ')}`, 'No CRM values were saved. Human approval is required before saving HS/HSN codes, document rules, duties/tariffs, margin defaults, compliance policies, quote sends, waivers, or write-backs.'].filter(Boolean).join('\n\n'); return { answer, confidence: context.product === 'not detected' || context.country === 'not detected' ? 'medium' : 'high', mode, researchStatus: 'source_backed_draft', requiresHumanApproval: true, subject, context, hsnCatalogReview: input.hsnCatalogReview ?? null, citations: sources, rows: sources.map((source) => ({ id: source.id, name: source.title, type: source.sourceType, url: source.url, citation: source.citation, next: source.why })), actions: input.hsnCatalogReview?.needsApproval ? ['Review sources', 'Approve catalog HSN update', 'Open Product Management'] : ['Review sources', 'Ask live research follow-up', mode === 'margin_benchmark' ? 'Review pricing defaults' : 'Open compliance'] }; }

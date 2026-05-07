@@ -2,13 +2,6 @@
 
 Purpose: Setu Guru is the embedded CRM assistant. It should be contextual, safe, and useful inside the current route before falling back to generic workflow help.
 
-## Best for
-
-- Explaining what the current page is for.
-- Summarizing visible blockers and next safe actions.
-- Searching live organization data for products, leads, buyers, suppliers, quotes, compliance, and documents.
-- Researching HS/HSN codes, tariffs, duties, margins, and country compliance rules with reviewable sources.
-
 ## HSN catalog review behavior
 
 For questions like “what is HSN code for vacuum cooked banana chips,” Setu Guru must route to live organization search and source-backed research. It should provide a draft HSN candidate, check the matching catalog product, compare the current catalog HSN, and ask for explicit human approval before applying any change.
@@ -21,20 +14,22 @@ When the user clicks **Approve catalog HSN update**, Setu Guru must:
 
 1. show a confirmation prompt,
 2. call `/api/setu-guru/apply-hsn`,
-3. require an authenticated user with `catalog.manage`,
-4. verify the active product name is unique in the organization,
-5. verify the catalog HSN has not changed since the research brief,
-6. update the product and its variants only after approval,
-7. write an audit log with source `setu_guru_hsn_approval`,
-8. revalidate product-related routes.
+3. send the catalog `productId` from the research brief when available,
+4. require an authenticated user with `catalog.manage`,
+5. verify the active product still matches the research brief,
+6. verify the catalog HSN has not changed since the research brief,
+7. update the product and its variants only after approval,
+8. write an audit log with source `setu_guru_hsn_approval`,
+9. revalidate product-related routes.
 
 If the catalog already matches the reviewed HSN, no update should be made.
 
-## Setu Guru action button policy
+## Route-specific action button policy
 
 Every action button shown in Setu Guru must have a safe behavior:
 
 - navigation actions route to the right page,
+- quote/compliance actions may use per-action route maps, such as Compliance Assist for the active lead and lead document tabs for evidence,
 - review-source actions explain the source cards,
 - live-research actions place a follow-up question in the composer,
 - blocker actions run live blocker search,
