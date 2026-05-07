@@ -16,6 +16,11 @@ function normalizeStatus(value: FormDataEntryValue | null) {
   return String(value ?? '').trim().toLowerCase();
 }
 
+function safeReturnPath(value: FormDataEntryValue | null, fallback = '/compliance') {
+  const raw = String(value ?? '').trim();
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return fallback;
+  return raw;
+}
 
 export async function uploadWorkspaceDocument(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
   if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
@@ -83,8 +88,83 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
 
   revalidatePath('/documents');
   revalidatePath('/compliance');
+  revalidatePath('/leads');
   revalidatePath(`/leads/${leadId}`);
+  revalidatePath(safeReturnPath(formData.get('return_path'), `/compliance/assist?leadId=${leadId}`));
   return { success: `Document uploaded for ${lead.company_name ?? 'lead'}.` };
+}
+
+export async function waiveLeadDocumentRequirement(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
+  if (!hasWorkspaceCapability(workspace.currentRoles, 'compliance.review')) {
+    return { error: getReadOnlyWorkspaceMessage(workspace.currentRoles, 'compliance.review') ?? 'Your current role cannot waive document requirements.' };
+  }
+
+  const leadId = String(formData.get('lead_id') ?? '').trim();
+  const requirementCode = String(formData.get('requirement_code') ?? '').trim();
+  const reason = String(formData.get('review_notes') ?? '').trim();
+  const docType = String(formData.get('doc_type') ?? '').trim() || 'waiver';
+  if (!leadId) return { error: 'Lead id is required.' };
+  if (!requirementCode) return { error: 'Requirement code is required.' };
+  if (reason.length < 8) return { error: 'Add a short waiver reason before approving this exception.' };
+
+  const supabase = await createClient();
+  const admin = createAdminSupabaseClient();
+  const db = supabase as any;
+  const mutationDb = (admin ?? supabase) as any;
+
+  const { data: lead, error: leadError } = await db
+    .from('leads')
+    .select('id, company_name')
+    .eq('organization_id', workspace.organization.id)
+    .eq('id', leadId)
+    .maybeSingle();
+  if (leadError) return { error: leadError.message };
+  if (!lead?.id) return { error: 'Selected lead is not available in the active organization.' };
+
+  const now = new Date().toISOString();
+  const fileName = `Waiver - ${requirementCode}`;
+  const { data: document, error } = await mutationDb
+    .from('documents')
+    .insert({
+      organization_id: workspace.organization.id,
+      related_entity: 'lead',
+      related_id: leadId,
+      file_name: fileName,
+      file_url: `workspace-waiver://${leadId}/${Date.now()}/${encodeURIComponent(requirementCode)}`,
+      doc_type: docType,
+      uploaded_by: workspace.user.id,
+      uploaded_at: now,
+      version: 1,
+      status: 'approved',
+      owner_user_id: workspace.user.id,
+      reviewer_user_id: workspace.user.id,
+      reviewed_at: now,
+      requirement_code: requirementCode,
+      review_notes: reason,
+      version_label: 'quote-waiver',
+    })
+    .select('id')
+    .single();
+  if (error) return { error: error.message };
+
+  await mutationDb.from('audit_logs').insert({
+    organization_id: workspace.organization.id,
+    actor_user_id: workspace.user.id,
+    action: 'document_requirement_waived',
+    entity_type: 'document',
+    entity_id: document?.id ?? null,
+    payload: { previous: null, new: { lead_id: leadId, requirement_code: requirementCode, status: 'approved', reason }, metadata: { source: 'compliance_assist' } },
+  });
+
+  revalidatePath('/documents');
+  revalidatePath('/compliance');
+  revalidatePath('/leads');
+  revalidatePath(`/leads/${leadId}`);
+  revalidatePath(safeReturnPath(formData.get('return_path'), `/compliance/assist?leadId=${leadId}`));
+  return { success: `Waiver recorded for ${lead.company_name ?? 'lead'}.` };
 }
 
 export async function updateDocumentWorkflow(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
