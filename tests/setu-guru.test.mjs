@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 const shell = readFileSync('src/components/layout/app-shell.tsx', 'utf8');
 const widget = readFileSync('src/features/setu-guru/setu-guru-widget.tsx', 'utf8');
 const orgSearchRoute = readFileSync('src/app/api/setu-guru/org-search/route.ts', 'utf8');
+const liveResearch = readFileSync('src/lib/setu-guru/live-research.ts', 'utf8');
 
 test('Setu Guru widget is embedded in the authenticated shell', () => {
   assert.match(shell, /SetuGuruWidget/);
@@ -40,6 +41,7 @@ test('Setu Guru docs and runtime assets are present', () => {
     'src/lib/setu-guru/page-context.ts',
     'src/lib/setu-guru/help-registry.ts',
     'src/lib/setu-guru/guru-response-policy.ts',
+    'src/lib/setu-guru/live-research.ts',
   ].forEach((path) => assert.equal(existsSync(path), true, `${path} should exist`));
 });
 
@@ -89,7 +91,14 @@ test('Setu Guru org search normalizes roadmap mode aliases', () => {
 test('Setu Guru org search routes research intent safely', () => {
   assert.match(orgSearchRoute, /buildResearchRoutingAnswer/);
   assert.match(orgSearchRoute, /isResearchRoutingMode/);
-  assert.match(orgSearchRoute, /Official or reviewable sources required/);
-  assert.match(orgSearchRoute, /Human review before write-back/);
-  assert.match(orgSearchRoute, /Ask live research/);
+  assert.match(orgSearchRoute, /buildLiveResearchExecutionAnswer/);
+  assert.match(orgSearchRoute, /asLiveResearchMode/);
+});
+
+test('Setu Guru live research returns source-backed draft guidance', () => {
+  assert.match(liveResearch, /source_backed_draft/);
+  assert.match(liveResearch, /requiresHumanApproval: true/);
+  assert.match(liveResearch, /No CRM values were saved/);
+  assert.match(liveResearch, /Human approval is required/);
+  ['World Customs Organization HS Nomenclature', 'India ICEGATE customs portal', 'US Harmonized Tariff Schedule', 'EU Access2Markets', 'UK Trade Tariff', 'Trade.gov Country Commercial Guides', 'International Trade Centre Trade Map', 'World Bank Data'].forEach((source) => assert.match(liveResearch, new RegExp(source.replace(/[/.]/g, '\\$&'))));
 });
