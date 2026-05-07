@@ -15,6 +15,8 @@ Use this checklist before and after every repo pass. Do not start random fixes w
 - [ ] Identify files likely to change.
 - [ ] Identify what Setu Guru must learn from this pass.
 - [ ] Identify what must not change.
+- [ ] Ask Ritesh for explicit approval before making repo changes.
+- [ ] After approval, make the approved change directly to GitHub `main` unless Ritesh asks for a branch or PR.
 
 ---
 
@@ -28,6 +30,7 @@ Use this checklist before and after every repo pass. Do not start random fixes w
 - [ ] Update or add Setu Guru docs/context/policy in the same pass.
 - [ ] Use Supabase/Vercel tools when schema/build truth is needed.
 - [ ] Do not run `npm ci` in the sandbox.
+- [ ] Keep commits small enough to review and tied to the approved pass.
 
 ---
 
@@ -101,4 +104,4 @@ Tell the new chat to read:
 - `docs/implementation/DO_NOT_REGRESS.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
-Then continue from the current sprint and latest READY deployment.
+Then continue from the current sprint and latest READY deployment. Ask Ritesh for explicit approval before changing GitHub `main`.
