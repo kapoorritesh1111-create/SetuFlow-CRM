@@ -4,6 +4,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
 import { EMPTY_CARD_SETTINGS, toCardSettingsInput } from '@/lib/contact-exchange/my-card-settings-shared';
+import { QuoteComplianceFixEnhancer } from '@/features/leads/components/quote-compliance-fix-enhancer';
 
 import { unstable_noStore as noStore } from 'next/cache'; // ✅ ADD THIS
 
@@ -56,6 +57,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       cardSettings={myCardSettings}
       cardShareSlug={myCardSettingsRow?.share_slug ?? null}
     >
+      <QuoteComplianceFixEnhancer />
       {children}
     </AppShell>
   );
