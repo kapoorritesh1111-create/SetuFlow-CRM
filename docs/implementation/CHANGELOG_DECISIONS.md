@@ -138,24 +138,40 @@ Decision:
 - The action map routes through existing query filters and does not add product save, pricing save, delete, distribution, or quote-pricing behavior.
 - Products help documents how Setu Guru should explain the Products workspace action map.
 
+Build:
+
+- READY
+- Commit: `2811ebb2d76a407beff3ec241ca9777654fd8ba7`
+
+---
+
+## 2026-05-07 — Sprint 4 product detail drawer guidance
+
+Decision:
+
+- Verified `2811ebb2d76a407beff3ec241ca9777654fd8ba7` is READY before continuing Sprint 4.
+- Product detail drawer now explains each tab's action purpose and boundary before showing tab content.
+- Pricing tab copy now reinforces that saved calculator changes are product defaults future quotes can inherit.
+- Variant tab now clarifies SKU/pack/MOQ/quote-ready review versus customer-specific quote pricing.
+- No product save handler, delete handler, pricing calculator save behavior, quote-specific pricing path, HSN apply API, database schema, or drawer tab removal was changed.
+
 Files:
 
-- `src/features/products/components/products-workspace-action-map.tsx`
-- `src/app/(app)/products/page.tsx`
+- `src/features/products/components/product-detail-drawer.tsx`
 - `docs/help/products.md`
-- `tests/products-workspace-action-map.test.mjs`
+- `tests/product-detail-drawer-guidance.test.mjs`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Reason:
 
-- Ritesh approved improving Products workspace action rows while protecting product save handlers and quote-specific pricing behavior.
-- The safest UI improvement is a route/filter action map that guides users without touching drawer, save, or pricing logic.
+- Ritesh approved drawer-level product/variant guidance while protecting save handlers and quote-specific pricing behavior.
+- The safest implementation is copy/guidance and tests around existing tabs and boundaries, not changing write paths.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `d6c2a3e1c12aeebfdf4bd1ab0052d806e7621e45`
+- Baseline before pass: `2811ebb2d76a407beff3ec241ca9777654fd8ba7`
 
 ---
 

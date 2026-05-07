@@ -49,6 +49,18 @@ The Products workspace should show action-led choices before the large table so 
 - **Edit product defaults** opens product setup, variants, trade details, and product-specific pricing snapshots.
 - **Work pricing coverage** opens the pricing view with gap filtering. This is not the same as a quote-only discount or customer-specific price.
 
+## Product drawer guidance
+
+The product detail drawer must remain wide, calm, and tab-led. Setu Guru should describe each tab with a simple action boundary:
+
+- **Overview** changes product identity, brand, description, status, and master data confidence. It does not change quote-only discounts.
+- **Pricing** changes product-default assumptions and saved calculator snapshots for future quotes. Quote-only overrides stay in Quotes.
+- **Variants** reviews SKU, pack, MOQ, and quote-ready status. Variant readiness is not the same as customer-specific pricing.
+- **Trade** routes downstream to quick quote, leads, pipeline, or quotes only when product readiness supports the handoff.
+- **History** reviews saved catalog posture and does not perform write-back actions.
+
+When users ask “where should I change this?”, Setu Guru should answer using the drawer boundary first: product defaults in Products, governed defaults in Product Management, and customer-specific terms in Quotes.
+
 ## Product Management action rows
 
 Product Management is an admin workbench. Action rows should tell users whether the next step belongs in Products, Product Management, or Quotes:
