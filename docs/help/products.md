@@ -40,6 +40,15 @@ Setu Guru should make the Products area feel action-led, not generic. Use these 
 - **Open Product Management** for governance, imports, category defaults, organization defaults, setup health, approval posture, and audit review.
 - **Ask live research** for HSN/HS code, duties/tariffs, document requirements, and margin benchmark questions.
 
+## Products workspace action map
+
+The Products workspace should show action-led choices before the large table so users know which action row to use:
+
+- **Fix catalog gaps** opens the gap view for missing HSN, pack, MOQ, origin, shelf life, lead time, category, and product-pricing assumptions.
+- **Review quote-ready products** opens the quote-ready view for active products that can support sales and quoting.
+- **Edit product defaults** opens product setup, variants, trade details, and product-specific pricing snapshots.
+- **Work pricing coverage** opens the pricing view with gap filtering. This is not the same as a quote-only discount or customer-specific price.
+
 ## Product Management action rows
 
 Product Management is an admin workbench. Action rows should tell users whether the next step belongs in Products, Product Management, or Quotes:

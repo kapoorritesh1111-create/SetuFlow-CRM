@@ -122,22 +122,40 @@ Decision:
 - Products help records the Product Management action-row policy so Setu Guru can guide users without mixing product defaults and quote-only pricing.
 - No product save handler, pricing save handler, quote-specific pricing path, HSN apply API, database schema, or product drawer tab behavior was changed.
 
+Build:
+
+- READY
+- Commit: `d6c2a3e1c12aeebfdf4bd1ab0052d806e7621e45`
+
+---
+
+## 2026-05-07 — Sprint 4 Products workspace action map
+
+Decision:
+
+- Verified `d6c2a3e1c12aeebfdf4bd1ab0052d806e7621e45` is READY before continuing Sprint 4.
+- Products workspace now renders an action map before the spreadsheet/table so users can choose catalog gaps, quote-ready products, product setup, or pricing coverage explicitly.
+- The action map routes through existing query filters and does not add product save, pricing save, delete, distribution, or quote-pricing behavior.
+- Products help documents how Setu Guru should explain the Products workspace action map.
+
 Files:
 
-- `src/features/admin/components/product-governance-workbench.tsx`
+- `src/features/products/components/products-workspace-action-map.tsx`
+- `src/app/(app)/products/page.tsx`
 - `docs/help/products.md`
+- `tests/products-workspace-action-map.test.mjs`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Reason:
 
-- Ritesh approved improving Product Management and Products action-row clarity while preserving quote-specific pricing behavior.
-- Product Management action-row clarity was the smallest safe UI improvement before touching the larger Products workspace component.
+- Ritesh approved improving Products workspace action rows while protecting product save handlers and quote-specific pricing behavior.
+- The safest UI improvement is a route/filter action map that guides users without touching drawer, save, or pricing logic.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `88ca1f62a18e80e9a90ca6c78ed9fcb9dd69daa5`
+- Baseline before pass: `d6c2a3e1c12aeebfdf4bd1ab0052d806e7621e45`
 
 ---
 

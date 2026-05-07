@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `88ca1f62a18e80e9a90ca6c78ed9fcb9dd69daa5`
-- Commit message: `Clarify Setu Guru catalog actions`
+- Latest verified production READY commit before this pass: `d6c2a3e1c12aeebfdf4bd1ab0052d806e7621e45`
+- Commit message: `Clarify Product Management action rows`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -52,7 +52,7 @@ Progress: 100%
 ### Sprint 4 — Product catalog UX maturity
 
 Status: `IN PROGRESS`
-Progress: 60%
+Progress: 66%
 
 Completed:
 
@@ -61,10 +61,11 @@ Completed:
 - Products help documents the product-default/category-default/organization-default/quote-only boundary.
 - Product Management now includes an action map that explains which catalog actions belong in Products, Product Management, or Quotes.
 - Product Management action rows now use clearer CTA labels for pricing gaps, variant setup, trade fields, imports, products, and approval posture.
+- Products workspace now shows an action map before the spreadsheet/table so users can jump to catalog gaps, quote-ready products, product setup, or pricing coverage without changing product save behavior.
 
 Next focus:
 
-- Continue Products workspace action-row clarity.
+- Continue product drawer action clarity and variant tab guidance.
 - Preserve the wide, calm product drawer and pricing tab improvements.
 - Keep Setu Guru catalog actions source-backed and approval-safe.
 - Improve product/variant action clarity without rewriting quote-specific pricing.
@@ -102,11 +103,11 @@ Progress: 10%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
-- Current Sprint 4 Product catalog UX maturity: 60%
+- Current Sprint 4 Product catalog UX maturity: 66%
 - Setu Guru intelligence readiness: 95%
-- UX cleanup readiness: 52%
+- UX cleanup readiness: 53%
 - Quote/compliance maturity: 54%
-- Product catalog maturity: 66%
+- Product catalog maturity: 68%
 
 ---
 
@@ -142,7 +143,7 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, and Sprint 3 are 100%. Sprint 4 Product catalog UX maturity is active at 60%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions.
+Current status: Sprint 1, Sprint 2, and Sprint 3 are 100%. Sprint 4 Product catalog UX maturity is active at 66%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions.
 ```
 
 ---
@@ -151,6 +152,6 @@ Current status: Sprint 1, Sprint 2, and Sprint 3 are 100%. Sprint 4 Product cata
 
 Continue Sprint 4 Product catalog UX cleanup:
 
-1. Verify this Product Management action-map deployment is READY.
-2. Inspect Products workspace action rows in `src/features/products/components/products-manager.tsx`.
-3. Improve product/variant action clarity in Products workspace without changing product save handlers or quote-specific pricing behavior.
+1. Verify this Products workspace action-map deployment is READY.
+2. Inspect product detail drawer tabs and variant/pricing action copy.
+3. Improve drawer-level product/variant guidance without changing save handlers or quote-specific pricing behavior.
