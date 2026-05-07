@@ -122,6 +122,24 @@ function isPricingDefaultQuestion(question: string) {
   return pricingWord && setupWord;
 }
 
+function getActionHref(action: string) {
+  const normalized = normalize(action);
+  if (normalized.includes('product management') || normalized.includes('set calculator') || normalized.includes('calculator default')) return '/admin/product-management';
+  if (normalized.includes('open products')) return '/products';
+  if (normalized.includes('organization profile') || normalized.includes('admin organization')) return '/admin/organization#company-profile';
+  if (normalized.includes('open leads')) return '/leads';
+  if (normalized.includes('quote terms') || normalized.includes('review changes') || normalized.includes('preview pdf')) return '/quotes';
+  if (normalized.includes('approval queue') || normalized.includes('approval')) return '/approval-send';
+  if (normalized.includes('blocker')) return '/orders';
+  if (normalized.includes('market')) return '/admin/markets';
+  if (normalized.includes('categories') || normalized.includes('variants') || normalized.includes('imports')) return '/admin/product-management';
+  if (normalized.includes('sources')) return '/documents';
+  if (normalized.includes('write back')) return '/admin/product-management';
+  if (normalized.includes('pipeline')) return '/admin/pipelines';
+  if (normalized.includes('stages')) return '/admin/stages';
+  return null;
+}
+
 function buildAssistantMessage(topic: SetuGuruTopic, routeTitle: string): ChatMessage {
   return {
     id: `${topic.id}-${Date.now()}`,
@@ -278,9 +296,13 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       void runPricingDefaults(action, 'apply');
       return;
     }
-    if (message.actionHref) {
-      window.location.href = message.actionHref;
+    const href = message.actionHref ?? getActionHref(action);
+    if (href) {
+      window.location.assign(href);
+      return;
     }
+    setInputValue(action);
+    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 
   function saveFeedback(label: 'helpful' | 'missing') {
@@ -330,9 +352,10 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
                     <div className={cn('rounded-[22px] px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]', message.role === 'user' ? 'rounded-br-md bg-sky-600 text-white' : message.tone === 'error' ? 'rounded-bl-md border border-rose-200 bg-rose-50 text-rose-900' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700')}>
                       {message.content.split('\n\n').map((paragraph) => <p key={paragraph} className="mb-2 last:mb-0">{paragraph}</p>)}
                       <ResultRows rows={message.rows ?? []} />
-                      {message.actions?.length ? (<div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action, index) => {
-                        if (message.actionIntent || (message.actionHref && index === 0)) return <button key={action} type="button" onClick={() => handleAction(message, action)} className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-sky-700">{action}</button>;
-                        return <span key={action} className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700">{action}</span>;
+                      {message.actions?.length ? (<div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action) => {
+                        const href = message.actionHref ?? getActionHref(action);
+                        const clickable = Boolean(href || message.actionIntent || action.toLowerCase().includes('ask'));
+                        return <button key={action} type="button" onClick={() => handleAction(message, action)} className={cn('rounded-full px-2.5 py-1 text-[11px] font-medium transition', clickable ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-sky-50 text-sky-700 hover:bg-sky-100')}>{action}</button>;
                       })}</div>) : null}
                     </div>
                   </div>
