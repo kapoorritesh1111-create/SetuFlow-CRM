@@ -68,6 +68,7 @@ Quote share links must be buyer-facing and professional:
 - Do not expose Vercel preview URLs in WhatsApp/customer messages.
 - Do not show raw JSON to the buyer.
 - The share route should open a branded quote summary with organization logo when available and a clear **Open quote PDF** action.
+- The authenticated share URL should carry safe org branding fields (`org`, `logo`, `website`) so the public buyer page can render branding without requiring buyer authentication.
 - If organization logo is missing or unsafe, show a clean fallback mark rather than broken image UI.
 - WhatsApp messages should use polished buyer wording: quote number, product summary, selected-currency total, validity, and production quote link.
 - Keep share flow inside the existing send/checkpoint flow; do not add duplicate quote action surfaces.

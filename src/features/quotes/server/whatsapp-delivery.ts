@@ -9,6 +9,12 @@ function cleanWhatsAppNumber(value: string | null | undefined) {
   return String(value ?? '').replace(/[+\s\-()]/g, '').replace(/[^0-9]/g, '');
 }
 
+function safeLogoUrl(value: string | null | undefined) {
+  const text = String(value ?? '').trim();
+  if (!/^https:\/\//i.test(text)) return '';
+  return text;
+}
+
 function appBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
   const clean = configured?.replace(/\/$/, '');
@@ -27,13 +33,28 @@ function formatDate(value: string | null | undefined) {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function buildShareUrl(input: { quoteId: string; quoteNumber: string; products: string; total: string; validity: string; currency: string }) {
+function buildShareUrl(input: {
+  quoteId: string;
+  quoteNumber: string;
+  buyerName: string;
+  products: string;
+  total: string;
+  validity: string;
+  currency: string;
+  orgName: string;
+  orgLogoUrl: string;
+  orgWebsite: string;
+}) {
   const url = new URL(`/api/quotes/${input.quoteId}/share`, appBaseUrl());
   url.searchParams.set('quote', input.quoteNumber);
+  url.searchParams.set('buyer', input.buyerName);
   url.searchParams.set('products', input.products);
   url.searchParams.set('total', input.total);
   url.searchParams.set('validity', input.validity);
   url.searchParams.set('currency', input.currency);
+  url.searchParams.set('org', input.orgName);
+  if (input.orgLogoUrl) url.searchParams.set('logo', input.orgLogoUrl);
+  if (input.orgWebsite) url.searchParams.set('website', input.orgWebsite);
   return url.toString();
 }
 
@@ -45,9 +66,10 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
 
   const supabase = await createClient();
   const db = supabase as any;
-  const [{ data: lead }, { data: quote }] = await Promise.all([
+  const [{ data: lead }, { data: quote }, { data: organization }] = await Promise.all([
     db.from('leads').select('id, company_name, contact_name, whatsapp_number, phone').eq('organization_id', input.organizationId).eq('id', input.leadId).maybeSingle(),
     db.from('quotes').select('id, quote_number, currency, display_currency, current_version_id, accepted_version_id').eq('organization_id', input.organizationId).eq('id', input.quoteId).maybeSingle(),
+    db.from('organizations').select('name, legal_name, logo_url, website').eq('id', input.organizationId).maybeSingle(),
   ]);
 
   if (!lead || !quote) throw new Error('Quote or lead not found.');
@@ -69,13 +91,16 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
   const productSummary = lineItems.map((line: any) => line.product_name ?? line.description).filter(Boolean).slice(0, 4).join(', ') || `${version?.total_line_count ?? (lineItems.length || 0)} line items`;
   const quoteNumber = quote.quote_number ?? quote.id.slice(0, 8);
   const validity = formatDate(version?.valid_until);
-  const shareUrl = buildShareUrl({ quoteId: quote.id, quoteNumber, products: productSummary, total, validity, currency });
   const buyerName = lead.contact_name || lead.company_name || 'there';
+  const orgName = organization?.legal_name || organization?.name || workspace.organization?.name || 'SETU Groups LLC';
+  const orgLogoUrl = safeLogoUrl(organization?.logo_url);
+  const orgWebsite = organization?.website || 'www.setuflowcrm.com';
+  const shareUrl = buildShareUrl({ quoteId: quote.id, quoteNumber, buyerName, products: productSummary, total, validity, currency, orgName, orgLogoUrl, orgWebsite });
 
   const message = [
     `Hello ${buyerName},`,
     '',
-    `Please find quote ${quoteNumber} from SETU Groups LLC.`,
+    `Please find quote ${quoteNumber} from ${orgName}.`,
     `Products: ${productSummary}`,
     `Total: ${total}`,
     `Validity: ${validity}`,
@@ -102,7 +127,7 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
     summary: 'Quote shared through professional production-domain WhatsApp prefill link.',
     sent_at: now,
     provider_payload: { provider: 'wa.me', url },
-    metadata: { upgrade_path: 'Twilio WhatsApp Business API when volume justifies it.', share_url: shareUrl },
+    metadata: { upgrade_path: 'Twilio WhatsApp Business API when volume justifies it.', share_url: shareUrl, org_logo_url: orgLogoUrl },
   });
 
   return { url };

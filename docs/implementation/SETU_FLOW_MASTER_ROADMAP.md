@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `fa0ae3f176b3072f288e8a67f7a72ffde33f6b10`
-- Commit message: `Replace quote share placeholder`
+- Latest verified production READY commit before this pass: `09ac180a8bec9a96c7af60ded4321e1101e6b452`
+- Commit message: `Show org logo on quote share page`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -32,6 +32,7 @@ Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 - UI cleanup should reduce duplication. Do not create duplicate shortcut cards, duplicate buttons, duplicate filters, or repeated work surfaces when a cleaner primary control already exists near the user's work area.
 - Buyer-facing quote share links must use the production domain and must never show raw JSON placeholders to customers.
 - Buyer-facing quote share pages should show organization branding/logo when available, with a safe fallback when the org logo is missing.
+- Public quote share pages should receive safe org branding fields from the authenticated send/share generator so buyers do not need app authentication to see logo/name/website.
 
 ---
 
@@ -60,7 +61,7 @@ Progress: 100%
 ### Sprint 5 — Quote builder and quote PDF maturity
 
 Status: `IN PROGRESS`
-Progress: 82%
+Progress: 86%
 
 Completed:
 
@@ -76,17 +77,17 @@ Completed:
 - Quote builder step labels now clarify one primary sequence: Product & currency, Price lines, Terms & approval, Review totals, Send & approval checkpoint.
 - Quotes help and tests now protect the no-duplicate-quote-action-surface rule and the send/approval boundary.
 - Quote WhatsApp/share flow now uses production-domain share links and polished buyer-facing wording.
-- `/api/quotes/[quoteId]/share` now renders a branded buyer-facing HTML quote summary with an **Open quote PDF** action instead of raw JSON placeholder output.
-- Quote share page now looks up the quote organization profile and renders the organization logo when available, with a clean fallback mark otherwise.
+- `/api/quotes/[quoteId]/share` renders a branded buyer-facing HTML quote summary with an **Open quote PDF** action instead of raw JSON placeholder output.
+- Quote share page renders org logo from a safe URL when available and falls back cleanly otherwise.
+- Production smoke check confirmed the share route is HTML, on production domain, includes Open quote PDF, and does not show raw JSON.
+- Follow-up fix sends safe org branding fields in the authenticated WhatsApp/share URL so public buyer share pages can show the org logo without relying on anonymous database reads.
 
 Recommended focus:
 
-- Continue quote builder and quote PDF maturity.
-- Visually re-smoke-check a generated quote PDF and the buyer-facing quote share page using a production screenshot.
-- Preserve quote-only pricing behavior and product-default boundary.
-- Tighten Setu Guru quote guidance around approval/blocker/share explanation.
-- Protect existing quote PDF product/variant detail, currency, Incoterm, seller/tax details, share-page org branding, and document-blocker fixes.
-- Keep quote UI cleanup near the quote work area and avoid duplicate action surfaces.
+- Verify this public share branding handoff deployment is READY.
+- Re-open a production buyer-facing share link generated from WhatsApp/send flow and confirm org logo is visible.
+- Visually re-smoke-check a generated quote PDF using a production screenshot.
+- Tighten Setu Guru quote approval/blocker/share guidance without adding duplicate action surfaces.
 
 ### Sprint 6 — Compliance Assist maturity
 
@@ -117,10 +118,10 @@ Progress: 10%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
-- Current Sprint 5 Quote builder and quote PDF maturity: 82%
+- Current Sprint 5 Quote builder and quote PDF maturity: 86%
 - Setu Guru intelligence readiness: 97%
 - UX cleanup readiness: 67%
-- Quote/compliance maturity: 72%
+- Quote/compliance maturity: 74%
 - Product catalog maturity: 83%
 
 ---
@@ -157,7 +158,7 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is active at 82%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Quote PDF must stay professional, compact, selected-currency aware, and include SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Unit price, Case price, line total, seller address, and tax ID. Quote builder should stay one clear sequence and avoid duplicate action surfaces. Send must use the existing send/approval checkpoint. Quote sharing must use production-domain buyer-facing pages with organization logo where available, never Vercel preview URLs or raw JSON placeholders.
+Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is active at 86%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Quote PDF must stay professional, compact, selected-currency aware, and include SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Unit price, Case price, line total, seller address, and tax ID. Quote builder should stay one clear sequence and avoid duplicate action surfaces. Send must use the existing send/approval checkpoint. Quote sharing must use production-domain buyer-facing pages with organization logo where available, never Vercel preview URLs or raw JSON placeholders. Public share pages should receive safe org branding fields from the authenticated send/share generator.
 ```
 
 ---
@@ -166,6 +167,6 @@ Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Qu
 
 Continue Sprint 5 Quote builder and quote PDF maturity:
 
-1. Verify this quote share logo deployment is READY.
-2. Smoke-check the buyer-facing share link opens a branded page with organization logo on `https://www.setuflowcrm.com`.
+1. Verify this share branding handoff deployment is READY.
+2. Smoke-check a newly generated production buyer-facing quote share link includes org logo, production domain, branded page, Open quote PDF action, and no raw JSON.
 3. Visually re-smoke-check generated quote PDF and Setu Guru quote approval/blocker/share guidance without adding duplicate quote action surfaces.

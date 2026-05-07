@@ -14,9 +14,18 @@ test('whatsapp quote share uses production domain instead of vercel preview URLs
 
 test('whatsapp message uses professional buyer-facing wording', () => {
   assert.match(whatsApp, /Please find quote/);
-  assert.match(whatsApp, /SETU Groups LLC/);
+  assert.match(whatsApp, /from \$\{orgName\}/);
   assert.match(whatsApp, /Please reply here if you would like any revisions or have questions/);
   assert.doesNotMatch(whatsApp, /Sharing quote .* from SETU Flow/);
+});
+
+test('whatsapp share URL carries safe buyer and org branding fields for public rendering', () => {
+  assert.match(whatsApp, /buyerName/);
+  assert.match(whatsApp, /orgName/);
+  assert.match(whatsApp, /orgLogoUrl/);
+  assert.match(whatsApp, /url\.searchParams\.set\('org'/);
+  assert.match(whatsApp, /url\.searchParams\.set\('logo'/);
+  assert.match(whatsApp, /safeLogoUrl/);
 });
 
 test('quote share route renders html and does not expose placeholder json', () => {
@@ -39,4 +48,5 @@ test('quotes help protects production-domain buyer share flow', () => {
   assert.match(quotesHelp, /raw JSON/);
   assert.match(quotesHelp, /Do not expose Vercel preview URLs/);
   assert.match(quotesHelp, /organization logo/);
+  assert.match(quotesHelp, /share URL should carry safe org branding fields/);
 });

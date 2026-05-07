@@ -49,19 +49,17 @@ Builds:
 
 Decision:
 
-- Verified `e4df72ebf04ba61117495f9d2fa54734652764d3` is READY before replacing the placeholder share route.
-- Verified `fa0ae3f176b3072f288e8a67f7a72ffde33f6b10` is READY before this logo polish pass.
-- Replaced the raw JSON placeholder at `/api/quotes/[quoteId]/share` with a branded buyer-facing HTML quote summary.
-- The share page includes quote number, product summary, selected-currency total, validity, a clear **Open quote PDF** action, and revision contact link.
-- The share page now queries the quote organization profile and renders `organizations.logo_url` when available, with a clean fallback SETU mark if no safe logo URL is present.
-- WhatsApp quote delivery now prefers `https://www.setuflowcrm.com` and refuses to use Vercel preview/localhost origins for client share links.
-- WhatsApp message wording is now professional buyer-facing copy: `Please find quote...`, products, total, validity, and `View quote` production link.
-- Quote share docs/tests now protect against raw JSON placeholder output, preview URL exposure, and missing org-logo support.
+- Verified `09ac180a8bec9a96c7af60ded4321e1101e6b452` is READY before this pass.
+- Production smoke check confirmed the share link opens `https://www.setuflowcrm.com/api/quotes/[quoteId]/share`, returns branded HTML, includes **Open quote PDF**, and no longer shows raw JSON.
+- Smoke check also found the page showed fallback SETU branding instead of the org logo because anonymous public reads cannot reliably resolve private org profile fields.
+- Fixed this by making the authenticated WhatsApp/share generator embed safe org branding fields in the share URL: buyer name, org name, safe HTTPS logo URL, and org website.
+- Public share page can now render org logo/name/website from safe URL fields without requiring buyer authentication.
+- The fallback SETU mark remains for missing or unsafe logo URLs.
 - No quote-only pricing write-back, product default write-back, HSN API, schema, send endpoint duplication, or duplicate quote action surface was added.
 
 Files:
 
-- `src/app/api/quotes/[quoteId]/share/route.ts`
+- `src/features/quotes/server/whatsapp-delivery.ts`
 - `tests/quote-share-flow.test.mjs`
 - `docs/help/quotes.md`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
@@ -69,12 +67,12 @@ Files:
 
 Reason:
 
-- Ritesh approved smoke-checking the buyer-facing quote share link on production and explicitly asked that the branded page include the organization logo.
+- Ritesh approved verifying the production share page and explicitly asked for org-logo branding on the buyer-facing page.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `fa0ae3f176b3072f288e8a67f7a72ffde33f6b10`
+- Baseline before pass: `09ac180a8bec9a96c7af60ded4321e1101e6b452`
 
 ---
 
