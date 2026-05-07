@@ -88,6 +88,73 @@ Reason:
 
 ---
 
+## 2026-05-07 — Approval before direct-main implementation
+
+Decision:
+
+- Future implementation passes must ask Ritesh for explicit approval before GitHub repo writes.
+- After approval, apply approved changes directly to GitHub `main` unless Ritesh asks for a branch or pull request.
+- Keep the approved scope tight and record process changes in the implementation docs.
+
+Files:
+
+- `docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md`
+- `docs/implementation/PASS_CHECKLIST.md`
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Reason:
+
+- Ritesh requested an explicit approval gate and direct-main implementation role for future roadmap passes.
+- This prevents accidental drift while keeping approved implementation fast.
+
+Build:
+
+- BUILDING / pending after direct-main documentation commits.
+- Commit: `cd889a640c532f32c94cbb3ef78fdfa8eb42f6ba`
+
+---
+
+## 2026-05-07 — Sprint 2 Setu Guru help foundation
+
+Decision:
+
+- Add route-level help docs for Dashboard, Follow-up, Products, Quotes, Orders, Compliance, Trade Events, Admin Organization, Pricing Calculator, and Setu Guru.
+- Add typed Setu Guru page context, help registry, and response policy modules.
+- Add tests that protect the route help docs and Setu Guru runtime registry files.
+- Continue wiring widget fallback and `/api/setu-guru/org-search` `page_help` support in the next pass.
+
+Files:
+
+- `docs/help/dashboard.md`
+- `docs/help/leads.md`
+- `docs/help/products.md`
+- `docs/help/quotes.md`
+- `docs/help/orders.md`
+- `docs/help/compliance.md`
+- `docs/help/trade-events.md`
+- `docs/help/admin-organization.md`
+- `docs/help/pricing-calculator.md`
+- `docs/help/setu-guru.md`
+- `src/lib/setu-guru/page-context.ts`
+- `src/lib/setu-guru/help-registry.ts`
+- `src/lib/setu-guru/guru-response-policy.ts`
+- `tests/setu-guru.test.mjs`
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Reason:
+
+- Sprint 2 requires every main route to have help topics, common blockers, data sources, allowed actions, and approval rules.
+- Setu Guru needs a reusable registry before Sprint 3 can route live page context through additional API modes.
+
+Build:
+
+- BUILDING / pending after direct-main commits.
+- Latest Sprint 2 commit before this changelog: `cd889a640c532f32c94cbb3ef78fdfa8eb42f6ba`
+
+---
+
 ## Future changelog format
 
 Use this format for every future decision:
