@@ -9,6 +9,9 @@ import { StateMessage } from '@/components/ui/state-message';
 
 const APPROVED_STATUSES = new Set(['approved', 'complete', 'completed', 'ready', 'waived']);
 const PENDING_STATUSES = new Set(['submitted', 'pending', 'in_review', 'pending_review']);
+const uploadDocumentAction = uploadWorkspaceDocument.bind(null, undefined);
+const waiveRequirementAction = waiveLeadDocumentRequirement.bind(null, undefined);
+const updateComplianceAction = updateComplianceWorkflow.bind(null, undefined);
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -69,7 +72,7 @@ function RequirementCard({ rule, leadId, canReview, documents }: { rule: Documen
         </div>
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]">
-        <form action={uploadWorkspaceDocument} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+        <form action={uploadDocumentAction} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
           <input type="hidden" name="lead_id" value={leadId} />
           <input type="hidden" name="requirement_code" value={rule.requirement_code} />
           <input type="hidden" name="doc_type" value={rule.doc_type || rule.requirement_code || 'evidence'} />
@@ -83,7 +86,7 @@ function RequirementCard({ rule, leadId, canReview, documents }: { rule: Documen
           <label className="mt-3 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Evidence notes<textarea name="review_notes" rows={2} placeholder="What this evidence proves" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400" /></label>
           <button className="mt-3 rounded-full bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800" type="submit">Submit evidence</button>
         </form>
-        <form action={waiveLeadDocumentRequirement} className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+        <form action={waiveRequirementAction} className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
           <input type="hidden" name="lead_id" value={leadId} />
           <input type="hidden" name="requirement_code" value={rule.requirement_code} />
           <input type="hidden" name="doc_type" value="waiver" />
@@ -130,14 +133,13 @@ export default async function ComplianceAssistPage({ searchParams }: { searchPar
   const productIds = productRows.map((row) => row.product_id).filter(Boolean) as string[];
   const marketIds = marketRows.map((row) => row.market_id).filter(Boolean) as string[];
   const allRules = (rules ?? []) as DocumentRequirementRule[];
-  const quoteRules = getApplicableRequirementRules({ rules: allRules, leadType: lead.lead_type, marketIds, productIds, documents: documents ?? [], scope: 'quote_send' });
-  const dispatchRules = getApplicableRequirementRules({ rules: allRules, leadType: lead.lead_type, marketIds, productIds, documents: documents ?? [], scope: 'contract_progression' });
+  const quoteRules = getApplicableRequirementRules({ rules: allRules, leadType: lead.lead_type, marketIds, productIds, scope: 'quote_send' });
+  const dispatchRules = getApplicableRequirementRules({ rules: allRules, leadType: lead.lead_type, marketIds, productIds, scope: 'contract_progression' });
   const requiredQuoteRules = quoteRules.filter((rule) => rule.is_mandatory === true);
   const advisoryRules = [...quoteRules, ...dispatchRules].filter((rule, index, array) => rule.is_mandatory !== true && array.findIndex((entry) => entry.requirement_code === rule.requirement_code) === index);
   const blockerRows = ((complianceRows ?? []) as ComplianceRow[]).filter((row) => row.compliance_checklist_items?.is_mandatory !== false && !APPROVED_STATUSES.has(normalizeStatus(row.status)));
   const canReview = hasWorkspaceCapability(workspace.currentRoles, 'compliance.review');
   const leadName = (lead as LeadRow).company_name;
-  const returnPath = `/compliance/assist?leadId=${lead.id}`;
 
   return (
     <div className="space-y-6">
@@ -172,7 +174,7 @@ export default async function ComplianceAssistPage({ searchParams }: { searchPar
           <h2 className="text-lg font-semibold text-rose-950">Open compliance checklist items</h2>
           <div className="mt-4 space-y-3">
             {blockerRows.map((row) => (
-              <form action={updateComplianceWorkflow} key={row.id} className="rounded-2xl border border-rose-200 bg-white p-4">
+              <form action={updateComplianceAction} key={row.id} className="rounded-2xl border border-rose-200 bg-white p-4">
                 <input type="hidden" name="compliance_id" value={row.id} />
                 <input type="hidden" name="status" value="waived" />
                 <p className="font-semibold text-slate-950">{row.compliance_checklist_items?.description || row.compliance_checklist_items?.code || 'Compliance item'}</p>
