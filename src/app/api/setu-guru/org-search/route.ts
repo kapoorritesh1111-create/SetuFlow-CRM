@@ -10,7 +10,7 @@ function asText(value: unknown) {
 
 function questionMode(question: string) {
   const q = question.toLowerCase();
-  if (q.includes('compliance') || q.includes('blocker') || q.includes('document') || q.includes('certificate') || q.includes('dispatch')) return 'quote_compliance';
+  if (['compliance', 'blocker', 'document', 'certificate', 'dispatch', 'coa', 'packing list', 'waive', 'ignore', 'fix this'].some((word) => q.includes(word))) return 'quote_compliance';
   if (q.includes('buyer')) return 'buyers';
   if (q.includes('supplier')) return 'suppliers';
   if (q.includes('category')) return 'categories';
@@ -40,12 +40,48 @@ function includesTerm(row: Record<string, unknown>, term: string) {
 }
 
 function parseLeadIdFromRoute(route: string) {
-  const match = route.match(/\/leads\/([^/]+)\/quote/);
+  const match = route.match(/\/leads\/([^/?#]+)\/quote/);
   return match?.[1] ?? null;
 }
 
 function isOpenStatus(status: unknown) {
   return !['approved', 'waived', 'complete', 'completed', 'ready'].includes(String(status ?? '').toLowerCase());
+}
+
+async function resolveActiveLead(db: any, organizationId: string, route: string, pageText: string) {
+  const leadId = parseLeadIdFromRoute(route);
+  if (leadId) {
+    const { data } = await db.from('leads').select('id, company_name, contact_name, lead_type, country').eq('organization_id', organizationId).eq('id', leadId).maybeSingle();
+    if (data?.id) return data;
+  }
+
+  const visibleText = pageText.toLowerCase();
+  const { data: candidates } = await db
+    .from('leads')
+    .select('id, company_name, contact_name, lead_type, country, updated_at')
+    .eq('organization_id', organizationId)
+    .order('updated_at', { ascending: false })
+    .limit(50);
+
+  const exactVisible = (candidates ?? []).find((lead: any) => {
+    const company = String(lead.company_name ?? '').toLowerCase();
+    const contact = String(lead.contact_name ?? '').toLowerCase();
+    return (company.length > 3 && visibleText.includes(company)) || (contact.length > 3 && visibleText.includes(contact));
+  });
+  if (exactVisible?.id) return exactVisible;
+
+  const { data: quoteLeadRows } = await db
+    .from('quotes')
+    .select('lead_id, updated_at, leads(id, company_name, contact_name, lead_type, country)')
+    .eq('organization_id', organizationId)
+    .order('updated_at', { ascending: false })
+    .limit(10);
+  const quoteVisible = (quoteLeadRows ?? []).map((row: any) => row.leads).find((lead: any) => {
+    const company = String(lead?.company_name ?? '').toLowerCase();
+    return company.length > 3 && visibleText.includes(company);
+  });
+  if (quoteVisible?.id) return quoteVisible;
+  return quoteLeadRows?.[0]?.leads ?? candidates?.[0] ?? null;
 }
 
 function buildQuoteComplianceAnswer(input: {
@@ -72,9 +108,9 @@ function buildQuoteComplianceAnswer(input: {
     `I checked this live quote for ${input.lead?.company_name ?? input.organizationName}.`,
     `Destination/context: ${input.countryName || input.lead?.country || 'not set'} · Products: ${products}.`,
     blockers.length ? `True blocker: ${blockerText}.` : blockerText,
-    blockers.length ? 'How to fix it: upload the required evidence/document against the lead or quote, submit it for review, then return to the quote review step. If this should not block quote send, an owner/admin should mark the rule advisory or waive the item with a reason.' : 'The quote can move forward from a compliance perspective. Keep product/country documents advisory until dispatch if the org policy allows quoting before dispatch readiness.',
+    blockers.length ? 'How to fix it: open the lead evidence/compliance area, upload the required document or evidence, submit it for review, then return to quote review. If this is not required at quote stage, an owner/admin should mark it advisory or waive it with a reason.' : 'The quote can move forward from a quote-compliance perspective. Keep product/country documents advisory until dispatch when org policy allows quoting before dispatch readiness.',
     advisoryText,
-    'AI assist should help identify likely product/country compliance needs, but it must not approve, waive, or clear compliance automatically. Human approval is still required for prices, compliance, sends, and write-backs.',
+    'Setu Guru can suggest likely product/country evidence, but it must not approve, waive, or clear compliance automatically. Human approval is required for prices, compliance, sends, and write-backs.',
   ].join('\n\n');
   return { answer, blockers };
 }
@@ -88,33 +124,22 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const question = asText(body.question);
     const route = asText(body.route);
-    if (!question) {
-      return NextResponse.json({ answer: 'Ask a catalog, product, buyer, supplier, or lead question.', confidence: 'low', rows: [] }, { status: 400 });
-    }
+    const pageText = asText(body.pageText);
+    if (!question) return NextResponse.json({ answer: 'Ask a catalog, product, buyer, supplier, or lead question.', confidence: 'low', rows: [] }, { status: 400 });
 
     const workspace = await getWorkspaceAccess();
-    if (!workspace.user || !workspace.organization) {
-      return NextResponse.json({ answer: 'Please sign in to Setu Flow before asking Setu Guru to search organization data.', confidence: 'low', rows: [] }, { status: 401 });
-    }
+    if (!workspace.user || !workspace.organization) return NextResponse.json({ answer: 'Please sign in to Setu Flow before asking Setu Guru to search organization data.', confidence: 'low', rows: [] }, { status: 401 });
 
     const organizationId = workspace.organization.id;
     const organizationName = workspace.organization.name ?? 'this organization';
     const mode = asText(body.mode) || questionMode(question);
     const term = asText(body.term) || extractSearchTerm(question, mode);
-
-    const supabase = await createClient();
-    const db = supabase as any;
+    const db = (await createClient()) as any;
 
     if (mode === 'quote_compliance') {
-      const leadId = parseLeadIdFromRoute(route);
-      let lead: any = null;
-      if (leadId) {
-        const { data } = await db.from('leads').select('id, company_name, contact_name, lead_type, country').eq('organization_id', organizationId).eq('id', leadId).maybeSingle();
-        lead = data;
-      }
-      if (!lead?.id) {
-        return NextResponse.json({ answer: 'I can help with quote compliance, but I could not identify the active lead from this quote page route. Open the quote from a lead workspace, then ask again.', confidence: 'medium', rows: [], actions: ['Open Leads', 'Open compliance'], actionHref: '/leads' });
-      }
+      const lead = await resolveActiveLead(db, organizationId, route, pageText);
+      if (!lead?.id) return NextResponse.json({ answer: 'I can help with quote compliance, but I could not identify a lead from the route or visible page. Open the quote or lead workspace and ask again.', confidence: 'medium', rows: [], actions: ['Open Leads', 'Open compliance'], actionHref: '/leads' });
+
       const [{ data: quotes }, { data: leadProducts }, { data: documents }, { data: complianceRows }, { data: rules }, { data: country }] = await Promise.all([
         db.from('quotes').select('id, quote_number, status, country_id, market_id, currency, display_currency').eq('organization_id', organizationId).eq('lead_id', lead.id).order('updated_at', { ascending: false }).limit(1),
         db.from('lead_product_interests').select('product_id, products(id, name, hsn_code, category_id)').eq('organization_id', organizationId).eq('lead_id', lead.id),
@@ -151,13 +176,7 @@ export async function POST(request: Request) {
       const sourceProducts = mode === 'hsn' ? missingHsnProducts : visibleProducts;
       const matchedProducts = term ? sourceProducts.filter((product: any) => includesTerm({ name: product.name, sku: product.sku, sku_code: product.sku_code, hsn_code: product.hsn_code, category: categoryNameById.get(product.category_id) }, term)) : sourceProducts;
       const rows = matchedProducts.slice(0, 8).map((product: any) => ({ id: product.id, name: product.name, sku: product.sku ?? product.sku_code ?? null, hsnCode: product.hsn_code ?? null, category: categoryNameById.get(product.category_id) ?? null }));
-
-      const answer = mode === 'hsn'
-        ? `I found ${missingHsnProducts.length} catalog product(s) missing HSN/HS codes in ${organizationName}. I listed ${rows.length} row(s) for review.`
-        : term
-          ? `I found ${matchedProducts.length} matching catalog product(s) for "${term}" in ${organizationName}. There are ${visibleProducts.length} catalog product(s) total.`
-          : `You have ${visibleProducts.length} catalog product(s) in ${organizationName}. I did not apply any search filter.`;
-
+      const answer = mode === 'hsn' ? `I found ${missingHsnProducts.length} catalog product(s) missing HSN/HS codes in ${organizationName}. I listed ${rows.length} row(s) for review.` : term ? `I found ${matchedProducts.length} matching catalog product(s) for "${term}" in ${organizationName}. There are ${visibleProducts.length} catalog product(s) total.` : `You have ${visibleProducts.length} catalog product(s) in ${organizationName}. I did not apply any search filter.`;
       return NextResponse.json({ answer, confidence: 'high', mode, term, rows, metrics: { catalogProducts: visibleProducts.length, categories: categories.length, missingHsnCount: missingHsnProducts.length }, nextAction: mode === 'hsn' ? 'Open Products filtered to missing HSN codes.' : 'Open Products to review the catalog.', actionHref: mode === 'hsn' ? '/products?guru=missing-hsn' : '/products' });
     }
 
@@ -167,12 +186,10 @@ export async function POST(request: Request) {
       if (mode === 'suppliers') countQuery = countQuery.eq('lead_type', 'supplier');
       const { count, error: countError } = await countQuery;
       if (countError) throw countError;
-
       let query = db.from('leads').select('id, company_name, contact_name, email, phone, lead_type, country, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(8);
       if (mode === 'buyers') query = query.eq('lead_type', 'buyer');
       if (mode === 'suppliers') query = query.eq('lead_type', 'supplier');
       if (term) query = query.or(`company_name.ilike.%${term}%,contact_name.ilike.%${term}%,email.ilike.%${term}%,country.ilike.%${term}%`);
-
       const { data: leads, error } = await query;
       if (error) throw error;
       const rows = (leads ?? []).map((lead: any) => ({ id: lead.id, company: lead.company_name, contact: lead.contact_name, email: lead.email, phone: lead.phone, type: lead.lead_type, country: lead.country }));
