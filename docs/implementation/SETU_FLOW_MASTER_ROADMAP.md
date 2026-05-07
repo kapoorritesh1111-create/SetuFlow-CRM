@@ -13,18 +13,20 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit: `36d2905254a3ddcbeac73dbe89c542feea860dd0`
-- Commit message: `Record Setu Guru mode alias routing pass`
+- Latest verified production READY commit before this pass: `4c52b51c7b97e3c9192ba87a2ac124bf62a5dec6`
+- Commit message: `Close completed Sprint 1 and Sprint 2`
 - Previous product-stability baseline: `770244eba3a973aab7b27290e05de7f0779dc245`
-- Vercel status at this update: `READY`
+- Vercel status before this update: `READY`
 - Included recent improvements:
+  - Sprint 1 implementation controls closed at 100%
+  - Sprint 2 Setu Guru knowledge foundation closed at 100%
   - Setu Guru modern drawer redesign
   - Setu Guru live organization search foundations
   - Setu Guru route help docs and help registry foundation
   - Setu Guru widget wired to route help registry and page context collector
   - `/api/setu-guru/org-search` supports `page_help` before live database lookup
   - `/api/setu-guru/org-search` normalizes roadmap mode aliases for catalog, buyer, supplier, lead, quote compliance, HSN, document requirements, margins, and page help
-  - Safe research-intent routing now points HS/HSN, document requirement, duty/tariff, and margin questions toward source-backed review before write-back
+  - Source-backed live research draft execution for HS/HSN, document requirements, duties/tariffs, and margin benchmarks
   - Quote PDF improvements for pack, MOQ, origin, shelf life, lead time, and tax wording
   - AUD quote save compatibility
   - Advisory compliance documents no longer blocking quote send
@@ -77,8 +79,8 @@ Setu Guru must become smarter on every pass. Every UX change must include matchi
 - Never answer generic workflow guidance when live page context is available.
 - Route page-specific questions through page context first.
 - Use live organization data for catalog, leads, buyers, suppliers, quotes, compliance, and documents.
-- Use live web research for HSN/HS codes, margins, duties, country rules, and compliance requirements.
-- Human approval is required for write-back, send, waive, approve, delete, and pricing/compliance decisions.
+- Use source-backed live research for HSN/HS codes, margins, duties, tariffs, country rules, and compliance/document requirements.
+- Human approval is required for write-back, send, waive, approve, delete, saved HSN/HS codes, tariff assumptions, margin defaults, pricing changes, and compliance decisions.
 - Every implementation pass must update Setu Guru knowledge or page context.
 
 ---
@@ -170,7 +172,7 @@ Progress: 100%
 
 ### Sprint 3 — Smarter Setu Guru routing and live context
 
-Status: `STARTED`
+Status: `IN PROGRESS`
 
 Deliverables:
 
@@ -194,14 +196,18 @@ Completed:
 - `page_help` is supported by `/api/setu-guru/org-search` without requiring Supabase access.
 - `/api/setu-guru/org-search` now normalizes old aliases (`catalog`, `buyers`, `suppliers`, `leads`, `hsn`) into roadmap mode names.
 - Research-intent routing now gives safe source-backed guidance boundaries for HS/HSN, document requirements, duties/tariffs, and margin benchmarks before any write-back.
-- Tests protect mode aliases and safe research routing text.
+- Added `src/lib/setu-guru/live-research.ts` to return source-backed draft research briefs with source rows/citation markers.
+- Wired source-backed research execution into `/api/setu-guru/org-search` for HS/HSN, document requirements, duties/tariffs, and margin benchmark modes.
+- Updated Setu Guru help to document source-backed live research and approval boundaries.
+- Tests protect mode aliases, research execution, source rows, and no-write-back approval language.
 
 Definition of done:
 
 - Bot answers are contextual on Products, Leads, Quotes, Compliance, Admin, and Orders.
 - Bot stops giving generic answers for active blockers.
+- Source-backed research answers return reviewable sources and human approval boundaries before write-back.
 
-Progress: 30%
+Progress: 55%
 
 ---
 
@@ -262,6 +268,7 @@ Completed:
 - Quote prep checklist now links to Compliance Assist.
 - Compliance help topic added to Setu Guru knowledge.
 - Safe research-routing boundaries added for document requirements, duties, and tariffs.
+- Source-backed draft research execution added for document requirements and duties/tariffs.
 
 Next:
 
@@ -269,9 +276,9 @@ Next:
 - Add evidence timeline.
 - Add AI-suggested evidence checklist by product and country.
 - Separate quote-send, order, dispatch, and advisory requirements clearly.
-- Add live research execution with citations for source-backed compliance answers.
+- Add true external retrieval/citation verification when a browsing-capable backend is available.
 
-Progress: 45%
+Progress: 50%
 
 ---
 
@@ -337,13 +344,13 @@ Progress: 10%
 
 Current readiness snapshot:
 
-- Overall CRM readiness: 82%
+- Overall CRM readiness: 83%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
-- Current Sprint 3 Setu Guru routing completion: 30%
-- Setu Guru intelligence readiness: 65%
+- Current Sprint 3 Setu Guru routing completion: 55%
+- Setu Guru intelligence readiness: 70%
 - UX cleanup readiness: 44%
-- Quote/compliance maturity: 47%
+- Quote/compliance maturity: 48%
 - Product catalog maturity: 56%
 
 Update these numbers after every implementation pass.
@@ -406,8 +413,8 @@ Current direction: Sprint 1 and Sprint 2 are complete at 100%. Continue Sprint 3
 
 Continue Sprint 3:
 
-1. Add source-backed live research execution for HS/HSN, document requirements, duties/tariffs, and margin benchmarks.
-2. Keep research answers draft-only until human approval.
-3. Add tests for live-research routing and approval boundaries.
+1. Add UI rendering support for research source rows/citation markers in Setu Guru answers if the current drawer needs a richer display.
+2. Add backend retrieval/citation verification when a browsing-capable or research API backend is available.
+3. Add tighter context extraction for product, destination country, and buyer/supplier role from visible page context.
 4. Check Vercel build after the final commit.
 5. Update this roadmap and changelog.
