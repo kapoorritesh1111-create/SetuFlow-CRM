@@ -9,11 +9,12 @@ This log records important implementation decisions so future chats and passes c
 Decision:
 
 - Treat the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
-- Sprint 1 and Sprint 2 are complete at 100%.
+- Sprint 1, Sprint 2, and Sprint 3 are complete at 100% after the Sprint 3 production drawer verification pass.
 
 Reason:
 
-- Production is now advancing through small approved one-commit passes on `main`.
+- Production is advancing through small approved one-commit passes on `main`.
+- Sprint 3 Setu Guru routing/live-context behavior is now deployed and verification found no blocking defects.
 
 ---
 
@@ -58,8 +59,8 @@ Decision:
 
 Build:
 
-- BUILDING / pending after this pass
-- Baseline before pass: `e7feb89de0caa18c53e005b8c9f12bc959880241`
+- READY
+- Commit: `8a2d8d866cc5e11ca9edddf4a23a73f84f635b31`
 
 ---
 
@@ -72,24 +73,36 @@ Decision:
 - No order write-back endpoint or order state mutation was added.
 - Action feedback now tells the user whether Setu Guru queued guidance, routed the user, or stopped at a human-approval boundary.
 
+Build:
+
+- READY
+- Commit: `fbbc8349069d6de6546c039227eef27a453568d5`
+
+---
+
+## 2026-05-07 — Sprint 3 production drawer verification and closure
+
+Decision:
+
+- Verified the latest Vercel production deployment for `fbbc8349069d6de6546c039227eef27a453568d5` is READY.
+- Reviewed the protected Setu Guru drawer/action behavior for HSN, quote/compliance, order guidance-only actions, source rows, and non-dead button handling.
+- Closed Sprint 3 at 100% and moved the roadmap focus to Sprint 4 Product catalog UX maturity.
+- No product, quote, order, compliance, or Supabase schema write-back changes were made in this closure pass.
+
 Files:
 
-- `src/lib/setu-guru/help-registry.ts`
-- `src/features/setu-guru/setu-guru-widget.tsx`
-- `docs/help/orders.md`
-- `tests/setu-guru.test.mjs`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
+- `docs/implementation/SPRINT_3_PRODUCTION_VERIFICATION.md`
 
 Reason:
 
-- Ritesh approved tightening order route actions and richer success/failure states.
-- Order execution actions are high-impact and must stay guidance-only until an explicit approval-safe write path is designed.
+- Ritesh approved closing Sprint 3 remaining gaps after production verification, then moving to the next roadmap UX cleanup pass if no defects appeared.
 
 Build:
 
-- BUILDING / pending after this pass
-- Baseline before pass: `8a2d8d866cc5e11ca9edddf4a23a73f84f635b31`
+- BUILDING / pending after closure-doc commit
+- Baseline before closure pass: `fbbc8349069d6de6546c039227eef27a453568d5`
 
 ---
 
@@ -100,4 +113,4 @@ Build:
 - Do not run `npm ci` in sandbox.
 - Do not put dev/debug notes on user-facing screens.
 - Do not write back without explicit human approval.
-- Sprint 1 and Sprint 2 remain 100% complete.
+- Sprint 1, Sprint 2, and Sprint 3 remain 100% complete.
