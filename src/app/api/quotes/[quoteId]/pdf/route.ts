@@ -3,23 +3,43 @@ import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
+const INK = '#0f172a';
+const MUTED = '#475569';
 const NAVY = '#0b2e4a';
-const BORDER = '#cbd5e1';
+const BLUE = '#1d4ed8';
+const LINE = '#cbd5e1';
+const PANEL = '#f8fafc';
+const SOFT = '#eef2f7';
 
 function n(v: unknown, f = 0) { const x = Number(v ?? f); return Number.isFinite(x) ? x : f; }
 function s(v: unknown, f = '-') { const t = String(v ?? '').trim(); return t || f; }
 function c(v: unknown, m = 36, f = '-') { const t = s(v, f); return t.length > m ? t.slice(0, m - 3) + '...' : t; }
-function money(v: unknown, cur = 'USD') { return `${cur} ${n(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
 function d(v: unknown) { const t = s(v, ''); if (!t) return '-'; const dt = new Date(t.includes('T') ? t : `${t}T00:00:00`); return Number.isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('en-GB'); }
 function esc(v: string) { return String(v).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[\r\n]+/g, ' '); }
 function rgb(hex: string) { const x = Number.parseInt(hex.replace('#', ''), 16); return `${(((x >> 16) & 255) / 255).toFixed(3)} ${(((x >> 8) & 255) / 255).toFixed(3)} ${((x & 255) / 255).toFixed(3)}`; }
+function money(v: unknown, cur = 'USD') { return `${cur} ${n(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
 function basis(v: unknown) { const x = s(v, 'FOB').replace(/_/g, ' ').trim().toUpperCase(); return x.includes('EX') ? 'EXW' : x || 'FOB'; }
-function mode(v: unknown) { const x = s(v, 'unit').toLowerCase(); return x.includes('case') ? 'CASE' : x.includes('kg') || x.includes('bulk') ? 'KG' : 'UNIT'; }
 function lead(v: unknown) { const x = n(v); return x ? `${Math.max(1, x - 3)}-${x} days` : 'Confirm per order'; }
 function shelf(v: unknown) { const x = n(v); return x ? `${x} months` : 'Available per SKU'; }
-function pack(v: any) { return s(v?.pack_label, '') || (s(v?.pack_size_value, '') && s(v?.pack_size_unit, '') ? `${s(v.pack_size_value, '')} ${s(v.pack_size_unit, '')}` : '-'); }
+function parsePackGrams(v: any) { const value = n(v?.pack_size_value); const unit = s(v?.pack_size_unit, '').toLowerCase(); if (value && (unit.includes('kg') || unit === 'kilogram')) return value * 1000; if (value) return value; const label = s(v?.pack_label, ''); const match = label.match(/([0-9]+(?:\.[0-9]+)?)/); if (!match) return 0; const parsed = Number(match[1]); return label.toLowerCase().includes('kg') ? parsed * 1000 : parsed; }
+function packGrams(v: any) { const grams = parsePackGrams(v); return grams ? String(Math.round(grams)) : '-'; }
 
-type Row = { sku: string; product: string; hs: string; pack: string; units: string; moq: string; uom: string; origin: string; unit: number; net: number; disc: string; total: number; note: string; shelf: string; lead: string };
+type Row = {
+  sku: string;
+  product: string;
+  hs: string;
+  packGrams: string;
+  unitsPerCase: number;
+  moqCases: number;
+  basis: string;
+  origin: string;
+  unitPrice: number;
+  casePrice: number;
+  total: number;
+  note: string;
+  shelf: string;
+  lead: string;
+};
 
 type TextOp = { x: number; y: number; t: string; size?: number; bold?: boolean; color?: string; right?: boolean };
 
@@ -31,30 +51,73 @@ function buildPdf(data: { quoteNo: string; org: any; buyer: any; market: string;
   const ops: string[] = [];
   const texts: TextOp[] = [];
   const box = (x: number, y: number, w: number, h: number, fill?: string, stroke?: string) => { if (fill) ops.push(`${rgb(fill)} rg ${x} ${y} ${w} ${h} re f`); if (stroke) ops.push(`${rgb(stroke)} RG ${x} ${y} ${w} ${h} re S`); };
-  const txt = (x: number, y: number, t: string, size = 7, bold = false, color = '#0f172a', right = false) => texts.push({ x, y, t, size, bold, color, right });
+  const line = (x1: number, y1: number, x2: number, y2: number, color = LINE, width = 0.7) => ops.push(`${rgb(color)} RG ${width} w ${x1} ${y1} m ${x2} ${y2} l S`);
+  const txt = (x: number, y: number, t: string, size = 7, bold = false, color = INK, right = false) => texts.push({ x, y, t, size, bold, color, right });
   const total = data.rows.reduce((a, r) => a + r.total, 0);
   const leadSummary = Array.from(new Set(data.rows.map(r => r.lead))).slice(0, 2).join(', ') || 'Confirm per order';
   const originSummary = Array.from(new Set(data.rows.map(r => r.origin))).slice(0, 3).join(', ') || 'Confirm per SKU';
   const shelfSummary = Array.from(new Set(data.rows.map(r => r.shelf))).slice(0, 2).join(', ') || 'Available per SKU';
 
-  box(24,738,42,36,NAVY); txt(33,755,'LOGO',7.5,true,'#fff');
-  txt(76,763,c(data.org.legal_name ?? data.org.name,30,'SETU Flow'),10.5,true,NAVY); txt(76,750,c(data.org.website,38,'Streamlining Global Trade'),6.4,false,'#475569');
-  txt(188,763,'SETU Flow - Client Price List',15.5,true,NAVY); txt(188,746,'Pro Forma Quotation',9,false,'#334155');
-  box(462,734,126,44,NAVY); txt(474,760,data.quoteNo,10,true,'#fff'); txt(474,747,`Quote Date: ${data.quoteDate}`,6.2,false,'#fff'); txt(474,737,`Valid Until: ${data.validUntil}`,6.2,false,'#fff');
-  box(24,602,168,118,'#fff',BORDER); txt(34,704,'SELLER / EXPORTER',7,true,NAVY); txt(34,686,c(data.org.legal_name ?? data.org.name,34),8,true); txt(34,672,c(data.org.registered_address,34),6.3); txt(34,642,c(data.org.contact_email,34),6.3); txt(34,632,c(data.org.website,34),6.3); txt(34,616,`Tax/VAT: ${c(data.org.tax_id,22)}`,6.3,true);
-  box(206,602,154,118,'#fff',BORDER); txt(216,704,'BUYER / IMPORTER',7,true,NAVY); txt(216,686,c(data.buyer.company_name,31,'Unknown customer'),8,true); txt(216,672,c(data.buyer.contact_name,31,''),6.3); txt(216,662,c(data.buyer.country,31,data.destination),6.3); txt(216,642,c(data.buyer.email,34),6.3); txt(216,632,c(data.buyer.phone,34),6.3);
-  box(374,602,214,118,'#fff',BORDER); [['DESTINATION',data.destination],['MARKET',data.market],['BASIS',`${data.basis} (Incoterms 2020)`],['NAMED PLACE',data.place],['CURRENCY',data.currency],['PAYMENT TERMS','As agreed / per quote terms'],['LEAD TIME',leadSummary],['TAXES','Per Incoterm / buyer account unless included']].forEach(([k,v],i)=>{ const y=708-i*14; box(374,y-4,214,14,i%2?'#fff':'#f6f8fb','#e2e8f0'); txt(384,y,k,5.5,true,'#334155'); txt(472,y,c(v,30),6); });
-  box(24,580,564,14,'#eef6ff','#bfdbfe'); txt(34,584,'Taxes, duties and destination charges follow the agreed Incoterm. Unless included, buyer pays import duty, VAT/GST, clearance and destination handling.',5.45,false,'#1e3a8a');
-  let y=558; box(24,y-15,564,18,NAVY); [['#',30],['SKU',48],['Product',108],['HS',190],['Pack',234],['UOM',270],['Units',308],['MOQ',344],['Origin',378],['Unit',430],['Disc',472],['Net',508],['Notes',552]].forEach(([h,x])=>txt(Number(x),y-9,String(h),5.4,true,'#fff')); y-=22;
-  data.rows.slice(0,8).forEach((r,i)=>{ box(24,y-16,564,22,i%2?'#fff':'#f8fafc','#dbe3ed'); txt(30,y,String(i+1),5.6,true); txt(48,y,c(r.sku,17),5.3); txt(108,y,c(r.product,23),5.3); txt(190,y,c(r.hs,10),5.3); txt(234,y,c(r.pack,10),5.3); txt(270,y,r.uom,5.3); txt(330,y,r.units,5.3,false,'#0f172a',true); txt(360,y,r.moq,5.3,false,'#0f172a',true); txt(378,y,c(r.origin,10),5.3); txt(462,y,money(r.unit,data.currency),5.3,false,'#0f172a',true); txt(494,y,r.disc,5.3,false,'#0f172a',true); txt(542,y,money(r.net,data.currency),5.3,false,'#0f172a',true); txt(552,y,c(r.note,9),5.1); y-=22; });
-  y-=6; box(24,y-86,274,86,'#fff',BORDER); txt(34,y-13,'COMMERCIAL & COMPLIANCE',7,true,NAVY); [`Country of origin: ${originSummary}`,`Shelf life: ${shelfSummary}`,'Specs, ingredients and nutrition available on request.','Export docs commonly include invoice, packing list, certificate of origin and product certificates.','HS codes are indicative and should be validated for destination market.'].forEach((l,i)=>txt(34,y-28-i*10,`- ${c(l,76)}`,5.7));
-  box(314,y-86,274,86,'#fff',BORDER); txt(326,y-13,`FINANCIAL SUMMARY (${data.currency})`,7,true,NAVY); [['Subtotal after discount',money(total,data.currency)],['Documentation / packaging charge',money(0,data.currency)],['Freight / insurance','Not included unless stated'],['Taxes / duties','Per Incoterm / buyer account unless included']].forEach(([k,v],i)=>{ txt(326,y-28-i*11,k,5.8); txt(578,y-28-i*11,v,5.8,false,'#0f172a',true); }); box(314,y-86,274,18,NAVY); txt(326,y-80,'GRAND TOTAL',9,true,'#fff'); txt(578,y-80,money(total,data.currency),9,true,'#fff',true);
-  y-=104; box(24,y-66,564,66,'#fff',BORDER); txt(34,y-13,'TERMS & CONDITIONS',7,true,NAVY); [`Quote valid until ${data.validUntil}.`,`Prices quoted on ${data.basis} basis from ${data.place}.`,'Import duties, VAT/GST, customs clearance and destination handling are buyer account unless included.','Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.','Export documentation will be provided as per applicable regulations and agreed product scope.','Prices may change before confirmation if cost, freight, policy or currency inputs change.'].forEach((l,i)=>txt(i<3?34:318,y-27-(i%3)*12,`${i+1}. ${c(l,70)}`,5.6));
-  y-=78; box(24,y-48,274,48,'#fff',BORDER); txt(34,y-13,'LEAD TIME & SHIPMENT',7,true,NAVY); [`Lead time: ${leadSummary}.`,`Port/place: ${data.place}.`,'Shipment schedule and routing are confirmed after PO and document review.'].forEach((l,i)=>txt(34,y-27-i*9,`- ${c(l,68)}`,5.6)); box(314,y-48,274,48,'#fff',BORDER); txt(326,y-13,'NOTES',7,true,NAVY); ['Quote is confidential and intended solely for the addressee.','Pricing basis and charges must be reviewed before sending.',c(data.terms,70)].forEach((l,i)=>txt(326,y-27-i*9,`- ${l}`,5.6));
-  y-=66; box(24,y-50,564,50,'#fff',BORDER); txt(34,y-14,'AUTHORIZED SIGNATURE (SELLER)',6.5,true,NAVY); txt(34,y-31,'Name: ______________________',5.7); txt(34,y-43,'Date: _______________________',5.7); txt(236,y-14,'GET IN TOUCH',6.5,true,NAVY); txt(236,y-30,c(data.org.contact_email,34),5.7); txt(236,y-42,c(data.org.website,34),5.7); txt(420,y-14,'ACCEPTANCE (IMPORTER)',6.5,true,NAVY); txt(420,y-31,'Accepted by: ________________',5.7); txt(420,y-43,'Signature: _________________',5.7); box(0,14,612,14,NAVY); txt(245,18,'THANK YOU FOR YOUR BUSINESS!',7.5,true,'#fff');
-  ops.push('BT'); for (const item of texts) { const size=item.size??7; const x=item.right?Math.max(18,item.x-item.t.length*size*0.46):item.x; ops.push(`/${item.bold?'F2':'F1'} ${size} Tf\n${rgb(item.color??'#0f172a')} rg\n1 0 0 1 ${x} ${item.y} Tm (${esc(item.t)}) Tj`); } ops.push('ET');
-  const content=ops.join('\n'); const contentId=add(`<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream`); const pageId=add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${font} 0 R /F2 ${fontBold} 0 R >> >> /Contents ${contentId} 0 R >>`); const pagesId=add(`<< /Type /Pages /Kids [${pageId} 0 R] /Count 1 >>`); objects[pageId-1]=objects[pageId-1].replace('/Parent 0 0 R',`/Parent ${pagesId} 0 R`); const catalogId=add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-  let out='%PDF-1.4\n'; const offsets=[0]; objects.forEach((body,i)=>{offsets.push(Buffer.byteLength(out)); out+=`${i+1} 0 obj\n${body}\nendobj\n`;}); const xref=Buffer.byteLength(out); out+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`; for(let i=1;i<=objects.length;i++) out+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`; out+=`trailer\n<< /Size ${objects.length+1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`; return Buffer.from(out,'utf8');
+  box(0, 0, 612, 792, '#ffffff');
+  box(24, 724, 564, 44, '#ffffff', LINE);
+  box(24, 724, 44, 44, NAVY); txt(36, 746, 'LOGO', 7, true, '#ffffff');
+  txt(78, 750, c(data.org.legal_name ?? data.org.name, 32, 'SETU Groups LLC'), 10.5, true, NAVY);
+  txt(78, 736, c(data.org.website, 42, 'https://www.setuflowcrm.com/'), 6.4, false, MUTED);
+  txt(204, 752, 'SETU Flow - Client Price List', 15.2, true, NAVY);
+  txt(204, 736, 'Pro Forma Quotation', 8.8, false, MUTED);
+  box(474, 732, 104, 28, PANEL, LINE); txt(484, 750, data.quoteNo, 8.5, true, NAVY); txt(484, 739, `${data.quoteDate} · Valid ${data.validUntil}`, 5.7, false, MUTED);
+
+  box(24, 612, 176, 92, PANEL, LINE); txt(36, 686, 'SELLER / EXPORTER', 6.5, true, BLUE); txt(36, 672, c(data.org.legal_name ?? data.org.name, 34), 8, true); txt(36, 658, c(data.org.registered_address, 35), 6.2, false, MUTED); txt(36, 632, c(data.org.contact_email, 36), 6.2, false, MUTED); txt(36, 622, c(data.org.website, 36), 6.2, false, MUTED);
+  box(216, 612, 176, 92, PANEL, LINE); txt(228, 686, 'BUYER / IMPORTER', 6.5, true, BLUE); txt(228, 672, c(data.buyer.company_name, 34, 'Unknown customer'), 8, true); txt(228, 658, c(data.buyer.contact_name, 35, ''), 6.2, false, MUTED); txt(228, 648, c(data.buyer.country, 35, data.destination), 6.2, false, MUTED); txt(228, 632, c(data.buyer.email, 36), 6.2, false, MUTED); txt(228, 622, c(data.buyer.phone, 36), 6.2, false, MUTED);
+  box(408, 612, 180, 92, PANEL, LINE); [['Destination', data.destination], ['Market', data.market], ['Basis', `${data.basis} (Incoterms 2020)`], ['Named place', data.place], ['Currency', data.currency], ['Lead time', leadSummary]].forEach(([k, v], i) => { const yy = 688 - i * 12; txt(420, yy, k, 5.3, true, MUTED); txt(578, yy, c(v, 23), 5.7, false, INK, true); });
+  box(24, 590, 564, 14, '#eef6ff', '#bfdbfe'); txt(36, 594, 'Taxes, duties and destination charges follow the agreed Incoterm. Unless included, buyer pays import duty, VAT/GST, clearance and destination handling.', 5.45, false, '#1e3a8a');
+
+  const tableX = 24; let y = 558; const rowH = 24;
+  const cols = [
+    ['#', 24, 'left'], ['SKU', 70, 'left'], ['Product', 112, 'left'], ['Pack (g)', 48, 'right'], ['Units/Case', 56, 'right'], ['MOQ (cases)', 58, 'right'], ['Basis', 42, 'left'], [`${data.currency}/Unit`, 62, 'right'], [`${data.currency}/Case`, 62, 'right'], [`Total (${data.currency})`, 68, 'right'],
+  ] as const;
+  box(tableX, y - 17, 564, 20, '#e2e8f0', LINE);
+  let x = tableX + 8;
+  cols.forEach(([h, w, align]) => { txt(align === 'right' ? x + Number(w) - 6 : x, y - 10, h, 5.55, true, NAVY, align === 'right'); x += Number(w); });
+  y -= 24;
+  data.rows.slice(0, 10).forEach((r, i) => {
+    box(tableX, y - 17, 564, rowH, i % 2 ? '#ffffff' : '#f8fafc', LINE);
+    x = tableX + 8;
+    const cells: Array<[string, number, 'left' | 'right']> = [
+      [String(i + 1), 24, 'left'], [c(r.sku, 15), 70, 'left'], [c(r.product, 22), 112, 'left'], [r.packGrams, 48, 'right'], [String(r.unitsPerCase || '-'), 56, 'right'], [String(r.moqCases || '-'), 58, 'right'], [r.basis, 42, 'left'], [money(r.unitPrice, data.currency), 62, 'right'], [money(r.casePrice, data.currency), 62, 'right'], [money(r.total, data.currency), 68, 'right'],
+    ];
+    cells.forEach(([value, w, align]) => { txt(align === 'right' ? x + w - 6 : x, y - 7, value, 5.65, i === 0 && (align === 'left' || value.includes(data.currency)), INK, align === 'right'); x += w; });
+    y -= rowH;
+  });
+  line(tableX, y + 4, tableX + 564, y + 4, NAVY, 1.1);
+  txt(380, y - 8, 'Grand Total', 8.5, true, NAVY); txt(580, y - 8, money(total, data.currency), 9, true, NAVY, true);
+
+  y -= 32;
+  box(24, y - 78, 274, 78, PANEL, LINE); txt(36, y - 14, 'COMMERCIAL & COMPLIANCE', 7, true, NAVY); [`Country of origin: ${originSummary}`, `Shelf life: ${shelfSummary}`, 'Specs, ingredients and nutrition available on request.', 'HS codes are indicative and should be validated for destination market.'].forEach((l, i) => txt(36, y - 29 - i * 11, `- ${c(l, 72)}`, 5.7, false, MUTED));
+  box(314, y - 78, 274, 78, PANEL, LINE); txt(326, y - 14, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY); [['Subtotal', money(total, data.currency)], ['Documentation / packaging', money(0, data.currency)], ['Freight / insurance', 'Not included unless stated'], ['Taxes / duties', 'Per Incoterm / buyer account']].forEach(([k, v], i) => { txt(326, y - 29 - i * 11, k, 5.8, false, MUTED); txt(578, y - 29 - i * 11, v, 5.8, false, INK, true); });
+  y -= 94;
+  box(24, y - 62, 564, 62, '#ffffff', LINE); txt(36, y - 14, 'TERMS & CONDITIONS', 7, true, NAVY); [`Quote valid until ${data.validUntil}.`, `Prices quoted on ${data.basis} basis from ${data.place}.`, 'Import duties, VAT/GST, customs clearance and destination handling are buyer account unless included.', 'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.', 'Prices may change before confirmation if cost, freight, policy or currency inputs change.'].forEach((l, i) => txt(i < 3 ? 36 : 322, y - 28 - (i % 3) * 11, `${i + 1}. ${c(l, 67)}`, 5.5, false, MUTED));
+  y -= 76;
+  box(24, y - 46, 274, 46, PANEL, LINE); txt(36, y - 13, 'LEAD TIME & SHIPMENT', 7, true, NAVY); [`Lead time: ${leadSummary}.`, `Port/place: ${data.place}.`, 'Schedule confirmed after PO and document review.'].forEach((l, i) => txt(36, y - 26 - i * 9, `- ${c(l, 66)}`, 5.6, false, MUTED));
+  box(314, y - 46, 274, 46, PANEL, LINE); txt(326, y - 13, 'NOTES', 7, true, NAVY); ['Quote is confidential and intended solely for the addressee.', 'Pricing basis and charges must be reviewed before sending.', c(data.terms, 68)].forEach((l, i) => txt(326, y - 26 - i * 9, `- ${l}`, 5.6, false, MUTED));
+  y -= 62;
+  box(24, y - 46, 564, 46, '#ffffff', LINE); txt(36, y - 14, 'AUTHORIZED SIGNATURE (SELLER)', 6.5, true, NAVY); txt(36, y - 31, 'Name: ______________________', 5.7, false, MUTED); txt(236, y - 14, 'GET IN TOUCH', 6.5, true, NAVY); txt(236, y - 30, c(data.org.contact_email, 34), 5.7, false, MUTED); txt(420, y - 14, 'ACCEPTANCE (IMPORTER)', 6.5, true, NAVY); txt(420, y - 31, 'Signature: _________________', 5.7, false, MUTED);
+
+  ops.push('BT');
+  for (const item of texts) { const size = item.size ?? 7; const xPos = item.right ? Math.max(18, item.x - item.t.length * size * 0.45) : item.x; ops.push(`/${item.bold ? 'F2' : 'F1'} ${size} Tf\n${rgb(item.color ?? INK)} rg\n1 0 0 1 ${xPos} ${item.y} Tm (${esc(item.t)}) Tj`); }
+  ops.push('ET');
+  const content = ops.join('\n');
+  const contentId = add(`<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream`);
+  const pageId = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${font} 0 R /F2 ${fontBold} 0 R >> >> /Contents ${contentId} 0 R >>`);
+  const pagesId = add(`<< /Type /Pages /Kids [${pageId} 0 R] /Count 1 >>`);
+  objects[pageId - 1] = objects[pageId - 1].replace('/Parent 0 0 R', `/Parent ${pagesId} 0 R`);
+  const catalogId = add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
+  let out = '%PDF-1.4\n'; const offsets = [0];
+  objects.forEach((body, i) => { offsets.push(Buffer.byteLength(out)); out += `${i + 1} 0 obj\n${body}\nendobj\n`; });
+  const xref = Buffer.byteLength(out); out += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= objects.length; i++) out += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  out += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return Buffer.from(out, 'utf8');
 }
 
 export async function GET(_request: Request, { params }: { params: { quoteId: string } }) {
@@ -65,14 +128,53 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
   if (error) return NextResponse.json({ error: error.message }, { status: 500 }); if (!quote?.id) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
   const { data: leadRow } = await db.from('leads').select('id, company_name, contact_name, email, phone, country').eq('organization_id', organizationId).eq('id', quote.lead_id).maybeSingle();
   const countryPromise = quote.country_id ? db.from('countries').select('id, name, market_id, default_port_of_loading').eq('organization_id', organizationId).eq('id', quote.country_id).maybeSingle() : leadRow?.country ? db.from('countries').select('id, name, market_id, default_port_of_loading').eq('organization_id', organizationId).ilike('name', leadRow.country).maybeSingle() : Promise.resolve({ data: null });
-  const [{ data: items }, { data: org }, { data: country }, { data: freight }] = await Promise.all([db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes').eq('quote_id', quote.id).order('created_at', { ascending: true }), db.from('organizations').select('id, name, legal_name, logo_url, registered_address, website, contact_email, tax_id, quote_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(), countryPromise, quote.freight_profile_id ? db.from('freight_profiles').select('id, destination_port, notes').eq('organization_id', organizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null })]);
+  const [{ data: items }, { data: org }, { data: country }, { data: freight }] = await Promise.all([
+    db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes').eq('quote_id', quote.id).order('created_at', { ascending: true }),
+    db.from('organizations').select('id, name, legal_name, logo_url, registered_address, website, contact_email, tax_id, quote_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
+    countryPromise,
+    quote.freight_profile_id ? db.from('freight_profiles').select('id, destination_port, notes').eq('organization_id', organizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
   const marketId = quote.market_id ?? country?.market_id ?? null; const { data: market } = marketId ? await db.from('markets').select('id, name').eq('organization_id', organizationId).eq('id', marketId).maybeSingle() : { data: null };
-  const lines=(items??[]) as any[]; const productIds=Array.from(new Set(lines.map(l=>l.product_id).filter(Boolean)));
-  const [{data:products},{data:variants}] = await Promise.all([productIds.length ? db.from('products').select('id, name, sku, sku_code, hsn_code, category_id').eq('organization_id', organizationId).in('id', productIds) : Promise.resolve({data:[]}), productIds.length ? db.from('product_variants').select('id, product_id, name, sku_code, hsn_code, country_of_origin, pack_size_value, pack_size_unit, pack_label, units_per_case, moq_cases, moq_kg, pricing_mode_default, shipment_notes, lead_time_days, shelf_life_months').in('product_id', productIds) : Promise.resolve({data:[]})]);
-  const productMap=new Map((products??[]).map((p:any)=>[p.id,p])); const variantsByProduct=new Map<string, any[]>(); for(const v of variants??[]){const list=variantsByProduct.get(v.product_id)??[]; list.push(v); variantsByProduct.set(v.product_id,list);} const categoryIds=Array.from(new Set((products??[]).map((p:any)=>p.category_id).filter(Boolean))); const {data:categories}=categoryIds.length ? await db.from('product_categories').select('id, name, default_lead_time_days, default_shelf_life_months, default_country_of_origin, default_shipment_notes').eq('organization_id', organizationId).in('id', categoryIds) : {data:[]}; const categoryMap=new Map((categories??[]).map((cat:any)=>[cat.id,cat]));
-  const currency=String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD');
-  const rows: Row[] = lines.map((line:any)=>{ const product:any=productMap.get(line.product_id)??{}; const variantsForProduct=variantsByProduct.get(line.product_id)??[]; const variant:any=variantsForProduct.find((v:any)=>v.id===line.product_variant_id)??variantsForProduct[0]??{}; const category:any=categoryMap.get(product.category_id)??{}; const m=mode(variant.pricing_mode_default ?? quote.pricing_basis); const net=n(line.unit_price); const catalog=line.catalog_price_amount==null?net:n(line.catalog_price_amount); return { sku:s(variant.sku_code ?? product.sku_code ?? product.sku), product:s(product.name ?? variant.name,'Catalog line'), hs:s(variant.hsn_code ?? product.hsn_code,'TBC'), pack:pack(variant), uom:m==='KG'?'Kg':m==='CASE'?'Case':'Unit', units:s(variant.units_per_case), moq:m==='KG'?s(variant.moq_kg,'0'):s(variant.moq_cases ?? variant.moq_kg,'0'), origin:s(variant.country_of_origin ?? category.default_country_of_origin,'Confirm per SKU'), unit:catalog, net, disc:line.is_price_overridden && catalog ? `${(((catalog-net)/catalog)*100).toFixed(1)}%` : '-', note:s(line.override_reason ?? line.notes,'-'), total:n(line.quantity)*net, shelf:shelf(variant.shelf_life_months ?? category.default_shelf_life_months), lead:lead(variant.lead_time_days ?? category.default_lead_time_days) }; });
-  const place=s(quote.destination_port ?? freight?.destination_port ?? country?.default_port_of_loading, 'Confirm port/place before sending'); const bytes=buildPdf({quoteNo:`Quote ${quote.quote_number ?? quote.id.slice(0,8)}`, org:org??{name:workspace.organization?.name}, buyer:leadRow??{}, market:s(market?.name), destination:s(country?.name ?? leadRow?.country), place, basis:basis(quote.pricing_basis), currency, quoteDate:d(quote.updated_at ?? quote.created_at), validUntil:d(quote.valid_until), terms:s(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'), rows});
-  await db.from('documents').upsert({organization_id:organizationId, related_entity:'quote', related_id:quote.id, file_name:`quote-${quote.quote_number ?? quote.id.slice(0,8)}.pdf`, file_url:`/api/quotes/${quote.id}/pdf`, doc_type:'quote_pdf', uploaded_by:workspace.user?.id ?? null, version:1, status:quote.approval_required && !quote.approved_at ? 'pending_approval' : 'ready'}, {onConflict:'organization_id,related_entity,related_id,file_name'}).then(()=>null);
-  return new Response(new Uint8Array(bytes), {status:200, headers:{'Content-Type':'application/pdf','Content-Disposition':`inline; filename="quote-${quote.quote_number ?? quote.id.slice(0,8)}.pdf"`,'Cache-Control':'no-store'}});
+  const lines = (items ?? []) as any[]; const productIds = Array.from(new Set(lines.map(l => l.product_id).filter(Boolean)));
+  const [{ data: products }, { data: variants }] = await Promise.all([
+    productIds.length ? db.from('products').select('id, name, sku, sku_code, hsn_code, category_id').eq('organization_id', organizationId).in('id', productIds) : Promise.resolve({ data: [] }),
+    productIds.length ? db.from('product_variants').select('id, product_id, name, sku_code, hsn_code, country_of_origin, pack_size_value, pack_size_unit, pack_label, units_per_case, moq_cases, moq_kg, pricing_mode_default, shipment_notes, lead_time_days, shelf_life_months').in('product_id', productIds) : Promise.resolve({ data: [] }),
+  ]);
+  const productMap = new Map((products ?? []).map((p: any) => [p.id, p]));
+  const variantsByProduct = new Map<string, any[]>(); for (const v of variants ?? []) { const list = variantsByProduct.get(v.product_id) ?? []; list.push(v); variantsByProduct.set(v.product_id, list); }
+  const categoryIds = Array.from(new Set((products ?? []).map((p: any) => p.category_id).filter(Boolean)));
+  const { data: categories } = categoryIds.length ? await db.from('product_categories').select('id, name, default_lead_time_days, default_shelf_life_months, default_country_of_origin, default_shipment_notes').eq('organization_id', organizationId).in('id', categoryIds) : { data: [] };
+  const categoryMap = new Map((categories ?? []).map((cat: any) => [cat.id, cat]));
+  const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
+  const quoteBasis = basis(quote.pricing_basis);
+  const rows: Row[] = lines.map((line: any) => {
+    const product: any = productMap.get(line.product_id) ?? {};
+    const variantsForProduct = variantsByProduct.get(line.product_id) ?? [];
+    const variant: any = variantsForProduct.find((v: any) => v.id === line.product_variant_id) ?? variantsForProduct[0] ?? {};
+    const category: any = categoryMap.get(product.category_id) ?? {};
+    const unitsPerCase = Math.max(1, Math.round(n(variant.units_per_case, 1)));
+    const moqCases = Math.max(1, Math.round(n(variant.moq_cases ?? line.quantity, n(line.quantity, 1))));
+    const unitPrice = n(line.unit_price ?? line.catalog_price_amount);
+    const casePrice = unitPrice * unitsPerCase;
+    return {
+      sku: s(variant.sku_code ?? product.sku_code ?? product.sku),
+      product: s(product.name ?? variant.name, 'Catalog line'),
+      hs: s(variant.hsn_code ?? product.hsn_code, 'TBC'),
+      packGrams: packGrams(variant),
+      unitsPerCase,
+      moqCases,
+      basis: quoteBasis,
+      origin: s(variant.country_of_origin ?? category.default_country_of_origin, 'Confirm per SKU'),
+      unitPrice,
+      casePrice,
+      total: moqCases * casePrice,
+      note: s(line.override_reason ?? line.notes, '-'),
+      shelf: shelf(variant.shelf_life_months ?? category.default_shelf_life_months),
+      lead: lead(variant.lead_time_days ?? category.default_lead_time_days),
+    };
+  });
+  const place = s(quote.destination_port ?? freight?.destination_port ?? country?.default_port_of_loading, 'Confirm port/place before sending');
+  const bytes = buildPdf({ quoteNo: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`, org: org ?? { name: workspace.organization?.name }, buyer: leadRow ?? {}, market: s(market?.name), destination: s(country?.name ?? leadRow?.country), place, basis: quoteBasis, currency, quoteDate: d(quote.updated_at ?? quote.created_at), validUntil: d(quote.valid_until), terms: s(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'), rows });
+  await db.from('documents').upsert({ organization_id: organizationId, related_entity: 'quote', related_id: quote.id, file_name: `quote-${quote.quote_number ?? quote.id.slice(0, 8)}.pdf`, file_url: `/api/quotes/${quote.id}/pdf`, doc_type: 'quote_pdf', uploaded_by: workspace.user?.id ?? null, version: 1, status: quote.approval_required && !quote.approved_at ? 'pending_approval' : 'ready' }, { onConflict: 'organization_id,related_entity,related_id,file_name' }).then(() => null);
+  return new Response(new Uint8Array(bytes), { status: 200, headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="quote-${quote.quote_number ?? quote.id.slice(0, 8)}.pdf"`, 'Cache-Control': 'no-store' } });
 }

@@ -11,13 +11,14 @@ Decision:
 - Treat the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 - Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are complete at 100% after Sprint 4 final closure.
 - UI cleanup should reduce duplicate work surfaces, not add repeated shortcut cards or redundant buttons.
+- Sprint 5 Quote builder and quote PDF maturity is active.
 
 Reason:
 
 - Production is advancing through small approved one-commit passes on `main`.
 - Sprint 3 Setu Guru routing/live-context behavior is deployed and verified.
 - Sprint 4 product catalog UX maturity is complete after READY deployment and final smoke review.
-- The Products page already has a stronger primary control area in its catalog header, tabs, chips, filters, pricing calculator, quote handoff, and Add product actions.
+- Quote PDFs must be buyer-ready, professional, selected-currency aware, and complete enough for price-list sharing.
 
 ---
 
@@ -121,36 +122,39 @@ Builds:
 - READY `93891e419853309942c9d9deac627a83f87c54d1` — Tighten product table readiness UI
 - READY `53678eac76cb1b77bf40c9e5b9fd02661b277ef0` — Document Sprint 4 closure readiness
 - READY `ee8c363b293b4697d03b4b35c8a0e9cc18edef97` — Close Sprint 4 product catalog UX
+- READY `d602a5ae7bffbd991276b211427968f8547d071d` — Remove duplicate Products shortcut panel
 
 ---
 
-## 2026-05-07 — Remove duplicated Products shortcut card
+## 2026-05-07 — Sprint 5 professional quote PDF price-list table
 
 Decision:
 
-- Verified `ee8c363b293b4697d03b4b35c8a0e9cc18edef97` is READY before changing Products.
-- Removed the duplicated top `Catalog shortcuts / Products workspace` card from `/products`.
-- Kept the lower catalog header, category chips, pricing-gap chip, quote-ready chip, filters, Pricing calculator, Quote handoff, and Add product controls as the primary action area.
-- Updated tests so future passes should not reintroduce `ProductsWorkspaceActionMap` above the spreadsheet.
-- Added roadmap/changelog guidance to avoid duplicate work surfaces during UI cleanup.
-- No product table, filters, drawer, pricing calculator, add product, quote handoff, Product Management route, save handler, quote-pricing behavior, HSN API, or schema behavior was changed.
+- Verified `d602a5ae7bffbd991276b211427968f8547d071d` is READY before starting the Sprint 5 PDF pass.
+- Quote PDF now uses a professional white/slate layout with restrained navy accents instead of heavy saturated blue panels.
+- Quote PDF line table now includes SKU, Product, Pack (g), Units/Case, MOQ (cases), Basis, selected-currency Unit price, selected-currency Case price, and selected-currency Line total.
+- Line total is calculated as MOQ cases × Case price.
+- Case price is calculated as Unit price × Units/Case.
+- Currency labels use `quote.display_currency ?? quote.currency ?? organization.default_currency`, not hardcoded USD columns.
+- Quote help and tests now document the professional PDF table and selected-currency rule.
+- No quote-only pricing write-back, product default write-back, HSN API, schema, or duplicate quote action surface was added.
 
 Files:
 
-- `src/app/(app)/products/page.tsx`
-- `tests/products-workspace-action-map.test.mjs`
-- `docs/help/products.md`
+- `src/app/api/quotes/[quoteId]/pdf/route.ts`
+- `docs/help/quotes.md`
+- `tests/quote-pdf-layout.test.mjs`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Reason:
 
-- Ritesh identified the duplicate top shortcut card in production and confirmed the lower catalog controls are the cleaner, better UX placement.
+- Ritesh showed the current PDF was visually unprofessional and missing the buyer-facing price list fields expected in quote exports.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `ee8c363b293b4697d03b4b35c8a0e9cc18edef97`
+- Baseline before pass: `d602a5ae7bffbd991276b211427968f8547d071d`
 
 ---
 

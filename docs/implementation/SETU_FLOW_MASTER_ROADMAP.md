@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `ee8c363b293b4697d03b4b35c8a0e9cc18edef97`
-- Commit message: `Close Sprint 4 product catalog UX`
+- Latest verified production READY commit before this pass: `d602a5ae7bffbd991276b211427968f8547d071d`
+- Commit message: `Remove duplicate Products shortcut panel`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -55,19 +55,6 @@ Progress: 100%
 Status: `DONE`
 Progress: 100%
 
-Completed and verified:
-
-- Sprint 4 started from verified READY commit `27a4d981d037a1d1d0741e5b8d35d3efebdc2f10`.
-- Setu Guru product guidance now separates daily Products work, Product Management governance, catalog readiness checks, and live research.
-- Products help documents the product-default/category-default/organization-default/quote-only boundary.
-- Product Management includes an action map that explains which catalog actions belong in Products, Product Management, or Quotes.
-- Product Management action rows use clearer CTA labels for pricing gaps, variant setup, trade fields, imports, products, and approval posture.
-- Products workspace uses the existing catalog header, tabs, chips, filters, pricing calculator, quote handoff, and Add product controls as the primary control surface; the duplicated top shortcut card was removed after review.
-- Product detail drawer preserves protected tabs and uses concise business labels only; explanatory help/policy stays in docs and Setu Guru knowledge.
-- Product table row actions and readiness cues use clearer operational labels without adding help or development text to product screens.
-- Closure-readiness commit `53678eac76cb1b77bf40c9e5b9fd02661b277ef0` is READY.
-- Final closure smoke review found no blocking defect in Products route composition, Product Management action links, product drawer tabs, product table row actions, product-default pricing save path, or quote-only pricing boundary.
-
 Protected for future passes:
 
 - Product drawer remains wide, calm, premium, and tab-led.
@@ -80,8 +67,18 @@ Protected for future passes:
 
 ### Sprint 5 — Quote builder and quote PDF maturity
 
-Status: `NEXT`
-Progress: 40%
+Status: `IN PROGRESS`
+Progress: 52%
+
+Completed in this pass:
+
+- Verified duplicate Products shortcut cleanup commit `d602a5ae7bffbd991276b211427968f8547d071d` is READY before starting Sprint 5.
+- Redesigned quote PDF away from heavy saturated blue blocks into a professional white/slate layout with restrained navy accents.
+- Quote PDF line table now includes SKU, Product, Pack (g), Units/Case, MOQ (cases), Basis, selected-currency Unit price, selected-currency Case price, and selected-currency line total.
+- Line total now calculates as MOQ cases × case price.
+- Case price now derives from quote unit price × units per case.
+- Quote PDF currency labels use the quote builder display currency/currency instead of hardcoded USD columns.
+- Quotes help and tests document the buyer-facing PDF table and selected-currency rule.
 
 Recommended focus:
 
@@ -115,14 +112,15 @@ Progress: 10%
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 94%
+- Overall CRM readiness: 95%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
+- Current Sprint 5 Quote builder and quote PDF maturity: 52%
 - Setu Guru intelligence readiness: 96%
-- UX cleanup readiness: 61%
-- Quote/compliance maturity: 54%
+- UX cleanup readiness: 62%
+- Quote/compliance maturity: 60%
 - Product catalog maturity: 83%
 
 ---
@@ -159,15 +157,15 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is next unless Ritesh gives a higher-priority fix. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Keep product screens and drawers free of help-style or development-style text; put policy in docs and Setu Guru knowledge only. Avoid duplicate work surfaces: prefer the cleaner primary action area near the user's workflow instead of adding repeated shortcut cards or redundant buttons.
+Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is active at 52%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Quote PDF must stay professional, light, selected-currency aware, and include SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Unit price, Case price, and line total. Avoid duplicate work surfaces.
 ```
 
 ---
 
 ## 7. Next recommended pass
 
-Start Sprint 5 Quote builder and quote PDF maturity:
+Continue Sprint 5 Quote builder and quote PDF maturity:
 
-1. Verify this duplicate-shortcut cleanup deployment is READY.
-2. Inspect quote builder and quote PDF guardrails in `DO_NOT_REGRESS.md`.
-3. Improve quote route action clarity and Setu Guru quote guidance without moving quote-only pricing into Products or adding duplicate quote action surfaces.
+1. Verify this quote PDF redesign deployment is READY.
+2. Smoke-check a generated quote PDF in production for professional color, expected columns, selected currency labels, and line totals.
+3. Tighten quote builder action clarity without adding duplicate quote action surfaces.
