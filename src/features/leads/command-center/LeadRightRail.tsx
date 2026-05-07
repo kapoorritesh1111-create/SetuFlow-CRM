@@ -111,6 +111,7 @@ export function LeadRightRail({
     : compliance.missingRequiredDocumentCount > 0 || compliance.expiringDocumentCount > 0
       ? `${compliance.missingRequiredDocumentCount} missing required · ${compliance.expiringDocumentCount} expiring soon.`
       : 'Compliance is currently clear.'
+  const complianceAssistHref = `${workspaceLinks.complianceWorkspace.includes('?') ? workspaceLinks.complianceWorkspace : workspaceLinks.complianceWorkspace}?assist=1`.replace('/compliance?assist=1', `/compliance/assist?leadId=${workspaceLinks.backToLeads.split('/').filter(Boolean).pop() ?? ''}`)
 
   return (
     <aside className="sticky top-[98px] space-y-4 self-start md:top-[108px]">
@@ -159,8 +160,11 @@ export function LeadRightRail({
             <span className="rounded-[10px] bg-neutral-50 px-3 py-2">Total {compliance.totalDocumentCount}</span>
           </div>
         </div>
-        <Link href={workspaceLinks.complianceWorkspace} className="mt-3 inline-flex w-full justify-center rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50">
-          View compliance
+        <Link href={complianceAssistHref} className="mt-3 inline-flex w-full justify-center rounded-full bg-brand-primary px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark">
+          Fix with Compliance Assist
+        </Link>
+        <Link href={workspaceLinks.complianceWorkspace} className="mt-2 inline-flex w-full justify-center rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50">
+          View compliance register
         </Link>
       </Card>
 
