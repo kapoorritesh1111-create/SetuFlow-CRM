@@ -3,37 +3,37 @@ import type { WizardStepDefinition } from '@/components/ui/wizard-shell';
 export const QUOTE_CREATE_STEPS: WizardStepDefinition[] = [
   {
     id: 'product',
-    title: 'Product context',
+    title: 'Product & currency',
     shortLabel: 'Product',
     description:
-      'Choose RFQ linkage, template, basis, and currency before drafting commercial detail.',
+      'Choose buyer context, product scope, pricing basis, and quote currency before editing commercial prices.',
   },
   {
     id: 'pricing',
-    title: 'Pricing lines',
+    title: 'Price lines',
     shortLabel: 'Pricing',
     description:
-      'Keep product and price linkage inside the same commercial flow.',
+      'Review pack, MOQ, units/case, basis price, quote price, and line total in the same pricing table.',
   },
   {
     id: 'terms',
-    title: 'Terms and posture',
+    title: 'Terms & approval',
     shortLabel: 'Terms',
     description:
-      'Set workflow status, approval posture, and internal terms without leaving the builder.',
+      'Set workflow status, approval posture, and internal notes before the quote reaches final review.',
   },
   {
     id: 'review',
-    title: 'Review and totals',
+    title: 'Review totals',
     shortLabel: 'Review',
     description:
-      'Confirm totals, draft structure, and workflow posture before the final send decision is made.',
+      'Confirm selected currency, totals, quote-only overrides, and approval state before generating or sending.',
   },
   {
     id: 'send',
     title: 'Send checkpoint',
     shortLabel: 'Send',
     description:
-      'Keep blockers explicit before send or revision actions move the quote forward.',
+      'Use the existing send checkpoint for blockers, approvals, revisions, and customer-send decisions.',
   },
 ];

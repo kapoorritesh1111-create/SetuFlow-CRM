@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `8d24fa9857fd19d04872c257efc5fe156fab6c72`
-- Commit message: `Fit quote PDF price columns`
+- Latest verified production READY commit before this pass: `4b0be38ec0215fd4299e77d4c2394376f66cbbbd`
+- Commit message: `Polish quote PDF seller and pack details`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -58,7 +58,7 @@ Progress: 100%
 ### Sprint 5 — Quote builder and quote PDF maturity
 
 Status: `IN PROGRESS`
-Progress: 63%
+Progress: 68%
 
 Completed:
 
@@ -72,13 +72,15 @@ Completed:
 - Pack, units/case, and MOQ now use catalog data first and safe SKU/product fallback values when older quote/catalog records are sparse.
 - Vertical whitespace between quote PDF sections has been tightened.
 - Quotes help and tests document the buyer-facing PDF table, selected-currency rule, seller tax/address details, and pack/case fallbacks.
+- Quote builder step labels now clarify the single primary sequence: Product & currency, Price lines, Terms & approval, Review totals, Send checkpoint.
+- Quotes help and tests now protect the no-duplicate-quote-action-surface rule.
 
 Recommended focus:
 
 - Continue quote builder and quote PDF maturity.
 - Preserve quote-only pricing behavior and product-default boundary.
-- Tighten quote route UX/action clarity and Setu Guru quote guidance.
-- Protect existing quote PDF product/variant detail, currency, Incoterm, and document-blocker fixes.
+- Tighten quote send/approval clarity and Setu Guru quote guidance.
+- Protect existing quote PDF product/variant detail, currency, Incoterm, seller/tax details, and document-blocker fixes.
 - Keep quote UI cleanup near the quote work area and avoid duplicate action surfaces.
 
 ### Sprint 6 — Compliance Assist maturity
@@ -110,10 +112,10 @@ Progress: 10%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
-- Current Sprint 5 Quote builder and quote PDF maturity: 63%
+- Current Sprint 5 Quote builder and quote PDF maturity: 68%
 - Setu Guru intelligence readiness: 96%
-- UX cleanup readiness: 63%
-- Quote/compliance maturity: 64%
+- UX cleanup readiness: 64%
+- Quote/compliance maturity: 66%
 - Product catalog maturity: 83%
 
 ---
@@ -150,7 +152,7 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is active at 63%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Quote PDF must stay professional, compact, selected-currency aware, and include SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Unit price, Case price, line total, seller address, and tax ID. Avoid duplicate work surfaces.
+Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is active at 68%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Quote PDF must stay professional, compact, selected-currency aware, and include SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Unit price, Case price, line total, seller address, and tax ID. Quote builder should stay one clear sequence and avoid duplicate action surfaces.
 ```
 
 ---
@@ -159,6 +161,6 @@ Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Qu
 
 Continue Sprint 5 Quote builder and quote PDF maturity:
 
-1. Verify this quote PDF seller/pack/spacing deployment is READY.
-2. Re-smoke-check a generated quote PDF for pack values, seller city/postcode/country, Tax ID, reduced whitespace, selected currency labels, and line totals.
-3. Tighten quote builder action clarity without adding duplicate quote action surfaces.
+1. Verify this quote builder clarity deployment is READY.
+2. Re-smoke-check a generated quote PDF visually after `4b0be38` for pack values, seller city/postcode/country, Tax ID, reduced whitespace, selected currency labels, and line totals.
+3. Tighten quote send/approval clarity without adding duplicate quote action surfaces.

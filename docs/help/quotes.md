@@ -17,6 +17,7 @@ Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals
 - Which documents matter at quote stage versus dispatch stage?
 - Why does quote currency differ from catalog currency?
 - Why does the quote PDF show unit price, case price, and MOQ total?
+- Which quote builder step should I use next?
 
 ## Common blockers
 
@@ -34,6 +35,22 @@ Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals
 - Organization profile fields: legal name, registered address, city, postal code, country, website, contact email, and tax ID.
 - Organization pricing defaults, category defaults, and approval rules.
 - Documents, document rules, and compliance items.
+
+## Quote builder action clarity
+
+Keep one primary quote builder sequence instead of adding duplicate quote action panels. The sequence is:
+
+**Product & currency → Price lines → Terms & approval → Review totals → Send checkpoint**
+
+Use each step for a clear business decision:
+
+- **Product & currency** anchors buyer context, product scope, pricing basis, and selected quote currency.
+- **Price lines** reviews pack, MOQ, units/case, basis price, quote price, and line total in one table.
+- **Terms & approval** records workflow status, approval posture, and internal notes.
+- **Review totals** confirms selected currency, quote-only overrides, totals, and approval state before customer movement.
+- **Send checkpoint** handles blockers, approvals, revisions, and customer-send decisions through the existing send controls.
+
+Do not add duplicate quote action panels when an action already exists inside the builder sequence, send checkpoint, PDF route, or approval controls. Setu Guru should point the user to the next builder step rather than creating parallel actions.
 
 ## Quote PDF policy
 
@@ -58,7 +75,7 @@ Seller information should include legal name, registered address, city/postal co
 ## Allowed actions
 
 - Explain quote readiness and exact blockers.
-- Route to Approvals & Sending, Compliance Assist, Products, or lead documents.
+- Route to the right quote builder step, Approvals & Sending, Compliance Assist, Products, or lead documents.
 - Suggest wording for buyer-facing quote explanations.
 - Explain quote-only adjustments without writing back to defaults.
 - Explain quote PDF columns and currency calculations.
@@ -69,4 +86,4 @@ Human approval is required for quote send, price deviation approval, compliance 
 
 ## Response policy
 
-Quote blocker answers must use live quote or lead context first. Never require RFQ or dispatch documents for quote send unless an active organization rule explicitly makes them mandatory at quote stage.
+Quote blocker answers must use live quote or lead context first. Never require RFQ or dispatch documents for quote send unless an active organization rule explicitly makes them mandatory at quote stage. For quote-builder questions, answer with the next step in the builder sequence and avoid recommending duplicate action surfaces.
