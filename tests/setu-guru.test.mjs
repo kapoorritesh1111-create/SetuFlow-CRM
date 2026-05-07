@@ -26,5 +26,36 @@ test('Setu Guru docs and runtime assets are present', () => {
     'docs/setu-guru/SETUFLOW_TROUBLESHOOTING.md',
     'docs/setu-guru/SETUFLOW_WORKFLOWS.md',
     'docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md',
+    'docs/help/dashboard.md',
+    'docs/help/leads.md',
+    'docs/help/products.md',
+    'docs/help/quotes.md',
+    'docs/help/orders.md',
+    'docs/help/compliance.md',
+    'docs/help/trade-events.md',
+    'docs/help/admin-organization.md',
+    'docs/help/pricing-calculator.md',
+    'docs/help/setu-guru.md',
+    'src/lib/setu-guru/page-context.ts',
+    'src/lib/setu-guru/help-registry.ts',
+    'src/lib/setu-guru/guru-response-policy.ts',
   ].forEach((path) => assert.equal(existsSync(path), true, `${path} should exist`));
+});
+
+test('Setu Guru help registry covers the main route help docs', () => {
+  const registry = readFileSync('src/lib/setu-guru/help-registry.ts', 'utf8');
+  [
+    'docs/help/dashboard.md',
+    'docs/help/leads.md',
+    'docs/help/products.md',
+    'docs/help/quotes.md',
+    'docs/help/orders.md',
+    'docs/help/compliance.md',
+    'docs/help/trade-events.md',
+    'docs/help/admin-organization.md',
+    'docs/help/pricing-calculator.md',
+    'docs/help/setu-guru.md',
+  ].forEach((docPath) => assert.match(registry, new RegExp(docPath.replace(/[/.]/g, '\\$&'))));
+  assert.match(registry, /getBestSetuGuruHelpTopic/);
+  assert.match(registry, /getSetuGuruRouteTopics/);
 });
