@@ -16,7 +16,7 @@ Decision:
 Reason:
 
 - Production is advancing through small approved one-commit passes on `main`.
-- Quote PDFs and quote share links must be buyer-ready, professional, selected-currency aware, and complete enough for client sharing.
+- Quote PDFs and quote share links must be buyer-ready, professional, selected-currency aware, branded, and complete enough for client sharing.
 
 ---
 
@@ -49,17 +49,18 @@ Builds:
 
 Decision:
 
-- Verified `e4df72ebf04ba61117495f9d2fa54734652764d3` is READY before this pass.
+- Verified `e4df72ebf04ba61117495f9d2fa54734652764d3` is READY before replacing the placeholder share route.
+- Verified `fa0ae3f176b3072f288e8a67f7a72ffde33f6b10` is READY before this logo polish pass.
 - Replaced the raw JSON placeholder at `/api/quotes/[quoteId]/share` with a branded buyer-facing HTML quote summary.
 - The share page includes quote number, product summary, selected-currency total, validity, a clear **Open quote PDF** action, and revision contact link.
+- The share page now queries the quote organization profile and renders `organizations.logo_url` when available, with a clean fallback SETU mark if no safe logo URL is present.
 - WhatsApp quote delivery now prefers `https://www.setuflowcrm.com` and refuses to use Vercel preview/localhost origins for client share links.
 - WhatsApp message wording is now professional buyer-facing copy: `Please find quote...`, products, total, validity, and `View quote` production link.
-- Quote share docs/tests now protect against raw JSON placeholder output and preview URL exposure.
+- Quote share docs/tests now protect against raw JSON placeholder output, preview URL exposure, and missing org-logo support.
 - No quote-only pricing write-back, product default write-back, HSN API, schema, send endpoint duplication, or duplicate quote action surface was added.
 
 Files:
 
-- `src/features/quotes/server/whatsapp-delivery.ts`
 - `src/app/api/quotes/[quoteId]/share/route.ts`
 - `tests/quote-share-flow.test.mjs`
 - `docs/help/quotes.md`
@@ -68,12 +69,12 @@ Files:
 
 Reason:
 
-- Ritesh showed that WhatsApp was exposing a Vercel preview URL and clicking the quote link opened raw JSON placeholder output, which is not professional or buyer-ready.
+- Ritesh approved smoke-checking the buyer-facing quote share link on production and explicitly asked that the branded page include the organization logo.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `e4df72ebf04ba61117495f9d2fa54734652764d3`
+- Baseline before pass: `fa0ae3f176b3072f288e8a67f7a72ffde33f6b10`
 
 ---
 

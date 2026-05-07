@@ -27,8 +27,16 @@ test('quote share route renders html and does not expose placeholder json', () =
   assert.doesNotMatch(shareRoute, /Share endpoint placeholder/);
 });
 
+test('quote share route renders organization logo when available', () => {
+  assert.match(shareRoute, /logo_url/);
+  assert.match(shareRoute, /function renderLogo/);
+  assert.match(shareRoute, /<img class="logo-img"/);
+  assert.match(shareRoute, /logo-fallback/);
+});
+
 test('quotes help protects production-domain buyer share flow', () => {
   assert.match(quotesHelp, /production-domain quote share links/);
   assert.match(quotesHelp, /raw JSON/);
   assert.match(quotesHelp, /Do not expose Vercel preview URLs/);
+  assert.match(quotesHelp, /organization logo/);
 });

@@ -29,13 +29,14 @@ Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals
 - Mandatory quote-send compliance rule is open.
 - Advisory dispatch document is being mistaken for a quote-send blocker.
 - Quote share link is still a preview/dev URL or raw JSON placeholder instead of a buyer-facing page.
+- Quote share page lacks organization branding/logo when organization profile has a logo.
 
 ## Data sources
 
 - Quote header and quote lines.
 - Lead and lead product interests.
 - Product catalog rows and variants.
-- Organization profile fields: legal name, registered address, city, postal code, country, website, contact email, and tax ID.
+- Organization profile fields: legal name, registered address, city, postal code, country, website, contact email, logo URL, and tax ID.
 - Organization pricing defaults, category defaults, and approval rules.
 - Documents, document rules, and compliance items.
 
@@ -66,7 +67,8 @@ Quote share links must be buyer-facing and professional:
 - Use production-domain quote share links from `https://www.setuflowcrm.com`.
 - Do not expose Vercel preview URLs in WhatsApp/customer messages.
 - Do not show raw JSON to the buyer.
-- The share route should open a branded quote summary with a clear **Open quote PDF** action.
+- The share route should open a branded quote summary with organization logo when available and a clear **Open quote PDF** action.
+- If organization logo is missing or unsafe, show a clean fallback mark rather than broken image UI.
 - WhatsApp messages should use polished buyer wording: quote number, product summary, selected-currency total, validity, and production quote link.
 - Keep share flow inside the existing send/checkpoint flow; do not add duplicate quote action surfaces.
 
@@ -97,7 +99,7 @@ Seller information should include legal name, registered address, city/postal co
 - Suggest wording for buyer-facing quote explanations.
 - Explain quote-only adjustments without writing back to defaults.
 - Explain quote PDF columns and currency calculations.
-- Explain quote share links and why production-domain buyer pages are required.
+- Explain quote share links, organization-logo branding, and why production-domain buyer pages are required.
 
 ## Approval rules
 
@@ -105,4 +107,4 @@ Human approval is required for quote send, price deviation approval, compliance 
 
 ## Response policy
 
-Quote blocker answers must use live quote or lead context first. Never require RFQ or dispatch documents for quote send unless an active organization rule explicitly makes them mandatory at quote stage. For quote-builder questions, answer with the next step in the builder sequence and avoid recommending duplicate action surfaces. For send questions, state whether approval is approved/not required, pending, or blocked, then route through the existing send checkpoint. For share-link questions, require production-domain buyer-facing pages and reject raw JSON/preview-link behavior.
+Quote blocker answers must use live quote or lead context first. Never require RFQ or dispatch documents for quote send unless an active organization rule explicitly makes them mandatory at quote stage. For quote-builder questions, answer with the next step in the builder sequence and avoid recommending duplicate action surfaces. For send questions, state whether approval is approved/not required, pending, or blocked, then route through the existing send checkpoint. For share-link questions, require production-domain buyer-facing pages with organization branding where available and reject raw JSON/preview-link behavior.

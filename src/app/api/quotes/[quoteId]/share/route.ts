@@ -11,6 +11,9 @@ type ShareSummary = {
   total: string;
   validity: string;
   currency: string;
+  orgName: string;
+  orgLogoUrl: string;
+  orgWebsite: string;
 };
 
 function escapeHtml(value: string) {
@@ -20,6 +23,12 @@ function escapeHtml(value: string) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function safeLogoUrl(value: string | null | undefined) {
+  const text = String(value ?? '').trim();
+  if (!/^https:\/\//i.test(text)) return '';
+  return text;
 }
 
 function money(amount: number, currency: string) {
@@ -39,14 +48,15 @@ async function readQuoteSummary(quoteId: string, fromLink: ShareSummary) {
     const db = (await createClient()) as any;
     const { data: quote } = await db
       .from('quotes')
-      .select('id, quote_number, lead_id, currency, display_currency, valid_until, current_version_id, accepted_version_id')
+      .select('id, quote_number, lead_id, organization_id, currency, display_currency, valid_until, current_version_id, accepted_version_id')
       .eq('id', quoteId)
       .maybeSingle();
     if (!quote?.id) return fromLink;
 
     const versionId = quote.accepted_version_id ?? quote.current_version_id;
-    const [{ data: lead }, { data: version }, { data: lines }] = await Promise.all([
+    const [{ data: lead }, { data: org }, { data: version }, { data: lines }] = await Promise.all([
       quote.lead_id ? db.from('leads').select('company_name, contact_name').eq('id', quote.lead_id).maybeSingle() : Promise.resolve({ data: null }),
+      quote.organization_id ? db.from('organizations').select('name, legal_name, logo_url, website').eq('id', quote.organization_id).maybeSingle() : Promise.resolve({ data: null }),
       versionId ? db.from('quote_versions').select('display_currency, valid_until, total_line_count').eq('id', versionId).maybeSingle() : Promise.resolve({ data: null }),
       versionId ? db.from('quote_version_line_items').select('product_name, final_case_price, final_kg_price, final_unit_price').eq('quote_version_id', versionId).order('sort_order', { ascending: true }).limit(8) : Promise.resolve({ data: [] }),
     ]);
@@ -63,10 +73,19 @@ async function readQuoteSummary(quoteId: string, fromLink: ShareSummary) {
       total: totalAmount > 0 ? money(totalAmount, currency) : fromLink.total,
       validity: formatDate(version?.valid_until ?? quote.valid_until) || fromLink.validity,
       currency,
+      orgName: org?.legal_name ?? org?.name ?? fromLink.orgName,
+      orgLogoUrl: safeLogoUrl(org?.logo_url) || fromLink.orgLogoUrl,
+      orgWebsite: org?.website ?? fromLink.orgWebsite,
     } satisfies ShareSummary;
   } catch {
     return fromLink;
   }
+}
+
+function renderLogo(summary: ShareSummary) {
+  const logoUrl = safeLogoUrl(summary.orgLogoUrl);
+  if (!logoUrl) return '<div class="logo-fallback">SETU</div>';
+  return `<img class="logo-img" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(summary.orgName || 'Organization')} logo" />`;
 }
 
 function renderSharePage(summary: ShareSummary) {
@@ -76,6 +95,9 @@ function renderSharePage(summary: ShareSummary) {
   const products = escapeHtml(summary.products || 'Quote products');
   const total = escapeHtml(summary.total || 'Confirmed in quote');
   const validity = escapeHtml(summary.validity || 'Confirmed in quote');
+  const orgName = escapeHtml(summary.orgName || 'SETU Groups LLC');
+  const orgWebsite = escapeHtml(summary.orgWebsite || 'www.setuflowcrm.com');
+  const logo = renderLogo(summary);
   const pdfHref = `${PRODUCTION_SHARE_ORIGIN}/api/quotes/${quoteId}/pdf`;
   const reviseHref = `mailto:help@setugroups.com?subject=${encodeURIComponent(`Quote ${summary.quoteNumber || summary.quoteId} question`)}`;
 
@@ -85,7 +107,7 @@ function renderSharePage(summary: ShareSummary) {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Quote ${quoteNumber} | SETU Groups LLC</title>
+  <title>Quote ${quoteNumber} | ${orgName}</title>
   <style>
     :root { color-scheme: light; --navy: #0b2e4a; --blue: #1d4ed8; --slate: #475569; --line: #d8e1ec; --soft: #f8fafc; --green: #047857; }
     * { box-sizing: border-box; }
@@ -94,7 +116,9 @@ function renderSharePage(summary: ShareSummary) {
     .card { background: rgba(255,255,255,.96); border: 1px solid var(--line); border-radius: 28px; box-shadow: 0 24px 70px rgba(15,23,42,.12); overflow: hidden; }
     .top { display: flex; gap: 18px; align-items: center; justify-content: space-between; padding: 22px 26px; border-bottom: 1px solid var(--line); }
     .brand { display: flex; gap: 14px; align-items: center; }
-    .logo { width: 54px; height: 54px; border-radius: 16px; background: var(--navy); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+    .logo-wrap { width: 62px; height: 62px; border-radius: 18px; background: #ffffff; border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; flex: 0 0 auto; }
+    .logo-fallback { width: 100%; height: 100%; background: var(--navy); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+    .logo-img { width: 100%; height: 100%; object-fit: contain; padding: 7px; background: #fff; }
     .eyebrow { color: var(--blue); font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
     h1 { margin: 4px 0 2px; font-size: clamp(25px, 4vw, 38px); color: var(--navy); line-height: 1.08; }
     .sub { color: var(--slate); margin: 0; }
@@ -119,7 +143,7 @@ function renderSharePage(summary: ShareSummary) {
   <main class="shell">
     <section class="card" aria-label="SETU Flow quote share">
       <header class="top">
-        <div class="brand"><div class="logo">SETU</div><div><div class="eyebrow">SETU Groups LLC</div><h1>Quote ${quoteNumber}</h1><p class="sub">Buyer-ready quote summary from SETU Flow</p></div></div>
+        <div class="brand"><div class="logo-wrap">${logo}</div><div><div class="eyebrow">${orgName}</div><h1>Quote ${quoteNumber}</h1><p class="sub">Buyer-ready quote summary from SETU Flow</p></div></div>
         <div class="pill">Secure quote share</div>
       </header>
       <div class="body">
@@ -136,7 +160,7 @@ function renderSharePage(summary: ShareSummary) {
         </div>
         <p class="note">This page is a professional quote share summary. Pricing, taxes, duties, Incoterms, validity, and product details remain subject to the latest approved quote PDF and agreed terms.</p>
       </div>
-      <footer class="footer"><span>www.setuflowcrm.com</span><span>SETU Flow quote workflow</span></footer>
+      <footer class="footer"><span>${orgWebsite}</span><span>SETU Flow quote workflow</span></footer>
     </section>
   </main>
 </body>
@@ -153,6 +177,9 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     total: requestUrl.searchParams.get('total') || 'Confirmed in quote',
     validity: requestUrl.searchParams.get('validity') || 'Shared quote validity applies',
     currency: requestUrl.searchParams.get('currency') || 'USD',
+    orgName: requestUrl.searchParams.get('org') || 'SETU Groups LLC',
+    orgLogoUrl: safeLogoUrl(requestUrl.searchParams.get('logo')),
+    orgWebsite: requestUrl.searchParams.get('website') || 'www.setuflowcrm.com',
   };
   const summary = await readQuoteSummary(params.quoteId, fromLink);
   return new Response(renderSharePage(summary), {
