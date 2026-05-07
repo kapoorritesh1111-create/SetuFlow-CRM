@@ -40,17 +40,21 @@ Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals
 
 Keep one primary quote builder sequence instead of adding duplicate quote action panels. The sequence is:
 
-**Product & currency → Price lines → Terms & approval → Review totals → Send checkpoint**
+**Product & currency → Price lines → Terms & approval → Review totals → Send & approval checkpoint**
 
 Use each step for a clear business decision:
 
 - **Product & currency** anchors buyer context, product scope, pricing basis, and selected quote currency.
 - **Price lines** reviews pack, MOQ, units/case, basis price, quote price, and line total in one table.
-- **Terms & approval** records workflow status, approval posture, and internal notes.
-- **Review totals** confirms selected currency, quote-only overrides, totals, and approval state before customer movement.
-- **Send checkpoint** handles blockers, approvals, revisions, and customer-send decisions through the existing send controls.
+- **Terms & approval** records workflow status, approval posture, and internal notes. Approval posture must be explicit before customer movement.
+- **Review totals** confirms selected currency, quote-only overrides, totals, approval state, and PDF readiness before generating or sending.
+- **Send & approval checkpoint** handles blockers, approval status, revisions, and customer-send decisions through the existing send controls.
 
 Do not add duplicate quote action panels when an action already exists inside the builder sequence, send checkpoint, PDF route, or approval controls. Setu Guru should point the user to the next builder step rather than creating parallel actions.
+
+## Send and approval policy
+
+Send only when approval is approved or not required, the quote has no active send blockers, and the operator intentionally chooses the existing send checkpoint. If approval is pending, route to the approval action first. If blockers are active, explain the blocker and route to the matching builder step or Compliance Assist. Do not create parallel send buttons, quick-send shortcuts, or hidden write-back actions.
 
 ## Quote PDF policy
 
@@ -75,7 +79,7 @@ Seller information should include legal name, registered address, city/postal co
 ## Allowed actions
 
 - Explain quote readiness and exact blockers.
-- Route to the right quote builder step, Approvals & Sending, Compliance Assist, Products, or lead documents.
+- Route to the right quote builder step, existing send checkpoint, Approvals & Sending, Compliance Assist, Products, or lead documents.
 - Suggest wording for buyer-facing quote explanations.
 - Explain quote-only adjustments without writing back to defaults.
 - Explain quote PDF columns and currency calculations.
@@ -86,4 +90,4 @@ Human approval is required for quote send, price deviation approval, compliance 
 
 ## Response policy
 
-Quote blocker answers must use live quote or lead context first. Never require RFQ or dispatch documents for quote send unless an active organization rule explicitly makes them mandatory at quote stage. For quote-builder questions, answer with the next step in the builder sequence and avoid recommending duplicate action surfaces.
+Quote blocker answers must use live quote or lead context first. Never require RFQ or dispatch documents for quote send unless an active organization rule explicitly makes them mandatory at quote stage. For quote-builder questions, answer with the next step in the builder sequence and avoid recommending duplicate action surfaces. For send questions, state whether approval is approved/not required, pending, or blocked, then route through the existing send checkpoint.

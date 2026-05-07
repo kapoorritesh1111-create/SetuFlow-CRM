@@ -20,20 +20,20 @@ export const QUOTE_CREATE_STEPS: WizardStepDefinition[] = [
     title: 'Terms & approval',
     shortLabel: 'Terms',
     description:
-      'Set workflow status, approval posture, and internal notes before the quote reaches final review.',
+      'Set workflow status, approval posture, and internal notes; approvals stay explicit before any customer-send action.',
   },
   {
     id: 'review',
     title: 'Review totals',
     shortLabel: 'Review',
     description:
-      'Confirm selected currency, totals, quote-only overrides, and approval state before generating or sending.',
+      'Confirm selected currency, totals, quote-only overrides, approval state, and PDF readiness before generating or sending.',
   },
   {
     id: 'send',
-    title: 'Send checkpoint',
+    title: 'Send & approval checkpoint',
     shortLabel: 'Send',
     description:
-      'Use the existing send checkpoint for blockers, approvals, revisions, and customer-send decisions.',
+      'Use the existing checkpoint to confirm blockers are clear, approval is approved or not required, and the customer-send decision is intentional.',
   },
 ];

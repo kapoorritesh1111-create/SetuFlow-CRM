@@ -40,20 +40,22 @@ Builds:
 - READY `9a671811c7b36931a3e8b13da5c21425c21b51c2` — Redesign quote PDF price list
 - READY `8d24fa9857fd19d04872c257efc5fe156fab6c72` — Fit quote PDF price columns
 - READY `4b0be38ec0215fd4299e77d4c2394376f66cbbbd` — Polish quote PDF seller and pack details
+- READY `e7124880fa8b2afd7b1f4702f587747948c0d3c1` — Clarify quote builder action steps
 
 ---
 
-## 2026-05-07 — Sprint 5 quote builder action clarity
+## 2026-05-07 — Sprint 5 send and approval checkpoint clarity
 
 Decision:
 
-- Verified `4b0be38ec0215fd4299e77d4c2394376f66cbbbd` is READY before applying quote builder clarity.
-- Production/deployed code-path smoke check confirms the quote PDF route includes pack fallback logic, seller city/postal/country fields, visible Tax ID, selected currency labels, and MOQ × case-price line totals.
+- Verified `e7124880fa8b2afd7b1f4702f587747948c0d3c1` is READY before this pass.
+- The quote builder now labels the last step as `Send & approval checkpoint`.
+- The Terms step now states that approvals stay explicit before customer-send actions.
+- The Review step now includes PDF readiness alongside selected currency, totals, quote-only overrides, and approval state.
+- The Send step now states the exact boundary: blockers clear, approval approved or not required, and the customer-send decision is intentional.
+- Quotes help and tests now protect the rule that send must use the existing checkpoint and must not add parallel quick-send or duplicate action surfaces.
 - The final visual PDF check still needs a generated production screenshot from an authenticated quote record.
-- Quote builder step labels now clarify the one primary sequence: Product & currency, Price lines, Terms & approval, Review totals, Send checkpoint.
-- Quote builder descriptions now point users to pack/MOQ/units/case/pricing in the Price lines table and blockers/approvals/customer-send in the existing Send checkpoint.
-- Quotes help and tests now protect the no-duplicate-quote-action-surface rule.
-- No quote-only pricing write-back, product default write-back, HSN API, schema, or duplicate quote action surface was added.
+- No quote-only pricing write-back, product default write-back, HSN API, schema, send endpoint, or duplicate quote action surface was added.
 
 Files:
 
@@ -65,12 +67,12 @@ Files:
 
 Reason:
 
-- Ritesh approved re-smoke-checking the quote PDF expectations and then tightening quote builder action clarity without adding duplicate quote action surfaces.
+- Ritesh approved verifying the deployment, visually re-smoke-checking the quote PDF, and tightening quote send/approval clarity without adding duplicate quote action surfaces.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `4b0be38ec0215fd4299e77d4c2394376f66cbbbd`
+- Baseline before pass: `e7124880fa8b2afd7b1f4702f587747948c0d3c1`
 
 ---
 
