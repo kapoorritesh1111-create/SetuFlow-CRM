@@ -11,19 +11,24 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 ## 1. Current locked baseline
 
-Use this as the current production baseline unless a newer successful deployment is explicitly marked as locked.
+Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Current stable production commit: `770244eba3a973aab7b27290e05de7f0779dc245`
-- Commit message: `Fix pricing panel ReactNode type`
-- Vercel status at roadmap creation: `READY`
+- Latest verified production READY commit: `32707ec295175b55e17cce71e970fd00ec08c7b0`
+- Commit message: `Require one final commit per implementation pass`
+- Previous product-stability baseline: `770244eba3a973aab7b27290e05de7f0779dc245`
+- Vercel status at this update: `READY`
 - Included recent improvements:
   - Setu Guru modern drawer redesign
   - Setu Guru live organization search foundations
+  - Setu Guru route help docs and help registry foundation
+  - Setu Guru widget wired to route help registry and page context collector
+  - `/api/setu-guru/org-search` supports `page_help` before live database lookup
   - Quote PDF improvements for pack, MOQ, origin, shelf life, lead time, and tax wording
   - AUD quote save compatibility
   - Advisory compliance documents no longer blocking quote send
   - Compliance Assist page and quote-prep CTA
   - Product edit drawer widened and pricing calculator made lighter
+  - One-final-commit implementation rule to reduce Vercel deployment noise
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
@@ -49,6 +54,8 @@ Setu Guru must become smarter on every pass. Every UX change must include matchi
 
 - Before every implementation pass, ask Ritesh for explicit approval before changing GitHub.
 - After approval, make the approved change directly to GitHub `main` unless Ritesh explicitly requests a branch or pull request.
+- Prepare the full approved pass before committing.
+- Make one final commit per normal implementation pass so Vercel receives one deployment trigger.
 - Keep the approved scope tight. Do not drift into unrelated features.
 - Record approval/process decisions in `docs/implementation/CHANGELOG_DECISIONS.md`.
 - See `docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md`.
@@ -89,6 +96,7 @@ Deliverables:
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 - `docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md`
 - New-chat continuation prompt stored in the roadmap and summarized to the user.
+- One-final-commit workflow documented in implementation controls.
 
 Definition of done:
 
@@ -96,8 +104,9 @@ Definition of done:
 - Every future pass reports readiness %, sprint %, build status, and next pass.
 - A new ChatGPT session can resume work from these docs.
 - Future passes require Ritesh approval before GitHub writes.
+- Future normal passes commit once to `main` and trigger one Vercel deployment.
 
-Progress: 85%
+Progress: 95%
 
 ---
 
@@ -121,24 +130,28 @@ Deliverables:
 - `src/lib/setu-guru/help-registry.ts`
 - `src/lib/setu-guru/guru-response-policy.ts`
 
-Completed in this pass:
+Completed:
 
 - Added route help docs for Dashboard, Follow-up, Products, Quotes, Orders, Compliance, Trade events, Admin / Organization, Pricing calculator, and Setu Guru.
 - Added typed Setu Guru page context, help registry, and response policy modules.
 - Added tests that protect the new route help files and Setu Guru runtime registry files.
+- Wired the Setu Guru widget to the registry and page context collector.
+- Added `/api/setu-guru/org-search` `page_help` support before live database lookup.
+- Added tests that protect registry wiring and page-help API behavior.
 
 Definition of done:
 
 - Every main route has a help topic, common blockers, data sources, allowed actions, and approval rules.
 - Setu Guru can answer from route-specific help before falling back to generic topics.
+- Widget fallback and page-help API path are covered by tests.
 
-Progress: 65%
+Progress: 80%
 
 ---
 
 ### Sprint 3 — Smarter Setu Guru routing and live context
 
-Status: `PLANNED`
+Status: `STARTED`
 
 Deliverables:
 
@@ -156,12 +169,17 @@ Deliverables:
   - `page_help`
 - Add a safe live-research mode with source-backed answers.
 
+Completed:
+
+- Page context collector is now sent from the widget.
+- `page_help` is supported by `/api/setu-guru/org-search` without requiring Supabase access.
+
 Definition of done:
 
 - Bot answers are contextual on Products, Leads, Quotes, Compliance, Admin, and Orders.
 - Bot stops giving generic answers for active blockers.
 
-Progress: 0%
+Progress: 15%
 
 ---
 
@@ -175,6 +193,7 @@ Completed:
 - Pricing calculator reduced density.
 - Saved pricing snapshot added.
 - Essential inputs and advanced collapsible pricing sections added.
+- Product help topic added to Setu Guru knowledge.
 
 Next:
 
@@ -182,9 +201,8 @@ Next:
 - Clean trade tab.
 - Add quote-ready checklist.
 - Add HSN/compliance readiness indicator.
-- Add Setu Guru product help docs.
 
-Progress: 45%
+Progress: 48%
 
 ---
 
@@ -197,6 +215,7 @@ Completed:
 - Quote PDF improved with product data, pack, MOQ, origin, shelf life, lead time, and better tax wording.
 - AUD save issue fixed.
 - Advisory compliance documents moved away from quote-send blockers.
+- Quote help topic added to Setu Guru knowledge.
 
 Next:
 
@@ -205,9 +224,8 @@ Next:
 - Separate quote currency from catalog/reference currency.
 - Add Compliance Assist and approval explanation inline.
 - Improve quote PDF alignment further.
-- Add Setu Guru quote help docs.
 
-Progress: 38%
+Progress: 40%
 
 ---
 
@@ -220,6 +238,7 @@ Completed:
 - Compliance Assist page created.
 - Evidence/waiver actions created.
 - Quote prep checklist now links to Compliance Assist.
+- Compliance help topic added to Setu Guru knowledge.
 
 Next:
 
@@ -227,9 +246,9 @@ Next:
 - Add evidence timeline.
 - Add AI-suggested evidence checklist by product and country.
 - Separate quote-send, order, dispatch, and advisory requirements clearly.
-- Add Setu Guru compliance docs and live research rules.
+- Add live research rules for source-backed compliance answers.
 
-Progress: 40%
+Progress: 43%
 
 ---
 
@@ -295,13 +314,13 @@ Progress: 10%
 
 Current readiness snapshot:
 
-- Overall CRM readiness: 79%
-- Current anti-drift sprint completion: 85%
-- Current Setu Guru knowledge sprint completion: 65%
-- Setu Guru intelligence readiness: 55%
-- UX cleanup readiness: 43%
-- Quote/compliance maturity: 44%
-- Product catalog maturity: 55%
+- Overall CRM readiness: 80%
+- Current anti-drift sprint completion: 95%
+- Current Setu Guru knowledge sprint completion: 80%
+- Setu Guru intelligence readiness: 60%
+- UX cleanup readiness: 44%
+- Quote/compliance maturity: 46%
+- Product catalog maturity: 56%
 
 Update these numbers after every implementation pass.
 
@@ -350,21 +369,20 @@ Rules:
 7. Never put dev/debug notes on user-facing screens; put them in docs and Setu Guru knowledge.
 8. Protect previous fixes listed in DO_NOT_REGRESS.md.
 9. Ask Ritesh for explicit approval before making GitHub repo changes.
-10. After approval, make approved changes directly to GitHub main unless Ritesh asks for a branch or PR.
+10. After approval, prepare the full approved pass and make one final commit directly to GitHub main unless Ritesh asks for a branch or PR.
 11. At the end, report build status, files changed, readiness %, sprint %, and the next pass.
 
-Current direction: continue UX cleanup and Setu Guru intelligence. Sprint 2 route help docs and Setu Guru registry foundation are in progress. Next recommended pass is to wire Setu Guru static fallback and `/api/setu-guru/org-search` page_help/live context modes to the new registry.
+Current direction: continue UX cleanup and Setu Guru intelligence. Sprint 2 route help docs and registry are mostly complete, and Sprint 3 live route context has started. Next recommended pass is to expand `/api/setu-guru/org-search` with richer mode aliases and source-backed live research routing.
 ```
 
 ---
 
 ## 8. Next recommended pass
 
-Continue Sprint 2:
+Continue Sprint 3:
 
-1. Wire Setu Guru widget static fallback to `src/lib/setu-guru/help-registry.ts`.
-2. Add `/api/setu-guru/org-search` support for `page_help` and richer route context modes.
-3. Expand Setu Guru live research routing for HS/HSN, document requirements, duties, and margin benchmarks.
-4. Add source-backed help topic responses where live external rules are needed.
-5. Check Vercel build after merge.
-6. Update this roadmap and changelog.
+1. Normalize `/api/setu-guru/org-search` mode aliases to roadmap names: `catalog_search`, `buyer_search`, `supplier_search`, `lead_search`, `quote_compliance`, `page_help`, and `document_requirements`.
+2. Add tests for mode aliases and no-database `page_help` behavior.
+3. Start safe live-research routing for HS/HSN, document requirements, duties, and margin benchmarks.
+4. Check Vercel build after the one final commit.
+5. Update this roadmap and changelog.

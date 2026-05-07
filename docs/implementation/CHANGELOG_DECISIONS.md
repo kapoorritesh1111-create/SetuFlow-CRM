@@ -30,12 +30,13 @@ Reason:
 
 Decision:
 
-- Treat commit `770244eba3a973aab7b27290e05de7f0779dc245` as the current stable production baseline at roadmap creation.
+- Treat commit `770244eba3a973aab7b27290e05de7f0779dc245` as the initial stable product baseline at roadmap creation.
+- Treat the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
 Reason:
 
-- Vercel production deployment for this commit is READY.
-- It includes the latest product drawer/pricing build fix.
+- The original baseline included the latest product drawer/pricing build fix.
+- Subsequent READY deployments added Setu Guru route help, registry, widget wiring, and page-help API behavior.
 
 ---
 
@@ -110,8 +111,35 @@ Reason:
 
 Build:
 
-- BUILDING / pending after direct-main documentation commits.
-- Commit: `cd889a640c532f32c94cbb3ef78fdfa8eb42f6ba`
+- READY
+- Commit: `32707ec295175b55e17cce71e970fd00ec08c7b0`
+
+---
+
+## 2026-05-07 — One final commit per implementation pass
+
+Decision:
+
+- Normal implementation passes must prepare all intended files before writing to `main`.
+- Normal passes should use one final commit so Vercel receives one deployment trigger.
+- File-by-file commits are not allowed for normal passes.
+- Emergency build-fix exceptions must be called out, kept minimal, and verified again.
+
+Files:
+
+- `docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md`
+- `docs/implementation/PASS_CHECKLIST.md`
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+
+Reason:
+
+- Ritesh requested one commit after all build/pass work is complete so Vercel does not deploy repeatedly during a pass.
+- The GitHub connector supports lower-level blob/tree/commit/ref operations, so multi-file one-commit passes are now possible.
+
+Build:
+
+- READY before this changelog update
+- Baseline commit: `32707ec295175b55e17cce71e970fd00ec08c7b0`
 
 ---
 
@@ -150,8 +178,39 @@ Reason:
 
 Build:
 
-- BUILDING / pending after direct-main commits.
-- Latest Sprint 2 commit before this changelog: `cd889a640c532f32c94cbb3ef78fdfa8eb42f6ba`
+- READY
+- Commit: `8f668fde8d4579c680325f5432e593d5c6146d45`
+
+---
+
+## 2026-05-07 — Setu Guru registry wiring and page-help API
+
+Decision:
+
+- Wire Setu Guru widget fallback and quick prompts to `src/lib/setu-guru/help-registry.ts`.
+- Use `collectSetuGuruPageContext()` so widget requests include route, help topic, suggested prompts, visible page text, and approval boundaries.
+- Add `/api/setu-guru/org-search` `page_help` mode so page-specific help can respond before Supabase workspace lookup.
+- Add tests that protect widget registry wiring and no-database `page_help` behavior.
+
+Files:
+
+- `src/features/setu-guru/setu-guru-widget.tsx`
+- `src/app/api/setu-guru/org-search/route.ts`
+- `tests/setu-guru.test.mjs`
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+- `docs/implementation/PASS_CHECKLIST.md`
+
+Reason:
+
+- Sprint 2 definition of done requires Setu Guru to answer from route-specific help before generic topics.
+- Sprint 3 requires richer route context and `page_help` support as the first live-context mode.
+- Tests must protect against regressing back to hardcoded widget-only topics.
+
+Build:
+
+- BUILDING / pending after this one-commit pass
+- Baseline before commit: `32707ec295175b55e17cce71e970fd00ec08c7b0`
 
 ---
 

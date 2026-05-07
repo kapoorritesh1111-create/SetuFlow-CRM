@@ -16,7 +16,8 @@ Use this checklist before and after every repo pass. Do not start random fixes w
 - [ ] Identify what Setu Guru must learn from this pass.
 - [ ] Identify what must not change.
 - [ ] Ask Ritesh for explicit approval before making repo changes.
-- [ ] After approval, make the approved change directly to GitHub `main` unless Ritesh asks for a branch or PR.
+- [ ] After approval, prepare the full approved change before committing.
+- [ ] Use one final commit to GitHub `main` unless Ritesh asks for a branch or PR.
 
 ---
 
@@ -30,11 +31,24 @@ Use this checklist before and after every repo pass. Do not start random fixes w
 - [ ] Update or add Setu Guru docs/context/policy in the same pass.
 - [ ] Use Supabase/Vercel tools when schema/build truth is needed.
 - [ ] Do not run `npm ci` in the sandbox.
-- [ ] Keep commits small enough to review and tied to the approved pass.
+- [ ] Prepare all intended file changes before the final commit.
+- [ ] Keep the final commit scoped to the approved pass.
 
 ---
 
-## 3. Required Setu Guru update
+## 3. One-commit deployment rule
+
+Normal implementation passes must produce one final commit to `main`.
+
+- [ ] Do not commit file-by-file.
+- [ ] Do not move `main` until the pass is complete.
+- [ ] Use multi-file commit tooling when more than one file changes.
+- [ ] Let the single final commit trigger one Vercel deployment.
+- [ ] If a build-fix exception is required, state it clearly, keep it minimal, and verify Vercel again.
+
+---
+
+## 4. Required Setu Guru update
 
 Every pass must update at least one of:
 
@@ -50,7 +64,7 @@ If no Setu Guru update is needed, document why in `CHANGELOG_DECISIONS.md`.
 
 ---
 
-## 4. Required manual checks
+## 5. Required manual checks
 
 For every pass, check the most relevant items:
 
@@ -65,7 +79,7 @@ For every pass, check the most relevant items:
 
 ---
 
-## 5. End-of-pass report format
+## 6. End-of-pass report format
 
 Use this exact format:
 
@@ -85,7 +99,7 @@ Next pass:
 
 ---
 
-## 6. If build fails
+## 7. If build fails
 
 1. Fetch Vercel build logs.
 2. Fix only the failing build issue first.
@@ -95,7 +109,7 @@ Next pass:
 
 ---
 
-## 7. If user starts a new chat
+## 8. If user starts a new chat
 
 Tell the new chat to read:
 
@@ -103,5 +117,6 @@ Tell the new chat to read:
 - `docs/implementation/PASS_CHECKLIST.md`
 - `docs/implementation/DO_NOT_REGRESS.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
+- `docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md`
 
-Then continue from the current sprint and latest READY deployment. Ask Ritesh for explicit approval before changing GitHub `main`.
+Then continue from the current sprint and latest READY deployment. Ask Ritesh for explicit approval before changing GitHub `main`, then make one final commit for the approved pass.

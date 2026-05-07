@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const shell = readFileSync('src/components/layout/app-shell.tsx', 'utf8');
 const widget = readFileSync('src/features/setu-guru/setu-guru-widget.tsx', 'utf8');
+const orgSearchRoute = readFileSync('src/app/api/setu-guru/org-search/route.ts', 'utf8');
 
 test('Setu Guru widget is embedded in the authenticated shell', () => {
   assert.match(shell, /SetuGuruWidget/);
@@ -58,4 +59,23 @@ test('Setu Guru help registry covers the main route help docs', () => {
   ].forEach((docPath) => assert.match(registry, new RegExp(docPath.replace(/[/.]/g, '\\$&'))));
   assert.match(registry, /getBestSetuGuruHelpTopic/);
   assert.match(registry, /getSetuGuruRouteTopics/);
+});
+
+test('Setu Guru widget uses the route help registry and page context collector', () => {
+  assert.match(widget, /collectSetuGuruPageContext/);
+  assert.match(widget, /getBestSetuGuruHelpTopic/);
+  assert.match(widget, /getRouteHelpSummary/);
+  assert.match(widget, /getSetuGuruRouteTopics/);
+  assert.match(widget, /isSetuGuruOrgSearchQuestion/);
+  assert.match(widget, /page_help/);
+  assert.doesNotMatch(widget, /const TOPICS/);
+});
+
+test('Setu Guru org search supports page help before live database lookup', () => {
+  assert.match(orgSearchRoute, /buildPageHelpAnswer/);
+  assert.match(orgSearchRoute, /mode === 'page_help'/);
+  assert.match(orgSearchRoute, /getBestSetuGuruHelpTopic/);
+  assert.match(orgSearchRoute, /getRouteHelpSummary/);
+  assert.match(orgSearchRoute, /classifySetuGuruResponse/);
+  assert.match(orgSearchRoute, /Ask “what can you do on this page\?” for route help/);
 });
