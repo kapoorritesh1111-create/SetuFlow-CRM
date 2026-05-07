@@ -16,6 +16,20 @@ Before making GitHub repo changes, ChatGPT must ask Ritesh for explicit approval
 
 After approval, ChatGPT should make the approved change directly to GitHub `main` unless Ritesh explicitly requests a branch or pull request.
 
+## One final commit per pass
+
+Each implementation pass should produce exactly one final GitHub commit to `main`.
+
+Required workflow:
+
+1. Prepare the full pass internally first.
+2. Review the intended file set before writing.
+3. Make one final commit only after the full pass is ready.
+4. Let that single commit trigger one Vercel deployment.
+5. Verify the single Vercel deployment and report status.
+
+Do not commit file-by-file during normal implementation passes. If an emergency build fix is required after the final commit, state that it is a build-fix exception, keep it minimal, and verify Vercel again.
+
 ## Required approval wording
 
 Any clear approval from Ritesh is acceptable, including:
@@ -24,15 +38,22 @@ Any clear approval from Ritesh is acceptable, including:
 APPROVED — update GitHub main and continue next pass
 ```
 
+For one-commit passes, preferred approval is:
+
+```text
+APPROVED — update GitHub main in one commit and continue next pass
+```
+
 ## Required operating sequence
 
 1. Read the roadmap/control docs.
 2. Check the latest Vercel build status.
 3. Identify the sprint, smallest safe change, files to change, and Setu Guru knowledge update.
 4. Ask Ritesh for explicit approval before repo writes.
-5. After approval, commit approved changes directly to `main`.
-6. Verify Vercel deployment status.
-7. Report build status, latest commit, files changed, readiness %, sprint %, Setu Guru intelligence %, and next pass.
+5. After approval, prepare the approved pass completely before committing.
+6. Commit the approved pass directly to `main` as one final commit.
+7. Verify Vercel deployment status for that commit.
+8. Report build status, latest commit, files changed, readiness %, sprint %, Setu Guru intelligence %, and next pass.
 
 ## Guardrails
 
@@ -42,3 +63,4 @@ APPROVED — update GitHub main and continue next pass
 - Do not start a new feature while production build is failing.
 - Protect all previous fixes listed in `DO_NOT_REGRESS.md`.
 - Every implementation pass must update Setu Guru knowledge, context, help docs, response policy, or explain why not in the changelog.
+- Keep normal passes to one final commit so Vercel receives one deployment trigger per pass.
