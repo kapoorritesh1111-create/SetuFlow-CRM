@@ -209,8 +209,38 @@ Reason:
 
 Build:
 
-- BUILDING / pending after this one-commit pass
-- Baseline before commit: `32707ec295175b55e17cce71e970fd00ec08c7b0`
+- READY
+- Commit: `8b9600c1c40b93424be2b76d0c40388bafda2432`
+
+---
+
+## 2026-05-07 — Setu Guru roadmap mode aliases and safe research routing
+
+Decision:
+
+- Normalize `/api/setu-guru/org-search` mode aliases to roadmap names for catalog, buyer, supplier, lead, quote compliance, pricing defaults, HSN enrichment, document requirements, margin benchmark, and page help.
+- Keep existing live catalog, HSN gap, lead, buyer, supplier, and quote compliance behavior working through the new canonical mode names.
+- Add safe research-intent routing for HS/HSN, document requirements, duties/tariffs, and margin benchmarks.
+- Research routing returns source-backed research boundaries and human approval requirements before any write-back.
+- Keep route helper functions internal to the Next.js route handler.
+
+Files:
+
+- `src/app/api/setu-guru/org-search/route.ts`
+- `tests/setu-guru.test.mjs`
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Reason:
+
+- Sprint 3 requires Setu Guru to use roadmap mode names instead of drifting aliases.
+- HSN, document requirement, duty/tariff, and margin questions must move toward live source-backed research while staying draft-only until human review.
+- This keeps the existing Supabase-backed answers safe while preparing the next pass for real cited live research execution.
+
+Build:
+
+- BUILDING / pending after this pass
+- Baseline before pass: `8b9600c1c40b93424be2b76d0c40388bafda2432`
 
 ---
 
