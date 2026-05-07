@@ -239,8 +239,34 @@ Reason:
 
 Build:
 
-- BUILDING / pending after this pass
-- Baseline before pass: `8b9600c1c40b93424be2b76d0c40388bafda2432`
+- READY
+- Commit: `36d2905254a3ddcbeac73dbe89c542feea860dd0`
+
+---
+
+## 2026-05-07 — Close Sprint 1 and Sprint 2 before further passes
+
+Decision:
+
+- Audit Sprint 1 and Sprint 2 definitions of done before starting the next pass.
+- Mark Sprint 1 Implementation Control and Anti-Drift System as `DONE` at 100%.
+- Mark Sprint 2 Setu Guru Knowledge Base Foundation as `DONE` at 100%.
+- Add the rule that earlier sprints must be 100% complete or explicitly active with a reason before moving to the next roadmap pass.
+
+Files:
+
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Reason:
+
+- Ritesh approved continuing but required all past sprints to be at 100% before moving to the next pass.
+- Sprint 1 control docs and Sprint 2 route-help/registry/page-help deliverables are present, tested, and deployed READY.
+
+Build:
+
+- BUILDING / pending after this documentation update
+- Baseline before update: `36d2905254a3ddcbeac73dbe89c542feea860dd0`
 
 ---
 
