@@ -78,6 +78,7 @@ function getComplianceTone(compliance: LeadProfileSnapshot['compliance']): RailT
 }
 
 export function LeadRightRail({
+  leadId,
   nextAction,
   quoteFocus,
   compliance,
@@ -88,6 +89,7 @@ export function LeadRightRail({
   onOpenNextAction,
   onOpenLeadLog,
 }: {
+  leadId: string
   nextAction: NextActionSummary
   quoteFocus: QuoteFocusSummary
   compliance: LeadProfileSnapshot['compliance']
@@ -111,7 +113,7 @@ export function LeadRightRail({
     : compliance.missingRequiredDocumentCount > 0 || compliance.expiringDocumentCount > 0
       ? `${compliance.missingRequiredDocumentCount} missing required · ${compliance.expiringDocumentCount} expiring soon.`
       : 'Compliance is currently clear.'
-  const complianceAssistHref = `${workspaceLinks.complianceWorkspace.includes('?') ? workspaceLinks.complianceWorkspace : workspaceLinks.complianceWorkspace}?assist=1`.replace('/compliance?assist=1', `/compliance/assist?leadId=${workspaceLinks.backToLeads.split('/').filter(Boolean).pop() ?? ''}`)
+  const complianceAssistHref = `/compliance/assist?leadId=${encodeURIComponent(leadId)}`
 
   return (
     <aside className="sticky top-[98px] space-y-4 self-start md:top-[108px]">
