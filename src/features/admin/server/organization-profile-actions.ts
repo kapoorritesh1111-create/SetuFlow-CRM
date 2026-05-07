@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { writeAuditLog } from '@/lib/auditLog';
@@ -20,6 +21,17 @@ function clean(value: FormDataEntryValue | null) {
   return text.length ? text : null;
 }
 
+function normalizeSlug(value: FormDataEntryValue | null, fallback: string) {
+  const raw = typeof value === 'string' ? value : '';
+  const normalized = raw
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '')
+    .slice(0, 48);
+  return normalized || fallback;
+}
+
 function currencyFromCountry(country: any, fallback: string | null) {
   const iso = String(country?.iso2_code ?? country?.iso_code ?? '').trim().toUpperCase();
   const byIso = COUNTRY_CURRENCY[iso];
@@ -31,6 +43,10 @@ function currencyFromCountry(country: any, fallback: string | null) {
   if (name.includes('united states')) return 'USD';
   if (name.includes('united arab emirates') || name.includes('uae')) return 'AED';
   return fallback ?? 'USD';
+}
+
+function redirectToProfile(notice: string): never {
+  redirect(`/admin/organization?notice=${encodeURIComponent(notice)}#company-profile`);
 }
 
 export async function updateOrganizationProfileV2(formData: FormData): Promise<void> {
@@ -51,11 +67,24 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
     defaultCountry = data ?? null;
   }
 
+  const currentSlug = String((context.organization as any).slug ?? 'organization').trim().toLowerCase();
+  const nextSlug = normalizeSlug(formData.get('slug'), currentSlug);
+  if (nextSlug !== currentSlug) {
+    const { data: existingSlug } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('slug', nextSlug)
+      .neq('id', context.organization.id)
+      .maybeSingle();
+    if (existingSlug?.id) redirectToProfile('slug-taken');
+  }
+
   const manualCurrency = clean(formData.get('default_currency'));
   const nextCurrency = (manualCurrency ?? currencyFromCountry(defaultCountry, context.organization.default_currency ?? 'USD')).toUpperCase().slice(0, 3);
 
   const payload: Record<string, unknown> = {
     name: clean(formData.get('name')) ?? context.organization.name,
+    slug: nextSlug,
     legal_name: clean(formData.get('legal_name')),
     headquarters_country: clean(formData.get('headquarters_country')) ?? defaultCountry?.name ?? null,
     registered_address: clean(formData.get('registered_address')),
@@ -89,6 +118,7 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
     payload: {
       previous: {
         name: context.organization.name,
+        slug: currentSlug,
         default_currency: context.organization.default_currency,
         default_country_id: (context.organization as any).default_country_id ?? null,
         default_market_id: (context.organization as any).default_market_id ?? null,
@@ -100,4 +130,5 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
 
   revalidatePath('/admin/organization');
   revalidatePath('/dashboard');
+  redirectToProfile('profile-saved');
 }
