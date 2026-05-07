@@ -6,20 +6,93 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { getBestSetuGuruHelpTopic, getRouteHelpSummary } from '@/lib/setu-guru/help-registry';
 import { classifySetuGuruResponse } from '@/lib/setu-guru/guru-response-policy';
 
+type SetuGuruOrgSearchMode =
+  | 'catalog_search'
+  | 'buyer_search'
+  | 'supplier_search'
+  | 'lead_search'
+  | 'quote_compliance'
+  | 'pricing_defaults'
+  | 'hsn_enrichment'
+  | 'document_requirements'
+  | 'margin_benchmark'
+  | 'page_help';
+
+const MODE_ALIASES: Record<string, SetuGuruOrgSearchMode> = {
+  catalog: 'catalog_search',
+  products: 'catalog_search',
+  product: 'catalog_search',
+  categories: 'catalog_search',
+  category: 'catalog_search',
+  catalog_search: 'catalog_search',
+  buyers: 'buyer_search',
+  buyer: 'buyer_search',
+  buyer_search: 'buyer_search',
+  suppliers: 'supplier_search',
+  supplier: 'supplier_search',
+  supplier_search: 'supplier_search',
+  leads: 'lead_search',
+  lead: 'lead_search',
+  lead_search: 'lead_search',
+  quote_compliance: 'quote_compliance',
+  compliance: 'quote_compliance',
+  quote: 'quote_compliance',
+  pricing_defaults: 'pricing_defaults',
+  pricing: 'pricing_defaults',
+  hsn: 'hsn_enrichment',
+  hs_code: 'hsn_enrichment',
+  hs_code_enrichment: 'hsn_enrichment',
+  hsn_enrichment: 'hsn_enrichment',
+  document_requirements: 'document_requirements',
+  document_requirement: 'document_requirements',
+  documents: 'document_requirements',
+  required_documents: 'document_requirements',
+  margin_benchmark: 'margin_benchmark',
+  margin: 'margin_benchmark',
+  duties: 'document_requirements',
+  duty: 'document_requirements',
+  tariffs: 'document_requirements',
+  tariff: 'document_requirements',
+  page_help: 'page_help',
+  help: 'page_help',
+};
+
 function asText(value: unknown) {
   return String(value ?? '').trim();
 }
 
-function questionMode(question: string) {
+function modeKey(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+function isHsnGapQuestion(question: string) {
+  const q = question.toLowerCase();
+  return (q.includes('missing') || q.includes('count') || q.includes('how many') || q.includes('in my catalog') || q.includes('listed')) && (q.includes('hsn') || q.includes('hs code') || q.includes('hs-code'));
+}
+
+function isResearchRoutingMode(mode: SetuGuruOrgSearchMode, question: string) {
+  if (mode === 'document_requirements' || mode === 'margin_benchmark') return true;
+  if (mode === 'hsn_enrichment') return !isHsnGapQuestion(question);
+  return false;
+}
+
+function questionMode(question: string): SetuGuruOrgSearchMode {
   const q = question.toLowerCase();
   if (['how do i use this page', 'what can you do', 'what should i do', 'page help', 'help me here'].some((word) => q.includes(word))) return 'page_help';
+  if (q.includes('hsn') || q.includes('hs code') || q.includes('hs-code')) return 'hsn_enrichment';
+  if (['tariff', 'duty', 'duties', 'customs', 'required document', 'document requirement', 'destination requirement', 'country requirement'].some((word) => q.includes(word))) return 'document_requirements';
+  if (['margin benchmark', 'market margin', 'industry margin', 'benchmark margin'].some((word) => q.includes(word))) return 'margin_benchmark';
   if (['compliance', 'blocker', 'document', 'certificate', 'dispatch', 'coa', 'packing list', 'waive', 'ignore', 'fix this'].some((word) => q.includes(word))) return 'quote_compliance';
-  if (q.includes('buyer')) return 'buyers';
-  if (q.includes('supplier')) return 'suppliers';
-  if (q.includes('category')) return 'categories';
-  if (q.includes('hsn') || q.includes('hs code') || q.includes('hs-code')) return 'hsn';
-  if (q.includes('lead') || q.includes('contact') || q.includes('company')) return 'leads';
-  return 'catalog';
+  if (q.includes('buyer')) return 'buyer_search';
+  if (q.includes('supplier')) return 'supplier_search';
+  if (q.includes('lead') || q.includes('contact') || q.includes('company')) return 'lead_search';
+  return 'catalog_search';
+}
+
+export function normalizeSetuGuruOrgSearchMode(rawMode: string, question = ''): SetuGuruOrgSearchMode {
+  const key = modeKey(rawMode);
+  if (key && MODE_ALIASES[key]) return MODE_ALIASES[key];
+  return questionMode(question);
 }
 
 function isPureCountQuestion(question: string) {
@@ -29,7 +102,7 @@ function isPureCountQuestion(question: string) {
 
 function extractSearchTerm(question: string, mode: string) {
   if (isPureCountQuestion(question)) return '';
-  const filler = ['how many', 'count', 'total', 'show me', 'find', 'search', 'filter', 'buyer', 'buyers', 'supplier', 'suppliers', 'lead', 'leads', 'product', 'products', 'catalog', 'category', 'categories', 'named', 'called', 'by name', 'in my', 'my', 'are in', 'there are', 'missing', 'hsn', 'hs code', 'hs-code', mode];
+  const filler = ['how many', 'count', 'total', 'show me', 'find', 'search', 'filter', 'buyer', 'buyers', 'supplier', 'suppliers', 'lead', 'leads', 'product', 'products', 'catalog', 'category', 'categories', 'named', 'called', 'by name', 'in my', 'my', 'are in', 'there are', 'missing', 'hsn', 'hs code', 'hs-code', mode.replaceAll('_', ' ')];
   let cleaned = question.toLowerCase();
   for (const word of filler) cleaned = cleaned.replaceAll(word, ' ');
   cleaned = cleaned.replace(/[^a-z0-9\s-]/gi, ' ').replace(/\s+/g, ' ').trim();
@@ -71,6 +144,29 @@ function buildPageHelpAnswer(question: string, route: string) {
     policyText,
   ].join('\n\n');
   return { answer, rows, actions: topic.actions, actionHref: topic.actions[0] ? null : undefined, routeHelp, mode: 'page_help' };
+}
+
+function buildResearchRoutingAnswer(question: string, route: string, mode: SetuGuruOrgSearchMode) {
+  const routeHelp = getRouteHelpSummary(route || '/dashboard');
+  const topic = getBestSetuGuruHelpTopic(question || routeHelp.summary, route || '/dashboard');
+  const label = mode === 'hsn_enrichment' ? 'HS/HSN enrichment' : mode === 'document_requirements' ? 'document and destination requirements' : 'margin benchmark research';
+  const rows = [
+    { id: 'research-scope', name: label, type: 'research scope', next: 'Use live, source-backed research before writing CRM values' },
+    { id: 'sources-required', name: 'Official or reviewable sources required', type: 'source rule', next: 'Cite customs, tariff, regulator, marketplace, or broker sources when available' },
+    { id: 'human-review', name: 'Human review before write-back', type: 'approval boundary', next: 'Do not save HSN, duty, margin, or document rules without approval' },
+  ];
+  const answer = [
+    `I identified this as ${label}.`,
+    topic.summary,
+    mode === 'hsn_enrichment'
+      ? 'Next safe research path: identify product material/use, destination country, HS chapter candidates, official tariff notes, and any local HSN mapping. Treat the result as draft until reviewed.'
+      : mode === 'document_requirements'
+        ? 'Next safe research path: identify product, destination country, buyer/supplier role, quote/order/dispatch stage, mandatory documents, advisory documents, and validity or inspection rules.'
+        : 'Next safe research path: identify product category, buyer market, channel role, landed cost assumptions, distributor/retailer benchmarks, and whether the number should be quote-only or a saved default.',
+    'Setu Guru should use live source-backed research for this request and cite reviewable sources before any write-back.',
+    'Human approval is required before saving HSN/HS code, duties, tariff assumptions, margin defaults, compliance rules, or document requirements.',
+  ].join('\n\n');
+  return { answer, confidence: 'medium', mode, rows, actions: ['Ask live research', 'Review sources', ...topic.actions.slice(0, 2)] };
 }
 
 async function resolveActiveLead(db: any, organizationId: string, route: string, pageText: string) {
@@ -146,16 +242,20 @@ export async function POST(request: Request) {
     const question = asText(body.question);
     const route = asText(body.route);
     const pageText = asText(body.pageText);
-    if (!question) return NextResponse.json({ answer: 'Ask a catalog, product, buyer, supplier, lead, quote blocker, or page help question.', confidence: 'low', rows: [] }, { status: 400 });
+    if (!question) return NextResponse.json({ answer: 'Ask a catalog, product, buyer, supplier, lead, quote blocker, route help, or live research question.', confidence: 'low', rows: [] }, { status: 400 });
 
-    const mode = asText(body.mode) || questionMode(question);
+    const mode = normalizeSetuGuruOrgSearchMode(asText(body.mode), question);
     if (mode === 'page_help') {
       const help = buildPageHelpAnswer(question, route);
       return NextResponse.json({ ...help, confidence: 'high' });
     }
 
+    if (isResearchRoutingMode(mode, question)) {
+      return NextResponse.json(buildResearchRoutingAnswer(question, route, mode));
+    }
+
     if (!hasSupabaseEnv) {
-      return NextResponse.json({ answer: 'Setu Guru cannot read live organization data because Supabase environment variables are missing. Ask “what can you do on this page?” for route help.', confidence: 'low', rows: [], actions: ['Show page help'] }, { status: 500 });
+      return NextResponse.json({ answer: 'Setu Guru cannot read live organization data because Supabase environment variables are missing. Ask “what can you do on this page?” for route help, or ask for live research guidance for HS/HSN, document requirements, duties, or margins.', confidence: 'low', rows: [], actions: ['Show page help', 'Ask live research'] }, { status: 500 });
     }
 
     const workspace = await getWorkspaceAccess();
@@ -196,38 +296,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ answer: built.answer, confidence: 'high', mode, rows, actions: ['Open lead documents', 'Open compliance', 'Ask AI evidence checklist'], actionHref: `/leads/${lead.id}` });
     }
 
-    if (mode === 'catalog' || mode === 'products' || mode === 'hsn' || mode === 'categories') {
+    if (mode === 'catalog_search' || mode === 'hsn_enrichment') {
       const workspaceData = await getProductsData(organizationId);
       const products = workspaceData?.products ?? [];
       const categories = workspaceData?.categories ?? [];
       const categoryNameById = new Map(categories.map((category: any) => [category.id, category.name]));
       const visibleProducts = products.filter((product: any) => product.is_active !== false);
       const missingHsnProducts = visibleProducts.filter((product: any) => !asText(product.hsn_code));
-      const sourceProducts = mode === 'hsn' ? missingHsnProducts : visibleProducts;
+      const sourceProducts = mode === 'hsn_enrichment' ? missingHsnProducts : visibleProducts;
       const matchedProducts = term ? sourceProducts.filter((product: any) => includesTerm({ name: product.name, sku: product.sku, sku_code: product.sku_code, hsn_code: product.hsn_code, category: categoryNameById.get(product.category_id) }, term)) : sourceProducts;
       const rows = matchedProducts.slice(0, 8).map((product: any) => ({ id: product.id, name: product.name, sku: product.sku ?? product.sku_code ?? null, hsnCode: product.hsn_code ?? null, category: categoryNameById.get(product.category_id) ?? null }));
-      const answer = mode === 'hsn' ? `I found ${missingHsnProducts.length} catalog product(s) missing HSN/HS codes in ${organizationName}. I listed ${rows.length} row(s) for review.` : term ? `I found ${matchedProducts.length} matching catalog product(s) for "${term}" in ${organizationName}. There are ${visibleProducts.length} catalog product(s) total.` : `You have ${visibleProducts.length} catalog product(s) in ${organizationName}. I did not apply any search filter.`;
-      return NextResponse.json({ answer, confidence: 'high', mode, term, rows, metrics: { catalogProducts: visibleProducts.length, categories: categories.length, missingHsnCount: missingHsnProducts.length }, nextAction: mode === 'hsn' ? 'Open Products filtered to missing HSN codes.' : 'Open Products to review the catalog.', actionHref: mode === 'hsn' ? '/products?guru=missing-hsn' : '/products' });
+      const answer = mode === 'hsn_enrichment' ? `I found ${missingHsnProducts.length} catalog product(s) missing HSN/HS codes in ${organizationName}. I listed ${rows.length} row(s) for review. For actual HS/HSN assignment, use live source-backed research and human review before write-back.` : term ? `I found ${matchedProducts.length} matching catalog product(s) for "${term}" in ${organizationName}. There are ${visibleProducts.length} catalog product(s) total.` : `You have ${visibleProducts.length} catalog product(s) in ${organizationName}. I did not apply any search filter.`;
+      return NextResponse.json({ answer, confidence: 'high', mode, term, rows, metrics: { catalogProducts: visibleProducts.length, categories: categories.length, missingHsnCount: missingHsnProducts.length }, nextAction: mode === 'hsn_enrichment' ? 'Open Products filtered to missing HSN codes.' : 'Open Products to review the catalog.', actionHref: mode === 'hsn_enrichment' ? '/products?guru=missing-hsn' : '/products' });
     }
 
-    if (mode === 'buyers' || mode === 'suppliers' || mode === 'leads') {
+    if (mode === 'buyer_search' || mode === 'supplier_search' || mode === 'lead_search') {
       let countQuery = db.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId);
-      if (mode === 'buyers') countQuery = countQuery.eq('lead_type', 'buyer');
-      if (mode === 'suppliers') countQuery = countQuery.eq('lead_type', 'supplier');
+      if (mode === 'buyer_search') countQuery = countQuery.eq('lead_type', 'buyer');
+      if (mode === 'supplier_search') countQuery = countQuery.eq('lead_type', 'supplier');
       const { count, error: countError } = await countQuery;
       if (countError) throw countError;
       let query = db.from('leads').select('id, company_name, contact_name, email, phone, lead_type, country, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(8);
-      if (mode === 'buyers') query = query.eq('lead_type', 'buyer');
-      if (mode === 'suppliers') query = query.eq('lead_type', 'supplier');
+      if (mode === 'buyer_search') query = query.eq('lead_type', 'buyer');
+      if (mode === 'supplier_search') query = query.eq('lead_type', 'supplier');
       if (term) query = query.or(`company_name.ilike.%${term}%,contact_name.ilike.%${term}%,email.ilike.%${term}%,country.ilike.%${term}%`);
       const { data: leads, error } = await query;
       if (error) throw error;
       const rows = (leads ?? []).map((lead: any) => ({ id: lead.id, company: lead.company_name, contact: lead.contact_name, email: lead.email, phone: lead.phone, type: lead.lead_type, country: lead.country }));
-      const label = mode === 'buyers' ? 'buyer' : mode === 'suppliers' ? 'supplier' : 'lead';
-      return NextResponse.json({ answer: term ? `I found ${rows.length} matching ${label} record(s) for "${term}" in ${organizationName}. There are ${count ?? 0} ${label} record(s) total.` : `${organizationName} has ${count ?? 0} ${label} record(s). I listed the latest ${rows.length}.`, confidence: 'high', mode, term, rows, metrics: { count: count ?? 0 }, nextAction: mode === 'buyers' ? 'Open Leads in Buyers mode.' : mode === 'suppliers' ? 'Open Leads in Suppliers mode.' : 'Open Leads to filter or edit records.', actionHref: mode === 'buyers' ? '/leads?mode=buyers' : mode === 'suppliers' ? '/leads?mode=suppliers' : '/leads' });
+      const label = mode === 'buyer_search' ? 'buyer' : mode === 'supplier_search' ? 'supplier' : 'lead';
+      return NextResponse.json({ answer: term ? `I found ${rows.length} matching ${label} record(s) for "${term}" in ${organizationName}. There are ${count ?? 0} ${label} record(s) total.` : `${organizationName} has ${count ?? 0} ${label} record(s). I listed the latest ${rows.length}.`, confidence: 'high', mode, term, rows, metrics: { count: count ?? 0 }, nextAction: mode === 'buyer_search' ? 'Open Leads in Buyers mode.' : mode === 'supplier_search' ? 'Open Leads in Suppliers mode.' : 'Open Leads to filter or edit records.', actionHref: mode === 'buyer_search' ? '/leads?mode=buyers' : mode === 'supplier_search' ? '/leads?mode=suppliers' : '/leads' });
     }
 
-    return NextResponse.json({ answer: 'I can search live products, HSN gaps, buyers, suppliers, leads, quote compliance blockers, and route help. Try “what can you do on this page?” for page-specific help.', confidence: 'medium', rows: [], actions: ['Show page help'] });
+    return NextResponse.json({ answer: 'I can search live products, HSN gaps, buyers, suppliers, leads, quote compliance blockers, route help, and research-intent routing for HS/HSN, document requirements, duties, tariffs, and margins. Try “what can you do on this page?” for page-specific help.', confidence: 'medium', rows: [], actions: ['Show page help', 'Ask live research'] });
   } catch (error) {
     return NextResponse.json({ answer: error instanceof Error ? error.message : 'Setu Guru organization search failed.', confidence: 'low', rows: [] }, { status: 500 });
   }
