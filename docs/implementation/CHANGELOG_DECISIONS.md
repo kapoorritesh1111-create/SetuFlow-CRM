@@ -9,14 +9,13 @@ This log records important implementation decisions so future chats and passes c
 Decision:
 
 - Treat the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
-- Sprint 1, Sprint 2, and Sprint 3 are complete at 100% after the Sprint 3 production drawer verification pass.
-- Sprint 4 is a closure candidate after the product save/drawer/table protection review.
+- Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are complete at 100% after Sprint 4 final closure.
 
 Reason:
 
 - Production is advancing through small approved one-commit passes on `main`.
 - Sprint 3 Setu Guru routing/live-context behavior is deployed and verified.
-- Sprint 4 product catalog UX work is now ready for final production smoke check before full closure.
+- Sprint 4 product catalog UX maturity is complete after READY deployment and final smoke review.
 
 ---
 
@@ -118,19 +117,19 @@ Builds:
 - READY `2811ebb2d76a407beff3ec241ca9777654fd8ba7` — Add Products workspace action map
 - READY `be19063efa8f703c6c1144b36638c2817ecd55ff` — Clarify product drawer action guidance
 - READY `93891e419853309942c9d9deac627a83f87c54d1` — Tighten product table readiness UI
+- READY `53678eac76cb1b77bf40c9e5b9fd02661b277ef0` — Document Sprint 4 closure readiness
 
 ---
 
-## 2026-05-07 — Sprint 4 closure candidate protection review
+## 2026-05-07 — Sprint 4 final closure
 
 Decision:
 
-- Verified `93891e419853309942c9d9deac627a83f87c54d1` is READY before preparing the closure candidate.
-- Reviewed product drawer, product table, and pricing calculator code paths for protected behavior.
-- Product drawer still uses the existing `updateProductDetail` and `deleteProduct` paths and preserves Overview, Pricing, Variants, Trade, and History tabs.
-- Product table row actions remain inline product-default price edits, drawer routing, and quick quote links; no new save/delete/distribution paths were introduced.
-- Product pricing calculator still saves product-default snapshots through `savePricingCalculatorSnapshot`; quote-only pricing remains in Quotes.
-- No product UI behavior was changed in this closure-readiness pass.
+- Verified `53678eac76cb1b77bf40c9e5b9fd02661b277ef0` is READY before closing Sprint 4.
+- Smoke review found no blocking defects in Products route composition, Product Management action links, product drawer tabs, product table row actions, product-default pricing save path, or quote-only pricing boundary.
+- Closed Sprint 4 Product catalog UX maturity at 100%.
+- Moved the next roadmap focus to Sprint 5 Quote builder and quote PDF maturity.
+- No product UI behavior, save path, schema, quote-specific pricing behavior, HSN API, or Setu Guru action code was changed in this closure pass.
 
 Files:
 
@@ -141,13 +140,13 @@ Files:
 
 Reason:
 
-- Ritesh approved preparing Sprint 4 closure candidate after verifying product save/drawer/table protections.
-- This pass documents readiness only and keeps product screens unchanged.
+- Ritesh approved closing Sprint 4 after READY verification and smoke-check review if no defects appeared.
+- The closure pass is documentation-only so the deployed product UI remains unchanged.
 
 Build:
 
-- BUILDING / pending after this documentation pass
-- Baseline before pass: `93891e419853309942c9d9deac627a83f87c54d1`
+- BUILDING / pending after this closure-doc commit
+- Baseline before pass: `53678eac76cb1b77bf40c9e5b9fd02661b277ef0`
 
 ---
 
@@ -158,4 +157,4 @@ Build:
 - Do not run `npm ci` in sandbox.
 - Do not put dev/debug notes on user-facing screens.
 - Do not write back without explicit human approval.
-- Sprint 1, Sprint 2, and Sprint 3 remain 100% complete.
+- Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100% complete.

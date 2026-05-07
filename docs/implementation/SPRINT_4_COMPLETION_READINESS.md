@@ -2,20 +2,33 @@
 
 Date: 2026-05-07
 Sprint: Sprint 4 — Product catalog UX maturity
-Production baseline verified: `93891e419853309942c9d9deac627a83f87c54d1`
-Vercel status before closure-candidate documentation: `READY`
+Production baseline verified before final closure: `53678eac76cb1b77bf40c9e5b9fd02661b277ef0`
+Vercel status before final closure: `READY`
+Final closure status: `DONE`
 
 ---
 
-## Readiness summary
+## Closure summary
 
-Sprint 4 is a closure candidate. Product catalog UX maturity has improved across Product Management, Products workspace, product table readiness, and product detail drawer behavior while protecting product save paths and quote-specific pricing boundaries.
+Sprint 4 is complete at 100%. Product catalog UX maturity improved across Product Management, Products workspace, product table readiness, and product detail drawer behavior while protecting product save paths and quote-specific pricing boundaries.
 
-This pass made no product UI behavior changes. It records the verification result and the remaining smoke checks before Sprint 4 can be closed at 100%.
+The final closure pass made no product UI behavior changes. It records the final READY verification and smoke-check result.
 
 ---
 
 ## Verified protections
+
+### Product routes and workspace
+
+- `/products` route composes compact catalog shortcuts before the Products spreadsheet page.
+- Products shortcuts route through existing query filters: catalog gaps, quote-ready, product setup, and pricing coverage.
+- Product screens should remain compact and operational, with policy/help text kept in docs and Setu Guru knowledge.
+
+### Product Management
+
+- Product Management action links route to Products/Product Management views.
+- Product Management continues to show governance, imports, defaults, readiness gaps, approval posture, and audit review.
+- Governance actions did not introduce product UI save/delete/write-back changes.
 
 ### Product drawer
 
@@ -48,19 +61,12 @@ This pass made no product UI behavior changes. It records the verification resul
 
 ---
 
-## Remaining closure checks
+## Closure result
 
-Before marking Sprint 4 complete at 100%, verify in production:
-
-1. Products page opens and shows compact catalog shortcuts.
-2. Product table shows readiness and action labels without help/development text.
-3. Product drawer opens/closes and keeps Overview, Pricing, Variants, Trade, and History tabs.
-4. Pricing tab still shows saved snapshot, calculator essentials, advanced sections, and live result card.
-5. Product Management action rows route to Products/Product Management views as intended.
-6. No quote-specific pricing behavior was moved into Products.
+No blocking defects were found during the final Sprint 4 closure review. Sprint 4 can remain closed at 100%.
 
 ---
 
-## Closure recommendation
+## Next recommended focus
 
-If the closure checks pass, close Sprint 4 at 100% and move the roadmap to the next approved UX cleanup focus.
+Move to Sprint 5 Quote builder and quote PDF maturity unless Ritesh gives a higher-priority fix.
