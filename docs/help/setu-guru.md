@@ -9,45 +9,41 @@ Purpose: Setu Guru is the embedded CRM assistant. It should be contextual, safe,
 - Searching live organization data for products, leads, buyers, suppliers, quotes, compliance, and documents.
 - Researching HS/HSN codes, tariffs, duties, margins, and country compliance rules with reviewable sources.
 
-## Source-backed live research behavior
-
-When a user asks about HS/HSN, document requirements, duties/tariffs, or margin benchmarks, Setu Guru should return a draft research brief that includes:
-
-- the research scope,
-- detected product/country/role context,
-- the active source used for context, such as active product, active lead, active quote, or visible page fallback,
-- reviewable source rows,
-- source IDs/citation markers,
-- a recommended review path,
-- and an explicit human approval boundary.
-
-Research answers are not write-backs. They are decision support for review.
-
 ## HSN catalog review behavior
 
-For questions like “what is HSN code for vacuum cooked banana chips,” Setu Guru must not fall back to generic Products help. It should:
+For questions like “what is HSN code for vacuum cooked banana chips,” Setu Guru must route to live organization search and source-backed research. It should provide a draft HSN candidate, check the matching catalog product, compare the current catalog HSN, and ask for explicit human approval before applying any change.
 
-1. route the question to live organization search and source-backed research,
-2. provide a draft HSN candidate with review sources,
-3. check the matching catalog product, such as Banana Chips,
-4. compare the current catalog HSN with the draft candidate,
-5. say no update is needed if the catalog already matches,
-6. or ask for explicit human approval before applying any HSN change to the catalog.
+Current built-in draft guidance for banana chips is HSN `2008.99.99` as a review candidate for prepared/preserved fruit products. This remains draft guidance until reviewed against the destination market and official tariff source.
 
-Current built-in draft guidance for banana chips is HSN `2008.99.99` as a review candidate for prepared/preserved fruit products. This must remain draft guidance until reviewed against the destination market and official tariff source.
+## Approval-safe HSN apply behavior
 
-## Active entity context policy
+When the user clicks **Approve catalog HSN update**, Setu Guru must:
 
-For research questions, Setu Guru should prefer live route records over visible text when safe and available:
+1. show a confirmation prompt,
+2. call `/api/setu-guru/apply-hsn`,
+3. require an authenticated user with `catalog.manage`,
+4. verify the active product name is unique in the organization,
+5. verify the catalog HSN has not changed since the research brief,
+6. update the product and its variants only after approval,
+7. write an audit log with source `setu_guru_hsn_approval`,
+8. revalidate product-related routes.
 
-1. Product detail route → use active product name and catalog context.
-2. Quote route → use quote number, linked lead, linked products, destination/country, and lead type.
-3. Lead route → use lead company/contact, lead type, country, and product interests.
-4. If no active record can be resolved, fall back to visible page text and the user's question.
+If the catalog already matches the reviewed HSN, no update should be made.
 
-## Research source row rendering
+## Setu Guru action button policy
 
-Setu Guru source rows should be rendered as review cards in the drawer when row data includes a source URL or citation marker. Each source card should make the source title, source type, citation marker, and next review step visible. External source URLs may open in a new tab; internal `internal:*` source references should be shown as review context, not external links.
+Every action button shown in Setu Guru must have a safe behavior:
+
+- navigation actions route to the right page,
+- review-source actions explain the source cards,
+- live-research actions place a follow-up question in the composer,
+- blocker actions run live blocker search,
+- HSN approval actions call the approval-safe API,
+- unknown actions are placed in the composer instead of becoming dead clicks.
+
+## Source-backed live research behavior
+
+Research answers are not write-backs. They are decision support for review and should include scope, detected context, reviewable source rows, citation markers, a recommended review path, and the human approval boundary.
 
 ## Approval rules
 

@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `324491837b1000349ecba6cc0ac83a19418cb3a9`
-- Commit message: `Ground Setu Guru research in active records`
+- Latest verified production READY commit before this pass: `a2b48499ad96684bfad73ad15c96678e652bcd0f`
+- Commit message: `Route HSN questions through catalog research`
 - Vercel status before this update: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -56,59 +56,32 @@ Completed:
 - Source-backed draft research execution exists for HS/HSN, document requirements, duties/tariffs, and margin benchmarks.
 - Research source rows render in the Setu Guru drawer.
 - Research can use active product, lead, and quote records before visible text fallback.
-- HSN code questions now route to live research instead of generic Products help.
+- HSN code questions route to live research instead of generic Products help.
 - HSN research checks the matching catalog product, returns a draft candidate, compares current catalog HSN, and asks for approval before any update.
+- Approval-safe `/api/setu-guru/apply-hsn` applies a reviewed HSN only after human confirmation, `catalog.manage` permission, uniqueness check, stale-value check, and audit logging.
+- Setu Guru action buttons now navigate, run live checks, queue follow-ups, explain sources, or call approval-safe APIs instead of dead-clicking.
 
 Definition of done:
 
 - Bot answers are contextual on Products, Leads, Quotes, Compliance, Admin, and Orders.
 - Bot stops giving generic answers for active blockers and HSN/live research questions.
 - Source-backed research answers return reviewable sources and human approval boundaries before write-back.
+- Approval actions require explicit human confirmation and record audit trails.
 
-Progress: 78%
-
-### Sprint 4 — Product catalog UX maturity
-
-Status: `IN PROGRESS`
-Progress: 50%
-
-### Sprint 5 — Quote builder and quote PDF maturity
-
-Status: `IN PROGRESS`
-Progress: 40%
-
-### Sprint 6 — Compliance Assist maturity
-
-Status: `IN PROGRESS`
-Progress: 50%
-
-### Sprint 7 — Lead command center cleanup
-
-Status: `PLANNED`
-Progress: 15%
-
-### Sprint 8 — Orders and execution readiness
-
-Status: `PLANNED`
-Progress: 0%
-
-### Sprint 9 — Admin and organization setup cleanup
-
-Status: `PLANNED`
-Progress: 10%
+Progress: 86%
 
 ---
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 86%
+- Overall CRM readiness: 87%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
-- Current Sprint 3 Setu Guru routing completion: 78%
-- Setu Guru intelligence readiness: 82%
-- UX cleanup readiness: 45%
-- Quote/compliance maturity: 49%
-- Product catalog maturity: 58%
+- Current Sprint 3 Setu Guru routing completion: 86%
+- Setu Guru intelligence readiness: 86%
+- UX cleanup readiness: 46%
+- Quote/compliance maturity: 50%
+- Product catalog maturity: 60%
 
 ---
 
@@ -143,14 +116,13 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current direction: Sprint 1 and Sprint 2 are 100%. Continue Sprint 3 Setu Guru live context. HSN code questions should use live research, check catalog HSN, and ask for approval before any catalog update.
+Current direction: Sprint 1 and Sprint 2 are 100%. Continue Sprint 3 Setu Guru live context. HSN apply is now approval-safe; next tighten route-specific quote/order/compliance action behavior.
 ```
 
 ---
 
 ## 7. Next recommended pass
 
-1. Verify the HSN live-research/catalog-check deployment is READY.
-2. Add an approval-safe API/action path for applying a reviewed HSN to a catalog product.
-3. Add UI affordance in Setu Guru for “approve catalog HSN update” that cannot write without owner approval.
-4. Continue tightening live context for quote/order/compliance routes.
+1. Verify the approval-safe HSN apply deployment is READY.
+2. Add richer success/failure UI states for Setu Guru actions where needed.
+3. Continue tightening live context for quote/order/compliance routes.
