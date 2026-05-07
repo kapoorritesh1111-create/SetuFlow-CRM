@@ -8,23 +8,32 @@ function toNumber(value: unknown, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function money(value: unknown, currency = 'USD'): string {
-  const n = toNumber(value, 0);
-  return `${currency} ${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function cleanText(value: unknown, fallback = '-'): string {
+  const s = String(value ?? '').trim();
+  return s || fallback;
 }
 
-function moneyCompact(value: unknown, currency = 'USD'): string {
+function short(value: unknown, max = 36, fallback = '-'): string {
+  const text = cleanText(value, fallback);
+  return text.length > max ? `${text.slice(0, Math.max(0, max - 1))}…` : text;
+}
+
+function money(value: unknown, currency = 'USD'): string {
   const n = toNumber(value, 0);
   const prefix = currency === 'USD' ? '$' : `${currency} `;
   return `${prefix}${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function dateText(value: unknown, fallback = '-'): string {
+  const text = cleanText(value, '');
+  if (!text) return fallback;
+  const date = text.includes('T') ? new Date(text) : new Date(`${text}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString('en-GB');
+}
+
 function pdfEscape(value: string): string {
-  return String(value ?? '')
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)')
-    .replace(/[\r\n]+/g, ' ');
+  return String(value ?? '').replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[\r\n]+/g, ' ');
 }
 
 function rgb(hex: string): string {
@@ -34,11 +43,6 @@ function rgb(hex: string): string {
   const g = ((n >> 8) & 255) / 255;
   const b = (n & 255) / 255;
   return `${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)}`;
-}
-
-function cleanText(value: unknown, fallback = '-'): string {
-  const s = String(value ?? '').trim();
-  return s || fallback;
 }
 
 function wrapText(value: string, maxChars: number): string[] {
@@ -58,12 +62,51 @@ function wrapText(value: string, maxChars: number): string[] {
   return lines.length ? lines : [''];
 }
 
+function formatBasis(value: unknown): string {
+  const raw = cleanText(value, 'FOB').toUpperCase().replace(/_/g, ' ');
+  if (raw === 'FOB') return 'FOB';
+  if (raw === 'CIF') return 'CIF';
+  if (raw.includes('EX')) return 'EXW / Ex-Factory';
+  return raw;
+}
+
+function normalizePricingMode(value: unknown): string {
+  const basis = cleanText(value, 'unit').toLowerCase();
+  if (basis.includes('case')) return 'CASE';
+  if (basis.includes('kg') || basis.includes('bulk')) return 'KG';
+  return 'UNIT';
+}
+
+function formatPack(variant: VariantLookup | undefined): string {
+  if (!variant) return '-';
+  const label = cleanText(variant.pack_label, '');
+  if (label) return label;
+  const value = cleanText(variant.pack_size_value, '');
+  const unit = cleanText(variant.pack_size_unit, '');
+  if (value && unit) return `${value}${unit}`;
+  return value || '-';
+}
+
+function monthsText(value: unknown): string {
+  const months = toNumber(value, 0);
+  return months > 0 ? `${months} months` : 'Available per SKU';
+}
+
+function daysRangeText(value: unknown): string {
+  const days = toNumber(value, 0);
+  if (!days) return 'Confirm per category / order';
+  if (days <= 7) return `${days} days`;
+  return `${Math.max(1, days - 3)}–${days} days`;
+}
+
 type ProductLookup = {
   id: string;
   name?: string | null;
   sku?: string | null;
   sku_code?: string | null;
+  hsn_code?: string | null;
   category_id?: string | null;
+  description?: string | null;
 };
 
 type VariantLookup = {
@@ -71,6 +114,8 @@ type VariantLookup = {
   product_id?: string | null;
   name?: string | null;
   sku_code?: string | null;
+  hsn_code?: string | null;
+  country_of_origin?: string | null;
   pack_size_value?: number | string | null;
   pack_size_unit?: string | null;
   pack_label?: string | null;
@@ -78,12 +123,21 @@ type VariantLookup = {
   moq_cases?: number | string | null;
   moq_kg?: number | string | null;
   pricing_mode_default?: string | null;
+  packaging_type?: string | null;
+  packaging_unit?: string | null;
+  shipment_notes?: string | null;
+  lead_time_days?: number | string | null;
+  shelf_life_months?: number | string | null;
 };
 
 type CategoryLookup = {
   id: string;
   name?: string | null;
   sort_order?: number | null;
+  default_lead_time_days?: number | string | null;
+  default_shelf_life_months?: number | string | null;
+  default_country_of_origin?: string | null;
+  default_shipment_notes?: string | null;
 };
 
 type QuoteLineSource = {
@@ -92,9 +146,7 @@ type QuoteLineSource = {
   product_variant_id?: string | null;
   quantity?: number | string | null;
   unit_price?: number | string | null;
-  currency?: string | null;
   catalog_price_amount?: number | string | null;
-  catalog_price_currency?: string | null;
   is_price_overridden?: boolean | null;
   override_reason?: string | null;
   notes?: string | null;
@@ -105,220 +157,250 @@ type QuotePdfLineRow = {
   productName: string;
   categoryName: string;
   categorySort: number;
+  hsCode: string;
   pack: string;
+  uom: string;
   unitsPerCase: string;
   moq: string;
-  basis: string;
-  qty: number;
-  quoteUnit: number;
-  catalogUnit: number | null;
+  origin: string;
+  unitPrice: number;
+  discount: string;
+  netPrice: number;
+  note: string;
   total: number;
-  quoteCase: number | null;
-  catalogCase: number | null;
-  isAdjusted: boolean;
-  adjustmentLabel: string;
+  leadTime: string;
+  shelfLife: string;
 };
 
-type PdfTextItem = {
-  text: string;
-  x: number;
-  y: number;
-  size?: number;
-  bold?: boolean;
-  color?: string;
-  align?: 'left' | 'right';
-};
+type PdfTextItem = { text: string; x: number; y: number; size?: number; bold?: boolean; color?: string; align?: 'left' | 'right' | 'center' };
+type PdfBox = { x: number; y: number; w: number; h: number; fill?: string; stroke?: string; radius?: number };
 
-type PdfBox = {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  fill?: string;
-  stroke?: string;
-};
-
-function asProductLookup(value: unknown): ProductLookup | null {
-  if (!value || typeof value !== 'object') return null;
-  const candidate = value as Partial<ProductLookup>;
-  return typeof candidate.id === 'string' ? candidate as ProductLookup : null;
-}
-
-function asVariantLookup(value: unknown): VariantLookup | null {
-  if (!value || typeof value !== 'object') return null;
-  const candidate = value as Partial<VariantLookup>;
-  return typeof candidate.id === 'string' ? candidate as VariantLookup : null;
-}
-
-function asCategoryLookup(value: unknown): CategoryLookup | null {
-  if (!value || typeof value !== 'object') return null;
-  const candidate = value as Partial<CategoryLookup>;
-  return typeof candidate.id === 'string' ? candidate as CategoryLookup : null;
-}
-
-function formatPack(variant: VariantLookup | undefined): string {
-  if (!variant) return '-';
-  const value = cleanText(variant.pack_size_value, '');
-  const unit = cleanText(variant.pack_size_unit, '');
-  const label = cleanText(variant.pack_label, '');
-  if (label && label !== '-') return label;
-  if (value && unit) return `${value} ${unit}`;
-  if (value) return value;
-  return '-';
-}
-
-function normalizeBasis(value: unknown): string {
-  const basis = cleanText(value, 'unit').toLowerCase();
-  if (basis.includes('case')) return 'CASE';
-  if (basis.includes('kg') || basis.includes('bulk')) return 'KG';
-  return 'UNIT';
-}
-
-function buildAdjustmentLabel(line: QuoteLineSource, catalogUnit: number | null, quoteUnit: number): string {
-  if (!line.is_price_overridden || catalogUnit === null || catalogUnit <= 0) return '';
-  const diff = quoteUnit - catalogUnit;
-  const pct = Math.abs((diff / catalogUnit) * 100);
-  const mode = diff < 0 ? 'Discount' : 'Markup';
-  const reason = cleanText(line.override_reason ?? line.notes, 'quote-only adjustment');
-  return `${mode} applied: ${pct.toFixed(1)}% (${reason})`;
-}
-
-function buildQuotePdf(input: {
+type PdfContext = {
   quoteTitle: string;
-  organizationName: string;
-  customerName: string;
-  preparedFor: string;
-  preparedDate: string;
+  organization: any;
+  buyer: any;
   marketName: string;
   destination: string;
   basis: string;
-  validUntil: string;
+  namedPlace: string;
   currency: string;
+  validUntil: string;
+  preparedDate: string;
+  paymentTerms: string;
+  leadTimeSummary: string;
+  taxNote: string;
   rows: QuotePdfLineRow[];
   subtotal: number;
+  documentationCharge: number;
   quoteTerms: string;
-}) {
+  shipmentNotes: string[];
+};
+
+function discountLabel(line: QuoteLineSource): string {
+  const catalog = line.catalog_price_amount === null || line.catalog_price_amount === undefined ? null : toNumber(line.catalog_price_amount, 0);
+  const unit = toNumber(line.unit_price, 0);
+  if (!catalog || catalog <= 0 || !line.is_price_overridden) return '-';
+  const diffPct = ((catalog - unit) / catalog) * 100;
+  if (Math.abs(diffPct) < 0.1) return '-';
+  return diffPct > 0 ? `${diffPct.toFixed(1)}%` : `+${Math.abs(diffPct).toFixed(1)}%`;
+}
+
+function buildPdf(input: PdfContext): Buffer {
   const objects: string[] = [];
-  const add = (body: string): number => {
-    objects.push(body);
-    return objects.length;
-  };
+  const add = (body: string): number => { objects.push(body); return objects.length; };
   const fontId = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
   const boldFontId = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
   const boxes: PdfBox[] = [];
   const text: PdfTextItem[] = [];
-  const pageW = 612;
-  const margin = 36;
-  const addText = (item: PdfTextItem) => text.push(item);
   const addBox = (box: PdfBox) => boxes.push(box);
-  const rightText = (value: string, x: number, y: number, size = 9, bold = false) => addText({ text: value, x, y, size, bold, align: 'right' });
+  const addText = (item: PdfTextItem) => text.push(item);
+  const pageW = 612;
+  const margin = 18;
+  const navy = '#0b2e4a';
+  const light = '#f4f7fb';
+  const border = '#cbd5e1';
 
-  addText({ text: `${input.organizationName} - Client Price List`, x: margin, y: 752, size: 16, bold: true, color: '#0b2e4a' });
-  addBox({ x: margin, y: 726, w: pageW - margin * 2, h: 18, fill: '#0b2e4a' });
-  addText({ text: input.quoteTitle, x: margin + 8, y: 731, size: 10, bold: true, color: '#ffffff' });
+  function right(value: string, x: number, y: number, size = 7, bold = false, color = '#0f172a') { addText({ text: value, x, y, size, bold, color, align: 'right' }); }
+  function center(value: string, x: number, y: number, size = 7, bold = false, color = '#0f172a') { addText({ text: value, x, y, size, bold, color, align: 'center' }); }
+  function label(value: string, x: number, y: number) { addText({ text: value.toUpperCase(), x, y, size: 5.8, bold: true, color: '#334155' }); }
 
-  const metaY = 704;
-  addText({ text: 'Prepared For:', x: margin, y: metaY, size: 8, bold: true });
-  addText({ text: input.preparedFor, x: 116, y: metaY, size: 8 });
-  addText({ text: 'Market:', x: 246, y: metaY, size: 8, bold: true });
-  addText({ text: input.marketName, x: 310, y: metaY, size: 8 });
-  addText({ text: 'Basis:', x: 446, y: metaY, size: 8, bold: true });
-  addText({ text: input.basis, x: 506, y: metaY, size: 8 });
+  // Header
+  addBox({ x: margin, y: 742, w: 48, h: 34, fill: navy });
+  center('LOGO', margin + 24, 757, 8, true, '#ffffff');
+  addText({ text: short(input.organization.name ?? input.organization.legal_name, 24, 'SETU Flow'), x: 72, y: 762, size: 10, bold: true, color: navy });
+  addText({ text: short(input.organization.website, 34, 'Streamlining Global Trade'), x: 72, y: 748, size: 6.5, color: '#475569' });
+  addText({ text: 'SETU Flow – Client Price List', x: 172, y: 764, size: 17, bold: true, color: navy });
+  addText({ text: 'Pro Forma Quotation', x: 172, y: 746, size: 9, color: '#334155' });
+  addBox({ x: 465, y: 742, w: 128, h: 38, fill: navy });
+  center(input.quoteTitle, 529, 762, 10, true, '#ffffff');
+  addText({ text: `Quote Date: ${input.preparedDate}`, x: 474, y: 748, size: 6.5, color: '#ffffff' });
+  addText({ text: `Valid Until: ${input.validUntil}`, x: 474, y: 738, size: 6.5, color: '#ffffff' });
 
-  addText({ text: 'Prepared:', x: margin, y: metaY - 16, size: 8, bold: true });
-  addText({ text: input.preparedDate, x: 116, y: metaY - 16, size: 8 });
-  addText({ text: 'Valid Until:', x: 246, y: metaY - 16, size: 8, bold: true });
-  addText({ text: input.validUntil, x: 310, y: metaY - 16, size: 8 });
-  addText({ text: 'Currency:', x: 446, y: metaY - 16, size: 8, bold: true });
-  addText({ text: input.currency, x: 506, y: metaY - 16, size: 8 });
+  // Seller / buyer / details cards
+  addBox({ x: margin, y: 604, w: 170, h: 124, fill: '#ffffff', stroke: border });
+  addBox({ x: 28, y: 707, w: 86, h: 14, fill: navy });
+  addText({ text: 'SELLER / EXPORTER', x: 34, y: 711, size: 6, bold: true, color: '#ffffff' });
+  addText({ text: short(input.organization.legal_name ?? input.organization.name, 30), x: 28, y: 692, size: 8, bold: true, color: navy });
+  wrapText(cleanText(input.organization.registered_address, ''), 32).slice(0, 3).forEach((line, index) => addText({ text: line, x: 28, y: 677 - index * 9, size: 6.4 }));
+  addText({ text: short(input.organization.contact_email, 32, '-'), x: 28, y: 644, size: 6.4 });
+  addText({ text: short(input.organization.website, 32, '-'), x: 28, y: 633, size: 6.4 });
+  addText({ text: `Tax/VAT: ${short(input.organization.tax_id, 22, '-')}`, x: 28, y: 618, size: 6.4, bold: true });
 
-  addText({ text: 'Destination:', x: margin, y: metaY - 32, size: 8, bold: true });
-  addText({ text: input.destination, x: 116, y: metaY - 32, size: 8 });
+  addBox({ x: 202, y: 604, w: 150, h: 124, fill: '#ffffff', stroke: border });
+  addBox({ x: 212, y: 707, w: 84, h: 14, fill: navy });
+  addText({ text: 'BUYER / IMPORTER', x: 218, y: 711, size: 6, bold: true, color: '#ffffff' });
+  addText({ text: short(input.buyer.company_name, 28, 'Unknown customer'), x: 212, y: 692, size: 8, bold: true, color: navy });
+  addText({ text: short(input.buyer.contact_name, 30, ''), x: 212, y: 678, size: 6.4 });
+  addText({ text: short(input.buyer.country, 30, input.destination), x: 212, y: 667, size: 6.4 });
+  addText({ text: short(input.buyer.email, 32, '-'), x: 212, y: 650, size: 6.4 });
+  addText({ text: short(input.buyer.phone, 32, '-'), x: 212, y: 639, size: 6.4 });
 
-  let y = 642;
-  const header = () => {
-    addBox({ x: margin, y: y - 12, w: 540, h: 18, fill: '#eaf0f6', stroke: '#b8c3cf' });
-    addText({ text: 'SKU', x: margin + 4, y: y - 6, size: 8, bold: true });
-    addText({ text: 'Product', x: 108, y: y - 6, size: 8, bold: true });
-    addText({ text: 'Pack', x: 210, y: y - 6, size: 8, bold: true });
-    addText({ text: 'Units/Case', x: 260, y: y - 6, size: 8, bold: true });
-    addText({ text: 'MOQ', x: 322, y: y - 6, size: 8, bold: true });
-    addText({ text: 'Basis', x: 374, y: y - 6, size: 8, bold: true });
-    addText({ text: `${input.currency}/Unit`, x: 424, y: y - 6, size: 8, bold: true });
-    addText({ text: `${input.currency}/Case`, x: 502, y: y - 6, size: 8, bold: true });
-    y -= 21;
-  };
-
-  const groups = Array.from(input.rows.reduce((map: Map<string, QuotePdfLineRow[]>, row: QuotePdfLineRow) => {
-    const key = row.categoryName || 'Catalog';
-    const current = map.get(key) ?? [];
-    current.push(row);
-    map.set(key, current);
-    return map;
-  }, new Map<string, QuotePdfLineRow[]>()).entries())
-    .sort((a, b) => (a[1][0]?.categorySort ?? 9999) - (b[1][0]?.categorySort ?? 9999) || a[0].localeCompare(b[0]));
-  const showCategorySubtotal = groups.length > 1;
-
-  header();
-  for (const [categoryName, rows] of groups) {
-    addBox({ x: margin, y: y - 10, w: 540, h: 16, fill: '#f7fafc' });
-    addText({ text: categoryName.toUpperCase(), x: margin + 4, y: y - 5, size: 8, bold: true, color: '#0b2e4a' });
-    y -= 18;
-    rows.forEach((row: QuotePdfLineRow, index: number) => {
-      const rowHeight = row.isAdjusted ? 28 : 18;
-      addBox({ x: margin, y: y - rowHeight + 6, w: 540, h: rowHeight, fill: index % 2 ? '#ffffff' : '#f4f7fb', stroke: '#c7d0da' });
-      addText({ text: row.sku, x: margin + 4, y, size: 7 });
-      addText({ text: row.productName.slice(0, 25), x: 108, y, size: 7 });
-      addText({ text: row.pack.slice(0, 10), x: 210, y, size: 7 });
-      rightText(row.unitsPerCase, 310, y, 7);
-      rightText(row.moq, 360, y, 7);
-      addText({ text: row.basis, x: 374, y, size: 7 });
-      rightText(moneyCompact(row.quoteUnit, input.currency), 490, y, 7);
-      rightText(row.quoteCase === null ? '-' : moneyCompact(row.quoteCase, input.currency), 570, y, 7);
-      if (row.isAdjusted) {
-        addText({ text: row.adjustmentLabel.slice(0, 84), x: 108, y: y - 12, size: 6, color: '#92400e' });
-        const original = row.catalogUnit === null ? '' : `List: ${moneyCompact(row.catalogUnit, input.currency)}`;
-        const caseOriginal = row.catalogCase === null ? '' : ` / ${moneyCompact(row.catalogCase, input.currency)} case`;
-        addText({ text: `${original}${caseOriginal}`.slice(0, 42), x: 424, y: y - 12, size: 6, color: '#64748b' });
-      }
-      y -= rowHeight;
-    });
-    if (showCategorySubtotal) {
-      const categorySubtotal = rows.reduce((sum: number, row: QuotePdfLineRow) => sum + row.total, 0);
-      addBox({ x: 356, y: y - 12, w: 220, h: 18, fill: '#ffffff', stroke: '#c7d0da' });
-      addText({ text: `${categoryName} subtotal`, x: 364, y: y - 6, size: 7, bold: true });
-      rightText(money(categorySubtotal, input.currency), 570, y - 6, 7, true);
-      y -= 24;
-    } else {
-      y -= 8;
-    }
-  }
-
-  y -= 6;
-  addBox({ x: 356, y: y - 16, w: 220, h: 24, fill: '#0b2e4a' });
-  addText({ text: 'Quote total', x: 366, y: y - 6, size: 9, bold: true, color: '#ffffff' });
-  rightText(money(input.subtotal, input.currency), 566, y - 6, 9, true);
-
-  y -= 44;
-  addText({ text: 'Notes', x: margin, y, size: 9, bold: true });
-  y -= 13;
-  const shortTerms = input.quoteTerms || 'Prices are subject to the validity date shown on this quote. Delivery basis is as per the stated Incoterm. Duties, taxes, and destination charges are excluded unless specifically included. This quote is subject to final order confirmation and agreed payment terms.';
-  wrapText(shortTerms, 126).slice(0, 4).forEach((line: string) => {
-    addText({ text: line, x: margin, y, size: 7 });
-    y -= 10;
+  addBox({ x: 362, y: 604, w: 231, h: 124, fill: '#ffffff', stroke: border });
+  const details = [
+    ['Destination', input.destination],
+    ['Market', input.marketName],
+    ['Basis', `${input.basis} (Incoterms 2020)`],
+    ['Named place', input.namedPlace],
+    ['Currency', input.currency],
+    ['Payment terms', input.paymentTerms],
+    ['Lead time', input.leadTimeSummary],
+    ['Tax treatment', 'Buyer import duties / VAT unless included'],
+  ];
+  details.forEach(([k, v], index) => {
+    const rowY = 716 - index * 14;
+    addBox({ x: 362, y: rowY - 4, w: 231, h: 14, fill: index % 2 ? '#ffffff' : light, stroke: '#e2e8f0' });
+    addText({ text: k.toUpperCase(), x: 372, y: rowY, size: 5.6, bold: true, color: '#334155' });
+    addText({ text: short(v, 35), x: 458, y: rowY, size: 6.1 });
   });
-  addText({ text: 'Generated by SETU Flow. Review commercial terms, validity, pricing basis, and delivery method before sending.', x: margin, y: 36, size: 7 });
+
+  // Tax note strip
+  addBox({ x: margin, y: 582, w: 575, h: 14, fill: '#eef6ff', stroke: '#bfdbfe' });
+  addText({ text: short(input.taxNote, 142), x: 26, y: 586, size: 5.6, color: '#1e3a8a' });
+
+  // Product table
+  let y = 560;
+  addBox({ x: margin, y: y - 15, w: 575, h: 18, fill: navy });
+  const columns = [
+    ['#', 22], ['SKU', 42], ['Product', 82], ['HS Code', 148], ['Pack', 190], ['UOM', 226], ['Units', 258], ['MOQ', 290], ['Origin', 322], ['Unit', 368], ['Disc.', 412], ['Net', 448], ['Notes', 492],
+  ];
+  columns.forEach(([name, x]) => addText({ text: String(name), x: Number(x), y: y - 9, size: 5.6, bold: true, color: '#ffffff' }));
+  y -= 22;
+  input.rows.slice(0, 8).forEach((row, index) => {
+    const rowH = 22;
+    addBox({ x: margin, y: y - rowH + 6, w: 575, h: rowH, fill: index % 2 ? '#ffffff' : '#f8fafc', stroke: '#dbe3ed' });
+    addText({ text: String(index + 1), x: 22, y, size: 5.8, bold: true });
+    addText({ text: short(row.sku, 13), x: 42, y, size: 5.6 });
+    addText({ text: short(row.productName, 18), x: 82, y, size: 5.6 });
+    addText({ text: short(row.hsCode, 10), x: 148, y, size: 5.6 });
+    addText({ text: short(row.pack, 10), x: 190, y, size: 5.6 });
+    addText({ text: row.uom, x: 226, y, size: 5.6 });
+    right(row.unitsPerCase, 280, y, 5.6);
+    right(row.moq, 312, y, 5.6);
+    addText({ text: short(row.origin, 9), x: 322, y, size: 5.6 });
+    right(money(row.unitPrice, input.currency), 404, y, 5.6);
+    right(row.discount, 440, y, 5.6);
+    right(money(row.netPrice, input.currency), 486, y, 5.6);
+    addText({ text: short(row.note, 18), x: 492, y, size: 5.3 });
+    y -= rowH;
+  });
+  addBox({ x: margin, y: y - 12, w: 575, h: 16, fill: '#f8fafc', stroke: '#dbe3ed' });
+  center('Product details are pulled from quote lines, product variants, and category defaults where available.', 306, y - 6, 5.8, true, navy);
+  y -= 32;
+
+  // Lower panels
+  const panelTop = y;
+  addBox({ x: margin, y: panelTop - 86, w: 282, h: 86, fill: '#ffffff', stroke: border });
+  addText({ text: 'COMMERCIAL & COMPLIANCE', x: 28, y: panelTop - 13, size: 7, bold: true, color: navy });
+  const shelfSet = Array.from(new Set(input.rows.map((row) => row.shelfLife).filter(Boolean))).slice(0, 2).join(', ') || 'Available per SKU';
+  const originSet = Array.from(new Set(input.rows.map((row) => row.origin).filter((origin) => origin && origin !== '-'))).slice(0, 3).join(', ') || 'Confirm per SKU';
+  const compliance = [
+    `Country of origin: ${originSet}`,
+    `Shelf life: ${shelfSet}`,
+    'Product specs, ingredients, and nutrition available on request.',
+    'Export docs: commercial invoice, packing list, certificate of origin, and product-specific certificates where applicable.',
+    'HS codes are indicative and subject to buyer validation in destination market.',
+  ];
+  compliance.forEach((line, index) => addText({ text: `• ${short(line, 82)}`, x: 28, y: panelTop - 27 - index * 10, size: 5.7 }));
+
+  const docsCharge = input.documentationCharge;
+  const grandTotal = input.subtotal + docsCharge;
+  addBox({ x: 316, y: panelTop - 86, w: 277, h: 86, fill: '#ffffff', stroke: border });
+  addText({ text: `FINANCIAL SUMMARY (${input.currency})`, x: 326, y: panelTop - 13, size: 7, bold: true, color: navy });
+  const summaryRows = [
+    ['Subtotal after discount', money(input.subtotal, input.currency)],
+    ['Documentation / packaging charge', money(docsCharge, input.currency)],
+    ['Freight / insurance', 'Not included unless stated'],
+    ['Taxes / duties', 'Buyer account unless included'],
+  ];
+  summaryRows.forEach(([k, v], index) => {
+    const rowY = panelTop - 28 - index * 11;
+    addText({ text: k, x: 326, y: rowY, size: 5.8 });
+    right(v, 582, rowY, 5.8);
+  });
+  addBox({ x: 316, y: panelTop - 86, w: 277, h: 18, fill: navy });
+  addText({ text: 'GRAND TOTAL', x: 326, y: panelTop - 80, size: 9, bold: true, color: '#ffffff' });
+  right(money(grandTotal, input.currency), 582, panelTop - 80, 9, true, '#ffffff');
+
+  const termsY = panelTop - 104;
+  addBox({ x: margin, y: termsY - 70, w: 575, h: 70, fill: '#ffffff', stroke: border });
+  addText({ text: 'TERMS & CONDITIONS', x: 28, y: termsY - 13, size: 7, bold: true, color: navy });
+  const terms = [
+    `This quotation is valid until ${input.validUntil}.`,
+    `Prices are quoted on ${input.basis} basis from ${input.namedPlace}.`,
+    'Destination import duties, VAT/GST, customs charges, and destination handling are payable by buyer unless explicitly included.',
+    'Order confirmation is subject to mutual agreement on quantities, pack sizes, MOQs, and specifications.',
+    'Export documentation will be provided as per applicable regulations and buyer requirements.',
+    'Prices may change before confirmation if raw material, freight, tax, policy, or currency inputs change.',
+  ];
+  terms.forEach((line, index) => {
+    const col = index < 3 ? 28 : 316;
+    const rowY = termsY - 27 - (index % 3) * 12;
+    addText({ text: `${index + 1}. ${short(line, 74)}`, x: col, y: rowY, size: 5.6 });
+  });
+
+  const shipY = termsY - 82;
+  addBox({ x: margin, y: shipY - 52, w: 282, h: 52, fill: '#ffffff', stroke: border });
+  addText({ text: 'LEAD TIME & SHIPMENT', x: 28, y: shipY - 13, size: 7, bold: true, color: navy });
+  const shipNotes = [
+    `Lead time: ${input.leadTimeSummary}.`,
+    `Port/place: ${input.namedPlace}.`,
+    ...input.shipmentNotes,
+  ].slice(0, 4);
+  shipNotes.forEach((line, index) => addText({ text: `• ${short(line, 72)}`, x: 28, y: shipY - 27 - index * 9, size: 5.6 }));
+  addBox({ x: 316, y: shipY - 52, w: 277, h: 52, fill: '#ffffff', stroke: border });
+  addText({ text: 'NOTES', x: 326, y: shipY - 13, size: 7, bold: true, color: navy });
+  [
+    'Quote is confidential and intended solely for the addressee.',
+    'Pricing basis and charges must be reviewed before sending.',
+    short(input.quoteTerms, 78, 'Commercial terms are printed from organization quote terms where available.'),
+  ].forEach((line, index) => addText({ text: `• ${line}`, x: 326, y: shipY - 27 - index * 9, size: 5.6 }));
+
+  // Footer
+  addBox({ x: margin, y: 36, w: 575, h: 52, fill: '#ffffff', stroke: border });
+  addText({ text: 'AUTHORIZED SIGNATURE (SELLER)', x: 28, y: 73, size: 6.5, bold: true, color: navy });
+  addText({ text: 'Name: ___________________________', x: 28, y: 58, size: 5.7 });
+  addText({ text: 'Date: ____________________________', x: 28, y: 47, size: 5.7 });
+  addText({ text: 'GET IN TOUCH', x: 236, y: 73, size: 6.5, bold: true, color: navy });
+  addText({ text: short(input.organization.contact_email, 34, '-'), x: 236, y: 60, size: 5.7 });
+  addText({ text: short(input.organization.website, 34, '-'), x: 236, y: 49, size: 5.7 });
+  addText({ text: 'ACCEPTANCE (IMPORTER)', x: 420, y: 73, size: 6.5, bold: true, color: navy });
+  addText({ text: 'Accepted by: _____________________', x: 420, y: 60, size: 5.7 });
+  addText({ text: 'Signature: _______________________', x: 420, y: 49, size: 5.7 });
+  addBox({ x: 0, y: 14, w: 612, h: 14, fill: navy });
+  center('THANK YOU FOR YOUR BUSINESS!', 306, 18, 7.5, true, '#ffffff');
 
   const ops: string[] = [];
-  boxes.forEach((box: PdfBox) => {
+  boxes.forEach((box) => {
     if (box.fill) ops.push(`${rgb(box.fill)} rg ${box.x} ${box.y} ${box.w} ${box.h} re f`);
     if (box.stroke) ops.push(`${rgb(box.stroke)} RG ${box.x} ${box.y} ${box.w} ${box.h} re S`);
   });
   ops.push('BT');
-  text.forEach((item: PdfTextItem) => {
-    const size = item.size ?? 9;
-    const estimatedWidth = item.text.length * size * 0.5;
-    const x = item.align === 'right' ? Math.max(margin, item.x - estimatedWidth) : item.x;
+  text.forEach((item) => {
+    const size = item.size ?? 8;
+    let x = item.x;
+    const estimatedWidth = item.text.length * size * 0.48;
+    if (item.align === 'right') x = Math.max(margin, item.x - estimatedWidth);
+    if (item.align === 'center') x = Math.max(margin, item.x - estimatedWidth / 2);
     ops.push(`/${item.bold ? 'F2' : 'F1'} ${size} Tf`);
     ops.push(`${rgb(item.color ?? '#0f172a')} rg`);
     ops.push(`1 0 0 1 ${x} ${item.y} Tm (${pdfEscape(item.text)}) Tj`);
@@ -334,7 +416,7 @@ function buildQuotePdf(input: {
 
   let pdf = '%PDF-1.4\n';
   const offsets: number[] = [0];
-  objects.forEach((body: string, index: number) => {
+  objects.forEach((body, index) => {
     offsets.push(Buffer.byteLength(pdf));
     pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
   });
@@ -355,104 +437,107 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
 
   const { data: quote, error } = await db
     .from('quotes')
-    .select('id, quote_number, lead_id, status, currency, display_currency, updated_at, valid_until, pricing_basis, destination_port, market_id, country_id, approval_required, approved_at')
+    .select('id, quote_number, lead_id, status, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer')
     .eq('organization_id', organizationId)
     .eq('id', quoteId)
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!quote?.id) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
 
-  const [{ data: lead }, { data: lineItems }, { data: organizationTerms }, { data: market }, { data: country }] = await Promise.all([
-    db.from('leads').select('id, company_name, contact_name, email, phone, country').eq('organization_id', organizationId).eq('id', quote.lead_id).maybeSingle(),
+  const [{ data: lead }, { data: lineItems }, { data: organization }, { data: market }, { data: country }, { data: freightProfile }] = await Promise.all([
+    db.from('leads').select('id, company_name, contact_name, email, phone, country, website').eq('organization_id', organizationId).eq('id', quote.lead_id).maybeSingle(),
     db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, currency, catalog_price_amount, catalog_price_currency, is_price_overridden, override_reason, notes').eq('quote_id', quote.id).order('created_at', { ascending: true }),
-    db.from('organizations').select('id, name, quote_terms_conditions').eq('id', organizationId).maybeSingle(),
+    db.from('organizations').select('id, name, legal_name, logo_url, registered_address, city, postal_code, website, contact_email, tax_id, quote_terms_conditions, order_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
     quote.market_id ? db.from('markets').select('id, name').eq('organization_id', organizationId).eq('id', quote.market_id).maybeSingle() : Promise.resolve({ data: null }),
-    quote.country_id ? db.from('countries').select('id, name').eq('organization_id', organizationId).eq('id', quote.country_id).maybeSingle() : Promise.resolve({ data: null }),
+    quote.country_id ? db.from('countries').select('id, name, default_port_of_loading').eq('organization_id', organizationId).eq('id', quote.country_id).maybeSingle() : Promise.resolve({ data: null }),
+    quote.freight_profile_id ? db.from('freight_profiles').select('id, name, destination_port, notes').eq('organization_id', organizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
 
   const lines: QuoteLineSource[] = (lineItems ?? []) as QuoteLineSource[];
-  const productIds = Array.from(new Set(lines.map((line: QuoteLineSource) => line.product_id).filter((id): id is string => Boolean(id))));
-  const variantIds = Array.from(new Set(lines.map((line: QuoteLineSource) => line.product_variant_id).filter((id): id is string => Boolean(id))));
+  const productIds = Array.from(new Set(lines.map((line) => line.product_id).filter((id): id is string => Boolean(id))));
+  const variantIds = Array.from(new Set(lines.map((line) => line.product_variant_id).filter((id): id is string => Boolean(id))));
+
   const [{ data: products }, { data: variants }] = await Promise.all([
-    productIds.length ? db.from('products').select('id, name, sku, sku_code, category_id').eq('organization_id', organizationId).in('id', productIds) : Promise.resolve({ data: [] }),
-    variantIds.length ? db.from('product_variants').select('id, product_id, name, sku_code, pack_size_value, pack_size_unit, pack_label, units_per_case, moq_cases, moq_kg, pricing_mode_default').in('id', variantIds) : Promise.resolve({ data: [] }),
+    productIds.length ? db.from('products').select('id, name, sku, sku_code, hsn_code, category_id, description').eq('organization_id', organizationId).in('id', productIds) : Promise.resolve({ data: [] }),
+    variantIds.length ? db.from('product_variants').select('id, product_id, name, sku_code, hsn_code, country_of_origin, pack_size_value, pack_size_unit, pack_label, units_per_case, moq_cases, moq_kg, pricing_mode_default, packaging_type, packaging_unit, shipment_notes, lead_time_days, shelf_life_months').in('id', variantIds) : Promise.resolve({ data: [] }),
   ]);
 
   const productMap = new Map<string, ProductLookup>();
-  (products ?? []).forEach((product: unknown) => {
-    const normalized = asProductLookup(product);
-    if (normalized) productMap.set(normalized.id, normalized);
-  });
+  (products ?? []).forEach((product: ProductLookup) => productMap.set(product.id, product));
   const variantMap = new Map<string, VariantLookup>();
-  (variants ?? []).forEach((variant: unknown) => {
-    const normalized = asVariantLookup(variant);
-    if (normalized) variantMap.set(normalized.id, normalized);
-  });
-  const categoryIds = Array.from(new Set(Array.from(productMap.values()).map((product: ProductLookup) => product.category_id).filter((id): id is string => Boolean(id))));
+  (variants ?? []).forEach((variant: VariantLookup) => variantMap.set(variant.id, variant));
+  const categoryIds = Array.from(new Set(Array.from(productMap.values()).map((product) => product.category_id).filter((id): id is string => Boolean(id))));
   const { data: categories } = categoryIds.length
-    ? await db.from('product_categories').select('id, name, sort_order').eq('organization_id', organizationId).in('id', categoryIds)
+    ? await db.from('product_categories').select('id, name, sort_order, default_lead_time_days, default_shelf_life_months, default_country_of_origin, default_shipment_notes').eq('organization_id', organizationId).in('id', categoryIds)
     : { data: [] };
   const categoryMap = new Map<string, CategoryLookup>();
-  (categories ?? []).forEach((category: unknown) => {
-    const normalized = asCategoryLookup(category);
-    if (normalized) categoryMap.set(normalized.id, normalized);
-  });
+  (categories ?? []).forEach((category: CategoryLookup) => categoryMap.set(category.id, category));
 
-  const currency = String(quote.display_currency ?? quote.currency ?? 'USD');
-  const rows: QuotePdfLineRow[] = lines.map((line: QuoteLineSource): QuotePdfLineRow => {
+  const currency = String(quote.display_currency ?? quote.currency ?? organization?.default_currency ?? 'USD');
+  const rows: QuotePdfLineRow[] = lines.map((line) => {
     const product = line.product_id ? productMap.get(line.product_id) : undefined;
     const variant = line.product_variant_id ? variantMap.get(line.product_variant_id) : undefined;
     const category = product?.category_id ? categoryMap.get(product.category_id) : undefined;
-    const basis = normalizeBasis(variant?.pricing_mode_default ?? quote.pricing_basis);
-    const qty = toNumber(line.quantity, 0);
-    const quoteUnit = toNumber(line.unit_price, 0);
-    const catalogUnitRaw = line.catalog_price_amount === null || line.catalog_price_amount === undefined ? null : toNumber(line.catalog_price_amount, 0);
-    const unitsPerCase = toNumber(variant?.units_per_case, 0);
-    const quoteCase = basis === 'CASE' ? quoteUnit * (unitsPerCase || 1) : null;
-    const catalogCase = catalogUnitRaw !== null && basis === 'CASE' ? catalogUnitRaw * (unitsPerCase || 1) : null;
-    const moq = basis === 'KG'
-      ? cleanText(variant?.moq_kg, '0')
-      : basis === 'CASE'
-        ? cleanText(variant?.moq_cases, '0')
-        : cleanText(variant?.moq_cases ?? variant?.moq_kg, '0');
-    const sku = cleanText(variant?.sku_code ?? product?.sku_code ?? product?.sku, '-');
-    const productName = cleanText(product?.name ?? variant?.name, 'Catalog line');
-    const categoryName = cleanText(category?.name, 'Catalog');
+    const mode = normalizePricingMode(variant?.pricing_mode_default ?? quote.pricing_basis);
+    const quantity = toNumber(line.quantity, 0);
+    const unitPrice = toNumber(line.unit_price, 0);
+    const catalog = line.catalog_price_amount === null || line.catalog_price_amount === undefined ? null : toNumber(line.catalog_price_amount, 0);
+    const categoryLead = category?.default_lead_time_days;
+    const categoryShelf = category?.default_shelf_life_months;
+    const leadDays = variant?.lead_time_days ?? categoryLead;
+    const shelfMonths = variant?.shelf_life_months ?? categoryShelf;
+    const origin = cleanText(variant?.country_of_origin ?? category?.default_country_of_origin, 'Confirm per SKU');
     return {
-      sku,
-      productName,
-      categoryName,
+      sku: cleanText(variant?.sku_code ?? product?.sku_code ?? product?.sku, '-'),
+      productName: cleanText(product?.name ?? variant?.name, 'Catalog line'),
+      categoryName: cleanText(category?.name, 'Catalog'),
       categorySort: category?.sort_order ?? 9999,
-      pack: basis === 'KG' ? 'Bulk' : formatPack(variant),
-      unitsPerCase: basis === 'CASE' ? cleanText(variant?.units_per_case, '-') : '-',
-      moq,
-      basis,
-      qty,
-      quoteUnit,
-      catalogUnit: catalogUnitRaw,
-      total: qty * quoteUnit,
-      quoteCase,
-      catalogCase,
-      isAdjusted: Boolean(line.is_price_overridden || (catalogUnitRaw !== null && Math.abs(catalogUnitRaw - quoteUnit) > 0.0001)),
-      adjustmentLabel: buildAdjustmentLabel(line, catalogUnitRaw, quoteUnit),
+      hsCode: cleanText(variant?.hsn_code ?? product?.hsn_code, 'TBC'),
+      pack: formatPack(variant),
+      uom: mode === 'KG' ? 'Kg' : mode === 'CASE' ? 'Case' : 'Unit',
+      unitsPerCase: cleanText(variant?.units_per_case, '-'),
+      moq: mode === 'KG' ? cleanText(variant?.moq_kg, '0') : cleanText(variant?.moq_cases ?? variant?.moq_kg, '0'),
+      origin,
+      unitPrice: catalog ?? unitPrice,
+      discount: discountLabel(line),
+      netPrice: unitPrice,
+      note: cleanText(line.override_reason ?? line.notes ?? variant?.shipment_notes ?? category?.default_shipment_notes, '-'),
+      total: quantity * unitPrice,
+      leadTime: daysRangeText(leadDays),
+      shelfLife: monthsText(shelfMonths),
     };
   });
-  const subtotal = rows.reduce((sum: number, row: QuotePdfLineRow) => sum + row.total, 0);
-  const defaultQuoteTerms = 'Prices are subject to the validity date shown on this quote. Delivery basis is as per the stated Incoterm. Duties, taxes, and destination charges are excluded unless specifically included. This quote is subject to final order confirmation and agreed payment terms.';
-  const pdf = buildQuotePdf({
+
+  const subtotal = rows.reduce((sum, row) => sum + row.total, 0);
+  const namedPlace = cleanText(quote.destination_port ?? freightProfile?.destination_port ?? country?.default_port_of_loading, 'Confirm port/place before sending');
+  const leadTimeSummary = Array.from(new Set(rows.map((row) => row.leadTime))).filter(Boolean).slice(0, 2).join(', ') || 'Confirm per category / order';
+  const taxNote = 'Export sales may be zero-rated/exempt under seller-country export rules where applicable; destination import duty, VAT/GST, customs charges, and local taxes are buyer account unless explicitly included.';
+  const defaultQuoteTerms = 'Prices are subject to the validity date shown on this quote. Delivery basis is as per the stated Incoterm. Destination import duties, VAT/GST, customs charges, and destination handling are payable by buyer unless explicitly included. This quote is subject to final order confirmation and agreed payment terms.';
+  const shipmentNotes = [
+    freightProfile?.notes,
+    'Shipment method and schedule confirmed after PO and payment terms.',
+    'Port/place may vary by country, freight profile, and agreed Incoterm.',
+  ].filter(Boolean) as string[];
+
+  const pdf = buildPdf({
     quoteTitle: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
-    organizationName: cleanText(organizationTerms?.name, 'SETU Flow'),
-    customerName: cleanText(lead?.company_name, 'Unknown customer'),
-    preparedFor: cleanText(lead?.company_name, 'Unknown customer'),
-    preparedDate: quote.updated_at ? new Date(quote.updated_at).toLocaleDateString('en-US') : new Date().toLocaleDateString('en-US'),
+    organization: organization ?? { name: workspace.organization?.name ?? 'SETU Flow' },
+    buyer: lead ?? {},
     marketName: cleanText(market?.name, '-'),
-    destination: cleanText(country?.name ?? lead?.country ?? quote.destination_port, '-'),
-    basis: cleanText(quote.pricing_basis, 'FOB').toUpperCase(),
-    validUntil: quote.valid_until ? new Date(`${quote.valid_until}T00:00:00`).toLocaleDateString('en-US') : '-',
+    destination: cleanText(country?.name ?? lead?.country, '-'),
+    basis: formatBasis(quote.pricing_basis),
+    namedPlace,
     currency,
+    validUntil: dateText(quote.valid_until),
+    preparedDate: dateText(quote.updated_at ?? quote.created_at, new Date().toLocaleDateString('en-GB')),
+    paymentTerms: 'As agreed / per quote terms',
+    leadTimeSummary,
+    taxNote,
     rows,
     subtotal,
-    quoteTerms: organizationTerms?.quote_terms_conditions ?? defaultQuoteTerms,
+    documentationCharge: 0,
+    quoteTerms: cleanText(organization?.quote_terms_conditions ?? quote.notes_customer, defaultQuoteTerms),
+    shipmentNotes,
   });
 
   await db.from('documents').upsert({
