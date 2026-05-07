@@ -180,8 +180,10 @@ export function WorkflowTab({
       )}
 
       <QuotePrepChecklist
+        leadId={leadId}
         nextAction={snapshot.nextAction}
         quoteFocus={snapshot.quoteFocus}
+        compliance={snapshot.compliance}
         cards={orderedSupportCards}
         activeKey={activePanel === 'commercial' ? null : activePanel}
         recommendedKey={recommendedSupportKey}
