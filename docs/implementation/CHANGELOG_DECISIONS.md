@@ -10,12 +10,14 @@ Decision:
 
 - Treat the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 - Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are complete at 100% after Sprint 4 final closure.
+- UI cleanup should reduce duplicate work surfaces, not add repeated shortcut cards or redundant buttons.
 
 Reason:
 
 - Production is advancing through small approved one-commit passes on `main`.
 - Sprint 3 Setu Guru routing/live-context behavior is deployed and verified.
 - Sprint 4 product catalog UX maturity is complete after READY deployment and final smoke review.
+- The Products page already has a stronger primary control area in its catalog header, tabs, chips, filters, pricing calculator, quote handoff, and Add product actions.
 
 ---
 
@@ -105,7 +107,7 @@ Decision:
 - Product guidance separates Products, Product Management, catalog readiness, and source-backed research.
 - Products help documents product-default, category-default, organization-default, and quote-only boundaries.
 - Product Management gained action-map and clearer governance row CTAs.
-- Products workspace gained compact operational shortcuts.
+- Products workspace gained compact operational shortcuts, then the top shortcut card was removed when it duplicated the better lower control surface.
 - Product detail drawer preserved protected tabs and stayed business-label focused.
 - Product table row actions/readiness cues use compact operational labels.
 - Product screens and drawer must not carry help-style or development-style explanatory text; policy belongs in docs and Setu Guru knowledge.
@@ -118,35 +120,37 @@ Builds:
 - READY `be19063efa8f703c6c1144b36638c2817ecd55ff` — Clarify product drawer action guidance
 - READY `93891e419853309942c9d9deac627a83f87c54d1` — Tighten product table readiness UI
 - READY `53678eac76cb1b77bf40c9e5b9fd02661b277ef0` — Document Sprint 4 closure readiness
+- READY `ee8c363b293b4697d03b4b35c8a0e9cc18edef97` — Close Sprint 4 product catalog UX
 
 ---
 
-## 2026-05-07 — Sprint 4 final closure
+## 2026-05-07 — Remove duplicated Products shortcut card
 
 Decision:
 
-- Verified `53678eac76cb1b77bf40c9e5b9fd02661b277ef0` is READY before closing Sprint 4.
-- Smoke review found no blocking defects in Products route composition, Product Management action links, product drawer tabs, product table row actions, product-default pricing save path, or quote-only pricing boundary.
-- Closed Sprint 4 Product catalog UX maturity at 100%.
-- Moved the next roadmap focus to Sprint 5 Quote builder and quote PDF maturity.
-- No product UI behavior, save path, schema, quote-specific pricing behavior, HSN API, or Setu Guru action code was changed in this closure pass.
+- Verified `ee8c363b293b4697d03b4b35c8a0e9cc18edef97` is READY before changing Products.
+- Removed the duplicated top `Catalog shortcuts / Products workspace` card from `/products`.
+- Kept the lower catalog header, category chips, pricing-gap chip, quote-ready chip, filters, Pricing calculator, Quote handoff, and Add product controls as the primary action area.
+- Updated tests so future passes should not reintroduce `ProductsWorkspaceActionMap` above the spreadsheet.
+- Added roadmap/changelog guidance to avoid duplicate work surfaces during UI cleanup.
+- No product table, filters, drawer, pricing calculator, add product, quote handoff, Product Management route, save handler, quote-pricing behavior, HSN API, or schema behavior was changed.
 
 Files:
 
+- `src/app/(app)/products/page.tsx`
+- `tests/products-workspace-action-map.test.mjs`
+- `docs/help/products.md`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
-- `docs/implementation/SPRINT_4_COMPLETION_READINESS.md`
-- `docs/help/products.md`
 
 Reason:
 
-- Ritesh approved closing Sprint 4 after READY verification and smoke-check review if no defects appeared.
-- The closure pass is documentation-only so the deployed product UI remains unchanged.
+- Ritesh identified the duplicate top shortcut card in production and confirmed the lower catalog controls are the cleaner, better UX placement.
 
 Build:
 
-- BUILDING / pending after this closure-doc commit
-- Baseline before pass: `53678eac76cb1b77bf40c9e5b9fd02661b277ef0`
+- BUILDING / pending after this pass
+- Baseline before pass: `ee8c363b293b4697d03b4b35c8a0e9cc18edef97`
 
 ---
 

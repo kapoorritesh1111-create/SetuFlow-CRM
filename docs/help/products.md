@@ -40,14 +40,17 @@ Setu Guru should make the Products area feel action-led, not generic. Use these 
 - **Open Product Management** for governance, imports, category defaults, organization defaults, setup health, approval posture, and audit review.
 - **Ask live research** for HSN/HS code, duties/tariffs, document requirements, and margin benchmark questions.
 
-## Products workspace action map
+## Products workspace control surface
 
-The Products workspace should show compact operational shortcuts only:
+The Products workspace should use one primary control surface only. Avoid duplicate work surfaces that repeat actions already available in the catalog header, category chips, pricing-gap chip, quote-ready chip, filters, pricing calculator, quote handoff, and Add product controls.
 
-- **Catalog gaps** opens the gap view for missing product readiness and pricing assumptions.
-- **Quote-ready** opens the quote-ready view for active products that can support sales and quoting.
-- **Product setup** opens product setup, variants, trade details, and product-specific pricing snapshots.
-- **Pricing coverage** opens the pricing view with gap filtering.
+Keep the lower catalog controls as the primary action area:
+
+- **Products / Pricing view / Spreadsheet** tabs.
+- **Category chips** for All products and product categories.
+- **Pricing gaps** and **Quote-ready** status chips.
+- **Search, category, pricing mode, gaps, status, and quote-ready filters**.
+- **Pricing calculator**, **Quote handoff**, and **Add product** header actions.
 
 Do not add help-style or development-style explanations on the product screen. Keep explanatory policy here in docs and in Setu Guru responses.
 
@@ -83,6 +86,7 @@ Sprint 4 is complete. Future product passes must preserve:
 4. Human approval before saved product/category/organization default changes.
 5. No long help/development text on product screens or drawers.
 6. Setu Guru explains product policy in chat, not inside product UI panels.
+7. No duplicate shortcut/action panels when the same action already exists in the primary control area.
 
 ## Product default boundary
 
