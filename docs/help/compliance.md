@@ -6,18 +6,19 @@ Purpose: Use Compliance to clarify what is required now, what is advisory for la
 
 - Reviewing compliance blockers and evidence status.
 - Separating quote-send requirements from order/dispatch requirements.
+- Opening a single fix panel when a quote is blocked.
 - Preparing evidence checklists by product and destination country.
-- Explaining waiver rules and human approval requirements.
+- Explaining waiver, dispatch deferral, and human approval requirements.
 - Guiding users to the next safe action without adding duplicate action panels.
 
 ## Common questions Setu Guru should answer
 
+- Why exactly is this quote blocked?
+- Where do I attach the required document?
+- Can I ignore this for quote and record it for dispatch?
 - Is this a true blocker or an advisory document?
-- What evidence should I upload?
 - Can this quote be sent before COA or Packing List?
-- What country or product rule should I research?
-- Who needs to approve a waiver?
-- Why is this compliance item in quote, dispatch, or order stage?
+- Who needs to approve a waiver or dispatch deferral?
 
 ## Common blockers
 
@@ -25,7 +26,7 @@ Purpose: Use Compliance to clarify what is required now, what is advisory for la
 - Requirement stage is unclear.
 - Evidence exists but status is pending, expired, rejected, or not linked to the right record.
 - COA or Packing List is treated as mandatory before quote send even when it is only advisory before dispatch.
-- Waiver request has no reason or the user lacks permission.
+- Waiver or dispatch deferral request has no reason or the user lacks permission.
 
 ## Data sources
 
@@ -38,34 +39,35 @@ Purpose: Use Compliance to clarify what is required now, what is advisory for la
 
 ## Compliance stage policy
 
-Use three labels consistently:
+Use four labels consistently:
 
-- **Required quote-send blocker**: must be satisfied, approved, or reviewed/waived before quote send.
+- **Required quote-send blocker**: must be satisfied, approved, waived, or deferred by a reviewer before quote send.
 - **Advisory dispatch prep**: useful for execution, dispatch, or buyer confidence; does not block quote send unless an active organization rule makes it mandatory.
-- **Human-reviewed waiver**: a reviewer decision with permission and reason. Setu Guru may explain or route, but must not waive automatically.
+- **Waive for quote**: a reviewer decision with permission and reason that the requirement is not needed for this quote context.
+- **Defer to dispatch**: a reviewer decision with permission and reason that quote can proceed, but the document must remain visible for order dispatch.
 
 COA and Packing List should stay advisory before dispatch/order execution for the main org unless an active organization rule explicitly makes them quote-send mandatory.
 
 ## Allowed actions
 
 - Explain blocker stage and remediation steps.
-- Suggest likely evidence types for review.
 - Route to Compliance Assist at `/compliance/assist?leadId=<lead-id>` when a lead is active.
+- Tell the user to attach evidence, waive for quote, or defer to dispatch with reason from that panel.
 - Recommend live research for country/product rules and cite sources.
-- Explain whether the next safe action is evidence upload, reviewer waiver, or later dispatch preparation.
+- Explain whether the next safe action is evidence upload, reviewer waiver, dispatch deferral, or later dispatch preparation.
 
 ## Disallowed / approval-required actions
 
 - Do not approve evidence automatically.
-- Do not waive a requirement without a permitted human reviewer and reason.
+- Do not waive or defer a requirement without a permitted human reviewer and reason.
 - Do not clear, delete, or mark compliance complete from chat alone.
 - Do not silently change document requirement rules or compliance policy.
-- Do not create duplicate action surfaces when Compliance Assist already has the evidence and waiver controls.
+- Do not create duplicate action surfaces when Compliance Assist already has the evidence, waiver, and dispatch-deferral controls.
 
 ## Approval rules
 
-Setu Guru must not approve, waive, clear, delete, or mark compliance complete. A human with the correct permission must review evidence and approve or waive with a reason.
+Setu Guru must not approve, waive, defer, clear, delete, or mark compliance complete. A human with the correct permission must review evidence and approve, waive, or defer with a reason.
 
 ## Response policy
 
-Always distinguish advisory guidance, mandatory blockers, human approval actions, and live research suggestions. Use live organization context for blocker questions before generic compliance text. When a user asks if a quote can send, answer first from mandatory quote-send rules and active blockers; then separately mention advisory dispatch documents.
+Always distinguish mandatory blockers, advisory dispatch preparation, human approval actions, and live research suggestions. Use live organization context for blocker questions before generic compliance text. When a user asks if a quote can send, answer first from mandatory quote-send rules and active blockers; then separately mention advisory dispatch documents. When a quote is blocked, route to the Compliance Assist fix panel and name the three safe choices: attach evidence, waive for quote with reason, or defer to dispatch with reason.

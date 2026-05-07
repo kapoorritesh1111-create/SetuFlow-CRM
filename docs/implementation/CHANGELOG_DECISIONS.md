@@ -17,7 +17,7 @@ Reason:
 
 - Production is advancing through small approved one-commit passes on `main`.
 - Sprint 5 quote PDF/share/send work is closed and protected.
-- Compliance Assist now becomes the next maturity focus for blocker/advisory/waiver clarity.
+- Compliance Assist now becomes the next maturity focus for blocker/advisory/waiver/dispatch-deferral clarity.
 
 ---
 
@@ -55,17 +55,39 @@ Decision:
 - Updated `docs/help/compliance.md` so Setu Guru uses the same blocker/advisory/waiver language.
 - No schema, quote send behavior, waiver backend, approval backend, compliance policy, or silent write-back behavior was changed.
 
+Build:
+
+- READY `dddcb5a559acb726c7da519e22bab95ec71d49b5` — Clarify compliance blocker actions
+
+---
+
+## 2026-05-07 — Sprint 6 actionable compliance fix panel
+
+Decision:
+
+- Verified `dddcb5a559acb726c7da519e22bab95ec71d49b5` is READY before this pass.
+- Production screenshots showed the compliance blocker was visible in lead/quote flow but did not give a clear place to resolve it.
+- Quote prep compliance card now points to a clear **Open compliance fix panel** path.
+- Compliance Assist now shows **Why this is blocked** for each requirement, including requirement code, stage, latest linked evidence, and evidence/review status.
+- Required quote-send blockers now provide three explicit options in the existing Compliance Assist surface: attach evidence for review, waive for quote with a reviewer reason, or defer to dispatch with a reviewer reason.
+- Deferring to dispatch records the decision using existing reviewed document requirement workflow semantics; it is not a silent clear or chat-side bypass.
+- Setu Guru compliance help now tells users to route to Compliance Assist and name the three safe choices.
+- Tests protect that the actionable fix panel, quote prep route, and Setu Guru guidance stay present.
+- No schema, quote send behavior, approval backend, compliance policy, duplicate action surface, or silent write-back behavior was added.
+
 Files:
 
 - `src/app/(app)/compliance/assist/page.tsx`
+- `src/features/leads/command-center/workflow/QuotePrepChecklist.tsx`
 - `docs/help/compliance.md`
+- `tests/compliance-assist-action-clarity.test.mjs`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `7747aaf816c28b77dd8af67600c6e2544b11a9b8`
+- Baseline before pass: `dddcb5a559acb726c7da519e22bab95ec71d49b5`
 
 ---
 

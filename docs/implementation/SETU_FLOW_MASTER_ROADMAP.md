@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `7747aaf816c28b77dd8af67600c6e2544b11a9b8`
-- Commit message: `Document Sprint 5 closure`
+- Latest verified production READY commit before this pass: `dddcb5a559acb726c7da519e22bab95ec71d49b5`
+- Commit message: `Clarify compliance blocker actions`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -34,6 +34,7 @@ Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 - Quote PDF, quote sharing, and quote send/approval controls are Sprint 5 closure-protected; future passes should not reopen them unless a production screenshot shows a defect.
 - Compliance actions must clearly separate required quote-send blockers, advisory dispatch/order prep, and human-reviewed waiver decisions.
 - Do not add silent waiver, approval, send, clear-compliance, or document status write-back behavior.
+- Compliance blockers must route to a clear fix panel where the user can see the exact reason, attach evidence, waive for quote with reason, or defer to dispatch with reason.
 
 ---
 
@@ -82,9 +83,9 @@ Protected for future passes:
 ### Sprint 6 — Compliance Assist maturity
 
 Status: `IN PROGRESS`
-Progress: 60%
+Progress: 68%
 
-Completed in Sprint 6 start pass:
+Completed in Sprint 6:
 
 - Verified Sprint 5 closure deployment `7747aaf816c28b77dd8af67600c6e2544b11a9b8` is READY before starting Sprint 6.
 - Inspected Compliance Assist route, quote/lead compliance entry points, Setu Guru compliance help, and compliance response policy.
@@ -92,13 +93,19 @@ Completed in Sprint 6 start pass:
 - Added a compact decision guide inside the existing Compliance Assist flow rather than creating a duplicate action surface.
 - Clarified evidence submission as review intake, not auto-approval.
 - Clarified waiver controls as reviewed human decisions requiring permission and a reason.
-- Updated compliance help so Setu Guru uses the same blocker/advisory/waiver language.
-- No schema, quote send behavior, waiver backend, approval backend, or silent write-back behavior was changed.
+- Verified Sprint 6 start deployment `dddcb5a559acb726c7da519e22bab95ec71d49b5` is READY before this pass.
+- Production screenshots showed the compliance blocker was visible but not actionable enough from the quote/lead flow.
+- Quote prep compliance card now routes to a clearly named **Open compliance fix panel** path.
+- Compliance Assist now shows **Why this is blocked** for each requirement, including requirement code, stage, latest evidence, and evidence/review status.
+- Required quote-send blockers now present three explicit safe choices: attach evidence for review, waive for quote with reason, or defer to dispatch with reason.
+- Dispatch deferral is a human-reviewed decision that keeps the document visible for order execution; it is not a silent clear.
+- Updated compliance help and tests so Setu Guru uses the same attach / waive / defer language and never clears compliance from chat alone.
+- No schema, quote send behavior, approval backend, compliance policy, or silent write-back behavior was changed.
 
 Recommended focus:
 
-- Verify this Sprint 6 Compliance Assist clarity deployment is READY.
-- Smoke-check `/compliance/assist?leadId=<lead-id>` in production for the updated decision guide, required/advisory cards, evidence copy, and waiver copy.
+- Verify this actionable Compliance Assist fix-panel deployment is READY.
+- Smoke-check the blocker panel / quote prep card opens `/compliance/assist?leadId=<lead-id>` and shows exact reason, attach evidence, waive for quote, and defer to dispatch options.
 - Tighten Setu Guru compliance/blocker routing responses and action buttons if screenshots show ambiguity.
 - Preserve COA/Packing List advisory behavior before dispatch/order execution unless explicitly configured as quote-send blockers.
 
@@ -127,10 +134,10 @@ Progress: 10%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
 - Completed Sprint 5 Quote builder and quote PDF maturity: 100%
-- Current Sprint 6 Compliance Assist maturity: 60%
+- Current Sprint 6 Compliance Assist maturity: 68%
 - Setu Guru intelligence readiness: 98%
-- UX cleanup readiness: 70%
-- Quote/compliance maturity: 78%
+- UX cleanup readiness: 71%
+- Quote/compliance maturity: 80%
 - Product catalog maturity: 83%
 
 ---
@@ -167,7 +174,7 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, and Sprint 5 are 100%. Sprint 6 Compliance Assist maturity is active at 60%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, guidance-only order actions, and closed Sprint 5 quote PDF/share/send protections. Compliance Assist must distinguish required quote-send blockers, advisory dispatch/order prep, and human-reviewed waiver decisions. Do not add duplicate action surfaces or silent waiver/approval/clear-compliance/write-back behavior.
+Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, and Sprint 5 are 100%. Sprint 6 Compliance Assist maturity is active at 68%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, guidance-only order actions, and closed Sprint 5 quote PDF/share/send protections. Compliance Assist must distinguish required quote-send blockers, advisory dispatch/order prep, waive-for-quote decisions, and defer-to-dispatch decisions. Do not add duplicate action surfaces or silent waiver/approval/clear-compliance/write-back behavior.
 ```
 
 ---
@@ -176,6 +183,6 @@ Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, and Sprint 5 are 100%. S
 
 Continue Sprint 6 Compliance Assist maturity / UX cleanup:
 
-1. Verify this Sprint 6 Compliance Assist clarity deployment is READY.
-2. Smoke-check `/compliance/assist?leadId=<lead-id>` in production for decision-guide clarity, required/advisory sections, evidence submission copy, and waiver permission copy.
+1. Verify this actionable Compliance Assist fix-panel deployment is READY.
+2. Smoke-check the quote prep compliance blocker opens `/compliance/assist?leadId=<lead-id>` and shows exact reason, attach evidence, waive for quote, and defer to dispatch options.
 3. Tighten Setu Guru compliance/blocker action routing if production screenshots show ambiguity, without adding duplicate action surfaces or silent write-back behavior.
