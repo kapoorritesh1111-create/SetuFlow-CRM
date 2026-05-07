@@ -15,50 +15,12 @@ test('Setu Guru widget is embedded in the authenticated shell', () => {
 });
 
 test('Setu Guru docs and runtime assets are present', () => {
-  [
-    'public/setu-guru/setu-guru-avatar.svg',
-    'public/setu-guru/navigation-map.svg',
-    'public/setu-guru/pricing-hierarchy.svg',
-    'public/setu-guru/roles-permissions.svg',
-    'public/setu-guru/knowledge-manifest.json',
-    'docs/setu-guru/SETU_GURU_GPT_BUILD_PROMPT.md',
-    'docs/setu-guru/SETU_GURU_LEARNING_LOOP.md',
-    'docs/setu-guru/SETU_GURU_REPO_REVIEW.md',
-    'docs/setu-guru/SETUFLOW_ONBOARDING_GUIDE.md',
-    'docs/setu-guru/SETUFLOW_TROUBLESHOOTING.md',
-    'docs/setu-guru/SETUFLOW_WORKFLOWS.md',
-    'docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md',
-    'docs/help/dashboard.md',
-    'docs/help/leads.md',
-    'docs/help/products.md',
-    'docs/help/quotes.md',
-    'docs/help/orders.md',
-    'docs/help/compliance.md',
-    'docs/help/trade-events.md',
-    'docs/help/admin-organization.md',
-    'docs/help/pricing-calculator.md',
-    'docs/help/setu-guru.md',
-    'src/lib/setu-guru/page-context.ts',
-    'src/lib/setu-guru/help-registry.ts',
-    'src/lib/setu-guru/guru-response-policy.ts',
-    'src/lib/setu-guru/live-research.ts',
-  ].forEach((path) => assert.equal(existsSync(path), true, `${path} should exist`));
+  ['public/setu-guru/setu-guru-avatar.svg', 'public/setu-guru/navigation-map.svg', 'public/setu-guru/pricing-hierarchy.svg', 'public/setu-guru/roles-permissions.svg', 'public/setu-guru/knowledge-manifest.json', 'docs/setu-guru/SETU_GURU_GPT_BUILD_PROMPT.md', 'docs/setu-guru/SETU_GURU_LEARNING_LOOP.md', 'docs/setu-guru/SETU_GURU_REPO_REVIEW.md', 'docs/setu-guru/SETUFLOW_ONBOARDING_GUIDE.md', 'docs/setu-guru/SETUFLOW_TROUBLESHOOTING.md', 'docs/setu-guru/SETUFLOW_WORKFLOWS.md', 'docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md', 'docs/help/dashboard.md', 'docs/help/leads.md', 'docs/help/products.md', 'docs/help/quotes.md', 'docs/help/orders.md', 'docs/help/compliance.md', 'docs/help/trade-events.md', 'docs/help/admin-organization.md', 'docs/help/pricing-calculator.md', 'docs/help/setu-guru.md', 'src/lib/setu-guru/page-context.ts', 'src/lib/setu-guru/help-registry.ts', 'src/lib/setu-guru/guru-response-policy.ts', 'src/lib/setu-guru/live-research.ts'].forEach((path) => assert.equal(existsSync(path), true, `${path} should exist`));
 });
 
 test('Setu Guru help registry covers the main route help docs', () => {
   const registry = readFileSync('src/lib/setu-guru/help-registry.ts', 'utf8');
-  [
-    'docs/help/dashboard.md',
-    'docs/help/leads.md',
-    'docs/help/products.md',
-    'docs/help/quotes.md',
-    'docs/help/orders.md',
-    'docs/help/compliance.md',
-    'docs/help/trade-events.md',
-    'docs/help/admin-organization.md',
-    'docs/help/pricing-calculator.md',
-    'docs/help/setu-guru.md',
-  ].forEach((docPath) => assert.match(registry, new RegExp(docPath.replace(/[/.]/g, '\\$&'))));
+  ['docs/help/dashboard.md', 'docs/help/leads.md', 'docs/help/products.md', 'docs/help/quotes.md', 'docs/help/orders.md', 'docs/help/compliance.md', 'docs/help/trade-events.md', 'docs/help/admin-organization.md', 'docs/help/pricing-calculator.md', 'docs/help/setu-guru.md'].forEach((docPath) => assert.match(registry, new RegExp(docPath.replace(/[/.]/g, '\\$&'))));
   assert.match(registry, /getBestSetuGuruHelpTopic/);
   assert.match(registry, /getSetuGuruRouteTopics/);
 });
@@ -116,4 +78,16 @@ test('Setu Guru live research extracts product, country, and role context', () =
   assert.match(liveResearch, /inferCountry/);
   assert.match(liveResearch, /inferRole/);
   assert.match(liveResearch, /Detected context/);
+});
+
+test('Setu Guru research prefers active route records before visible text fallback', () => {
+  assert.match(liveResearch, /SetuGuruResearchEntityContext/);
+  assert.match(liveResearch, /entityContext/);
+  assert.match(liveResearch, /Active source/);
+  assert.match(orgSearchRoute, /resolveActiveResearchEntityContext/);
+  assert.match(orgSearchRoute, /resolveProductResearchContext/);
+  assert.match(orgSearchRoute, /resolveLeadResearchContext/);
+  assert.match(orgSearchRoute, /resolveQuoteResearchContext/);
+  assert.match(orgSearchRoute, /parseProductIdFromRoute/);
+  assert.match(orgSearchRoute, /parseQuoteIdFromRoute/);
 });

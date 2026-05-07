@@ -30,6 +30,7 @@ Purpose: Setu Guru is the embedded CRM assistant. It should be contextual, safe,
 - Current route, visible page text, organization, role, active entity, visible record, and flags.
 - Help registry and route help topics.
 - Live organization search APIs.
+- Active product, lead, and quote records for research context when the route includes an entity ID.
 - Live research sources for customs, tariffs, HS/HSN, compliance, margins, and market context.
 
 ## Source-backed live research behavior
@@ -38,12 +39,24 @@ When a user asks about HS/HSN, document requirements, duties/tariffs, or margin 
 
 - the research scope,
 - detected product/country/role context,
+- the active source used for context, such as active product, active lead, active quote, or visible page fallback,
 - reviewable source rows,
 - source IDs/citation markers,
 - a recommended review path,
 - and an explicit human approval boundary.
 
 Research answers are not write-backs. They are decision support for review.
+
+## Active entity context policy
+
+For research questions, Setu Guru should prefer live route records over visible text when safe and available:
+
+1. Product detail route → use active product name and catalog context.
+2. Quote route → use quote number, linked lead, linked products, destination/country, and lead type.
+3. Lead route → use lead company/contact, lead type, country, and product interests.
+4. If no active record can be resolved, fall back to visible page text and the user's question.
+
+This keeps research briefs grounded in the actual CRM record while preserving the no-write-back boundary.
 
 ## Research source row rendering
 
@@ -62,4 +75,4 @@ Setu Guru must not approve, waive, write back, send, delete, clear compliance, a
 
 ## Response policy
 
-Answer in this order: page context, live organization data, route help registry, live research when required, then generic guidance. Always state when human review is required.
+Answer in this order: page context, active route entity, live organization data, route help registry, live research when required, then generic guidance. Always state when human review is required.

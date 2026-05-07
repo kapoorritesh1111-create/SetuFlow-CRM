@@ -5,7 +5,7 @@ import { getProductsData } from '@/lib/queries/products';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getBestSetuGuruHelpTopic, getRouteHelpSummary } from '@/lib/setu-guru/help-registry';
 import { classifySetuGuruResponse } from '@/lib/setu-guru/guru-response-policy';
-import { buildLiveResearchExecutionAnswer, type SetuGuruLiveResearchMode } from '@/lib/setu-guru/live-research';
+import { buildLiveResearchExecutionAnswer, type SetuGuruLiveResearchMode, type SetuGuruResearchEntityContext } from '@/lib/setu-guru/live-research';
 
 type SetuGuruOrgSearchMode =
   | 'catalog_search'
@@ -20,46 +20,20 @@ type SetuGuruOrgSearchMode =
   | 'page_help';
 
 const MODE_ALIASES: Record<string, SetuGuruOrgSearchMode> = {
-  catalog: 'catalog_search',
-  products: 'catalog_search',
-  product: 'catalog_search',
-  categories: 'catalog_search',
-  category: 'catalog_search',
-  catalog_search: 'catalog_search',
-  buyers: 'buyer_search',
-  buyer: 'buyer_search',
-  buyer_search: 'buyer_search',
-  suppliers: 'supplier_search',
-  supplier: 'supplier_search',
-  supplier_search: 'supplier_search',
-  leads: 'lead_search',
-  lead: 'lead_search',
-  lead_search: 'lead_search',
-  quote_compliance: 'quote_compliance',
-  compliance: 'quote_compliance',
-  quote: 'quote_compliance',
-  pricing_defaults: 'pricing_defaults',
-  pricing: 'pricing_defaults',
-  hsn: 'hsn_enrichment',
-  hs_code: 'hsn_enrichment',
-  hs_code_enrichment: 'hsn_enrichment',
-  hsn_enrichment: 'hsn_enrichment',
-  document_requirements: 'document_requirements',
-  document_requirement: 'document_requirements',
-  documents: 'document_requirements',
-  required_documents: 'document_requirements',
-  margin_benchmark: 'margin_benchmark',
-  margin: 'margin_benchmark',
-  duties: 'document_requirements',
-  duty: 'document_requirements',
-  tariffs: 'document_requirements',
-  tariff: 'document_requirements',
-  page_help: 'page_help',
-  help: 'page_help',
+  catalog: 'catalog_search', products: 'catalog_search', product: 'catalog_search', categories: 'catalog_search', category: 'catalog_search', catalog_search: 'catalog_search',
+  buyers: 'buyer_search', buyer: 'buyer_search', buyer_search: 'buyer_search', suppliers: 'supplier_search', supplier: 'supplier_search', supplier_search: 'supplier_search',
+  leads: 'lead_search', lead: 'lead_search', lead_search: 'lead_search', quote_compliance: 'quote_compliance', compliance: 'quote_compliance', quote: 'quote_compliance',
+  pricing_defaults: 'pricing_defaults', pricing: 'pricing_defaults', hsn: 'hsn_enrichment', hs_code: 'hsn_enrichment', hs_code_enrichment: 'hsn_enrichment', hsn_enrichment: 'hsn_enrichment',
+  document_requirements: 'document_requirements', document_requirement: 'document_requirements', documents: 'document_requirements', required_documents: 'document_requirements',
+  margin_benchmark: 'margin_benchmark', margin: 'margin_benchmark', duties: 'document_requirements', duty: 'document_requirements', tariffs: 'document_requirements', tariff: 'document_requirements', page_help: 'page_help', help: 'page_help',
 };
 
 function asText(value: unknown) {
   return String(value ?? '').trim();
+}
+
+function compactList(values: unknown[]) {
+  return values.map((value) => asText(value)).filter(Boolean);
 }
 
 function modeKey(value: string) {
@@ -122,9 +96,21 @@ function includesTerm(row: Record<string, unknown>, term: string) {
   return haystack.includes(term.toLowerCase());
 }
 
-function parseLeadIdFromRoute(route: string) {
-  const match = route.match(/\/leads\/([^/?#]+)\/quote/);
+function parseRouteId(route: string, pattern: RegExp) {
+  const match = route.match(pattern);
   return match?.[1] ?? null;
+}
+
+function parseLeadIdFromRoute(route: string) {
+  return parseRouteId(route, /\/leads\/([^/?#]+)/);
+}
+
+function parseProductIdFromRoute(route: string) {
+  return parseRouteId(route, /\/products\/([^/?#]+)/);
+}
+
+function parseQuoteIdFromRoute(route: string) {
+  return parseRouteId(route, /\/quotes\/([^/?#]+)/);
 }
 
 function isOpenStatus(status: unknown) {
@@ -141,25 +127,58 @@ function buildPageHelpAnswer(question: string, route: string) {
   ];
   const policyText = policy.reminders.length ? `Policy reminder: ${policy.reminders.join(' ')}` : 'Policy reminder: answer from page context and route help before generic guidance.';
   const approvalText = topic.approvalRules.length ? `Human approval boundary: ${topic.approvalRules.join(' ')}` : 'Human approval is required for sends, waivers, write-backs, deletes, pricing decisions, and compliance decisions.';
-  const answer = [
-    `I checked the Setu Guru help registry for ${routeHelp.routeTitle}.`,
-    topic.summary,
-    ...topic.answer,
-    `Common blockers to inspect: ${topic.commonBlockers.slice(0, 4).join(', ') || 'none listed'}.`,
-    `Data sources to check before acting: ${topic.dataSources.slice(0, 5).join(', ') || 'page context and organization data'}.`,
-    approvalText,
-    policyText,
-  ].join('\n\n');
+  const answer = [`I checked the Setu Guru help registry for ${routeHelp.routeTitle}.`, topic.summary, ...topic.answer, `Common blockers to inspect: ${topic.commonBlockers.slice(0, 4).join(', ') || 'none listed'}.`, `Data sources to check before acting: ${topic.dataSources.slice(0, 5).join(', ') || 'page context and organization data'}.`, approvalText, policyText].join('\n\n');
   return { answer, rows, actions: topic.actions, actionHref: topic.actions[0] ? null : undefined, routeHelp, mode: 'page_help' };
 }
 
-function buildResearchRoutingAnswer(question: string, route: string, pageText: string, mode: SetuGuruOrgSearchMode) {
-  return buildLiveResearchExecutionAnswer({
-    question,
-    route,
-    pageText,
-    mode: asLiveResearchMode(mode),
-  });
+function buildResearchRoutingAnswer(question: string, route: string, pageText: string, mode: SetuGuruOrgSearchMode, entityContext?: SetuGuruResearchEntityContext | null) {
+  return buildLiveResearchExecutionAnswer({ question, route, pageText, mode: asLiveResearchMode(mode), entityContext });
+}
+
+async function resolveLeadResearchContext(db: any, organizationId: string, leadId: string): Promise<SetuGuruResearchEntityContext | null> {
+  const { data: lead } = await db.from('leads').select('id, company_name, contact_name, lead_type, country').eq('organization_id', organizationId).eq('id', leadId).maybeSingle();
+  if (!lead?.id) return null;
+  const { data: leadProducts } = await db.from('lead_product_interests').select('product_id, products(id, name, hsn_code, category_id)').eq('organization_id', organizationId).eq('lead_id', lead.id).limit(6);
+  const productNames = compactList((leadProducts ?? []).map((row: any) => row.products?.name));
+  return { product: productNames.join(', '), country: lead.country, role: lead.lead_type ? `${lead.lead_type} lead` : 'lead workspace', entityLabel: lead.company_name || lead.contact_name || 'active lead', source: 'active_lead' };
+}
+
+async function resolveProductResearchContext(db: any, organizationId: string, productId: string): Promise<SetuGuruResearchEntityContext | null> {
+  const { data: product } = await db.from('products').select('id, name, hsn_code, category_id').eq('organization_id', organizationId).eq('id', productId).maybeSingle();
+  if (!product?.id) return null;
+  return { product: product.name, role: 'catalog product', entityLabel: product.name || 'active product', source: 'active_product' };
+}
+
+async function resolveQuoteResearchContext(db: any, organizationId: string, quoteId: string): Promise<SetuGuruResearchEntityContext | null> {
+  const { data: quote } = await db.from('quotes').select('id, quote_number, lead_id, country_id, market_id, currency, display_currency').eq('organization_id', organizationId).eq('id', quoteId).maybeSingle();
+  if (!quote?.id) return null;
+  const [leadResult, countryResult] = await Promise.all([
+    quote.lead_id ? db.from('leads').select('id, company_name, contact_name, lead_type, country').eq('organization_id', organizationId).eq('id', quote.lead_id).maybeSingle() : Promise.resolve({ data: null }),
+    quote.country_id ? db.from('countries').select('id, name').eq('organization_id', organizationId).eq('id', quote.country_id).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+  const lead = leadResult.data;
+  const { data: leadProducts } = quote.lead_id ? await db.from('lead_product_interests').select('product_id, products(id, name, hsn_code, category_id)').eq('organization_id', organizationId).eq('lead_id', quote.lead_id).limit(6) : { data: [] };
+  const productNames = compactList((leadProducts ?? []).map((row: any) => row.products?.name));
+  return { product: productNames.join(', '), country: countryResult.data?.name ?? lead?.country, role: lead?.lead_type ? `${lead.lead_type} quote` : 'quote workspace', entityLabel: quote.quote_number || lead?.company_name || 'active quote', source: 'active_quote' };
+}
+
+async function resolveActiveResearchEntityContext(db: any, organizationId: string, route: string): Promise<SetuGuruResearchEntityContext | null> {
+  const productId = parseProductIdFromRoute(route);
+  if (productId) {
+    const productContext = await resolveProductResearchContext(db, organizationId, productId);
+    if (productContext) return productContext;
+  }
+  const quoteId = parseQuoteIdFromRoute(route);
+  if (quoteId) {
+    const quoteContext = await resolveQuoteResearchContext(db, organizationId, quoteId);
+    if (quoteContext) return quoteContext;
+  }
+  const leadId = parseLeadIdFromRoute(route);
+  if (leadId) {
+    const leadContext = await resolveLeadResearchContext(db, organizationId, leadId);
+    if (leadContext) return leadContext;
+  }
+  return null;
 }
 
 async function resolveActiveLead(db: any, organizationId: string, route: string, pageText: string) {
@@ -168,28 +187,15 @@ async function resolveActiveLead(db: any, organizationId: string, route: string,
     const { data } = await db.from('leads').select('id, company_name, contact_name, lead_type, country').eq('organization_id', organizationId).eq('id', leadId).maybeSingle();
     if (data?.id) return data;
   }
-
   const visibleText = pageText.toLowerCase();
-  const { data: candidates } = await db
-    .from('leads')
-    .select('id, company_name, contact_name, lead_type, country, updated_at')
-    .eq('organization_id', organizationId)
-    .order('updated_at', { ascending: false })
-    .limit(50);
-
+  const { data: candidates } = await db.from('leads').select('id, company_name, contact_name, lead_type, country, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(50);
   const exactVisible = (candidates ?? []).find((lead: any) => {
     const company = String(lead.company_name ?? '').toLowerCase();
     const contact = String(lead.contact_name ?? '').toLowerCase();
     return (company.length > 3 && visibleText.includes(company)) || (contact.length > 3 && visibleText.includes(contact));
   });
   if (exactVisible?.id) return exactVisible;
-
-  const { data: quoteLeadRows } = await db
-    .from('quotes')
-    .select('lead_id, updated_at, leads(id, company_name, contact_name, lead_type, country)')
-    .eq('organization_id', organizationId)
-    .order('updated_at', { ascending: false })
-    .limit(10);
+  const { data: quoteLeadRows } = await db.from('quotes').select('lead_id, updated_at, leads(id, company_name, contact_name, lead_type, country)').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(10);
   const quoteVisible = (quoteLeadRows ?? []).map((row: any) => row.leads).find((lead: any) => {
     const company = String(lead?.company_name ?? '').toLowerCase();
     return company.length > 3 && visibleText.includes(company);
@@ -198,16 +204,7 @@ async function resolveActiveLead(db: any, organizationId: string, route: string,
   return quoteLeadRows?.[0]?.leads ?? candidates?.[0] ?? null;
 }
 
-function buildQuoteComplianceAnswer(input: {
-  organizationName: string;
-  lead: any;
-  quote: any;
-  complianceRows: any[];
-  documentRows: any[];
-  requirementRows: any[];
-  productRows: any[];
-  countryName: string;
-}) {
+function buildQuoteComplianceAnswer(input: { organizationName: string; lead: any; quote: any; complianceRows: any[]; documentRows: any[]; requirementRows: any[]; productRows: any[]; countryName: string; }) {
   const mandatoryRules = input.requirementRows.filter((rule) => rule.is_mandatory === true);
   const advisoryRules = input.requirementRows.filter((rule) => rule.is_mandatory !== true);
   const openCompliance = input.complianceRows.filter((row) => isOpenStatus(row.status) && row.compliance_checklist_items?.is_mandatory !== false);
@@ -218,14 +215,7 @@ function buildQuoteComplianceAnswer(input: {
   openDocuments.forEach((rule) => blockers.push(rule.title || rule.requirement_code));
   const blockerText = blockers.length ? blockers.slice(0, 4).join('; ') : 'No mandatory compliance blocker is open for this quote.';
   const advisoryText = advisoryRules.length ? `Advisory before dispatch: ${advisoryRules.map((rule) => rule.title || rule.requirement_code).slice(0, 4).join(', ')}.` : 'No advisory document rule is configured right now.';
-  const answer = [
-    `I checked this live quote for ${input.lead?.company_name ?? input.organizationName}.`,
-    `Destination/context: ${input.countryName || input.lead?.country || 'not set'} · Products: ${products}.`,
-    blockers.length ? `True blocker: ${blockerText}.` : blockerText,
-    blockers.length ? 'How to fix it: open the lead evidence/compliance area, upload the required document or evidence, submit it for review, then return to quote review. If this is not required at quote stage, an owner/admin should mark it advisory or waive it with a reason.' : 'The quote can move forward from a quote-compliance perspective. Keep product/country documents advisory until dispatch when org policy allows quoting before dispatch readiness.',
-    advisoryText,
-    'Setu Guru can suggest likely product/country evidence, but it must not approve, waive, or clear compliance automatically. Human approval is required for prices, compliance, sends, and write-backs.',
-  ].join('\n\n');
+  const answer = [`I checked this live quote for ${input.lead?.company_name ?? input.organizationName}.`, `Destination/context: ${input.countryName || input.lead?.country || 'not set'} · Products: ${products}.`, blockers.length ? `True blocker: ${blockerText}.` : blockerText, blockers.length ? 'How to fix it: open the lead evidence/compliance area, upload the required document or evidence, submit it for review, then return to quote review. If this is not required at quote stage, an owner/admin should mark it advisory or waive it with a reason.' : 'The quote can move forward from a quote-compliance perspective. Keep product/country documents advisory until dispatch when org policy allows quoting before dispatch readiness.', advisoryText, 'Setu Guru can suggest likely product/country evidence, but it must not approve, waive, or clear compliance automatically. Human approval is required for prices, compliance, sends, and write-backs.'].join('\n\n');
   return { answer, blockers };
 }
 
@@ -244,12 +234,18 @@ export async function POST(request: Request) {
     }
 
     if (isResearchRoutingMode(mode, question)) {
-      return NextResponse.json(buildResearchRoutingAnswer(question, route, pageText, mode));
+      let entityContext: SetuGuruResearchEntityContext | null = null;
+      if (hasSupabaseEnv) {
+        const workspace = await getWorkspaceAccess().catch(() => null);
+        if (workspace?.user && workspace.organization) {
+          const db = (await createClient()) as any;
+          entityContext = await resolveActiveResearchEntityContext(db, workspace.organization.id, route).catch(() => null);
+        }
+      }
+      return NextResponse.json(buildResearchRoutingAnswer(question, route, pageText, mode, entityContext));
     }
 
-    if (!hasSupabaseEnv) {
-      return NextResponse.json({ answer: 'Setu Guru cannot read live organization data because Supabase environment variables are missing. Ask “what can you do on this page?” for route help, or ask for live research guidance for HS/HSN, document requirements, duties, or margins.', confidence: 'low', rows: [], actions: ['Show page help', 'Ask live research'] }, { status: 500 });
-    }
+    if (!hasSupabaseEnv) return NextResponse.json({ answer: 'Setu Guru cannot read live organization data because Supabase environment variables are missing. Ask “what can you do on this page?” for route help, or ask for live research guidance for HS/HSN, document requirements, duties, or margins.', confidence: 'low', rows: [], actions: ['Show page help', 'Ask live research'] }, { status: 500 });
 
     const workspace = await getWorkspaceAccess();
     if (!workspace.user || !workspace.organization) return NextResponse.json({ answer: 'Please sign in to Setu Flow before asking Setu Guru to search organization data.', confidence: 'low', rows: [] }, { status: 401 });
@@ -262,7 +258,6 @@ export async function POST(request: Request) {
     if (mode === 'quote_compliance') {
       const lead = await resolveActiveLead(db, organizationId, route, pageText);
       if (!lead?.id) return NextResponse.json({ answer: 'I can help with quote compliance, but I could not identify a lead from the route or visible page. Open the quote or lead workspace and ask again.', confidence: 'medium', rows: [], actions: ['Open Leads', 'Open compliance'], actionHref: '/leads' });
-
       const [{ data: quotes }, { data: leadProducts }, { data: documents }, { data: complianceRows }, { data: rules }, { data: country }] = await Promise.all([
         db.from('quotes').select('id, quote_number, status, country_id, market_id, currency, display_currency').eq('organization_id', organizationId).eq('lead_id', lead.id).order('updated_at', { ascending: false }).limit(1),
         db.from('lead_product_interests').select('product_id, products(id, name, hsn_code, category_id)').eq('organization_id', organizationId).eq('lead_id', lead.id),
@@ -275,17 +270,9 @@ export async function POST(request: Request) {
       const productRows = (leadProducts ?? []).map((row: any) => row.products).filter(Boolean);
       const productIdSet = new Set(productRows.map((product: any) => product.id));
       const marketId = quote?.market_id ?? country?.market_id ?? null;
-      const applicableRules = (rules ?? []).filter((rule: any) => {
-        if (rule.lead_type && rule.lead_type !== lead.lead_type) return false;
-        if (rule.market_id && rule.market_id !== marketId) return false;
-        if (rule.product_id && !productIdSet.has(rule.product_id)) return false;
-        return true;
-      });
+      const applicableRules = (rules ?? []).filter((rule: any) => { if (rule.lead_type && rule.lead_type !== lead.lead_type) return false; if (rule.market_id && rule.market_id !== marketId) return false; if (rule.product_id && !productIdSet.has(rule.product_id)) return false; return true; });
       const built = buildQuoteComplianceAnswer({ organizationName, lead, quote, complianceRows: complianceRows ?? [], documentRows: documents ?? [], requirementRows: applicableRules, productRows, countryName: country?.name ?? lead.country ?? '' });
-      const rows = [
-        ...built.blockers.map((item, index) => ({ id: `blocker-${index}`, name: item, type: 'mandatory blocker', next: 'Upload evidence, submit review, or owner/admin waive with reason' })),
-        ...applicableRules.filter((rule: any) => rule.is_mandatory !== true).slice(0, 4).map((rule: any) => ({ id: rule.id, name: rule.title || rule.requirement_code, type: 'advisory before dispatch', next: 'Prepare before order dispatch' })),
-      ];
+      const rows = [...built.blockers.map((item, index) => ({ id: `blocker-${index}`, name: item, type: 'mandatory blocker', next: 'Upload evidence, submit review, or owner/admin waive with reason' })), ...applicableRules.filter((rule: any) => rule.is_mandatory !== true).slice(0, 4).map((rule: any) => ({ id: rule.id, name: rule.title || rule.requirement_code, type: 'advisory before dispatch', next: 'Prepare before order dispatch' }))];
       return NextResponse.json({ answer: built.answer, confidence: 'high', mode, rows, actions: ['Open lead documents', 'Open compliance', 'Ask AI evidence checklist'], actionHref: `/leads/${lead.id}` });
     }
 

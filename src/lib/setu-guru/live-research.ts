@@ -12,11 +12,21 @@ export type SetuGuruResearchSource = ResearchSourceSeed & {
   citation: string;
 };
 
+export type SetuGuruResearchEntityContext = {
+  product?: string;
+  country?: string;
+  role?: string;
+  entityLabel?: string;
+  source?: 'active_product' | 'active_lead' | 'active_quote' | 'visible_page' | 'fallback';
+};
+
 export type SetuGuruResearchContext = {
   product: string;
   country: string;
   role: string;
   route: string;
+  entityLabel: string;
+  source: string;
 };
 
 export type SetuGuruLiveResearchInput = {
@@ -24,86 +34,27 @@ export type SetuGuruLiveResearchInput = {
   route?: string;
   pageText?: string;
   mode: SetuGuruLiveResearchMode;
+  entityContext?: SetuGuruResearchEntityContext | null;
 };
 
 const RESEARCH_SOURCES: Record<SetuGuruLiveResearchMode, ResearchSourceSeed[]> = {
   hsn_enrichment: [
-    {
-      title: 'World Customs Organization HS Nomenclature',
-      url: 'https://www.wcoomd.org/en/topics/nomenclature/instrument-and-tools/hs-nomenclature-2022-edition.aspx',
-      sourceType: 'official',
-      why: 'Use for HS chapter and heading structure before selecting a product code.',
-    },
-    {
-      title: 'India ICEGATE customs portal',
-      url: 'https://www.icegate.gov.in/',
-      sourceType: 'official',
-      why: 'Use for India-specific HSN/tariff validation when India is the origin or destination context.',
-    },
-    {
-      title: 'US Harmonized Tariff Schedule',
-      url: 'https://hts.usitc.gov/',
-      sourceType: 'official',
-      why: 'Use for US HTS candidates, notes, and duty references when the US is the destination context.',
-    },
-    {
-      title: 'EU Access2Markets',
-      url: 'https://trade.ec.europa.eu/access-to-markets/en/home',
-      sourceType: 'official',
-      why: 'Use for EU import requirements, tariffs, and product-specific market access checks.',
-    },
+    { title: 'World Customs Organization HS Nomenclature', url: 'https://www.wcoomd.org/en/topics/nomenclature/instrument-and-tools/hs-nomenclature-2022-edition.aspx', sourceType: 'official', why: 'Use for HS chapter and heading structure before selecting a product code.' },
+    { title: 'India ICEGATE customs portal', url: 'https://www.icegate.gov.in/', sourceType: 'official', why: 'Use for India-specific HSN/tariff validation when India is the origin or destination context.' },
+    { title: 'US Harmonized Tariff Schedule', url: 'https://hts.usitc.gov/', sourceType: 'official', why: 'Use for US HTS candidates, notes, and duty references when the US is the destination context.' },
+    { title: 'EU Access2Markets', url: 'https://trade.ec.europa.eu/access-to-markets/en/home', sourceType: 'official', why: 'Use for EU import requirements, tariffs, and product-specific market access checks.' },
   ],
   document_requirements: [
-    {
-      title: 'EU Access2Markets',
-      url: 'https://trade.ec.europa.eu/access-to-markets/en/home',
-      sourceType: 'official',
-      why: 'Use for destination-specific EU import requirements, duties, and document guidance.',
-    },
-    {
-      title: 'UK Trade Tariff',
-      url: 'https://www.gov.uk/trade-tariff',
-      sourceType: 'official',
-      why: 'Use for UK commodity codes, duties, measures, and import document checks.',
-    },
-    {
-      title: 'US Customs and Border Protection import guidance',
-      url: 'https://www.cbp.gov/trade/basic-import-export',
-      sourceType: 'official',
-      why: 'Use for US import process, document, customs, and compliance review.',
-    },
-    {
-      title: 'India ICEGATE customs portal',
-      url: 'https://www.icegate.gov.in/',
-      sourceType: 'official',
-      why: 'Use for India customs references and import/export document checks.',
-    },
+    { title: 'EU Access2Markets', url: 'https://trade.ec.europa.eu/access-to-markets/en/home', sourceType: 'official', why: 'Use for destination-specific EU import requirements, duties, and document guidance.' },
+    { title: 'UK Trade Tariff', url: 'https://www.gov.uk/trade-tariff', sourceType: 'official', why: 'Use for UK commodity codes, duties, measures, and import document checks.' },
+    { title: 'US Customs and Border Protection import guidance', url: 'https://www.cbp.gov/trade/basic-import-export', sourceType: 'official', why: 'Use for US import process, document, customs, and compliance review.' },
+    { title: 'India ICEGATE customs portal', url: 'https://www.icegate.gov.in/', sourceType: 'official', why: 'Use for India customs references and import/export document checks.' },
   ],
   margin_benchmark: [
-    {
-      title: 'Trade.gov Country Commercial Guides',
-      url: 'https://www.trade.gov/ccg-landing-page',
-      sourceType: 'trade_reference',
-      why: 'Use for market structure, channel, distribution, and commercial environment context.',
-    },
-    {
-      title: 'International Trade Centre Trade Map',
-      url: 'https://www.intracen.org/resources/tools/trade-map',
-      sourceType: 'market_reference',
-      why: 'Use for trade flow context before deciding whether a margin benchmark is reasonable.',
-    },
-    {
-      title: 'World Bank Data',
-      url: 'https://data.worldbank.org/',
-      sourceType: 'market_reference',
-      why: 'Use for macro market context that may affect landed-cost and channel assumptions.',
-    },
-    {
-      title: 'SETU Flow pricing defaults and quote history',
-      url: 'internal:setu-flow-pricing-defaults',
-      sourceType: 'internal_review',
-      why: 'Use internal organization defaults and prior quote context before saving any new margin assumption.',
-    },
+    { title: 'Trade.gov Country Commercial Guides', url: 'https://www.trade.gov/ccg-landing-page', sourceType: 'trade_reference', why: 'Use for market structure, channel, distribution, and commercial environment context.' },
+    { title: 'International Trade Centre Trade Map', url: 'https://www.intracen.org/resources/tools/trade-map', sourceType: 'market_reference', why: 'Use for trade flow context before deciding whether a margin benchmark is reasonable.' },
+    { title: 'World Bank Data', url: 'https://data.worldbank.org/', sourceType: 'market_reference', why: 'Use for macro market context that may affect landed-cost and channel assumptions.' },
+    { title: 'SETU Flow pricing defaults and quote history', url: 'internal:setu-flow-pricing-defaults', sourceType: 'internal_review', why: 'Use internal organization defaults and prior quote context before saving any new margin assumption.' },
   ],
 };
 
@@ -113,9 +64,7 @@ const MODE_LABELS: Record<SetuGuruLiveResearchMode, string> = {
   margin_benchmark: 'margin benchmark research',
 };
 
-const COUNTRY_HINTS = [
-  'India', 'United States', 'USA', 'US', 'United Kingdom', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'Netherlands', 'Spain', 'Italy', 'United Arab Emirates', 'UAE', 'Saudi Arabia', 'Singapore', 'Japan', 'South Korea', 'Vietnam', 'Thailand', 'Malaysia', 'Indonesia', 'China', 'Mexico', 'Brazil', 'South Africa', 'European Union', 'EU'
-];
+const COUNTRY_HINTS = ['India', 'United States', 'USA', 'US', 'United Kingdom', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'Netherlands', 'Spain', 'Italy', 'United Arab Emirates', 'UAE', 'Saudi Arabia', 'Singapore', 'Japan', 'South Korea', 'Vietnam', 'Thailand', 'Malaysia', 'Indonesia', 'China', 'Mexico', 'Brazil', 'South Africa', 'European Union', 'EU'];
 
 function compactText(value: string) {
   return value.replace(/\s+/g, ' ').trim();
@@ -134,10 +83,17 @@ function firstMatch(text: string, patterns: RegExp[]) {
   return '';
 }
 
+function normalizeCountry(country: string) {
+  if (country === 'USA' || country === 'US') return 'United States';
+  if (country === 'UK') return 'United Kingdom';
+  if (country === 'EU') return 'European Union';
+  return country;
+}
+
 function inferCountry(text: string) {
   const lower = text.toLowerCase();
   const country = COUNTRY_HINTS.find((item) => lower.includes(item.toLowerCase()));
-  return country ? (country === 'USA' || country === 'US' ? 'United States' : country === 'UK' ? 'United Kingdom' : country === 'EU' ? 'European Union' : country) : 'not detected';
+  return country ? normalizeCountry(country) : 'not detected';
 }
 
 function inferRole(text: string) {
@@ -163,13 +119,24 @@ function inferProduct(question: string, pageText = '') {
   return titleCase(cleaned.slice(0, 80)) || 'not detected';
 }
 
+function preferEntityValue(value: string | undefined, fallback: string) {
+  const clean = compactText(String(value ?? ''));
+  return clean || fallback;
+}
+
 function getResearchContext(input: SetuGuruLiveResearchInput): SetuGuruResearchContext {
   const text = compactText(`${input.question} ${input.pageText?.slice(0, 1500) ?? ''}`);
+  const inferredProduct = inferProduct(input.question, input.pageText);
+  const inferredCountry = inferCountry(text);
+  const inferredRole = inferRole(text);
+  const entity = input.entityContext ?? null;
   return {
-    product: inferProduct(input.question, input.pageText),
-    country: inferCountry(text),
-    role: inferRole(text),
+    product: preferEntityValue(entity?.product, inferredProduct),
+    country: preferEntityValue(entity?.country, inferredCountry),
+    role: preferEntityValue(entity?.role, inferredRole),
     route: input.route || '/dashboard',
+    entityLabel: preferEntityValue(entity?.entityLabel, 'visible page context'),
+    source: entity?.source ?? 'visible_page',
   };
 }
 
@@ -180,32 +147,16 @@ function getResearchSubject(context: SetuGuruResearchContext, question: string) 
 
 function getResearchSteps(mode: SetuGuruLiveResearchMode) {
   if (mode === 'hsn_enrichment') {
-    return [
-      'Confirm product composition, use case, form, packaging, and destination country.',
-      'Compare candidate HS chapters/headings against official notes before choosing a code.',
-      'Treat the suggested code as draft until a human reviews the official source and product facts.',
-    ];
+    return ['Confirm product composition, use case, form, packaging, and destination country.', 'Compare candidate HS chapters/headings against official notes before choosing a code.', 'Treat the suggested code as draft until a human reviews the official source and product facts.'];
   }
   if (mode === 'document_requirements') {
-    return [
-      'Confirm product, destination country, buyer/supplier role, and workflow stage: quote, order, or dispatch.',
-      'Separate mandatory quote-send blockers from order/dispatch and advisory documents.',
-      'Treat source-backed requirements as draft until a human reviews and updates organization policy.',
-    ];
+    return ['Confirm product, destination country, buyer/supplier role, and workflow stage: quote, order, or dispatch.', 'Separate mandatory quote-send blockers from order/dispatch and advisory documents.', 'Treat source-backed requirements as draft until a human reviews and updates organization policy.'];
   }
-  return [
-    'Confirm product category, buyer market, channel role, landed-cost assumptions, and quote currency.',
-    'Compare internal pricing defaults with market/channel references before using an external benchmark.',
-    'Keep the benchmark quote-only unless a human approves saving product/category/organization defaults.',
-  ];
+  return ['Confirm product category, buyer market, channel role, landed-cost assumptions, and quote currency.', 'Compare internal pricing defaults with market/channel references before using an external benchmark.', 'Keep the benchmark quote-only unless a human approves saving product/category/organization defaults.'];
 }
 
 function hydrateSources(mode: SetuGuruLiveResearchMode): SetuGuruResearchSource[] {
-  return RESEARCH_SOURCES[mode].map((source, index) => ({
-    ...source,
-    id: `S${index + 1}`,
-    citation: `[S${index + 1}]`,
-  }));
+  return RESEARCH_SOURCES[mode].map((source, index) => ({ ...source, id: `S${index + 1}`, citation: `[S${index + 1}]` }));
 }
 
 export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInput) {
@@ -218,7 +169,7 @@ export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInpu
   const sourceSummary = sources.map((source) => `${source.citation} ${source.title}`).join('; ');
   const answer = [
     `I prepared a source-backed draft research brief for ${label}.`,
-    `Detected context: Product: ${context.product}. Country/market: ${context.country}. Role/stage: ${context.role}. Route: ${context.route}.`,
+    `Detected context: Product: ${context.product}. Country/market: ${context.country}. Role/stage: ${context.role}. Active source: ${context.entityLabel} (${context.source}). Route: ${context.route}.`,
     `Research scope: ${subject}.`,
     `Reviewable sources: ${sourceSummary}.`,
     `Recommended review path: ${steps.map((step, index) => `${index + 1}. ${step}`).join(' ')}`,
@@ -234,14 +185,7 @@ export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInpu
     subject,
     context,
     citations: sources,
-    rows: sources.map((source) => ({
-      id: source.id,
-      name: source.title,
-      type: source.sourceType,
-      url: source.url,
-      citation: source.citation,
-      next: source.why,
-    })),
+    rows: sources.map((source) => ({ id: source.id, name: source.title, type: source.sourceType, url: source.url, citation: source.citation, next: source.why })),
     actions: ['Review sources', 'Ask live research follow-up', mode === 'margin_benchmark' ? 'Review pricing defaults' : 'Open compliance'],
   };
 }
