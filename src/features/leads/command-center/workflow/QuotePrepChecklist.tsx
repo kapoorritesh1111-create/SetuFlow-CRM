@@ -1,5 +1,6 @@
+import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
-import type { NextActionSummary, QuoteFocusSummary, WorkflowActionCardState, WorkflowActionKey } from '../types'
+import type { LeadProfileSnapshot, NextActionSummary, QuoteFocusSummary, WorkflowActionCardState, WorkflowActionKey } from '../types'
 import { getStatusIcon, getUrgencyStatus, getWorkflowIcon, ICON_CONTAINER_CLASS } from '../ui-system'
 
 function badgeTone(card: WorkflowActionCardState) {
@@ -140,17 +141,63 @@ function CurrentBlockerCard({
   )
 }
 
+function ComplianceAssistCard({ leadId, compliance }: { leadId: string; compliance: LeadProfileSnapshot['compliance'] }) {
+  const blockerCount = compliance.blockerCount ?? 0
+  const missingRequired = compliance.missingRequiredDocumentCount ?? 0
+  const expiringCount = compliance.expiringDocumentCount ?? 0
+  const totalAttention = blockerCount + missingRequired + expiringCount
+  const isClear = totalAttention === 0
+  const toneClass = isClear
+    ? 'border-status-ready/20 bg-status-ready/8'
+    : blockerCount > 0
+      ? 'border-status-blocked/25 bg-status-blocked/8'
+      : 'border-status-progress/25 bg-status-progress/10'
+  const title = isClear ? 'Compliance clear for quote prep' : 'Compliance needs action'
+  const summary = isClear
+    ? 'No mandatory quote-send compliance blocker is currently showing. Dispatch documents can stay advisory until order execution.'
+    : blockerCount > 0
+      ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'} still affect quote motion. Open Compliance Assist to upload evidence or record an approved waiver.`
+      : `${missingRequired} required document${missingRequired === 1 ? '' : 's'} missing · ${expiringCount} expiring soon. Use Compliance Assist to fix evidence in one place.`
+
+  return (
+    <div className={`mt-5 rounded-[16px] border p-4 shadow-soft ${toneClass}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-dark shadow-soft">Compliance assist</span>
+            <StatusPill label={isClear ? 'Clear' : 'Needs action'} />
+            <StatusPill label={`Docs ${compliance.approvedDocumentCount}/${compliance.totalDocumentCount}`} />
+          </div>
+          <h4 className="mt-3 text-lg font-semibold text-neutral-900">{title}</h4>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">{summary}</p>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">This is the place to fix evidence instead of hunting through documents, compliance, or quote screens.</p>
+        </div>
+        <Link
+          href={`/compliance/assist?leadId=${encodeURIComponent(leadId)}`}
+          className="inline-flex h-10 items-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-dark"
+        >
+          Fix with Compliance Assist
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 export function QuotePrepChecklist({
+  leadId,
   nextAction,
   quoteFocus,
+  compliance,
   cards,
   activeKey,
   recommendedKey,
   onOpenQuote,
   onSelect,
 }: {
+  leadId: string
   nextAction: NextActionSummary
   quoteFocus: QuoteFocusSummary
+  compliance: LeadProfileSnapshot['compliance']
   cards: WorkflowActionCardState[]
   activeKey: WorkflowActionKey | null
   recommendedKey: WorkflowActionKey | null
@@ -165,8 +212,10 @@ export function QuotePrepChecklist({
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-600">Quote prep queue</p>
       <h3 className="mt-2 text-lg font-semibold text-neutral-900">Keep quote prep in one decision lane instead of stacking duplicate support guidance</h3>
       <p className="mt-2 text-sm leading-6 text-neutral-600">
-        Create Quote or Continue Quote stays dominant above. This lane now carries the current blocker call itself, so support work no longer repeats in a second competing guidance card.
+        Create Quote or Continue Quote stays dominant above. This lane now carries support and compliance fixes in the same place so blockers have a clear next action.
       </p>
+
+      <ComplianceAssistCard leadId={leadId} compliance={compliance} />
 
       <CurrentBlockerCard
         nextAction={nextAction}
