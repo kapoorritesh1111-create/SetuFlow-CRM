@@ -3,21 +3,38 @@
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
+const PRODUCTION_SHARE_ORIGIN = 'https://www.setuflowcrm.com';
+
 function cleanWhatsAppNumber(value: string | null | undefined) {
   return String(value ?? '').replace(/[+\s\-()]/g, '').replace(/[^0-9]/g, '');
 }
 
 function appBaseUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
-    'http://localhost:3000'
-  ).replace(/\/$/, '');
+  const configured = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  const clean = configured?.replace(/\/$/, '');
+  if (clean && !clean.includes('vercel.app') && !clean.includes('localhost')) return clean;
+  return PRODUCTION_SHARE_ORIGIN;
 }
 
 function money(amount: number, currency: string) {
   return `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return '7 days';
+  const date = new Date(value.includes('T') ? value : `${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return '7 days';
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function buildShareUrl(input: { quoteId: string; quoteNumber: string; products: string; total: string; validity: string; currency: string }) {
+  const url = new URL(`/api/quotes/${input.quoteId}/share`, appBaseUrl());
+  url.searchParams.set('quote', input.quoteNumber);
+  url.searchParams.set('products', input.products);
+  url.searchParams.set('total', input.total);
+  url.searchParams.set('validity', input.validity);
+  url.searchParams.set('currency', input.currency);
+  return url.toString();
 }
 
 export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: string; organizationId: string }) {
@@ -47,22 +64,24 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
 
   const currency = version?.display_currency ?? quote.display_currency ?? quote.currency ?? 'USD';
   const lineItems = Array.isArray(lines) ? lines : [];
-  const total = lineItems.reduce((sum: number, line: any) => sum + Number(line.final_case_price ?? line.final_kg_price ?? line.final_unit_price ?? 0), 0);
+  const totalAmount = lineItems.reduce((sum: number, line: any) => sum + Number(line.final_case_price ?? line.final_kg_price ?? line.final_unit_price ?? 0), 0);
+  const total = money(totalAmount, currency);
   const productSummary = lineItems.map((line: any) => line.product_name ?? line.description).filter(Boolean).slice(0, 4).join(', ') || `${version?.total_line_count ?? (lineItems.length || 0)} line items`;
-  const shareUrl = `${appBaseUrl()}/api/quotes/${quote.id}/share`;
-  const validity = version?.valid_until ? new Date(version.valid_until).toISOString().slice(0, 10) : '7 days';
+  const quoteNumber = quote.quote_number ?? quote.id.slice(0, 8);
+  const validity = formatDate(version?.valid_until);
+  const shareUrl = buildShareUrl({ quoteId: quote.id, quoteNumber, products: productSummary, total, validity, currency });
   const buyerName = lead.contact_name || lead.company_name || 'there';
 
   const message = [
-    `Hi ${buyerName},`,
+    `Hello ${buyerName},`,
     '',
-    `Sharing quote ${quote.quote_number ?? quote.id.slice(0, 8)} from SETU Flow.`,
+    `Please find quote ${quoteNumber} from SETU Groups LLC.`,
     `Products: ${productSummary}`,
-    `Total: ${money(total, currency)}`,
+    `Total: ${total}`,
     `Validity: ${validity}`,
-    `Quote link: ${shareUrl}`,
+    `View quote: ${shareUrl}`,
     '',
-    'Please review and reply here with any questions.'
+    'Please reply here if you would like any revisions or have questions.'
   ].join('\n');
 
   const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
@@ -78,9 +97,9 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
     channel: 'whatsapp',
     status: 'sent',
     draft_source: 'system',
-    subject: `WhatsApp quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
+    subject: `WhatsApp quote ${quoteNumber}`,
     body: message,
-    summary: 'Quote shared through WhatsApp wa.me prefill link.',
+    summary: 'Quote shared through professional production-domain WhatsApp prefill link.',
     sent_at: now,
     provider_payload: { provider: 'wa.me', url },
     metadata: { upgrade_path: 'Twilio WhatsApp Business API when volume justifies it.', share_url: shareUrl },

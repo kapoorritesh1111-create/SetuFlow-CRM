@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `e7124880fa8b2afd7b1f4702f587747948c0d3c1`
-- Commit message: `Clarify quote builder action steps`
+- Latest verified production READY commit before this pass: `e4df72ebf04ba61117495f9d2fa54734652764d3`
+- Commit message: `Clarify quote send approval checkpoint`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -30,6 +30,7 @@ Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 - Every pass must improve Setu Guru through help docs, route context, response policy, API behavior, or bot UI.
 - Before moving to a next roadmap pass, ensure earlier sprints are 100% complete or explicitly active with a reason.
 - UI cleanup should reduce duplication. Do not create duplicate shortcut cards, duplicate buttons, duplicate filters, or repeated work surfaces when a cleaner primary control already exists near the user's work area.
+- Buyer-facing quote share links must use the production domain and must never show raw JSON placeholders to customers.
 
 ---
 
@@ -58,7 +59,7 @@ Progress: 100%
 ### Sprint 5 — Quote builder and quote PDF maturity
 
 Status: `IN PROGRESS`
-Progress: 72%
+Progress: 78%
 
 Completed:
 
@@ -73,13 +74,15 @@ Completed:
 - Vertical whitespace between quote PDF sections has been tightened.
 - Quote builder step labels now clarify one primary sequence: Product & currency, Price lines, Terms & approval, Review totals, Send & approval checkpoint.
 - Quotes help and tests now protect the no-duplicate-quote-action-surface rule and the send/approval boundary.
+- Quote WhatsApp/share flow now uses production-domain share links and polished buyer-facing wording.
+- `/api/quotes/[quoteId]/share` now renders a branded buyer-facing HTML quote summary with an **Open quote PDF** action instead of raw JSON placeholder output.
 
 Recommended focus:
 
 - Continue quote builder and quote PDF maturity.
-- Visually re-smoke-check a generated quote PDF after `4b0be38` and `e712488` using a production quote screenshot.
+- Visually re-smoke-check a generated quote PDF and the buyer-facing quote share page using a production screenshot.
 - Preserve quote-only pricing behavior and product-default boundary.
-- Tighten Setu Guru quote guidance around approval/blocker explanation.
+- Tighten Setu Guru quote guidance around approval/blocker/share explanation.
 - Protect existing quote PDF product/variant detail, currency, Incoterm, seller/tax details, and document-blocker fixes.
 - Keep quote UI cleanup near the quote work area and avoid duplicate action surfaces.
 
@@ -107,15 +110,15 @@ Progress: 10%
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 95%
+- Overall CRM readiness: 96%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
-- Current Sprint 5 Quote builder and quote PDF maturity: 72%
-- Setu Guru intelligence readiness: 96%
-- UX cleanup readiness: 65%
-- Quote/compliance maturity: 67%
+- Current Sprint 5 Quote builder and quote PDF maturity: 78%
+- Setu Guru intelligence readiness: 97%
+- UX cleanup readiness: 66%
+- Quote/compliance maturity: 70%
 - Product catalog maturity: 83%
 
 ---
@@ -152,7 +155,7 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is active at 72%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Quote PDF must stay professional, compact, selected-currency aware, and include SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Unit price, Case price, line total, seller address, and tax ID. Quote builder should stay one clear sequence and avoid duplicate action surfaces. Send must use the existing send/approval checkpoint and must not add parallel quick-send surfaces.
+Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Quote builder and quote PDF maturity is active at 78%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, and guidance-only order actions. Quote PDF must stay professional, compact, selected-currency aware, and include SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Unit price, Case price, line total, seller address, and tax ID. Quote builder should stay one clear sequence and avoid duplicate action surfaces. Send must use the existing send/approval checkpoint. Quote sharing must use production-domain buyer-facing pages, never Vercel preview URLs or raw JSON placeholders.
 ```
 
 ---
@@ -161,6 +164,6 @@ Current status: Sprint 1, Sprint 2, Sprint 3, and Sprint 4 are 100%. Sprint 5 Qu
 
 Continue Sprint 5 Quote builder and quote PDF maturity:
 
-1. Verify this send/approval checkpoint clarity deployment is READY.
-2. Visually re-smoke-check the generated quote PDF for pack values, seller city/postcode/country, Tax ID, reduced whitespace, selected currency labels, and line totals.
-3. Tighten Setu Guru quote approval/blocker guidance without adding duplicate quote action surfaces.
+1. Verify this quote share flow deployment is READY.
+2. Smoke-check the buyer-facing share link opens a branded page, not JSON, and uses `https://www.setuflowcrm.com`.
+3. Visually re-smoke-check generated quote PDF and Setu Guru quote approval/blocker/share guidance without adding duplicate quote action surfaces.

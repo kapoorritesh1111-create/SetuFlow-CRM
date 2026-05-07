@@ -8,6 +8,7 @@ Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals
 - Separating quote currency from catalog/reference currency.
 - Checking approval status and quote-send readiness.
 - Preparing a professional quote PDF that includes SKU, product, pack, units per case, MOQ cases, basis, unit price, case price, line total, origin, shelf life, lead time, seller address, tax ID, and clear tax/incoterm wording.
+- Sharing buyer-facing quote links through production-domain quote share pages.
 
 ## Common questions Setu Guru should answer
 
@@ -18,6 +19,7 @@ Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals
 - Why does quote currency differ from catalog currency?
 - Why does the quote PDF show unit price, case price, and MOQ total?
 - Which quote builder step should I use next?
+- Why should quote share links use the production domain?
 
 ## Common blockers
 
@@ -26,6 +28,7 @@ Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals
 - Price deviation exceeds approval threshold.
 - Mandatory quote-send compliance rule is open.
 - Advisory dispatch document is being mistaken for a quote-send blocker.
+- Quote share link is still a preview/dev URL or raw JSON placeholder instead of a buyer-facing page.
 
 ## Data sources
 
@@ -56,6 +59,17 @@ Do not add duplicate quote action panels when an action already exists inside th
 
 Send only when approval is approved or not required, the quote has no active send blockers, and the operator intentionally chooses the existing send checkpoint. If approval is pending, route to the approval action first. If blockers are active, explain the blocker and route to the matching builder step or Compliance Assist. Do not create parallel send buttons, quick-send shortcuts, or hidden write-back actions.
 
+## Quote share policy
+
+Quote share links must be buyer-facing and professional:
+
+- Use production-domain quote share links from `https://www.setuflowcrm.com`.
+- Do not expose Vercel preview URLs in WhatsApp/customer messages.
+- Do not show raw JSON to the buyer.
+- The share route should open a branded quote summary with a clear **Open quote PDF** action.
+- WhatsApp messages should use polished buyer wording: quote number, product summary, selected-currency total, validity, and production quote link.
+- Keep share flow inside the existing send/checkpoint flow; do not add duplicate quote action surfaces.
+
 ## Quote PDF policy
 
 Quote PDFs should look buyer-ready and professional. Use a light white/slate layout with restrained navy accents, not large saturated color blocks. The quote line table should show:
@@ -83,6 +97,7 @@ Seller information should include legal name, registered address, city/postal co
 - Suggest wording for buyer-facing quote explanations.
 - Explain quote-only adjustments without writing back to defaults.
 - Explain quote PDF columns and currency calculations.
+- Explain quote share links and why production-domain buyer pages are required.
 
 ## Approval rules
 
@@ -90,4 +105,4 @@ Human approval is required for quote send, price deviation approval, compliance 
 
 ## Response policy
 
-Quote blocker answers must use live quote or lead context first. Never require RFQ or dispatch documents for quote send unless an active organization rule explicitly makes them mandatory at quote stage. For quote-builder questions, answer with the next step in the builder sequence and avoid recommending duplicate action surfaces. For send questions, state whether approval is approved/not required, pending, or blocked, then route through the existing send checkpoint.
+Quote blocker answers must use live quote or lead context first. Never require RFQ or dispatch documents for quote send unless an active organization rule explicitly makes them mandatory at quote stage. For quote-builder questions, answer with the next step in the builder sequence and avoid recommending duplicate action surfaces. For send questions, state whether approval is approved/not required, pending, or blocked, then route through the existing send checkpoint. For share-link questions, require production-domain buyer-facing pages and reject raw JSON/preview-link behavior.

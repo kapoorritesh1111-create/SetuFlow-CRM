@@ -16,7 +16,7 @@ Decision:
 Reason:
 
 - Production is advancing through small approved one-commit passes on `main`.
-- Quote PDFs must be buyer-ready, professional, selected-currency aware, and complete enough for price-list sharing.
+- Quote PDFs and quote share links must be buyer-ready, professional, selected-currency aware, and complete enough for client sharing.
 
 ---
 
@@ -41,38 +41,39 @@ Builds:
 - READY `8d24fa9857fd19d04872c257efc5fe156fab6c72` — Fit quote PDF price columns
 - READY `4b0be38ec0215fd4299e77d4c2394376f66cbbbd` — Polish quote PDF seller and pack details
 - READY `e7124880fa8b2afd7b1f4702f587747948c0d3c1` — Clarify quote builder action steps
+- READY `e4df72ebf04ba61117495f9d2fa54734652764d3` — Clarify quote send approval checkpoint
 
 ---
 
-## 2026-05-07 — Sprint 5 send and approval checkpoint clarity
+## 2026-05-07 — Sprint 5 professional quote share flow
 
 Decision:
 
-- Verified `e7124880fa8b2afd7b1f4702f587747948c0d3c1` is READY before this pass.
-- The quote builder now labels the last step as `Send & approval checkpoint`.
-- The Terms step now states that approvals stay explicit before customer-send actions.
-- The Review step now includes PDF readiness alongside selected currency, totals, quote-only overrides, and approval state.
-- The Send step now states the exact boundary: blockers clear, approval approved or not required, and the customer-send decision is intentional.
-- Quotes help and tests now protect the rule that send must use the existing checkpoint and must not add parallel quick-send or duplicate action surfaces.
-- The final visual PDF check still needs a generated production screenshot from an authenticated quote record.
-- No quote-only pricing write-back, product default write-back, HSN API, schema, send endpoint, or duplicate quote action surface was added.
+- Verified `e4df72ebf04ba61117495f9d2fa54734652764d3` is READY before this pass.
+- Replaced the raw JSON placeholder at `/api/quotes/[quoteId]/share` with a branded buyer-facing HTML quote summary.
+- The share page includes quote number, product summary, selected-currency total, validity, a clear **Open quote PDF** action, and revision contact link.
+- WhatsApp quote delivery now prefers `https://www.setuflowcrm.com` and refuses to use Vercel preview/localhost origins for client share links.
+- WhatsApp message wording is now professional buyer-facing copy: `Please find quote...`, products, total, validity, and `View quote` production link.
+- Quote share docs/tests now protect against raw JSON placeholder output and preview URL exposure.
+- No quote-only pricing write-back, product default write-back, HSN API, schema, send endpoint duplication, or duplicate quote action surface was added.
 
 Files:
 
-- `src/features/quotes/logic/wizard-config.ts`
-- `tests/quote-builder-action-clarity.test.mjs`
+- `src/features/quotes/server/whatsapp-delivery.ts`
+- `src/app/api/quotes/[quoteId]/share/route.ts`
+- `tests/quote-share-flow.test.mjs`
 - `docs/help/quotes.md`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Reason:
 
-- Ritesh approved verifying the deployment, visually re-smoke-checking the quote PDF, and tightening quote send/approval clarity without adding duplicate quote action surfaces.
+- Ritesh showed that WhatsApp was exposing a Vercel preview URL and clicking the quote link opened raw JSON placeholder output, which is not professional or buyer-ready.
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `e7124880fa8b2afd7b1f4702f587747948c0d3c1`
+- Baseline before pass: `e4df72ebf04ba61117495f9d2fa54734652764d3`
 
 ---
 
