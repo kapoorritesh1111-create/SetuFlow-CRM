@@ -3,8 +3,20 @@ import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
 
-const IRELAND_DRAFT_DEFAULTS = {
-  currency: 'EUR',
+const COUNTRY_CURRENCY: Record<string, string> = {
+  ireland: 'EUR',
+  'united kingdom': 'GBP',
+  uk: 'GBP',
+  england: 'GBP',
+  india: 'INR',
+  'united states': 'USD',
+  usa: 'USD',
+  'united arab emirates': 'AED',
+  uae: 'AED',
+};
+
+const BASE_DRAFT_DEFAULTS = {
+  currency: 'USD',
   margin_mode: 'markup',
   inland_transport_cost: 0,
   export_customs_cost: 0,
@@ -23,24 +35,62 @@ function asText(value: unknown) {
   return String(value ?? '').trim();
 }
 
-function isIreland(question: string, organizationName: string) {
-  const value = `${question} ${organizationName}`.toLowerCase();
-  return value.includes('ireland') || value.includes('irish') || value.includes('dublin') || value.includes('avanti foods');
+function inferCountry(question: string, organizationName: string, orgCountry?: string | null) {
+  const combined = `${question} ${orgCountry ?? ''} ${organizationName}`.toLowerCase();
+  if (combined.includes('ireland') || combined.includes('irish') || combined.includes('dublin') || combined.includes('avanti foods')) return 'Ireland';
+  if (combined.includes('united kingdom') || combined.includes(' uk ') || combined.includes('england')) return 'United Kingdom';
+  if (combined.includes('india')) return 'India';
+  if (combined.includes('united states') || combined.includes(' usa ') || combined.includes('america')) return 'United States';
+  if (combined.includes('united arab emirates') || combined.includes(' uae ') || combined.includes('dubai')) return 'United Arab Emirates';
+  return asText(orgCountry) || 'new export organization';
 }
 
-function recommendation(countryLabel: string) {
-  const isIe = countryLabel.toLowerCase().includes('ireland');
-  const defaults = isIe ? IRELAND_DRAFT_DEFAULTS : { ...IRELAND_DRAFT_DEFAULTS, currency: 'USD' };
-  const countryText = isIe ? 'Ireland/EU setup' : 'new export organization setup';
+function currencyForCountry(countryLabel: string, fallback = 'USD') {
+  const key = countryLabel.toLowerCase();
+  const exact = COUNTRY_CURRENCY[key];
+  if (exact) return exact;
+  const partial = Object.entries(COUNTRY_CURRENCY).find(([country]) => key.includes(country));
+  return partial?.[1] ?? fallback;
+}
+
+function countryText(countryLabel: string) {
+  const lower = countryLabel.toLowerCase();
+  if (lower.includes('ireland')) return 'Ireland/EU setup';
+  if (lower.includes('united kingdom')) return 'UK setup';
+  if (lower.includes('india')) return 'India setup';
+  if (lower.includes('united states')) return 'US setup';
+  if (lower.includes('united arab emirates')) return 'UAE setup';
+  return 'new export organization setup';
+}
+
+function recommendation(countryLabel: string, fallbackCurrency?: string | null, marketName?: string | null) {
+  const defaults = { ...BASE_DRAFT_DEFAULTS, currency: currencyForCountry(countryLabel, fallbackCurrency ?? 'USD') };
+  const marketText = marketName ? ` Default market: ${marketName}.` : '';
   return {
     defaults,
-    countryText,
     answer: [
-      `For a ${countryText}, I would treat pricing calculator defaults as draft commercial assumptions, not final industry truth.`,
+      `For a ${countryText(countryLabel)}, I would treat pricing calculator defaults as draft commercial assumptions, not final industry truth.${marketText}`,
       `Recommended starter values: currency ${defaults.currency}, margin mode ${defaults.margin_mode}, internal margin/markup ${defaults.internal_margin_percent}%, distributor margin ${defaults.distributor_margin_percent}%, and retail margin ${defaults.retail_margin_percent}%.`,
       'Keep freight, insurance, duty, destination charges, and local delivery at 0 until a lane/product quote or broker source confirms them. This avoids hiding unknown landed-cost assumptions inside defaults.',
       'I can apply these as organization-level calculator defaults, then you should review and save/adjust them in Product Management or category/product pricing before quoting.',
     ].join('\n\n'),
+  };
+}
+
+async function loadOrganizationSetupContext(supabase: any, organizationId: string) {
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, name, default_currency, headquarters_country, default_country_id, default_market_id, countries:default_country_id(name, iso2_code, markets:market_id(id, name, market_code)), markets:default_market_id(id, name, market_code)')
+    .eq('id', organizationId)
+    .maybeSingle();
+
+  const defaultCountry = Array.isArray(org?.countries) ? org.countries[0] : org?.countries;
+  const defaultMarket = (Array.isArray(org?.markets) ? org.markets[0] : org?.markets) ?? defaultCountry?.markets ?? null;
+  return {
+    organization: org,
+    countryName: defaultCountry?.name ?? org?.headquarters_country ?? null,
+    marketName: defaultMarket?.name ?? null,
+    fallbackCurrency: org?.default_currency ?? null,
   };
 }
 
@@ -53,20 +103,23 @@ export async function POST(request: Request) {
     const workspace = await getWorkspaceAccess();
     if (!workspace.user || !workspace.organization) return NextResponse.json({ answer: 'Please sign in before applying pricing defaults.', confidence: 'low' }, { status: 401 });
 
-    const countryLabel = isIreland(question, workspace.organization.name ?? '') ? 'Ireland' : asText(body.country) || 'new export organization';
-    const rec = recommendation(countryLabel);
+    const supabase = await createClient();
+    const orgContext = await loadOrganizationSetupContext(supabase as any, workspace.organization.id);
+    const countryLabel = inferCountry(question, workspace.organization.name ?? '', orgContext.countryName ?? asText(body.country));
+    const rec = recommendation(countryLabel, orgContext.fallbackCurrency, orgContext.marketName);
 
     if (action !== 'apply') {
       return NextResponse.json({
         answer: rec.answer,
-        confidence: 'medium',
+        confidence: orgContext.countryName || question ? 'medium' : 'low',
         defaults: rec.defaults,
+        country: countryLabel,
+        market: orgContext.marketName,
         nextAction: 'Apply draft pricing defaults',
         actionIntent: 'apply_pricing_defaults',
       });
     }
 
-    const supabase = await createClient();
     const payload = {
       organization_id: workspace.organization.id,
       rule_scope: 'organization',
@@ -101,13 +154,15 @@ export async function POST(request: Request) {
       entity_type: 'pricing_calculator_default_rules',
       entity_id: existing?.id ?? null,
       action: 'pricing_defaults_applied_by_setu_guru',
-      payload: { defaults: rec.defaults, country_context: countryLabel, source: 'setu_guru_draft_recommendation' },
+      payload: { defaults: rec.defaults, country_context: countryLabel, default_market: orgContext.marketName, source: 'setu_guru_draft_recommendation' },
     });
 
     return NextResponse.json({
-      answer: `I applied draft organization-level pricing calculator defaults for ${countryLabel}. Review them in Product Management / pricing defaults before using them in live quotes.`,
+      answer: `I applied draft organization-level pricing calculator defaults for ${countryLabel}${orgContext.marketName ? ` / ${orgContext.marketName}` : ''}. Review them in Product Management / pricing defaults before using them in live quotes.`,
       confidence: 'medium',
       defaults: rec.defaults,
+      country: countryLabel,
+      market: orgContext.marketName,
       nextAction: 'Open Product Management to review and save/adjust defaults',
       actionHref: '/admin/product-management',
     });
