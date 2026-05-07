@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import RightDrawer from '@/components/RightDrawer';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { cn } from '@/lib/utils';
+import { collectSetuGuruPageContext } from '@/lib/setu-guru/page-context';
+import { getBestSetuGuruHelpTopic, getRouteHelpSummary, getSetuGuruActionHref, getSetuGuruRouteTopics, type SetuGuruHelpTopic } from '@/lib/setu-guru/help-registry';
+import { isSetuGuruComplianceQuestion, isSetuGuruOrgSearchQuestion, isSetuGuruPricingDefaultQuestion } from '@/lib/setu-guru/guru-response-policy';
 
 type ChatMessage = {
   id: string;
@@ -15,129 +18,20 @@ type ChatMessage = {
   tone?: 'normal' | 'loading' | 'error';
 };
 
-type Topic = {
-  id: string;
-  title: string;
-  routes: string[];
-  tags: string[];
-  answer: string[];
-  actions: string[];
-};
-
 const STORAGE_KEY = 'setu-guru-widget-hidden';
-const COMPLIANCE_WORDS = ['compliance', 'blocker', 'document', 'evidence', 'certificate', 'coa', 'packing list', 'dispatch', 'ignore', 'waive', 'fix this', 'fix compliance', 'required document'];
 
-const TOPICS: Topic[] = [
-  {
-    id: 'quote-compliance',
-    title: 'Fix quote compliance blocker',
-    routes: ['/leads', '/quotes', '/approval-send'],
-    tags: ['quote', 'compliance', 'blocker', 'document', 'certificate', 'dispatch'],
-    answer: [
-      'For quote compliance issues, I should inspect the active lead, quote, destination, products, document rules, linked files, and open compliance items.',
-      'A quote should not require RFQ documents unless an admin rule explicitly makes them mandatory. Dispatch documents can stay advisory until the order/dispatch stage.',
-      'Ask: “how do I fix this compliance issue in the quote?” and I will search the live organization context instead of giving generic workflow guidance.',
-    ],
-    actions: ['Check this quote blocker', 'Open lead documents', 'Ask AI evidence checklist'],
-  },
-  {
-    id: 'catalog-pricing',
-    title: 'Catalog and pricing help',
-    routes: ['/products', '/admin/categories', '/admin/product-management', '/dashboard'],
-    tags: ['products', 'catalog', 'pricing', 'category', 'variant'],
-    answer: [
-      'Use category and organization defaults for shared pricing assumptions. Product overrides should be deliberate and reviewed.',
-      'For quote pricing, keep the main displayed currency aligned with the buyer/market and show source catalog currency only as reference detail.',
-    ],
-    actions: ['Open Product Management', 'Review organization profile'],
-  },
-  {
-    id: 'lead-to-order',
-    title: 'Lead to order flow',
-    routes: ['/leads', '/pipeline', '/orders'],
-    tags: ['lead', 'quote', 'order', 'pipeline'],
-    answer: [
-      'Create or open the lead, qualify it, map product interest, create the quote, resolve required quote blockers, then send for acceptance.',
-      'After acceptance, dispatch and order execution should resolve final documents, compliance, commercial locks, and shipment readiness.',
-    ],
-    actions: ['Open Leads', 'Review quote terms', 'Check blockers'],
-  },
-  {
-    id: 'live-research',
-    title: 'Live industry research',
-    routes: ['/products', '/quotes', '/orders', '/documents', '/compliance'],
-    tags: ['hsn', 'hs code', 'margin', 'compliance', 'export', 'import', 'tariff'],
-    answer: [
-      'Use live research for HS/HSN, market margin guidance, destination regulations, and compliance document checklists.',
-      'Research outputs should be treated as draft guidance until a human reviews the sources and approves write-back.',
-    ],
-    actions: ['Ask live research', 'Review sources'],
-  },
-];
-
-function normalize(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-}
-
-function isComplianceQuestion(question: string) {
+function isPageHelpQuestion(question: string) {
   const q = question.toLowerCase();
-  return COMPLIANCE_WORDS.some((word) => q.includes(word));
+  return ['help', 'what can you do', 'what should i do', 'guide me', 'how do i use this page', 'what is this page'].some((phrase) => q.includes(phrase));
 }
 
-function isOrgSearchQuestion(question: string) {
-  const q = question.toLowerCase();
-  return isComplianceQuestion(question) || ['how many product', 'how many buyer', 'how many supplier', 'how many lead', 'in my catalog', 'find buyer', 'find supplier', 'find lead', 'find product', 'search buyer', 'search supplier', 'missing hsn', 'missing hs code', 'filter', 'listed products', 'category'].some((phrase) => q.includes(phrase));
-}
-
-function isPricingDefaultQuestion(question: string) {
-  const q = question.toLowerCase();
-  return ['pricing calculator', 'calculator default', 'price calculator', 'default margin', 'default markup', 'distributor margin', 'retail margin'].some((phrase) => q.includes(phrase));
-}
-
-function getActionHref(action: string) {
-  const normalized = normalize(action);
-  if (normalized.includes('lead document')) return '/documents';
-  if (normalized.includes('compliance')) return '/compliance';
-  if (normalized.includes('product management')) return '/admin/product-management';
-  if (normalized.includes('organization')) return '/admin/organization#company-profile';
-  if (normalized.includes('open leads')) return '/leads';
-  if (normalized.includes('quote')) return '/quotes';
-  if (normalized.includes('approval')) return '/approval-send';
-  if (normalized.includes('product')) return '/products';
-  return null;
-}
-
-function routeTopics(pathname: string) {
-  const matches = TOPICS.filter((topic) => topic.routes.some((route) => pathname === route || pathname.startsWith(`${route}/`)));
-  return matches.length ? matches : TOPICS;
-}
-
-function bestTopic(question: string, pathname: string) {
-  if (isComplianceQuestion(question)) return TOPICS[0];
-  const q = normalize(question);
-  const ranked = TOPICS.map((topic) => {
-    const routeScore = topic.routes.some((route) => pathname === route || pathname.startsWith(`${route}/`)) ? 2 : 0;
-    const haystack = normalize([topic.title, ...topic.tags, ...topic.answer].join(' '));
-    const wordScore = q.split(/\s+/).filter(Boolean).reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
-    return { topic, score: routeScore + wordScore };
-  }).sort((a, b) => b.score - a.score);
-  return ranked[0]?.topic ?? TOPICS[0];
-}
-
-function topicMessage(topic: Topic, routeTitle: string): ChatMessage {
+function topicMessage(topic: SetuGuruHelpTopic, routeTitle: string): ChatMessage {
+  const approval = topic.approvalRules.length ? [`Human approval boundary: ${topic.approvalRules.join(' ')}`] : [];
   return {
     id: `${topic.id}-${Date.now()}`,
     role: 'assistant',
-    content: [`Here’s the best guidance for ${topic.title.toLowerCase()} on ${routeTitle}.`, ...topic.answer].join('\n\n'),
+    content: [`Here’s the best guidance for ${topic.title.toLowerCase()} on ${routeTitle}.`, topic.summary, ...topic.answer, ...approval].join('\n\n'),
     actions: topic.actions,
-  };
-}
-
-function pageContext() {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return { route: '', pageText: '' };
-  return {
-    route: `${window.location.pathname}${window.location.search}`,
-    pageText: document.body?.innerText?.replace(/\s+/g, ' ').slice(0, 6000) ?? '',
   };
 }
 
@@ -170,13 +64,14 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
+  const routeHelp = useMemo(() => getRouteHelpSummary(pathname), [pathname]);
+  const quickPrompts = useMemo(() => getSetuGuruRouteTopics(pathname).slice(0, 4), [pathname]);
+
   useEffect(() => setHidden(localStorage.getItem(STORAGE_KEY) === 'true'), []);
 
-  const quickPrompts = useMemo(() => routeTopics(pathname).slice(0, 4), [pathname]);
-
   useEffect(() => {
-    setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeTitle}, live catalog search, CRM workflows, pricing calculator defaults, HS codes, and export compliance. What would you like to do?` }]);
-  }, [pathname, routeTitle]);
+    setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.` }]);
+  }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
 
   useEffect(() => {
     const target = scrollRef.current;
@@ -190,17 +85,31 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     if (nextHidden) setDrawerOpen(false);
   }
 
-  async function runOrgSearch(question: string) {
+  async function runOrgSearch(question: string, requestedMode?: string) {
     const loadingId = `loading-${Date.now()}`;
-    const ctx = pageContext();
+    const ctx = collectSetuGuruPageContext();
     setIsThinking(true);
-    setMessages((current) => [...current, { id: loadingId, role: 'assistant', content: 'Searching this live workspace and the visible page context…', tone: 'loading' }]);
+    setMessages((current) => [...current, { id: loadingId, role: 'assistant', content: requestedMode === 'page_help' ? 'Checking this page help registry…' : 'Searching this live workspace and the visible page context…', tone: 'loading' }]);
     try {
-      const mode = isComplianceQuestion(question) ? 'quote_compliance' : undefined;
+      const mode = requestedMode ?? (isSetuGuruComplianceQuestion(question) ? 'quote_compliance' : undefined);
       const response = await fetch('/api/setu-guru/org-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, route: ctx.route || pathname, pageText: ctx.pageText, mode }),
+        body: JSON.stringify({
+          question,
+          route: ctx.route || pathname,
+          pageText: ctx.pageText,
+          mode,
+          pageContext: {
+            routeKey: ctx.routeKey,
+            helpTopicId: ctx.helpTopicId,
+            helpFile: ctx.helpFile,
+            summary: ctx.summary,
+            liveSearchModes: ctx.liveSearchModes,
+            suggestedPrompts: ctx.suggestedPrompts,
+            approvalRequiredActions: ctx.approvalRequiredActions,
+          },
+        }),
       });
       const payload = await response.json();
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({
@@ -222,10 +131,11 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
 
   async function runPricingDefaults(question: string) {
     const loadingId = `pricing-${Date.now()}`;
+    const ctx = collectSetuGuruPageContext();
     setIsThinking(true);
     setMessages((current) => [...current, { id: loadingId, role: 'assistant', content: 'Preparing draft pricing calculator defaults…', tone: 'loading' }]);
     try {
-      const response = await fetch('/api/setu-guru/pricing-defaults', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, route: pageContext().route || pathname, action: 'suggest' }) });
+      const response = await fetch('/api/setu-guru/pricing-defaults', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, route: ctx.route || pathname, pageContext: ctx, action: 'suggest' }) });
       const payload = await response.json();
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: `pricing-${Date.now()}`, role: 'assistant', content: payload.answer ?? 'I prepared pricing guidance, but could not load default values.', actions: payload.nextAction ? [payload.nextAction] : undefined, actionHref: typeof payload.actionHref === 'string' ? payload.actionHref : null, tone: response.ok ? 'normal' : 'error' }));
     } catch (error) {
@@ -236,7 +146,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     }
   }
 
-  function askTopic(topic: Topic) {
+  function askTopic(topic: SetuGuruHelpTopic) {
     setMessages((current) => [...current, { id: `user-${topic.id}-${Date.now()}`, role: 'user', content: topic.title }, topicMessage(topic, routeTitle)]);
   }
 
@@ -246,15 +156,19 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     if (!question || isThinking) return;
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
-    if (isPricingDefaultQuestion(question)) {
+    if (isSetuGuruPricingDefaultQuestion(question)) {
       void runPricingDefaults(question);
       return;
     }
-    if (isOrgSearchQuestion(question)) {
+    if (isSetuGuruOrgSearchQuestion(question)) {
       void runOrgSearch(question);
       return;
     }
-    setMessages((current) => [...current, topicMessage(bestTopic(question, pathname), routeTitle)]);
+    if (isPageHelpQuestion(question)) {
+      void runOrgSearch(question, 'page_help');
+      return;
+    }
+    setMessages((current) => [...current, topicMessage(getBestSetuGuruHelpTopic(question, pathname), routeTitle)]);
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 
@@ -264,12 +178,12 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
       return;
     }
-    const href = message.actionHref ?? getActionHref(action);
+    const href = message.actionHref ?? getSetuGuruActionHref(action);
     if (href) window.location.assign(href);
   }
 
   function saveFeedback(label: 'helpful' | 'missing') {
-    const feedback = { label, lastMessage: messages[messages.length - 1]?.content ?? '', pathname, routeTitle, createdAt: new Date().toISOString() };
+    const feedback = { label, lastMessage: messages[messages.length - 1]?.content ?? '', pathname, routeTitle, helpFile: routeHelp.helpFile, createdAt: new Date().toISOString() };
     const existingRaw = localStorage.getItem('setu-guru-feedback-log');
     const existing = existingRaw ? (JSON.parse(existingRaw) as unknown[]) : [];
     localStorage.setItem('setu-guru-feedback-log', JSON.stringify([feedback, ...existing].slice(0, 50)));
@@ -301,10 +215,10 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
             </div>
           </header>
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-            <div className="rounded-[22px] border border-sky-100 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Quick starts</p><div className="mt-3 grid grid-cols-2 gap-2">{quickPrompts.map((topic) => <button key={topic.id} type="button" onClick={() => askTopic(topic)} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900">{topic.title}</button>)}</div></div>
+            <div className="rounded-[22px] border border-sky-100 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Quick starts</p><p className="mt-1 text-xs leading-5 text-slate-500">{routeHelp.summary}</p><div className="mt-3 grid grid-cols-2 gap-2">{quickPrompts.map((topic) => <button key={topic.id} type="button" onClick={() => askTopic(topic)} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900">{topic.title}</button>)}</div></div>
             <div className="mt-4 space-y-3 pb-2">{messages.map((message) => <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}><div className={cn('max-w-[88%]', message.role === 'assistant' ? 'pr-8' : 'pl-8')}>{message.role === 'assistant' ? <div className="mb-1 flex items-center gap-2 pl-1"><div className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-sky-400 via-blue-600 to-indigo-700 p-[2px]"><img src="/setu-guru/setu-guru-avatar.svg" alt="Setu Guru" className="h-full w-full rounded-full object-cover" /></div><span className="text-[11px] font-semibold text-slate-500">Setu Guru</span></div> : null}<div className={cn('rounded-[22px] px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]', message.role === 'user' ? 'rounded-br-md bg-sky-600 text-white' : message.tone === 'error' ? 'rounded-bl-md border border-rose-200 bg-rose-50 text-rose-900' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700')}>{message.content.split('\n\n').map((paragraph) => <p key={paragraph} className="mb-2 last:mb-0">{paragraph}</p>)}<ResultRows rows={message.rows ?? []} />{message.actions?.length ? <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action) => <button key={action} type="button" onClick={() => handleAction(message, action)} className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-sky-700">{action}</button>)}</div> : null}</div></div></div>)}</div>
           </div>
-          <footer className="shrink-0 border-t border-slate-200 bg-white px-4 pb-4 pt-3"><div className="mb-3 flex items-center justify-between gap-2"><div className="flex gap-2"><button type="button" onClick={() => saveFeedback('helpful')} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">Helpful</button><button type="button" onClick={() => saveFeedback('missing')} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">Missing detail</button></div><span className="text-[11px] text-slate-400">{feedbackSaved ? 'Saved' : 'Live org search ready'}</span></div><form onSubmit={handleAsk} className="flex items-end gap-2 rounded-[22px] border border-slate-200 bg-[#F8FBFF] p-2 focus-within:border-sky-300 focus-within:ring-4 focus-within:ring-sky-100"><textarea ref={inputRef} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} rows={1} placeholder="Ask about products, pricing defaults, buyers, HSN codes…" className="max-h-28 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400" /><button type="submit" disabled={isThinking} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-600 text-white shadow-[0_10px_24px_rgba(2,132,199,0.24)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Send message"><FaIcon icon={isThinking ? 'circle-o-notch' : 'send'} className={isThinking ? 'animate-spin' : undefined} /></button></form><p className="mt-2 px-1 text-center text-[11px] text-slate-400">Setu Guru can search this organization. Humans approve prices, compliance, sends, and write-backs.</p></footer>
+          <footer className="shrink-0 border-t border-slate-200 bg-white px-4 pb-4 pt-3"><div className="mb-3 flex items-center justify-between gap-2"><div className="flex gap-2"><button type="button" onClick={() => saveFeedback('helpful')} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">Helpful</button><button type="button" onClick={() => saveFeedback('missing')} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">Missing detail</button></div><span className="text-[11px] text-slate-400">{feedbackSaved ? 'Saved' : 'Live org search ready'}</span></div><form onSubmit={handleAsk} className="flex items-end gap-2 rounded-[22px] border border-slate-200 bg-[#F8FBFF] p-2 focus-within:border-sky-300 focus-within:ring-4 focus-within:ring-sky-100"><textarea ref={inputRef} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} rows={1} placeholder="Ask about this page, products, pricing defaults, buyers, HSN codes…" className="max-h-28 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400" /><button type="submit" disabled={isThinking} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-600 text-white shadow-[0_10px_24px_rgba(2,132,199,0.24)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Send message"><FaIcon icon={isThinking ? 'circle-o-notch' : 'send'} className={isThinking ? 'animate-spin' : undefined} /></button></form><p className="mt-2 px-1 text-center text-[11px] text-slate-400">Setu Guru checks page context, the help registry, and live organization data. Humans approve prices, compliance, sends, and write-backs.</p></footer>
         </div>
       </RightDrawer>
     </>
