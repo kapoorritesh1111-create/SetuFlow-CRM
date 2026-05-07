@@ -4,44 +4,31 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
-## 2026-05-07 — Current production baseline
+## 2026-05-07 — Sprint 6 quote-scoped Compliance Assist fix panel
 
 Decision:
 
-- Treat the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
-- Sprint 1, Sprint 2, Sprint 3, Sprint 4, and Sprint 5 are complete at 100%.
-- UI cleanup should reduce duplicate work surfaces, not add repeated shortcut cards or redundant buttons.
-- Sprint 6 Compliance Assist maturity is active.
-
-Reason:
-
-- Production is advancing through small approved one-commit passes on `main`.
-- Sprint 5 quote PDF/share/send work is closed and protected.
-- Compliance Assist now becomes the next maturity focus for blocker/advisory/waiver/dispatch-deferral clarity.
-
----
-
-## 2026-05-07 — Sprint 6 inline quote preview compliance action
-
-Decision:
-
-- Production screenshot showed the quote preview red blocker panel still had only Back to Command Center and Refresh draft after fix.
-- Added a client-side quote compliance fix enhancer mounted in the authenticated app layout.
-- The enhancer targets the quote preview blocker text and adds a direct **Fix compliance** action to `/compliance/assist?leadId=<lead-id>` when the active lead id is discoverable from the page.
-- The enhancer also adds short inline guidance: open the fix panel to see the exact reason, attach evidence, waive for quote, or defer to dispatch with a reviewer reason.
-- This is intentionally additive and does not change quote send logic, compliance status logic, schema, approvals, or waiver behavior.
+- Verified `b693232f4d282499c1f4c43d38c2c1eaddda1b27` is READY before this pass.
+- Production screenshot showed the inline **Fix compliance** button appeared, but opened Compliance Assist for a different lead because the enhancer guessed a lead id from unrelated page links.
+- Fixed the route to prefer the active quote id and open `/compliance/assist?quoteId=<quote-id>`.
+- Compliance Assist now resolves the correct `lead_id` server-side from the quote instead of trusting a guessed lead id.
+- Removed page-wide unrelated lead-link guessing from the inline enhancer.
+- Reworked Compliance Assist visual context so it feels connected to the lead → quote workflow, with active workflow context, quote label/status, Back to quote, and Open command center actions.
+- Updated Compliance help and tests to protect quote-scoped routing and connected workflow context.
+- No schema, quote send behavior, approval backend, compliance policy, duplicate action surface, or silent write-back behavior was added.
 
 Files:
 
-- `src/app/(app)/layout.tsx`
 - `src/features/leads/components/quote-compliance-fix-enhancer.tsx`
+- `src/app/(app)/compliance/assist/page.tsx`
 - `tests/quote-compliance-fix-enhancer.test.mjs`
+- `docs/help/compliance.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Build:
 
 - BUILDING / pending after this pass
-- Baseline before pass: `3940b1e95a2aa8913d9fb1ff958f3b63b8b03b2c`
+- Baseline before pass: `b693232f4d282499c1f4c43d38c2c1eaddda1b27`
 
 ---
 

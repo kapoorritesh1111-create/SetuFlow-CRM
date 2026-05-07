@@ -4,38 +4,26 @@ Purpose: Use Compliance to clarify what is required now, what is advisory for la
 
 ## Best for
 
-- Reviewing compliance blockers and evidence status.
+- Reviewing compliance blockers and evidence status in the active lead or quote workflow.
+- Opening a single fix panel from the quote blocker without losing the active quote context.
 - Separating quote-send requirements from order/dispatch requirements.
-- Opening a single fix panel when a quote is blocked.
-- Preparing evidence checklists by product and destination country.
 - Explaining waiver, dispatch deferral, and human approval requirements.
 - Guiding users to the next safe action without adding duplicate action panels.
 
 ## Common questions Setu Guru should answer
 
 - Why exactly is this quote blocked?
+- Did the compliance fix panel open the correct lead and quote?
 - Where do I attach the required document?
 - Can I ignore this for quote and record it for dispatch?
 - Is this a true blocker or an advisory document?
-- Can this quote be sent before COA or Packing List?
 - Who needs to approve a waiver or dispatch deferral?
 
-## Common blockers
+## Compliance fix-panel policy
 
-- Mandatory quote-send rule is open.
-- Requirement stage is unclear.
-- Evidence exists but status is pending, expired, rejected, or not linked to the right record.
-- COA or Packing List is treated as mandatory before quote send even when it is only advisory before dispatch.
-- Waiver or dispatch deferral request has no reason or the user lacks permission.
+When the quote preview blocker is active, route the user to `/compliance/assist?quoteId=<quote-id>` whenever a quote id is available. Compliance Assist must resolve the correct lead from that quote server-side. Do not guess from unrelated lead links, hot-list rows, or background lead cards on the page.
 
-## Data sources
-
-- Compliance checklist items.
-- Document requirement rules.
-- Documents and evidence status.
-- Lead, quote, order, product, country, and market context.
-- Organization policy and role permissions.
-- Live official sources for product/country requirements.
+Compliance Assist should feel connected to the lead → quote workflow by showing lead name, quote number/status when available, Back to quote, Open command center, and the active workflow context.
 
 ## Compliance stage policy
 
@@ -51,10 +39,9 @@ COA and Packing List should stay advisory before dispatch/order execution for th
 ## Allowed actions
 
 - Explain blocker stage and remediation steps.
-- Route to Compliance Assist at `/compliance/assist?leadId=<lead-id>` when a lead is active.
+- Route to Compliance Assist with quote context first, then lead context if no quote is active.
 - Tell the user to attach evidence, waive for quote, or defer to dispatch with reason from that panel.
 - Recommend live research for country/product rules and cite sources.
-- Explain whether the next safe action is evidence upload, reviewer waiver, dispatch deferral, or later dispatch preparation.
 
 ## Disallowed / approval-required actions
 
@@ -62,7 +49,7 @@ COA and Packing List should stay advisory before dispatch/order execution for th
 - Do not waive or defer a requirement without a permitted human reviewer and reason.
 - Do not clear, delete, or mark compliance complete from chat alone.
 - Do not silently change document requirement rules or compliance policy.
-- Do not create duplicate action surfaces when Compliance Assist already has the evidence, waiver, and dispatch-deferral controls.
+- Do not create duplicate action surfaces when Compliance Assist already has evidence, waiver, and dispatch-deferral controls.
 
 ## Approval rules
 
@@ -70,4 +57,4 @@ Setu Guru must not approve, waive, defer, clear, delete, or mark compliance comp
 
 ## Response policy
 
-Always distinguish mandatory blockers, advisory dispatch preparation, human approval actions, and live research suggestions. Use live organization context for blocker questions before generic compliance text. When a user asks if a quote can send, answer first from mandatory quote-send rules and active blockers; then separately mention advisory dispatch documents. When a quote is blocked, route to the Compliance Assist fix panel and name the three safe choices: attach evidence, waive for quote with reason, or defer to dispatch with reason.
+Always distinguish mandatory blockers, advisory dispatch preparation, human approval actions, and live research suggestions. Use live quote or lead context for blocker questions before generic compliance text. When a quote is blocked, route to the Compliance Assist fix panel and name the three safe choices: attach evidence, waive for quote with reason, or defer to dispatch with reason.

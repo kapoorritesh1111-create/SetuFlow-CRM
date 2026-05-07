@@ -4,36 +4,50 @@ import { useEffect } from 'react';
 
 const BLOCKER_TEXT = 'resolve compliance/document blocker';
 const BUTTON_MARKER = 'data-quote-compliance-fix-enhanced';
+const UUID_PATTERN = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
 function normalizeText(value: string | null | undefined) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-function findLeadIdFromHref(href: string | null | undefined) {
+function findQuoteIdFromHref(href: string | null | undefined) {
   const value = String(href ?? '');
-  const match = value.match(/\/leads\/([^/?#]+)/);
+  const match = value.match(new RegExp(`/api/quotes/(${UUID_PATTERN})(?:/|\\?|#|$)`, 'i'))
+    ?? value.match(new RegExp(`/quotes/(${UUID_PATTERN})(?:/|\\?|#|$)`, 'i'))
+    ?? value.match(new RegExp(`quoteId=(${UUID_PATTERN})`, 'i'));
   return match?.[1] ?? '';
 }
 
-function findLeadId(scope: Element) {
-  const urlParams = new URLSearchParams(window.location.search);
-  const fromQuery = urlParams.get('leadId') || urlParams.get('lead_id');
-  if (fromQuery) return fromQuery;
+function findQuoteId(scope: Element) {
+  const scopedAnchor = Array.from(scope.querySelectorAll<HTMLAnchorElement>('a[href]')).find((anchor) => findQuoteIdFromHref(anchor.getAttribute('href')));
+  const scopedQuoteId = findQuoteIdFromHref(scopedAnchor?.getAttribute('href'));
+  if (scopedQuoteId) return scopedQuoteId;
 
-  const fromPath = findLeadIdFromHref(window.location.pathname);
-  if (fromPath) return fromPath;
+  const pageAnchor = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href]')).find((anchor) => findQuoteIdFromHref(anchor.getAttribute('href')));
+  const pageQuoteId = findQuoteIdFromHref(pageAnchor?.getAttribute('href'));
+  if (pageQuoteId) return pageQuoteId;
 
-  const scopedAnchor = Array.from(scope.querySelectorAll<HTMLAnchorElement>('a[href]')).find((anchor) => findLeadIdFromHref(anchor.getAttribute('href')));
-  const scopedLeadId = findLeadIdFromHref(scopedAnchor?.getAttribute('href'));
-  if (scopedLeadId) return scopedLeadId;
-
-  const pageAnchor = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href]')).find((anchor) => findLeadIdFromHref(anchor.getAttribute('href')));
-  return findLeadIdFromHref(pageAnchor?.getAttribute('href'));
+  const htmlMatch = document.body.innerHTML.match(new RegExp(`/api/quotes/(${UUID_PATTERN})/`, 'i'))
+    ?? document.body.innerHTML.match(new RegExp(`/quotes/(${UUID_PATTERN})`, 'i'));
+  return htmlMatch?.[1] ?? '';
 }
 
-function makeFixLink(leadId: string) {
+function findLeadIdFromCurrentUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('leadId') || urlParams.get('lead_id') || '';
+}
+
+function makeFixHref(scope: Element) {
+  const quoteId = findQuoteId(scope);
+  if (quoteId) return `/compliance/assist?quoteId=${encodeURIComponent(quoteId)}`;
+  const leadId = findLeadIdFromCurrentUrl();
+  if (leadId) return `/compliance/assist?leadId=${encodeURIComponent(leadId)}`;
+  return '/compliance/assist';
+}
+
+function makeFixLink(scope: Element) {
   const link = document.createElement('a');
-  link.href = leadId ? `/compliance/assist?leadId=${encodeURIComponent(leadId)}` : '/compliance/assist';
+  link.href = makeFixHref(scope);
   link.textContent = 'Fix compliance';
   link.setAttribute(BUTTON_MARKER, 'true');
   link.className = 'inline-flex h-10 items-center rounded-[10px] bg-rose-700 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-rose-800';
@@ -49,26 +63,18 @@ function makeExplainer() {
 }
 
 function enhanceBlockers() {
-  const candidates = Array.from(document.querySelectorAll<HTMLElement>('section, div'))
-    .filter((node) => normalizeText(node.textContent).includes(BLOCKER_TEXT));
-
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>('section, div')).filter((node) => normalizeText(node.textContent).includes(BLOCKER_TEXT));
   candidates.forEach((candidate) => {
     const panel = candidate.closest<HTMLElement>('section, div') ?? candidate;
     if (panel.querySelector(`[${BUTTON_MARKER}]`)) return;
-
-    const leadId = findLeadId(panel);
     const existingButtons = Array.from(panel.querySelectorAll<HTMLElement>('a, button')).filter((node) => {
       const label = normalizeText(node.textContent);
       return label.includes('back to command center') || label.includes('refresh draft after fix');
     });
-
     const target = existingButtons[0]?.parentElement ?? panel;
-    target.appendChild(makeFixLink(leadId));
-
+    target.appendChild(makeFixLink(panel));
     const body = Array.from(panel.querySelectorAll<HTMLElement>('p, div')).find((node) => normalizeText(node.textContent).includes('this quote is blocked')) ?? panel;
-    if (!body.parentElement?.querySelector(`[${BUTTON_MARKER}].mt-2`)) {
-      body.parentElement?.appendChild(makeExplainer());
-    }
+    if (!body.parentElement?.querySelector(`[${BUTTON_MARKER}].mt-2`)) body.parentElement?.appendChild(makeExplainer());
   });
 }
 
@@ -80,6 +86,5 @@ export function QuoteComplianceFixEnhancer() {
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, []);
-
   return null;
 }
