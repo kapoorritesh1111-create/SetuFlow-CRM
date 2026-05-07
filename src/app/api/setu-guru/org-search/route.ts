@@ -5,6 +5,7 @@ import { getProductsData } from '@/lib/queries/products';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getBestSetuGuruHelpTopic, getRouteHelpSummary } from '@/lib/setu-guru/help-registry';
 import { classifySetuGuruResponse } from '@/lib/setu-guru/guru-response-policy';
+import { buildLiveResearchExecutionAnswer, type SetuGuruLiveResearchMode } from '@/lib/setu-guru/live-research';
 
 type SetuGuruOrgSearchMode =
   | 'catalog_search'
@@ -74,6 +75,12 @@ function isResearchRoutingMode(mode: SetuGuruOrgSearchMode, question: string) {
   if (mode === 'document_requirements' || mode === 'margin_benchmark') return true;
   if (mode === 'hsn_enrichment') return !isHsnGapQuestion(question);
   return false;
+}
+
+function asLiveResearchMode(mode: SetuGuruOrgSearchMode): SetuGuruLiveResearchMode {
+  if (mode === 'margin_benchmark') return 'margin_benchmark';
+  if (mode === 'document_requirements') return 'document_requirements';
+  return 'hsn_enrichment';
 }
 
 function questionMode(question: string): SetuGuruOrgSearchMode {
@@ -146,27 +153,13 @@ function buildPageHelpAnswer(question: string, route: string) {
   return { answer, rows, actions: topic.actions, actionHref: topic.actions[0] ? null : undefined, routeHelp, mode: 'page_help' };
 }
 
-function buildResearchRoutingAnswer(question: string, route: string, mode: SetuGuruOrgSearchMode) {
-  const routeHelp = getRouteHelpSummary(route || '/dashboard');
-  const topic = getBestSetuGuruHelpTopic(question || routeHelp.summary, route || '/dashboard');
-  const label = mode === 'hsn_enrichment' ? 'HS/HSN enrichment' : mode === 'document_requirements' ? 'document and destination requirements' : 'margin benchmark research';
-  const rows = [
-    { id: 'research-scope', name: label, type: 'research scope', next: 'Use live, source-backed research before writing CRM values' },
-    { id: 'sources-required', name: 'Official or reviewable sources required', type: 'source rule', next: 'Cite customs, tariff, regulator, marketplace, or broker sources when available' },
-    { id: 'human-review', name: 'Human review before write-back', type: 'approval boundary', next: 'Do not save HSN, duty, margin, or document rules without approval' },
-  ];
-  const answer = [
-    `I identified this as ${label}.`,
-    topic.summary,
-    mode === 'hsn_enrichment'
-      ? 'Next safe research path: identify product material/use, destination country, HS chapter candidates, official tariff notes, and any local HSN mapping. Treat the result as draft until reviewed.'
-      : mode === 'document_requirements'
-        ? 'Next safe research path: identify product, destination country, buyer/supplier role, quote/order/dispatch stage, mandatory documents, advisory documents, and validity or inspection rules.'
-        : 'Next safe research path: identify product category, buyer market, channel role, landed cost assumptions, distributor/retailer benchmarks, and whether the number should be quote-only or a saved default.',
-    'Setu Guru should use live source-backed research for this request and cite reviewable sources before any write-back.',
-    'Human approval is required before saving HSN/HS code, duties, tariff assumptions, margin defaults, compliance rules, or document requirements.',
-  ].join('\n\n');
-  return { answer, confidence: 'medium', mode, rows, actions: ['Ask live research', 'Review sources', ...topic.actions.slice(0, 2)] };
+function buildResearchRoutingAnswer(question: string, route: string, pageText: string, mode: SetuGuruOrgSearchMode) {
+  return buildLiveResearchExecutionAnswer({
+    question,
+    route,
+    pageText,
+    mode: asLiveResearchMode(mode),
+  });
 }
 
 async function resolveActiveLead(db: any, organizationId: string, route: string, pageText: string) {
@@ -251,7 +244,7 @@ export async function POST(request: Request) {
     }
 
     if (isResearchRoutingMode(mode, question)) {
-      return NextResponse.json(buildResearchRoutingAnswer(question, route, mode));
+      return NextResponse.json(buildResearchRoutingAnswer(question, route, pageText, mode));
     }
 
     if (!hasSupabaseEnv) {
