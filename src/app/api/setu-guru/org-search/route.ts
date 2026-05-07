@@ -89,7 +89,7 @@ function questionMode(question: string): SetuGuruOrgSearchMode {
   return 'catalog_search';
 }
 
-export function normalizeSetuGuruOrgSearchMode(rawMode: string, question = ''): SetuGuruOrgSearchMode {
+function normalizeSetuGuruOrgSearchMode(rawMode: string, question = ''): SetuGuruOrgSearchMode {
   const key = modeKey(rawMode);
   if (key && MODE_ALIASES[key]) return MODE_ALIASES[key];
   return questionMode(question);
