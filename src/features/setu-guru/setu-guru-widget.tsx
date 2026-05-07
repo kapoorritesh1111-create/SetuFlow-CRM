@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import RightDrawer from '@/components/RightDrawer';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,6 @@ type SetuGuruTopic = {
   title: string;
   routes: string[];
   tags: string[];
-  summary: string;
   answer: string[];
   nextActions: string[];
 };
@@ -20,6 +19,7 @@ type ChatMessage = {
   role: 'assistant' | 'user';
   content: string;
   actions?: string[];
+  actionHref?: string | null;
   rows?: Array<Record<string, unknown>>;
   tone?: 'normal' | 'loading' | 'error';
 };
@@ -28,50 +28,46 @@ const STORAGE_KEY = 'setu-guru-widget-hidden';
 
 const TOPICS: SetuGuruTopic[] = [
   {
-    id: 'start-new-org',
-    title: 'Set up a new organization',
-    routes: ['/admin/organization', '/admin/pipelines', '/admin/stages', '/admin/markets'],
-    tags: ['onboarding', 'organization', 'setup', 'workspace'],
-    summary: 'Verify organization defaults, commercial structure, markets, and approval thresholds before inviting the team.',
-    answer: [
-      'Open Admin > Organization and confirm company details, quote terms, order terms, default currency, and approval threshold.',
-      'Review Admin > Pipelines, Admin > Stages, and Admin > Markets before inviting the wider team.',
-      'Invite users from Admin > Invitations and assign roles based on each person’s actual responsibility.',
-    ],
-    nextActions: ['Open Admin > Organization', 'Review pipelines', 'Invite team'],
-  },
-  {
     id: 'catalog-pricing',
     title: 'Catalog and pricing help',
     routes: ['/products', '/admin/categories', '/admin/product-management'],
     tags: ['products', 'catalog', 'pricing', 'category', 'variant', 'import', 'margin'],
-    summary: 'Create categories first, add products and variants, then apply inherited defaults or deliberate product overrides.',
     answer: [
       'Start with Admin > Categories so taxonomy and pricing defaults are ready before imports or manual product creation.',
       'In Products, each quote-ready row should include variant context like pack size, UOM, MOQ, SKU, and pricing basis.',
       'Use organization or category defaults for shared pricing assumptions. Product-level pricing overrides should be intentional and reviewed.',
     ],
-    nextActions: ['Create categories', 'Add variants', 'Validate imports'],
+    nextActions: ['Open Products', 'Create categories', 'Validate imports'],
+  },
+  {
+    id: 'live-industry-research',
+    title: 'Live industry research',
+    routes: ['/products', '/quotes', '/orders', '/documents', '/compliance'],
+    tags: ['live search', 'margin', 'hsn', 'hs code', 'tariff', 'uk', 'ireland', 'compliance', 'export', 'import'],
+    answer: [
+      'Ask live research questions when the answer depends on country, product, date, tariff rules, or current market benchmarks.',
+      'For HS/HSN enrichment, Setu Guru should prepare candidate codes with confidence and sources first. Product master data should only be updated after authorized review.',
+      'For compliance and pricing benchmarks, recommendations should stay source-backed and treated as draft guidance until confirmed.',
+    ],
+    nextActions: ['Ask live research', 'Review sources', 'Approve before write-back'],
   },
   {
     id: 'lead-to-order',
     title: 'Lead to order flow',
     routes: ['/leads', '/quotes', '/approval-send', '/orders', '/pipeline'],
-    tags: ['lead', 'quote', 'order', 'pipeline', 'approval', 'accepted quote'],
-    summary: 'Capture, qualify, quote, approve, accept, and execute the order with blockers resolved.',
+    tags: ['lead', 'quote', 'order', 'pipeline', 'approval', 'buyer', 'supplier'],
     answer: [
       'Create or open the lead, qualify it, map product interest, and move it through the pipeline only when the next stage is valid.',
       'Create the quote from the lead and lock commercial terms first. Then price lines with the correct UOM, pack, MOQ, incoterm, FX, and quote-only adjustments.',
       'After acceptance, create the order and resolve contract, document, compliance, and commercial-lock blockers before moving execution forward.',
     ],
-    nextActions: ['Open lead', 'Review quote terms', 'Check blockers'],
+    nextActions: ['Open Leads', 'Review quote terms', 'Check blockers'],
   },
   {
     id: 'quote-approval',
     title: 'Quote pending approval',
     routes: ['/quotes', '/approval-send', '/leads'],
     tags: ['quote', 'approval', 'discount', 'markup', 'send', 'pdf'],
-    summary: 'Quote-only adjustments beyond the configured threshold require approval before sending or acceptance.',
     answer: [
       'Discounts and markups on a quote affect that quote only. They do not rewrite organization, category, or product defaults.',
       'If the quote crosses the configured approval threshold, it moves into pending approval for owner, admin, or manager review.',
@@ -80,58 +76,21 @@ const TOPICS: SetuGuruTopic[] = [
     nextActions: ['Open approval queue', 'Review changes', 'Preview PDF'],
   },
   {
-    id: 'documents-compliance',
-    title: 'Documents and compliance',
-    routes: ['/documents', '/compliance', '/orders', '/leads'],
-    tags: ['documents', 'compliance', 'blocker', 'contract', 'order state'],
-    summary: 'Document and compliance blockers prevent unsafe progression until the right evidence is complete.',
+    id: 'new-org',
+    title: 'Set up a new organization',
+    routes: ['/admin/organization', '/admin/pipelines', '/admin/stages', '/admin/markets'],
+    tags: ['onboarding', 'organization', 'setup', 'workspace'],
     answer: [
-      'A document blocker means a required file is missing or tagged incorrectly. Upload the file and attach the correct document type.',
-      'A compliance blocker means the checklist or review action is unresolved. Operations, managers, admins, or owners usually clear these checks.',
-      'Orders should not advance until accepted quote, contract, document, compliance, and commercial-lock blockers are clear.',
+      'Open Admin > Organization and confirm company details, quote terms, order terms, default currency, and approval threshold.',
+      'Review Admin > Pipelines, Admin > Stages, and Admin > Markets before inviting the wider team.',
+      'Invite users from Admin > Invitations and assign roles based on each person’s actual responsibility.',
     ],
-    nextActions: ['Open blockers', 'Upload evidence', 'Resolve checklist'],
-  },
-  {
-    id: 'roles-permissions',
-    title: 'Roles and permissions',
-    routes: ['/admin/users', '/admin/invitations', '/admin/organization'],
-    tags: ['role', 'permission', 'user', 'invite', 'admin'],
-    summary: 'Use roles to match responsibility: owners and admins govern, managers approve, operators run daily work, viewers read only.',
-    answer: [
-      'If a user cannot see admin pages, they probably do not have owner, admin, or manager-level access.',
-      'If a user cannot edit leads or quotes, verify the role in Admin > Users and confirm the person is an active organization member.',
-      'If an invitation failed or access looks wrong, admins can resend the invitation or manually correct the user role assignment.',
-    ],
-    nextActions: ['Open Admin > Users', 'Check membership', 'Resend invitation'],
-  },
-  {
-    id: 'live-industry-research',
-    title: 'Live industry research',
-    routes: ['/products', '/quotes', '/orders', '/documents', '/compliance'],
-    tags: ['live search', 'margin', 'hsn', 'hs code', 'tariff', 'uk', 'ireland', 'compliance', 'export', 'import'],
-    summary: 'Use live source-backed research for margins, HS/HSN codes, tariffs, duties, and shipment document requirements.',
-    answer: [
-      'Ask for live research when the answer depends on country, product, date, tariff rules, or current industry benchmarks.',
-      'For HS/HSN enrichment, Setu Guru should prepare candidate codes with confidence and sources first. Product master data should only be updated after authorized review.',
-      'For compliance and pricing benchmarks, recommendations should stay source-backed and treated as draft guidance until confirmed.',
-    ],
-    nextActions: ['Ask live research', 'Review sources', 'Approve before write-back'],
+    nextActions: ['Open Admin > Organization', 'Review pipelines', 'Invite team'],
   },
 ];
 
 function normalize(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-}
-
-function scoreTopic(topic: SetuGuruTopic, query: string, pathname: string) {
-  const normalizedQuery = normalize(query);
-  const haystack = normalize([topic.title, topic.summary, ...topic.tags, ...topic.answer, ...topic.nextActions].join(' '));
-  const routeMatch = topic.routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-  if (!normalizedQuery) return routeMatch ? 8 : 0;
-  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
-  const hits = tokens.reduce((count, token) => count + (haystack.includes(token) ? 1 : 0), 0);
-  return hits + (routeMatch ? 2 : 0);
 }
 
 function getRouteTopics(pathname: string) {
@@ -140,17 +99,19 @@ function getRouteTopics(pathname: string) {
 }
 
 function getBestTopic(query: string, pathname: string) {
-  const ranked = [...TOPICS].map((topic) => ({ topic, score: scoreTopic(topic, query, pathname) })).sort((a, b) => b.score - a.score);
+  const normalizedQuery = normalize(query);
+  const ranked = TOPICS.map((topic) => {
+    const routeScore = topic.routes.some((route) => pathname === route || pathname.startsWith(`${route}/`)) ? 2 : 0;
+    const haystack = normalize([topic.title, ...topic.tags, ...topic.answer].join(' '));
+    const wordScore = normalizedQuery.split(/\s+/).filter(Boolean).reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
+    return { topic, score: routeScore + wordScore };
+  }).sort((a, b) => b.score - a.score);
   return ranked[0]?.score > 0 ? ranked[0].topic : getRouteTopics(pathname)[0];
 }
 
 function isOrgSearchQuestion(question: string) {
   const q = question.toLowerCase();
-  return [
-    'how many product', 'how many buyer', 'how many supplier', 'how many lead', 'in my catalog',
-    'find buyer', 'find supplier', 'find lead', 'find product', 'search buyer', 'search supplier',
-    'missing hsn', 'missing hs code', 'filter', 'listed products', 'category',
-  ].some((phrase) => q.includes(phrase));
+  return ['how many product', 'how many buyer', 'how many supplier', 'how many lead', 'in my catalog', 'find buyer', 'find supplier', 'find lead', 'find product', 'search buyer', 'search supplier', 'missing hsn', 'missing hs code', 'filter', 'listed products', 'category'].some((phrase) => q.includes(phrase));
 }
 
 function buildAssistantMessage(topic: SetuGuruTopic, routeTitle: string): ChatMessage {
@@ -170,7 +131,7 @@ function ResultRows({ rows }: { rows: Array<Record<string, unknown>> }) {
         <div key={String(row.id ?? index)} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-700">
           <div className="font-semibold text-slate-950">{String(row.name ?? row.company ?? row.contact ?? 'Result')}</div>
           <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-500">
-            {Object.entries(row).filter(([key, value]) => key !== 'id' && key !== 'name' && key !== 'company' && key !== 'contact' && value).slice(0, 4).map(([key, value]) => (
+            {Object.entries(row).filter(([key, value]) => !['id', 'name', 'company', 'contact'].includes(key) && value).slice(0, 4).map(([key, value]) => (
               <span key={key} className="rounded-full bg-white px-2 py-0.5 ring-1 ring-slate-200">{key}: {String(value)}</span>
             ))}
           </div>
@@ -180,17 +141,7 @@ function ResultRows({ rows }: { rows: Array<Record<string, unknown>> }) {
   );
 }
 
-export function SetuGuruWidget({
-  pathname,
-  routeTitle,
-  organizationName,
-  roleLabel,
-}: {
-  pathname: string;
-  routeTitle: string;
-  organizationName?: string | null;
-  roleLabel: string;
-}) {
+export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLabel }: { pathname: string; routeTitle: string; organizationName?: string | null; roleLabel: string }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -199,6 +150,7 @@ export function SetuGuruWidget({
   const [isThinking, setIsThinking] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   useEffect(() => {
     setHidden(localStorage.getItem(STORAGE_KEY) === 'true');
@@ -206,9 +158,12 @@ export function SetuGuruWidget({
 
   const routeTopics = useMemo(() => getRouteTopics(pathname), [pathname]);
   const quickPrompts = useMemo(() => {
-    const liveResearch = TOPICS.find((topic) => topic.id === 'live-industry-research');
-    const quoteApproval = TOPICS.find((topic) => topic.id === 'quote-approval');
-    return [...routeTopics.slice(0, 2), liveResearch, quoteApproval].filter(Boolean).slice(0, 4) as SetuGuruTopic[];
+    const selected = [
+      ...routeTopics,
+      TOPICS.find((topic) => topic.id === 'live-industry-research'),
+      TOPICS.find((topic) => topic.id === 'quote-approval'),
+    ].filter(Boolean) as SetuGuruTopic[];
+    return selected.filter((topic, index, array) => array.findIndex((entry) => entry.id === topic.id) === index).slice(0, 4);
   }, [routeTopics]);
 
   useEffect(() => {
@@ -218,7 +173,7 @@ export function SetuGuruWidget({
   useEffect(() => {
     const target = scrollRef.current;
     if (!target) return;
-    target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' });
+    requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' }));
   }, [messages, isThinking, drawerOpen]);
 
   function setWidgetHidden(nextHidden: boolean) {
@@ -236,30 +191,22 @@ export function SetuGuruWidget({
     setIsThinking(true);
     setMessages((current) => [...current, { id: loadingId, role: 'assistant', content: 'Searching your live organization data…', tone: 'loading' }]);
     try {
-      const response = await fetch('/api/setu-guru/org-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, route: pathname }),
-      });
+      const response = await fetch('/api/setu-guru/org-search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, route: pathname }) });
       const payload = await response.json();
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({
         id: `org-${Date.now()}`,
         role: 'assistant',
         content: payload.answer ?? 'I searched your organization data, but did not find a matching answer.',
         actions: payload.nextAction ? [payload.nextAction] : undefined,
+        actionHref: typeof payload.actionHref === 'string' ? payload.actionHref : null,
         rows: Array.isArray(payload.rows) ? payload.rows : [],
         tone: response.ok ? 'normal' : 'error',
       }));
     } catch (error) {
-      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({
-        id: `org-error-${Date.now()}`,
-        role: 'assistant',
-        content: error instanceof Error ? error.message : 'I could not search your organization data right now.',
-        tone: 'error',
-      }));
+      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: `org-error-${Date.now()}`, role: 'assistant', content: error instanceof Error ? error.message : 'I could not search your organization data right now.', tone: 'error' }));
     } finally {
       setIsThinking(false);
-      requestAnimationFrame(() => inputRef.current?.focus());
+      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
     }
   }
 
@@ -273,9 +220,8 @@ export function SetuGuruWidget({
       void runOrgSearch(question);
       return;
     }
-    const topic = getBestTopic(question, pathname);
-    setMessages((current) => [...current, buildAssistantMessage(topic, routeTitle)]);
-    requestAnimationFrame(() => inputRef.current?.focus());
+    setMessages((current) => [...current, buildAssistantMessage(getBestTopic(question, pathname), routeTitle)]);
+    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 
   function saveFeedback(label: 'helpful' | 'missing') {
@@ -299,7 +245,7 @@ export function SetuGuruWidget({
   return (
     <>
       {launcher}
-      <RightDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={undefined} widthClassName="sm:max-w-[430px]" bodyClassName="!p-0" hideHeader>
+      <RightDrawer open={drawerOpen} onClose={closeDrawer} title={undefined} widthClassName="sm:max-w-[430px]" bodyClassName="!p-0" hideHeader>
         <div className="flex h-full min-h-[100dvh] flex-col bg-[#F8FBFF] sm:min-h-[calc(100dvh-1.5rem)]">
           <header className="shrink-0 border-b border-slate-200 bg-white px-5 py-4">
             <div className="flex items-center justify-between gap-3">
@@ -325,7 +271,7 @@ export function SetuGuruWidget({
                     <div className={cn('rounded-[22px] px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]', message.role === 'user' ? 'rounded-br-md bg-sky-600 text-white' : message.tone === 'error' ? 'rounded-bl-md border border-rose-200 bg-rose-50 text-rose-900' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700')}>
                       {message.content.split('\n\n').map((paragraph) => <p key={paragraph} className="mb-2 last:mb-0">{paragraph}</p>)}
                       <ResultRows rows={message.rows ?? []} />
-                      {message.actions?.length ? (<div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action) => <span key={action} className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700">{action}</span>)}</div>) : null}
+                      {message.actions?.length ? (<div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action, index) => message.actionHref && index === 0 ? <a key={action} href={message.actionHref} className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-sky-700">{action}</a> : <span key={action} className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700">{action}</span>)}</div>) : null}
                     </div>
                   </div>
                 </div>
