@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getProductsData } from '@/lib/queries/products';
 import { hasSupabaseEnv } from '@/lib/env';
+import { getBestSetuGuruHelpTopic, getRouteHelpSummary } from '@/lib/setu-guru/help-registry';
+import { classifySetuGuruResponse } from '@/lib/setu-guru/guru-response-policy';
 
 function asText(value: unknown) {
   return String(value ?? '').trim();
@@ -10,6 +12,7 @@ function asText(value: unknown) {
 
 function questionMode(question: string) {
   const q = question.toLowerCase();
+  if (['how do i use this page', 'what can you do', 'what should i do', 'page help', 'help me here'].some((word) => q.includes(word))) return 'page_help';
   if (['compliance', 'blocker', 'document', 'certificate', 'dispatch', 'coa', 'packing list', 'waive', 'ignore', 'fix this'].some((word) => q.includes(word))) return 'quote_compliance';
   if (q.includes('buyer')) return 'buyers';
   if (q.includes('supplier')) return 'suppliers';
@@ -46,6 +49,28 @@ function parseLeadIdFromRoute(route: string) {
 
 function isOpenStatus(status: unknown) {
   return !['approved', 'waived', 'complete', 'completed', 'ready'].includes(String(status ?? '').toLowerCase());
+}
+
+function buildPageHelpAnswer(question: string, route: string) {
+  const routeHelp = getRouteHelpSummary(route || '/dashboard');
+  const topic = getBestSetuGuruHelpTopic(question || routeHelp.summary, route || '/dashboard');
+  const policy = classifySetuGuruResponse(question || topic.title, route);
+  const rows = [
+    ...topic.commonBlockers.slice(0, 4).map((name, index) => ({ id: `blocker-${index}`, name, type: 'common blocker', next: 'Ask Setu Guru to check live context when this appears on the page' })),
+    ...topic.dataSources.slice(0, 4).map((name, index) => ({ id: `source-${index}`, name, type: 'data source', next: 'Use this source before generic guidance' })),
+  ];
+  const policyText = policy.reminders.length ? `Policy reminder: ${policy.reminders.join(' ')}` : 'Policy reminder: answer from page context and route help before generic guidance.';
+  const approvalText = topic.approvalRules.length ? `Human approval boundary: ${topic.approvalRules.join(' ')}` : 'Human approval is required for sends, waivers, write-backs, deletes, pricing decisions, and compliance decisions.';
+  const answer = [
+    `I checked the Setu Guru help registry for ${routeHelp.routeTitle}.`,
+    topic.summary,
+    ...topic.answer,
+    `Common blockers to inspect: ${topic.commonBlockers.slice(0, 4).join(', ') || 'none listed'}.`,
+    `Data sources to check before acting: ${topic.dataSources.slice(0, 5).join(', ') || 'page context and organization data'}.`,
+    approvalText,
+    policyText,
+  ].join('\n\n');
+  return { answer, rows, actions: topic.actions, actionHref: topic.actions[0] ? null : undefined, routeHelp, mode: 'page_help' };
 }
 
 async function resolveActiveLead(db: any, organizationId: string, route: string, pageText: string) {
@@ -117,22 +142,27 @@ function buildQuoteComplianceAnswer(input: {
 
 export async function POST(request: Request) {
   try {
-    if (!hasSupabaseEnv) {
-      return NextResponse.json({ answer: 'Setu Guru cannot read live organization data because Supabase environment variables are missing.', confidence: 'low', rows: [] }, { status: 500 });
-    }
-
     const body = await request.json().catch(() => ({}));
     const question = asText(body.question);
     const route = asText(body.route);
     const pageText = asText(body.pageText);
-    if (!question) return NextResponse.json({ answer: 'Ask a catalog, product, buyer, supplier, or lead question.', confidence: 'low', rows: [] }, { status: 400 });
+    if (!question) return NextResponse.json({ answer: 'Ask a catalog, product, buyer, supplier, lead, quote blocker, or page help question.', confidence: 'low', rows: [] }, { status: 400 });
+
+    const mode = asText(body.mode) || questionMode(question);
+    if (mode === 'page_help') {
+      const help = buildPageHelpAnswer(question, route);
+      return NextResponse.json({ ...help, confidence: 'high' });
+    }
+
+    if (!hasSupabaseEnv) {
+      return NextResponse.json({ answer: 'Setu Guru cannot read live organization data because Supabase environment variables are missing. Ask “what can you do on this page?” for route help.', confidence: 'low', rows: [], actions: ['Show page help'] }, { status: 500 });
+    }
 
     const workspace = await getWorkspaceAccess();
     if (!workspace.user || !workspace.organization) return NextResponse.json({ answer: 'Please sign in to Setu Flow before asking Setu Guru to search organization data.', confidence: 'low', rows: [] }, { status: 401 });
 
     const organizationId = workspace.organization.id;
     const organizationName = workspace.organization.name ?? 'this organization';
-    const mode = asText(body.mode) || questionMode(question);
     const term = asText(body.term) || extractSearchTerm(question, mode);
     const db = (await createClient()) as any;
 
@@ -197,7 +227,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ answer: term ? `I found ${rows.length} matching ${label} record(s) for "${term}" in ${organizationName}. There are ${count ?? 0} ${label} record(s) total.` : `${organizationName} has ${count ?? 0} ${label} record(s). I listed the latest ${rows.length}.`, confidence: 'high', mode, term, rows, metrics: { count: count ?? 0 }, nextAction: mode === 'buyers' ? 'Open Leads in Buyers mode.' : mode === 'suppliers' ? 'Open Leads in Suppliers mode.' : 'Open Leads to filter or edit records.', actionHref: mode === 'buyers' ? '/leads?mode=buyers' : mode === 'suppliers' ? '/leads?mode=suppliers' : '/leads' });
     }
 
-    return NextResponse.json({ answer: 'I can search live products, HSN gaps, buyers, suppliers, leads, and quote compliance blockers. Try “how do I fix this compliance issue in the quote?” while the quote is open.', confidence: 'medium', rows: [] });
+    return NextResponse.json({ answer: 'I can search live products, HSN gaps, buyers, suppliers, leads, quote compliance blockers, and route help. Try “what can you do on this page?” for page-specific help.', confidence: 'medium', rows: [], actions: ['Show page help'] });
   } catch (error) {
     return NextResponse.json({ answer: error instanceof Error ? error.message : 'Setu Guru organization search failed.', confidence: 'low', rows: [] }, { status: 500 });
   }
