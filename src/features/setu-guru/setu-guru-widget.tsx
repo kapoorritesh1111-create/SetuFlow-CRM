@@ -20,6 +20,7 @@ type ChatMessage = {
   content: string;
   actions?: string[];
   actionHref?: string | null;
+  actionIntent?: 'apply_pricing_defaults' | null;
   rows?: Array<Record<string, unknown>>;
   tone?: 'normal' | 'loading' | 'error';
 };
@@ -30,14 +31,14 @@ const TOPICS: SetuGuruTopic[] = [
   {
     id: 'catalog-pricing',
     title: 'Catalog and pricing help',
-    routes: ['/products', '/admin/categories', '/admin/product-management'],
-    tags: ['products', 'catalog', 'pricing', 'category', 'variant', 'import', 'margin'],
+    routes: ['/products', '/admin/categories', '/admin/product-management', '/dashboard'],
+    tags: ['products', 'catalog', 'pricing', 'category', 'variant', 'import'],
     answer: [
-      'Start with Admin > Categories so taxonomy and pricing defaults are ready before imports or manual product creation.',
-      'In Products, each quote-ready row should include variant context like pack size, UOM, MOQ, SKU, and pricing basis.',
-      'Use organization or category defaults for shared pricing assumptions. Product-level pricing overrides should be intentional and reviewed.',
+      'Use organization or category pricing defaults for shared calculator assumptions. Product-level overrides should be intentional and reviewed.',
+      'A new organization should first confirm company profile, default currency, markets/countries, and then calculator defaults before the first quote.',
+      'For margin questions, ask Setu Guru for draft calculator defaults. It can suggest safe starter values and apply them only after you confirm.',
     ],
-    nextActions: ['Open Products', 'Create categories', 'Validate imports'],
+    nextActions: ['Open Product Management', 'Review organization profile', 'Ask for margin defaults'],
   },
   {
     id: 'live-industry-research',
@@ -78,14 +79,14 @@ const TOPICS: SetuGuruTopic[] = [
   {
     id: 'new-org',
     title: 'Set up a new organization',
-    routes: ['/admin/organization', '/admin/pipelines', '/admin/stages', '/admin/markets'],
-    tags: ['onboarding', 'organization', 'setup', 'workspace'],
+    routes: ['/admin/organization', '/admin/pipelines', '/admin/stages', '/admin/markets', '/dashboard'],
+    tags: ['onboarding', 'organization', 'setup', 'workspace', 'country', 'currency'],
     answer: [
-      'Open Admin > Organization and confirm company details, quote terms, order terms, default currency, and approval threshold.',
-      'Review Admin > Pipelines, Admin > Stages, and Admin > Markets before inviting the wider team.',
-      'Invite users from Admin > Invitations and assign roles based on each person’s actual responsibility.',
+      'Open Admin > Organization and confirm company details, country/headquarters details, default currency, quote terms, order terms, and approval threshold.',
+      'Then review Admin > Markets, Countries, Pipelines, and Stages before inviting the wider team.',
+      'Set pricing calculator defaults only after the country/currency context is clear, because freight, duty, and margin assumptions vary by lane and product.',
     ],
-    nextActions: ['Open Admin > Organization', 'Review pipelines', 'Invite team'],
+    nextActions: ['Open Admin > Organization', 'Set calculator defaults', 'Review markets'],
   },
 ];
 
@@ -114,6 +115,13 @@ function isOrgSearchQuestion(question: string) {
   return ['how many product', 'how many buyer', 'how many supplier', 'how many lead', 'in my catalog', 'find buyer', 'find supplier', 'find lead', 'find product', 'search buyer', 'search supplier', 'missing hsn', 'missing hs code', 'filter', 'listed products', 'category'].some((phrase) => q.includes(phrase));
 }
 
+function isPricingDefaultQuestion(question: string) {
+  const q = question.toLowerCase();
+  const pricingWord = ['pricing calculator', 'calculator default', 'price calculator', 'default margin', 'default markup', 'margin', 'markup', 'distributor margin', 'retail margin'].some((phrase) => q.includes(phrase));
+  const setupWord = ['default', 'should', 'recommend', 'apply', 'set', 'calculator', 'ireland', 'irish', 'new organization'].some((phrase) => q.includes(phrase));
+  return pricingWord && setupWord;
+}
+
 function buildAssistantMessage(topic: SetuGuruTopic, routeTitle: string): ChatMessage {
   return {
     id: `${topic.id}-${Date.now()}`,
@@ -121,6 +129,18 @@ function buildAssistantMessage(topic: SetuGuruTopic, routeTitle: string): ChatMe
     content: [`Here’s the best guidance for ${topic.title.toLowerCase()} on ${routeTitle}.`, ...topic.answer].join('\n\n'),
     actions: topic.nextActions,
   };
+}
+
+function defaultsToRows(defaults: Record<string, unknown> | null | undefined) {
+  if (!defaults) return [];
+  return [{
+    name: 'Draft calculator defaults',
+    currency: defaults.currency,
+    mode: defaults.margin_mode,
+    internal: `${defaults.internal_margin_percent ?? 0}%`,
+    distributor: `${defaults.distributor_margin_percent ?? 0}%`,
+    retail: `${defaults.retail_margin_percent ?? 0}%`,
+  }];
 }
 
 function ResultRows({ rows }: { rows: Array<Record<string, unknown>> }) {
@@ -131,7 +151,7 @@ function ResultRows({ rows }: { rows: Array<Record<string, unknown>> }) {
         <div key={String(row.id ?? index)} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-700">
           <div className="font-semibold text-slate-950">{String(row.name ?? row.company ?? row.contact ?? 'Result')}</div>
           <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-500">
-            {Object.entries(row).filter(([key, value]) => !['id', 'name', 'company', 'contact'].includes(key) && value).slice(0, 4).map(([key, value]) => (
+            {Object.entries(row).filter(([key, value]) => !['id', 'name', 'company', 'contact'].includes(key) && value !== null && value !== undefined && value !== '').slice(0, 5).map(([key, value]) => (
               <span key={key} className="rounded-full bg-white px-2 py-0.5 ring-1 ring-slate-200">{key}: {String(value)}</span>
             ))}
           </div>
@@ -167,7 +187,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   }, [routeTopics]);
 
   useEffect(() => {
-    setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeTitle}, live catalog search, CRM workflows, pricing, HS codes, and export compliance. What would you like to do?` }]);
+    setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeTitle}, live catalog search, CRM workflows, pricing calculator defaults, HS codes, and export compliance. What would you like to do?` }]);
   }, [pathname, routeTitle]);
 
   useEffect(() => {
@@ -210,18 +230,57 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     }
   }
 
+  async function runPricingDefaults(question: string, action: 'suggest' | 'apply' = 'suggest') {
+    const loadingId = `pricing-${action}-${Date.now()}`;
+    setIsThinking(true);
+    setMessages((current) => [...current, { id: loadingId, role: 'assistant', content: action === 'apply' ? 'Applying draft calculator defaults…' : 'Preparing draft pricing calculator defaults…', tone: 'loading' }]);
+    try {
+      const response = await fetch('/api/setu-guru/pricing-defaults', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, route: pathname, action }) });
+      const payload = await response.json();
+      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({
+        id: `pricing-${Date.now()}`,
+        role: 'assistant',
+        content: payload.answer ?? 'I prepared pricing calculator guidance, but could not load default values.',
+        actions: payload.nextAction ? [payload.nextAction] : undefined,
+        actionHref: typeof payload.actionHref === 'string' ? payload.actionHref : null,
+        actionIntent: payload.actionIntent === 'apply_pricing_defaults' ? 'apply_pricing_defaults' : null,
+        rows: defaultsToRows(payload.defaults),
+        tone: response.ok ? 'normal' : 'error',
+      }));
+    } catch (error) {
+      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: `pricing-error-${Date.now()}`, role: 'assistant', content: error instanceof Error ? error.message : 'I could not prepare pricing calculator defaults right now.', tone: 'error' }));
+    } finally {
+      setIsThinking(false);
+      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+    }
+  }
+
   function handleAsk(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const question = inputValue.trim();
     if (!question || isThinking) return;
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
+    if (isPricingDefaultQuestion(question)) {
+      void runPricingDefaults(question);
+      return;
+    }
     if (isOrgSearchQuestion(question)) {
       void runOrgSearch(question);
       return;
     }
     setMessages((current) => [...current, buildAssistantMessage(getBestTopic(question, pathname), routeTitle)]);
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+  }
+
+  function handleAction(message: ChatMessage, action: string) {
+    if (message.actionIntent === 'apply_pricing_defaults') {
+      void runPricingDefaults(action, 'apply');
+      return;
+    }
+    if (message.actionHref) {
+      window.location.href = message.actionHref;
+    }
   }
 
   function saveFeedback(label: 'helpful' | 'missing') {
@@ -271,7 +330,10 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
                     <div className={cn('rounded-[22px] px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]', message.role === 'user' ? 'rounded-br-md bg-sky-600 text-white' : message.tone === 'error' ? 'rounded-bl-md border border-rose-200 bg-rose-50 text-rose-900' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700')}>
                       {message.content.split('\n\n').map((paragraph) => <p key={paragraph} className="mb-2 last:mb-0">{paragraph}</p>)}
                       <ResultRows rows={message.rows ?? []} />
-                      {message.actions?.length ? (<div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action, index) => message.actionHref && index === 0 ? <a key={action} href={message.actionHref} className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-sky-700">{action}</a> : <span key={action} className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700">{action}</span>)}</div>) : null}
+                      {message.actions?.length ? (<div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action, index) => {
+                        if (message.actionIntent || (message.actionHref && index === 0)) return <button key={action} type="button" onClick={() => handleAction(message, action)} className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-sky-700">{action}</button>;
+                        return <span key={action} className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700">{action}</span>;
+                      })}</div>) : null}
                     </div>
                   </div>
                 </div>
@@ -282,7 +344,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
           <footer className="shrink-0 border-t border-slate-200 bg-white px-4 pb-4 pt-3">
             <div className="mb-3 flex items-center justify-between gap-2"><div className="flex gap-2"><button type="button" onClick={() => saveFeedback('helpful')} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">Helpful</button><button type="button" onClick={() => saveFeedback('missing')} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">Missing detail</button></div><span className="text-[11px] text-slate-400">{feedbackSaved ? 'Saved' : 'Live org search ready'}</span></div>
             <form onSubmit={handleAsk} className="flex items-end gap-2 rounded-[22px] border border-slate-200 bg-[#F8FBFF] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] focus-within:border-sky-300 focus-within:ring-4 focus-within:ring-sky-100">
-              <textarea ref={inputRef} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} rows={1} placeholder="Ask about products, buyers, suppliers, HSN codes…" className="max-h-28 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400" />
+              <textarea ref={inputRef} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} rows={1} placeholder="Ask about products, pricing defaults, buyers, HSN codes…" className="max-h-28 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400" />
               <button type="submit" disabled={isThinking} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-600 text-white shadow-[0_10px_24px_rgba(2,132,199,0.24)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Send message"><FaIcon icon={isThinking ? 'circle-o-notch' : 'send'} className={isThinking ? 'animate-spin' : undefined} /></button>
             </form>
             <p className="mt-2 px-1 text-center text-[11px] text-slate-400">Setu Guru can search this organization. Humans approve prices, compliance, sends, and write-backs.</p>
