@@ -73,6 +73,13 @@ test('Setu Guru widget uses the route help registry and page context collector',
   assert.doesNotMatch(widget, /const TOPICS/);
 });
 
+test('Setu Guru widget renders source research rows as source cards', () => {
+  assert.match(widget, /isSourceRow/);
+  assert.match(widget, /setu-guru-source-row/);
+  assert.match(widget, /Open source/);
+  assert.match(widget, /citation/);
+});
+
 test('Setu Guru org search supports page help before live database lookup', () => {
   assert.match(orgSearchRoute, /buildPageHelpAnswer/);
   assert.match(orgSearchRoute, /mode === 'page_help'/);
@@ -101,4 +108,12 @@ test('Setu Guru live research returns source-backed draft guidance', () => {
   assert.match(liveResearch, /No CRM values were saved/);
   assert.match(liveResearch, /Human approval is required/);
   ['World Customs Organization HS Nomenclature', 'India ICEGATE customs portal', 'US Harmonized Tariff Schedule', 'EU Access2Markets', 'UK Trade Tariff', 'Trade.gov Country Commercial Guides', 'International Trade Centre Trade Map', 'World Bank Data'].forEach((source) => assert.match(liveResearch, new RegExp(source.replace(/[/.]/g, '\\$&'))));
+});
+
+test('Setu Guru live research extracts product, country, and role context', () => {
+  assert.match(liveResearch, /SetuGuruResearchContext/);
+  assert.match(liveResearch, /inferProduct/);
+  assert.match(liveResearch, /inferCountry/);
+  assert.match(liveResearch, /inferRole/);
+  assert.match(liveResearch, /Detected context/);
 });

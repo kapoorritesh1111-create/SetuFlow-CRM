@@ -12,6 +12,13 @@ export type SetuGuruResearchSource = ResearchSourceSeed & {
   citation: string;
 };
 
+export type SetuGuruResearchContext = {
+  product: string;
+  country: string;
+  role: string;
+  route: string;
+};
+
 export type SetuGuruLiveResearchInput = {
   question: string;
   route?: string;
@@ -106,37 +113,88 @@ const MODE_LABELS: Record<SetuGuruLiveResearchMode, string> = {
   margin_benchmark: 'margin benchmark research',
 };
 
+const COUNTRY_HINTS = [
+  'India', 'United States', 'USA', 'US', 'United Kingdom', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'Netherlands', 'Spain', 'Italy', 'United Arab Emirates', 'UAE', 'Saudi Arabia', 'Singapore', 'Japan', 'South Korea', 'Vietnam', 'Thailand', 'Malaysia', 'Indonesia', 'China', 'Mexico', 'Brazil', 'South Africa', 'European Union', 'EU'
+];
+
 function compactText(value: string) {
   return value.replace(/\s+/g, ' ').trim();
 }
 
-function getResearchSubject(question: string, pageText = '') {
-  const combined = compactText(`${question} ${pageText.slice(0, 500)}`);
-  const cleaned = combined
-    .replace(/\b(what|which|how|many|do|does|should|need|needed|please|find|research|source|sources|citation|citations|hsn|hs code|hs-code|tariff|tariffs|duty|duties|document|documents|requirement|requirements|margin|benchmark)\b/gi, ' ')
-    .replace(/[^a-z0-9\s/-]/gi, ' ')
+function titleCase(value: string) {
+  return value.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function firstMatch(text: string, patterns: RegExp[]) {
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    const value = match?.[1]?.trim();
+    if (value) return compactText(value).slice(0, 80);
+  }
+  return '';
+}
+
+function inferCountry(text: string) {
+  const lower = text.toLowerCase();
+  const country = COUNTRY_HINTS.find((item) => lower.includes(item.toLowerCase()));
+  return country ? (country === 'USA' || country === 'US' ? 'United States' : country === 'UK' ? 'United Kingdom' : country === 'EU' ? 'European Union' : country) : 'not detected';
+}
+
+function inferRole(text: string) {
+  const lower = text.toLowerCase();
+  if (/\bbuyer\b|\bimporter\b|\bdistributor\b|\bcustomer\b/.test(lower)) return 'buyer/importer';
+  if (/\bsupplier\b|\bexporter\b|\bmanufacturer\b|\bvendor\b/.test(lower)) return 'supplier/exporter';
+  if (/\bquote\b|\border\b|\bdispatch\b/.test(lower)) return 'commercial workflow';
+  return 'not detected';
+}
+
+function inferProduct(question: string, pageText = '') {
+  const text = compactText(`${question} ${pageText.slice(0, 900)}`);
+  const explicit = firstMatch(text, [
+    /(?:product|item|sku|hsn for|hs code for|margin for|documents for)\s*[:\-]?\s*([a-z0-9][a-z0-9\s/&()\-]{2,80})/i,
+    /(?:export|import|ship|quote|sell|buy)\s+([a-z0-9][a-z0-9\s/&()\-]{2,80})\s+(?:to|from|in|for)/i,
+  ]);
+  if (explicit) return titleCase(explicit.replace(/\b(to|from|in|for|with|and|or)\b.*$/i, '').trim() || explicit);
+  const cleaned = text
+    .replace(/\b(what|which|how|many|do|does|should|need|needed|please|find|research|source|sources|citation|citations|hsn|hs code|hs-code|tariff|tariffs|duty|duties|document|documents|requirement|requirements|margin|benchmark|country|buyer|supplier|importer|exporter)\b/gi, ' ')
+    .replace(/[^a-z0-9\s/&()-]/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  return cleaned.slice(0, 140) || question.slice(0, 140) || 'current product, country, and route context';
+  return titleCase(cleaned.slice(0, 80)) || 'not detected';
+}
+
+function getResearchContext(input: SetuGuruLiveResearchInput): SetuGuruResearchContext {
+  const text = compactText(`${input.question} ${input.pageText?.slice(0, 1500) ?? ''}`);
+  return {
+    product: inferProduct(input.question, input.pageText),
+    country: inferCountry(text),
+    role: inferRole(text),
+    route: input.route || '/dashboard',
+  };
+}
+
+function getResearchSubject(context: SetuGuruResearchContext, question: string) {
+  const parts = [context.product !== 'not detected' ? context.product : '', context.country !== 'not detected' ? context.country : '', context.role !== 'not detected' ? context.role : ''].filter(Boolean);
+  return parts.length ? parts.join(' · ') : question.slice(0, 140) || 'current product, country, and route context';
 }
 
 function getResearchSteps(mode: SetuGuruLiveResearchMode) {
   if (mode === 'hsn_enrichment') {
     return [
-      'Identify product composition, use case, form, packaging, and destination country.',
+      'Confirm product composition, use case, form, packaging, and destination country.',
       'Compare candidate HS chapters/headings against official notes before choosing a code.',
       'Treat the suggested code as draft until a human reviews the official source and product facts.',
     ];
   }
   if (mode === 'document_requirements') {
     return [
-      'Identify product, destination country, buyer/supplier role, and workflow stage: quote, order, or dispatch.',
+      'Confirm product, destination country, buyer/supplier role, and workflow stage: quote, order, or dispatch.',
       'Separate mandatory quote-send blockers from order/dispatch and advisory documents.',
       'Treat source-backed requirements as draft until a human reviews and updates organization policy.',
     ];
   }
   return [
-    'Identify product category, buyer market, channel role, landed-cost assumptions, and quote currency.',
+    'Confirm product category, buyer market, channel role, landed-cost assumptions, and quote currency.',
     'Compare internal pricing defaults with market/channel references before using an external benchmark.',
     'Keep the benchmark quote-only unless a human approves saving product/category/organization defaults.',
   ];
@@ -153,12 +211,14 @@ function hydrateSources(mode: SetuGuruLiveResearchMode): SetuGuruResearchSource[
 export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInput) {
   const mode = input.mode;
   const label = MODE_LABELS[mode];
-  const subject = getResearchSubject(input.question, input.pageText);
+  const context = getResearchContext(input);
+  const subject = getResearchSubject(context, input.question);
   const sources = hydrateSources(mode);
   const steps = getResearchSteps(mode);
   const sourceSummary = sources.map((source) => `${source.citation} ${source.title}`).join('; ');
   const answer = [
     `I prepared a source-backed draft research brief for ${label}.`,
+    `Detected context: Product: ${context.product}. Country/market: ${context.country}. Role/stage: ${context.role}. Route: ${context.route}.`,
     `Research scope: ${subject}.`,
     `Reviewable sources: ${sourceSummary}.`,
     `Recommended review path: ${steps.map((step, index) => `${index + 1}. ${step}`).join(' ')}`,
@@ -167,11 +227,12 @@ export function buildLiveResearchExecutionAnswer(input: SetuGuruLiveResearchInpu
 
   return {
     answer,
-    confidence: 'medium',
+    confidence: context.product === 'not detected' || context.country === 'not detected' ? 'medium' : 'high',
     mode,
     researchStatus: 'source_backed_draft',
     requiresHumanApproval: true,
     subject,
+    context,
     citations: sources,
     rows: sources.map((source) => ({
       id: source.id,

@@ -37,12 +37,17 @@ Purpose: Setu Guru is the embedded CRM assistant. It should be contextual, safe,
 When a user asks about HS/HSN, document requirements, duties/tariffs, or margin benchmarks, Setu Guru should return a draft research brief that includes:
 
 - the research scope,
+- detected product/country/role context,
 - reviewable source rows,
 - source IDs/citation markers,
 - a recommended review path,
 - and an explicit human approval boundary.
 
 Research answers are not write-backs. They are decision support for review.
+
+## Research source row rendering
+
+Setu Guru source rows should be rendered as review cards in the drawer when row data includes a source URL or citation marker. Each source card should make the source title, source type, citation marker, and next review step visible. External source URLs may open in a new tab; internal `internal:*` source references should be shown as review context, not external links.
 
 ## Allowed actions
 

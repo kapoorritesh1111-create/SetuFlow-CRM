@@ -35,20 +35,57 @@ function topicMessage(topic: SetuGuruHelpTopic, routeTitle: string): ChatMessage
   };
 }
 
+function rowText(row: Record<string, unknown>, key: string) {
+  const value = row[key];
+  return value === null || value === undefined ? '' : String(value);
+}
+
+function isExternalSourceUrl(value: string) {
+  return /^https?:\/\//.test(value);
+}
+
+function isSourceRow(row: Record<string, unknown>) {
+  return Boolean(row.citation || row.url || row.type === 'official' || row.type === 'trade_reference' || row.type === 'market_reference' || row.type === 'internal_review');
+}
+
 function ResultRows({ rows }: { rows: Array<Record<string, unknown>> }) {
   if (!rows.length) return null;
   return (
     <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-      {rows.slice(0, 6).map((row, index) => (
-        <div key={String(row.id ?? index)} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-700">
-          <div className="font-semibold text-slate-950">{String(row.name ?? row.company ?? row.contact ?? 'Result')}</div>
-          <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-500">
-            {Object.entries(row).filter(([key, value]) => !['id', 'name', 'company', 'contact'].includes(key) && value !== null && value !== undefined && value !== '').slice(0, 5).map(([key, value]) => (
-              <span key={key} className="rounded-full bg-white px-2 py-0.5 ring-1 ring-slate-200">{key}: {String(value)}</span>
-            ))}
+      {rows.slice(0, 6).map((row, index) => {
+        const sourceRow = isSourceRow(row);
+        const sourceUrl = rowText(row, 'url');
+        if (sourceRow) {
+          return (
+            <div key={String(row.id ?? index)} className="setu-guru-source-row rounded-2xl border border-sky-100 bg-sky-50/70 px-3 py-3 text-xs text-slate-700">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {row.citation ? <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-sky-700 ring-1 ring-sky-200">{rowText(row, 'citation')}</span> : null}
+                    {row.type ? <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{rowText(row, 'type').replaceAll('_', ' ')}</span> : null}
+                  </div>
+                  <div className="mt-2 font-semibold text-slate-950">{rowText(row, 'name') || rowText(row, 'title') || 'Research source'}</div>
+                </div>
+                {isExternalSourceUrl(sourceUrl) ? (
+                  <a href={sourceUrl} target="_blank" rel="noreferrer" className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-sky-700 ring-1 ring-sky-200 hover:bg-sky-100">Open source</a>
+                ) : null}
+              </div>
+              {row.next ? <p className="mt-2 leading-5 text-slate-600">{rowText(row, 'next')}</p> : null}
+              {sourceUrl && !isExternalSourceUrl(sourceUrl) ? <p className="mt-2 rounded-xl bg-white px-2 py-1 text-[11px] text-slate-500 ring-1 ring-slate-200">Reference: {sourceUrl}</p> : null}
+            </div>
+          );
+        }
+        return (
+          <div key={String(row.id ?? index)} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-700">
+            <div className="font-semibold text-slate-950">{String(row.name ?? row.company ?? row.contact ?? 'Result')}</div>
+            <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-500">
+              {Object.entries(row).filter(([key, value]) => !['id', 'name', 'company', 'contact'].includes(key) && value !== null && value !== undefined && value !== '').slice(0, 5).map(([key, value]) => (
+                <span key={key} className="rounded-full bg-white px-2 py-0.5 ring-1 ring-slate-200">{key}: {String(value)}</span>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
