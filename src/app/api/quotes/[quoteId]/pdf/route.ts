@@ -13,6 +13,7 @@ function money(v: unknown, cur = 'USD') { return `${cur} ${n(v).toLocaleString('
 function d(v: unknown) { const t = s(v, ''); if (!t) return '-'; const dt = new Date(t.includes('T') ? t : `${t}T00:00:00`); return Number.isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('en-GB'); }
 function esc(v: string) { return String(v).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[\r\n]+/g, ' '); }
 function rgb(hex: string) { const x = Number.parseInt(hex.replace('#', ''), 16); return `${(((x >> 16) & 255) / 255).toFixed(3)} ${(((x >> 8) & 255) / 255).toFixed(3)} ${((x & 255) / 255).toFixed(3)}`; }
+function basis(v: unknown) { const x = s(v, 'FOB').replace(/_/g, ' ').trim().toUpperCase(); return x.includes('EX') ? 'EXW' : x || 'FOB'; }
 function mode(v: unknown) { const x = s(v, 'unit').toLowerCase(); return x.includes('case') ? 'CASE' : x.includes('kg') || x.includes('bulk') ? 'KG' : 'UNIT'; }
 function lead(v: unknown) { const x = n(v); return x ? `${Math.max(1, x - 3)}-${x} days` : 'Confirm per order'; }
 function shelf(v: unknown) { const x = n(v); return x ? `${x} months` : 'Available per SKU'; }
