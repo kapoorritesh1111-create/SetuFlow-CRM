@@ -35,12 +35,16 @@ export type LeadRequirementState = {
   expiredRequirementCodes: string[];
 };
 
-const APPROVED_DOC_STATUSES = new Set(['approved', 'complete', 'completed', 'ready']);
+const APPROVED_DOC_STATUSES = new Set(['approved', 'complete', 'completed', 'ready', 'waived']);
 const PENDING_DOC_STATUSES = new Set(['pending', 'submitted', 'in_review', 'pending_review', 'revision_requested']);
 const ACTIVE_SCOPES = new Set(['general', 'quote_send', 'contract_progression']);
 
 function normalize(value: string | null | undefined) {
   return String(value ?? '').trim().toLowerCase();
+}
+
+function requirementLabel(rule: DocumentRequirementRule) {
+  return String(rule.title || rule.requirement_code || 'Required document').trim();
 }
 
 function uniqueByCode(rules: DocumentRequirementRule[]) {
@@ -53,8 +57,8 @@ function uniqueByCode(rules: DocumentRequirementRule[]) {
       map.set(code, rule);
       continue;
     }
-    const currentScore = Number(Boolean(rule.market_id)) + Number(Boolean(rule.product_id)) + Number(Boolean(rule.lead_type));
-    const existingScore = Number(Boolean(existing.market_id)) + Number(Boolean(existing.product_id)) + Number(Boolean(existing.lead_type));
+    const currentScore = Number(Boolean(rule.market_id)) + Number(Boolean(rule.product_id)) + Number(Boolean(rule.lead_type)) + Number(rule.is_mandatory === true);
+    const existingScore = Number(Boolean(existing.market_id)) + Number(Boolean(existing.product_id)) + Number(Boolean(existing.lead_type)) + Number(existing.is_mandatory === true);
     if (currentScore >= existingScore) map.set(code, rule);
   }
   return Array.from(map.values());
@@ -101,9 +105,18 @@ export function buildLeadDocumentRequirementState(input: {
   const missingRequirementCodes: string[] = [];
   const pendingRequirementCodes: string[] = [];
   const expiredRequirementCodes: string[] = [];
+  const missingLabels: string[] = [];
+  const pendingLabels: string[] = [];
+  const expiredLabels: string[] = [];
 
   for (const rule of applicableRules) {
+    // Advisory quote documents should guide the user but not block quote creation/send.
+    // Only mandatory rules become blockers.
+    if (rule.is_mandatory !== true) continue;
+
     const code = String(rule.requirement_code ?? '').trim();
+    if (!code) continue;
+    const label = requirementLabel(rule);
     const matchingDocuments = documents.filter((document) => String(document.requirement_code ?? '').trim() === code);
     const nonExpired = matchingDocuments.filter((document) => !document.expires_at || document.expires_at >= today);
     const approved = nonExpired.some((document) => APPROVED_DOC_STATUSES.has(normalize(document.status)));
@@ -111,19 +124,26 @@ export function buildLeadDocumentRequirementState(input: {
     const expired = !approved && matchingDocuments.some((document) => Boolean(document.expires_at) && String(document.expires_at) < today);
 
     if (approved) continue;
-    if (pending) pendingRequirementCodes.push(code);
-    else if (expired) expiredRequirementCodes.push(code);
-    else missingRequirementCodes.push(code);
+    if (pending) {
+      pendingRequirementCodes.push(code);
+      pendingLabels.push(label);
+    } else if (expired) {
+      expiredRequirementCodes.push(code);
+      expiredLabels.push(label);
+    } else {
+      missingRequirementCodes.push(code);
+      missingLabels.push(label);
+    }
   }
 
   const blockerReasons: string[] = [];
-  if (missingRequirementCodes.length) blockerReasons.push(`${missingRequirementCodes.length} required document rule${missingRequirementCodes.length === 1 ? '' : 's'} missing`);
-  if (pendingRequirementCodes.length) blockerReasons.push(`${pendingRequirementCodes.length} required document review${pendingRequirementCodes.length === 1 ? '' : 's'} still pending`);
-  if (expiredRequirementCodes.length) blockerReasons.push(`${expiredRequirementCodes.length} required document${expiredRequirementCodes.length === 1 ? '' : 's'} expired`);
+  if (missingLabels.length) blockerReasons.push(`Missing required document: ${missingLabels.slice(0, 3).join(', ')}${missingLabels.length > 3 ? ' +' + (missingLabels.length - 3) + ' more' : ''}`);
+  if (pendingLabels.length) blockerReasons.push(`Required document review pending: ${pendingLabels.slice(0, 3).join(', ')}${pendingLabels.length > 3 ? ' +' + (pendingLabels.length - 3) + ' more' : ''}`);
+  if (expiredLabels.length) blockerReasons.push(`Required document expired: ${expiredLabels.slice(0, 3).join(', ')}${expiredLabels.length > 3 ? ' +' + (expiredLabels.length - 3) + ' more' : ''}`);
 
   return {
     applicableRuleCount: applicableRules.length,
-    satisfiedRuleCount: Math.max(0, applicableRules.length - missingRequirementCodes.length - pendingRequirementCodes.length - expiredRequirementCodes.length),
+    satisfiedRuleCount: Math.max(0, applicableRules.filter((rule) => rule.is_mandatory === true).length - missingRequirementCodes.length - pendingRequirementCodes.length - expiredRequirementCodes.length),
     missingRuleCount: missingRequirementCodes.length,
     pendingRuleCount: pendingRequirementCodes.length,
     expiredRuleCount: expiredRequirementCodes.length,
@@ -135,7 +155,6 @@ export function buildLeadDocumentRequirementState(input: {
   };
 }
 
-
 export async function getLeadProgressionGuard(db: { from: (table: string) => any }, input: {
   organizationId: string;
   leadId: string;
@@ -146,7 +165,7 @@ export async function getLeadProgressionGuard(db: { from: (table: string) => any
     db.from('lead_markets').select('market_id').eq('lead_id', input.leadId),
     db.from('lead_product_interests').select('product_id').eq('lead_id', input.leadId),
     db.from('documents').select('id, requirement_code, status, expires_at, related_entity, related_id').eq('organization_id', input.organizationId).eq('related_entity', 'lead').eq('related_id', input.leadId),
-    db.from('lead_compliance_items').select('status').eq('organization_id', input.organizationId).eq('lead_id', input.leadId),
+    db.from('lead_compliance_items').select('status, compliance_checklist_items(code, description, is_mandatory)').eq('organization_id', input.organizationId).eq('lead_id', input.leadId),
     db.from('document_requirement_rules').select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, applies_to_entity, is_mandatory, is_active').eq('organization_id', input.organizationId).eq('is_active', true),
   ]);
 
@@ -162,15 +181,22 @@ export async function getLeadProgressionGuard(db: { from: (table: string) => any
     documents,
     scope: input.scope,
   });
-  const openComplianceCount = Array.isArray(complianceResult.data)
-    ? complianceResult.data.filter((item: any) => !['approved', 'waived', 'complete', 'completed'].includes(normalize(item.status))).length
-    : 0;
+  const openComplianceItems = Array.isArray(complianceResult.data)
+    ? complianceResult.data.filter((item: any) => {
+        const status = normalize(item.status);
+        const mandatory = item.compliance_checklist_items?.is_mandatory !== false;
+        return mandatory && !['approved', 'waived', 'complete', 'completed'].includes(status);
+      })
+    : [];
   const blockerReasons = [...documentState.blockerReasons];
-  if (openComplianceCount > 0) blockerReasons.push(`${openComplianceCount} compliance blocker${openComplianceCount === 1 ? '' : 's'} still open`);
+  if (openComplianceItems.length > 0) {
+    const labels = openComplianceItems.map((item: any) => item.compliance_checklist_items?.description || item.compliance_checklist_items?.code || 'Compliance item');
+    blockerReasons.push(`Open mandatory compliance item: ${labels.slice(0, 3).join(', ')}${labels.length > 3 ? ' +' + (labels.length - 3) + ' more' : ''}`);
+  }
   return {
-    blockerCount: documentState.blockerCount + (openComplianceCount > 0 ? 1 : 0),
+    blockerCount: documentState.blockerCount + (openComplianceItems.length > 0 ? 1 : 0),
     blockerReasons,
     documentState,
-    openComplianceCount,
+    openComplianceCount: openComplianceItems.length,
   };
 }
