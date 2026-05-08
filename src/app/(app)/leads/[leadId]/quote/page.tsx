@@ -6,6 +6,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import QuotePrintButton from '@/features/leads/components/quote-print-button';
 import { QuoteWorkspace } from '@/features/quotes/components/quote-workspace';
+import { ComplianceCheckPopover } from '@/features/compliance/components/compliance-check-popover';
 import { buildLeadActivityTimeline } from '@/lib/activity-timeline';
 import { ActivityTimeline } from '@/components/ui/activity-timeline';
 import {
@@ -310,6 +311,8 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   const acceptedQuoteCount = data.quotes.filter((quote) => String(quote.status ?? '').toLowerCase() === 'accepted').length;
   const inNegotiationCount = data.quotes.filter((quote) => String(quote.status ?? '').toLowerCase() === 'negotiating').length;
   const openQuoteCount = data.quotes.filter((quote) => !['accepted', 'rejected', 'expired', 'cancelled'].includes(String(quote.status ?? '').toLowerCase())).length;
+  const activeQuote = requestedQuoteId ? data.quotes.find((quote) => quote.id === requestedQuoteId) ?? data.quotes[0] ?? null : data.quotes[0] ?? null;
+  const activeQuoteId = activeQuote?.id ?? requestedQuoteId;
 
   return (
     <>
@@ -413,6 +416,25 @@ export default async function QuotePage({ params, searchParams }: { params: { le
                 ? `${openQuoteCount} open · ${quoteSendGuard.blockerCount} blocker${quoteSendGuard.blockerCount === 1 ? '' : 's'} to clear before send.`
                 : `${openQuoteCount} open · Ready to move through review and send.`}
           </div>
+          {quoteSendGuard.blockerCount > 0 && activeQuoteId ? (
+            <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Compliance check</p>
+                  <p className="mt-1 text-sm font-semibold text-rose-950">Quote Review is blocked until the source-of-truth compliance gate clears.</p>
+                  <p className="mt-1 text-sm leading-6 text-rose-800">Open the check window here to attach evidence, waive for quote, or defer to dispatch without leaving Quote Builder.</p>
+                </div>
+                <ComplianceCheckPopover
+                  leadId={leadId}
+                  quoteId={activeQuoteId}
+                  triggerLabel="Compliance check"
+                  title="Quote Review compliance check"
+                  contextLabel={`Quote Builder · ${activeQuote?.quote_number ?? activeQuoteId.slice(0, 8)}`}
+                  blockerReasons={quoteSendGuard.blockerReasons}
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Quote workspace */}
