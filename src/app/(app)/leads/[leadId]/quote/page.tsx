@@ -313,6 +313,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   const openQuoteCount = data.quotes.filter((quote) => !['accepted', 'rejected', 'expired', 'cancelled'].includes(String(quote.status ?? '').toLowerCase())).length;
   const activeQuote = requestedQuoteId ? data.quotes.find((quote) => quote.id === requestedQuoteId) ?? data.quotes[0] ?? null : data.quotes[0] ?? null;
   const activeQuoteId = activeQuote?.id ?? requestedQuoteId;
+  const activeQuoteLabel = activeQuoteId ? activeQuoteId.slice(0, 8) : 'current quote';
 
   return (
     <>
@@ -429,7 +430,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
                   quoteId={activeQuoteId}
                   triggerLabel="Compliance check"
                   title="Quote Review compliance check"
-                  contextLabel={`Quote Builder · ${activeQuote?.quote_number ?? activeQuoteId.slice(0, 8)}`}
+                  contextLabel={`Quote Builder · ${activeQuoteLabel}`}
                   blockerReasons={quoteSendGuard.blockerReasons}
                 />
               </div>
