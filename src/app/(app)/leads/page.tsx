@@ -2,7 +2,6 @@
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
-import { QuoteReviewComplianceActions } from '@/features/leads/components/quote-review-compliance-actions';
 import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
@@ -27,8 +26,6 @@ export default async function LeadsPage({
     autoQuote?: string | string[];
     handoff?: string | string[];
     eventId?: string | string[];
-    quoteId?: string | string[];
-    quoteStep?: string | string[];
   };
 }) {
   const workspace = await getWorkspaceAccess();
@@ -65,15 +62,6 @@ export default async function LeadsPage({
   const quickLeadProductId = readParam(searchParams?.productId).trim();
   const eventId = readParam(searchParams?.eventId).trim();
   const initialFastField = quickLeadEnabled && Boolean(eventId);
-  const quoteStep = readParam(searchParams?.quoteStep).trim().toLowerCase();
-  const requestedQuoteId = readParam(searchParams?.quoteId).trim();
-  const activeReviewQuote = requestedQuoteId
-    ? viewModel.normalizedQuotes.find((quote: any) => quote.id === requestedQuoteId) ?? viewModel.normalizedQuotes[0] ?? null
-    : viewModel.normalizedQuotes[0] ?? null;
-  const shouldShowQuoteReviewClearPanel = quoteStep === 'review' && Boolean(activeReviewQuote?.id);
-  const reviewBlockerReasons = shouldShowQuoteReviewClearPanel
-    ? ['Quote Review is blocked until quote-linked evidence, waiver, or dispatch deferral is saved and the gate refreshes.']
-    : [];
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -111,14 +99,6 @@ export default async function LeadsPage({
 
       <div className="hidden space-y-4 md:block">
         <QueryIssuesAlert issues={data.queryIssues} />
-        {shouldShowQuoteReviewClearPanel ? (
-          <QuoteReviewComplianceActions
-            quoteId={activeReviewQuote.id}
-            leadId={activeReviewQuote.lead_id}
-            quoteLabel={activeReviewQuote.quote_number ? `Quote ${activeReviewQuote.quote_number}` : `Quote ${String(activeReviewQuote.id).slice(0, 8)}`}
-            blockerReasons={reviewBlockerReasons}
-          />
-        ) : null}
         <LeadsWorkspace
         currentUserId={viewModel.currentUserId}
         canManageLeads={viewModel.canManageLeads}
