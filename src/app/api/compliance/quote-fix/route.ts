@@ -19,8 +19,8 @@ function ruleApplies(rule: any, lead: any, marketIds: Set<string>, productIds: S
   const scope = normalize(rule?.progression_scope || 'general');
   if (!(scope === 'general' || scope === 'quote_send')) return false;
   if (rule?.lead_type && normalize(rule.lead_type) !== normalize(lead?.lead_type)) return false;
-  if (rule?.market_id && !marketIds.has(rule.market_id)) return false;
-  if (rule?.product_id && !productIds.has(rule.product_id)) return false;
+  if (rule?.market_id && !marketIds.has(String(rule.market_id))) return false;
+  if (rule?.product_id && !productIds.has(String(rule.product_id))) return false;
   return Boolean(clean(rule?.requirement_code));
 }
 
@@ -36,8 +36,16 @@ async function getMissingQuoteRequirementCodes(db: any, organizationId: string, 
     if (result.error) throw new Error(result.error.message);
   }
 
-  const marketIds = new Set((leadMarketsResult.data ?? []).map((row: any) => row.market_id).filter(Boolean));
-  const productIds = new Set((leadProductsResult.data ?? []).map((row: any) => row.product_id).filter(Boolean));
+  const marketIds: Set<string> = new Set(
+    (leadMarketsResult.data ?? [])
+      .map((row: any) => clean(row.market_id))
+      .filter((value: string) => value.length > 0)
+  );
+  const productIds: Set<string> = new Set(
+    (leadProductsResult.data ?? [])
+      .map((row: any) => clean(row.product_id))
+      .filter((value: string) => value.length > 0)
+  );
   const rules = (rulesResult.data ?? []).filter((rule: any) => ruleApplies(rule, lead, marketIds, productIds));
   const documents = documentsResult.data ?? [];
   const today = new Date().toISOString().slice(0, 10);

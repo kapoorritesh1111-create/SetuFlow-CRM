@@ -11,6 +11,12 @@ test('quote review compliance panel is not mounted globally from app layout', ()
   assert.doesNotMatch(layout, /QuoteComplianceFixEnhancer/);
 });
 
+test('quote requirement lookup uses typed market and product id sets', () => {
+  assert.match(route, /const marketIds: Set<string>/);
+  assert.match(route, /const productIds: Set<string>/);
+  assert.match(route, /ruleApplies\(rule, lead, marketIds, productIds\)/);
+});
+
 test('waive and defer satisfy lead-level document requirements used by the quote gate', () => {
   assert.match(route, /getMissingQuoteRequirementCodes/);
   assert.match(route, /document_requirement_rules/);
