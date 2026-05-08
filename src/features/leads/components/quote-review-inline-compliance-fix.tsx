@@ -24,11 +24,19 @@ function findQuoteId() {
   return '';
 }
 
+function removeDuplicateHosts(keep?: HTMLElement | null) {
+  if (typeof document === 'undefined') return;
+  const hosts = Array.from(document.querySelectorAll<HTMLElement>('[data-quote-review-clear-host="true"]'));
+  for (const host of hosts) {
+    if (keep && host === keep) continue;
+    host.remove();
+  }
+}
+
 function ensureHost(details: HTMLDetailsElement) {
-  const hosts = Array.from(details.querySelectorAll<HTMLElement>('[data-quote-review-clear-host="true"]'));
-  const existing = hosts[0] ?? null;
-  for (const duplicate of hosts.slice(1)) duplicate.remove();
+  const existing = details.querySelector<HTMLElement>('[data-quote-review-clear-host="true"]');
   if (existing) {
+    removeDuplicateHosts(existing);
     details.open = true;
     return existing;
   }
@@ -37,6 +45,7 @@ function ensureHost(details: HTMLDetailsElement) {
   host.className = 'mt-3';
   details.appendChild(host);
   details.open = true;
+  removeDuplicateHosts(host);
   return host;
 }
 
@@ -95,8 +104,13 @@ function Card() {
 
 export function QuoteReviewInlineComplianceFix() {
   const [host, setHost] = useState<HTMLElement | null>(null);
+  const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
+    if ((window as any).__setuQuoteReviewClearCardMounted) return;
+    (window as any).__setuQuoteReviewClearCardMounted = true;
+    setEnabled(true);
+
     const install = () => {
       const details = findTargetDetails();
       if (!details) return;
@@ -109,9 +123,11 @@ export function QuoteReviewInlineComplianceFix() {
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
       document.removeEventListener('click', install, true);
+      removeDuplicateHosts(host);
+      (window as any).__setuQuoteReviewClearCardMounted = false;
     };
   }, []);
 
-  if (!host) return null;
+  if (!enabled || !host) return null;
   return createPortal(<Card />, host);
 }
