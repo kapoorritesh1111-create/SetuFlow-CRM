@@ -3,9 +3,15 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-type GateStatus = {
-  clear?: boolean;
-  quoteNumber?: string;
+type SendSyncStatus = {
+  sendReady?: boolean;
+  quoteNumber?: string | null;
+  lineCount?: number;
+  pricedLineCount?: number;
+  pricingComplete?: boolean;
+  approvalCleared?: boolean;
+  complianceClear?: boolean;
+  openComplianceCount?: number;
   error?: string;
 };
 
@@ -23,14 +29,18 @@ function findQuoteNumber() {
   return match?.[0] ?? '';
 }
 
-async function fetchGateStatus() {
+async function syncSendGate() {
   const quoteNumber = findQuoteNumber();
   if (!quoteNumber) return null;
-  const params = new URLSearchParams({ quoteNumber });
-  const response = await fetch(`/api/compliance/quote-gate-status?${params.toString()}`, { cache: 'no-store' });
+  const response = await fetch('/api/compliance/quote-send-sync', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    cache: 'no-store',
+    body: JSON.stringify({ quoteNumber }),
+  });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) return { error: payload?.error || 'Could not read quote gate status.' } as GateStatus;
-  return payload as GateStatus;
+  if (!response.ok) return { error: payload?.error || 'Could not sync quote send gate.' } as SendSyncStatus;
+  return payload as SendSyncStatus;
 }
 
 function makeGreen(node: HTMLElement) {
@@ -51,11 +61,11 @@ function replaceTextOnly(node: HTMLElement, nextText: string) {
   makeGreen(node);
 }
 
-function clearSendGateActiveBlocker(status: GateStatus | null) {
-  if (typeof document === 'undefined') return false;
+function clearSendGateActiveBlocker(status: SendSyncStatus | null) {
+  if (typeof document === 'undefined' || !status?.sendReady) return false;
   const root = document.querySelector<HTMLElement>('#inline-lead-workspace');
   if (!root) return false;
-  const quoteNumber = status?.quoteNumber || findQuoteNumber();
+  const quoteNumber = status.quoteNumber || findQuoteNumber();
   if (!quoteNumber) return false;
 
   const text = lowerTextOf(root);
@@ -109,9 +119,9 @@ export function QuoteReviewInlineComplianceFix() {
     let cancelled = false;
 
     async function run() {
-      const gate = await fetchGateStatus();
-      if (cancelled || !gate?.clear) return;
-      const changed = clearSendGateActiveBlocker(gate);
+      const status = await syncSendGate();
+      if (cancelled || !status?.sendReady) return;
+      const changed = clearSendGateActiveBlocker(status);
       if (changed) {
         window.setTimeout(() => {
           if (!cancelled) router.refresh();
