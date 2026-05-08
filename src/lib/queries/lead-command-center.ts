@@ -12,7 +12,8 @@ export type ExplainableReadiness = {
   blockers: string[]
 }
 
-const QUOTE_REVIEW_CLEAR_STATUSES = new Set(['approved', 'complete', 'completed', 'ready'])
+const QUOTE_REVIEW_CLEAR_STATUSES = new Set(['approved', 'complete', 'completed', 'ready', 'waived'])
+const QUOTE_REVIEW_CLEAR_DOC_TYPES = new Set(['waiver', 'quote_waiver', 'dispatch_defer', 'quote_review_evidence'])
 
 function byNewest<T>(items: T[], getDate: (item: T) => string | null | undefined) {
   return [...items].sort((a, b) => {
@@ -20,6 +21,10 @@ function byNewest<T>(items: T[], getDate: (item: T) => string | null | undefined
     const bTime = new Date(getDate(b) ?? 0).getTime()
     return bTime - aTime
   })
+}
+
+function normalize(value: unknown) {
+  return String(value ?? '').trim().toLowerCase()
 }
 
 function getLatestQuote(data: LeadProfileData) {
@@ -81,10 +86,20 @@ export function getComplianceStatus(data: LeadProfileData) {
 
   const latestQuote = getLatestQuote(data)
   const quoteDocuments = latestQuote?.id
-    ? data.documents.filter((document) => String(document.related_entity ?? '') === 'quote' && document.related_id === latestQuote.id)
+    ? data.documents.filter((document) => {
+        const relatedEntity = String(document.related_entity ?? '')
+        return (relatedEntity === 'quote' && document.related_id === latestQuote.id)
+          || document.linked_quote_id === latestQuote.id
+      })
     : []
   const latestQuoteDocument = byNewest(quoteDocuments, (document) => document.uploaded_at)[0] ?? null
-  const hasQuoteReviewClearDocument = quoteDocuments.some((document) => QUOTE_REVIEW_CLEAR_STATUSES.has(String(document.status ?? '').trim().toLowerCase()))
+  const hasQuoteReviewClearDocument = quoteDocuments.some((document) => {
+    const status = normalize(document.status)
+    const docType = normalize(document.doc_type)
+    const requirementCode = normalize(document.requirement_code)
+    return QUOTE_REVIEW_CLEAR_STATUSES.has(status)
+      && (requirementCode === 'quote_review_document' || QUOTE_REVIEW_CLEAR_DOC_TYPES.has(docType))
+  })
 
   if (latestQuote?.id && !hasQuoteReviewClearDocument) {
     blockers.push(latestQuoteDocument?.file_name
