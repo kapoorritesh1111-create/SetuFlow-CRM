@@ -16,6 +16,10 @@ function normalize(value: unknown) {
   return clean(value).toLowerCase();
 }
 
+function toStringSet(rows: any[], key: string) {
+  return new Set<string>(rows.map((row: any) => clean(row?.[key])).filter((value: string) => value.length > 0));
+}
+
 function ruleApplies(rule: any, lead: any, marketIds: Set<string>, productIds: Set<string>) {
   if (rule?.is_active === false || rule?.is_mandatory !== true) return false;
   const scope = normalize(rule?.progression_scope || 'general');
@@ -38,8 +42,8 @@ async function getMissingQuoteRequirementCodes(db: any, organizationId: string, 
     if (result.error) throw new Error(result.error.message);
   }
 
-  const marketIds = new Set((leadMarketsResult.data ?? []).map((row: any) => clean(row.market_id)).filter(Boolean));
-  const productIds = new Set((leadProductsResult.data ?? []).map((row: any) => clean(row.product_id)).filter(Boolean));
+  const marketIds = toStringSet(leadMarketsResult.data ?? [], 'market_id');
+  const productIds = toStringSet(leadProductsResult.data ?? [], 'product_id');
   const rules = (rulesResult.data ?? []).filter((rule: any) => ruleApplies(rule, lead, marketIds, productIds));
   const documents = documentsResult.data ?? [];
   const today = new Date().toISOString().slice(0, 10);
