@@ -91,8 +91,10 @@ export function getComplianceStatus(data: LeadProfileData) {
     ? data.documents.filter((document) => {
         const quoteDocument = document as QuoteReviewDocument
         const relatedEntity = String(quoteDocument.related_entity ?? '')
+        const requirementCode = normalize(quoteDocument.requirement_code)
         return (relatedEntity === 'quote' && quoteDocument.related_id === latestQuote.id)
           || quoteDocument.linked_quote_id === latestQuote.id
+          || (relatedEntity === 'lead' && quoteDocument.related_id === data.lead?.id && requirementCode === 'quote_review_document')
       })
     : []
   const latestQuoteDocument = byNewest(quoteDocuments, (document) => document.uploaded_at)[0] ?? null
