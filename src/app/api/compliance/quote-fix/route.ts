@@ -149,8 +149,9 @@ export async function POST(request: Request) {
   let approvedLeadRequirements = 0;
   if (action === 'waive' || action === 'defer') {
     const missingCodes = await getMissingQuoteRequirementCodes(db, organizationId, lead);
-    if (missingCodes.length) {
-      const leadRequirementDocuments = missingCodes.map((code) => ({
+    const leadRequirementCodes = Array.from(new Set(['quote_review_document', ...missingCodes]));
+    if (leadRequirementCodes.length) {
+      const leadRequirementDocuments = leadRequirementCodes.map((code) => ({
         organization_id: organizationId,
         related_entity: 'lead',
         related_id: lead.id,
@@ -167,7 +168,9 @@ export async function POST(request: Request) {
         reviewed_at: now,
         requirement_code: code,
         review_notes: notes,
-        version_label: action === 'waive' ? 'quote-waiver-requirement' : 'dispatch-deferral-requirement',
+        version_label: code === 'quote_review_document'
+          ? (action === 'waive' ? 'quote-waiver-gate-clearance' : 'dispatch-deferral-gate-clearance')
+          : (action === 'waive' ? 'quote-waiver-requirement' : 'dispatch-deferral-requirement'),
       }));
       const { error: leadDocsError } = await mutationDb.from('documents').insert(leadRequirementDocuments);
       if (leadDocsError) return NextResponse.json({ error: leadDocsError.message }, { status: 500 });
@@ -216,7 +219,7 @@ export async function POST(request: Request) {
         cleared_compliance_items: clearedComplianceItems,
         lead_compliance_status: action === 'attach' ? null : 'approved',
       },
-      metadata: { source: 'quote_review_gate_fix', quote_gate_clearance: action === 'attach' ? 'document_submitted_for_review' : 'lead_requirements_and_compliance_approved_with_recorded_reason' }
+      metadata: { source: 'quote_review_gate_fix', quote_gate_clearance: action === 'attach' ? 'document_submitted_for_review' : 'quote_and_lead_gate_clearance_recorded_with_reason' }
     },
   });
 
@@ -227,8 +230,8 @@ export async function POST(request: Request) {
   const actionMessage = action === 'attach'
     ? 'Evidence attached to this quote. Refresh draft preview after review approval.'
     : action === 'waive'
-      ? `Quote waiver recorded. ${approvedLeadRequirements} document requirement${approvedLeadRequirements === 1 ? '' : 's'} and ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'} were approved for quote send.`
-      : `Dispatch deferral recorded. ${approvedLeadRequirements} document requirement${approvedLeadRequirements === 1 ? '' : 's'} and ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'} were approved for quote send.`;
+      ? `Quote waiver recorded. ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'} and ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'} were approved for quote send.`
+      : `Dispatch deferral recorded. ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'} and ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'} were approved for quote send.`;
 
   return NextResponse.json({ ok: true, approvedLeadRequirements, clearedComplianceItems, message: actionMessage });
 }
