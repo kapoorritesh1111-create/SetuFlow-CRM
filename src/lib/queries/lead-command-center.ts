@@ -12,12 +12,18 @@ export type ExplainableReadiness = {
   blockers: string[]
 }
 
+const QUOTE_REVIEW_CLEAR_STATUSES = new Set(['approved', 'complete', 'completed', 'ready'])
+
 function byNewest<T>(items: T[], getDate: (item: T) => string | null | undefined) {
   return [...items].sort((a, b) => {
     const aTime = new Date(getDate(a) ?? 0).getTime()
     const bTime = new Date(getDate(b) ?? 0).getTime()
     return bTime - aTime
   })
+}
+
+function getLatestQuote(data: LeadProfileData) {
+  return byNewest(data.quotes, (item) => item.updated_at ?? item.created_at)[0] ?? null
 }
 
 export function getOwnerName(data: LeadProfileData) {
@@ -39,8 +45,7 @@ export function getPricingReadiness(data: LeadProfileData): PricingReadiness {
 }
 
 export function getActivePricingBasis(data: LeadProfileData): QuotePricingBasis | null {
-  const latestQuoteBasis = [...data.quotes]
-    .sort((a, b) => new Date(b.updated_at ?? b.created_at ?? 0).getTime() - new Date(a.updated_at ?? a.created_at ?? 0).getTime())[0]
+  const latestQuoteBasis = getLatestQuote(data)
   if ((latestQuoteBasis as any)?.pricing_basis) return normalizePricingBasis((latestQuoteBasis as any).pricing_basis)
 
   const normalized = data.pricingRules
@@ -73,6 +78,19 @@ export function getComplianceStatus(data: LeadProfileData) {
   })
 
   for (const rule of missingRequiredDocs) blockers.push(`${rule.title} is missing`)
+
+  const latestQuote = getLatestQuote(data)
+  const quoteDocuments = latestQuote?.id
+    ? data.documents.filter((document) => String(document.related_entity ?? '') === 'quote' && document.related_id === latestQuote.id)
+    : []
+  const latestQuoteDocument = byNewest(quoteDocuments, (document) => document.uploaded_at)[0] ?? null
+  const hasQuoteReviewClearDocument = quoteDocuments.some((document) => QUOTE_REVIEW_CLEAR_STATUSES.has(String(document.status ?? '').trim().toLowerCase()))
+
+  if (latestQuote?.id && !hasQuoteReviewClearDocument) {
+    blockers.push(latestQuoteDocument?.file_name
+      ? `Quote Review blocked: latest quote document ${latestQuoteDocument.file_name} is not approved/reviewed`
+      : 'Quote Review blocked: latest document none linked')
+  }
 
   const expiringDocs = data.documents.filter((document) => {
     if (!document.expires_at) return false
@@ -218,7 +236,7 @@ export function getQuoteSendReadiness(data: LeadProfileData): ExplainableReadine
 export function getContractHandoffReadiness(data: LeadProfileData): ExplainableReadiness {
   const blockers: string[] = []
   const compliance = getComplianceStatus(data)
-  const latestQuote = byNewest(data.quotes, (item) => item.updated_at ?? item.created_at)[0]
+  const latestQuote = getLatestQuote(data)
   const hasAcceptedQuote = Boolean(latestQuote && ['accepted', 'approved'].includes(String(latestQuote.status ?? '').toLowerCase()))
   const hasContract = data.contracts.length > 0
 
