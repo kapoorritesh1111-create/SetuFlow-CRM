@@ -5,6 +5,17 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 
 type Mode = 'attach' | 'waive' | 'defer';
+type GateStatus = {
+  ok?: boolean;
+  clear?: boolean;
+  quoteId?: string;
+  quoteNumber?: string;
+  hasClearQuoteReviewDocument?: boolean;
+  quoteReviewApproved?: boolean;
+  openComplianceCount?: number;
+  quoteReviewDocumentCount?: number;
+  error?: string;
+};
 
 function textOf(node: Element | null) {
   return String(node?.textContent ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -13,6 +24,13 @@ function textOf(node: Element | null) {
 function findTargetDetails() {
   if (typeof document === 'undefined') return null;
   return Array.from(document.querySelectorAll<HTMLDetailsElement>('#inline-lead-workspace details')).find((node) => textOf(node).includes('resolve compliance/document blocker')) ?? null;
+}
+
+function findQuoteNumber() {
+  if (typeof document === 'undefined') return '';
+  const text = document.body.textContent || '';
+  const match = text.match(/Q-\d{5}/i);
+  return match?.[0] ?? '';
 }
 
 function findQuoteId() {
@@ -24,6 +42,19 @@ function findQuoteId() {
   return '';
 }
 
+async function fetchGateStatus() {
+  const quoteId = findQuoteId();
+  const quoteNumber = findQuoteNumber();
+  const params = new URLSearchParams();
+  if (quoteId) params.set('quoteId', quoteId);
+  else if (quoteNumber) params.set('quoteNumber', quoteNumber);
+  if (!params.toString()) return null;
+  const response = await fetch(`/api/compliance/quote-gate-status?${params.toString()}`, { cache: 'no-store' });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) return { error: payload?.error || 'Could not read quote gate status.' } as GateStatus;
+  return payload as GateStatus;
+}
+
 function removeDuplicateHosts(keep?: HTMLElement | null) {
   if (typeof document === 'undefined') return;
   const hosts = Array.from(document.querySelectorAll<HTMLElement>('[data-quote-review-clear-host="true"]'));
@@ -31,6 +62,48 @@ function removeDuplicateHosts(keep?: HTMLElement | null) {
     if (keep && host === keep) continue;
     host.remove();
   }
+}
+
+function markInlineGateCleared(status?: GateStatus | null) {
+  if (typeof document === 'undefined') return;
+  const details = findTargetDetails();
+  const quoteNumber = status?.quoteNumber || findQuoteNumber() || 'active quote';
+  const message = `Quote Review gate is clear for ${quoteNumber}. Approved quote-review evidence/waiver is linked and no mandatory compliance item is open.`;
+
+  if (details) {
+    details.open = false;
+    details.setAttribute('data-quote-review-gate-clear', 'true');
+    details.classList.remove('border-rose-200', 'bg-rose-50');
+    details.classList.add('border-emerald-200', 'bg-emerald-50');
+    const summary = details.querySelector('summary');
+    if (summary) summary.textContent = 'Quote Review compliance clear';
+    const existing = details.querySelector<HTMLElement>('[data-quote-review-clear-message="true"]');
+    if (existing) {
+      existing.textContent = message;
+    } else {
+      const clearMessage = document.createElement('p');
+      clearMessage.setAttribute('data-quote-review-clear-message', 'true');
+      clearMessage.className = 'mt-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-800';
+      clearMessage.textContent = message;
+      details.appendChild(clearMessage);
+    }
+  }
+
+  removeDuplicateHosts(null);
+
+  Array.from(document.querySelectorAll<HTMLElement>('#inline-lead-workspace *')).forEach((node) => {
+    const text = textOf(node);
+    if (text === 'blocked') {
+      node.textContent = 'Ready ✓';
+      node.classList.remove('text-rose-600', 'text-red-600');
+      node.classList.add('text-emerald-700');
+    }
+    if (text === '1 blocker') {
+      node.textContent = 'Clear';
+      node.classList.remove('text-rose-600', 'text-red-600');
+      node.classList.add('text-emerald-700');
+    }
+  });
 }
 
 function ensureHost(details: HTMLDetailsElement) {
@@ -58,6 +131,18 @@ function Card() {
   const [status, setStatus] = useState('');
   const [pending, startTransition] = useTransition();
 
+  async function refreshGate() {
+    setStatus('Checking quote gate...');
+    const gate = await fetchGateStatus();
+    if (gate?.clear) {
+      markInlineGateCleared(gate);
+      setStatus('Quote Review gate is clear. Continue to Send gate.');
+      startTransition(() => router.refresh());
+      return;
+    }
+    setStatus(gate?.error || 'Quote Review gate is still blocked. Save a waiver/defer reason or attach approved evidence, then refresh.');
+  }
+
   async function save() {
     const quoteId = findQuoteId();
     if (!quoteId) return setStatus('Create/open the draft preview first so the active quote can be identified.');
@@ -71,8 +156,8 @@ function Card() {
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result?.error) return setStatus(result?.error || 'Could not save compliance action.');
-    setStatus(result?.message || 'Compliance action saved. Refreshing gate...');
-    startTransition(() => router.refresh());
+    setStatus(result?.message || 'Compliance action saved. Checking gate...');
+    await refreshGate();
   }
 
   return (
@@ -94,7 +179,7 @@ function Card() {
           </div>
           {mode === 'attach' ? <input value={fileName} onChange={(event) => setFileName(event.target.value)} placeholder="Evidence/document name" className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" /> : null}
           <textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder={mode === 'attach' ? 'Evidence note' : 'Reviewer reason'} rows={3} className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-          <div className="mt-3 flex gap-2"><button type="button" disabled={pending} onClick={save} className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save and refresh gate</button><button type="button" onClick={() => startTransition(() => router.refresh())} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Refresh gate</button></div>
+          <div className="mt-3 flex gap-2"><button type="button" disabled={pending} onClick={save} className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save and refresh gate</button><button type="button" onClick={refreshGate} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Refresh gate</button></div>
           {status ? <p className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">{status}</p> : null}
         </div>
       ) : null}
@@ -111,14 +196,20 @@ export function QuoteReviewInlineComplianceFix() {
     (window as any).__setuQuoteReviewClearCardMounted = true;
     setEnabled(true);
 
-    const install = () => {
+    const install = async () => {
+      const gate = await fetchGateStatus();
+      if (gate?.clear) {
+        markInlineGateCleared(gate);
+        setHost(null);
+        return;
+      }
       const details = findTargetDetails();
       if (!details) return;
       const nextHost = ensureHost(details);
       setHost((current) => (current === nextHost ? current : nextHost));
     };
-    install();
-    const timers = [250, 800, 1600, 3200, 6400].map((delay) => window.setTimeout(install, delay));
+    void install();
+    const timers = [250, 800, 1600, 3200, 6400].map((delay) => window.setTimeout(() => void install(), delay));
     document.addEventListener('click', install, true);
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
