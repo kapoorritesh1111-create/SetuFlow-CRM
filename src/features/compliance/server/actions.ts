@@ -22,12 +22,46 @@ function safeReturnPath(value: FormDataEntryValue | null, fallback = '/complianc
   return raw;
 }
 
+async function resolveLeadAndQuote(db: any, organizationId: string, leadId: string, quoteId: string) {
+  if (quoteId) {
+    const { data: quote, error: quoteError } = await db
+      .from('quotes')
+      .select('id, quote_number, lead_id')
+      .eq('organization_id', organizationId)
+      .eq('id', quoteId)
+      .maybeSingle();
+    if (quoteError) return { error: quoteError.message };
+    if (!quote?.id) return { error: 'Selected quote is not available in the active organization.' };
+    const resolvedLeadId = leadId || quote.lead_id;
+    const { data: lead, error: leadError } = await db
+      .from('leads')
+      .select('id, company_name')
+      .eq('organization_id', organizationId)
+      .eq('id', resolvedLeadId)
+      .maybeSingle();
+    if (leadError) return { error: leadError.message };
+    if (!lead?.id) return { error: 'Quote lead is not available in the active organization.' };
+    return { lead, quote };
+  }
+
+  const { data: lead, error: leadError } = await db
+    .from('leads')
+    .select('id, company_name')
+    .eq('organization_id', organizationId)
+    .eq('id', leadId)
+    .maybeSingle();
+  if (leadError) return { error: leadError.message };
+  if (!lead?.id) return { error: 'Selected lead is not available in the active organization.' };
+  return { lead, quote: null };
+}
+
 export async function uploadWorkspaceDocument(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
   if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
   const workspace = await getWorkspaceAccess();
   if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
 
   const leadId = String(formData.get('lead_id') ?? '').trim();
+  const quoteId = String(formData.get('quote_id') ?? '').trim();
   const docType = String(formData.get('doc_type') ?? '').trim() || 'general';
   const requirementCode = String(formData.get('requirement_code') ?? '').trim() || null;
   const reviewNotes = String(formData.get('review_notes') ?? '').trim() || null;
@@ -36,7 +70,7 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
   const typedName = String(formData.get('file_name') ?? '').trim();
   const fileName = fileEntry instanceof File && fileEntry.name ? fileEntry.name : typedName;
 
-  if (!leadId) return { error: 'Choose a lead before uploading a document.' };
+  if (!leadId && !quoteId) return { error: 'Choose a lead or quote before uploading a document.' };
   if (!fileName) return { error: 'Choose a file or enter a document name.' };
 
   const supabase = await createClient();
@@ -44,24 +78,23 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
   const db = supabase as any;
   const mutationDb = (admin ?? supabase) as any;
 
-  const { data: lead, error: leadError } = await db
-    .from('leads')
-    .select('id, company_name')
-    .eq('organization_id', workspace.organization.id)
-    .eq('id', leadId)
-    .maybeSingle();
-  if (leadError) return { error: leadError.message };
-  if (!lead?.id) return { error: 'Selected lead is not available in the active organization.' };
+  const resolved = await resolveLeadAndQuote(db, workspace.organization.id, leadId, quoteId);
+  if ('error' in resolved && resolved.error) return { error: resolved.error };
+  const lead = resolved.lead;
+  const quote = resolved.quote;
+  const relatedEntity = quote?.id ? 'quote' : 'lead';
+  const relatedId = quote?.id ?? lead.id;
 
   const now = new Date().toISOString();
   const { data: document, error } = await mutationDb
     .from('documents')
     .insert({
       organization_id: workspace.organization.id,
-      related_entity: 'lead',
-      related_id: leadId,
+      related_entity: relatedEntity,
+      related_id: relatedId,
+      linked_quote_id: quote?.id ?? null,
       file_name: fileName,
-      file_url: `workspace-upload://${leadId}/${Date.now()}/${encodeURIComponent(fileName)}`,
+      file_url: `workspace-upload://${relatedEntity}/${relatedId}/${Date.now()}/${encodeURIComponent(fileName)}`,
       doc_type: docType,
       uploaded_by: workspace.user.id,
       uploaded_at: now,
@@ -71,7 +104,7 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
       requirement_code: requirementCode,
       review_notes: reviewNotes,
       expires_at: expiresAt,
-      version_label: 'global-upload',
+      version_label: quote?.id ? 'quote-review-upload' : 'global-upload',
     })
     .select('id')
     .single();
@@ -83,15 +116,15 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
     action: 'document_uploaded',
     entity_type: 'document',
     entity_id: document?.id ?? null,
-    payload: { previous: null, new: { lead_id: leadId, file_name: fileName, status: 'submitted' }, metadata: { source: 'documents_workspace' } },
+    payload: { previous: null, new: { lead_id: lead.id, quote_id: quote?.id ?? null, file_name: fileName, status: 'submitted' }, metadata: { source: quote?.id ? 'quote_compliance_fix_panel' : 'documents_workspace' } },
   });
 
   revalidatePath('/documents');
   revalidatePath('/compliance');
   revalidatePath('/leads');
-  revalidatePath(`/leads/${leadId}`);
-  revalidatePath(safeReturnPath(formData.get('return_path'), `/compliance/assist?leadId=${leadId}`));
-  return { success: `Document uploaded for ${lead.company_name ?? 'lead'}.` };
+  revalidatePath(`/leads/${lead.id}`);
+  revalidatePath(safeReturnPath(formData.get('return_path'), quote?.id ? `/compliance/assist?quoteId=${quote.id}` : `/compliance/assist?leadId=${lead.id}`));
+  return { success: `Document uploaded for ${quote?.quote_number ? `quote ${quote.quote_number}` : lead.company_name ?? 'lead'}.` };
 }
 
 export async function waiveLeadDocumentRequirement(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
@@ -103,10 +136,11 @@ export async function waiveLeadDocumentRequirement(_: ActionState | undefined, f
   }
 
   const leadId = String(formData.get('lead_id') ?? '').trim();
+  const quoteId = String(formData.get('quote_id') ?? '').trim();
   const requirementCode = String(formData.get('requirement_code') ?? '').trim();
   const reason = String(formData.get('review_notes') ?? '').trim();
   const docType = String(formData.get('doc_type') ?? '').trim() || 'waiver';
-  if (!leadId) return { error: 'Lead id is required.' };
+  if (!leadId && !quoteId) return { error: 'Lead or quote id is required.' };
   if (!requirementCode) return { error: 'Requirement code is required.' };
   if (reason.length < 8) return { error: 'Add a short waiver reason before approving this exception.' };
 
@@ -115,25 +149,24 @@ export async function waiveLeadDocumentRequirement(_: ActionState | undefined, f
   const db = supabase as any;
   const mutationDb = (admin ?? supabase) as any;
 
-  const { data: lead, error: leadError } = await db
-    .from('leads')
-    .select('id, company_name')
-    .eq('organization_id', workspace.organization.id)
-    .eq('id', leadId)
-    .maybeSingle();
-  if (leadError) return { error: leadError.message };
-  if (!lead?.id) return { error: 'Selected lead is not available in the active organization.' };
+  const resolved = await resolveLeadAndQuote(db, workspace.organization.id, leadId, quoteId);
+  if ('error' in resolved && resolved.error) return { error: resolved.error };
+  const lead = resolved.lead;
+  const quote = resolved.quote;
+  const relatedEntity = quote?.id ? 'quote' : 'lead';
+  const relatedId = quote?.id ?? lead.id;
 
   const now = new Date().toISOString();
-  const fileName = `Waiver - ${requirementCode}`;
+  const fileName = docType === 'dispatch_defer' ? `Dispatch deferral - ${requirementCode}` : `Waiver - ${requirementCode}`;
   const { data: document, error } = await mutationDb
     .from('documents')
     .insert({
       organization_id: workspace.organization.id,
-      related_entity: 'lead',
-      related_id: leadId,
+      related_entity: relatedEntity,
+      related_id: relatedId,
+      linked_quote_id: quote?.id ?? null,
       file_name: fileName,
-      file_url: `workspace-waiver://${leadId}/${Date.now()}/${encodeURIComponent(requirementCode)}`,
+      file_url: `workspace-waiver://${relatedEntity}/${relatedId}/${Date.now()}/${encodeURIComponent(requirementCode)}`,
       doc_type: docType,
       uploaded_by: workspace.user.id,
       uploaded_at: now,
@@ -144,7 +177,7 @@ export async function waiveLeadDocumentRequirement(_: ActionState | undefined, f
       reviewed_at: now,
       requirement_code: requirementCode,
       review_notes: reason,
-      version_label: 'quote-waiver',
+      version_label: docType === 'dispatch_defer' ? 'dispatch-deferral' : 'quote-waiver',
     })
     .select('id')
     .single();
@@ -153,18 +186,18 @@ export async function waiveLeadDocumentRequirement(_: ActionState | undefined, f
   await mutationDb.from('audit_logs').insert({
     organization_id: workspace.organization.id,
     actor_user_id: workspace.user.id,
-    action: 'document_requirement_waived',
+    action: docType === 'dispatch_defer' ? 'document_requirement_deferred_to_dispatch' : 'document_requirement_waived',
     entity_type: 'document',
     entity_id: document?.id ?? null,
-    payload: { previous: null, new: { lead_id: leadId, requirement_code: requirementCode, status: 'approved', reason }, metadata: { source: 'compliance_assist' } },
+    payload: { previous: null, new: { lead_id: lead.id, quote_id: quote?.id ?? null, requirement_code: requirementCode, status: 'approved', reason }, metadata: { source: 'compliance_assist' } },
   });
 
   revalidatePath('/documents');
   revalidatePath('/compliance');
   revalidatePath('/leads');
-  revalidatePath(`/leads/${leadId}`);
-  revalidatePath(safeReturnPath(formData.get('return_path'), `/compliance/assist?leadId=${leadId}`));
-  return { success: `Waiver recorded for ${lead.company_name ?? 'lead'}.` };
+  revalidatePath(`/leads/${lead.id}`);
+  revalidatePath(safeReturnPath(formData.get('return_path'), quote?.id ? `/compliance/assist?quoteId=${quote.id}` : `/compliance/assist?leadId=${lead.id}`));
+  return { success: `${docType === 'dispatch_defer' ? 'Dispatch deferral' : 'Waiver'} recorded for ${quote?.quote_number ? `quote ${quote.quote_number}` : lead.company_name ?? 'lead'}.` };
 }
 
 export async function updateDocumentWorkflow(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
@@ -210,9 +243,7 @@ export async function updateDocumentWorkflow(_: ActionState | undefined, formDat
   revalidatePath('/documents');
   revalidatePath('/compliance');
   revalidatePath('/pipeline');
-  if (relatedEntity === 'lead' && typeof relatedId === 'string') {
-    revalidatePath(`/leads/${relatedId}`);
-  }
+  if (relatedEntity === 'lead' && typeof relatedId === 'string') revalidatePath(`/leads/${relatedId}`);
   return { success: 'Document workflow updated.' };
 }
 
@@ -258,8 +289,6 @@ export async function updateComplianceWorkflow(_: ActionState | undefined, formD
   revalidatePath('/documents');
   revalidatePath('/compliance');
   revalidatePath('/pipeline');
-  if (typeof leadId === 'string') {
-    revalidatePath(`/leads/${leadId}`);
-  }
+  if (typeof leadId === 'string') revalidatePath(`/leads/${leadId}`);
   return { success: 'Compliance workflow updated.' };
 }
