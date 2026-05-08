@@ -6,12 +6,14 @@ import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
+const CLEAR_STATUSES = new Set(['approved', 'complete', 'completed', 'ready', 'waived']);
+
 function clean(value: unknown) {
   return String(value ?? '').trim();
 }
 
 function normalize(value: unknown) {
-  return String(value ?? '').trim().toLowerCase();
+  return clean(value).toLowerCase();
 }
 
 function ruleApplies(rule: any, lead: any, marketIds: Set<string>, productIds: Set<string>) {
@@ -36,43 +38,63 @@ async function getMissingQuoteRequirementCodes(db: any, organizationId: string, 
     if (result.error) throw new Error(result.error.message);
   }
 
-  const marketIds: Set<string> = new Set(
-    (leadMarketsResult.data ?? [])
-      .map((row: any) => clean(row.market_id))
-      .filter((value: string) => value.length > 0)
-  );
-  const productIds: Set<string> = new Set(
-    (leadProductsResult.data ?? [])
-      .map((row: any) => clean(row.product_id))
-      .filter((value: string) => value.length > 0)
-  );
+  const marketIds = new Set((leadMarketsResult.data ?? []).map((row: any) => clean(row.market_id)).filter(Boolean));
+  const productIds = new Set((leadProductsResult.data ?? []).map((row: any) => clean(row.product_id)).filter(Boolean));
   const rules = (rulesResult.data ?? []).filter((rule: any) => ruleApplies(rule, lead, marketIds, productIds));
   const documents = documentsResult.data ?? [];
   const today = new Date().toISOString().slice(0, 10);
-  const approvedStatuses = new Set(['approved', 'complete', 'completed', 'ready', 'waived']);
-
   const codes: string[] = [];
+
   for (const rule of rules) {
     const code = clean(rule.requirement_code);
     if (!code || codes.includes(code)) continue;
-    const hasApproved = documents.some((document: any) => {
+    const approved = documents.some((document: any) => {
       const sameCode = clean(document.requirement_code) === code;
-      const notExpired = !document.expires_at || String(document.expires_at) >= today;
-      return sameCode && notExpired && approvedStatuses.has(normalize(document.status));
+      const current = !document.expires_at || String(document.expires_at) >= today;
+      return sameCode && current && CLEAR_STATUSES.has(normalize(document.status));
     });
-    if (!hasApproved) codes.push(code);
+    if (!approved) codes.push(code);
   }
   return codes;
 }
 
+type DocumentLookup = {
+  organization_id: string;
+  related_entity: string;
+  related_id: string;
+  linked_quote_id: string;
+  requirement_code: string;
+  doc_type?: string;
+};
+
+async function saveDocumentIdempotently(db: any, lookup: DocumentLookup, payload: Record<string, unknown>) {
+  let findQuery = db.from('documents').select('id');
+  for (const [key, value] of Object.entries(lookup)) {
+    if (value != null) findQuery = findQuery.eq(key, value);
+  }
+  const { data: existingRows, error: findError } = await findQuery.order('uploaded_at', { ascending: false }).limit(1);
+  if (findError) throw new Error(findError.message);
+  const existingId = Array.isArray(existingRows) ? existingRows[0]?.id : null;
+
+  if (existingId) {
+    const { data, error } = await db.from('documents').update(payload).eq('id', existingId).select('id').single();
+    if (error) throw new Error(error.message);
+    return { id: data?.id ?? existingId, created: false };
+  }
+
+  const { data, error } = await db.from('documents').insert(payload).select('id').single();
+  if (error) throw new Error(error.message);
+  return { id: data?.id ?? null, created: true };
+}
+
 export async function POST(request: Request) {
   if (!hasSupabaseEnv) return NextResponse.json({ error: 'Missing Supabase environment variables.' }, { status: 500 });
+
   const workspace = await getWorkspaceAccess();
   if (!workspace.user || !workspace.organization) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
 
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
-
   const payload = await request.json().catch(() => ({}));
   const quoteId = clean(payload.quoteId);
   const action = clean(payload.action).toLowerCase();
@@ -88,9 +110,8 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
-  const admin = createAdminSupabaseClient();
+  const mutationDb = (createAdminSupabaseClient() ?? supabase) as any;
   const db = supabase as any;
-  const mutationDb = (admin ?? supabase) as any;
 
   const { data: quote, error: quoteError } = await db
     .from('quotes')
@@ -111,14 +132,10 @@ export async function POST(request: Request) {
   if (!lead?.id) return NextResponse.json({ error: 'Quote lead was not found.' }, { status: 404 });
 
   const now = new Date().toISOString();
+  const quoteLabel = quote.quote_number ?? quote.id.slice(0, 8);
   const docType = action === 'attach' ? 'quote_review_evidence' : action === 'waive' ? 'waiver' : 'dispatch_defer';
   const status = action === 'attach' ? 'submitted' : 'approved';
-  const quoteLabel = quote.quote_number ?? quote.id.slice(0, 8);
-  const fileName = action === 'attach'
-    ? fileNameInput
-    : action === 'waive'
-      ? `Quote waiver - ${quoteLabel}`
-      : `Dispatch deferral - ${quoteLabel}`;
+  const fileName = action === 'attach' ? fileNameInput : action === 'waive' ? `Quote waiver - ${quoteLabel}` : `Dispatch deferral - ${quoteLabel}`;
 
   const quoteDocumentPayload: Record<string, unknown> = {
     organization_id: organizationId,
@@ -126,7 +143,9 @@ export async function POST(request: Request) {
     related_id: quote.id,
     linked_quote_id: quote.id,
     file_name: fileName,
-    file_url: `workspace-quote-fix://${quote.id}/${Date.now()}/${encodeURIComponent(fileName)}`,
+    file_url: action === 'attach'
+      ? `workspace-quote-fix://${quote.id}/${Date.now()}/${encodeURIComponent(fileName)}`
+      : `workspace-quote-fix://${quote.id}/${encodeURIComponent(docType)}`,
     doc_type: docType,
     uploaded_by: actorUserId,
     uploaded_at: now,
@@ -142,41 +161,71 @@ export async function POST(request: Request) {
     quoteDocumentPayload.reviewed_at = now;
   }
 
-  const { data: quoteDocument, error: insertError } = await mutationDb.from('documents').insert(quoteDocumentPayload).select('id').single();
-  if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
+  let quoteDocument: { id: string | null; created: boolean };
+  try {
+    if (action === 'attach') {
+      const { data, error } = await mutationDb.from('documents').insert(quoteDocumentPayload).select('id').single();
+      if (error) throw new Error(error.message);
+      quoteDocument = { id: data?.id ?? null, created: true };
+    } else {
+      quoteDocument = await saveDocumentIdempotently(mutationDb, {
+        organization_id: organizationId,
+        related_entity: 'quote',
+        related_id: quote.id,
+        linked_quote_id: quote.id,
+        requirement_code: 'quote_review_document',
+        doc_type: docType,
+      }, quoteDocumentPayload);
+    }
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not save quote document.' }, { status: 500 });
+  }
 
-  let clearedComplianceItems = 0;
   let approvedLeadRequirements = 0;
+  let updatedLeadRequirements = 0;
+  let clearedComplianceItems = 0;
   let supersededQuoteReviewDocuments = 0;
   let quoteReviewApproved = false;
+  let quoteLineCount = 0;
+
   if (action === 'waive' || action === 'defer') {
     const missingCodes = await getMissingQuoteRequirementCodes(db, organizationId, lead);
     const leadRequirementCodes = Array.from(new Set(['quote_review_document', ...missingCodes]));
-    if (leadRequirementCodes.length) {
-      const leadRequirementDocuments = leadRequirementCodes.map((code) => ({
-        organization_id: organizationId,
-        related_entity: 'lead',
-        related_id: lead.id,
-        linked_quote_id: quote.id,
-        file_name: `${fileName} - ${code}`,
-        file_url: `workspace-quote-fix://${quote.id}/${Date.now()}/${encodeURIComponent(code)}`,
-        doc_type: docType,
-        uploaded_by: actorUserId,
-        uploaded_at: now,
-        version: 1,
-        status: 'approved',
-        owner_user_id: actorUserId,
-        reviewer_user_id: actorUserId,
-        reviewed_at: now,
-        requirement_code: code,
-        review_notes: notes,
-        version_label: code === 'quote_review_document'
-          ? (action === 'waive' ? 'quote-waiver-gate-clearance' : 'dispatch-deferral-gate-clearance')
-          : (action === 'waive' ? 'quote-waiver-requirement' : 'dispatch-deferral-requirement'),
-      }));
-      const { error: leadDocsError } = await mutationDb.from('documents').insert(leadRequirementDocuments);
-      if (leadDocsError) return NextResponse.json({ error: leadDocsError.message }, { status: 500 });
-      approvedLeadRequirements = leadRequirementDocuments.length;
+
+    for (const code of leadRequirementCodes) {
+      try {
+        const result = await saveDocumentIdempotently(mutationDb, {
+          organization_id: organizationId,
+          related_entity: 'lead',
+          related_id: lead.id,
+          linked_quote_id: quote.id,
+          requirement_code: code,
+        }, {
+          organization_id: organizationId,
+          related_entity: 'lead',
+          related_id: lead.id,
+          linked_quote_id: quote.id,
+          file_name: `${fileName} - ${code}`,
+          file_url: `workspace-quote-fix://${quote.id}/${encodeURIComponent(code)}`,
+          doc_type: docType,
+          uploaded_by: actorUserId,
+          uploaded_at: now,
+          version: 1,
+          status: 'approved',
+          owner_user_id: actorUserId,
+          reviewer_user_id: actorUserId,
+          reviewed_at: now,
+          requirement_code: code,
+          review_notes: notes,
+          version_label: code === 'quote_review_document'
+            ? (action === 'waive' ? 'quote-waiver-gate-clearance' : 'dispatch-deferral-gate-clearance')
+            : (action === 'waive' ? 'quote-waiver-requirement' : 'dispatch-deferral-requirement'),
+        });
+        if (result.created) approvedLeadRequirements += 1;
+        else updatedLeadRequirements += 1;
+      } catch (error) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not save lead requirement clearance.' }, { status: 500 });
+      }
     }
 
     const { data: pendingQuoteReviewDocuments, error: pendingQuoteReviewError } = await db
@@ -188,24 +237,23 @@ export async function POST(request: Request) {
     if (pendingQuoteReviewError) return NextResponse.json({ error: pendingQuoteReviewError.message }, { status: 500 });
 
     const pendingQuoteReviewIds = (pendingQuoteReviewDocuments ?? [])
-      .filter((document: any) => !['approved', 'complete', 'completed', 'ready', 'waived'].includes(normalize(document.status)))
+      .filter((document: any) => !CLEAR_STATUSES.has(normalize(document.status)))
       .map((document: any) => document.id)
       .filter(Boolean);
 
     if (pendingQuoteReviewIds.length) {
       const { error: supersedeError } = await mutationDb
         .from('documents')
-        .update({
-          status: 'approved',
-          reviewer_user_id: actorUserId,
-          reviewed_at: now,
-          review_notes: `Superseded by ${action === 'waive' ? 'quote waiver' : 'dispatch deferral'}: ${notes}`,
-        })
+        .update({ status: 'approved', reviewer_user_id: actorUserId, reviewed_at: now, review_notes: `${action} decision cleared quote review: ${notes}` })
         .in('id', pendingQuoteReviewIds)
         .eq('organization_id', organizationId);
       if (supersedeError) return NextResponse.json({ error: supersedeError.message }, { status: 500 });
       supersededQuoteReviewDocuments = pendingQuoteReviewIds.length;
     }
+
+    const { data: quoteLines, error: quoteLinesError } = await db.from('quote_line_items').select('id').eq('quote_id', quote.id);
+    if (quoteLinesError) return NextResponse.json({ error: quoteLinesError.message }, { status: 500 });
+    quoteLineCount = Array.isArray(quoteLines) ? quoteLines.length : 0;
 
     const { error: quoteUpdateError } = await mutationDb
       .from('quotes')
@@ -220,11 +268,10 @@ export async function POST(request: Request) {
     if (quoteUpdateError) return NextResponse.json({ error: quoteUpdateError.message }, { status: 500 });
     quoteReviewApproved = true;
 
-    const quoteVersionQuery = mutationDb
-      .from('quote_versions')
-      .update({ approved_at: now })
-      .eq('quote_id', quote.id);
-    if (quote.current_version_id) quoteVersionQuery.eq('id', quote.current_version_id);
+    const quoteVersionUpdate: Record<string, unknown> = { approved_at: now, approved_by: actorUserId, updated_at: now };
+    if (quoteLineCount > 0) quoteVersionUpdate.total_line_count = quoteLineCount;
+    let quoteVersionQuery = mutationDb.from('quote_versions').update(quoteVersionUpdate).eq('quote_id', quote.id);
+    if (quote.current_version_id) quoteVersionQuery = quoteVersionQuery.eq('id', quote.current_version_id);
     const { error: quoteVersionUpdateError } = await quoteVersionQuery;
     if (quoteVersionUpdateError) return NextResponse.json({ error: quoteVersionUpdateError.message }, { status: 500 });
 
@@ -236,14 +283,14 @@ export async function POST(request: Request) {
     if (openItemsError) return NextResponse.json({ error: openItemsError.message }, { status: 500 });
 
     const openItemIds = (openItems ?? [])
-      .filter((item: any) => !['approved', 'complete', 'completed', 'ready'].includes(normalize(item.status)))
+      .filter((item: any) => !CLEAR_STATUSES.has(normalize(item.status)))
       .map((item: any) => item.id)
       .filter(Boolean);
 
     if (openItemIds.length) {
       const { error: clearError } = await mutationDb
         .from('lead_compliance_items')
-        .update({ status: 'approved', submitted_at: now, approved_at: now })
+        .update({ status: 'approved', submitted_at: now, approved_at: now, reviewer_user_id: actorUserId, reviewed_at: now, review_notes: notes })
         .in('id', openItemIds)
         .eq('organization_id', organizationId);
       if (clearError) return NextResponse.json({ error: clearError.message }, { status: 500 });
@@ -259,20 +306,8 @@ export async function POST(request: Request) {
     entity_id: quoteDocument?.id ?? null,
     payload: {
       previous: null,
-      new: {
-        quote_id: quote.id,
-        lead_id: lead.id,
-        action,
-        status,
-        file_name: fileName,
-        notes,
-        approved_lead_requirements: approvedLeadRequirements,
-        cleared_compliance_items: clearedComplianceItems,
-        superseded_quote_review_documents: supersededQuoteReviewDocuments,
-        quote_review_approved: quoteReviewApproved,
-        lead_compliance_status: action === 'attach' ? null : 'approved',
-      },
-      metadata: { source: 'quote_review_gate_fix', quote_gate_clearance: action === 'attach' ? 'document_submitted_for_review' : 'quote_and_lead_gate_clearance_recorded_with_reason' }
+      new: { quote_id: quote.id, lead_id: lead.id, action, status, file_name: fileName, notes, quote_document_created: quoteDocument.created, approved_lead_requirements: approvedLeadRequirements, updated_lead_requirements: updatedLeadRequirements, cleared_compliance_items: clearedComplianceItems, superseded_quote_review_documents: supersededQuoteReviewDocuments, quote_review_approved: quoteReviewApproved, quote_line_count: quoteLineCount },
+      metadata: { source: 'quote_review_gate_fix', idempotent_decision: action !== 'attach' }
     },
   });
 
@@ -283,8 +318,8 @@ export async function POST(request: Request) {
   const actionMessage = action === 'attach'
     ? 'Evidence attached to this quote. Refresh draft preview after review approval.'
     : action === 'waive'
-      ? `Quote waiver recorded. Quote review approved, ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'}, ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'}, and ${supersededQuoteReviewDocuments} pending quote-review document${supersededQuoteReviewDocuments === 1 ? '' : 's'} were approved for quote send.`
-      : `Dispatch deferral recorded. Quote review approved, ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'}, ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'}, and ${supersededQuoteReviewDocuments} pending quote-review document${supersededQuoteReviewDocuments === 1 ? '' : 's'} were approved for quote send.`;
+      ? `Quote waiver saved. ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'} created, ${updatedLeadRequirements} updated, and quote version refreshed with ${quoteLineCount} line${quoteLineCount === 1 ? '' : 's'}.`
+      : `Dispatch deferral saved. ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'} created, ${updatedLeadRequirements} updated, and quote version refreshed with ${quoteLineCount} line${quoteLineCount === 1 ? '' : 's'}.`;
 
-  return NextResponse.json({ ok: true, approvedLeadRequirements, clearedComplianceItems, supersededQuoteReviewDocuments, quoteReviewApproved, message: actionMessage });
+  return NextResponse.json({ ok: true, quoteDocumentCreated: quoteDocument.created, approvedLeadRequirements, updatedLeadRequirements, clearedComplianceItems, supersededQuoteReviewDocuments, quoteReviewApproved, quoteLineCount, message: actionMessage });
 }
