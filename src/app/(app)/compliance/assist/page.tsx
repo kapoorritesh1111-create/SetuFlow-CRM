@@ -7,7 +7,7 @@ import { getApplicableRequirementRules, type DocumentRequirementRule, type LeadR
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
 
-const APPROVED_STATUSES = new Set(['approved', 'complete', 'completed', 'ready', 'waived']);
+const APPROVED_STATUSES = new Set(['approved', 'complete', 'completed', 'ready']);
 const PENDING_STATUSES = new Set(['submitted', 'pending', 'in_review', 'pending_review']);
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -22,10 +22,11 @@ function normalizeStatus(value: unknown) { return String(value ?? '').trim().toL
 function isApproved(value: unknown) { return APPROVED_STATUSES.has(normalizeStatus(value)); }
 function isPending(value: unknown) { return PENDING_STATUSES.has(normalizeStatus(value)); }
 function quoteLabel(quote?: QuoteContext | null) { return quote?.quote_number ? `Quote ${quote.quote_number}` : quote?.id ? `Quote ${quote.id.slice(0, 8)}` : 'Active quote'; }
-function reviewReturnHref(leadId: string, quoteId: string) { return `/leads?leadId=${encodeURIComponent(leadId)}&view=quote&quoteId=${encodeURIComponent(quoteId)}&quoteStep=review#quote-review`; }
+function reviewReturnHref(leadId: string, quoteId: string) { return quoteId ? `/leads?leadId=${encodeURIComponent(leadId)}&view=quote&quoteId=${encodeURIComponent(quoteId)}&quoteStep=review#quote-review` : `/leads?leadId=${encodeURIComponent(leadId)}&view=quote`; }
 function assistReturnPath(leadId: string, quoteId: string) { return quoteId ? `/compliance/assist?quoteId=${quoteId}` : `/compliance/assist?leadId=${leadId}`; }
 function latestQuoteDoc(docs: QuoteDocument[]) { return [...docs].sort((a, b) => String(b.uploaded_at ?? '').localeCompare(String(a.uploaded_at ?? '')))[0] ?? null; }
-function quoteDocStatus(docs: QuoteDocument[]) {
+function quoteDocStatus(docs: QuoteDocument[], hasQuote: boolean) {
+  if (!hasQuote) return { label: 'No quote', tone: 'neutral' as const, reason: 'No active quote context was found. Open this from a quote or use the command center quote action first.' };
   if (!docs.length) return { label: 'Missing', tone: 'blocked' as const, reason: 'Latest document: none linked. Quote review blocks send because no quote-linked evidence, waiver, or dispatch deferral is attached yet.' };
   const latest = latestQuoteDoc(docs);
   if (docs.some((doc) => isApproved(doc.status))) return { label: 'Cleared', tone: 'ready' as const, reason: `Latest document: ${latest?.file_name ?? 'linked evidence'} · approved/reviewed.` };
@@ -45,6 +46,7 @@ async function submitEvidence(formData: FormData): Promise<void> { 'use server';
 async function submitWaiver(formData: FormData): Promise<void> { 'use server'; await waiveLeadDocumentRequirement(undefined, formData); }
 
 function QuickFixActions({ leadId, quoteId, canReview, requirementCode, returnPath }: { leadId: string; quoteId: string; canReview: boolean; requirementCode: string; returnPath: string }) {
+  if (!quoteId) return <StateMessage title="Quote context needed" description="Open Compliance Assist from the active quote so evidence, waiver, or dispatch deferral can be linked to the exact quote review." tone="warning" />;
   return <div className="grid gap-3 lg:grid-cols-3">
     <form action={submitEvidence} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <input type="hidden" name="lead_id" value={leadId} /><input type="hidden" name="quote_id" value={quoteId} /><input type="hidden" name="requirement_code" value={requirementCode} /><input type="hidden" name="doc_type" value="quote_review_evidence" /><input type="hidden" name="return_path" value={returnPath} />
@@ -73,12 +75,20 @@ export default async function ComplianceAssistPage({ searchParams }: { searchPar
   if (!workspace.user || !workspace.organization) return <WorkspaceState eyebrow="Compliance assist" title="Workspace access needed" description="Sign in to a workspace before opening compliance assist." primaryActionHref="/dashboard" primaryActionLabel="Go to dashboard" />;
   const db = (await createClient()) as any;
   const requestedLeadId = firstParam(searchParams, 'leadId');
-  const quoteId = firstParam(searchParams, 'quoteId');
+  const requestedQuoteId = firstParam(searchParams, 'quoteId');
   let quoteContext: QuoteContext | null = null;
-  if (quoteId) {
-    const { data } = await db.from('quotes').select('id, quote_number, lead_id, status, currency, display_currency, updated_at').eq('organization_id', workspace.organization.id).eq('id', quoteId).maybeSingle();
+
+  if (requestedQuoteId) {
+    const { data } = await db.from('quotes').select('id, quote_number, lead_id, status, currency, display_currency, updated_at').eq('organization_id', workspace.organization.id).eq('id', requestedQuoteId).maybeSingle();
     quoteContext = data ?? null;
   }
+
+  if (!quoteContext?.id && requestedLeadId) {
+    const { data } = await db.from('quotes').select('id, quote_number, lead_id, status, currency, display_currency, updated_at').eq('organization_id', workspace.organization.id).eq('lead_id', requestedLeadId).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    quoteContext = data ?? null;
+  }
+
+  const quoteId = quoteContext?.id ?? requestedQuoteId;
   const leadId = requestedLeadId || quoteContext?.lead_id || '';
   if (!leadId) return <WorkspaceState eyebrow="Compliance assist" title="Open from a lead or quote" description="Compliance Assist needs a lead or quote context so it can show the correct blocker and evidence path." primaryActionHref="/leads" primaryActionLabel="Open leads" />;
 
@@ -99,13 +109,15 @@ export default async function ComplianceAssistPage({ searchParams }: { searchPar
   const quoteRules = getApplicableRequirementRules({ rules: (rules ?? []) as DocumentRequirementRule[], leadType: lead.lead_type, marketIds, productIds, scope: 'quote_send' }).filter((rule) => rule.is_mandatory === true);
   const openQuoteRules = quoteRules.filter((rule) => !ruleCleared(rule, (leadDocuments ?? []) as LeadRequirementDocument[]));
   const quoteDocs = (quoteDocuments ?? []) as QuoteDocument[];
-  const quoteDoc = quoteDocStatus(quoteDocs);
-  const quoteReviewBlocked = Boolean(quoteContext?.id && quoteDoc.tone !== 'ready');
+  const quoteDoc = quoteDocStatus(quoteDocs, Boolean(quoteContext?.id || quoteId));
+  const quoteReviewBlocked = Boolean((quoteContext?.id || quoteId) && quoteDoc.tone !== 'ready');
   const canReview = hasWorkspaceCapability(workspace.currentRoles, 'compliance.review');
   const leadName = (lead as LeadRow).company_name;
   const returnHref = reviewReturnHref(lead.id, quoteId);
   const returnPath = assistReturnPath(lead.id, quoteId);
   const requirementCode = openQuoteRules[0]?.requirement_code ?? 'quote_review_document';
+  const headerBadgeClass = quoteReviewBlocked ? 'bg-rose-50 text-rose-700' : quoteDoc.tone === 'attention' ? 'bg-amber-50 text-amber-700' : quoteDoc.tone === 'ready' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700';
+  const headerBadgeLabel = quoteReviewBlocked ? 'Blocked' : quoteDoc.label;
 
   return <div className="mx-auto max-w-5xl space-y-4">
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_14px_36px_rgba(15,23,42,0.07)]">
@@ -114,16 +126,16 @@ export default async function ComplianceAssistPage({ searchParams }: { searchPar
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-700">Lead → Quote → Compliance</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Quick compliance fix</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600"><strong>{leadName}</strong>{quoteContext ? ` · ${quoteLabel(quoteContext)}` : ''}. This panel shows the same quote-review document blocker and the shortest safe way to clear or defer it.</p>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold"><span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-700">Return target: Review step</span>{quoteContext ? <span className="rounded-full bg-sky-50 px-3 py-1.5 text-sky-700">{quoteLabel(quoteContext)}</span> : null}<span className={`rounded-full px-3 py-1.5 ${quoteReviewBlocked ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{quoteReviewBlocked ? 'Blocked' : 'Clear'}</span></div>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold"><span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-700">Return target: Review step</span>{quoteContext ? <span className="rounded-full bg-sky-50 px-3 py-1.5 text-sky-700">{quoteLabel(quoteContext)}</span> : null}<span className={`rounded-full px-3 py-1.5 ${headerBadgeClass}`}>{headerBadgeLabel}</span></div>
         </div>
-        <div className="flex flex-wrap gap-2"><Link href={returnHref} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Back to review</Link><Link href={`/leads/${lead.id}?focus=commercial`} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open command center</Link></div>
+        <div className="flex flex-wrap gap-2"><Link href={returnHref} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Back to review</Link><Link href={`/leads?leadId=${encodeURIComponent(lead.id)}&view=workflow`} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open command center</Link></div>
       </div>
     </section>
 
     {firstParam(searchParams, 'notice') ? <StateMessage title="Compliance update" description={firstParam(searchParams, 'notice')} tone="success" /> : null}
 
     <section className={`rounded-[1.25rem] border p-5 shadow-sm ${toneClasses(quoteDoc.tone)}`}>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.16em]">Exact quote-review blocker</p><h2 className="mt-2 text-xl font-semibold">{quoteReviewBlocked ? 'Document evidence is missing for this quote review' : 'Quote-review document posture is clear'}</h2><p className="mt-2 text-sm leading-6">{quoteDoc.reason}</p></div><span className="rounded-full border border-current/20 bg-white/70 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em]">{quoteDoc.label}</span></div>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.16em]">Exact quote-review blocker</p><h2 className="mt-2 text-xl font-semibold">{quoteReviewBlocked ? 'Document evidence is missing for this quote review' : quoteDoc.tone === 'ready' ? 'Quote-review document posture is clear' : 'Open an active quote to review document posture'}</h2><p className="mt-2 text-sm leading-6">{quoteDoc.reason}</p></div><span className="rounded-full border border-current/20 bg-white/70 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em]">{quoteDoc.label}</span></div>
       {quoteReviewBlocked ? <div className="mt-4"><QuickFixActions leadId={lead.id} quoteId={quoteId} canReview={canReview} requirementCode={requirementCode} returnPath={returnPath} /></div> : null}
     </section>
 
