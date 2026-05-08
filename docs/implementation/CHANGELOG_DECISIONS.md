@@ -4,6 +4,33 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-08 — Sprint 6 quote review compliance action surface restored
+
+Decision:
+
+- Production screenshot after the gate-status fix showed the red blocker remained visible but no compliance action surface was available to the operator.
+- Added a stable React-only quote Review compliance action panel that renders only on `/leads?quoteId=...&quoteStep=review`.
+- The panel lets the operator record `Defer to dispatch` or `Waive for quote` with a reviewer reason, saves through `/api/compliance/quote-fix`, and refreshes the quote Review screen in place.
+- This is not the removed DOM enhancer: it does not query or mutate quote builder DOM and it does not use `MutationObserver`.
+- The next refinement should move this panel from layout-level route rendering into the quote Review component itself once `leads-workspace.tsx` is safely refactored.
+
+Files:
+
+- `src/features/leads/components/quote-review-compliance-actions.tsx`
+- `src/app/(app)/layout.tsx`
+- `tests/quote-review-compliance-actions.test.mjs`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No schema change.
+- No quote PDF/share/send changes.
+- No hidden DOM injection.
+- No separate Compliance Assist route for this blocker.
+- Waiver/defer reason remains recorded through the quote-fix API.
+
+---
+
 ## 2026-05-08 — Sprint 6 quote review gate source-of-truth fix
 
 Decision:
@@ -52,21 +79,6 @@ Protected:
 - No silent quote send.
 - No hidden DOM injection.
 - No duplicate compliance page routing.
-
----
-
-## 2026-05-07 — Sprint 6 inline quote-review compliance fix attempt
-
-Decision:
-
-- Production screenshot showed the separate Compliance Assist page still felt disconnected from quote builder, and defer was not visibly saving in the quote workflow.
-- An inline DOM enhancer was added as a temporary quote-review repair path.
-- Follow-up production testing showed that this approach was not acceptable for SaaS UX and caused React runtime instability, so it is no longer the accepted path.
-
-Protected next direction:
-
-- Implement the fix directly inside `leads-workspace.tsx` or a proper quote review child component.
-- Do not use layout-level DOM mutation for quote workflow controls.
 
 ---
 
