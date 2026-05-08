@@ -5,7 +5,8 @@ Purpose: Use Compliance to clarify what is required now, what is advisory for la
 ## Best for
 
 - Reviewing compliance blockers and evidence status in the active lead or quote workflow.
-- Opening a single fix panel from the quote blocker without losing the active quote context.
+- Opening a scoped compliance check window from the quote blocker without losing the active quote context.
+- Opening the full Compliance Assist page only when more workspace is needed.
 - Separating quote-send requirements from order/dispatch requirements.
 - Explaining waiver, dispatch deferral, and human approval requirements.
 - Guiding users to the next safe action without adding duplicate action panels.
@@ -13,11 +14,19 @@ Purpose: Use Compliance to clarify what is required now, what is advisory for la
 ## Common questions Setu Guru should answer
 
 - Why exactly is this quote blocked?
-- Did the compliance fix panel open the correct lead and quote?
+- Did the compliance check open the correct lead and quote?
 - Where do I attach the required document?
 - Can I ignore this for quote and record it for dispatch?
 - Is this a true blocker or an advisory document?
 - Who needs to approve a waiver or dispatch deferral?
+
+## Compliance check window policy
+
+When the quote preview or quote Review blocker is active, keep the user inside the current workflow first. The primary action should open a scoped Compliance Check window over the Lead Command Center or Quote Builder, not a global overlay and not a separate sticky panel.
+
+The scoped window may embed `/compliance/assist?quoteId=<quote-id>` when a quote id is available, or `/compliance/assist?leadId=<lead-id>` when only lead context is available. The full-screen link should remain available as a secondary option.
+
+The compliance check window must not be mounted from `src/app/(app)/layout.tsx`, must not use DOM injection, and must not use MutationObserver. It belongs only near the active lead/quote workflow action.
 
 ## Compliance fix-panel policy
 
@@ -39,6 +48,7 @@ COA and Packing List should stay advisory before dispatch/order execution for th
 ## Allowed actions
 
 - Explain blocker stage and remediation steps.
+- Open a scoped compliance check from Lead Command Center or Quote Builder.
 - Route to Compliance Assist with quote context first, then lead context if no quote is active.
 - Tell the user to attach evidence, waive for quote, or defer to dispatch with reason from that panel.
 - Recommend live research for country/product rules and cite sources.
@@ -57,4 +67,4 @@ Setu Guru must not approve, waive, defer, clear, delete, or mark compliance comp
 
 ## Response policy
 
-Always distinguish mandatory blockers, advisory dispatch preparation, human approval actions, and live research suggestions. Use live quote or lead context for blocker questions before generic compliance text. When a quote is blocked, route to the Compliance Assist fix panel and name the three safe choices: attach evidence, waive for quote with reason, or defer to dispatch with reason.
+Always distinguish mandatory blockers, advisory dispatch preparation, human approval actions, and live research suggestions. Use live quote or lead context for blocker questions before generic compliance text. When a quote is blocked, route to the scoped Compliance Check first and name the three safe choices: attach evidence, waive for quote with reason, or defer to dispatch with reason.
