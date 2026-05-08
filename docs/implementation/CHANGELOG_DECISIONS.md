@@ -4,33 +4,43 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
-## 2026-05-07 — Sprint 6 inline quote-review compliance fix
+## 2026-05-08 — Sprint 6 rollback of quote compliance DOM enhancer
 
 Decision:
 
-- Production screenshot showed the separate Compliance Assist page still felt disconnected from quote builder, and defer was not visibly saving in the quote workflow.
-- Stopped using the separate Compliance Assist route as the primary quote-review blocker fix path.
-- The quote-review blocker now gets inline **Fix here** controls directly inside the red quote builder panel.
-- Inline controls save through `/api/compliance/quote-fix` and keep the operator on the same Review screen.
-- The API records quote-scoped documents using `related_entity = quote` and `related_id = quoteId` for attach evidence, waive-for-quote, and defer-to-dispatch decisions.
-- The inline panel shows success/error messages in place instead of silently failing or navigating to Step 1.
-- This keeps the quote builder as the workflow home and leaves Compliance Assist as secondary/reference, not the default quote blocker repair surface.
+- Production screenshots and console logs showed the quote compliance blocker remained after quote waiver/defer attempts.
+- The temporary `QuoteComplianceFixEnhancer` DOM injection also caused React production runtime errors `#425` and `#422` in the browser console.
+- Removed the enhancer from the authenticated app shell so it no longer mutates the rendered quote builder after hydration.
+- The quote blocker is still a Sprint 6 blocker and must be fixed in the real quote review component and/or quote gate source of truth, not through DOM patching.
+- Next implementation must make the quote review gate treat reviewed quote waiver/defer records as clearing the send gate, and must expose any fix action as first-class React UI owned by the quote review panel.
 
 Files:
 
-- `src/features/leads/components/quote-compliance-fix-enhancer.tsx`
-- `src/app/api/compliance/quote-fix/route.ts`
-- `tests/inline-quote-compliance-fix.test.mjs`
+- `src/app/(app)/layout.tsx`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Protected:
 
 - No schema change.
-- No quote send behavior change.
-- No silent compliance clear.
-- No duplicate quote action surface outside the existing blocker panel.
-- No redirect to Compliance Assist for quote-review blocker repair.
-- No npm ci.
+- No quote PDF/share/send changes.
+- No silent quote send.
+- No hidden DOM injection.
+- No duplicate compliance page routing.
+
+---
+
+## 2026-05-07 — Sprint 6 inline quote-review compliance fix attempt
+
+Decision:
+
+- Production screenshot showed the separate Compliance Assist page still felt disconnected from quote builder, and defer was not visibly saving in the quote workflow.
+- An inline DOM enhancer was added as a temporary quote-review repair path.
+- Follow-up production testing showed that this approach was not acceptable for SaaS UX and caused React runtime instability, so it is no longer the accepted path.
+
+Protected next direction:
+
+- Implement the fix directly inside `leads-workspace.tsx` or a proper quote review child component.
+- Do not use layout-level DOM mutation for quote workflow controls.
 
 ---
 
