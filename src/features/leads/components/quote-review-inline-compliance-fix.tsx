@@ -25,8 +25,13 @@ function findQuoteId() {
 }
 
 function ensureHost(details: HTMLDetailsElement) {
-  const existing = details.querySelector<HTMLElement>('[data-quote-review-clear-host="true"]');
-  if (existing) return existing;
+  const hosts = Array.from(details.querySelectorAll<HTMLElement>('[data-quote-review-clear-host="true"]'));
+  const existing = hosts[0] ?? null;
+  for (const duplicate of hosts.slice(1)) duplicate.remove();
+  if (existing) {
+    details.open = true;
+    return existing;
+  }
   const host = document.createElement('div');
   host.setAttribute('data-quote-review-clear-host', 'true');
   host.className = 'mt-3';
@@ -95,7 +100,8 @@ export function QuoteReviewInlineComplianceFix() {
     const install = () => {
       const details = findTargetDetails();
       if (!details) return;
-      setHost(ensureHost(details));
+      const nextHost = ensureHost(details);
+      setHost((current) => (current === nextHost ? current : nextHost));
     };
     install();
     const timers = [250, 800, 1600, 3200, 6400].map((delay) => window.setTimeout(install, delay));
