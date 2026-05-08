@@ -19,6 +19,7 @@ Purpose: Use Compliance to clarify what is required now, what is advisory for la
 - Can I ignore this for quote and record it for dispatch?
 - Is this a true blocker or an advisory document?
 - Who needs to approve a waiver or dispatch deferral?
+- Why does Review look clear but Send Gate still shows an active blocker?
 
 ## Compliance check window policy
 
@@ -33,6 +34,20 @@ The compliance check window must not be mounted from `src/app/(app)/layout.tsx`,
 When the quote preview blocker is active, route the user to `/compliance/assist?quoteId=<quote-id>` whenever a quote id is available. Compliance Assist must resolve the correct lead from that quote server-side. Do not guess from unrelated lead links, hot-list rows, or background lead cards on the page.
 
 Compliance Assist should feel connected to the lead → quote workflow by showing lead name, quote number/status when available, Back to quote, Open command center, and the active workflow context.
+
+## Quote Review and Send Gate source-of-truth policy
+
+Quote Review and Send Gate must not be cleared by page text alone. The workflow should check persisted records first:
+
+- quote-linked `documents` rows with `requirement_code = quote_review_document`
+- lead-level `quote_review_document` clearance rows linked to the active quote
+- open `lead_compliance_items`
+- quote and current quote-version approval timestamps
+- persisted `quote_line_items` and `quote_versions.total_line_count`
+
+If Quote Review is clear but Send Gate still shows an active blocker, Setu Guru should tell the user to refresh the quote preview or use the inline Send Gate sync action. The safe sync must persist the current quote-version line count and approval posture before any Send Gate CTA is treated as ready.
+
+Do not create repeated waiver/defer documents for every button click. Reviewer decisions should be idempotent for the same quote, requirement, and action type, while each actual evidence upload can still create a new evidence row.
 
 ## Compliance stage policy
 
