@@ -2,6 +2,7 @@
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
+import { QuoteReviewInlineComplianceFix } from '@/features/leads/components/quote-review-inline-compliance-fix';
 import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
@@ -135,6 +136,7 @@ export default async function LeadsPage({
         initialEventId={eventId || null}
         initialFastField={initialFastField}
         />
+        <QuoteReviewInlineComplianceFix />
       </div>
     </div>
   );
