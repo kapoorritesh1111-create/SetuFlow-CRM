@@ -70,6 +70,9 @@ export async function POST(request: Request) {
   const workspace = await getWorkspaceAccess();
   if (!workspace.user || !workspace.organization) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
 
+  const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
+
   const payload = await request.json().catch(() => ({}));
   const quoteId = clean(payload.quoteId);
   const action = clean(payload.action).toLowerCase();
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
   const { data: quote, error: quoteError } = await db
     .from('quotes')
     .select('id, quote_number, lead_id')
-    .eq('organization_id', workspace.organization.id)
+    .eq('organization_id', organizationId)
     .eq('id', quoteId)
     .maybeSingle();
   if (quoteError) return NextResponse.json({ error: quoteError.message }, { status: 500 });
@@ -101,7 +104,7 @@ export async function POST(request: Request) {
   const { data: lead, error: leadError } = await db
     .from('leads')
     .select('id, lead_type, company_name')
-    .eq('organization_id', workspace.organization.id)
+    .eq('organization_id', organizationId)
     .eq('id', quote.lead_id)
     .maybeSingle();
   if (leadError) return NextResponse.json({ error: leadError.message }, { status: 500 });
@@ -118,24 +121,24 @@ export async function POST(request: Request) {
       : `Dispatch deferral - ${quoteLabel}`;
 
   const quoteDocumentPayload: Record<string, unknown> = {
-    organization_id: workspace.organization.id,
+    organization_id: organizationId,
     related_entity: 'quote',
     related_id: quote.id,
     linked_quote_id: quote.id,
     file_name: fileName,
     file_url: `workspace-quote-fix://${quote.id}/${Date.now()}/${encodeURIComponent(fileName)}`,
     doc_type: docType,
-    uploaded_by: workspace.user.id,
+    uploaded_by: actorUserId,
     uploaded_at: now,
     version: 1,
     status,
-    owner_user_id: workspace.user.id,
+    owner_user_id: actorUserId,
     requirement_code: 'quote_review_document',
     review_notes: notes || null,
     version_label: action === 'attach' ? 'quote-review-upload' : action === 'waive' ? 'quote-waiver' : 'dispatch-deferral',
   };
   if (action !== 'attach') {
-    quoteDocumentPayload.reviewer_user_id = workspace.user.id;
+    quoteDocumentPayload.reviewer_user_id = actorUserId;
     quoteDocumentPayload.reviewed_at = now;
   }
 
@@ -145,22 +148,22 @@ export async function POST(request: Request) {
   let clearedComplianceItems = 0;
   let approvedLeadRequirements = 0;
   if (action === 'waive' || action === 'defer') {
-    const missingCodes = await getMissingQuoteRequirementCodes(db, workspace.organization.id, lead);
+    const missingCodes = await getMissingQuoteRequirementCodes(db, organizationId, lead);
     if (missingCodes.length) {
       const leadRequirementDocuments = missingCodes.map((code) => ({
-        organization_id: workspace.organization.id,
+        organization_id: organizationId,
         related_entity: 'lead',
         related_id: lead.id,
         linked_quote_id: quote.id,
         file_name: `${fileName} - ${code}`,
         file_url: `workspace-quote-fix://${quote.id}/${Date.now()}/${encodeURIComponent(code)}`,
         doc_type: docType,
-        uploaded_by: workspace.user.id,
+        uploaded_by: actorUserId,
         uploaded_at: now,
         version: 1,
         status: 'approved',
-        owner_user_id: workspace.user.id,
-        reviewer_user_id: workspace.user.id,
+        owner_user_id: actorUserId,
+        reviewer_user_id: actorUserId,
         reviewed_at: now,
         requirement_code: code,
         review_notes: notes,
@@ -174,7 +177,7 @@ export async function POST(request: Request) {
     const { data: openItems, error: openItemsError } = await db
       .from('lead_compliance_items')
       .select('id, status')
-      .eq('organization_id', workspace.organization.id)
+      .eq('organization_id', organizationId)
       .eq('lead_id', lead.id);
     if (openItemsError) return NextResponse.json({ error: openItemsError.message }, { status: 500 });
 
@@ -188,15 +191,15 @@ export async function POST(request: Request) {
         .from('lead_compliance_items')
         .update({ status: 'approved', submitted_at: now, approved_at: now })
         .in('id', openItemIds)
-        .eq('organization_id', workspace.organization.id);
+        .eq('organization_id', organizationId);
       if (clearError) return NextResponse.json({ error: clearError.message }, { status: 500 });
       clearedComplianceItems = openItemIds.length;
     }
   }
 
   await mutationDb.from('audit_logs').insert({
-    organization_id: workspace.organization.id,
-    actor_user_id: workspace.user.id,
+    organization_id: organizationId,
+    actor_user_id: actorUserId,
     action: action === 'attach' ? 'quote_compliance_evidence_attached' : action === 'waive' ? 'quote_compliance_waived' : 'quote_compliance_deferred_to_dispatch',
     entity_type: 'document',
     entity_id: quoteDocument?.id ?? null,
