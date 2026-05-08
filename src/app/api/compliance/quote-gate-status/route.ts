@@ -6,6 +6,14 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 const CLEAR_DOCUMENT_STATUSES = new Set(['approved', 'complete', 'completed', 'ready', 'waived']);
 const OPEN_COMPLIANCE_STATUSES = new Set(['blocked', 'missing', 'rejected', 'overdue', 'pending', 'submitted', 'in_review', 'pending_review', 'revision_requested']);
 
+type QuoteGateRow = {
+  id: string;
+  quote_number: string | null;
+  lead_id: string | null;
+  approved_at: string | null;
+  current_version_id: string | null;
+};
+
 function clean(value: unknown) {
   return String(value ?? '').trim();
 }
@@ -28,31 +36,38 @@ export async function GET(request: Request) {
   if (!quoteId && !quoteNumber) return NextResponse.json({ error: 'quoteId or quoteNumber is required.' }, { status: 400 });
 
   const supabase = await createClient();
-  let query = supabase
+  let quoteQuery = (supabase as any)
     .from('quotes')
     .select('id, quote_number, lead_id, approved_at, current_version_id')
     .eq('organization_id', organizationId)
     .limit(1);
 
-  query = quoteId ? query.eq('id', quoteId) : query.eq('quote_number', quoteNumber);
-  const { data: quoteRows, error: quoteError } = await query;
-  if (quoteError) return NextResponse.json({ error: quoteError.message }, { status: 500 });
-  const quote = quoteRows?.[0] ?? null;
+  quoteQuery = quoteId ? quoteQuery.eq('id', quoteId) : quoteQuery.eq('quote_number', quoteNumber);
+  const quoteResult = await quoteQuery;
+  if (quoteResult.error) return NextResponse.json({ error: quoteResult.error.message }, { status: 500 });
+  const quote = ((Array.isArray(quoteResult.data) ? quoteResult.data[0] : null) ?? null) as QuoteGateRow | null;
   if (!quote?.id || !quote?.lead_id) return NextResponse.json({ error: 'Quote not found in this organization.' }, { status: 404 });
 
-  const [documentsResult, complianceResult, versionResult] = await Promise.all([
-    supabase
+  const [quoteDocsResult, leadDocsResult, complianceResult, versionResult] = await Promise.all([
+    (supabase as any)
       .from('documents')
       .select('id, status, requirement_code, doc_type, linked_quote_id, related_entity, related_id, reviewed_at')
       .eq('organization_id', organizationId)
-      .or(`linked_quote_id.eq.${quote.id},and(related_entity.eq.quote,related_id.eq.${quote.id}),and(related_entity.eq.lead,related_id.eq.${quote.lead_id},requirement_code.eq.quote_review_document)`),
-    supabase
+      .eq('linked_quote_id', quote.id),
+    (supabase as any)
+      .from('documents')
+      .select('id, status, requirement_code, doc_type, linked_quote_id, related_entity, related_id, reviewed_at')
+      .eq('organization_id', organizationId)
+      .eq('related_entity', 'lead')
+      .eq('related_id', quote.lead_id)
+      .eq('requirement_code', 'quote_review_document'),
+    (supabase as any)
       .from('lead_compliance_items')
       .select('id, status, severity')
       .eq('organization_id', organizationId)
       .eq('lead_id', quote.lead_id),
     quote.current_version_id
-      ? supabase
+      ? (supabase as any)
           .from('quote_versions')
           .select('id, status, approved_at')
           .eq('id', quote.current_version_id)
@@ -60,11 +75,12 @@ export async function GET(request: Request) {
       : Promise.resolve({ data: null, error: null } as any),
   ]);
 
-  if (documentsResult.error) return NextResponse.json({ error: documentsResult.error.message }, { status: 500 });
-  if (complianceResult.error) return NextResponse.json({ error: complianceResult.error.message }, { status: 500 });
-  if (versionResult.error) return NextResponse.json({ error: versionResult.error.message }, { status: 500 });
+  for (const result of [quoteDocsResult, leadDocsResult, complianceResult, versionResult]) {
+    if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 });
+  }
 
-  const quoteReviewDocuments = (documentsResult.data ?? []).filter((document: any) => {
+  const documents = [...(quoteDocsResult.data ?? []), ...(leadDocsResult.data ?? [])];
+  const quoteReviewDocuments = documents.filter((document: any) => {
     const requirementCode = normalize(document.requirement_code);
     const docType = normalize(document.doc_type);
     return requirementCode === 'quote_review_document'
