@@ -94,7 +94,7 @@ export async function POST(request: Request) {
 
   const { data: quote, error: quoteError } = await db
     .from('quotes')
-    .select('id, quote_number, lead_id')
+    .select('id, quote_number, lead_id, notes_internal')
     .eq('organization_id', organizationId)
     .eq('id', quoteId)
     .maybeSingle();
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
   if (!lead?.id) return NextResponse.json({ error: 'Quote lead was not found.' }, { status: 404 });
 
   const now = new Date().toISOString();
-  const docType = action === 'attach' ? 'quote_review_evidence' : action === 'waive' ? 'quote_waiver' : 'dispatch_defer';
+  const docType = action === 'attach' ? 'quote_review_evidence' : action === 'waive' ? 'waiver' : 'dispatch_defer';
   const status = action === 'attach' ? 'submitted' : 'approved';
   const quoteLabel = quote.quote_number ?? quote.id.slice(0, 8);
   const fileName = action === 'attach'
@@ -176,6 +176,16 @@ export async function POST(request: Request) {
       if (leadDocsError) return NextResponse.json({ error: leadDocsError.message }, { status: 500 });
       approvedLeadRequirements = leadRequirementDocuments.length;
     }
+
+    const { error: quoteUpdateError } = await mutationDb
+      .from('quotes')
+      .update({
+        notes_internal: `${clean(quote.notes_internal)}\n[quote_review_gate_clearance] ${action} approved by ${actorUserId} at ${now}: ${notes}`.trim(),
+        updated_at: now,
+      })
+      .eq('organization_id', organizationId)
+      .eq('id', quote.id);
+    if (quoteUpdateError) return NextResponse.json({ error: quoteUpdateError.message }, { status: 500 });
 
     const { data: openItems, error: openItemsError } = await db
       .from('lead_compliance_items')
