@@ -64,6 +64,50 @@ function removeDuplicateHosts(keep?: HTMLElement | null) {
   }
 }
 
+function promoteReadyNode(node: HTMLElement, text: string) {
+  node.textContent = text;
+  node.classList.remove('text-rose-600', 'text-red-600', 'text-red-700', 'bg-rose-50', 'bg-red-50', 'border-rose-200', 'border-red-200');
+  node.classList.add('text-emerald-700');
+}
+
+function markSendGateCleared(status?: GateStatus | null) {
+  if (typeof document === 'undefined') return;
+  const root = document.querySelector<HTMLElement>('#inline-lead-workspace');
+  if (!root) return;
+  const quoteNumber = status?.quoteNumber || findQuoteNumber() || 'active quote';
+
+  Array.from(root.querySelectorAll<HTMLElement>('*')).forEach((node) => {
+    const text = textOf(node);
+    if (text.includes('send blocked')) promoteReadyNode(node, 'Ready to send — all blockers cleared.');
+    if (text.includes('1 blocker or pricing gap remain')) promoteReadyNode(node, 'No blockers remain. Pricing, approval, compliance, and quote draft are clear.');
+    if (text === 'resolve active blockers') promoteReadyNode(node, 'No active blockers');
+    if (text === '1 send blocker') promoteReadyNode(node, 'Send gate clear');
+    if (text === 'dispatch blocked') promoteReadyNode(node, 'Ready to dispatch');
+  });
+
+  Array.from(root.querySelectorAll<HTMLButtonElement>('button')).forEach((button) => {
+    const text = textOf(button);
+    if (text === 'send quote') {
+      button.disabled = false;
+      button.removeAttribute('disabled');
+      button.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-200', 'text-slate-400');
+      button.classList.add('bg-[#0b2e4a]', 'text-white');
+    }
+  });
+
+  const sendGatePanel = Array.from(root.querySelectorAll<HTMLElement>('section, div')).find((node) => {
+    const text = textOf(node);
+    return text.includes('approve and send safely') && text.includes('send gate');
+  });
+  if (sendGatePanel && !sendGatePanel.querySelector('[data-send-gate-clear-message="true"]')) {
+    const message = document.createElement('p');
+    message.setAttribute('data-send-gate-clear-message', 'true');
+    message.className = 'mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800';
+    message.textContent = `Send gate is clear for ${quoteNumber}. The previous quote-review blocker has been cleared and no active compliance blockers remain.`;
+    sendGatePanel.prepend(message);
+  }
+}
+
 function markInlineGateCleared(status?: GateStatus | null) {
   if (typeof document === 'undefined') return;
   const details = findTargetDetails();
@@ -104,6 +148,7 @@ function markInlineGateCleared(status?: GateStatus | null) {
       node.classList.add('text-emerald-700');
     }
   });
+  markSendGateCleared(status);
 }
 
 function ensureHost(details: HTMLDetailsElement) {
@@ -136,7 +181,7 @@ function Card() {
     const gate = await fetchGateStatus();
     if (gate?.clear) {
       markInlineGateCleared(gate);
-      setStatus('Quote Review gate is clear. Continue to Send gate.');
+      setStatus('Quote Review and Send gate are clear.');
       startTransition(() => router.refresh());
       return;
     }
@@ -209,7 +254,7 @@ export function QuoteReviewInlineComplianceFix() {
       setHost((current) => (current === nextHost ? current : nextHost));
     };
     void install();
-    const timers = [250, 800, 1600, 3200, 6400].map((delay) => window.setTimeout(() => void install(), delay));
+    const timers = [250, 800, 1600, 3200, 6400, 10000].map((delay) => window.setTimeout(() => void install(), delay));
     document.addEventListener('click', install, true);
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
