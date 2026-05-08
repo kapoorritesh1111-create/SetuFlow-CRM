@@ -4,31 +4,33 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
-## 2026-05-07 — Sprint 6 quote-scoped Compliance Assist fix panel
+## 2026-05-07 — Sprint 6 inline quote-review compliance fix
 
 Decision:
 
-- Verified `b693232f4d282499c1f4c43d38c2c1eaddda1b27` is READY before this pass.
-- Production screenshot showed the inline **Fix compliance** button appeared, but opened Compliance Assist for a different lead because the enhancer guessed a lead id from unrelated page links.
-- Fixed the route to prefer the active quote id and open `/compliance/assist?quoteId=<quote-id>`.
-- Compliance Assist now resolves the correct `lead_id` server-side from the quote instead of trusting a guessed lead id.
-- Removed page-wide unrelated lead-link guessing from the inline enhancer.
-- Reworked Compliance Assist visual context so it feels connected to the lead → quote workflow, with active workflow context, quote label/status, Back to quote, and Open command center actions.
-- Updated Compliance help and tests to protect quote-scoped routing and connected workflow context.
-- No schema, quote send behavior, approval backend, compliance policy, duplicate action surface, or silent write-back behavior was added.
+- Production screenshot showed the separate Compliance Assist page still felt disconnected from quote builder, and defer was not visibly saving in the quote workflow.
+- Stopped using the separate Compliance Assist route as the primary quote-review blocker fix path.
+- The quote-review blocker now gets inline **Fix here** controls directly inside the red quote builder panel.
+- Inline controls save through `/api/compliance/quote-fix` and keep the operator on the same Review screen.
+- The API records quote-scoped documents using `related_entity = quote` and `related_id = quoteId` for attach evidence, waive-for-quote, and defer-to-dispatch decisions.
+- The inline panel shows success/error messages in place instead of silently failing or navigating to Step 1.
+- This keeps the quote builder as the workflow home and leaves Compliance Assist as secondary/reference, not the default quote blocker repair surface.
 
 Files:
 
 - `src/features/leads/components/quote-compliance-fix-enhancer.tsx`
-- `src/app/(app)/compliance/assist/page.tsx`
-- `tests/quote-compliance-fix-enhancer.test.mjs`
-- `docs/help/compliance.md`
+- `src/app/api/compliance/quote-fix/route.ts`
+- `tests/inline-quote-compliance-fix.test.mjs`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
-Build:
+Protected:
 
-- BUILDING / pending after this pass
-- Baseline before pass: `b693232f4d282499c1f4c43d38c2c1eaddda1b27`
+- No schema change.
+- No quote send behavior change.
+- No silent compliance clear.
+- No duplicate quote action surface outside the existing blocker panel.
+- No redirect to Compliance Assist for quote-review blocker repair.
+- No npm ci.
 
 ---
 
