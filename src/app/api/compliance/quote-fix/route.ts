@@ -86,14 +86,14 @@ export async function POST(request: Request) {
     if (openItemsError) return NextResponse.json({ error: openItemsError.message }, { status: 500 });
 
     const openItemIds = (openItems ?? [])
-      .filter((item: any) => !['approved', 'complete', 'completed', 'ready', 'waived'].includes(String(item.status ?? '').toLowerCase()))
+      .filter((item: any) => !['approved', 'complete', 'completed', 'ready'].includes(String(item.status ?? '').toLowerCase()))
       .map((item: any) => item.id)
       .filter(Boolean);
 
     if (openItemIds.length) {
       const { error: clearError } = await mutationDb
         .from('lead_compliance_items')
-        .update({ status: 'waived', approved_at: now })
+        .update({ status: 'approved', submitted_at: now, approved_at: now })
         .in('id', openItemIds)
         .eq('organization_id', workspace.organization.id);
       if (clearError) return NextResponse.json({ error: clearError.message }, { status: 500 });
@@ -109,8 +109,8 @@ export async function POST(request: Request) {
     entity_id: document?.id ?? null,
     payload: {
       previous: null,
-      new: { quote_id: quote.id, lead_id: quote.lead_id, action, status, file_name: fileName, notes, cleared_compliance_items: clearedComplianceItems },
-      metadata: { source: 'inline_quote_review_fix' }
+      new: { quote_id: quote.id, lead_id: quote.lead_id, action, status, file_name: fileName, notes, cleared_compliance_items: clearedComplianceItems, lead_compliance_status: action === 'attach' ? null : 'approved' },
+      metadata: { source: 'quote_review_gate_fix', quote_gate_clearance: action === 'attach' ? 'document_submitted_for_review' : 'approved_for_quote_send_with_recorded_reason' }
     },
   });
 
@@ -121,8 +121,8 @@ export async function POST(request: Request) {
   const actionMessage = action === 'attach'
     ? 'Evidence attached to this quote. Refresh draft preview after review approval.'
     : action === 'waive'
-      ? `Quote waiver saved and ${clearedComplianceItems ? `${clearedComplianceItems} blocker${clearedComplianceItems === 1 ? '' : 's'} cleared` : 'blocker state refreshed'}. Refresh draft preview now.`
-      : `Dispatch deferral saved and ${clearedComplianceItems ? `${clearedComplianceItems} blocker${clearedComplianceItems === 1 ? '' : 's'} cleared` : 'blocker state refreshed'}. Refresh draft preview now.`;
+      ? `Quote waiver recorded and ${clearedComplianceItems ? `${clearedComplianceItems} blocker${clearedComplianceItems === 1 ? '' : 's'} approved for quote send` : 'the quote gate was refreshed'}. Refresh draft preview now.`
+      : `Dispatch deferral recorded and ${clearedComplianceItems ? `${clearedComplianceItems} blocker${clearedComplianceItems === 1 ? '' : 's'} approved for quote send` : 'the quote gate was refreshed'}. Refresh draft preview now.`;
 
   return NextResponse.json({ ok: true, clearedComplianceItems, message: actionMessage });
 }

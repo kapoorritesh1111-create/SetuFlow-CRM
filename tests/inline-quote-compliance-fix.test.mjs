@@ -2,26 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const enhancer = readFileSync('src/features/leads/components/quote-compliance-fix-enhancer.tsx', 'utf8');
 const route = readFileSync('src/app/api/compliance/quote-fix/route.ts', 'utf8');
+const layout = readFileSync('src/app/(app)/layout.tsx', 'utf8');
 
-test('quote compliance blocker fixes inline without routing to compliance page', () => {
-  assert.match(enhancer, /Resolve here/);
-  assert.match(enhancer, /Quote review fix/);
-  assert.match(enhancer, /\/api\/compliance\/quote-fix/);
-  assert.doesNotMatch(enhancer, /\/compliance\/assist\?quoteId=/);
+test('quote compliance fix is no longer mounted as a layout DOM enhancer', () => {
+  assert.doesNotMatch(layout, /QuoteComplianceFixEnhancer/);
+  assert.doesNotMatch(layout, /quote-compliance-fix-enhancer/);
 });
 
-test('inline enhancer targets one blocker panel and avoids global mutation observer loops', () => {
-  assert.match(enhancer, /getTargetBlockerPanel/);
-  assert.match(enhancer, /enhanceBlockerOnce/);
-  assert.doesNotMatch(enhancer, /new MutationObserver/);
-  assert.doesNotMatch(enhancer, /appendChild\(makeExplainer/);
-});
-
-test('waive and defer clear the active lead compliance blocker as well as saving quote document', () => {
+test('waive and defer save quote document evidence and approve the active quote gate blocker', () => {
+  assert.match(route, /related_entity: 'quote'/);
+  assert.match(route, /quote_waiver/);
+  assert.match(route, /dispatch_defer/);
   assert.match(route, /lead_compliance_items/);
-  assert.match(route, /status: 'waived'/);
-  assert.match(route, /clearedComplianceItems/);
+  assert.match(route, /status: 'approved'/);
+  assert.match(route, /submitted_at: now, approved_at: now/);
+  assert.doesNotMatch(route, /status: 'waived'/);
+  assert.doesNotMatch(route, /'waived'\.includes/);
+});
+
+test('audit trail keeps the human waiver or dispatch decision even though gate status is approved', () => {
+  assert.match(route, /quote_compliance_waived/);
   assert.match(route, /quote_compliance_deferred_to_dispatch/);
+  assert.match(route, /lead_compliance_status: action === 'attach' \? null : 'approved'/);
+  assert.match(route, /approved_for_quote_send_with_recorded_reason/);
 });

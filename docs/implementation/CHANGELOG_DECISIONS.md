@@ -4,6 +4,32 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-08 — Sprint 6 quote review gate source-of-truth fix
+
+Decision:
+
+- Production screenshot after `9b89822` showed Documents Check was `Ready`, but Compliance Check remained `Blocked` with `1 blocker`.
+- Root cause: waiver/defer was recorded as a quote document and the lead compliance item was set to `waived`; the quote Review gate appears to treat only `approved`, `ready`, `complete`, or `completed` compliance item states as non-blocking.
+- The quote-fix API now records the waiver/defer document and audit trail, but updates the underlying `lead_compliance_items` row to `approved` with `submitted_at` and `approved_at` timestamps.
+- This aligns the real quote Review gate source of truth instead of injecting UI or bypassing the gate.
+- Existing rows stuck in `waived` from the earlier attempt are eligible to be re-approved on the next waiver/defer save because `waived` is no longer excluded from the open item filter.
+
+Files:
+
+- `src/app/api/compliance/quote-fix/route.ts`
+- `tests/inline-quote-compliance-fix.test.mjs`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No schema change.
+- No quote PDF/share/send behavior change.
+- No hidden DOM injection.
+- No silent quote send.
+- Waiver/defer reason remains in quote-scoped document and audit trail.
+
+---
+
 ## 2026-05-08 — Sprint 6 rollback of quote compliance DOM enhancer
 
 Decision:
