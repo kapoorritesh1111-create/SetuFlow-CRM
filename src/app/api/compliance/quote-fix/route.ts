@@ -147,6 +147,7 @@ export async function POST(request: Request) {
 
   let clearedComplianceItems = 0;
   let approvedLeadRequirements = 0;
+  let supersededQuoteReviewDocuments = 0;
   if (action === 'waive' || action === 'defer') {
     const missingCodes = await getMissingQuoteRequirementCodes(db, organizationId, lead);
     const leadRequirementCodes = Array.from(new Set(['quote_review_document', ...missingCodes]));
@@ -175,6 +176,34 @@ export async function POST(request: Request) {
       const { error: leadDocsError } = await mutationDb.from('documents').insert(leadRequirementDocuments);
       if (leadDocsError) return NextResponse.json({ error: leadDocsError.message }, { status: 500 });
       approvedLeadRequirements = leadRequirementDocuments.length;
+    }
+
+    const { data: pendingQuoteReviewDocuments, error: pendingQuoteReviewError } = await db
+      .from('documents')
+      .select('id, status')
+      .eq('organization_id', organizationId)
+      .eq('linked_quote_id', quote.id)
+      .eq('requirement_code', 'quote_review_document');
+    if (pendingQuoteReviewError) return NextResponse.json({ error: pendingQuoteReviewError.message }, { status: 500 });
+
+    const pendingQuoteReviewIds = (pendingQuoteReviewDocuments ?? [])
+      .filter((document: any) => !['approved', 'complete', 'completed', 'ready', 'waived'].includes(normalize(document.status)))
+      .map((document: any) => document.id)
+      .filter(Boolean);
+
+    if (pendingQuoteReviewIds.length) {
+      const { error: supersedeError } = await mutationDb
+        .from('documents')
+        .update({
+          status: 'approved',
+          reviewer_user_id: actorUserId,
+          reviewed_at: now,
+          review_notes: `Superseded by ${action === 'waive' ? 'quote waiver' : 'dispatch deferral'}: ${notes}`,
+        })
+        .in('id', pendingQuoteReviewIds)
+        .eq('organization_id', organizationId);
+      if (supersedeError) return NextResponse.json({ error: supersedeError.message }, { status: 500 });
+      supersededQuoteReviewDocuments = pendingQuoteReviewIds.length;
     }
 
     const { error: quoteUpdateError } = await mutationDb
@@ -227,6 +256,7 @@ export async function POST(request: Request) {
         notes,
         approved_lead_requirements: approvedLeadRequirements,
         cleared_compliance_items: clearedComplianceItems,
+        superseded_quote_review_documents: supersededQuoteReviewDocuments,
         lead_compliance_status: action === 'attach' ? null : 'approved',
       },
       metadata: { source: 'quote_review_gate_fix', quote_gate_clearance: action === 'attach' ? 'document_submitted_for_review' : 'quote_and_lead_gate_clearance_recorded_with_reason' }
@@ -240,8 +270,8 @@ export async function POST(request: Request) {
   const actionMessage = action === 'attach'
     ? 'Evidence attached to this quote. Refresh draft preview after review approval.'
     : action === 'waive'
-      ? `Quote waiver recorded. ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'} and ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'} were approved for quote send.`
-      : `Dispatch deferral recorded. ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'} and ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'} were approved for quote send.`;
+      ? `Quote waiver recorded. ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'}, ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'}, and ${supersededQuoteReviewDocuments} pending quote-review document${supersededQuoteReviewDocuments === 1 ? '' : 's'} were approved for quote send.`
+      : `Dispatch deferral recorded. ${approvedLeadRequirements} gate document${approvedLeadRequirements === 1 ? '' : 's'}, ${clearedComplianceItems} compliance blocker${clearedComplianceItems === 1 ? '' : 's'}, and ${supersededQuoteReviewDocuments} pending quote-review document${supersededQuoteReviewDocuments === 1 ? '' : 's'} were approved for quote send.`;
 
-  return NextResponse.json({ ok: true, approvedLeadRequirements, clearedComplianceItems, message: actionMessage });
+  return NextResponse.json({ ok: true, approvedLeadRequirements, clearedComplianceItems, supersededQuoteReviewDocuments, message: actionMessage });
 }
