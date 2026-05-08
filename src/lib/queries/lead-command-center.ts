@@ -6,6 +6,8 @@ export type PricingReadiness = 'missing' | 'partial' | 'ready'
 export type TaskUrgency = 'ON_TRACK' | 'DUE' | 'OVERDUE'
 export type ReadinessStatus = 'not_ready' | 'at_risk' | 'ready'
 
+type QuoteReviewDocument = LeadProfileData['documents'][number] & { linked_quote_id?: string | null }
+
 export type ExplainableReadiness = {
   status: ReadinessStatus
   summary: string
@@ -87,9 +89,10 @@ export function getComplianceStatus(data: LeadProfileData) {
   const latestQuote = getLatestQuote(data)
   const quoteDocuments = latestQuote?.id
     ? data.documents.filter((document) => {
-        const relatedEntity = String(document.related_entity ?? '')
-        return (relatedEntity === 'quote' && document.related_id === latestQuote.id)
-          || document.linked_quote_id === latestQuote.id
+        const quoteDocument = document as QuoteReviewDocument
+        const relatedEntity = String(quoteDocument.related_entity ?? '')
+        return (relatedEntity === 'quote' && quoteDocument.related_id === latestQuote.id)
+          || quoteDocument.linked_quote_id === latestQuote.id
       })
     : []
   const latestQuoteDocument = byNewest(quoteDocuments, (document) => document.uploaded_at)[0] ?? null
