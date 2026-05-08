@@ -76,25 +76,53 @@ export async function POST(request: Request) {
   const { data: document, error: insertError } = await mutationDb.from('documents').insert(insertPayload).select('id').single();
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
 
+  let clearedComplianceItems = 0;
+  if ((action === 'waive' || action === 'defer') && quote.lead_id) {
+    const { data: openItems, error: openItemsError } = await db
+      .from('lead_compliance_items')
+      .select('id, status')
+      .eq('organization_id', workspace.organization.id)
+      .eq('lead_id', quote.lead_id);
+    if (openItemsError) return NextResponse.json({ error: openItemsError.message }, { status: 500 });
+
+    const openItemIds = (openItems ?? [])
+      .filter((item: any) => !['approved', 'complete', 'completed', 'ready', 'waived'].includes(String(item.status ?? '').toLowerCase()))
+      .map((item: any) => item.id)
+      .filter(Boolean);
+
+    if (openItemIds.length) {
+      const { error: clearError } = await mutationDb
+        .from('lead_compliance_items')
+        .update({ status: 'waived', approved_at: now })
+        .in('id', openItemIds)
+        .eq('organization_id', workspace.organization.id);
+      if (clearError) return NextResponse.json({ error: clearError.message }, { status: 500 });
+      clearedComplianceItems = openItemIds.length;
+    }
+  }
+
   await mutationDb.from('audit_logs').insert({
     organization_id: workspace.organization.id,
     actor_user_id: workspace.user.id,
     action: action === 'attach' ? 'quote_compliance_evidence_attached' : action === 'waive' ? 'quote_compliance_waived' : 'quote_compliance_deferred_to_dispatch',
     entity_type: 'document',
     entity_id: document?.id ?? null,
-    payload: { previous: null, new: { quote_id: quote.id, lead_id: quote.lead_id, action, status, file_name: fileName, notes }, metadata: { source: 'inline_quote_review_fix' } },
+    payload: {
+      previous: null,
+      new: { quote_id: quote.id, lead_id: quote.lead_id, action, status, file_name: fileName, notes, cleared_compliance_items: clearedComplianceItems },
+      metadata: { source: 'inline_quote_review_fix' }
+    },
   });
 
   revalidatePath('/leads');
   if (quote.lead_id) revalidatePath(`/leads/${quote.lead_id}`);
   revalidatePath('/compliance');
 
-  return NextResponse.json({
-    ok: true,
-    message: action === 'attach'
-      ? 'Evidence attached to this quote. Stay on Review and refresh/create draft preview again.'
-      : action === 'waive'
-        ? 'Quote waiver saved on this quote. Stay on Review and refresh/create draft preview again.'
-        : 'Dispatch deferral saved on this quote. Stay on Review and refresh/create draft preview again.',
-  });
+  const actionMessage = action === 'attach'
+    ? 'Evidence attached to this quote. Refresh draft preview after review approval.'
+    : action === 'waive'
+      ? `Quote waiver saved and ${clearedComplianceItems ? `${clearedComplianceItems} blocker${clearedComplianceItems === 1 ? '' : 's'} cleared` : 'blocker state refreshed'}. Refresh draft preview now.`
+      : `Dispatch deferral saved and ${clearedComplianceItems ? `${clearedComplianceItems} blocker${clearedComplianceItems === 1 ? '' : 's'} cleared` : 'blocker state refreshed'}. Refresh draft preview now.`;
+
+  return NextResponse.json({ ok: true, clearedComplianceItems, message: actionMessage });
 }

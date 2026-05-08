@@ -46,18 +46,18 @@ function makeStatus(message: string, tone: 'info' | 'success' | 'error' = 'info'
 async function saveQuoteFix(panel: HTMLElement, quoteId: string, action: string, fileName: string, notes: string) {
   const statusTarget = panel.querySelector<HTMLElement>('[data-inline-fix-status]');
   if (!quoteId) {
-    if (statusTarget) statusTarget.replaceChildren(makeStatus('Quote id was not found. Create/open draft preview first, then use inline fix.', 'error'));
+    statusTarget?.replaceChildren(makeStatus('Create/open the draft preview first so this quote can be identified.', 'error'));
     return;
   }
   if ((action === 'waive' || action === 'defer') && notes.trim().length < 8) {
-    if (statusTarget) statusTarget.replaceChildren(makeStatus('Add a clear reviewer reason before saving this decision.', 'error'));
+    statusTarget?.replaceChildren(makeStatus('Add a clear reviewer reason before saving this decision.', 'error'));
     return;
   }
   if (action === 'attach' && !fileName.trim()) {
-    if (statusTarget) statusTarget.replaceChildren(makeStatus('Enter a document/evidence name before attaching to this quote.', 'error'));
+    statusTarget?.replaceChildren(makeStatus('Enter a document/evidence name before attaching to this quote.', 'error'));
     return;
   }
-  if (statusTarget) statusTarget.replaceChildren(makeStatus('Saving this quote compliance decision...'));
+  statusTarget?.replaceChildren(makeStatus('Saving this quote decision...'));
   try {
     const response = await fetch('/api/compliance/quote-fix', {
       method: 'POST',
@@ -66,12 +66,12 @@ async function saveQuoteFix(panel: HTMLElement, quoteId: string, action: string,
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result?.error) throw new Error(result?.error || 'Could not save this compliance decision.');
-    if (statusTarget) statusTarget.replaceChildren(makeStatus(result?.message || 'Saved on this quote. Stay on Review and refresh/create draft preview again.', 'success'));
+    statusTarget?.replaceChildren(makeStatus(result?.message || 'Saved on this quote. Refresh draft preview now.', 'success'));
     panel.setAttribute('data-inline-fix-saved', 'true');
-    const title = panel.closest<HTMLElement>('section, div')?.querySelector<HTMLElement>('p, h3, h4');
-    if (title) title.textContent = 'Compliance decision saved on this quote — refresh draft preview';
+    panel.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea').forEach((field) => { field.disabled = true; });
+    panel.querySelectorAll<HTMLButtonElement>('button[data-fix-action]').forEach((button) => { button.disabled = true; button.classList.add('opacity-60', 'cursor-not-allowed'); });
   } catch (error) {
-    if (statusTarget) statusTarget.replaceChildren(makeStatus(error instanceof Error ? error.message : 'Could not save this compliance decision.', 'error'));
+    statusTarget?.replaceChildren(makeStatus(error instanceof Error ? error.message : 'Could not save this compliance decision.', 'error'));
   }
 }
 
@@ -83,11 +83,11 @@ function createInlinePanel(quoteId: string) {
   panel.innerHTML = `
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <p class="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Fix inside quote review</p>
-        <h4 class="mt-1 text-sm font-semibold text-slate-950">Latest document: none linked</h4>
-        <p class="mt-1 text-xs leading-5 text-slate-600">Save evidence, waiver, or dispatch deferral on this active quote without leaving the quote builder.</p>
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Quote review fix</p>
+        <h4 class="mt-1 text-sm font-semibold text-slate-950">Resolve this blocker in the quote workflow</h4>
+        <p class="mt-1 text-xs leading-5 text-slate-600">Choose one action, save it, then refresh the draft preview. Waive/defer clears the active quote blocker immediately.</p>
       </div>
-      <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Stays on Review</span>
+      <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">No page change</span>
     </div>
     <div class="mt-4 grid gap-3 lg:grid-cols-3">
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -124,51 +124,40 @@ function createInlinePanel(quoteId: string) {
   return panel;
 }
 
-function makeInlineButton(panel: HTMLElement, quoteId: string) {
+function getTargetBlockerPanel() {
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>('section, div'))
+    .filter((node) => normalizeText(node.textContent).includes(BLOCKER_TEXT))
+    .filter((node) => normalizeText(node.textContent).includes('refresh draft after fix') || normalizeText(node.textContent).includes('back to command center'));
+
+  candidates.sort((a, b) => (a.textContent?.length ?? 0) - (b.textContent?.length ?? 0));
+  return candidates[0] ?? null;
+}
+
+function enhanceBlockerOnce() {
+  const panel = getTargetBlockerPanel();
+  if (!panel || panel.querySelector(`[${BUTTON_MARKER}]`)) return;
+  const quoteId = findQuoteId(panel);
+  const existingButtons = Array.from(panel.querySelectorAll<HTMLElement>('a, button')).filter((node) => {
+    const label = normalizeText(node.textContent);
+    return label.includes('back to command center') || label.includes('refresh draft after fix');
+  });
+  const target = existingButtons[0]?.parentElement ?? panel;
   const button = document.createElement('button');
   button.type = 'button';
-  button.textContent = 'Fix here';
+  button.textContent = 'Resolve here';
   button.setAttribute(BUTTON_MARKER, 'true');
   button.className = 'inline-flex h-10 items-center rounded-[10px] bg-rose-700 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-rose-800';
   button.addEventListener('click', () => {
-    if (panel.querySelector(`[${PANEL_MARKER}]`)) return;
-    panel.appendChild(createInlinePanel(quoteId));
+    if (!panel.querySelector(`[${PANEL_MARKER}]`)) panel.appendChild(createInlinePanel(quoteId));
   });
-  return button;
-}
-
-function makeExplainer() {
-  const helper = document.createElement('p');
-  helper.setAttribute(BUTTON_MARKER, 'true');
-  helper.className = 'mt-2 text-xs font-medium text-rose-700';
-  helper.textContent = 'Fix this inside the quote review panel. Do not leave the quote builder or jump to another workflow.';
-  return helper;
-}
-
-function enhanceBlockers() {
-  const candidates = Array.from(document.querySelectorAll<HTMLElement>('section, div')).filter((node) => normalizeText(node.textContent).includes(BLOCKER_TEXT));
-  candidates.forEach((candidate) => {
-    const panel = candidate.closest<HTMLElement>('section, div') ?? candidate;
-    if (panel.querySelector(`[${BUTTON_MARKER}]`)) return;
-    const quoteId = findQuoteId(panel);
-    const existingButtons = Array.from(panel.querySelectorAll<HTMLElement>('a, button')).filter((node) => {
-      const label = normalizeText(node.textContent);
-      return label.includes('back to command center') || label.includes('refresh draft after fix');
-    });
-    const target = existingButtons[0]?.parentElement ?? panel;
-    target.appendChild(makeInlineButton(panel, quoteId));
-    const body = Array.from(panel.querySelectorAll<HTMLElement>('p, div')).find((node) => normalizeText(node.textContent).includes('this quote is blocked')) ?? panel;
-    if (!body.parentElement?.querySelector(`[${BUTTON_MARKER}].mt-2`)) body.parentElement?.appendChild(makeExplainer());
-  });
+  target.appendChild(button);
 }
 
 export function QuoteComplianceFixEnhancer() {
   useEffect(() => {
     if (!window.location.pathname.startsWith('/leads')) return;
-    enhanceBlockers();
-    const observer = new MutationObserver(() => enhanceBlockers());
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    const timers = [0, 400, 1000, 2000, 4000].map((delay) => window.setTimeout(enhanceBlockerOnce, delay));
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, []);
   return null;
 }
