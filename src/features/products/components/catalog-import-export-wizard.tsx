@@ -133,16 +133,17 @@ export function CatalogImportExportWizard({
   const handleApplyImport = () => {
     if (!validation || blockingImportIssues.length) return;
     startTransition(async () => {
-      if (entity === "categories") {
+      if (entity === "categories" || entity === "products") {
         const response = await fetch("/api/catalog/import-csv", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ entity, rows: validation.rows }),
         });
         const result = await response.json().catch(() => ({}));
+        const fallback = entity === "products" ? "Products imported." : "Categories imported.";
         setMessage(
           result.error ??
-            `${result.success ?? "Categories imported."} Inserted ${result.inserted ?? 0}, updated ${result.updated ?? 0}, skipped ${result.skipped ?? 0}. Refreshing category list...`,
+            `${result.success ?? fallback} Inserted ${result.inserted ?? 0}, updated ${result.updated ?? 0}, skipped ${result.skipped ?? 0}. Refreshing catalog...`,
         );
         if (!response.ok || result.error) return;
         setCsvText("");
