@@ -1,6 +1,6 @@
 # SETU Flow CRM Master Implementation Roadmap
 
-Last updated: 2026-05-07
+Last updated: 2026-05-08
 Owner: Ritesh Kapoor
 Repository: `kapoorritesh1111-create/SetuFlow-CRM`
 Production domain: `https://www.setuflowcrm.com/`
@@ -13,8 +13,8 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this pass: `d17a37fbd12f33d012fc5fdb3944adf090644866`
-- Commit message: `Scope compliance fix to quote context`
+- Latest verified production READY commit before this roadmap update: `bd62877b2e192810f0ea126d22a1500f273e5895`
+- Commit message: `Log final quote compliance workflow docs`
 - Production deployment status: `READY`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
@@ -34,7 +34,7 @@ Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 - Quote PDF, quote sharing, and quote send/approval controls are Sprint 5 closure-protected; future passes should not reopen them unless a production screenshot shows a defect.
 - Compliance actions must clearly separate required quote-send blockers, advisory dispatch/order prep, and human-reviewed waiver decisions.
 - Do not add silent waiver, approval, send, clear-compliance, or document status write-back behavior.
-- Compliance blockers must route to a quick quote-connected fix panel where the user can see the exact quote-review blocker source, attach quote-linked evidence, waive for quote with reason, or defer to dispatch with reason.
+- Compliance blockers must resolve inside the active quote Review workflow where the user can see the exact quote-review blocker source, attach quote-linked evidence, waive for quote with reason, or defer to dispatch with reason.
 
 ---
 
@@ -74,28 +74,20 @@ Closure verified:
 
 ### Sprint 6 — Compliance Assist maturity
 
-Status: `IN PROGRESS`
-Progress: 78%
+Status: `DONE`
+Progress: 100%
 
-Completed in Sprint 6:
+Closure verified:
 
-- Compliance Assist route and quote/lead compliance entry points were inspected and tightened.
-- Compliance Assist separates required quote-send blockers, advisory dispatch prep, waiver-for-quote decisions, and defer-to-dispatch decisions.
-- Production screenshots showed the visible quote preview blocker came from quote-review document state: `Latest document: none linked`.
-- Compliance Assist now reads quote-linked documents for the active quote instead of only lead-level document requirement rules.
-- Compliance Assist now shows the exact quote-review blocker source: latest quote document/evidence status.
-- The fix page is compressed into a quick quote-connected panel focused on exact reason, attach evidence, waive for quote, defer to dispatch, and back-to-review actions.
-- Upload evidence now supports quote-linked documents (`related_entity = quote`, `related_id = quoteId`, `linked_quote_id = quoteId`) so Review can see the document posture it checks.
-- Waive/defer actions now support quote-linked reviewed documents for quote context instead of only lead-level documents.
-- Back to quote now targets the review step with `quoteStep=review#quote-review`.
-- No schema, quote send behavior, approval backend, compliance policy, duplicate action surface, or silent write-back behavior was changed.
-
-Recommended focus:
-
-- Verify this quote-review compliance quick-fix deployment is READY.
-- Smoke-check Fix compliance from quote review opens the quick panel for the same quote, shows `Latest document: none linked`, and offers attach evidence / waive for quote / defer to dispatch.
-- After an evidence/waiver/defer action, confirm Back to review returns to the Review step and quote review no longer restarts at Step 1.
-- Preserve COA/Packing List advisory behavior before dispatch/order execution unless explicitly configured as quote-send blockers.
+- Quote-review compliance is locked to the working flow `/leads` → open lead → **Continue quote** → **Step 4 — Review**.
+- Compliance clearing belongs inside the existing inline red quote Review blocker card, not a separate Compliance Assist page, not a sticky helper, and not a globally mounted overlay.
+- The valid reviewer actions are **Attach evidence**, **Waive for quote**, and **Defer to dispatch**.
+- Waive/Defer require reviewer permission and reason, save through `/api/compliance/quote-fix`, and are idempotent for the same quote/action/requirement context.
+- Send Gate readiness uses shared persisted source-of-truth state: approved quote-review documents, lead-level clearance rows, no open lead compliance items, persisted quote lines, quote version line count, and approval posture.
+- Priced quote/RFQ lines count as pricing coverage even when a catalog pricing-rule is absent, preventing stale blocker counts after a valid quote is priced.
+- Setu Guru knowledge routes users to the inline Step 4 Review card and distinguishes quote-send blockers from dispatch/order reminders.
+- COA/Packing List remain advisory before dispatch/order execution unless explicitly configured as quote-send blockers.
+- No schema, quote PDF/share/send route, global layout, or silent waiver/approval behavior was changed.
 
 ### Sprint 7 — Lead command center cleanup
 
@@ -112,21 +104,36 @@ Progress: 5%
 Status: `PLANNED`
 Progress: 10%
 
+### Sprint 10 — Import wizard and catalog onboarding maturity
+
+Status: `ACTIVE`
+Progress: 30%
+
+Current focus:
+
+- Category CSV import must insert/update `product_categories` in the active organization after preview validation passes.
+- Category import must avoid `product_categories_org_sort_order_key` conflicts by assigning sort orders after the current organization max.
+- Parent categories in the CSV should be created first when missing, then child categories should link to them.
+- Re-importing the same category file should update existing categories by organization/name instead of duplicating them.
+- Product import should become easier after categories are imported: the user should not have to guess category names or manually pre-create parents.
+- Setu Guru troubleshooting must explain the categories → products import order and the duplicate sort-order fix path.
+
 ---
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 97%
+- Overall CRM readiness: 98%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
 - Completed Sprint 5 Quote builder and quote PDF maturity: 100%
-- Current Sprint 6 Compliance Assist maturity: 78%
-- Setu Guru intelligence readiness: 98%
-- UX cleanup readiness: 72%
-- Quote/compliance maturity: 83%
-- Product catalog maturity: 83%
+- Completed Sprint 6 Compliance Assist maturity: 100%
+- Current Sprint 10 Import wizard and catalog onboarding maturity: 30%
+- Setu Guru intelligence readiness: 99%
+- UX cleanup readiness: 76%
+- Quote/compliance maturity: 96%
+- Product catalog maturity: 86%
 
 ---
 
@@ -162,15 +169,17 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, and Sprint 5 are 100%. Sprint 6 Compliance Assist maturity is active at 78%. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, guidance-only order actions, and closed Sprint 5 quote PDF/share/send protections. Compliance Assist must match the quote-review blocker source, distinguish attach evidence / waive for quote / defer to dispatch decisions, and return to the Review step. Do not add duplicate action surfaces or silent waiver/approval/clear-compliance/write-back behavior.
+Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, and Sprint 6 are 100%. Sprint 10 Import wizard and catalog onboarding maturity is active. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, guidance-only order actions, closed Sprint 5 quote PDF/share/send protections, and closed Sprint 6 quote-review compliance protections. Do not add duplicate action surfaces or silent waiver/approval/clear-compliance/write-back behavior.
 ```
 
 ---
 
 ## 7. Next recommended pass
 
-Continue Sprint 6 Compliance Assist maturity / UX cleanup:
+Continue Sprint 10 Import wizard and catalog onboarding maturity:
 
-1. Verify this quote-review compliance quick-fix deployment is READY.
-2. Smoke-check the Fix compliance panel from quote review for exact blocker reason, quote-linked evidence upload, waive for quote, defer to dispatch, and Back to review.
-3. Tighten Setu Guru compliance/blocker action routing if production screenshots show ambiguity, without adding duplicate action surfaces or silent write-back behavior.
+1. Verify category CSV import deployment is READY.
+2. Smoke-check category import from `/admin/product-management` → Import catalog → Import wizard → Categories using the downloaded template.
+3. Confirm categories insert/update in `product_categories` for the active organization and do not collide on `sort_order`.
+4. Improve products import next so products can reliably reference imported categories and variants.
+5. Keep Setu Guru import troubleshooting current.
