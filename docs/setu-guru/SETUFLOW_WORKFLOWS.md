@@ -15,6 +15,49 @@ _For chatbot knowledge base upload — May 2026_
 5. Approve: quote moves to `approved`, ready to send
 6. Reject: enter a rejection reason → quote returns to `draft` for revision
 
+### Problem: Quote Review shows a compliance/document blocker
+**Cause:** The active quote is missing required quote-review evidence, or the reviewer has not yet waived/deferred that quote-send blocker.
+**Correct workflow:**
+1. Go to Leads (`/leads`)
+2. Open the lead from the lead queue
+3. Click **Continue quote** in the Lead Command Center
+4. Complete Product, Terms, and Pricing
+5. On **Step 4 — Review**, use the red **Resolve compliance/document blocker** card inside the quote Review panel
+6. Choose one action:
+   - **Attach evidence** when the document is available
+   - **Waive for quote** when a permitted reviewer decides the quote can proceed without that document
+   - **Defer to dispatch** when the quote may proceed but the document must be collected before order/dispatch
+7. Enter a human reviewer reason for Waive/Defer
+8. Click **Save and refresh gate**, then **Refresh draft after fix** or **Create/open draft preview**
+9. Continue to **Step 5 — Send gate** only when Review, pricing, approval, compliance, and quote draft are all clear
+
+**Important:** Do not open a global compliance overlay, sticky helper, or separate Compliance Assist page as the primary fix. The fix belongs inside the active quote Review workflow.
+
+### Problem: Quote Review says clear but Send Gate still says blocked
+**Cause:** One read path may still be seeing stale blocker state, most often from pricing coverage, quote-version line count, or an open compliance/document row.
+**Fix:**
+1. In the quote Review workspace, click **Create/open draft preview** to refresh the governed draft.
+2. Verify Step 4 says **Quote Review compliance clear**.
+3. Verify the Compliance Check card says **Gate Ready**.
+4. Verify the quote has priced quote line items and the quote version line count is refreshed.
+5. If the red blocker remains after refresh, this is a shared-read-path issue, not a user action issue. Escalate to engineering to inspect:
+   - `src/features/leads/components/leads-workspace.tsx`
+   - `src/lib/catalog-pricing-model.ts`
+   - `/api/compliance/quote-fix`
+   - `/api/compliance/quote-send-sync`
+
+**What engineering should check:**
+- Approved quote-linked `documents` with `requirement_code = quote_review_document`
+- Approved lead-level `quote_review_document` clearance linked to the same quote
+- No open `lead_compliance_items`
+- Persisted `quote_line_items` with prices
+- `quote_versions.total_line_count` matches saved quote lines
+- Priced quote/RFQ lines are counted as pricing coverage even if catalog pricing-rule coverage is absent
+
+### Problem: Top quote badge still says "1 send blocker" after the Review card is clear
+**Cause:** The blue quote header, Step 4 blocker card, Compliance Check card, Approval Queue, and Send Gate must all read the same shared quote gate state. If only one area clears, the read path is split.
+**Fix:** Refresh the governed draft first. If it still appears, escalate as a shared read-path issue. Do not add a new visual helper or DOM workaround.
+
 ### Problem: "Approve" button is not visible on a quote
 **Cause:** The quote doesn't require approval (no adjustment > 15%), OR the current user doesn't have approval authority.
 **Fix:** Approval authority requires owner, admin, or manager role. If you're trying to approve and can't, ask your admin to update your role.
@@ -67,9 +110,13 @@ _For chatbot knowledge base upload — May 2026_
 2. Open the lead → check if a pipeline and stage are set
 3. Set the pipeline and stage if missing
 
+### Problem: Lead shows as "Dispatch blocked" but Quote Review is clear
+**Cause:** Dispatch/order readiness is separate from Quote Review. A quote can be clear to send while dispatch still needs later order documents.
+**Fix:** Continue the quote/send workflow if Step 4 and Step 5 are clear. Treat dispatch badges as execution reminders unless an active quote-send rule explicitly makes that document mandatory.
+
 ### Problem: Lead shows as "Blocked" in TodayBar
 **Cause:** The lead has a compliance or document blocker preventing progression.
-**Fix:** Open the lead → look for the compliance or document section → identify and resolve the blocking item.
+**Fix:** Open the lead → look for the compliance or document section → identify and resolve the blocking item. If it is a quote Review blocker, use the inline Step 4 Review card inside Continue quote.
 
 ### Problem: Can't find a lead I just created
 **Cause:** List may be filtered.
