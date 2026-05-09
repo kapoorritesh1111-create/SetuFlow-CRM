@@ -1,11 +1,12 @@
 {
   "name": "Setu Guru",
-  "updated": "2026-05-06",
+  "updated": "2026-05-08",
   "purpose": "Embedded CRM help chatbot knowledge manifest for Setu Flow CRM.",
   "primaryFlow": [
     "Capture",
     "Follow-up",
     "Quote",
+    "Quote Review Compliance",
     "Approvals & Sending",
     "Orders / Execution"
   ],
@@ -20,6 +21,7 @@
     "docs/setu-guru/SETUFLOW_ONBOARDING_GUIDE.md",
     "docs/setu-guru/SETUFLOW_WORKFLOWS.md",
     "docs/setu-guru/SETUFLOW_TROUBLESHOOTING.md",
+    "docs/help/compliance.md",
     "docs/setu-guru/SETU_GURU_REPO_REVIEW.md",
     "docs/setu-guru/SETU_GURU_KNOWLEDGE_BASE_INSTRUCTIONS.md",
     "docs/setu-guru/SETU_GURU_LEARNING_LOOP.md",
@@ -32,12 +34,22 @@
     "docs/setu-guru/SETU_GURU_PRODUCT_ENRICHMENT_WORKFLOW.md",
     "docs/setu-guru/SETU_GURU_GPT_CREATION_EXACT_INSTRUCTIONS.md"
   ],
+  "quoteComplianceWorkflow": [
+    "Go to /leads.",
+    "Open the lead from the lead queue.",
+    "Click Continue quote.",
+    "Resolve blockers only from Step 4 — Review's inline red blocker card.",
+    "Use Attach evidence, Waive for quote, or Defer to dispatch with human reviewer reason.",
+    "Refresh draft after fix or create/open draft preview.",
+    "Proceed to Step 5 Send Gate only when shared readiness is clear."
+  ],
   "guardrails": [
     "Do not approve quotes autonomously.",
     "Do not change pricing defaults autonomously.",
     "Do not send messages autonomously.",
     "Do not advance order states autonomously.",
     "Do not make compliance decisions autonomously.",
+    "Do not route quote Review compliance fixes to a global overlay, sticky helper, DOM injection, or MutationObserver.",
     "Use live research for industry benchmarks, HS/HSN/commodity codes, tariffs, duties, and compliance questions.",
     "Do not overwrite product master data without authorized approval and audit notes.",
     "Always cite official or high-quality sources for live market, customs, tariff, and compliance answers."
