@@ -4,6 +4,40 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-08 — Sprint 6 final quote Review compliance workflow locked
+
+Decision:
+
+- The correct user workflow for quote compliance is now locked as `/leads` → open lead → **Continue quote** → **Step 4 — Review**.
+- Compliance clearing belongs inside the existing inline red quote Review blocker card, not a separate Compliance Assist page, not a sticky helper, and not a globally mounted overlay.
+- The valid reviewer actions are **Attach evidence**, **Waive for quote**, and **Defer to dispatch**.
+- Waive/Defer require reviewer permission and reason, are saved through `/api/compliance/quote-fix`, and are idempotent for the same quote/action/requirement context.
+- Send Gate readiness must use shared persisted source-of-truth state: approved quote-review documents, lead-level clearance rows, no open lead compliance items, persisted quote lines, quote version line count, and approval posture.
+- Priced quote/RFQ lines count as pricing coverage even when a catalog pricing-rule is absent, preventing stale blocker count after a valid quote is priced.
+- Setu Guru knowledge now instructs users to fix blockers from the inline Step 4 Review card and distinguishes quote-send blockers from dispatch/order reminders.
+
+Files:
+
+- `src/lib/catalog-pricing-model.ts`
+- `src/app/api/compliance/quote-fix/route.ts`
+- `src/app/api/compliance/quote-send-sync/route.ts`
+- `docs/help/compliance.md`
+- `docs/setu-guru/SETUFLOW_WORKFLOWS.md`
+- `docs/setu-guru/SETU_GURU_KNOWLEDGE_BASE_INSTRUCTIONS.md`
+- `public/setu-guru/knowledge-manifest.json`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No global quote compliance panel.
+- No DOM injection or MutationObserver.
+- No user-facing dev/debug text.
+- No schema migration.
+- No silent waiver/defer.
+- No quote PDF/share/send route rewrite.
+
+---
+
 ## 2026-05-08 — Sprint 6 quote compliance decision idempotency
 
 Decision:
