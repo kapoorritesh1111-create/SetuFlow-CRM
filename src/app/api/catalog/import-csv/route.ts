@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { hasSupabaseEnv } from '@/lib/env';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasWorkspaceCapability } from '@/lib/workspace/permissions';
@@ -269,7 +270,8 @@ async function ensureVariant(input: {
     const { error } = await input.db
       .from('product_variants')
       .update({ ...payload, updated_at: new Date().toISOString() })
-      .eq('id', existingVariant.id);
+      .eq('id', existingVariant.id)
+      .eq('organization_id', input.organizationId);
     if (error) throw new Error(error.message);
     return { variantId: existingVariant.id as string, created: false };
   }
@@ -413,10 +415,11 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
+  const mutationDb = (createAdminSupabaseClient() ?? supabase) as any;
   try {
     const result = entity === 'products'
-      ? await importProducts(supabase as any, workspace.organization.id, workspace.user.id, rows)
-      : await importCategories(supabase as any, workspace.organization.id, rows);
+      ? await importProducts(mutationDb, workspace.organization.id, workspace.user.id, rows)
+      : await importCategories(mutationDb, workspace.organization.id, rows);
     if (result.issues.some((issue) => issue.severity === 'error')) {
       return NextResponse.json({ error: 'Import has blocking validation issues.', ...result }, { status: 400 });
     }
