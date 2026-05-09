@@ -78,7 +78,19 @@ Markets represent geographic focus areas (e.g., "Europe", "Middle East", "Southe
 ### Step 5: Create Product Categories
 **Go to: Admin → Categories (`/admin/categories`)**
 
-Categories organize your products. Create your taxonomy first:
+Categories organize your products. Create your taxonomy first.
+
+Bulk import path:
+1. Go to **Admin → Product management** (`/admin/product-management`).
+2. Click **Import catalog**.
+3. Click **Import wizard**.
+4. Select **Categories**.
+5. Download the Categories template or upload a prepared CSV.
+6. Confirm preview says **0 blocking issues**.
+7. Click **Apply validated import**.
+8. Categories are inserted/updated in `product_categories` for the active organization.
+
+The Categories import is safe to rerun: existing categories are matched by organization + category name and updated instead of duplicated. Missing parent categories are created first, then child categories are linked to them. Sort order is assigned after the current organization maximum to avoid `product_categories_org_sort_order_key` conflicts.
 
 **Example for a food ingredients company:**
 ```
@@ -96,18 +108,16 @@ Natural Sweeteners
   └── Coconut Products
 ```
 
-**To create categories:**
-1. Click "+ Add Category"
-2. Enter category name
-3. Set parent category (for sub-categories)
-4. Optionally set category-level pricing defaults:
-   - Default currency
-   - Margin mode (markup vs margin)
-   - Standard margin percentages
-5. Save
-
 ### Step 6: Add Your Products
-**Go to: Products (`/products`)**
+**Go to: Products (`/products`) or Admin → Product management (`/admin/product-management`)**
+
+Recommended order for bulk onboarding:
+1. Import Categories first.
+2. Verify categories appear in Admin → Categories.
+3. Download the Products template.
+4. Use category names that already exist from the category import.
+5. Import products and variants.
+6. Add or import pricing rules/prices.
 
 Option A — Add products one by one:
 1. Click "+ Add Product"
@@ -115,11 +125,12 @@ Option A — Add products one by one:
 3. Save, then add Variants (pack sizes, SKUs)
 4. Set pricing for each variant
 
-Option B — Import in bulk (recommended for 10+ products):
-1. Products → Catalog Command Center
-2. Click "Download CSV Template" → Product Template
-3. Fill in your products in the spreadsheet
-4. Upload → review validation → confirm import
+Option B — Import in bulk:
+1. Admin → Product management → Import catalog → Import wizard
+2. Select **Catalog / Products**
+3. Download the product CSV template
+4. Fill in products using the imported category names
+5. Upload → review validation → apply import
 
 ### Step 7: Set Up Pricing Defaults
 **Go to: Admin → Organization (or Admin → Categories)**
@@ -143,6 +154,26 @@ For each product (or import in bulk):
 
 ---
 
+## IMPORT WIZARD TROUBLESHOOTING
+
+### Problem: Categories import preview passes, but no categories are inserted
+**Cause:** The old category import save path could submit rows with duplicate `sort_order = 0`, causing Supabase to reject the batch with `product_categories_org_sort_order_key`.
+**Fix:** Use the Categories tab in the Import wizard after the fix. It now posts to the category import API, assigns unique sort orders after the organization's current maximum, creates missing parent categories first, and updates existing categories by name.
+
+### Problem: Categories import says duplicate sort order
+**Cause:** Category rows need organization-unique `sort_order` values.
+**Fix:** Rerun the Categories import through Admin → Product management → Import catalog → Import wizard → Categories. Do not manually add `sort_order` to the CSV; the importer manages it.
+
+### Problem: Product import cannot find a category
+**Cause:** Products should reference categories that already exist in the active organization.
+**Fix:** Import Categories first, refresh, then import Products using exact category names from the Categories list.
+
+### Problem: Re-importing the same Categories file creates confusion
+**Cause:** Users expect imports to be upserts.
+**Fix:** Categories import is now upsert-like by organization and category name. Existing categories are updated for active status/parent linkage; new categories are inserted.
+
+---
+
 ## PHASE 3: FIRST DAY — Team Setup
 
 ### Step 9: Invite Your Team
@@ -151,26 +182,8 @@ For each product (or import in bulk):
 For each team member:
 1. Click "+ Invite User"
 2. Enter their email address
-3. Select their role:
-   - **Sales team members** → Sales role
-   - **Operations/logistics team** → Operations role
-   - **Procurement/sourcing team** → Sourcing or Procurement role
-   - **Read-only stakeholders** → Viewer role
-   - **Other managers** → Manager role
+3. Select their role
 4. Send invitation
-
-They'll receive an email with a login link. They create their own password.
-
-### Role Assignment Guide
-| Team Member Type | Recommended Role |
-|---|---|
-| CEO/Director who needs full control | Owner or Admin |
-| Sales Manager | Manager |
-| Sales Executive/Rep | Sales |
-| Logistics/Operations Manager | Operations |
-| Procurement/Sourcing Manager | Sourcing or Procurement |
-| Marketing/reporting only | Viewer |
-| Anyone creating/editing leads | Contributor minimum |
 
 ---
 
@@ -183,49 +196,30 @@ Start entering your existing buyer and supplier contacts:
 1. Click "+ New Lead"
 2. Fill in company name, contact name, email
 3. Set **Lead Type**: Buyer or Supplier
-4. Set **Market** (which geographic market they're in)
-5. Set **Pipeline** and **Stage** (what stage is this relationship at?)
-6. Set **Owner** (which team member manages this lead?)
-7. Add product interests (what products are they interested in?)
+4. Set **Market**
+5. Set **Pipeline** and **Stage**
+6. Set **Owner**
+7. Add product interests
 8. Save
-
-### Pro Tip: Import Leads
-If you have existing contacts in a spreadsheet:
-- Products → Catalog Command Center → Lead CSV Template
-- Fill in your contacts
-- Import → validate → confirm
 
 ### Step 11: Create Your First Quote
 Once a lead is qualified and you know what they want:
 1. Open the lead
-2. Click "Create Quote"
-3. **Terms step**: Set incoterm (FOB is most common for export), currency, payment terms
-4. **Pricing step**: Add products the lead is interested in, set quantities and prices
-5. **Review**: Check totals, add any adjustments
-6. Save → quote is in Draft
-
-Before sending:
-- Review the quote PDF (Quotes workspace → select quote → PDF Preview)
-- Get approval if needed (adjustments > 15% require manager/admin sign-off)
-- Send when ready
+2. Click "Create Quote" or "Continue quote"
+3. Complete terms, pricing, review, and send gate
+4. Save and send when ready
 
 ### Step 12: Set Up Mobile for Field Team
 For team members who attend trade shows or client meetings:
 
 1. Each user: Go to Profile → My Card settings
-2. Fill in contact details (name, title, phone, email)
+2. Fill in contact details
 3. Upload profile photo
 4. Save → Smart QR is ready
-
-At trade shows:
-- Use `/mobile/capture` or scan business cards to capture leads instantly
-- Share your QR code so contacts can scan and save your details
 
 ---
 
 ## CHECKLIST: READY TO OPERATE
-
-Use this checklist before going live with your team:
 
 **Organization:**
 - [ ] Company name, logo, and details set
@@ -234,11 +228,11 @@ Use this checklist before going live with your team:
 
 **Pipeline:**
 - [ ] Pipelines reflect your actual sales workflow
-- [ ] Stages match your process (usually 5-8 stages)
+- [ ] Stages match your process
 - [ ] Markets match your geographic focus
 
 **Products:**
-- [ ] Product categories created with correct hierarchy
+- [ ] Product categories created or imported with correct hierarchy
 - [ ] Core products added with variants/SKUs
 - [ ] Pricing calculator set up for main products
 - [ ] Organization-level pricing defaults configured
@@ -254,37 +248,13 @@ Use this checklist before going live with your team:
 - [ ] Leads assigned to correct owners
 - [ ] Pipeline stages set for existing relationships
 
-**Ready to quote!**
-
----
-
-## COMMON FIRST-TIME QUESTIONS
-
-**Q: I don't see Admin pages — why?**
-Admin pages require Owner, Admin, or Manager role. If you're the first admin, you should have Owner role. If not, contact Setu support.
-
-**Q: How do I know which incoterm to use on quotes?**
-Most exporters use FOB (goods ready at port of origin). Use CIF if you arrange and include freight. Use DDP if you deliver fully to the buyer's location. Check with your logistics team if unsure.
-
-**Q: My team member says their invite expired — what do I do?**
-Go to Admin → Invitations → find their invitation → click Resend. Or cancel and create a new invitation.
-
-**Q: Can I change my workspace URL after setup?**
-Workspace URLs (companyname.setuflowcrm.com) are set during provisioning. Contact Setu support to discuss URL changes.
-
-**Q: Do I need to enter all products before I can create quotes?**
-No — you can create quotes with custom line items even before products are fully set up. But product-based quotes are more powerful and reusable.
-
-**Q: How do I import product pricing from an old spreadsheet?**
-Download the Products CSV template, copy your pricing into the format shown, then import. The import guide in Products → Catalog Command Center walks through this step by step.
-
 ---
 
 ## GETTING HELP
 
-**In-app help:** Every page has a **Help button** (top right area). Click it for page-specific guidance.
+**In-app help:** Every page has a **Help button**. Click it for page-specific guidance.
 
-**This chatbot:** Ask any question about SetuFlow features, workflows, or troubleshooting.
+**This chatbot:** Ask any question about SetuFlow features, workflows, imports, or troubleshooting.
 
 **Setu Support:** Contact your Setu account manager for workspace configuration, billing, or technical issues.
 
