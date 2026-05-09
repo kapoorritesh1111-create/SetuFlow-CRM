@@ -132,10 +132,28 @@ export function CatalogImportExportWizard({
   };
   const handleApplyImport = () => {
     if (!validation || blockingImportIssues.length) return;
-    const formData = new FormData();
-    formData.set("entity", entity);
-    formData.set("rows_json", JSON.stringify(validation.rows));
     startTransition(async () => {
+      if (entity === "categories") {
+        const response = await fetch("/api/catalog/import-csv", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ entity, rows: validation.rows }),
+        });
+        const result = await response.json().catch(() => ({}));
+        setMessage(
+          result.error ??
+            `${result.success ?? "Categories imported."} Inserted ${result.inserted ?? 0}, updated ${result.updated ?? 0}, skipped ${result.skipped ?? 0}. Refreshing category list...`,
+        );
+        if (!response.ok || result.error) return;
+        setCsvText("");
+        setDrawer(null);
+        window.location.reload();
+        return;
+      }
+
+      const formData = new FormData();
+      formData.set("entity", entity);
+      formData.set("rows_json", JSON.stringify(validation.rows));
       const result = await importCsvRows(undefined, formData);
       setMessage(
         result.error ??
