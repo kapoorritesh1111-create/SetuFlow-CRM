@@ -359,7 +359,8 @@ export function getPricingReadinessClasses(value: CatalogPricingSnapshot['pricin
 
 export type LeadCommercialReadiness = CatalogPricingSnapshot & { missingLinkedProductCount: number; missingRfqLineCount: number; missingQuoteLineCount: number; overrideLineCount: number; blockerCount: number; blockerReasons: string[]; };
 type ReadinessLineItemLike = { product_id: string | null; catalog_price_id?: string | null; catalog_price_amount?: number | null; unit_price?: number | null; is_price_overridden?: boolean | null; };
-function countPricedItems(items: ReadinessLineItemLike[], pricedProductIds: Set<string>) { return items.filter((item) => item.product_id && (typeof item.unit_price === 'number' || pricedProductIds.has(item.product_id))).length; }
+function hasLinePrice(item: ReadinessLineItemLike) { return (typeof item.unit_price === 'number' && Number.isFinite(item.unit_price) && item.unit_price > 0) || (typeof item.catalog_price_amount === 'number' && Number.isFinite(item.catalog_price_amount) && item.catalog_price_amount > 0) || Boolean(item.catalog_price_id); }
+function countPricedItems(items: ReadinessLineItemLike[], pricedProductIds: Set<string>) { return items.filter((item) => item.product_id && (hasLinePrice(item) || pricedProductIds.has(item.product_id))).length; }
 
 export function buildLeadCommercialReadiness(input: { linkedProducts: ProductLike[]; variants: VariantLike[]; prices: PriceLike[]; rules?: CatalogPricingRuleLike[]; rfqLineItems: ReadinessLineItemLike[]; quoteLineItems: ReadinessLineItemLike[]; complianceStatuses?: Array<string | null | undefined>; }): LeadCommercialReadiness {
   const snapshot = buildCatalogPricingSnapshot({ linkedProducts: input.linkedProducts, variants: input.variants, prices: input.prices, rules: input.rules, rfqLineItems: input.rfqLineItems, quoteLineItems: input.quoteLineItems });
@@ -372,19 +373,22 @@ export function buildLeadCommercialReadiness(input: { linkedProducts: ProductLik
   const pricedProductIds = new Set(Array.from(ruleBackedProductIds));
   const rfqLinkedLineItems = input.rfqLineItems.filter((item) => Boolean(item.product_id));
   const quoteLinkedLineItems = input.quoteLineItems.filter((item) => Boolean(item.product_id));
+  for (const item of [...rfqLinkedLineItems, ...quoteLinkedLineItems]) {
+    if (item.product_id && hasLinePrice(item)) pricedProductIds.add(item.product_id);
+  }
   const rfqPricedLineCount = countPricedItems(rfqLinkedLineItems, pricedProductIds);
   const quotePricedLineCount = countPricedItems(quoteLinkedLineItems, pricedProductIds);
   const overrideLineCount = [...rfqLinkedLineItems, ...quoteLinkedLineItems].filter((item) => Boolean(item.is_price_overridden)).length;
   const openComplianceCount = (input.complianceStatuses ?? []).filter((status) => !['approved', 'complete', 'completed', 'waived'].includes(String(status ?? '').toLowerCase())).length;
   const blockerReasons: string[] = [];
-  const missingLinkedProductCount = Math.max(0, snapshot.linkedProductCount - snapshot.linkedPricedProductCount);
+  const missingLinkedProductCount = Array.from(linkedProductIds).filter((productId) => !pricedProductIds.has(productId)).length;
   const missingRfqLineCount = Math.max(0, rfqLinkedLineItems.length - rfqPricedLineCount);
   const missingQuoteLineCount = Math.max(0, quoteLinkedLineItems.length - quotePricedLineCount);
-  if (missingLinkedProductCount > 0) blockerReasons.push(`${missingLinkedProductCount} linked product${missingLinkedProductCount === 1 ? '' : 's'} missing pricing-rule coverage`);
+  if (missingLinkedProductCount > 0) blockerReasons.push(`${missingLinkedProductCount} linked product${missingLinkedProductCount === 1 ? '' : 's'} missing pricing-rule or priced quote/RFQ coverage`);
   if (missingRfqLineCount > 0) blockerReasons.push(`${missingRfqLineCount} RFQ line${missingRfqLineCount === 1 ? '' : 's'} missing price coverage`);
   if (missingQuoteLineCount > 0) blockerReasons.push(`${missingQuoteLineCount} quote line${missingQuoteLineCount === 1 ? '' : 's'} missing price coverage`);
   if (openComplianceCount > 0) blockerReasons.push(`${openComplianceCount} compliance blocker${openComplianceCount === 1 ? '' : 's'} still open`);
-  return { ...snapshot, rfqPricedLineCount, quotePricedLineCount, missingLinkedProductCount, missingRfqLineCount, missingQuoteLineCount, overrideLineCount, blockerCount: blockerReasons.length, blockerReasons };
+  return { ...snapshot, linkedPricedProductCount: pricedProductIds.size, pricingReadiness: linkedProductIds.size > 0 && missingLinkedProductCount === 0 ? 'ready' : snapshot.pricingReadiness, rfqPricedLineCount, quotePricedLineCount, missingLinkedProductCount, missingRfqLineCount, missingQuoteLineCount, overrideLineCount, blockerCount: blockerReasons.length, blockerReasons };
 }
 
 export function getCommercialBlockerTone(blockerCount: number) { return blockerCount > 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'; }
