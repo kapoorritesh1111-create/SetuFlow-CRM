@@ -4,6 +4,32 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-10 — Sprint 10F import coverage cards and cleanup confirmation fix
+
+Decision:
+
+- Import History now shows setup coverage cards using the Sprint 10E coverage payload: import audit trail, products without variants, and pricing-rule coverage.
+- The no-history empty state now distinguishes a brand-new workspace from a workspace that already has catalog data but no recorded import runs.
+- Product cleanup confirmation now returns the same lowercase confirmation phrase style shown in the UI and validates confirmation case-insensitively on the server.
+- This fixes the issue where an eligible product could remain blocked because the typed confirmation used lowercase text.
+- Delete remains owner/admin-only and protected by the 2-year quote/order guard.
+
+Files:
+
+- `src/features/admin/components/import-history-panel.tsx`
+- `src/app/api/admin/catalog/delete-product/route.ts`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No quote/compliance/PDF/share/send behavior was changed.
+- No importer persistence behavior was changed.
+- No product cleanup eligibility guard was weakened.
+- No schema migration was introduced.
+- No `npm ci` was run.
+
+---
+
 ## 2026-05-10 — Sprint 10E production import smoke-check and coverage payload
 
 Decision:
