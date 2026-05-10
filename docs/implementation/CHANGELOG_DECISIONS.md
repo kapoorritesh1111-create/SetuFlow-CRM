@@ -4,6 +4,33 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-10 — Sprint 10E production import smoke-check and coverage payload
+
+Decision:
+
+- Latest production deployment was verified READY before the pass.
+- Production smoke-check compared SETU Flow main org and Avanti Foods Limited catalog setup through Supabase-safe reads.
+- Main org has import-run history plus category/product/variant/pricing-rule coverage from Sprint 10C/D.
+- Avanti workspace has category and product catalog data, but no recorded import runs yet and most products still need variants/pricing-rule completion through the Sprint 10 import wizard.
+- Import history API now returns setup coverage counts in addition to recent import runs: categories, products, variants, pricing rules, import runs, and products without variants.
+- UI behavior remains stable for this pass; the coverage payload enables the next tiny UI pass to show workspace setup gap cards without changing importer behavior.
+
+Files:
+
+- `src/app/api/admin/catalog/import-history/route.ts`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No quote/compliance/PDF/share/send behavior was changed.
+- No importer persistence behavior was changed.
+- No product cleanup behavior was changed.
+- No schema migration was introduced.
+- No `npm ci` was run.
+- No catalog data was seeded or mutated during smoke-checks.
+
+---
+
 ## 2026-05-10 — Sprint 10D import history and audit UI
 
 Decision:
