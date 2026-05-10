@@ -4,6 +4,7 @@ import { StateMessage } from '@/components/ui/state-message';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
+import { normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 import { getProductsData } from '@/lib/queries/products';
 import { buildProductsViewModel } from '@/features/products/view-model';
 import { ProductGovernanceWorkbench, type PricingCalculatorDefaultRule } from '@/features/admin/components/product-governance-workbench';
@@ -17,6 +18,8 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
   }
 
   const canManageCatalog = hasWorkspaceCapability(workspace.currentRoles, 'catalog.manage');
+  const normalizedRoles = normalizeWorkspaceRoles(workspace.currentRoles);
+  const canCleanupProducts = normalizedRoles.includes('owner') || normalizedRoles.includes('admin');
   const readOnlyMessage = canManageCatalog
     ? null
     : getReadOnlyWorkspaceMessage(workspace.currentRoles, 'catalog.manage') ?? 'Your current role can review Catalog Admin, but only catalog managers can change setup, imports, and pricing defaults.';
@@ -42,7 +45,7 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
           eyebrow="Admin"
           title="Catalog Admin"
           badge="Setup & governance"
-          description="Back-office control center for catalog setup, imports, pricing defaults, readiness issues, and audit. Use Products for daily product row editing."
+          description="Back-office control center for pricing-first setup, imports, owner/admin product cleanup, readiness issues, and audit. Use Products for daily product row editing."
         />
 
         {readOnlyMessage ? <StateMessage title="Read-only Catalog Admin" description={readOnlyMessage} tone="warning" /> : null}
@@ -56,6 +59,7 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
           summary={summary}
           auditEvents={data.auditEvents}
           canManageCatalog={canManageCatalog}
+          canCleanupProducts={canCleanupProducts}
           pricingRules={(ruleRows ?? []) as PricingCalculatorDefaultRule[]}
         />
       </div>
