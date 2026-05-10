@@ -2,11 +2,24 @@
 
 Route: `/leads` and `/leads/[leadId]`
 Owner: Setu Guru knowledge base
-Last updated: 2026-05-07
+Last updated: 2026-05-10
 
 ## Purpose
 
 Follow-up is the command center for buyers, suppliers, qualification, next actions, product interest, and quote readiness. It should show what to do next and what is blocking the record.
+
+## Sprint 7 Lead Command Center action hierarchy
+
+The Lead Command Center should keep one clear action hierarchy:
+
+1. **Continue quote / Create quote** is the primary commercial action.
+2. **Plan follow-up** is the next operational action.
+3. **Edit lead** is the supporting data-correction action.
+4. **Close lead outcome** is an intentional terminal action area for Won/Lost, not a competing primary CTA.
+
+When a user asks how to continue a quote from a lead, route them through:
+
+`/leads` → open lead → **Continue quote** → Step 4 Review when compliance/document blockers need fixing.
 
 ## Setu Guru answer policy
 
@@ -41,17 +54,19 @@ Setu Guru should help answer:
 - Document requirement rules scoped to quote send, general, order, or dispatch.
 - Tasks and latest activity where available.
 
-## Allowed actions
+## Allowed guidance
 
-Setu Guru may suggest opening the lead, adding product interest, reviewing quote prep, checking compliance evidence, opening Compliance Assist, or creating a task. It may explain blockers and routes.
+Setu Guru may suggest opening the lead, adding product interest, reviewing quote prep, checking compliance evidence, opening the active quote Review workflow, or creating a task. It may explain blockers and routes.
 
 ## Human approval rules
 
-Setu Guru must not change lead status, approve price changes, waive compliance, send quotes, delete records, or write back field changes without explicit user approval and app permission.
+Setu Guru must not change lead status, approve price changes, waive compliance, send quotes, mark leads won/lost, or write back field changes without explicit user approval and app permission.
 
 ## Suggested prompts
 
 - Can I quote this lead now?
+- How do I continue a quote from this lead?
 - What is blocking this lead?
 - Which products or country details are missing?
 - What evidence do I need before quote send?
+- When should I mark a lead won or lost?
