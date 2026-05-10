@@ -4,6 +4,38 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-10 — Sprint 7B Lead list/table action cleanup
+
+Decision:
+
+- Lead list row action density was reduced.
+- The row itself still opens the Lead Command Center.
+- The visible row CTA is now only **Open**.
+- Secondary actions moved into the compact More menu:
+  - **Continue quote**;
+  - **Edit lead**;
+  - **Delete lead**.
+- Delete no longer competes as a visible inline lead-row CTA.
+- Lead table action column width was reduced to reflect the cleaner action model.
+- Setu Guru lead help now explains that row click/Open is the primary path and More contains secondary actions.
+
+Files:
+
+- `src/features/leads/ui/lead-table-row.tsx`
+- `docs/help/leads.md`
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No quote PDF/share/send behavior was changed.
+- No quote Review compliance behavior was changed.
+- No Catalog Admin/import/product cleanup behavior was changed.
+- No schema migration was introduced.
+- No `npm ci` was run.
+
+---
+
 ## 2026-05-10 — Sprint 7A Lead Command Center action hierarchy
 
 Decision:
@@ -21,14 +53,6 @@ Files:
 - `docs/help/leads.md`
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
-
-Protected:
-
-- No quote PDF/share/send behavior was changed.
-- No quote Review compliance behavior was changed.
-- No Catalog Admin/import/product cleanup behavior was changed.
-- No schema migration was introduced.
-- No `npm ci` was run.
 
 ---
 

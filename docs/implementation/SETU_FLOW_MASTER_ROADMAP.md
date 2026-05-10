@@ -13,10 +13,10 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this roadmap update: `527c68e9c40b9ca5ab9ac518f1bdb124e5833369`
-- Commit message: `Close Sprint 10 docs`
+- Latest verified production READY commit before this roadmap update: `55c1261fa79f46952df944a7e5cafb64bb8628f7`
+- Commit message: `Start Sprint 7 lead action cleanup`
 - Production deployment status: `READY`
-- Verified deployment: `dpl_6JDs84fG2YP4ywwfh1QgUU2t4iUe`
+- Vercel status source: GitHub commit status context `Vercel = success`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
@@ -85,16 +85,28 @@ Closure verified:
 ### Sprint 7 — Lead command center cleanup
 
 Status: `ACTIVE`
-Progress: 25%
+Progress: 40%
+
+Completed Sprint 7A:
+
+- Lead Command Center sticky action bar now has one clear commercial primary action: **Continue quote / Create quote**.
+- Follow-up planning and lead editing are secondary actions.
+- Won/Lost moved into an intentional closeout/outcome area.
+
+Completed Sprint 7B:
+
+- Lead list row action density reduced.
+- The row itself opens the Lead Command Center.
+- The visible row CTA is **Open**.
+- Secondary actions moved to the compact More menu: **Continue quote**, **Edit lead**, and **Delete lead**.
+- Delete no longer competes as a visible inline lead-row CTA.
 
 Current focus:
 
 - Reduce duplicate or competing lead action surfaces.
-- Keep **Continue quote / Create quote** as the primary commercial action.
-- Keep follow-up planning and lead editing as secondary actions.
-- Move Won/Lost into an intentional closeout/outcome area instead of competing with quote/follow-up CTAs.
 - Preserve the protected quote flow: `/leads` → open lead → **Continue quote** → **Step 4 — Review** for compliance/document blockers.
-- Update Setu Guru guidance so users understand where to continue quotes, plan follow-ups, edit leads, and close lead outcomes.
+- Keep lead table/list fast to scan.
+- Update Setu Guru guidance so users understand the new row action hierarchy.
 
 ### Sprint 8 — Orders and execution readiness
 
@@ -124,17 +136,17 @@ Closure verified:
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 99%
+- Overall CRM readiness: 99.1%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
 - Completed Sprint 5 Quote builder and quote PDF maturity: 100%
 - Completed Sprint 6 Compliance Assist maturity: 100%
-- Active Sprint 7 Lead command center cleanup: 25%
+- Active Sprint 7 Lead command center cleanup: 40%
 - Completed Sprint 10 Import wizard and catalog onboarding maturity: 100%
-- Setu Guru intelligence readiness: 99.2%
-- UX cleanup readiness: 83%
+- Setu Guru intelligence readiness: 99.3%
+- UX cleanup readiness: 84%
 - Quote/compliance maturity: 96%
 - Product catalog maturity: 94%
 
@@ -181,8 +193,7 @@ Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and 
 
 Continue Sprint 7:
 
-1. Smoke-check Lead Command Center sticky action bar after deployment.
-2. Verify **Continue quote / Create quote** is the clear primary action.
-3. Verify **Plan follow-up** and **Edit lead** remain easy to find.
-4. Verify **Close lead outcome** contains Won/Lost and does not compete with quote continuation.
-5. Continue simplifying lead list/table surfaces only after a production screenshot identifies the next duplicated or dense area.
+1. Smoke-check Lead table after deployment.
+2. Verify row click and **Open** both open the Lead Command Center.
+3. Verify More menu contains **Continue quote**, **Edit lead**, and **Delete lead**.
+4. Continue simplifying only after a production screenshot identifies the next dense lead area.

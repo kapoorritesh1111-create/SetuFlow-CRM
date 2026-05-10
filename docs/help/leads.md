@@ -21,6 +21,22 @@ When a user asks how to continue a quote from a lead, route them through:
 
 `/leads` → open lead → **Continue quote** → Step 4 Review when compliance/document blockers need fixing.
 
+## Sprint 7 lead list/table action policy
+
+The lead list should stay fast to scan and should not repeat the same actions in multiple places.
+
+Current row behavior:
+
+- The row itself opens the Lead Command Center.
+- The visible row CTA is **Open**.
+- Secondary actions live in the compact **More** menu:
+  - Continue quote;
+  - Edit lead;
+  - Delete lead.
+- Delete remains a deliberate secondary action and should not appear as a competing inline CTA.
+
+Setu Guru should tell users to click the lead row or **Open** for the full Lead Command Center. Use **More → Continue quote** only when the user wants to jump straight from the list into quote work.
+
 ## Setu Guru answer policy
 
 When a user asks about a lead, Setu Guru should use the active route, visible lead text, organization data, and the lead record before falling back to this topic.
@@ -60,7 +76,7 @@ Setu Guru may suggest opening the lead, adding product interest, reviewing quote
 
 ## Human approval rules
 
-Setu Guru must not change lead status, approve price changes, waive compliance, send quotes, mark leads won/lost, or write back field changes without explicit user approval and app permission.
+Setu Guru must not change lead status, approve price changes, waive compliance, send quotes, mark leads won/lost, delete leads, or write back field changes without explicit user approval and app permission.
 
 ## Suggested prompts
 
