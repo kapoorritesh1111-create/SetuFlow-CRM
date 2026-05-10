@@ -1,6 +1,6 @@
 # SETU Flow CRM Master Implementation Roadmap
 
-Last updated: 2026-05-08
+Last updated: 2026-05-10
 Owner: Ritesh Kapoor
 Repository: `kapoorritesh1111-create/SetuFlow-CRM`
 Production domain: `https://www.setuflowcrm.com/`
@@ -13,9 +13,10 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this roadmap update: `bd62877b2e192810f0ea126d22a1500f273e5895`
-- Commit message: `Log final quote compliance workflow docs`
+- Latest verified production READY commit before this roadmap update: `5b8f015ec597339484d75fef57efdd36cf511c19`
+- Commit message: `Show import coverage cards`
 - Production deployment status: `READY`
+- Verified deployment: `dpl_3PGsMegvGCnYdAHAtzzrGzLxh7PP`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
@@ -68,7 +69,7 @@ Progress: 100%
 Closure verified:
 
 - Latest verified READY closure commit: `e136978c127b462c7bad4923ade6b4426d1dc3e6`.
-- Fresh production PDF screenshot verified the buyer-facing PDF is professional and includes pack values, units/case, MOQ values, Basis, selected-currency unit/case prices, line totals, grand total, seller address, Tax ID, commercial/compliance, financial summary, terms, shipment, notes, and signature sections.
+- Buyer-facing quote PDF and sharing flows are protected.
 - Quote builder/send/share controls use one clear quote sequence and no duplicate quote action surfaces.
 - Quote sharing uses production-domain buyer-facing pages with organization branding where available and no raw JSON placeholders.
 
@@ -81,11 +82,9 @@ Closure verified:
 
 - Quote-review compliance is locked to the working flow `/leads` → open lead → **Continue quote** → **Step 4 — Review**.
 - Compliance clearing belongs inside the existing inline red quote Review blocker card, not a separate Compliance Assist page, not a sticky helper, and not a globally mounted overlay.
-- The valid reviewer actions are **Attach evidence**, **Waive for quote**, and **Defer to dispatch**.
-- Waive/Defer require reviewer permission and reason, save through `/api/compliance/quote-fix`, and are idempotent for the same quote/action/requirement context.
-- Send Gate readiness uses shared persisted source-of-truth state: approved quote-review documents, lead-level clearance rows, no open lead compliance items, persisted quote lines, quote version line count, and approval posture.
-- Priced quote/RFQ lines count as pricing coverage even when a catalog pricing-rule is absent, preventing stale blocker counts after a valid quote is priced.
-- Setu Guru knowledge routes users to the inline Step 4 Review card and distinguishes quote-send blockers from dispatch/order reminders.
+- Valid reviewer actions are **Attach evidence**, **Waive for quote**, and **Defer to dispatch**.
+- Waive/Defer require reviewer permission and reason, save through `/api/compliance/quote-fix`, and are idempotent.
+- Send Gate readiness uses shared persisted source-of-truth state.
 - COA/Packing List remain advisory before dispatch/order execution unless explicitly configured as quote-send blockers.
 - No schema, quote PDF/share/send route, global layout, or silent waiver/approval behavior was changed.
 
@@ -106,34 +105,38 @@ Progress: 10%
 
 ### Sprint 10 — Import wizard and catalog onboarding maturity
 
-Status: `ACTIVE`
-Progress: 30%
+Status: `DONE`
+Progress: 100%
 
-Current focus:
+Closure verified:
 
-- Category CSV import must insert/update `product_categories` in the active organization after preview validation passes.
-- Category import must avoid `product_categories_org_sort_order_key` conflicts by assigning sort orders after the current organization max.
-- Parent categories in the CSV should be created first when missing, then child categories should link to them.
-- Re-importing the same category file should update existing categories by organization/name instead of duplicating them.
-- Product import should become easier after categories are imported: the user should not have to guess category names or manually pre-create parents.
-- Setu Guru troubleshooting must explain the categories → products import order and the duplicate sort-order fix path.
+- Catalog Admin is now the back-office control center for setup, pricing defaults, imports, owner/admin product cleanup, and audit.
+- `/products` remains the daily product workspace for product rows, variants, units per case, MOQ, and product-specific pricing edits.
+- Import setup order is locked: **Pricing calculator/defaults → Categories → Products + variants**.
+- Category import creates/updates active-organization categories, handles parent categories first, links child categories, and avoids sort-order conflicts.
+- Product import creates/updates products and variants, resolves categories/subcategories by active workspace organization, and creates/updates pricing-rule rows from imported price fields.
+- Import wizard stays open after import to show row-level summaries, inserted/updated/skipped counts, pricing-rule counts, download summary, and manual refresh.
+- Import History shows recent import runs, issue details, row summaries, download reports, and setup coverage cards.
+- Product cleanup delete is owner/admin-only, uses 2-year quote/order protection, requires reason and typed confirmation, preserves audit/history, and removes eligible products from active catalog surfaces only.
+- Visual closeout testing was completed by Ritesh for Import History cards and delete cleanup behavior.
+- No quote/compliance/PDF/share/send behavior was changed during Sprint 10.
 
 ---
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 98%
+- Overall CRM readiness: 99%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
 - Completed Sprint 5 Quote builder and quote PDF maturity: 100%
 - Completed Sprint 6 Compliance Assist maturity: 100%
-- Current Sprint 10 Import wizard and catalog onboarding maturity: 30%
-- Setu Guru intelligence readiness: 99%
-- UX cleanup readiness: 76%
+- Completed Sprint 10 Import wizard and catalog onboarding maturity: 100%
+- Setu Guru intelligence readiness: 99.2%
+- UX cleanup readiness: 82%
 - Quote/compliance maturity: 96%
-- Product catalog maturity: 86%
+- Product catalog maturity: 94%
 
 ---
 
@@ -169,17 +172,17 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, and Sprint 6 are 100%. Sprint 10 Import wizard and catalog onboarding maturity is active. Preserve product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, guidance-only order actions, closed Sprint 5 quote PDF/share/send protections, and closed Sprint 6 quote-review compliance protections. Do not add duplicate action surfaces or silent waiver/approval/clear-compliance/write-back behavior.
+Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and Sprint 10 are 100% complete. Preserve Catalog Admin import/order/cleanup protections, product drawer/pricing protections, quote-only pricing boundaries, approval-safe HSN apply, quote/compliance per-action routes, source-backed live research, non-dead action buttons, guidance-only order actions, closed Sprint 5 quote PDF/share/send protections, closed Sprint 6 quote-review compliance protections, and closed Sprint 10 import/catalog onboarding protections. Do not add duplicate action surfaces or silent waiver/approval/clear-compliance/write-back behavior.
 ```
 
 ---
 
 ## 7. Next recommended pass
 
-Continue Sprint 10 Import wizard and catalog onboarding maturity:
+Start the next approved roadmap sprint only after Ritesh confirms priority. Recommended options:
 
-1. Verify category CSV import deployment is READY.
-2. Smoke-check category import from `/admin/product-management` → Import catalog → Import wizard → Categories using the downloaded template.
-3. Confirm categories insert/update in `product_categories` for the active organization and do not collide on `sort_order`.
-4. Improve products import next so products can reliably reference imported categories and variants.
-5. Keep Setu Guru import troubleshooting current.
+1. **Sprint 7 — Lead command center cleanup**: simplify lead workbench UX, keep quote continuation clear, and protect the Step 4 Review compliance route.
+2. **Sprint 9 — Admin and organization setup cleanup**: continue organization setup maturity now that Catalog Admin is closed.
+3. **Sprint 8 — Orders and execution readiness**: improve order execution only after quote/compliance and catalog setup protections remain stable.
+
+Do not reopen Sprint 10 unless a production screenshot shows a defect in import, coverage cards, or owner/admin product cleanup.

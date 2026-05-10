@@ -9,7 +9,8 @@
     "Quote Review Compliance",
     "Approvals & Sending",
     "Orders / Execution",
-    "Catalog Admin Setup"
+    "Catalog Admin Setup",
+    "Import History & Cleanup"
   ],
   "runtimeAssets": [
     "/setu-guru/setu-guru-avatar.svg",
@@ -36,10 +37,12 @@
     "docs/setu-guru/SETU_GURU_GPT_CREATION_EXACT_INSTRUCTIONS.md"
   ],
   "catalogAdminWorkflow": [
-    "Use /admin/product-management as Catalog Admin for setup, imports, defaults, governance, and audit.",
+    "Use /admin/product-management as Catalog Admin for setup, imports, defaults, governance, import history, cleanup, and audit.",
     "Use /products for day-to-day product row edits, variants, units per case, MOQ, and product-specific pricing.",
-    "Import categories before products.",
-    "Product template should include product identity, variant/pack setup, units per case, MOQ, pricing, and trade defaults.",
+    "Import order is pricing calculator/defaults first, categories second, products plus variants third.",
+    "Product template should include product identity, category/subcategory, variant/pack setup, units per case, MOQ, pricing mode, trade defaults, and starting prices.",
+    "Import History shows run status, row summaries, issue reports, downloadable reports, import audit trail coverage, products without variants, and pricing rule coverage.",
+    "Product cleanup belongs only in Catalog Admin Cleanup, is owner/admin-only, checks two years of quote/order usage, requires reason and typed confirmation, and preserves audit/history.",
     "Quote-only customer pricing stays in Quotes and must not rewrite catalog defaults."
   ],
   "quoteComplianceWorkflow": [
@@ -51,9 +54,21 @@
     "Refresh draft after fix or create/open draft preview.",
     "Proceed to Step 5 Send Gate only when shared readiness is clear."
   ],
+  "closedSprints": [
+    "Sprint 1 — Implementation control and anti-drift",
+    "Sprint 2 — Setu Guru knowledge base foundation",
+    "Sprint 3 — Smarter Setu Guru routing and live context",
+    "Sprint 4 — Product catalog UX maturity",
+    "Sprint 5 — Quote builder and quote PDF maturity",
+    "Sprint 6 — Compliance Assist maturity",
+    "Sprint 10 — Import wizard and catalog onboarding maturity"
+  ],
   "guardrails": [
     "Do not approve quotes autonomously.",
     "Do not change pricing defaults autonomously.",
+    "Do not perform imports autonomously.",
+    "Do not mark products deleted autonomously.",
+    "Do not bypass product cleanup eligibility guards.",
     "Do not send messages autonomously.",
     "Do not advance order states autonomously.",
     "Do not make compliance decisions autonomously.",
