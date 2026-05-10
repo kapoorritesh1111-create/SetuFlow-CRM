@@ -4,6 +4,31 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-10 — Sprint 10C import wizard result review polish
+
+Decision:
+
+- The import wizard no longer immediately refreshes after a successful product/category import.
+- Operators now stay inside the import drawer and can review the returned import run summary before refreshing the catalog.
+- The drawer shows inserted, updated, skipped, pricing rules created, and pricing rules updated counts.
+- Row-level import summaries are displayed in the drawer and can be downloaded as CSV.
+- A manual **Refresh catalog** button reloads the page after the operator reviews the result.
+
+Files:
+
+- `src/features/products/components/catalog-import-export-wizard.tsx`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No quote/compliance/PDF/share/send behavior was changed.
+- No importer persistence behavior was changed.
+- No product cleanup behavior was changed.
+- No schema migration was introduced.
+- No `npm ci` was run.
+
+---
+
 ## 2026-05-10 — Sprint 10C product import engine completeness
 
 Decision:
