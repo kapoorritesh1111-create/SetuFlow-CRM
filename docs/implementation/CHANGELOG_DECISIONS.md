@@ -4,6 +4,30 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-10 — Sprint 10C product import engine completeness
+
+Decision:
+
+- Product CSV imports now create/update products, variants, and pricing rules from imported price fields in one import flow.
+- Imported price columns are mapped into `product_pricing_rules` using the active default `pricing_rule_sets` row, or a new default rule set when none exists.
+- Supported price inputs include `ex_factory_per_unit`, `exw_price`, `fob_per_unit`, `fob_price`, and `bulk_price_per_kg` with USD/INR handling.
+- Imports now create an `import_runs` record, update completion counters, persist blocking/warning issues in `import_issues`, and record an `audit_logs` import-run entry.
+- Import API responses now include `import_run_id`, `pricingRulesCreated`, `pricingRulesUpdated`, and row summaries for operator review.
+
+Files:
+
+- `src/app/api/catalog/import-csv/route.ts`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No quote/compliance/PDF/share/send behavior was changed.
+- No product cleanup behavior was changed.
+- No schema migration was introduced.
+- No `npm ci` was run.
+
+---
+
 ## 2026-05-10 — Sprint 10B import order and protected product cleanup
 
 Decision:
