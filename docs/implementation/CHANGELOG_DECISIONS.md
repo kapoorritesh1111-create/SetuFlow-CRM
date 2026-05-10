@@ -4,6 +4,33 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-10 — Sprint 10D import history and audit UI
+
+Decision:
+
+- Catalog Admin now includes a reusable Import History panel backed by `import_runs` and `import_issues`.
+- The Import History panel shows recent import runs, status, row counters, warning/blocker counts, row-level summaries, issue details, and downloadable CSV reports.
+- The panel appears in the Imports work area and the Import history/Audit work area so operators can review prior import results after leaving the immediate import drawer.
+- Catalog Admin now highlights recent import blockers as a setup-health metric.
+- No import persistence, product cleanup, quote, compliance, PDF, share, or send behavior changed.
+
+Files:
+
+- `src/features/admin/components/import-history-panel.tsx`
+- `src/app/(app)/admin/product-management/page.tsx`
+- `src/features/admin/components/product-governance-workbench.tsx`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No quote/compliance/PDF/share/send behavior was changed.
+- No importer persistence behavior was changed.
+- No product cleanup behavior was changed.
+- No schema migration was introduced.
+- No `npm ci` was run.
+
+---
+
 ## 2026-05-10 — Sprint 10C import wizard result review polish
 
 Decision:
