@@ -11,252 +11,128 @@ This guide is for:
 
 ---
 
-## OVERVIEW: HOW YOU GOT HERE
-
-Before you have a SetuFlow workspace, the following happened:
-
-1. Your company filled in the public onboarding form at `[domain]/onboarding`
-2. Setu Flow's team reviewed the request
-3. Setu Flow created your organization workspace
-4. You received an invitation email
-5. You clicked the link and created your password
-6. You landed here — in your organization's SetuFlow workspace
-
----
-
 ## PHASE 1: FIRST 30 MINUTES — Core Setup
 
 ### Step 1: Verify Organization Settings
 **Go to: Admin → Organization (`/admin/organization`)**
 
-Check and update:
-- [ ] Company name is correct
-- [ ] Logo URL is set (or upload logo)
-- [ ] Website URL is correct
-- [ ] Headquarters country is correct
-- [ ] Set default **Quote Terms & Conditions** (standard payment terms, delivery conditions)
-- [ ] Set default **Order Terms & Conditions** (standard order conditions)
-- [ ] Review approval threshold (default is 15% — adjust if needed)
+Check company name, logo, website, headquarters country, quote/order terms, and approval threshold.
 
-Save when done.
-
-### Step 2: Review Your Pipelines
-**Go to: Admin → Pipelines (`/admin/pipelines`)**
-
-SetuFlow pre-created pipelines based on your onboarding form. Review:
-- [ ] Are the pipeline names right for your business?
-- [ ] Do you need a separate pipeline for Buyers and Suppliers?
-- [ ] Are all your sales stages represented?
-
-Edit or add as needed.
-
-### Step 3: Review Your Pipeline Stages
-**Go to: Admin → Stages (`/admin/stages`)**
-
-For each pipeline, review the stages:
-- [ ] Do the stage names match your actual sales process?
-- [ ] Are they in the right order?
-- [ ] Do you need any stages added or renamed?
-
-Common stage progression for B2B:
-```
-Prospecting → Qualified → Needs Analysis → Proposal Sent → Negotiation → Won / Lost
-```
-
-### Step 4: Review Your Markets
-**Go to: Admin → Markets (`/admin/markets`)**
-
-Markets represent geographic focus areas (e.g., "Europe", "Middle East", "Southeast Asia"):
-- [ ] Are your active market regions listed?
-- [ ] Remove any that aren't relevant
-- [ ] Add any that are missing
+### Step 2: Review Pipelines, Stages, and Markets
+Use Admin → Pipelines, Admin → Stages, and Admin → Markets to confirm your selling process and geographic focus.
 
 ---
 
-## PHASE 2: FIRST HOUR — Product Setup
+## PHASE 2: FIRST HOUR — Catalog Admin and Product Setup
 
-### Step 5: Create Product Categories
-**Go to: Admin → Categories (`/admin/categories`)**
+### Catalog Admin vs Products
 
-Categories organize your products. Create your taxonomy first.
+Use **Admin → Catalog Admin** (`/admin/product-management`) for back-office setup and governance:
+- category/product onboarding imports,
+- category and taxonomy setup,
+- pricing default rules,
+- import health,
+- readiness issues,
+- audit review.
 
-Bulk import path:
-1. Go to **Admin → Product management** (`/admin/product-management`).
-2. Click **Import catalog**.
-3. Click **Import wizard**.
-4. Select **Categories**.
-5. Download the Categories template or upload a prepared CSV.
-6. Confirm preview says **0 blocking issues**.
-7. Click **Apply validated import**.
-8. Categories are inserted/updated in `product_categories` for the active organization.
+Use **Products** (`/products`) for day-to-day commercial catalog work:
+- add or edit product rows,
+- edit variants and packs,
+- update units per case and MOQ,
+- adjust product-specific pricing snapshots,
+- fix pricing gaps before quoting.
 
-The Categories import is safe to rerun: existing categories are matched by organization + category name and updated instead of duplicated. Missing parent categories are created first, then child categories are linked to them. Sort order is assigned after the current organization maximum to avoid `product_categories_org_sort_order_key` conflicts.
+Quote-only customer discounts or negotiated prices stay inside **Quotes** and must not rewrite catalog defaults.
 
-**Example for a food ingredients company:**
+### Step 3: Create Product Categories First
+
+Preferred path:
+1. Go to **Admin → Catalog Admin** (`/admin/product-management`).
+2. Open **Import center**.
+3. Choose **Categories**.
+4. Download the Categories template.
+5. Confirm preview says **0 blocking issues**.
+6. Apply the validated import.
+
+The category template now includes:
 ```
-Dehydrated Products
-  ├── Garlic
-  ├── Onion
-  └── Vegetables
-
-Snacks
-  ├── Vacuum-Cooked Chips
-  └── Ready-to-Eat
-
-Natural Sweeteners
-  ├── Jaggery
-  └── Coconut Products
+category_name,parent_category,category_code,description,sort_order,active_status,default_country_of_origin,default_shelf_life_months,default_lead_time_days,default_shipment_notes
 ```
 
-### Step 6: Add Your Products
-**Go to: Products (`/products`) or Admin → Product management (`/admin/product-management`)**
+The Categories import is safe to rerun: existing categories are matched by organization + category name and updated instead of duplicated. Missing parent categories are created first, then child categories are linked to them. Sort order is assigned after the current organization maximum to avoid conflicts.
 
-Recommended order for bulk onboarding:
+### Step 4: Import or Add Products
+
+Recommended bulk order:
 1. Import Categories first.
-2. Verify categories appear in Admin → Categories.
-3. Download the Products template.
-4. Use category names that already exist from the category import.
-5. Import products and variants.
-6. Add or import pricing rules/prices.
+2. Refresh and confirm categories exist.
+3. Download the Products template from Catalog Admin → Import center.
+4. Fill in product, variant, pack, MOQ, pricing, and trade-default fields.
+5. Upload the CSV, review validation, then apply the import.
+6. Open Products to edit any row-level product details.
 
-Option A — Add products one by one:
-1. Click "+ Add Product"
-2. Fill in: Name, Category, Description, HS Code (for trade)
-3. Save, then add Variants (pack sizes, SKUs)
-4. Set pricing for each variant
+The product template now asks for setup fields a new org needs:
+```
+product_name,sku_code,brand_name,category,subcategory,pricing_type,active_status,quoteable_status,description,variant_name,variant_code,pack_label,pack_size_value,pack_size_unit,units_per_case,net_weight_kg,moq_cases,moq_kg,pricing_mode_default,supports_bulk_pricing,country_of_origin,shelf_life_months,lead_time_days,shipment_notes,hsn_code,currency,ex_factory_per_unit,fob_per_unit,cif_per_unit,ddp_per_unit,distributor_per_unit,retail_per_unit,bulk_price_per_kg,price_effective_from,price_effective_to,row_action,notes
+```
 
-Option B — Import in bulk:
-1. Admin → Product management → Import catalog → Import wizard
-2. Select **Catalog / Products**
-3. Download the product CSV template
-4. Fill in products using the imported category names
-5. Upload → review validation → apply import
+Important setup notes:
+- `units_per_case` is required because pack/MOQ and quote pricing depend on it.
+- `pricing_mode_default` should be `unit`, `case`, or `kg`.
+- Use `moq_cases` for chips/cases and `moq_kg` for powders/bulk products.
+- Use `row_action=upsert` for normal imports.
+- Category names should match the imported categories.
 
-### Step 7: Set Up Pricing Defaults
-**Go to: Admin → Organization (or Admin → Categories)**
+### Step 5: Pricing Defaults
 
-Before adding product prices, set your organization defaults:
-- Default currency
-- Margin mode (markup is most common)
-- Standard internal margin %
-- Standard distributor margin %
+Go to **Admin → Catalog Admin → Pricing defaults** for organization/category calculator defaults such as freight, duty, internal margin, distributor margin, retail margin, and margin mode.
 
-These become the starting point for all product pricing. Products can override them.
-
-### Step 8: Set Product Pricing
-For each product (or import in bulk):
-1. Open product → Pricing tab
-2. Open pricing calculator
-3. Enter your factory/EXW price
-4. Fill in cost layers (what it costs to ship to different destinations)
-5. Review calculated FOB, CIF, DDP prices
-6. Save pricing rules
+Product-specific UOM, pack size, units per case, MOQ, and pricing snapshots belong in **Products**, not in pricing defaults.
 
 ---
 
 ## IMPORT WIZARD TROUBLESHOOTING
 
 ### Problem: Categories import preview passes, but no categories are inserted
-**Cause:** The old category import save path could submit rows with duplicate `sort_order = 0`, causing Supabase to reject the batch with `product_categories_org_sort_order_key`.
-**Fix:** Use the Categories tab in the Import wizard after the fix. It now posts to the category import API, assigns unique sort orders after the organization's current maximum, creates missing parent categories first, and updates existing categories by name.
-
-### Problem: Categories import says duplicate sort order
-**Cause:** Category rows need organization-unique `sort_order` values.
-**Fix:** Rerun the Categories import through Admin → Product management → Import catalog → Import wizard → Categories. Do not manually add `sort_order` to the CSV; the importer manages it.
+**Cause:** Older import paths could collide on category sort order.
+**Fix:** Use Admin → Catalog Admin → Import center → Categories. The importer assigns unique sort orders, creates missing parents first, and updates existing categories by name.
 
 ### Problem: Product import cannot find a category
 **Cause:** Products should reference categories that already exist in the active organization.
 **Fix:** Import Categories first, refresh, then import Products using exact category names from the Categories list.
 
-### Problem: Re-importing the same Categories file creates confusion
-**Cause:** Users expect imports to be upserts.
-**Fix:** Categories import is now upsert-like by organization and category name. Existing categories are updated for active status/parent linkage; new categories are inserted.
+### Problem: Products import but setup still looks incomplete
+**Cause:** Product setup now depends on product + variant + pack + MOQ + pricing fields.
+**Fix:** Check `units_per_case`, `pack_label`, `pricing_mode_default`, `moq_cases` or `moq_kg`, and at least one starting price such as `ex_factory_per_unit` or `fob_per_unit`.
+
+### Problem: Users are unsure where import belongs
+**Fix:** Use Catalog Admin for full setup and onboarding imports. Use Products for day-to-day product row editing and product-specific pricing updates.
 
 ---
 
 ## PHASE 3: FIRST DAY — Team Setup
 
-### Step 9: Invite Your Team
-**Go to: Admin → Invitations (`/admin/invitations`)**
-
-For each team member:
-1. Click "+ Invite User"
-2. Enter their email address
-3. Select their role
-4. Send invitation
+Invite team members from Admin → Invitations and assign roles.
 
 ---
 
 ## PHASE 4: FIRST WEEK — First Leads & Quotes
 
-### Step 10: Enter Your First Leads
-**Go to: Leads (`/leads`)**
-
-Start entering your existing buyer and supplier contacts:
-1. Click "+ New Lead"
-2. Fill in company name, contact name, email
-3. Set **Lead Type**: Buyer or Supplier
-4. Set **Market**
-5. Set **Pipeline** and **Stage**
-6. Set **Owner**
-7. Add product interests
-8. Save
-
-### Step 11: Create Your First Quote
-Once a lead is qualified and you know what they want:
-1. Open the lead
-2. Click "Create Quote" or "Continue quote"
-3. Complete terms, pricing, review, and send gate
-4. Save and send when ready
-
-### Step 12: Set Up Mobile for Field Team
-For team members who attend trade shows or client meetings:
-
-1. Each user: Go to Profile → My Card settings
-2. Fill in contact details
-3. Upload profile photo
-4. Save → Smart QR is ready
+Create leads from `/leads`, then create or continue quotes from the lead. Quote Review compliance is fixed inside the quote Review step's inline blocker card only.
 
 ---
 
 ## CHECKLIST: READY TO OPERATE
 
-**Organization:**
-- [ ] Company name, logo, and details set
-- [ ] Quote and order terms defaults written
-- [ ] Approval threshold configured
+**Organization:** company details, terms, approval threshold.
 
-**Pipeline:**
-- [ ] Pipelines reflect your actual sales workflow
-- [ ] Stages match your process
-- [ ] Markets match your geographic focus
+**Catalog Admin:** categories imported, products imported, pricing defaults reviewed, import issues cleared.
 
-**Products:**
-- [ ] Product categories created or imported with correct hierarchy
-- [ ] Core products added with variants/SKUs
-- [ ] Pricing calculator set up for main products
-- [ ] Organization-level pricing defaults configured
+**Products:** product rows, variants, units per case, MOQ, pricing snapshots, origin/HSN/trade fields complete.
 
-**Team:**
-- [ ] All team members invited
-- [ ] Roles correctly assigned
-- [ ] Each person has logged in and verified access
-- [ ] Mobile setup done for field team members
+**Team:** users invited and roles assigned.
 
-**First Leads:**
-- [ ] Existing key contacts entered as leads
-- [ ] Leads assigned to correct owners
-- [ ] Pipeline stages set for existing relationships
-
----
-
-## GETTING HELP
-
-**In-app help:** Every page has a **Help button**. Click it for page-specific guidance.
-
-**This chatbot:** Ask any question about SetuFlow features, workflows, imports, or troubleshooting.
-
-**Setu Support:** Contact your Setu account manager for workspace configuration, billing, or technical issues.
+**First Leads:** existing key contacts entered and assigned.
 
 ---
 

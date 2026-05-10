@@ -10,7 +10,6 @@ import { ProductGovernanceWorkbench, type PricingCalculatorDefaultRule } from '@
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { createClient } from '@/lib/supabase/server';
 
-
 export default async function ProductManagementPage({ searchParams }: { searchParams?: { notice?: string } }) {
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {
@@ -20,11 +19,11 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
   const canManageCatalog = hasWorkspaceCapability(workspace.currentRoles, 'catalog.manage');
   const readOnlyMessage = canManageCatalog
     ? null
-    : getReadOnlyWorkspaceMessage(workspace.currentRoles, 'catalog.manage') ?? 'Your current role can review product management, but only catalog managers can edit the source of truth.';
+    : getReadOnlyWorkspaceMessage(workspace.currentRoles, 'catalog.manage') ?? 'Your current role can review Catalog Admin, but only catalog managers can change setup, imports, and pricing defaults.';
 
   const data = await getProductsData(workspace.organization.id);
   if (!data) {
-    return <EmptyState title="Product management unavailable" description="Product management needs a working data connection before the admin system of record can load." />;
+    return <EmptyState title="Catalog Admin unavailable" description="Catalog Admin needs a working data connection before setup, import, and governance controls can load." />;
   }
 
   const supabase = await createClient();
@@ -39,25 +38,26 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
   return (
     <AdminSettingsShell active="product-management" organizationName={workspace.organization.name} missingCount={summary.unpricedProducts === 0 ? 0 : 1}>
       <div className="space-y-6">
-      <PageHeader
-        eyebrow="Admin"
-        title="Product management"
-        badge="Governance"
-        description="Monitor catalog readiness, setup gaps, import health, and governed pricing controls."
-      />
+        <PageHeader
+          eyebrow="Admin"
+          title="Catalog Admin"
+          badge="Setup & governance"
+          description="Back-office control center for catalog setup, imports, pricing defaults, readiness issues, and audit. Use Products for daily product row editing."
+        />
 
-      {readOnlyMessage ? <StateMessage title="Read-only product governance" description={readOnlyMessage} tone="warning" /> : null}
-      <QueryIssuesAlert issues={data.queryIssues} />
+        {readOnlyMessage ? <StateMessage title="Read-only Catalog Admin" description={readOnlyMessage} tone="warning" /> : null}
+        {searchParams?.notice ? <StateMessage title="Catalog Admin notice" description={searchParams.notice} tone="neutral" /> : null}
+        <QueryIssuesAlert issues={data.queryIssues} />
 
-      <ProductGovernanceWorkbench
-        categories={categories}
-        products={products}
-        markets={(data.markets ?? []).map((market) => ({ id: market.id, name: market.name, isActive: Boolean(market.is_active) }))}
-        summary={summary}
-        auditEvents={data.auditEvents}
-        canManageCatalog={canManageCatalog}
-        pricingRules={(ruleRows ?? []) as PricingCalculatorDefaultRule[]}
-      />
+        <ProductGovernanceWorkbench
+          categories={categories}
+          products={products}
+          markets={(data.markets ?? []).map((market) => ({ id: market.id, name: market.name, isActive: Boolean(market.is_active) }))}
+          summary={summary}
+          auditEvents={data.auditEvents}
+          canManageCatalog={canManageCatalog}
+          pricingRules={(ruleRows ?? []) as PricingCalculatorDefaultRule[]}
+        />
       </div>
     </AdminSettingsShell>
   );

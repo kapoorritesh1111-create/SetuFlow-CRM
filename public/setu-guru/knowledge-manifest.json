@@ -1,6 +1,6 @@
 {
   "name": "Setu Guru",
-  "updated": "2026-05-08",
+  "updated": "2026-05-10",
   "purpose": "Embedded CRM help chatbot knowledge manifest for Setu Flow CRM.",
   "primaryFlow": [
     "Capture",
@@ -8,7 +8,8 @@
     "Quote",
     "Quote Review Compliance",
     "Approvals & Sending",
-    "Orders / Execution"
+    "Orders / Execution",
+    "Catalog Admin Setup"
   ],
   "runtimeAssets": [
     "/setu-guru/setu-guru-avatar.svg",
@@ -33,6 +34,13 @@
     "docs/setu-guru/SETU_GURU_COMPLIANCE_RESEARCH.md",
     "docs/setu-guru/SETU_GURU_PRODUCT_ENRICHMENT_WORKFLOW.md",
     "docs/setu-guru/SETU_GURU_GPT_CREATION_EXACT_INSTRUCTIONS.md"
+  ],
+  "catalogAdminWorkflow": [
+    "Use /admin/product-management as Catalog Admin for setup, imports, defaults, governance, and audit.",
+    "Use /products for day-to-day product row edits, variants, units per case, MOQ, and product-specific pricing.",
+    "Import categories before products.",
+    "Product template should include product identity, variant/pack setup, units per case, MOQ, pricing, and trade defaults.",
+    "Quote-only customer pricing stays in Quotes and must not rewrite catalog defaults."
   ],
   "quoteComplianceWorkflow": [
     "Go to /leads.",

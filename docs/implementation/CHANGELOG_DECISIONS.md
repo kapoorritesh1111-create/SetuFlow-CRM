@@ -4,91 +4,34 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
-## 2026-05-08 — Sprint 6 final quote Review compliance workflow locked
+## 2026-05-10 — Sprint 10A Catalog Admin and import template direction
 
 Decision:
 
-- The correct user workflow for quote compliance is now locked as `/leads` → open lead → **Continue quote** → **Step 4 — Review**.
-- Compliance clearing belongs inside the existing inline red quote Review blocker card, not a separate Compliance Assist page, not a sticky helper, and not a globally mounted overlay.
-- The valid reviewer actions are **Attach evidence**, **Waive for quote**, and **Defer to dispatch**.
-- Waive/Defer require reviewer permission and reason, are saved through `/api/compliance/quote-fix`, and are idempotent for the same quote/action/requirement context.
-- Send Gate readiness must use shared persisted source-of-truth state: approved quote-review documents, lead-level clearance rows, no open lead compliance items, persisted quote lines, quote version line count, and approval posture.
-- Priced quote/RFQ lines count as pricing coverage even when a catalog pricing-rule is absent, preventing stale blocker count after a valid quote is priced.
-- Setu Guru knowledge now instructs users to fix blockers from the inline Step 4 Review card and distinguishes quote-send blockers from dispatch/order reminders.
+- Admin → Product management is now treated as **Catalog Admin**, a back-office setup and governance control center, not a duplicate of the `/products` commercial catalog workspace.
+- `/products` remains the day-to-day workspace for product row edits, variant edits, units per case, MOQ, product-specific pricing snapshots, and quote-ready catalog work.
+- Catalog Admin owns setup health, master-data direction, import center entry points, pricing defaults, admin issues, and audit posture.
+- The full setup import path belongs in Catalog Admin/workspace setup. Product-only import shortcuts can remain in Products, but categories and all-in-one onboarding should not be hidden only inside the product page.
+- Product CSV templates now include the setup fields needed for a new org: SKU, brand, category, subcategory, variant, pack label, pack size, units per case, MOQ cases/KG, pricing mode, trade defaults, HSN, starting prices, and row action.
+- Category CSV templates now include hierarchy and default trade/setup fields: parent, code, sort order, active status, default origin, shelf life, lead time, and shipment notes.
+- This pass intentionally updates admin IA, template headers, export headers, validation, and Setu Guru guidance before the deeper importer engine work.
 
 Files:
 
-- `src/lib/catalog-pricing-model.ts`
-- `src/app/api/compliance/quote-fix/route.ts`
-- `src/app/api/compliance/quote-send-sync/route.ts`
-- `docs/help/compliance.md`
-- `docs/setu-guru/SETUFLOW_WORKFLOWS.md`
-- `docs/setu-guru/SETU_GURU_KNOWLEDGE_BASE_INSTRUCTIONS.md`
+- `src/app/(app)/admin/product-management/page.tsx`
+- `src/features/admin/components/product-governance-workbench.tsx`
+- `src/lib/import-export-templates.ts`
+- `docs/setu-guru/SETUFLOW_TROUBLESHOOTING.md`
 - `public/setu-guru/knowledge-manifest.json`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
 Protected:
 
-- No global quote compliance panel.
-- No DOM injection or MutationObserver.
-- No user-facing dev/debug text.
-- No schema migration.
-- No silent waiver/defer.
-- No quote PDF/share/send route rewrite.
-
----
-
-## 2026-05-08 — Sprint 6 quote compliance decision idempotency
-
-Decision:
-
-- `/api/compliance/quote-fix` now treats Waive and Defer as idempotent reviewer decisions for the same quote/action/requirement context.
-- Repeated Waive/Defer clicks update the existing quote-level clearance document instead of creating another quote waiver/dispatch-deferral row.
-- Lead-level gate clearance rows are also upsert-like/idempotent by quote, lead, and requirement code, so repeated clicks update the previous clearance row.
-- Attach evidence remains intentionally non-idempotent because each uploaded evidence item can be a distinct document.
-- The same action still records an audit log, clears open compliance items, approves quote/version posture, and refreshes the current quote version line count from persisted `quote_line_items`.
-- Supabase schema was checked before implementation; the fix uses existing columns only and does not require a migration.
-
-Files:
-
-- `src/app/api/compliance/quote-fix/route.ts`
-- `docs/implementation/CHANGELOG_DECISIONS.md`
-
-Protected:
-
-- No schema change.
-- No silent waiver/defer; reason and reviewer permission are still required.
-- No quote PDF/share/send route change.
-- Evidence uploads can still create multiple rows by design.
-- Audit trail remains appended for each human action attempt.
-
----
-
-## 2026-05-08 — Sprint 6 compliance regression rollback and gate source fix
-
-Decision:
-
-- Production screenshots showed the layout-mounted quote compliance panel caused major UI regression: it stayed visible on the main lead queue after leaving quote review.
-- Removed the global quote review compliance panel from the authenticated layout. Compliance action UI must not be mounted globally.
-- Production also showed waiver/defer saved a quote waiver, but the red blocker remained. The quote gate uses lead-level document requirement state from `buildLeadDocumentRequirementState`, which only reads `documents` where `related_entity = lead`.
-- The quote-fix API now records the quote-scoped waiver/defer document, and also writes approved lead-level requirement documents for any missing mandatory quote-send document rules.
-- The quote-fix API still approves open lead compliance items and records the human reason/audit trail.
-- Supabase MCP tooling was not exposed in this session, so the DB correction was made by aligning the API with the repository gate source of truth in `src/lib/document-requirements.ts`.
-
-Files:
-
-- `src/app/(app)/layout.tsx`
-- `src/app/api/compliance/quote-fix/route.ts`
-- `tests/quote-compliance-gate-source.test.mjs`
-- `docs/implementation/CHANGELOG_DECISIONS.md`
-
-Protected:
-
-- No schema change.
-- No hidden DOM injection.
-- No global compliance overlay.
-- No quote PDF/share/send behavior change.
-- Waiver/defer reason remains recorded on quote document and audit log.
+- No quote/compliance/PDF/share/send behavior was changed.
+- No global compliance overlay, sticky helper, DOM injection, or MutationObserver was added.
+- No schema migration was introduced.
+- No `npm ci` was run.
+- Import persistence remains org-scoped and protected by workspace auth + catalog.manage permission.
 
 ---
 
@@ -99,4 +42,4 @@ Protected:
 - Do not run `npm ci` in sandbox.
 - Do not put dev/debug notes on user-facing screens.
 - Do not write back without explicit human approval.
-- Sprint 1, Sprint 2, Sprint 3, Sprint 4, and Sprint 5 are 100% complete.
+- Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, and Sprint 6 are 100% complete.
