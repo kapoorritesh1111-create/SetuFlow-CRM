@@ -178,7 +178,7 @@ export function LeadTableRow({
         severityBorderClass,
         selected || isSpotlight ? 'bg-blue-50/40' : '',
       ].join(' ')}
-      style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 128px' }}
+      style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 146px' }}
       onClick={(event) => { if (shouldIgnoreLeadNavigationTarget(event.target)) return; openLeadCommandCenter(router, commandCenterHref); }}
       onKeyDown={(event) => { if (shouldIgnoreLeadNavigationTarget(event.target)) return; handleLeadCommandCenterKeyDown(event, router, commandCenterHref); }}
     >
@@ -205,7 +205,7 @@ export function LeadTableRow({
       </div>
 
       <div className="hidden lg:flex flex-col items-start gap-[2px]">
-        {blockerCount > 0 ? <span className="inline-flex items-center gap-1 rounded-[4px] border border-rose-100 bg-rose-50 px-[7px] py-[2px] text-[10px] font-bold text-rose-600">🚫 Dispatch blocked</span>
+        {blockerCount > 0 ? <span className="inline-flex items-center gap-1 rounded-[4px] border border-rose-100 bg-rose-50 px-[7px] py-[2px] text-[10px] font-bold text-rose-600">🚫 Blocked</span>
           : followUpState === 'overdue' ? <><span className="inline-flex items-center gap-1 rounded-[4px] border border-rose-100 bg-rose-50 px-[7px] py-[2px] text-[10px] font-bold text-rose-600">⚠ {overdueDays ?? 0} {overdueDays === 1 ? 'day' : 'days'} overdue</span><span className="text-[10px] text-slate-400">{dueLabel}</span></>
             : followUpState === 'today' ? <><span className="inline-flex rounded-[4px] border border-amber-100 bg-amber-50 px-[7px] py-[2px] text-[10px] font-bold text-amber-600">Today</span><span className="text-[10px] text-slate-400">{dueLabel}</span></>
               : hasDueDate ? <span className="text-[10px] font-semibold text-slate-600">{dueLabel}</span>
@@ -225,7 +225,7 @@ export function LeadTableRow({
       <div className="flex items-center justify-end gap-1.5">
         <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-[#0b2e4a] bg-[#0b2e4a] px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90">Open →</button>
         <div className="relative">
-          <button type="button" onClick={(event) => { event.stopPropagation(); setActionsOpen((current) => !current); }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] font-bold text-slate-600 transition hover:bg-slate-50" aria-label={`Open actions for ${lead.company_name}`} aria-expanded={actionsOpen}>⋯</button>
+          <button type="button" onClick={(event) => { event.stopPropagation(); setActionsOpen((current) => !current); }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:bg-slate-50" aria-label={`Open more actions for ${lead.company_name}`} aria-expanded={actionsOpen}>More</button>
           {actionsOpen ? (
             <div className="absolute right-0 top-full z-20 mt-2 w-40 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg" onClick={(event) => event.stopPropagation()}>
               <button type="button" disabled={!openQuoteBuilder} onClick={() => { setActionsOpen(false); openQuoteBuilder?.(lead.id); }} className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Continue quote</button>
@@ -241,14 +241,14 @@ export function LeadTableRow({
 
 export function LeadTableHeader({ onSelectAll, allSelected }: { onSelectAll: (checked: boolean) => void; allSelected: boolean }) {
   return (
-    <div className="grid items-center gap-x-4 border-b border-slate-200 bg-white px-4 py-2" style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 128px' }}>
+    <div className="grid items-center gap-x-4 border-b border-slate-200 bg-white px-4 py-2" style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 146px' }}>
       <div className="flex justify-center"><input type="checkbox" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} className="h-[18px] w-[18px] rounded-[4px] border-slate-300" /></div>
-      <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Company / Contact <span className="font-normal normal-case opacity-60">· stage · type</span></div>
+      <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Company / Contact</div>
       <div className="hidden lg:block text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Stage progress</div>
       <div className="hidden lg:block text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Follow-up</div>
       <div className="hidden lg:block text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Deal value</div>
       <div className="hidden lg:block text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Owner</div>
-      <div className="hidden lg:block text-right text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Action</div>
+      <div className="hidden lg:block text-right text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Open / More</div>
     </div>
   );
 }

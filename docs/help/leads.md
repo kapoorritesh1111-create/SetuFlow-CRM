@@ -29,11 +29,13 @@ Current row behavior:
 
 - The row itself opens the Lead Command Center.
 - The visible row CTA is **Open**.
-- Secondary actions live in the compact **More** menu:
+- The secondary action control is labeled **More**.
+- Secondary actions live in **More**:
   - Continue quote;
   - Edit lead;
   - Delete lead.
 - Delete remains a deliberate secondary action and should not appear as a competing inline CTA.
+- The action column header is **Open / More** so users understand the row model quickly.
 
 Setu Guru should tell users to click the lead row or **Open** for the full Lead Command Center. Use **More → Continue quote** only when the user wants to jump straight from the list into quote work.
 

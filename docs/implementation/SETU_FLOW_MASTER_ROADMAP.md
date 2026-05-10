@@ -13,10 +13,10 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this roadmap update: `55c1261fa79f46952df944a7e5cafb64bb8628f7`
-- Commit message: `Start Sprint 7 lead action cleanup`
+- Latest verified production READY commit before this roadmap update: `7089f7a9cf0220fe8a5ae2bebbe58c9547308bce`
+- Commit message: `Clean up lead row actions`
 - Production deployment status: `READY`
-- Vercel status source: GitHub commit status context `Vercel = success`
+- Verified deployment: `dpl_vSBU6HQmdZ2Q1K7kUTyiNP8WdfKt`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
@@ -85,7 +85,7 @@ Closure verified:
 ### Sprint 7 — Lead command center cleanup
 
 Status: `ACTIVE`
-Progress: 40%
+Progress: 50%
 
 Completed Sprint 7A:
 
@@ -101,12 +101,19 @@ Completed Sprint 7B:
 - Secondary actions moved to the compact More menu: **Continue quote**, **Edit lead**, and **Delete lead**.
 - Delete no longer competes as a visible inline lead-row CTA.
 
+Completed Sprint 7C:
+
+- Lead table smoke-check target made clearer.
+- Overflow control is now labeled **More** instead of a bare ellipsis.
+- Action column header now says **Open / More**.
+- Blocked row pill shortened to **Blocked** to reduce row density without changing compliance/source-of-truth behavior.
+
 Current focus:
 
 - Reduce duplicate or competing lead action surfaces.
 - Preserve the protected quote flow: `/leads` → open lead → **Continue quote** → **Step 4 — Review** for compliance/document blockers.
 - Keep lead table/list fast to scan.
-- Update Setu Guru guidance so users understand the new row action hierarchy.
+- Update Setu Guru guidance so users understand the row action hierarchy.
 
 ### Sprint 8 — Orders and execution readiness
 
@@ -143,10 +150,10 @@ Closure verified:
 - Completed Sprint 4 Product catalog UX maturity: 100%
 - Completed Sprint 5 Quote builder and quote PDF maturity: 100%
 - Completed Sprint 6 Compliance Assist maturity: 100%
-- Active Sprint 7 Lead command center cleanup: 40%
+- Active Sprint 7 Lead command center cleanup: 50%
 - Completed Sprint 10 Import wizard and catalog onboarding maturity: 100%
 - Setu Guru intelligence readiness: 99.3%
-- UX cleanup readiness: 84%
+- UX cleanup readiness: 85%
 - Quote/compliance maturity: 96%
 - Product catalog maturity: 94%
 
@@ -195,5 +202,5 @@ Continue Sprint 7:
 
 1. Smoke-check Lead table after deployment.
 2. Verify row click and **Open** both open the Lead Command Center.
-3. Verify More menu contains **Continue quote**, **Edit lead**, and **Delete lead**.
+3. Verify **More** contains **Continue quote**, **Edit lead**, and **Delete lead**.
 4. Continue simplifying only after a production screenshot identifies the next dense lead area.

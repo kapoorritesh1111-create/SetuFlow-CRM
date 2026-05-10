@@ -4,6 +4,35 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-10 — Sprint 7C Lead table smoke-check clarity
+
+Decision:
+
+- Lead table smoke-check target was made clearer while protecting the Sprint 7B row model.
+- Row click and **Open** remain the primary paths into the Lead Command Center.
+- The secondary action control is now labeled **More** instead of a bare ellipsis.
+- The action column header now says **Open / More**.
+- **More** still contains **Continue quote**, **Edit lead**, and **Delete lead**.
+- The blocked row pill was shortened to **Blocked** to reduce row density without changing compliance or blocker source-of-truth behavior.
+- Setu Guru lead help now explains the **Open / More** lead row model.
+
+Files:
+
+- `src/features/leads/ui/lead-table-row.tsx`
+- `docs/help/leads.md`
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No quote PDF/share/send behavior was changed.
+- No quote Review compliance behavior was changed.
+- No Catalog Admin/import/product cleanup behavior was changed.
+- No schema migration was introduced.
+- No `npm ci` was run.
+
+---
+
 ## 2026-05-10 — Sprint 7B Lead list/table action cleanup
 
 Decision:
@@ -26,14 +55,6 @@ Files:
 - `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
 - `docs/implementation/CHANGELOG_DECISIONS.md`
 
-Protected:
-
-- No quote PDF/share/send behavior was changed.
-- No quote Review compliance behavior was changed.
-- No Catalog Admin/import/product cleanup behavior was changed.
-- No schema migration was introduced.
-- No `npm ci` was run.
-
 ---
 
 ## 2026-05-10 — Sprint 7A Lead Command Center action hierarchy
@@ -46,13 +67,6 @@ Decision:
 - Won/Lost actions moved into a deliberate **Close lead outcome** area so terminal status changes do not compete with quote continuation.
 - The protected quote route remains `/leads` → open lead → **Continue quote** → **Step 4 — Review** for compliance/document blockers.
 - Setu Guru lead help now explains the action hierarchy and warns not to mark leads won/lost without explicit human intent.
-
-Files:
-
-- `src/features/leads/command-center/LeadStickyActionBar.tsx`
-- `docs/help/leads.md`
-- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
-- `docs/implementation/CHANGELOG_DECISIONS.md`
 
 ---
 
