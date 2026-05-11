@@ -36,7 +36,9 @@ function normalizeFirstDocumentGate(value: unknown, orderType?: unknown) {
 async function requireOrderWriteAccess() {
   if (!hasSupabaseEnv) redirect(buildRedirect('order-config-error'));
   const workspace = await getWorkspaceAccess();
-  if (!workspace.user || !workspace.organization) redirect(buildRedirect('order-auth-error'));
+  const user = workspace.user;
+  const organization = workspace.organization;
+  if (!user || !organization) redirect(buildRedirect('order-auth-error'));
 
   const canManage = hasWorkspaceCapability(workspace.currentRoles, 'lead.manage');
   const canReviewCompliance = hasWorkspaceCapability(workspace.currentRoles, 'compliance.review');
@@ -44,7 +46,7 @@ async function requireOrderWriteAccess() {
     const message = getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage') ?? 'Your role cannot manage order execution gates.';
     redirect(buildRedirect(`order-readonly:${message}`));
   }
-  return workspace;
+  return { user, organization, currentRoles: workspace.currentRoles };
 }
 
 async function findExecutionOrder(db: any, organizationId: string, quoteId: string) {
@@ -69,7 +71,7 @@ async function saveGate(db: any, payload: {
   const now = new Date().toISOString();
   const { data: existingGate } = await db
     .from('order_approval_gates')
-    .select('id, status')
+    .select('id')
     .eq('organization_id', payload.organizationId)
     .eq('order_id', payload.orderId)
     .eq('stage_key', payload.stageKey)
@@ -78,7 +80,7 @@ async function saveGate(db: any, payload: {
     .limit(1)
     .maybeSingle();
 
-  const updatePayload: Record<string, unknown> = {
+  const next: Record<string, unknown> = {
     organization_id: payload.organizationId,
     order_id: payload.orderId,
     stage_key: payload.stageKey,
@@ -88,22 +90,17 @@ async function saveGate(db: any, payload: {
     preview_snapshot: payload.previewSnapshot ?? {},
     updated_at: now,
   };
-  if (payload.status === 'previewed') updatePayload.previewed_at = now;
+  if (payload.status === 'previewed') next.previewed_at = now;
   if (payload.status === 'approved') {
-    updatePayload.approved_by = payload.actorUserId ?? null;
-    updatePayload.approved_at = now;
-    updatePayload.completed_at = now;
+    next.approved_by = payload.actorUserId ?? null;
+    next.approved_at = now;
+    next.completed_at = now;
   }
 
   if (existingGate?.id) {
-    return db
-      .from('order_approval_gates')
-      .update(updatePayload)
-      .eq('organization_id', payload.organizationId)
-      .eq('id', existingGate.id);
+    return db.from('order_approval_gates').update(next).eq('organization_id', payload.organizationId).eq('id', existingGate.id);
   }
-
-  return db.from('order_approval_gates').insert(updatePayload);
+  return db.from('order_approval_gates').insert(next);
 }
 
 async function recordOrderStageEvent(db: any, payload: {
@@ -128,7 +125,6 @@ async function recordOrderStageEvent(db: any, payload: {
 
 export async function ensureActualOrderLinesAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
-
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   const leadIdFromForm = String(formData.get('lead_id') ?? '').trim();
   const contractIdFromForm = String(formData.get('contract_id') ?? '').trim() || null;
@@ -136,14 +132,9 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
 
   const db = (await createClient()) as any;
   const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
 
-  const { data: existingOrder, error: existingError } = await db
-    .from('orders')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .eq('source_quote_id', quoteId)
-    .maybeSingle();
-
+  const { data: existingOrder, error: existingError } = await db.from('orders').select('id').eq('organization_id', organizationId).eq('source_quote_id', quoteId).maybeSingle();
   if (existingError) redirect(buildRedirect('actual-order-lines-error', quoteId));
   if (existingOrder?.id) redirect(buildRedirect('actual-order-lines-ready', quoteId));
 
@@ -153,7 +144,6 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
     .eq('organization_id', organizationId)
     .eq('id', quoteId)
     .maybeSingle();
-
   if (quoteError || !quote?.id) redirect(buildRedirect('order-quote-missing'));
 
   const leadId = String(quote.lead_id ?? leadIdFromForm ?? '').trim();
@@ -186,32 +176,20 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
       currency: quote.currency ?? contract?.quote_currency ?? lead?.deal_currency ?? null,
       pricing_basis: quote.pricing_basis ?? contract?.pricing_basis ?? null,
       total_order_value: lead?.deal_value ?? null,
-      metadata: {
-        source: 'ensureActualOrderLinesAction',
-        approved_quote_status: quote.status,
-        buyer_country: lead?.country ?? null,
-        lead_type: lead?.lead_type ?? null,
-        ux_anchor: 'Orders Full Redesign Approval Walkthrough',
-      },
-      created_by: workspace.user.id,
-      updated_by: workspace.user.id,
+      metadata: { source: 'ensureActualOrderLinesAction', approved_quote_status: quote.status, buyer_country: lead?.country ?? null, lead_type: lead?.lead_type ?? null, ux_anchor: 'Orders Full Redesign Approval Walkthrough' },
+      created_by: actorUserId,
+      updated_by: actorUserId,
     })
     .select('id')
     .single();
-
   if (orderError || !insertedOrder?.id) redirect(buildRedirect('actual-order-lines-error', quoteId));
   const orderId = insertedOrder.id as string;
 
   const { data: contractLines } = legacyContractId
-    ? await db
-      .from('contract_line_items')
-      .select('id, source_quote_version_line_item_id, product_id, product_variant_id, quantity, unit_price, currency, notes, catalog_price_amount, catalog_price_currency, is_price_overridden, override_reason')
-      .eq('organization_id', organizationId)
-      .eq('contract_id', legacyContractId)
+    ? await db.from('contract_line_items').select('id, source_quote_version_line_item_id, product_id, product_variant_id, quantity, unit_price, currency, notes, catalog_price_amount, catalog_price_currency, is_price_overridden, override_reason').eq('organization_id', organizationId).eq('contract_id', legacyContractId)
     : { data: [] };
 
   let orderLines: any[] = [];
-
   if (Array.isArray(contractLines) && contractLines.length > 0) {
     const productIds = [...new Set(contractLines.map((line: any) => line.product_id).filter(Boolean))];
     const variantIds = [...new Set(contractLines.map((line: any) => line.product_variant_id).filter(Boolean))];
@@ -251,12 +229,7 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
         line_status: 'draft',
         change_type: 'from_contract',
         change_reason: 'Initialized from linked contract line for actual order confirmation.',
-        pricing_snapshot: {
-          catalog_price_amount: line.catalog_price_amount ?? null,
-          catalog_price_currency: line.catalog_price_currency ?? null,
-          is_price_overridden: Boolean(line.is_price_overridden),
-          override_reason: line.override_reason ?? null,
-        },
+        pricing_snapshot: { catalog_price_amount: line.catalog_price_amount ?? null, catalog_price_currency: line.catalog_price_currency ?? null, is_price_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason ?? null },
         product_snapshot: { product, variant, notes: line.notes ?? null },
       };
     });
@@ -297,64 +270,22 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
         line_status: 'draft',
         change_type: 'from_quote',
         change_reason: 'Initialized from accepted quote version for actual order confirmation.',
-        pricing_snapshot: {
-          basis_applied: line.basis_applied ?? null,
-          pricing_mode: line.pricing_mode ?? null,
-          is_overridden: Boolean(line.is_overridden),
-          override_reason: line.override_reason ?? null,
-          catalog_price_snapshot: line.catalog_price_snapshot ?? null,
-          calculation_meta: line.calculation_meta ?? null,
-        },
+        pricing_snapshot: { basis_applied: line.basis_applied ?? null, pricing_mode: line.pricing_mode ?? null, is_overridden: Boolean(line.is_overridden), override_reason: line.override_reason ?? null, catalog_price_snapshot: line.catalog_price_snapshot ?? null, calculation_meta: line.calculation_meta ?? null },
         product_snapshot: { line_notes: line.line_notes ?? null },
       };
     });
   }
 
   if (orderLines.length === 0) redirect(buildRedirect('actual-order-lines-empty', quoteId));
-
   const { error: lineError } = await db.from('order_lines').insert(orderLines);
   if (lineError) redirect(buildRedirect('actual-order-lines-error', quoteId));
 
   const totalOrderValue = orderLines.reduce((sum, line) => sum + safeNumber(line.line_total, 0), 0);
-  await db.from('orders').update({ total_order_value: totalOrderValue || null, updated_by: workspace.user.id, updated_at: new Date().toISOString() }).eq('organization_id', organizationId).eq('id', orderId);
+  await db.from('orders').update({ total_order_value: totalOrderValue || null, updated_by: actorUserId, updated_at: new Date().toISOString() }).eq('organization_id', organizationId).eq('id', orderId);
 
-  await saveGate(db, {
-    organizationId,
-    orderId,
-    stageKey: 'quote_approved',
-    gateType: 'actual_lines',
-    status: 'prepared',
-    previewSnapshot: {
-      line_count: orderLines.length,
-      source_quote_id: quoteId,
-      source_quote_version_id: sourceQuoteVersionId,
-      legacy_contract_id: legacyContractId,
-      total_order_value: totalOrderValue || null,
-    },
-  });
-
-  await recordOrderStageEvent(db, {
-    organizationId,
-    orderId,
-    stageKey: 'quote_approved',
-    eventType: 'actual_order_lines_prepared',
-    actorUserId: workspace.user.id,
-    summary: `Prepared ${orderLines.length} actual order line${orderLines.length === 1 ? '' : 's'} from approved quote.`,
-    eventPayload: { source_quote_id: quoteId, source_quote_version_id: sourceQuoteVersionId, legacy_contract_id: legacyContractId },
-  });
-
-  await writeAuditLog({
-    organizationId,
-    action: 'order_execution_created',
-    entityType: 'order',
-    entityId: orderId,
-    actorUserId: workspace.user.id,
-    payload: {
-      previous: null,
-      new: { order_id: orderId, line_count: orderLines.length, total_order_value: totalOrderValue || null },
-      metadata: { source: 'ensureActualOrderLinesAction', quote_id: quoteId, lead_id: leadId, legacy_contract_id: legacyContractId },
-    },
-  });
+  await saveGate(db, { organizationId, orderId, stageKey: 'quote_approved', gateType: 'actual_lines', status: 'prepared', previewSnapshot: { line_count: orderLines.length, source_quote_id: quoteId, source_quote_version_id: sourceQuoteVersionId, legacy_contract_id: legacyContractId, total_order_value: totalOrderValue || null } });
+  await recordOrderStageEvent(db, { organizationId, orderId, stageKey: 'quote_approved', eventType: 'actual_order_lines_prepared', actorUserId, summary: `Prepared ${orderLines.length} actual order line${orderLines.length === 1 ? '' : 's'} from approved quote.`, eventPayload: { source_quote_id: quoteId, source_quote_version_id: sourceQuoteVersionId, legacy_contract_id: legacyContractId } });
+  await writeAuditLog({ organizationId, action: 'order_execution_created', entityType: 'order', entityId: orderId, actorUserId, payload: { previous: null, new: { order_id: orderId, line_count: orderLines.length, total_order_value: totalOrderValue || null }, metadata: { source: 'ensureActualOrderLinesAction', quote_id: quoteId, lead_id: leadId, legacy_contract_id: legacyContractId } } });
 
   revalidatePath('/orders');
   revalidatePath('/quotes');
@@ -366,54 +297,18 @@ export async function approveActualOrderLinesGateAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-
   const db = (await createClient()) as any;
   const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
   if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
-
   const now = new Date().toISOString();
-  const { error: gateError } = await saveGate(db, {
-    organizationId,
-    orderId: order.id,
-    stageKey: 'internal_review',
-    gateType: 'actual_lines',
-    status: 'approved',
-    actorUserId: workspace.user.id,
-    reason: 'Human approved actual buyer order lines for first document preparation.',
-    previewSnapshot: {
-      source_quote_id: quoteId,
-      source_quote_version_id: order.source_quote_version_id,
-      legacy_contract_id: order.legacy_contract_id,
-      approved_at: now,
-    },
-  });
+
+  const { error: gateError } = await saveGate(db, { organizationId, orderId: order.id, stageKey: 'internal_review', gateType: 'actual_lines', status: 'approved', actorUserId, reason: 'Human approved actual buyer order lines for first document preparation.', previewSnapshot: { source_quote_id: quoteId, source_quote_version_id: order.source_quote_version_id, legacy_contract_id: order.legacy_contract_id, approved_at: now } });
   if (gateError) redirect(buildRedirect('order-gate-update-failed', quoteId));
-
-  await db
-    .from('orders')
-    .update({ current_stage: 'internal_review', status: 'active', approval_state: 'actual_lines_approved', updated_by: workspace.user.id, updated_at: now })
-    .eq('organization_id', organizationId)
-    .eq('id', order.id);
-
-  await recordOrderStageEvent(db, {
-    organizationId,
-    orderId: order.id,
-    stageKey: 'internal_review',
-    eventType: 'actual_lines_approved',
-    actorUserId: workspace.user.id,
-    summary: 'Actual order lines approved for first document preparation.',
-    eventPayload: { source_quote_id: quoteId },
-  });
-
-  await writeAuditLog({
-    organizationId,
-    action: 'order_gate_approved',
-    entityType: 'order',
-    entityId: order.id,
-    actorUserId: workspace.user.id,
-    payload: { previous: { approval_state: order.approval_state }, new: { approval_state: 'actual_lines_approved' }, metadata: { source: 'approveActualOrderLinesGateAction', quote_id: quoteId, gate_type: 'actual_lines' } },
-  });
+  await db.from('orders').update({ current_stage: 'internal_review', status: 'active', approval_state: 'actual_lines_approved', updated_by: actorUserId, updated_at: now }).eq('organization_id', organizationId).eq('id', order.id);
+  await recordOrderStageEvent(db, { organizationId, orderId: order.id, stageKey: 'internal_review', eventType: 'actual_lines_approved', actorUserId, summary: 'Actual order lines approved for first document preparation.', eventPayload: { source_quote_id: quoteId } });
+  await writeAuditLog({ organizationId, action: 'order_gate_approved', entityType: 'order', entityId: order.id, actorUserId, payload: { previous: { approval_state: order.approval_state }, new: { approval_state: 'actual_lines_approved' }, metadata: { source: 'approveActualOrderLinesGateAction', quote_id: quoteId, gate_type: 'actual_lines' } } });
 
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
@@ -424,40 +319,16 @@ export async function prepareFirstDocumentGateAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-
   const db = (await createClient()) as any;
   const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
   if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
-
   const gateType = normalizeFirstDocumentGate(formData.get('document_gate_type'), order.order_type);
-  const { error: gateError } = await saveGate(db, {
-    organizationId,
-    orderId: order.id,
-    stageKey: 'first_document',
-    gateType,
-    status: 'prepared',
-    actorUserId: workspace.user.id,
-    previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType },
-  });
+  const { error: gateError } = await saveGate(db, { organizationId, orderId: order.id, stageKey: 'first_document', gateType, status: 'prepared', actorUserId, previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType } });
   if (gateError) redirect(buildRedirect('order-gate-update-failed', quoteId));
-
-  await db
-    .from('orders')
-    .update({ current_stage: 'first_document', approval_state: `${gateType}_prepared`, updated_by: workspace.user.id, updated_at: new Date().toISOString() })
-    .eq('organization_id', organizationId)
-    .eq('id', order.id);
-
-  await recordOrderStageEvent(db, {
-    organizationId,
-    orderId: order.id,
-    stageKey: 'first_document',
-    eventType: `${gateType}_prepared`,
-    actorUserId: workspace.user.id,
-    summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice gate prepared.' : 'Regional Order Confirmation gate prepared.',
-    eventPayload: { source_quote_id: quoteId, document_gate_type: gateType },
-  });
-
+  await db.from('orders').update({ current_stage: 'first_document', approval_state: `${gateType}_prepared`, updated_by: actorUserId, updated_at: new Date().toISOString() }).eq('organization_id', organizationId).eq('id', order.id);
+  await recordOrderStageEvent(db, { organizationId, orderId: order.id, stageKey: 'first_document', eventType: `${gateType}_prepared`, actorUserId, summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice gate prepared.' : 'Regional Order Confirmation gate prepared.', eventPayload: { source_quote_id: quoteId, document_gate_type: gateType } });
   revalidatePath('/orders');
   redirect(buildRedirect('first-document-gate-prepared', quoteId));
 }
@@ -466,34 +337,15 @@ export async function previewFirstDocumentGateAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-
   const db = (await createClient()) as any;
   const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
   if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
-
   const gateType = normalizeFirstDocumentGate(formData.get('document_gate_type'), order.order_type);
-  const { error: gateError } = await saveGate(db, {
-    organizationId,
-    orderId: order.id,
-    stageKey: 'first_document',
-    gateType,
-    status: 'previewed',
-    actorUserId: workspace.user.id,
-    previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType, previewed_by: workspace.user.id },
-  });
+  const { error: gateError } = await saveGate(db, { organizationId, orderId: order.id, stageKey: 'first_document', gateType, status: 'previewed', actorUserId, previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType, previewed_by: actorUserId } });
   if (gateError) redirect(buildRedirect('order-gate-update-failed', quoteId));
-
-  await recordOrderStageEvent(db, {
-    organizationId,
-    orderId: order.id,
-    stageKey: 'first_document',
-    eventType: `${gateType}_previewed`,
-    actorUserId: workspace.user.id,
-    summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice preview marked complete.' : 'Regional Order Confirmation preview marked complete.',
-    eventPayload: { source_quote_id: quoteId, document_gate_type: gateType },
-  });
-
+  await recordOrderStageEvent(db, { organizationId, orderId: order.id, stageKey: 'first_document', eventType: `${gateType}_previewed`, actorUserId, summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice preview marked complete.' : 'Regional Order Confirmation preview marked complete.', eventPayload: { source_quote_id: quoteId, document_gate_type: gateType } });
   revalidatePath('/orders');
   redirect(buildRedirect('first-document-gate-previewed', quoteId));
 }
@@ -502,51 +354,18 @@ export async function approveFirstDocumentGateAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-
   const db = (await createClient()) as any;
   const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
   if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
-
   const gateType = normalizeFirstDocumentGate(formData.get('document_gate_type'), order.order_type);
   const now = new Date().toISOString();
-  const { error: gateError } = await saveGate(db, {
-    organizationId,
-    orderId: order.id,
-    stageKey: 'first_document',
-    gateType,
-    status: 'approved',
-    actorUserId: workspace.user.id,
-    reason: 'Human approved first order document for send gate.',
-    previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType, approved_at: now },
-  });
+  const { error: gateError } = await saveGate(db, { organizationId, orderId: order.id, stageKey: 'first_document', gateType, status: 'approved', actorUserId, reason: 'Human approved first order document for send gate.', previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType, approved_at: now } });
   if (gateError) redirect(buildRedirect('order-gate-update-failed', quoteId));
-
-  await db
-    .from('orders')
-    .update({ current_stage: 'first_document', approval_state: `${gateType}_approved`, updated_by: workspace.user.id, updated_at: now })
-    .eq('organization_id', organizationId)
-    .eq('id', order.id);
-
-  await recordOrderStageEvent(db, {
-    organizationId,
-    orderId: order.id,
-    stageKey: 'first_document',
-    eventType: `${gateType}_approved`,
-    actorUserId: workspace.user.id,
-    summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice approved for sending.' : 'Regional Order Confirmation approved for sending.',
-    eventPayload: { source_quote_id: quoteId, document_gate_type: gateType },
-  });
-
-  await writeAuditLog({
-    organizationId,
-    action: 'order_gate_approved',
-    entityType: 'order',
-    entityId: order.id,
-    actorUserId: workspace.user.id,
-    payload: { previous: { approval_state: order.approval_state }, new: { approval_state: `${gateType}_approved` }, metadata: { source: 'approveFirstDocumentGateAction', quote_id: quoteId, gate_type: gateType } },
-  });
-
+  await db.from('orders').update({ current_stage: 'first_document', approval_state: `${gateType}_approved`, updated_by: actorUserId, updated_at: now }).eq('organization_id', organizationId).eq('id', order.id);
+  await recordOrderStageEvent(db, { organizationId, orderId: order.id, stageKey: 'first_document', eventType: `${gateType}_approved`, actorUserId, summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice approved for sending.' : 'Regional Order Confirmation approved for sending.', eventPayload: { source_quote_id: quoteId, document_gate_type: gateType } });
+  await writeAuditLog({ organizationId, action: 'order_gate_approved', entityType: 'order', entityId: order.id, actorUserId, payload: { previous: { approval_state: order.approval_state }, new: { approval_state: `${gateType}_approved` }, metadata: { source: 'approveFirstDocumentGateAction', quote_id: quoteId, gate_type: gateType } } });
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
   redirect(buildRedirect('first-document-gate-approved', quoteId));
