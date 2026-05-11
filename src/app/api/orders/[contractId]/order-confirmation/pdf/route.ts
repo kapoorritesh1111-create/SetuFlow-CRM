@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { buildOrderDocumentPdf, type OrderPdfLine } from '@/lib/orders/order-document-pdf';
+import { writeAuditLog } from '@/lib/auditLog';
 
 function safeId(value: string) {
   return String(value ?? '').slice(0, 8);
@@ -20,7 +21,7 @@ export async function GET(_request: Request, { params }: { params: { contractId:
 
   const { data: contract, error: contractError } = await db
     .from('contracts')
-    .select('id, quote_id, signed_at, commercial_lock_state, pricing_basis, quote_currency, execution_state, status')
+    .select('id, quote_id, lead_id, signed_at, commercial_lock_state, pricing_basis, quote_currency, execution_state, status')
     .eq('organization_id', organizationId)
     .eq('id', contractId)
     .maybeSingle();
@@ -96,6 +97,7 @@ export async function GET(_request: Request, { params }: { params: { contractId:
     lines,
   });
 
+  const now = new Date().toISOString();
   await db.from('documents').upsert({
     organization_id: organizationId,
     related_entity: 'contract',
@@ -107,6 +109,27 @@ export async function GET(_request: Request, { params }: { params: { contractId:
     version: 1,
     status: 'ready',
   }, { onConflict: 'organization_id,related_entity,related_id,file_name' }).then(() => null);
+
+  if (['draft', 'quote_accepted', 'accepted', '', null].includes(String(contract.execution_state ?? '').toLowerCase())) {
+    await db.from('contracts')
+      .update({ execution_state: 'confirmed', updated_at: now })
+      .eq('organization_id', organizationId)
+      .eq('id', contract.id)
+      .then(() => null);
+
+    await writeAuditLog({
+      organizationId,
+      action: 'contract_progressed',
+      entityType: 'contract',
+      entityId: contract.id,
+      actorUserId: workspace.user?.id ?? null,
+      payload: {
+        previous: { execution_state: contract.execution_state ?? 'draft' },
+        new: { execution_state: 'confirmed' },
+        metadata: { source: 'order_confirmation_pdf_generated', quote_id: contract.quote_id, lead_id: contract.lead_id },
+      },
+    });
+  }
 
   return new Response(new Uint8Array(bytes), {
     status: 200,
