@@ -8,6 +8,23 @@ Last updated: 2026-05-11
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, and shipment progress. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8L internal approval and first document gates
+
+Sprint 8L adds the first explicit approval gates on the new additive Orders execution schema.
+
+New behavior:
+
+1. **Approve actual lines** records human internal approval for actual buyer order lines.
+2. **Regional document gate** supports Order Confirmation: Prepare → Previewed → Approve.
+3. **Export document gate** supports Proforma Invoice: Prepare → Previewed → Approve.
+4. Gate state is saved in `order_approval_gates`.
+5. Gate changes create `order_stage_events` and audit records where approval occurs.
+6. The action works on the execution `orders` record created from the approved quote in Sprint 8K.
+7. Quote history is not mutated.
+8. Legacy Generate order PDF, Generate invoice, and send-link controls remain available while the new workflow is introduced gradually.
+
+Setu Guru should explain that this pass introduces workflow control, not final document redesign. Operators should prepare actual order lines first, approve those lines internally, then prepare/preview/approve either Regional Order Confirmation or Export Proforma Invoice before sending. Guru must not approve a gate, mark a preview complete, send a document, waive a requirement, or change order lines without explicit user action.
+
 ## Sprint 8K actual order lines from approved quote
 
 Sprint 8K starts the additive Orders execution workflow on the new schema while keeping legacy contracts and quote history untouched.
@@ -144,12 +161,16 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Why is order upload not accepting my file?
 - Why do I need to prepare actual order lines after quote approval?
 - Can buyer order quantities differ from the quote?
+- What does internal order approval mean?
+- What is the difference between Order Confirmation and Proforma Invoice?
 
 ## Common blockers
 
 - Accepted quote has not been converted or linked correctly.
 - Commercial lock, payment status, or release readiness is incomplete.
 - Actual order lines have not been prepared from the approved quote yet.
+- Actual order lines have not been internally approved yet.
+- First document gate has not been prepared, previewed, or approved.
 - Dispatch evidence is missing or pending review.
 - Compliance/document status is open, expired, or advisory but unresolved.
 - Dispatch documents are being treated as quote-send blockers instead of order execution readiness items.
@@ -161,6 +182,7 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Orders and execution states.
 - Accepted quote and quote lines.
 - New execution `orders` and `order_lines` records where present.
+- Order approval gates and order stage events.
 - Documents attached to order, lead, quote, or dispatch.
 - Compliance checklist items and document requirement rules.
 - Buyer/supplier and shipment notes.
@@ -172,10 +194,11 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Route to order document upload, Compliance Assist, or the linked lead/quote.
 - Route to generated Order Confirmation PDF and Invoice when a contract is linked.
 - Explain that actual order lines are prepared from the approved quote without mutating quote history.
+- Explain internal approval and first document gate steps.
 - Separate commercial, payment, document, compliance, and dispatch blockers.
 - Draft an evidence checklist for human review.
 - Explain the approval boundary before a user advances order execution.
-- Explain the quote PDF → actual lines → order confirmation/proforma → invoice sequence.
+- Explain the quote PDF → actual lines → internal approval → order confirmation/proforma → invoice sequence.
 
 ## Setu Guru order action buttons
 
@@ -199,13 +222,28 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - order closeout;
 - document deletion;
 - accepted quote term changes;
-- editing actual order lines without user confirmation.
+- editing actual order lines without user confirmation;
+- marking internal review or first document gates complete without user action.
 
 ## Response policy
 
 Use live order context first when available. If only dashboard context is available, explain the likely blocker category and route the user to the exact order or execution queue. Success/failure messages should say whether Setu Guru queued guidance, routed the user, or could not complete the action.
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the five readiness lanes and the safest next route.
+
+## Sprint 8L smoke-check checklist
+
+Use this checklist before the next Orders pass:
+
+- Does the Orders detail show the Sprint 8L gates?
+- Does **Approve actual lines** require an existing execution order from Sprint 8K?
+- Does Regional Order Confirmation support Prepare, Previewed, and Approve?
+- Does Export Proforma Invoice support Prepare, Previewed, and Approve?
+- Are gate records saved in `order_approval_gates`?
+- Are `order_stage_events` created for gate changes?
+- Does quote history remain untouched?
+- Does the legacy order PDF/invoice flow still work?
+- Are quote/compliance/catalog/lead protected flows untouched?
 
 ## Sprint 8K smoke-check checklist
 
@@ -243,3 +281,4 @@ Use this checklist before the next Orders pass:
 - Draft a dispatch evidence checklist.
 - Explain the approval boundary for this order.
 - Explain actual order lines after quote approval.
+- Explain the first document gate for this order.
