@@ -8,6 +8,19 @@ Last updated: 2026-05-11
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, and shipment progress. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8B production screenshot cleanup
+
+Sprint 8B is based on the production Orders screenshot showing the workspace feeling embedded/iframe-like and not helping operators create or sequence order documents after contract signing.
+
+Setu Guru should now explain Orders as an execution command center with this document chain:
+
+1. **Quote PDF** — the commercial source document remains in Quotes.
+2. **Order confirmation** — the signed contract and locked line items become the order execution source.
+3. **Invoice** — invoice evidence should follow release/dispatch posture so billing matches execution state.
+4. **Dispatch evidence** — packing list, bill of lading, certificate of origin, quality/lab evidence, and related files support release and shipment.
+
+When a user says “upload is not working,” Setu Guru should first check that the order has a linked contract, the user selected a real file, the document type is correct, and the file is being attached as final order evidence rather than as a quote blocker.
+
 ## Sprint 8A execution readiness map
 
 Sprint 8A starts Orders and execution readiness with a production smoke-check map. Until a production screenshot shows a specific defect, Orders work should focus on clarity, routing, and Setu Guru guidance rather than rewriting quote, compliance, catalog, or lead workflows.
@@ -38,6 +51,8 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Which documents are advisory, required, expired, or pending review?
 - Is this a commercial, payment, document, compliance, or dispatch blocker?
 - What is the next safe execution action?
+- Where do I get the quote PDF, order confirmation, and invoice?
+- Why is order upload not accepting my file?
 
 ## Common blockers
 
@@ -46,6 +61,7 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Dispatch evidence is missing or pending review.
 - Compliance/document status is open, expired, or advisory but unresolved.
 - Dispatch documents are being treated as quote-send blockers instead of order execution readiness items.
+- Order confirmation and invoice workflow is unclear after contract signing.
 - User wants to advance order state without required evidence or human approval.
 
 ## Data sources
@@ -64,6 +80,7 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Separate commercial, payment, document, compliance, and dispatch blockers.
 - Draft an evidence checklist for human review.
 - Explain the approval boundary before a user advances order execution.
+- Explain the quote PDF → order confirmation → invoice document sequence.
 
 ## Setu Guru order action buttons
 
@@ -94,14 +111,14 @@ Use live order context first when available. If only dashboard context is availa
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the five readiness lanes and the safest next route.
 
-## Sprint 8A smoke-check checklist
+## Sprint 8B smoke-check checklist
 
-Use this checklist before changing Orders code:
+Use this checklist before the next Orders code pass:
 
-- Does the Orders list show enough context to distinguish accepted quote status from execution readiness?
-- Does the order detail page identify commercial lock, payment/release readiness, document evidence, compliance posture, and dispatch readiness separately?
-- Can the user reach the linked quote or lead without losing context?
-- Are advisory dispatch documents clearly separated from quote-send blockers?
+- Does the Orders page feel like a native SaaS command center instead of an embedded frame?
+- Is there a visible document workflow from quote PDF to order confirmation to invoice?
+- Does document upload show clear document type, blocker, required file, and final evidence language?
+- Does the order detail panel help create/route documents instead of only asking the user to attach files?
 - Are human approval actions clearly marked before release, dispatch, waiver, deletion, or closeout?
 - Does Setu Guru answer from the current order context before giving generic order guidance?
 
@@ -111,5 +128,7 @@ Use this checklist before changing Orders code:
 - Is this order ready for dispatch?
 - Which evidence is missing before release?
 - Is this a quote issue or an order execution issue?
+- Where do I create the order confirmation and invoice?
+- Why is my order upload not working?
 - Draft a dispatch evidence checklist.
 - Explain the approval boundary for this order.
