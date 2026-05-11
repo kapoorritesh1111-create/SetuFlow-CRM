@@ -8,6 +8,24 @@ Last updated: 2026-05-11
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, and shipment progress. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8K actual order lines from approved quote
+
+Sprint 8K starts the additive Orders execution workflow on the new schema while keeping legacy contracts and quote history untouched.
+
+New behavior:
+
+1. Open an order from the Orders queue.
+2. Use **Prepare actual lines** to create a new execution `orders` record and `order_lines` from the approved quote or linked contract.
+3. The action is idempotent: if the execution order already exists, it returns to the same order instead of duplicating lines.
+4. Actual order lines preserve source lineage to the quote version line and/or contract line.
+5. Quote history is not changed.
+6. The prepared order starts in the `quote_approved` stage with an `actual_lines` approval gate in prepared state.
+7. An order stage event and audit log entry are created so the handoff is traceable.
+
+Setu Guru should explain that this is the first step in the approved `Orders Full Redesign Approval Walkthrough`: an approved quote becomes editable execution lines before future preview/approve/send gates. Guru must not describe quote lines as final buyer order truth. The buyer may buy fewer, more, or different items than the quote, and future passes will let the user review/edit/approve those lines before sending Order Confirmation or Proforma documents.
+
+Setu Guru must also explain that Sprint 8K does not yet replace the legacy order PDF/invoice actions. Those remain available while the new execution-order schema is introduced gradually.
+
 ## Sprint 8G Order Confirmation PDF and Invoice generation
 
 Sprint 8G wires the Orders drawer CTAs to live order-native PDF routes.
@@ -124,11 +142,14 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - What is the next safe execution action?
 - Where do I get the quote PDF, order confirmation, and invoice?
 - Why is order upload not accepting my file?
+- Why do I need to prepare actual order lines after quote approval?
+- Can buyer order quantities differ from the quote?
 
 ## Common blockers
 
 - Accepted quote has not been converted or linked correctly.
 - Commercial lock, payment status, or release readiness is incomplete.
+- Actual order lines have not been prepared from the approved quote yet.
 - Dispatch evidence is missing or pending review.
 - Compliance/document status is open, expired, or advisory but unresolved.
 - Dispatch documents are being treated as quote-send blockers instead of order execution readiness items.
@@ -139,6 +160,7 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 
 - Orders and execution states.
 - Accepted quote and quote lines.
+- New execution `orders` and `order_lines` records where present.
 - Documents attached to order, lead, quote, or dispatch.
 - Compliance checklist items and document requirement rules.
 - Buyer/supplier and shipment notes.
@@ -149,10 +171,11 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Explain execution readiness and next action.
 - Route to order document upload, Compliance Assist, or the linked lead/quote.
 - Route to generated Order Confirmation PDF and Invoice when a contract is linked.
+- Explain that actual order lines are prepared from the approved quote without mutating quote history.
 - Separate commercial, payment, document, compliance, and dispatch blockers.
 - Draft an evidence checklist for human review.
 - Explain the approval boundary before a user advances order execution.
-- Explain the quote PDF → order confirmation → invoice document sequence.
+- Explain the quote PDF → actual lines → order confirmation/proforma → invoice sequence.
 
 ## Setu Guru order action buttons
 
@@ -175,13 +198,28 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - payment clearance;
 - order closeout;
 - document deletion;
-- accepted quote term changes.
+- accepted quote term changes;
+- editing actual order lines without user confirmation.
 
 ## Response policy
 
 Use live order context first when available. If only dashboard context is available, explain the likely blocker category and route the user to the exact order or execution queue. Success/failure messages should say whether Setu Guru queued guidance, routed the user, or could not complete the action.
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the five readiness lanes and the safest next route.
+
+## Sprint 8K smoke-check checklist
+
+Use this checklist before the next Orders pass:
+
+- Does the Orders detail show **Prepare actual lines**?
+- Does the action create exactly one `orders` record per source quote?
+- Does it create `order_lines` from linked contract lines when available?
+- Does it fall back to accepted quote version lines when no contract lines exist?
+- Does it preserve source quote/contract references?
+- Does it create the `actual_lines` approval gate and stage event?
+- Does quote history remain untouched?
+- Does the legacy order PDF/invoice flow still work?
+- Are quote/compliance/catalog/lead protected flows untouched?
 
 ## Sprint 8G smoke-check checklist
 
@@ -204,3 +242,4 @@ Use this checklist before the next Orders pass:
 - Why is my order upload not working?
 - Draft a dispatch evidence checklist.
 - Explain the approval boundary for this order.
+- Explain actual order lines after quote approval.
