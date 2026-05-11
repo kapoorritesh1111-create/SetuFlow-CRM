@@ -127,8 +127,8 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
     const productIds = [...new Set(contractLines.map((line: any) => line.product_id).filter(Boolean))];
     const variantIds = [...new Set(contractLines.map((line: any) => line.product_variant_id).filter(Boolean))];
     const [{ data: products }, { data: variants }] = await Promise.all([
-      productIds.length ? db.from('products').select('id, name, sku, category_id, hsn_code, hs_code').eq('organization_id', organizationId).in('id', productIds) : Promise.resolve({ data: [] }),
-      variantIds.length ? db.from('product_variants').select('id, product_id, name, pack_label, sku_code, source_payload, hsn_code, hs_code').eq('organization_id', organizationId).in('id', variantIds) : Promise.resolve({ data: [] }),
+      productIds.length ? db.from('products').select('id, name, sku, category_id, hsn_code').eq('organization_id', organizationId).in('id', productIds) : Promise.resolve({ data: [] }),
+      variantIds.length ? db.from('product_variants').select('id, product_id, name, pack_label, sku_code, source_payload, hsn_code').eq('organization_id', organizationId).in('id', variantIds) : Promise.resolve({ data: [] }),
     ]);
     const productMap = new Map((Array.isArray(products) ? products : []).map((product: any) => [product.id, product]));
     const variantMap = new Map((Array.isArray(variants) ? variants : []).map((variant: any) => [variant.id, variant]));
@@ -150,7 +150,7 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
         variant_name_snapshot: firstText(variant?.pack_label, variant?.name),
         category_snapshot: null,
         sku_code: firstText(variant?.sku_code, product?.sku),
-        hs_code: firstText(variant?.hs_code, product?.hs_code),
+        hs_code: null,
         hsn_code: firstText(variant?.hsn_code, product?.hsn_code),
         quoted_quantity: quantity,
         ordered_quantity: quantity,
