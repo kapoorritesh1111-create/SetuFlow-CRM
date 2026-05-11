@@ -8,7 +8,13 @@
 
 import Link from 'next/link';
 import { progressOrderExecution, signContractAction, uploadOrderDocumentAction } from '@/features/orders/server/actions';
-import { ensureActualOrderLinesAction } from '@/features/orders/server/execution-order-actions';
+import {
+  approveActualOrderLinesGateAction,
+  approveFirstDocumentGateAction,
+  ensureActualOrderLinesAction,
+  prepareFirstDocumentGateAction,
+  previewFirstDocumentGateAction,
+} from '@/features/orders/server/execution-order-actions';
 import { sendOrderDocumentLinkAction } from '@/features/orders/server/share-actions';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
@@ -40,6 +46,49 @@ const STAGE_META: Record<StageKey, { action: string }> = {
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function GateForm({
+  action,
+  quoteId,
+  documentGateType,
+  label,
+  tone,
+}: {
+  action: (formData: FormData) => Promise<void>;
+  quoteId: string;
+  documentGateType?: 'order_confirmation' | 'proforma_invoice';
+  label: string;
+  tone: 'primary' | 'blue' | 'white' | 'green';
+}) {
+  const styles = {
+    primary: { bg: '#0b2e4a', color: 'white', border: '#0b2e4a' },
+    green: { bg: '#059669', color: 'white', border: '#059669' },
+    blue: { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+    white: { bg: 'white', color: '#334155', border: '#dbe7f3' },
+  }[tone];
+  return (
+    <form action={action}>
+      <input type="hidden" name="quote_id" value={quoteId} />
+      {documentGateType ? <input type="hidden" name="document_gate_type" value={documentGateType} /> : null}
+      <button
+        type="submit"
+        style={{
+          padding: '7px 11px',
+          borderRadius: '999px',
+          background: styles.bg,
+          color: styles.color,
+          border: `1px solid ${styles.border}`,
+          fontSize: '10px',
+          fontWeight: 800,
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </button>
+    </form>
+  );
 }
 
 export function OrderDetailPanel({
@@ -198,9 +247,36 @@ export function OrderDetailPanel({
         </div>
       </div>
 
-      <div style={{ padding: '10px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        {pill('Sprint 8K', 'blue')}
-        <span style={{ fontSize: '11px', color: '#64748b' }}>Prepare actual order lines from the approved quote before the future preview/approve/send gates. Quote history stays unchanged.</span>
+      <div style={{ padding: '10px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'grid', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {pill('Sprint 8L gates', 'blue')}
+          <span style={{ fontSize: '11px', color: '#64748b' }}>Internal approval and first document gates use the new order schema. Quote history stays unchanged.</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px' }}>
+          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: 'white', padding: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>1. Internal review</div>
+            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Approve actual buyer lines before any first document is sent.</div>
+            <GateForm action={approveActualOrderLinesGateAction} quoteId={quoteId} label="Approve actual lines" tone="green" />
+          </div>
+          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: 'white', padding: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>2. Regional document gate</div>
+            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Prepare, preview, and approve Order Confirmation.</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <GateForm action={prepareFirstDocumentGateAction} quoteId={quoteId} documentGateType="order_confirmation" label="Prepare" tone="white" />
+              <GateForm action={previewFirstDocumentGateAction} quoteId={quoteId} documentGateType="order_confirmation" label="Previewed" tone="blue" />
+              <GateForm action={approveFirstDocumentGateAction} quoteId={quoteId} documentGateType="order_confirmation" label="Approve" tone="green" />
+            </div>
+          </div>
+          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: 'white', padding: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>3. Export document gate</div>
+            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Prepare, preview, and approve Proforma Invoice.</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <GateForm action={prepareFirstDocumentGateAction} quoteId={quoteId} documentGateType="proforma_invoice" label="Prepare" tone="white" />
+              <GateForm action={previewFirstDocumentGateAction} quoteId={quoteId} documentGateType="proforma_invoice" label="Previewed" tone="blue" />
+              <GateForm action={approveFirstDocumentGateAction} quoteId={quoteId} documentGateType="proforma_invoice" label="Approve" tone="green" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {contractId && !isComplete && !isSigned && (
@@ -224,7 +300,7 @@ export function OrderDetailPanel({
       <div id={documentKitAnchor} style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '9px', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8' }}>Document readiness</div>
-          {pill('Quote → Actual lines → Order → Invoice', 'blue')}
+          {pill('Quote → Actual lines → Gate → Send', 'blue')}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px' }}>
           {documentWorkflow.map((item, index) => (
