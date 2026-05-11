@@ -8,6 +8,29 @@ Last updated: 2026-05-11
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, and shipment progress. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8M packing sheet and freight rate request foundation
+
+Sprint 8M adds the first packing and freight/delivery rate request foundation on the additive Orders execution schema.
+
+New behavior:
+
+1. **Packing sheet** supports Prepare → Previewed → Approve.
+2. Packing sheet templates now include Regional truck, 20ft container, 40ft container, and Custom.
+3. The first packing plan is created from actual order lines, not quote history.
+4. Packing plan lines capture the starting logistics structure: SKU/product snapshot, cartons, units per carton, pallet fields, weights, dimensions, CBM, marks, and notes.
+5. **Freight rate request** supports Prepare → Previewed → Approve.
+6. Freight request supports Road, Sea, Air, and Courier modes and Email, WhatsApp, Manual, or Integration-ready request method.
+7. Freight request records link to the approved packing plan and are ready for email/WhatsApp fallback first, with future integration adapters using the same record.
+8. Gate state is saved in `order_approval_gates` and stage changes are recorded in `order_stage_events`.
+9. Quote history is not mutated.
+10. No freight request is sent automatically; human preview/approval remains required.
+
+Setu Guru should explain that packing sheet is the logistics input for freight/delivery rates. A quote or order confirmation does not contain enough operational packing data by itself. The operator should prepare the packing sheet, preview it, approve it, then prepare/preview/approve the freight request. Guru must not mark a packing sheet approved, send a rate request, choose a freight quote, book shipment, dispatch, or clear documents without explicit human action.
+
+For export orders, Guru should explain that container templates are only a starting estimate. The organization may still need product-specific packing templates, pallet pattern, carton dimensions, net/gross weight, CBM, marks and numbers, loading notes, temperature or handling requirements, and buyer/logistics instructions before final logistics booking.
+
+For regional/distribution orders, Guru should explain that the same flow works without forcing export documents: Regional truck or Custom packing can support local delivery, courier, or domestic freight rates.
+
 ## Sprint 8L internal approval and first document gates
 
 Sprint 8L adds the first explicit approval gates on the new additive Orders execution schema.
@@ -163,6 +186,8 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Can buyer order quantities differ from the quote?
 - What does internal order approval mean?
 - What is the difference between Order Confirmation and Proforma Invoice?
+- What information is needed for a packing sheet?
+- How do I request freight or delivery rates?
 
 ## Common blockers
 
@@ -171,6 +196,8 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Actual order lines have not been prepared from the approved quote yet.
 - Actual order lines have not been internally approved yet.
 - First document gate has not been prepared, previewed, or approved.
+- Packing sheet has not been prepared, previewed, or approved.
+- Freight/delivery rate request has not been prepared, previewed, or approved.
 - Dispatch evidence is missing or pending review.
 - Compliance/document status is open, expired, or advisory but unresolved.
 - Dispatch documents are being treated as quote-send blockers instead of order execution readiness items.
@@ -183,6 +210,8 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Accepted quote and quote lines.
 - New execution `orders` and `order_lines` records where present.
 - Order approval gates and order stage events.
+- Packing plans and packing plan lines.
+- Freight rate requests and freight rate quotes.
 - Documents attached to order, lead, quote, or dispatch.
 - Compliance checklist items and document requirement rules.
 - Buyer/supplier and shipment notes.
@@ -195,17 +224,18 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Route to generated Order Confirmation PDF and Invoice when a contract is linked.
 - Explain that actual order lines are prepared from the approved quote without mutating quote history.
 - Explain internal approval and first document gate steps.
-- Separate commercial, payment, document, compliance, and dispatch blockers.
+- Explain packing sheet and freight/delivery request steps.
+- Separate commercial, payment, document, compliance, packing, freight, and dispatch blockers.
 - Draft an evidence checklist for human review.
 - Explain the approval boundary before a user advances order execution.
-- Explain the quote PDF → actual lines → internal approval → order confirmation/proforma → invoice sequence.
+- Explain the quote PDF → actual lines → internal approval → order confirmation/proforma → packing sheet → freight request → invoice sequence.
 
 ## Setu Guru order action buttons
 
 Order actions are guidance and routing only unless a future approved pass adds an explicit approval-safe write path. Current safe behaviors:
 
 - **Open Orders** routes to the Orders workspace.
-- **Check order blockers** asks Setu Guru to inspect commercial, payment/release, document, compliance, and dispatch blockers without advancing order state.
+- **Check order blockers** asks Setu Guru to inspect commercial, payment/release, document, compliance, packing, freight, and dispatch blockers without advancing order state.
 - **Draft dispatch evidence checklist** queues a checklist prompt in the composer.
 - **Review order approval boundary** explains which order actions require human approval.
 
@@ -223,13 +253,31 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - document deletion;
 - accepted quote term changes;
 - editing actual order lines without user confirmation;
-- marking internal review or first document gates complete without user action.
+- marking internal review or first document gates complete without user action;
+- approving a packing sheet;
+- sending or approving a freight/delivery rate request;
+- selecting a freight quote or booking a shipment.
 
 ## Response policy
 
 Use live order context first when available. If only dashboard context is available, explain the likely blocker category and route the user to the exact order or execution queue. Success/failure messages should say whether Setu Guru queued guidance, routed the user, or could not complete the action.
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the five readiness lanes and the safest next route.
+
+## Sprint 8M smoke-check checklist
+
+Use this checklist before the next Orders pass:
+
+- Does the Orders detail show Sprint 8M packing and freight controls?
+- Does Packing Sheet support Prepare, Previewed, and Approve?
+- Do Regional truck, 20ft, 40ft, and Custom templates create a packing plan foundation?
+- Does Freight Rate Request support Prepare, Previewed, and Approve?
+- Do Road, Sea, Air, and Courier shipment modes remain visible?
+- Do Email, WhatsApp, Manual, and Integration-ready request methods remain visible?
+- Are gate records saved in `order_approval_gates`?
+- Are `order_stage_events` created for gate changes?
+- Does quote history remain untouched?
+- Are quote/compliance/catalog/lead protected flows untouched?
 
 ## Sprint 8L smoke-check checklist
 
@@ -282,3 +330,5 @@ Use this checklist before the next Orders pass:
 - Explain the approval boundary for this order.
 - Explain actual order lines after quote approval.
 - Explain the first document gate for this order.
+- Explain the packing sheet for this order.
+- Explain the freight rate request for this order.
