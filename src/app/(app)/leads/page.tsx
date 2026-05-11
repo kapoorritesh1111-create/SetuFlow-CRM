@@ -2,6 +2,7 @@
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
+import { LeadEventFilterNarrower } from '@/features/leads/components/lead-event-filter-narrower';
 import { QuoteReviewInlineComplianceFix } from '@/features/leads/components/quote-review-inline-compliance-fix';
 import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -9,7 +10,6 @@ import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page-view-model';
 import { RoleAwareLeadList } from '@/features/mobile/components/role-aware-lead-list';
 import { MobileBusinessCardScanner } from '@/features/mobile/components/mobile-business-card-scanner';
-import { buildMobileLeadCardsFromAppData, buildMobileSignedInSummary, buildMobileUserContextFromWorkspace } from '@/features/mobile/lib/app-mobile-leads';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -100,6 +100,18 @@ export default async function LeadsPage({
 
       <div className="hidden space-y-4 md:block">
         <QueryIssuesAlert issues={data.queryIssues} />
+        <LeadEventFilterNarrower
+          leads={data.leads.map((lead) => ({
+            id: lead.id,
+            trade_event_id: lead.trade_event_id ?? null,
+            owner_user_id: lead.owner_user_id ?? null,
+            stage_id: lead.stage_id ?? null,
+            country_id: lead.country_id ?? null,
+          }))}
+          leadMarkets={data.leadMarkets}
+          leadProductInterests={data.leadProductInterests}
+          countries={data.countries.map((country) => ({ id: country.id, market_id: country.market_id ?? null }))}
+        />
         <LeadsWorkspace
         currentUserId={viewModel.currentUserId}
         canManageLeads={viewModel.canManageLeads}

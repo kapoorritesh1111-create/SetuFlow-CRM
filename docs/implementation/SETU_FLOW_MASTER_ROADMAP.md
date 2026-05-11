@@ -13,10 +13,10 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this roadmap update: `5b3b8a8778cf586c8fa49f3cdb322cda612b5bea`
-- Commit message: `Simplify lead filters`
+- Latest verified production READY commit before this roadmap update: `144ae93381964ed3b95bf43e0eb3da42de4149a5`
+- Commit message: `Connect lead country market filters`
 - Production deployment status: `READY`
-- Verified deployment: `dpl_6StxKvp1TFBCPXVMLbbiVW3nFGMF`
+- Verified deployment: `dpl_4MyjT9QtRx2e5q8TodGpgGA8NQAi`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
@@ -29,11 +29,8 @@ Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 - Do not run `npm ci` in the sandbox.
 - Do not put dev/debug notes on user-facing screens.
 - Every pass must improve Setu Guru through help docs, route context, response policy, API behavior, or bot UI.
-- Before moving to a next roadmap pass, ensure earlier sprints are 100% complete or explicitly active with a reason.
-- UI cleanup should reduce duplication. Do not create duplicate shortcut cards, duplicate buttons, duplicate filters, or repeated work surfaces when a cleaner primary control already exists near the user's work area.
-- Buyer-facing quote share links must use the production domain and must never show raw JSON placeholders to customers.
-- Quote PDF, quote sharing, and quote send/approval controls are Sprint 5 closure-protected; future passes should not reopen them unless a production screenshot shows a defect.
-- Compliance blockers must resolve inside the active quote Review workflow where the user can see the exact quote-review blocker source, attach quote-linked evidence, waive for quote with reason, or defer to dispatch with reason.
+- Keep quote PDF/share/send, quote-review compliance, and catalog admin/import cleanup protected unless a screenshot shows a defect.
+- Lead cleanup should reduce duplication and protect the row click, **Open**, and **More** row model.
 
 ---
 
@@ -64,28 +61,19 @@ Progress: 100%
 Status: `DONE`
 Progress: 100%
 
-Closure verified:
-
-- Buyer-facing quote PDF and sharing flows are protected.
-- Quote builder/send/share controls use one clear quote sequence and no duplicate quote action surfaces.
-- Quote sharing uses production-domain buyer-facing pages with organization branding where available and no raw JSON placeholders.
+Closure verified: buyer-facing quote PDF/share/send protections are locked.
 
 ### Sprint 6 — Compliance Assist maturity
 
 Status: `DONE`
 Progress: 100%
 
-Closure verified:
-
-- Quote-review compliance is locked to `/leads` → open lead → **Continue quote** → **Step 4 — Review**.
-- Compliance clearing belongs inside the existing inline red quote Review blocker card.
-- Valid reviewer actions are **Attach evidence**, **Waive for quote**, and **Defer to dispatch**.
-- No schema, quote PDF/share/send route, global layout, or silent waiver/approval behavior was changed.
+Closure verified: quote-review compliance fixes stay in the active quote Review workflow.
 
 ### Sprint 7 — Lead command center cleanup
 
 Status: `ACTIVE`
-Progress: 70%
+Progress: 76%
 
 Completed Sprint 7A:
 
@@ -98,38 +86,39 @@ Completed Sprint 7B:
 - Lead list row action density reduced.
 - The row itself opens the Lead Command Center.
 - The visible row CTA is **Open**.
-- Secondary actions moved to the compact More menu: **Continue quote**, **Edit lead**, and **Delete lead**.
-- Delete no longer competes as a visible inline lead-row CTA.
+- Secondary actions moved to the compact **More** menu.
 
 Completed Sprint 7C:
 
-- Lead table smoke-check target made clearer.
-- Overflow control is now labeled **More** instead of a bare ellipsis.
-- Action column header now says **Open / More**.
-- Blocked row pill shortened to **Blocked** to reduce row density without changing compliance/source-of-truth behavior.
+- Overflow control is labeled **More**.
+- Action column header says **Open / More**.
+- Blocked row pill shortened to **Blocked**.
 
 Completed Sprint 7D:
 
-- Advanced lead filters panel simplified into three calm sections: **Journey**, **Pipeline**, and **Commercial scope**.
-- Repeated route-lock helper copy under multiple fields was replaced with one clear route-lock note.
-- **Clear filters** remains visible in the panel header.
-- All existing filter fields and callbacks are preserved.
+- Advanced lead filters panel simplified into **Journey**, **Pipeline**, and **Commercial scope**.
+- Repeated route-lock helper copy replaced with one clear route-lock note.
 
 Completed Sprint 7E:
 
-- Supabase country/market data was corrected so European countries, including Ireland and Austria, map to Europe.
-- Avanti Foods Limited default country/default market pairing was corrected from Ireland/North America to Ireland/Europe.
-- New workspace provisioning now copies country rows into the matching market by market name instead of assigning all countries to the first/fallback market.
-- Advanced lead filter panel now keeps country and market controls connected: selecting a country selects its market, and selecting a market narrows countries to that market.
-- Row click, **Open**, and **More** lead-row behavior remain unchanged.
+- European country/market data corrected, including Ireland and Austria.
+- Avanti Foods Limited default country/default market pairing corrected to Ireland/Europe.
+- New workspace provisioning now preserves country market by matching market name.
+- Advanced country and market filters now stay connected.
+
+Completed Sprint 7F:
+
+- Top inline lead filters now respond to **Source Event** selection.
+- Selecting a source event narrows owner, stage, country, market, and product options to values present in that event's lead set.
+- Clearing Source Event restores the full option lists.
+- Incompatible selected inline options are cleared when the selected event does not contain them.
+- This was implemented as a small mounted helper to avoid rewriting the large lead workspace and to protect row/action behavior.
 
 Current focus:
 
-- Reduce duplicate or competing lead action surfaces.
-- Preserve the protected quote flow: `/leads` → open lead → **Continue quote** → **Step 4 — Review** for compliance/document blockers.
-- Keep lead table/list fast to scan.
-- Keep filters useful and connected to real workspace data.
-- Continue event-scoped option narrowing only after verifying the top inline filter implementation in production.
+- Smoke-check the production top inline filter bar after deployment.
+- Confirm Source Event narrows only the values captured in that event.
+- Continue the next screenshot-based cleanup only after that surface is confirmed.
 
 ### Sprint 8 — Orders and execution readiness
 
@@ -146,30 +135,14 @@ Progress: 10%
 Status: `DONE`
 Progress: 100%
 
-Closure verified:
-
-- Catalog Admin is the back-office control center for setup, pricing defaults, imports, owner/admin product cleanup, and audit.
-- `/products` remains the daily product workspace.
-- Import setup order is locked: **Pricing calculator/defaults → Categories → Products + variants**.
-- Import History shows recent import runs, issue details, row summaries, download reports, and setup coverage cards.
-- Product cleanup delete is owner/admin-only, uses 2-year quote/order protection, requires reason and typed confirmation, preserves audit/history, and removes eligible products from active catalog surfaces only.
-- No quote/compliance/PDF/share/send behavior was changed during Sprint 10.
-
 ---
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 99.2%
-- Completed Sprint 1 anti-drift/control: 100%
-- Completed Sprint 2 Setu Guru knowledge foundation: 100%
-- Completed Sprint 3 Setu Guru routing and live context: 100%
-- Completed Sprint 4 Product catalog UX maturity: 100%
-- Completed Sprint 5 Quote builder and quote PDF maturity: 100%
-- Completed Sprint 6 Compliance Assist maturity: 100%
-- Active Sprint 7 Lead command center cleanup: 70%
-- Completed Sprint 10 Import wizard and catalog onboarding maturity: 100%
-- Setu Guru intelligence readiness: 99.4%
-- UX cleanup readiness: 87%
+- Overall CRM readiness: 99.3%
+- Active Sprint 7 Lead command center cleanup: 76%
+- Setu Guru intelligence readiness: 99.5%
+- UX cleanup readiness: 88%
 - Quote/compliance maturity: 96%
 - Product catalog maturity: 94%
 
@@ -207,7 +180,7 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and Sprint 10 are 100% complete. Sprint 7 Lead command center cleanup is active. Preserve the quote continuation route, closed Sprint 5 quote PDF/share/send protections, closed Sprint 6 quote-review compliance protections, and closed Sprint 10 import/catalog onboarding protections. Do not add duplicate action surfaces or silent waiver/approval/clear-compliance/write-back behavior.
+Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and Sprint 10 are 100% complete. Sprint 7 Lead command center cleanup is active. Preserve quote continuation, quote PDF/share/send, quote-review compliance, catalog import/product cleanup, and lead row Open/More behavior.
 ```
 
 ---
@@ -216,7 +189,7 @@ Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and 
 
 Continue Sprint 7:
 
-1. Smoke-check Avanti default country/market after deployment.
-2. Verify Ireland and Austria appear under Europe.
-3. Verify advanced country/market filters stay connected.
-4. Inspect the top inline filter bar and add event-scoped option narrowing if the production implementation supports it cleanly.
+1. Smoke-check top inline Source Event filter behavior in production.
+2. Verify event-scoped owner, stage, country, market, and product options.
+3. Confirm clearing Source Event restores all options.
+4. Continue only the next visibly dense lead area from screenshot review.

@@ -39,21 +39,25 @@ Current row behavior:
 
 Setu Guru should tell users to click the lead row or **Open** for the full Lead Command Center. Use **More → Continue quote** only when the user wants to jump straight from the list into quote work.
 
-## Sprint 7 advanced filter policy
+## Sprint 7 filter policy
 
-Advanced filters should help users narrow the queue without competing with lead-row actions.
+Filters should help users narrow the queue without competing with lead-row actions.
 
 Current filter behavior:
 
-- Filters are grouped into **Journey**, **Pipeline**, and **Commercial scope**.
+- Filters are grouped into **Journey**, **Pipeline**, and **Commercial scope** in the advanced panel.
 - Route-locked buyer/supplier pages show one route-lock note instead of repeated helper text under every field.
 - **Clear filters** stays visible in the panel header.
 - Country and market filters stay connected:
   - selecting a country also selects that country's market;
   - selecting a market narrows the country list to countries in that market.
+- Top inline filters are connected to **Source Event**:
+  - selecting a source event narrows owner, stage, country, market, and product options to values actually present in leads captured from that event;
+  - clearing the source event restores the full option list;
+  - if a selected owner/stage/country/market/product is not present in the chosen event, the selection is cleared.
 - Filtering does not change quote, compliance, product cleanup, or lead workflow behavior.
 
-Setu Guru should tell users to use filters only when they need to narrow the lead queue by owner, pipeline, stage, country, market, or product. For normal lead work, open the lead row first.
+Setu Guru should tell users to use filters only when they need to narrow the lead queue by event, owner, pipeline, stage, country, market, or product. For normal lead work, open the lead row first.
 
 ## Country and market data policy
 
@@ -99,4 +103,5 @@ Setu Guru must not change lead status, approve price changes, waive compliance, 
 - What is blocking this lead?
 - Which products or country details are missing?
 - What evidence do I need before quote send?
+- Which leads came from this trade event?
 - When should I mark a lead won or lost?
