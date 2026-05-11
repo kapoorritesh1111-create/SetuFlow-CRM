@@ -8,6 +8,7 @@
 
 import Link from 'next/link';
 import { progressOrderExecution, signContractAction, uploadOrderDocumentAction } from '@/features/orders/server/actions';
+import { sendOrderDocumentLinkAction } from '@/features/orders/server/share-actions';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 type DocRow = {
@@ -150,6 +151,8 @@ export function OrderDetailPanel({
     };
   };
 
+  const sendButtonStyle = { ...buttonStyle('white'), padding: '7px 11px', fontSize: '10px' };
+
   return (
     <div style={{ borderTop: '1px solid #dbe7f3', background: 'white', padding: '0' }}>
       <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
@@ -224,6 +227,30 @@ export function OrderDetailPanel({
           ))}
         </div>
       </div>
+
+      {contractId && (
+        <div style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
+          <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Send secure links</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '10px' }}>
+            {(['order-confirmation', 'invoice'] as const).map((kind) => (
+              <form key={kind} action={sendOrderDocumentLinkAction} style={{ border: '1px solid #dbe7f3', borderRadius: '12px', padding: '10px', background: '#f8fafc', display: 'grid', gap: '8px' }}>
+                <input type="hidden" name="contract_id" value={contractId} />
+                <input type="hidden" name="document_kind" value={kind} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                  <strong style={{ fontSize: '11px', color: '#0b2e4a' }}>{kind === 'invoice' ? 'Send invoice' : 'Send order PDF'}</strong>
+                  {pill('Tracked link', 'blue')}
+                </div>
+                <input name="recipient" placeholder="Additional email or WhatsApp" style={{ width: '100%', padding: '8px 10px', borderRadius: '9px', border: '1px solid #dbe7f3', fontSize: '11px' }} />
+                <input name="note" placeholder="Optional note" style={{ width: '100%', padding: '8px 10px', borderRadius: '9px', border: '1px solid #dbe7f3', fontSize: '11px' }} />
+                <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
+                  <button name="channel" value="email" type="submit" style={sendButtonStyle}>Email link</button>
+                  <button name="channel" value="whatsapp" type="submit" style={sendButtonStyle}>WhatsApp link</button>
+                </div>
+              </form>
+            ))}
+          </div>
+        </div>
+      )}
 
       {contractId && (
         <div id="order-upload-document" style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
