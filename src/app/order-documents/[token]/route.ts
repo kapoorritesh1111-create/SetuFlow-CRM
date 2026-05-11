@@ -12,7 +12,8 @@ export async function GET(_request: Request, { params }: { params: { token: stri
   const payload = decodeOrderDocumentShareToken(params.token);
   if (!payload) redirect('/');
 
-  const admin = createAdminSupabaseClient();
+  const adminClient = createAdminSupabaseClient();
+  const admin = adminClient as any;
   const openedAt = new Date();
   const documentLabel = getOrderDocumentLabel(payload.documentKind);
 
