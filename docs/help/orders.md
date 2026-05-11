@@ -8,6 +8,20 @@ Last updated: 2026-05-11
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, and shipment progress. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8E de-duplication and compact row-click workspace
+
+Sprint 8E addresses the production screenshot feedback that Orders still repeated the workflow and execution state inside the open order. The open order drawer should not repeat timeline/readiness rows already visible on the card.
+
+Production UI principles for Sprint 8E:
+
+1. The main order card owns the visible workflow/timeline and readiness summary.
+2. The expanded order detail owns actions, document readiness, upload, and collapsible evidence only.
+3. Do not repeat execution state, commercial lock, documents, and payment rows inside the detail if the card already shows them.
+4. Keep the detail short enough that multiple orders remain scannable.
+5. The next page-shell pass should remove the duplicate inner All/Buyers/Suppliers control and make the order card/header itself open the order, not only the Open order button.
+
+Setu Guru should explain this distinction when asked about Orders UX: the card summarizes, the drawer acts.
+
 ## Sprint 8D compact command-center cleanup
 
 Sprint 8D removes help-style explanation from the production Orders screen and keeps the order UI action-first. Setu Guru should carry the explanatory load instead of the page.
@@ -140,17 +154,16 @@ Use live order context first when available. If only dashboard context is availa
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the five readiness lanes and the safest next route.
 
-## Sprint 8D smoke-check checklist
+## Sprint 8E smoke-check checklist
 
-Use this checklist before the next Orders generation pass:
+Use this checklist before the next Orders page-shell pass:
 
-- Is the production screen free of help-style banners and implementation language?
-- Is the open order detail compact enough to scan multiple orders?
-- Are confirm/progress, generate order PDF, generate invoice, and attach evidence visible without a long instructional panel?
-- Does the document readiness area stay short and action-oriented?
-- Does upload remain for final evidence rather than replacing the planned generation route?
-- Are human approval actions clearly marked before release, dispatch, waiver, deletion, or closeout?
-- Does Setu Guru answer from the current order context before giving generic order guidance?
+- Is the duplicated workflow/timeline removed from the open order detail?
+- Does the order card summarize while the drawer focuses on actions?
+- Is the expanded detail short enough to keep additional orders visible?
+- Does the page still have a duplicate inner All/Buyers/Suppliers control that needs removal next?
+- Does clicking the order card/header open the order, or does this still need page-shell wiring?
+- Are quote/compliance/catalog/lead protected flows untouched?
 
 ## Suggested prompts
 
