@@ -10,6 +10,7 @@ import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page-view-model';
 import { RoleAwareLeadList } from '@/features/mobile/components/role-aware-lead-list';
 import { MobileBusinessCardScanner } from '@/features/mobile/components/mobile-business-card-scanner';
+import { buildMobileLeadCardsFromAppData, buildMobileSignedInSummary, buildMobileUserContextFromWorkspace } from '@/features/mobile/lib/app-mobile-leads';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
