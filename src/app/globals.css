@@ -13,8 +13,15 @@ body {
   overflow-x: clip;
 }
 
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable both-edges;
+}
+
 body {
   @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-[#0F172A] dark:text-neutral-50;
+  min-height: 100vh;
+  overflow-anchor: none;
   background-image:
     radial-gradient(circle at top, rgba(53, 159, 145, 0.12), transparent 28%),
     radial-gradient(circle at top right, rgba(31, 72, 124, 0.12), transparent 30%),
@@ -35,6 +42,22 @@ body.drawer-open {
 
 *::selection {
   background: rgba(53, 159, 145, 0.24);
+}
+
+#app-content {
+  min-height: 100vh;
+  overflow-anchor: none;
+}
+
+.mobile-premium-leads {
+  min-height: calc(100dvh - 96px);
+  overflow-anchor: none;
+}
+
+.mobile-premium-leads input,
+.mobile-premium-leads select,
+.mobile-premium-leads button {
+  transform: translateZ(0);
 }
 
 input,
