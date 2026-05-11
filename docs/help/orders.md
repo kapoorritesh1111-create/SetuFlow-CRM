@@ -8,6 +8,20 @@ Last updated: 2026-05-11
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, and shipment progress. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8G Order Confirmation PDF and Invoice generation
+
+Sprint 8G wires the Orders drawer CTAs to live order-native PDF routes.
+
+Live document generation routes:
+
+1. **Generate order PDF** opens `/api/orders/[contractId]/order-confirmation/pdf`.
+2. **Generate invoice** opens `/api/orders/[contractId]/invoice/pdf`.
+3. Both PDFs are generated from the linked contract, accepted quote, lead/customer record, and contract line items.
+4. Generated PDFs are also registered as contract documents so they appear in order evidence history.
+5. The quote PDF remains in Quotes and is not replaced by the order/invoice documents.
+
+Setu Guru should explain that Order Confirmation PDF and Invoice generation are now live for orders with linked contracts. If an order has no linked contract, the user must complete the quote-to-contract/order handoff first. Setu Guru must still explain that release, dispatch, waiver, payment clearance, document deletion, and closeout remain human-approved operations.
+
 ## Sprint 8F Orders shell de-duplication and row-click open
 
 Sprint 8F removes the duplicated inner Orders Desk shell treatment and adds order row/header click behavior without breaking existing CTAs.
@@ -134,11 +148,11 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 
 - Explain execution readiness and next action.
 - Route to order document upload, Compliance Assist, or the linked lead/quote.
+- Route to generated Order Confirmation PDF and Invoice when a contract is linked.
 - Separate commercial, payment, document, compliance, and dispatch blockers.
 - Draft an evidence checklist for human review.
 - Explain the approval boundary before a user advances order execution.
 - Explain the quote PDF → order confirmation → invoice document sequence.
-- Explain that generation buttons marked coming next are not yet final PDF write actions.
 
 ## Setu Guru order action buttons
 
@@ -169,15 +183,15 @@ Use live order context first when available. If only dashboard context is availa
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the five readiness lanes and the safest next route.
 
-## Sprint 8F smoke-check checklist
+## Sprint 8G smoke-check checklist
 
 Use this checklist before the next Orders pass:
 
-- Is the duplicate inner Orders Desk strip hidden?
-- Is there only one visible All/Buyers/Suppliers switch?
-- Does clicking the order row/header open the existing `openOrderId` route?
-- Do explicit CTAs still work independently of row click behavior?
-- Does the open drawer avoid repeating the timeline/readiness summary?
+- Does Generate order PDF open a PDF for orders with linked contracts?
+- Does Generate invoice open a PDF for orders with linked contracts?
+- Are generated order/invoice documents registered as contract documents?
+- Does quote PDF remain separate in Quotes?
+- Are release, dispatch, waiver, payment clearance, deletion, and closeout still human-approved?
 - Are quote/compliance/catalog/lead protected flows untouched?
 
 ## Suggested prompts
