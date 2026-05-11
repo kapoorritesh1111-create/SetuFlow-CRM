@@ -1,6 +1,6 @@
 # SETU Flow CRM Master Implementation Roadmap
 
-Last updated: 2026-05-10
+Last updated: 2026-05-11
 Owner: Ritesh Kapoor
 Repository: `kapoorritesh1111-create/SetuFlow-CRM`
 Production domain: `https://www.setuflowcrm.com/`
@@ -13,10 +13,10 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this roadmap update: `144ae93381964ed3b95bf43e0eb3da42de4149a5`
-- Commit message: `Connect lead country market filters`
+- Latest verified production READY commit before this roadmap update: `523b7ceae51e7c60c59cec58696bfcd33e4ffe97`
+- Commit message: `Auto focus dashboard map by country`
 - Production deployment status: `READY`
-- Verified deployment: `dpl_4MyjT9QtRx2e5q8TodGpgGA8NQAi`
+- Verified deployment: `dpl_GvTzxbmavg5o81WNQ4i53AiG2P2d`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
@@ -73,9 +73,9 @@ Closure verified: quote-review compliance fixes stay in the active quote Review 
 ### Sprint 7 — Lead command center cleanup
 
 Status: `ACTIVE`
-Progress: 76%
+Progress: 82%
 
-Completed Sprint 7A through 7F:
+Completed Sprint 7A through 7G:
 
 - Lead Command Center sticky action bar now has one clear commercial primary action: **Continue quote / Create quote**.
 - Follow-up planning and lead editing are secondary actions.
@@ -86,12 +86,13 @@ Completed Sprint 7A through 7F:
 - European country/market data corrected, including Ireland and Austria.
 - Advanced country and market filters stay connected.
 - Top inline lead filters respond to **Source Event** selection and narrow owner, stage, country, market, and product options to values present in the event's lead set.
+- Sprint 7G production visual inspection passed: lead row **Open / More**, advanced filters, top inline Source Event narrowing, and dashboard country auto-focus/reset were visually confirmed with no new code defect reported.
 
 Current Sprint 7 focus:
 
-- Smoke-check top inline Source Event filter behavior in production.
-- Confirm Source Event narrows only values captured in that event.
-- Continue the next screenshot-based cleanup only after the current surface is confirmed.
+- Prepare Sprint 7 closeout only if no production screenshot shows a remaining lead workspace defect.
+- Preserve row click, **Open**, **More**, Source Event narrowing, advanced filter grouping, and country/market correctness.
+- Do not reopen quote/compliance/PDF/share/send or Catalog Admin/import/product cleanup unless a production screenshot shows a defect.
 
 ### Dashboard Map UX — Country auto-focus
 
@@ -105,6 +106,7 @@ Completed:
 - Manual zoom, pan, and Reset controls remain available after auto-focus.
 - Selected country highlight remains intact.
 - Setu Guru dashboard context and dashboard help now explain country focus and reset behavior.
+- Sprint 7G visual inspection confirmed dashboard map country auto-focus/reset behavior in production.
 
 ### Sprint 8 — Orders and execution readiness
 
@@ -125,11 +127,11 @@ Progress: 100%
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 99.35%
-- Active Sprint 7 Lead command center cleanup: 76%
+- Overall CRM readiness: 99.4%
+- Active Sprint 7 Lead command center cleanup: 82%
 - Dashboard map UX readiness: 100%
-- Setu Guru intelligence readiness: 99.55%
-- UX cleanup readiness: 89%
+- Setu Guru intelligence readiness: 99.6%
+- UX cleanup readiness: 90%
 - Quote/compliance maturity: 96%
 - Product catalog maturity: 94%
 
@@ -167,15 +169,16 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and Sprint 10 are 100% complete. Sprint 7 Lead command center cleanup is active. Dashboard map country auto-focus is complete. Preserve quote continuation, quote PDF/share/send, quote-review compliance, catalog import/product cleanup, and lead row Open/More behavior.
+Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and Sprint 10 are 100% complete. Sprint 7 Lead command center cleanup is active at 82% after Sprint 7G visual inspection passed. Dashboard map country auto-focus is complete and visually confirmed. Preserve quote continuation, quote PDF/share/send, quote-review compliance, catalog import/product cleanup, lead row Open/More behavior, Source Event narrowing, advanced filter grouping, and country/market correctness.
 ```
 
 ---
 
 ## 7. Next recommended pass
 
-1. Smoke-check dashboard country filter auto-focus in production.
-2. Verify selecting a country zooms/focuses the map to that country.
-3. Verify clearing the country filter resets to world view.
-4. Verify manual zoom, pan, and Reset remain usable after auto-focus.
-5. Continue Sprint 7 only after dashboard map behavior is confirmed.
+Sprint 7 closeout planning pass:
+
+1. Review any remaining production screenshots for lead workspace defects.
+2. If no defect remains, close Sprint 7 by documenting protected lead command center behavior and moving the roadmap toward Sprint 8.
+3. If a defect is visible, fix only that specific production screenshot defect.
+4. Keep quote/compliance/PDF/share/send and Catalog Admin/import/product cleanup untouched unless the screenshot defect is in those protected surfaces.
