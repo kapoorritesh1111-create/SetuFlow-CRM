@@ -26,14 +26,12 @@ const TOOLTIP_PADDING = 12;
 const TOOLTIP_W = 190;
 const TOOLTIP_H = 130;
 
-// Stable tier derivation — memoized outside render
 function getMarketTier(c: CountryCoverageDatum): 'critical' | 'active' | 'watch' {
   if (c.activeLeadCount >= 8 || c.openQuoteCount >= 4) return 'critical';
   if (c.activeLeadCount >= 3 || c.openQuoteCount >= 2) return 'active';
   return 'watch';
 }
 
-// Role-aware fill: buyer-centric = blues, supplier-centric = purples, all = amber critical
 function getTierFill(tier: 'critical' | 'active' | 'watch', mode: WorkspaceMode, intensity: number): string {
   if (mode === 'suppliers') {
     const base = tier === 'critical' ? [168, 85, 247] : tier === 'active' ? [109, 40, 217] : [139, 92, 246];
@@ -43,7 +41,6 @@ function getTierFill(tier: 'critical' | 'active' | 'watch', mode: WorkspaceMode,
     const base = tier === 'critical' ? [245, 158, 11] : tier === 'active' ? [31, 72, 124] : [8, 145, 178];
     return `rgba(${base[0]},${base[1]},${base[2]},${intensity})`;
   }
-  // all — same as buyers default
   const base = tier === 'critical' ? [245, 158, 11] : tier === 'active' ? [31, 72, 124] : [8, 145, 178];
   return `rgba(${base[0]},${base[1]},${base[2]},${intensity})`;
 }
@@ -53,6 +50,16 @@ function getTierStroke(tier: 'critical' | 'active' | 'watch', mode: WorkspaceMod
     return tier === 'critical' ? '#9333ea' : tier === 'active' ? '#7c3aed' : '#8b5cf6';
   }
   return tier === 'critical' ? '#d97706' : tier === 'active' ? '#1e40af' : '#0e7490';
+}
+
+function getPathBounds(path: SVGPathElement | null) {
+  if (!path) return null;
+  try {
+    const box = path.getBBox();
+    return { minX: box.x, minY: box.y, maxX: box.x + box.width, maxY: box.y + box.height };
+  } catch {
+    return null;
+  }
 }
 
 export function WorldCoverageMap({
@@ -65,8 +72,8 @@ export function WorldCoverageMap({
   const [worldMap, setWorldMap] = useState<WorldMapData | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const fetchedRef = useRef(false);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // Lazy load map data only once
   useEffect(() => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
@@ -81,7 +88,6 @@ export function WorldCoverageMap({
     return () => ctrl.abort();
   }, []);
 
-  // Memoize heavy derived structures — only recompute when countries changes
   const coverageMap = useMemo(
     () => new Map(countries.map(c => [c.countryCode, c] as const)),
     [countries],
@@ -92,7 +98,6 @@ export function WorldCoverageMap({
     [countries],
   );
 
-  // Memoize tier+fill per country so paths don't recompute on hover/pan
   const countryStyles = useMemo(() => {
     const map = new Map<string, { fill: string; stroke: string; clickable: boolean }>();
     for (const c of countries) {
@@ -114,9 +119,21 @@ export function WorldCoverageMap({
 
   const {
     zoom, pan, dragging, hoveredCode, pointerPosition,
-    onZoomOut, onZoomIn, onResetView,
+    onZoomOut, onZoomIn, onResetView, focusCountry,
     onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onPointerLeave,
   } = useWorldMapControls({ isSelectableCountry, onSelectCountry });
+
+  useEffect(() => {
+    if (!worldMap || !mapReady) return;
+    if (!selectedCountryCode) {
+      onResetView();
+      return;
+    }
+    const path = svgRef.current?.querySelector<SVGPathElement>(`[data-country-code="${selectedCountryCode}"]`) ?? null;
+    const bounds = getPathBounds(path);
+    if (!bounds) return;
+    focusCountry({ bounds, mapWidth: worldMap.width, mapHeight: worldMap.height });
+  }, [focusCountry, mapReady, onResetView, selectedCountryCode, worldMap]);
 
   const hovered = hoveredCode ? coverageMap.get(hoveredCode) ?? null : null;
 
@@ -152,12 +169,11 @@ export function WorldCoverageMap({
 
   return (
     <div className={cn('relative overflow-hidden rounded-[1.7rem] border border-slate-700/70 bg-[#0a1628] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.52)] ring-1 ring-white/5', className)}>
-      {/* Header bar */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/8 pb-3">
         <div className="flex flex-wrap items-center gap-2">
           {selectedCountryCode ? (
             <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
-              {coverageMap.get(selectedCountryCode)?.countryName ?? selectedCountryCode} · selected
+              {coverageMap.get(selectedCountryCode)?.countryName ?? selectedCountryCode} · focused
             </span>
           ) : (
             <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${modeAccent}`}>
@@ -169,18 +185,18 @@ export function WorldCoverageMap({
         </div>
         <div className="flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/85 p-1 shadow-[0_12px_28px_rgba(0,0,0,0.24)]">
           <button type="button" onClick={onZoomOut} aria-label="Zoom out" className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">−</button>
-          <button type="button" onClick={onZoomIn}  aria-label="Zoom in"  className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">+</button>
+          <button type="button" onClick={onZoomIn} aria-label="Zoom in" className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">+</button>
           <button type="button" onClick={onResetView} className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">Reset</button>
         </div>
       </div>
 
-      {/* Map container */}
       <div
         className={cn('relative h-[348px] overflow-hidden rounded-[1.4rem] bg-[#0d1f3a] transition-opacity duration-300', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onPointerLeave={onPointerLeave}
       >
         <svg
+          ref={svgRef}
           viewBox={`0 0 ${worldMap.width} ${worldMap.height}`}
           className="h-full w-full"
           role="img"
@@ -194,7 +210,7 @@ export function WorldCoverageMap({
           </defs>
           <rect width={worldMap.width} height={worldMap.height} fill="url(#ocean)" />
 
-          <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+          <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`} className="transition-transform duration-500 ease-out">
             {Object.entries(worldMap.paths).map(([code, item]) => {
               const isSelected = selectedCountryCode === code;
               const style = countryStyles.get(code);
@@ -210,7 +226,6 @@ export function WorldCoverageMap({
           </g>
         </svg>
 
-        {/* Tooltip — only when hovering, not dragging */}
         {hovered && !dragging ? (
           <div
             className="pointer-events-none absolute z-20 w-[190px] rounded-2xl border border-slate-700/80 bg-slate-950/95 px-3 py-3 shadow-[0_16px_32px_rgba(0,0,0,0.5)] backdrop-blur"
@@ -238,7 +253,7 @@ export function WorldCoverageMap({
             <div className="mt-2.5 grid grid-cols-2 gap-1.5">
               {[
                 ['Quotes', hovered.openQuoteCount],
-                ['RFQs',   hovered.openRfqCount],
+                ['RFQs', hovered.openRfqCount],
               ].map(([l, v]) => (
                 <div key={String(l)} className="rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
                   <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">{l}</p>
@@ -256,7 +271,6 @@ export function WorldCoverageMap({
         ) : null}
       </div>
 
-      {/* Legend */}
       <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-white/8 px-1 pt-3">
         {mode === 'suppliers' ? (
           <>
@@ -272,7 +286,7 @@ export function WorldCoverageMap({
           </>
         )}
         <LegendDot color="bg-white/90" label="Selected" />
-        <span className="ml-auto rounded-full border border-slate-700/70 bg-slate-900/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Click any market to open its command lane</span>
+        <span className="ml-auto rounded-full border border-slate-700/70 bg-slate-900/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Country filter auto-focuses the map</span>
       </div>
     </div>
   );

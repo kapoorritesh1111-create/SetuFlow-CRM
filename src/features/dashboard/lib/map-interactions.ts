@@ -3,6 +3,13 @@ export type MapPan = {
   y: number;
 };
 
+export type MapBounds = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+};
+
 export type PointerDragState = {
   pointerId: number;
   startX: number;
@@ -45,5 +52,33 @@ export function getDraggedMapPan(dragState: Pick<PointerDragState, 'panX' | 'pan
   return {
     x: dragState.panX + deltaX,
     y: dragState.panY + deltaY,
+  };
+}
+
+export function getFocusedCountryView({
+  bounds,
+  mapWidth,
+  mapHeight,
+  padding = 54,
+}: {
+  bounds: MapBounds;
+  mapWidth: number;
+  mapHeight: number;
+  padding?: number;
+}) {
+  const countryWidth = Math.max(bounds.maxX - bounds.minX, 1);
+  const countryHeight = Math.max(bounds.maxY - bounds.minY, 1);
+  const usableWidth = Math.max(mapWidth - padding * 2, 1);
+  const usableHeight = Math.max(mapHeight - padding * 2, 1);
+  const zoom = clampMapZoom(Math.min(usableWidth / countryWidth, usableHeight / countryHeight));
+  const countryCenterX = bounds.minX + countryWidth / 2;
+  const countryCenterY = bounds.minY + countryHeight / 2;
+
+  return {
+    zoom,
+    pan: {
+      x: mapWidth / 2 - countryCenterX * zoom,
+      y: mapHeight / 2 - countryCenterY * zoom,
+    },
   };
 }

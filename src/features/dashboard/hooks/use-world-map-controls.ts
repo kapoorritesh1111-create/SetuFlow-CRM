@@ -1,13 +1,15 @@
 'use client';
 
-import { useRef, useState, type PointerEvent as ReactPointerEvent, type PointerEventHandler } from 'react';
+import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent, type PointerEventHandler } from 'react';
 import {
   MIN_MAP_ZOOM,
   getDraggedMapPan,
+  getFocusedCountryView,
   getResetMapPan,
   getZoomInValue,
   getZoomOutValue,
   hasExceededMapDragThreshold,
+  type MapBounds,
   type MapPan,
   type PointerDragState,
 } from '@/features/dashboard/lib/map-interactions';
@@ -48,23 +50,34 @@ export function useWorldMapControls({
   const dragStateRef = useRef<PointerDragState | null>(null);
   const pressedCountryCodeRef = useRef<string | null>(null);
 
-  const onZoomOut = () => {
-    setZoom((value) => getZoomOutValue(value));
-  };
-
-  const onZoomIn = () => {
-    setZoom((value) => getZoomInValue(value));
-  };
-
-  const onResetView = () => {
-    setZoom(MIN_MAP_ZOOM);
-    setPan(getResetMapPan());
+  const clearInteractionState = useCallback(() => {
     setDragging(false);
     setHoveredCode(null);
     setPointerPosition(null);
     dragStateRef.current = null;
     pressedCountryCodeRef.current = null;
-  };
+  }, []);
+
+  const onZoomOut = useCallback(() => {
+    setZoom((value) => getZoomOutValue(value));
+  }, []);
+
+  const onZoomIn = useCallback(() => {
+    setZoom((value) => getZoomInValue(value));
+  }, []);
+
+  const onResetView = useCallback(() => {
+    setZoom(MIN_MAP_ZOOM);
+    setPan(getResetMapPan());
+    clearInteractionState();
+  }, [clearInteractionState]);
+
+  const focusCountry = useCallback(({ bounds, mapWidth, mapHeight }: { bounds: MapBounds; mapWidth: number; mapHeight: number }) => {
+    const nextView = getFocusedCountryView({ bounds, mapWidth, mapHeight });
+    setZoom(nextView.zoom);
+    setPan(nextView.pan);
+    clearInteractionState();
+  }, [clearInteractionState]);
 
   const onPointerDown: PointerEventHandler<HTMLDivElement> = (event) => {
     if (!event.isPrimary || event.button !== 0) return;
@@ -166,6 +179,7 @@ export function useWorldMapControls({
     onZoomOut,
     onZoomIn,
     onResetView,
+    focusCountry,
     onPointerDown,
     onPointerMove,
     onPointerUp,
