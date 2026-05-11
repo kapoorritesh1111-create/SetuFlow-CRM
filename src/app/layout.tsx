@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegistration';
+import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -51,13 +52,12 @@ const softwareSchema = {
     'Country compliance checklist',
     'Digital vCard with QR code',
   ],
-  // Markets served
   areaServed: [
-    { '@type': 'Country', name: 'India',          sameAs: 'https://www.wikidata.org/wiki/Q668'  },
-    { '@type': 'Country', name: 'Ireland',         sameAs: 'https://www.wikidata.org/wiki/Q27'   },
-    { '@type': 'Country', name: 'United Kingdom',  sameAs: 'https://www.wikidata.org/wiki/Q145'  },
-    { '@type': 'Country', name: 'Germany',         sameAs: 'https://www.wikidata.org/wiki/Q183'  },
-    { '@type': 'Country', name: 'United States',   sameAs: 'https://www.wikidata.org/wiki/Q30'   },
+    { '@type': 'Country', name: 'India', sameAs: 'https://www.wikidata.org/wiki/Q668' },
+    { '@type': 'Country', name: 'Ireland', sameAs: 'https://www.wikidata.org/wiki/Q27' },
+    { '@type': 'Country', name: 'United Kingdom', sameAs: 'https://www.wikidata.org/wiki/Q145' },
+    { '@type': 'Country', name: 'Germany', sameAs: 'https://www.wikidata.org/wiki/Q183' },
+    { '@type': 'Country', name: 'United States', sameAs: 'https://www.wikidata.org/wiki/Q30' },
   ],
   offers: [
     {
@@ -101,7 +101,6 @@ export const metadata: Metadata = {
     'Setu Flow is the trade execution CRM built for import-export teams in India, Ireland, UK, Germany and the US. Manage leads, quotes, approvals, orders and shipment execution in one connected system. Operational in under 5 days.',
 
   keywords: [
-    // ── Core category ──────────────────────────────────────
     'trade execution CRM',
     'import export CRM',
     'CRM for exporters',
@@ -110,8 +109,6 @@ export const metadata: Metadata = {
     'international trade CRM',
     'export management software',
     'B2B trade CRM',
-
-    // ── Feature-level ──────────────────────────────────────
     'quote management CRM',
     'FOB CIF pricing software',
     'trade show lead capture',
@@ -119,8 +116,6 @@ export const metadata: Metadata = {
     'FX rate locked quoting',
     'export compliance CRM',
     'approval workflow CRM',
-
-    // ── India ──────────────────────────────────────────────
     'trade CRM India',
     'export CRM India',
     'import export software India',
@@ -129,32 +124,24 @@ export const metadata: Metadata = {
     'B2B CRM India',
     'export management India',
     'trade software for SMEs India',
-
-    // ── Ireland ────────────────────────────────────────────
     'trade CRM Ireland',
     'export CRM Ireland',
     'import export software Ireland',
     'CRM for Irish exporters',
     'trade software Ireland',
     'SME export CRM Ireland',
-
-    // ── United Kingdom ─────────────────────────────────────
     'trade CRM UK',
     'export management software UK',
     'import export CRM United Kingdom',
     'CRM for UK exporters',
     'trade execution software UK',
     'B2B CRM UK',
-
-    // ── Germany ────────────────────────────────────────────
     'trade CRM Germany',
     'export management software Germany',
     'import export CRM Deutschland',
     'CRM for German exporters',
     'Handelssoftware exporteur',
     'B2B CRM Germany',
-
-    // ── United States ──────────────────────────────────────
     'trade CRM USA',
     'export management software United States',
     'import export CRM America',
@@ -164,70 +151,57 @@ export const metadata: Metadata = {
   ],
 
   authors: [{ name: 'Setu Groups', url: 'https://www.setuflowcrm.com' }],
-  creator:   'Setu Groups',
+  creator: 'Setu Groups',
   publisher: 'Setu Groups',
-  category:  'technology',
+  category: 'technology',
 
   robots: {
-    index:    true,
-    follow:   true,
+    index: true,
+    follow: true,
     googleBot: {
-      index:              true,
-      follow:             true,
+      index: true,
+      follow: true,
       'max-video-preview': -1,
       'max-image-preview': 'large',
-      'max-snippet':       -1,
+      'max-snippet': -1,
     },
   },
 
-  // ── Open Graph ─────────────────────────────────────────────────────────────
   openGraph: {
-    type:        'website',
-    locale:      'en_GB',                              // primary locale — UK/Ireland
-    alternateLocale: ['en_US', 'en_IN', 'en_DE'],      // additional locales served
-    url:         'https://www.setuflowcrm.com',
-    siteName:    'Setu Flow',
-    title:       'Setu Flow — Trade Execution CRM for Import-Export Teams',
+    type: 'website',
+    locale: 'en_GB',
+    alternateLocale: ['en_US', 'en_IN', 'en_DE'],
+    url: 'https://www.setuflowcrm.com',
+    siteName: 'Setu Flow',
+    title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
     description:
       'From first contact to final shipment, Setu Flow runs your entire trade operation in one connected system. Built for teams in India, Ireland, UK, Germany and the US. Operational in days — not months.',
     images: [
       {
-        url:    '/og-image.png',
-        width:   1200,
-        height:  630,
-        alt:    'Setu Flow — Trade Execution CRM for import-export teams',
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Setu Flow — Trade Execution CRM for import-export teams',
       },
     ],
   },
 
-  // ── Twitter / X ────────────────────────────────────────────────────────────
   twitter: {
-    card:        'summary_large_image',
-    title:       'Setu Flow — Trade Execution CRM for Import-Export Teams',
+    card: 'summary_large_image',
+    title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
     description: 'From first contact to final shipment, Setu Flow runs your entire trade operation in one connected system.',
-    images:      ['/og-image.png'],
+    images: ['/og-image.png'],
   },
 
-  // ── Canonical + hreflang ──────────────────────────────────────────────────
   alternates: {
     canonical: 'https://www.setuflowcrm.com',
-    // All markets are served from the same English URL.
-    // When/if localised pages exist, add them here:
-    // languages: {
-    //   'en-IN': 'https://www.setuflowcrm.com',
-    //   'en-GB': 'https://www.setuflowcrm.com',
-    //   'en-IE': 'https://www.setuflowcrm.com',
-    //   'en-US': 'https://www.setuflowcrm.com',
-    //   'en-DE': 'https://www.setuflowcrm.com',
-    // },
   },
 
-  // ── Icons & PWA ────────────────────────────────────────────────────────────
-  manifest:    '/manifest.json',
+  manifest: '/manifest.json',
   appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent' },
   icons: {
-    icon:     [{ url: '/favicon.ico' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }],
-    apple:    [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    icon: [{ url: '/favicon.ico' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
     shortcut: ['/favicon.ico'],
   },
 };
@@ -236,19 +210,16 @@ export const viewport: Viewport = {
   themeColor: '#0c7fff',
 };
 
-// ─── Root Layout ──────────────────────────────────────────────────────────────
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={jakarta.variable} suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="/vendor/font-awesome/css/font-awesome.min.css" />
-        <link rel="manifest"   href="/manifest.json" />
-        <meta name="theme-color"                   content="#0c7fff" />
-        <meta name="mobile-web-app-capable"        content="yes" />
-        <meta name="apple-mobile-web-app-capable"  content="yes" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0c7fff" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
 
-        {/* Structured data for Google */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -258,6 +229,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body suppressHydrationWarning>
         <ServiceWorkerRegistration />
+        <LeadsFilterStability />
         {children}
       </body>
     </html>
