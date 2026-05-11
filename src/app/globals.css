@@ -321,6 +321,21 @@ button {
   }
 }
 
+/* Leads filter/search stability: keep result card height fixed while rows change. */
+.mobile-premium-leads [style*="border: 1px solid #e2e8f0"][style*="background: white"]:has([class*="grid"]) {
+  min-height: clamp(440px, calc(100dvh - 255px), 680px) !important;
+  max-height: clamp(440px, calc(100dvh - 255px), 680px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  overflow-anchor: none !important;
+  scrollbar-gutter: stable !important;
+}
+
+.mobile-premium-leads [style*="border: 1px solid #e2e8f0"][style*="background: white"]:has([class*="grid"]) > * {
+  overflow-anchor: none !important;
+}
+
 /* Marketing V7 motion system */
 @keyframes setuFadeUp {
   from { opacity: 0; transform: translateY(34px); }
