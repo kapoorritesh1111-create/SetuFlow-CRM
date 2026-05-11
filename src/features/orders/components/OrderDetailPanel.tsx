@@ -15,6 +15,14 @@ import {
   prepareFirstDocumentGateAction,
   previewFirstDocumentGateAction,
 } from '@/features/orders/server/execution-order-actions';
+import {
+  approveFreightRateRequestAction,
+  approvePackingSheetAction,
+  prepareFreightRateRequestAction,
+  preparePackingSheetAction,
+  previewFreightRateRequestAction,
+  previewPackingSheetAction,
+} from '@/features/orders/server/packing-freight-actions';
 import { sendOrderDocumentLinkAction } from '@/features/orders/server/share-actions';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
@@ -202,6 +210,7 @@ export function OrderDetailPanel({
   };
 
   const sendButtonStyle = { ...buttonStyle('white'), padding: '7px 11px', fontSize: '10px' };
+  const fieldStyle = { padding: '7px 9px', borderRadius: '9px', border: '1px solid #dbe7f3', background: 'white', color: '#334155', fontSize: '10px', fontWeight: 700 };
 
   return (
     <div style={{ borderTop: '1px solid #dbe7f3', background: 'white', padding: '0' }}>
@@ -279,6 +288,57 @@ export function OrderDetailPanel({
         </div>
       </div>
 
+      <div style={{ padding: '10px 20px', borderBottom: '1px solid #e2e8f0', background: 'white', display: 'grid', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {pill('Sprint 8M packing + freight', 'blue')}
+          <span style={{ fontSize: '11px', color: '#64748b' }}>Create a packing sheet first, then preview and approve the freight/delivery rate request. Integration can plug in later.</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '8px' }}>
+          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: '#f8fafc', padding: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>4. Packing sheet</div>
+            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Use regional truck, 20ft, 40ft, or custom template before asking logistics for rates.</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <form action={preparePackingSheetAction} style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <input type="hidden" name="quote_id" value={quoteId} />
+                <select name="template_key" defaultValue="regional_truck" style={fieldStyle}>
+                  <option value="regional_truck">Regional truck</option>
+                  <option value="20ft_container">20ft container</option>
+                  <option value="40ft_container">40ft container</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <button type="submit" style={{ ...buttonStyle('white'), padding: '7px 11px', fontSize: '10px' }}>Prepare</button>
+              </form>
+              <GateForm action={previewPackingSheetAction} quoteId={quoteId} label="Previewed" tone="blue" />
+              <GateForm action={approvePackingSheetAction} quoteId={quoteId} label="Approve" tone="green" />
+            </div>
+          </div>
+          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: '#f8fafc', padding: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>5. Freight rate request</div>
+            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Prepare a tracked fallback request now; freight integrations can use the same record later.</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <form action={prepareFreightRateRequestAction} style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <input type="hidden" name="quote_id" value={quoteId} />
+                <select name="shipment_mode" defaultValue="road" style={fieldStyle}>
+                  <option value="road">Road</option>
+                  <option value="sea">Sea</option>
+                  <option value="air">Air</option>
+                  <option value="courier">Courier</option>
+                </select>
+                <select name="request_method" defaultValue="email" style={fieldStyle}>
+                  <option value="email">Email</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="manual">Manual</option>
+                  <option value="integration_ready">Integration-ready</option>
+                </select>
+                <button type="submit" style={{ ...buttonStyle('white'), padding: '7px 11px', fontSize: '10px' }}>Prepare</button>
+              </form>
+              <GateForm action={previewFreightRateRequestAction} quoteId={quoteId} label="Previewed" tone="blue" />
+              <GateForm action={approveFreightRateRequestAction} quoteId={quoteId} label="Approve" tone="green" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {contractId && !isComplete && !isSigned && (
         <div style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
           <form action={signContractAction} style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -300,7 +360,7 @@ export function OrderDetailPanel({
       <div id={documentKitAnchor} style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '9px', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8' }}>Document readiness</div>
-          {pill('Quote → Actual lines → Gate → Send', 'blue')}
+          {pill('Quote → Actual lines → Gate → Packing → Freight', 'blue')}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px' }}>
           {documentWorkflow.map((item, index) => (
