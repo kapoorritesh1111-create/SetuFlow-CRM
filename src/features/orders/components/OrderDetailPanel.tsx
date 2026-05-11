@@ -8,6 +8,7 @@
 
 import Link from 'next/link';
 import { progressOrderExecution, signContractAction, uploadOrderDocumentAction } from '@/features/orders/server/actions';
+import { ensureActualOrderLinesAction } from '@/features/orders/server/execution-order-actions';
 import { sendOrderDocumentLinkAction } from '@/features/orders/server/share-actions';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
@@ -182,6 +183,12 @@ export function OrderDetailPanel({
         ) : (
           pill('Contract needed', 'amber')
         )}
+        <form action={ensureActualOrderLinesAction}>
+          <input type="hidden" name="quote_id" value={quoteId} />
+          <input type="hidden" name="lead_id" value={leadId} />
+          <input type="hidden" name="contract_id" value={contractId ?? ''} />
+          <button type="submit" style={buttonStyle('primary')}>Prepare actual lines</button>
+        </form>
         <a href={orderPdfHref} target={contractId ? '_blank' : undefined} rel={contractId ? 'noreferrer' : undefined} style={buttonStyle('blue')}>Generate order PDF</a>
         <a href={invoicePdfHref} target={contractId ? '_blank' : undefined} rel={contractId ? 'noreferrer' : undefined} style={buttonStyle('blue')}>Generate invoice</a>
         <a href="#order-upload-document" style={buttonStyle('white')}>Attach evidence</a>
@@ -189,6 +196,11 @@ export function OrderDetailPanel({
           {pill(isLocked ? 'Commercial locked' : 'Commercial pending', isLocked ? 'green' : 'amber')}
           {pill(`${docOk.length}/${docOk.length + docBlockers.length} docs`, docBlockers.length ? 'amber' : 'green')}
         </div>
+      </div>
+
+      <div style={{ padding: '10px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        {pill('Sprint 8K', 'blue')}
+        <span style={{ fontSize: '11px', color: '#64748b' }}>Prepare actual order lines from the approved quote before the future preview/approve/send gates. Quote history stays unchanged.</span>
       </div>
 
       {contractId && !isComplete && !isSigned && (
@@ -212,7 +224,7 @@ export function OrderDetailPanel({
       <div id={documentKitAnchor} style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '9px', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8' }}>Document readiness</div>
-          {pill('Quote → Order → Invoice', 'blue')}
+          {pill('Quote → Actual lines → Order → Invoice', 'blue')}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px' }}>
           {documentWorkflow.map((item, index) => (
