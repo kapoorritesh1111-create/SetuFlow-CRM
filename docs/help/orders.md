@@ -8,6 +8,19 @@ Last updated: 2026-05-11
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, and shipment progress. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8C native page shell and generation route plan
+
+Sprint 8C continues the production screenshot cleanup by making the open order detail feel more like a native SETU Flow execution workspace and less like an embedded document frame. The order detail now names itself as a native order workspace, highlights the execution control lane, and marks Order Confirmation PDF and Invoice generation as planned first-class order actions.
+
+Planned generation route sequence:
+
+1. **Quote PDF** remains in Quotes as the commercial source.
+2. **Generate Order Confirmation PDF** should create an order document from the signed contract, locked commercial snapshot, accepted quote version, and contract line items.
+3. **Generate Invoice** should create an invoice after release/dispatch posture is clear so billing matches execution state.
+4. **Attach final evidence** remains available for signed PDFs, invoices, packing lists, bills of lading, certificates, lab reports, and final dispatch evidence.
+
+Setu Guru should explain that the current Sprint 8C UI shows the planned generation actions but does not yet generate the PDFs. The next implementation pass should wire the Order Confirmation PDF and Invoice generation routes/actions.
+
 ## Sprint 8B production screenshot cleanup
 
 Sprint 8B is based on the production Orders screenshot showing the workspace feeling embedded/iframe-like and not helping operators create or sequence order documents after contract signing.
@@ -81,6 +94,7 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Draft an evidence checklist for human review.
 - Explain the approval boundary before a user advances order execution.
 - Explain the quote PDF → order confirmation → invoice document sequence.
+- Explain that generation buttons marked planned are not yet final PDF write actions.
 
 ## Setu Guru order action buttons
 
@@ -111,14 +125,14 @@ Use live order context first when available. If only dashboard context is availa
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the five readiness lanes and the safest next route.
 
-## Sprint 8B smoke-check checklist
+## Sprint 8C smoke-check checklist
 
-Use this checklist before the next Orders code pass:
+Use this checklist before the next Orders generation pass:
 
-- Does the Orders page feel like a native SaaS command center instead of an embedded frame?
-- Is there a visible document workflow from quote PDF to order confirmation to invoice?
-- Does document upload show clear document type, blocker, required file, and final evidence language?
-- Does the order detail panel help create/route documents instead of only asking the user to attach files?
+- Does the open order detail feel like a native SETU Flow execution workspace?
+- Are generated Order Confirmation PDF and Invoice actions visible as planned routes without pretending they already generate final documents?
+- Does the document kit still point users to Quotes for the quote PDF source?
+- Does upload remain for final evidence rather than replacing the planned generation route?
 - Are human approval actions clearly marked before release, dispatch, waiver, deletion, or closeout?
 - Does Setu Guru answer from the current order context before giving generic order guidance?
 
