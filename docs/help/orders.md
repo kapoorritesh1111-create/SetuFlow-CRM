@@ -8,6 +8,21 @@ Last updated: 2026-05-11
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, and shipment progress. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8D compact command-center cleanup
+
+Sprint 8D removes help-style explanation from the production Orders screen and keeps the order UI action-first. Setu Guru should carry the explanatory load instead of the page.
+
+Production UI principles:
+
+1. Keep the open order detail compact.
+2. Avoid instructional banners such as “native workspace,” “execution control lane,” or “not an embedded frame.”
+3. Keep the primary action row visible: confirm/progress order, generate order PDF, generate invoice, attach evidence.
+4. Keep the document readiness grid short: Quote PDF, Order confirmation, Invoice.
+5. Upload remains for final evidence, not a substitute for generated order/invoice documents.
+6. Documents and evidence should be collapsible unless blockers are present.
+
+Setu Guru should explain the workflow when asked, but the production UI should stay concise.
+
 ## Sprint 8C native page shell and generation route plan
 
 Sprint 8C continues the production screenshot cleanup by making the open order detail feel more like a native SETU Flow execution workspace and less like an embedded document frame. The order detail now names itself as a native order workspace, highlights the execution control lane, and marks Order Confirmation PDF and Invoice generation as planned first-class order actions.
@@ -19,13 +34,13 @@ Planned generation route sequence:
 3. **Generate Invoice** should create an invoice after release/dispatch posture is clear so billing matches execution state.
 4. **Attach final evidence** remains available for signed PDFs, invoices, packing lists, bills of lading, certificates, lab reports, and final dispatch evidence.
 
-Setu Guru should explain that the current Sprint 8C UI shows the planned generation actions but does not yet generate the PDFs. The next implementation pass should wire the Order Confirmation PDF and Invoice generation routes/actions.
+Setu Guru should explain that the current Sprint 8D UI shows the generation actions as coming-next routes but does not yet generate the PDFs. The next implementation pass should wire the Order Confirmation PDF and Invoice generation routes/actions.
 
 ## Sprint 8B production screenshot cleanup
 
 Sprint 8B is based on the production Orders screenshot showing the workspace feeling embedded/iframe-like and not helping operators create or sequence order documents after contract signing.
 
-Setu Guru should now explain Orders as an execution command center with this document chain:
+Setu Guru should explain Orders as an execution command center with this document chain:
 
 1. **Quote PDF** — the commercial source document remains in Quotes.
 2. **Order confirmation** — the signed contract and locked line items become the order execution source.
@@ -94,7 +109,7 @@ Setu Guru should explain which lane is blocking the order before suggesting the 
 - Draft an evidence checklist for human review.
 - Explain the approval boundary before a user advances order execution.
 - Explain the quote PDF → order confirmation → invoice document sequence.
-- Explain that generation buttons marked planned are not yet final PDF write actions.
+- Explain that generation buttons marked coming next are not yet final PDF write actions.
 
 ## Setu Guru order action buttons
 
@@ -125,13 +140,14 @@ Use live order context first when available. If only dashboard context is availa
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the five readiness lanes and the safest next route.
 
-## Sprint 8C smoke-check checklist
+## Sprint 8D smoke-check checklist
 
 Use this checklist before the next Orders generation pass:
 
-- Does the open order detail feel like a native SETU Flow execution workspace?
-- Are generated Order Confirmation PDF and Invoice actions visible as planned routes without pretending they already generate final documents?
-- Does the document kit still point users to Quotes for the quote PDF source?
+- Is the production screen free of help-style banners and implementation language?
+- Is the open order detail compact enough to scan multiple orders?
+- Are confirm/progress, generate order PDF, generate invoice, and attach evidence visible without a long instructional panel?
+- Does the document readiness area stay short and action-oriented?
 - Does upload remain for final evidence rather than replacing the planned generation route?
 - Are human approval actions clearly marked before release, dispatch, waiver, deletion, or closeout?
 - Does Setu Guru answer from the current order context before giving generic order guidance?
