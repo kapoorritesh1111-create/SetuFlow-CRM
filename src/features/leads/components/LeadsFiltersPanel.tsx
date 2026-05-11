@@ -18,7 +18,7 @@ interface LeadsFiltersPanelProps {
   productIdFilter: string;
   onProductIdFilterChange: (value: string) => void;
   profiles: Array<{ id: string; full_name: string | null; username: string | null }>;
-  countries: Array<{ id: string; name: string }>;
+  countries: Array<{ id: string; name: string; market_id?: string | null }>;
   pipelines: Array<{ id: string; name: string }>;
   stages: Array<{ id: string; name: string }>;
   markets: Array<{ id: string; name: string }>;
@@ -46,7 +46,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function filterInputClassName() {
-  return 'h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:shadow-[0_0_0_4px_rgba(37,99,235,0.08)]';
+  return 'h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:shadow[_0_0_0_4px_rgba(37,99,235,0.08)]';
 }
 
 const LeadsFiltersPanel: React.FC<LeadsFiltersPanelProps> = ({
@@ -73,13 +73,38 @@ const LeadsFiltersPanel: React.FC<LeadsFiltersPanelProps> = ({
   onClear,
   lockedLeadType = '',
 }) => {
+  const selectedCountry = countries.find((country) => country.id === countryIdFilter) ?? null;
+  const selectedCountryMarketId = selectedCountry?.market_id ?? '';
+  const visibleCountries = marketIdFilter
+    ? countries.filter((country) => !country.market_id || country.market_id === marketIdFilter)
+    : countries;
+  const visibleMarkets = selectedCountryMarketId
+    ? markets.filter((market) => market.id === selectedCountryMarketId)
+    : markets;
+
+  function handleMarketChange(value: string) {
+    onMarketIdFilterChange(value);
+    if (value && selectedCountry?.market_id && selectedCountry.market_id !== value) {
+      onCountryIdFilterChange('');
+    }
+  }
+
+  function handleCountryChange(value: string) {
+    onCountryIdFilterChange(value);
+    const nextCountry = countries.find((country) => country.id === value);
+    if (nextCountry?.market_id && nextCountry.market_id !== marketIdFilter) {
+      onMarketIdFilterChange(nextCountry.market_id);
+    }
+  }
+
   return (
     <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
       <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Advanced filters</p>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">Use filters only when the lead list needs narrowing. Row click and Open still take you to the Lead Command Center.</p>
-          {lockedLeadType ? <p className="mt-2 text-xs font-semibold text-blue-700">This route is locked to {lockedLeadType} leads for cleaner journey separation.</p> : null}
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">Use filters when the lead list needs narrowing</p>
+          {lockedLeadType ? <p className="mt-2 text-xs font-semibold text-blue-700">This route is locked to {lockedLeadType} leads</p> : null}
+          <p className="mt-2 text-xs font-semibold text-slate-500">Country and market stay linked</p>
         </div>
         <button type="button" onClick={onClear} className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100">
           Clear filters
@@ -125,19 +150,19 @@ const LeadsFiltersPanel: React.FC<LeadsFiltersPanelProps> = ({
         </Section>
 
         <Section title="Commercial scope">
-          <FilterField label="Country">
-            <select value={countryIdFilter} onChange={(event) => onCountryIdFilterChange(event.target.value)} className={filterInputClassName()}>
-              <option value="">All countries</option>
-              {countries.map((country) => (
-                <option key={country.id} value={country.id}>{country.name}</option>
+          <FilterField label="Market">
+            <select value={marketIdFilter} onChange={(event) => handleMarketChange(event.target.value)} className={filterInputClassName()}>
+              <option value="">All markets</option>
+              {visibleMarkets.map((market) => (
+                <option key={market.id} value={market.id}>{market.name}</option>
               ))}
             </select>
           </FilterField>
-          <FilterField label="Market">
-            <select value={marketIdFilter} onChange={(event) => onMarketIdFilterChange(event.target.value)} className={filterInputClassName()}>
-              <option value="">All markets</option>
-              {markets.map((market) => (
-                <option key={market.id} value={market.id}>{market.name}</option>
+          <FilterField label="Country">
+            <select value={countryIdFilter} onChange={(event) => handleCountryChange(event.target.value)} className={filterInputClassName()}>
+              <option value="">All countries</option>
+              {visibleCountries.map((country) => (
+                <option key={country.id} value={country.id}>{country.name}</option>
               ))}
             </select>
           </FilterField>

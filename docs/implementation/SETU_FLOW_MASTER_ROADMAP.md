@@ -13,10 +13,10 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this roadmap update: `fd90a771cfecc846ade1e64cfd3dd59ea975b81d`
-- Commit message: `Clarify lead row actions`
+- Latest verified production READY commit before this roadmap update: `5b3b8a8778cf586c8fa49f3cdb322cda612b5bea`
+- Commit message: `Simplify lead filters`
 - Production deployment status: `READY`
-- Verified deployment: `dpl_J44MdwHJPj9A9zKaWLiWZnnRPcnE`
+- Verified deployment: `dpl_6StxKvp1TFBCPXVMLbbiVW3nFGMF`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
@@ -85,7 +85,7 @@ Closure verified:
 ### Sprint 7 — Lead command center cleanup
 
 Status: `ACTIVE`
-Progress: 60%
+Progress: 70%
 
 Completed Sprint 7A:
 
@@ -115,13 +115,21 @@ Completed Sprint 7D:
 - **Clear filters** remains visible in the panel header.
 - All existing filter fields and callbacks are preserved.
 
+Completed Sprint 7E:
+
+- Supabase country/market data was corrected so European countries, including Ireland and Austria, map to Europe.
+- Avanti Foods Limited default country/default market pairing was corrected from Ireland/North America to Ireland/Europe.
+- New workspace provisioning now copies country rows into the matching market by market name instead of assigning all countries to the first/fallback market.
+- Advanced lead filter panel now keeps country and market controls connected: selecting a country selects its market, and selecting a market narrows countries to that market.
+- Row click, **Open**, and **More** lead-row behavior remain unchanged.
+
 Current focus:
 
 - Reduce duplicate or competing lead action surfaces.
 - Preserve the protected quote flow: `/leads` → open lead → **Continue quote** → **Step 4 — Review** for compliance/document blockers.
 - Keep lead table/list fast to scan.
-- Keep advanced filters useful but visually calm.
-- Update Setu Guru guidance so users understand the row action hierarchy and filter policy.
+- Keep filters useful and connected to real workspace data.
+- Continue event-scoped option narrowing only after verifying the top inline filter implementation in production.
 
 ### Sprint 8 — Orders and execution readiness
 
@@ -151,17 +159,17 @@ Closure verified:
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 99.15%
+- Overall CRM readiness: 99.2%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
 - Completed Sprint 5 Quote builder and quote PDF maturity: 100%
 - Completed Sprint 6 Compliance Assist maturity: 100%
-- Active Sprint 7 Lead command center cleanup: 60%
+- Active Sprint 7 Lead command center cleanup: 70%
 - Completed Sprint 10 Import wizard and catalog onboarding maturity: 100%
-- Setu Guru intelligence readiness: 99.35%
-- UX cleanup readiness: 86%
+- Setu Guru intelligence readiness: 99.4%
+- UX cleanup readiness: 87%
 - Quote/compliance maturity: 96%
 - Product catalog maturity: 94%
 
@@ -208,7 +216,7 @@ Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and 
 
 Continue Sprint 7:
 
-1. Smoke-check Lead advanced filters after deployment.
-2. Verify all filters still narrow the lead queue correctly.
-3. Verify row click, **Open**, and **More** remain unchanged.
-4. Continue simplifying only after a production screenshot identifies the next dense lead area.
+1. Smoke-check Avanti default country/market after deployment.
+2. Verify Ireland and Austria appear under Europe.
+3. Verify advanced country/market filters stay connected.
+4. Inspect the top inline filter bar and add event-scoped option narrowing if the production implementation supports it cleanly.

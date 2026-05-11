@@ -61,6 +61,10 @@ function normalizeEmail(value: string | null | undefined) {
   return String(value ?? '').trim().toLowerCase();
 }
 
+function normalizeLookup(value: string | null | undefined) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
 async function countRows(admin: SupabaseAdmin, table: string, organizationId: string) {
   const { count } = await admin
     .from(table)
@@ -94,29 +98,44 @@ async function seedCountries(admin: SupabaseAdmin, organizationId: string, platf
   if (existingCount > 0) return 0;
   if (!fallbackMarketId) return 0;
 
+  const { data: targetMarkets, error: targetMarketError } = await admin
+    .from('markets')
+    .select('id, name')
+    .eq('organization_id', organizationId);
+  if (targetMarketError) throw targetMarketError;
+
+  const targetMarketByName = new Map<string, string>();
+  for (const market of targetMarkets ?? []) {
+    targetMarketByName.set(normalizeLookup(market.name), market.id);
+  }
+
   const { data: templateCountries, error } = await admin
     .from('countries')
-    .select('name, iso2_code, iso3_code, phone_code, sort_order, is_active, search_aliases')
+    .select('name, iso2_code, iso3_code, phone_code, sort_order, is_active, search_aliases, market:markets(name)')
     .eq('organization_id', platformOrganizationId)
     .order('sort_order', { ascending: true });
 
   if (error) throw error;
 
-  const countries = (templateCountries ?? []).map((country: any, index: number) => ({
-    organization_id: organizationId,
-    market_id: fallbackMarketId,
-    name: country.name,
-    iso2_code: country.iso2_code ?? null,
-    iso3_code: country.iso3_code ?? null,
-    phone_code: country.phone_code ?? null,
-    // Countries are assigned to the onboarding fallback market. The countries table
-    // has a unique (market_id, sort_order) constraint, so use a tenant-local
-    // sequential order instead of copying template sort_order values that may
-    // repeat across source markets.
-    sort_order: index + 1,
-    is_active: country.is_active ?? true,
-    search_aliases: country.search_aliases ?? null,
-  }));
+  const marketSortTracker = new Map<string, number>();
+  const countries = (templateCountries ?? []).map((country: any) => {
+    const templateMarketName = Array.isArray(country.market) ? country.market[0]?.name : country.market?.name;
+    const resolvedMarketId = targetMarketByName.get(normalizeLookup(templateMarketName)) ?? fallbackMarketId;
+    const nextSortOrder = (marketSortTracker.get(resolvedMarketId) ?? 0) + 1;
+    marketSortTracker.set(resolvedMarketId, nextSortOrder);
+
+    return {
+      organization_id: organizationId,
+      market_id: resolvedMarketId,
+      name: country.name,
+      iso2_code: country.iso2_code ?? null,
+      iso3_code: country.iso3_code ?? null,
+      phone_code: country.phone_code ?? null,
+      sort_order: nextSortOrder,
+      is_active: country.is_active ?? true,
+      search_aliases: country.search_aliases ?? null,
+    };
+  });
 
   if (countries.length === 0) return 0;
   const { error: insertError } = await admin.from('countries').insert(countries).throwOnError();

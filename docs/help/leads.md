@@ -48,9 +48,18 @@ Current filter behavior:
 - Filters are grouped into **Journey**, **Pipeline**, and **Commercial scope**.
 - Route-locked buyer/supplier pages show one route-lock note instead of repeated helper text under every field.
 - **Clear filters** stays visible in the panel header.
+- Country and market filters stay connected:
+  - selecting a country also selects that country's market;
+  - selecting a market narrows the country list to countries in that market.
 - Filtering does not change quote, compliance, product cleanup, or lead workflow behavior.
 
 Setu Guru should tell users to use filters only when they need to narrow the lead queue by owner, pipeline, stage, country, market, or product. For normal lead work, open the lead row first.
+
+## Country and market data policy
+
+Countries must map to the correct workspace market. Ireland, Austria, and other European countries should map to Europe, not North America. When a new workspace is provisioned, copied country rows should preserve the source country market by matching the market name in the new workspace.
+
+If a country appears under the wrong market, Setu Guru should recommend checking the country master row and the organization default country/default market pairing before changing lead data.
 
 ## Setu Guru answer policy
 

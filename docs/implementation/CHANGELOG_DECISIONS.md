@@ -4,6 +4,42 @@ This log records important implementation decisions so future chats and passes c
 
 ---
 
+## 2026-05-10 — Sprint 7E Connected lead filters and country-market correction
+
+Decision:
+
+- Sprint 7E addressed the production screenshot showing dense filters and a country/market mismatch.
+- Supabase production data was corrected so European country rows map to the Europe market.
+- Avanti Foods Limited default country/default market pairing was corrected from Ireland/North America to Ireland/Europe.
+- A tracked SQL migration was added for the country-market correction.
+- New workspace provisioning now copies country rows into the matching market by market name instead of assigning all copied countries to the first/fallback market.
+- Advanced lead filters now keep Country and Market connected:
+  - selecting a country also selects that country's market;
+  - selecting a market narrows the country dropdown to countries in that market;
+  - changing the market clears an incompatible selected country.
+- Row click, **Open**, and **More** lead-row behavior remain unchanged.
+- Top inline event-scoped option narrowing is intentionally left for the next pass because the screenshot shows that surface separately from the advanced panel and it should be inspected after this deployment.
+
+Files:
+
+- `src/features/client-onboarding/server/provisioning.ts`
+- `src/features/leads/components/LeadsFiltersPanel.tsx`
+- `mitigation/supabase/sql/130_sprint_7e_correct_country_market_mappings.sql`
+- `docs/help/leads.md`
+- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
+- `docs/implementation/CHANGELOG_DECISIONS.md`
+
+Protected:
+
+- No quote PDF/share/send behavior was changed.
+- No quote Review compliance behavior was changed.
+- No Catalog Admin/import/product cleanup behavior was changed.
+- No lead row **Open / More** behavior was changed.
+- No schema shape migration was introduced; this pass applied a data correction only.
+- No `npm ci` was run.
+
+---
+
 ## 2026-05-10 — Sprint 7D Advanced lead filter density cleanup
 
 Decision:
@@ -15,22 +51,6 @@ Decision:
 - Every existing filter field and callback is preserved: lead type, owner, pipeline, stage, country, market, and product.
 - Row click, **Open**, and **More** lead-row behavior remain unchanged from Sprint 7C.
 - Setu Guru lead help now explains when to use filters vs opening the lead row.
-
-Files:
-
-- `src/features/leads/components/LeadsFiltersPanel.tsx`
-- `docs/help/leads.md`
-- `docs/implementation/SETU_FLOW_MASTER_ROADMAP.md`
-- `docs/implementation/CHANGELOG_DECISIONS.md`
-
-Protected:
-
-- No quote PDF/share/send behavior was changed.
-- No quote Review compliance behavior was changed.
-- No Catalog Admin/import/product cleanup behavior was changed.
-- No lead filter callback or data behavior was intentionally changed.
-- No schema migration was introduced.
-- No `npm ci` was run.
 
 ---
 
