@@ -13,10 +13,10 @@ Supabase project: `sjzfzloggabsmcuxktnl`
 
 Use the latest Vercel READY production commit as the working baseline unless Ritesh explicitly locks a different commit.
 
-- Latest verified production READY commit before this roadmap update: `7089f7a9cf0220fe8a5ae2bebbe58c9547308bce`
-- Commit message: `Clean up lead row actions`
+- Latest verified production READY commit before this roadmap update: `fd90a771cfecc846ade1e64cfd3dd59ea975b81d`
+- Commit message: `Clarify lead row actions`
 - Production deployment status: `READY`
-- Verified deployment: `dpl_vSBU6HQmdZ2Q1K7kUTyiNP8WdfKt`
+- Verified deployment: `dpl_J44MdwHJPj9A9zKaWLiWZnnRPcnE`
 
 Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
@@ -85,7 +85,7 @@ Closure verified:
 ### Sprint 7 — Lead command center cleanup
 
 Status: `ACTIVE`
-Progress: 50%
+Progress: 60%
 
 Completed Sprint 7A:
 
@@ -108,12 +108,20 @@ Completed Sprint 7C:
 - Action column header now says **Open / More**.
 - Blocked row pill shortened to **Blocked** to reduce row density without changing compliance/source-of-truth behavior.
 
+Completed Sprint 7D:
+
+- Advanced lead filters panel simplified into three calm sections: **Journey**, **Pipeline**, and **Commercial scope**.
+- Repeated route-lock helper copy under multiple fields was replaced with one clear route-lock note.
+- **Clear filters** remains visible in the panel header.
+- All existing filter fields and callbacks are preserved.
+
 Current focus:
 
 - Reduce duplicate or competing lead action surfaces.
 - Preserve the protected quote flow: `/leads` → open lead → **Continue quote** → **Step 4 — Review** for compliance/document blockers.
 - Keep lead table/list fast to scan.
-- Update Setu Guru guidance so users understand the row action hierarchy.
+- Keep advanced filters useful but visually calm.
+- Update Setu Guru guidance so users understand the row action hierarchy and filter policy.
 
 ### Sprint 8 — Orders and execution readiness
 
@@ -143,17 +151,17 @@ Closure verified:
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 99.1%
+- Overall CRM readiness: 99.15%
 - Completed Sprint 1 anti-drift/control: 100%
 - Completed Sprint 2 Setu Guru knowledge foundation: 100%
 - Completed Sprint 3 Setu Guru routing and live context: 100%
 - Completed Sprint 4 Product catalog UX maturity: 100%
 - Completed Sprint 5 Quote builder and quote PDF maturity: 100%
 - Completed Sprint 6 Compliance Assist maturity: 100%
-- Active Sprint 7 Lead command center cleanup: 50%
+- Active Sprint 7 Lead command center cleanup: 60%
 - Completed Sprint 10 Import wizard and catalog onboarding maturity: 100%
-- Setu Guru intelligence readiness: 99.3%
-- UX cleanup readiness: 85%
+- Setu Guru intelligence readiness: 99.35%
+- UX cleanup readiness: 86%
 - Quote/compliance maturity: 96%
 - Product catalog maturity: 94%
 
@@ -200,7 +208,7 @@ Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and 
 
 Continue Sprint 7:
 
-1. Smoke-check Lead table after deployment.
-2. Verify row click and **Open** both open the Lead Command Center.
-3. Verify **More** contains **Continue quote**, **Edit lead**, and **Delete lead**.
+1. Smoke-check Lead advanced filters after deployment.
+2. Verify all filters still narrow the lead queue correctly.
+3. Verify row click, **Open**, and **More** remain unchanged.
 4. Continue simplifying only after a production screenshot identifies the next dense lead area.

@@ -33,11 +33,24 @@ Current row behavior:
 - Secondary actions live in **More**:
   - Continue quote;
   - Edit lead;
-  - Delete lead.
-- Delete remains a deliberate secondary action and should not appear as a competing inline CTA.
+  - Lead removal action.
+- Removal remains a deliberate secondary action and should not appear as a competing inline CTA.
 - The action column header is **Open / More** so users understand the row model quickly.
 
 Setu Guru should tell users to click the lead row or **Open** for the full Lead Command Center. Use **More → Continue quote** only when the user wants to jump straight from the list into quote work.
+
+## Sprint 7 advanced filter policy
+
+Advanced filters should help users narrow the queue without competing with lead-row actions.
+
+Current filter behavior:
+
+- Filters are grouped into **Journey**, **Pipeline**, and **Commercial scope**.
+- Route-locked buyer/supplier pages show one route-lock note instead of repeated helper text under every field.
+- **Clear filters** stays visible in the panel header.
+- Filtering does not change quote, compliance, product cleanup, or lead workflow behavior.
+
+Setu Guru should tell users to use filters only when they need to narrow the lead queue by owner, pipeline, stage, country, market, or product. For normal lead work, open the lead row first.
 
 ## Setu Guru answer policy
 
@@ -62,23 +75,13 @@ Setu Guru should help answer:
 - Follow-up date is overdue or missing.
 - Supplier or buyer type is unclear.
 
-## Data sources to check
-
-- Leads and lead type.
-- Lead product interests and linked products.
-- Quotes for the active lead.
-- Countries, markets, and default currency.
-- Lead compliance items and documents.
-- Document requirement rules scoped to quote send, general, order, or dispatch.
-- Tasks and latest activity where available.
-
 ## Allowed guidance
 
 Setu Guru may suggest opening the lead, adding product interest, reviewing quote prep, checking compliance evidence, opening the active quote Review workflow, or creating a task. It may explain blockers and routes.
 
 ## Human approval rules
 
-Setu Guru must not change lead status, approve price changes, waive compliance, send quotes, mark leads won/lost, delete leads, or write back field changes without explicit user approval and app permission.
+Setu Guru must not change lead status, approve price changes, waive compliance, send quotes, mark leads won/lost, remove lead records, or write back field changes without explicit user approval and app permission.
 
 ## Suggested prompts
 
