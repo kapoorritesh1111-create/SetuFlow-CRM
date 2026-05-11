@@ -8,6 +8,21 @@ Last updated: 2026-05-11
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, and shipment progress. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8F Orders shell de-duplication and row-click open
+
+Sprint 8F removes the duplicated inner Orders Desk shell treatment and adds order row/header click behavior without breaking existing CTAs.
+
+Production UI principles for Sprint 8F:
+
+1. Use only the global Orders / Execution header and global All / Buyers / Suppliers mode switch.
+2. Hide the duplicate inner Orders Desk strip and inner mode/export controls.
+3. Keep each order card as the summary owner for company, amount, timeline, and readiness status.
+4. Clicking the order row/header should open the order through the existing `openOrderId` route.
+5. Buttons and CTAs must remain interactive and must not be swallowed by row-click behavior.
+6. Existing actions still own their original routes or server actions: View quote, Close/Open order, Lead record, Confirm order, Generate order PDF, Generate invoice, Attach evidence.
+
+Setu Guru should describe Orders as a list/detail workspace: the row opens context, the drawer acts, and explicit buttons keep their original purpose.
+
 ## Sprint 8E de-duplication and compact row-click workspace
 
 Sprint 8E addresses the production screenshot feedback that Orders still repeated the workflow and execution state inside the open order. The open order drawer should not repeat timeline/readiness rows already visible on the card.
@@ -154,15 +169,15 @@ Use live order context first when available. If only dashboard context is availa
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the five readiness lanes and the safest next route.
 
-## Sprint 8E smoke-check checklist
+## Sprint 8F smoke-check checklist
 
-Use this checklist before the next Orders page-shell pass:
+Use this checklist before the next Orders pass:
 
-- Is the duplicated workflow/timeline removed from the open order detail?
-- Does the order card summarize while the drawer focuses on actions?
-- Is the expanded detail short enough to keep additional orders visible?
-- Does the page still have a duplicate inner All/Buyers/Suppliers control that needs removal next?
-- Does clicking the order card/header open the order, or does this still need page-shell wiring?
+- Is the duplicate inner Orders Desk strip hidden?
+- Is there only one visible All/Buyers/Suppliers switch?
+- Does clicking the order row/header open the existing `openOrderId` route?
+- Do explicit CTAs still work independently of row click behavior?
+- Does the open drawer avoid repeating the timeline/readiness summary?
 - Are quote/compliance/catalog/lead protected flows untouched?
 
 ## Suggested prompts
