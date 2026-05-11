@@ -75,50 +75,36 @@ Closure verified: quote-review compliance fixes stay in the active quote Review 
 Status: `ACTIVE`
 Progress: 76%
 
-Completed Sprint 7A:
+Completed Sprint 7A through 7F:
 
 - Lead Command Center sticky action bar now has one clear commercial primary action: **Continue quote / Create quote**.
 - Follow-up planning and lead editing are secondary actions.
 - Won/Lost moved into an intentional closeout/outcome area.
-
-Completed Sprint 7B:
-
 - Lead list row action density reduced.
-- The row itself opens the Lead Command Center.
-- The visible row CTA is **Open**.
-- Secondary actions moved to the compact **More** menu.
-
-Completed Sprint 7C:
-
-- Overflow control is labeled **More**.
-- Action column header says **Open / More**.
-- Blocked row pill shortened to **Blocked**.
-
-Completed Sprint 7D:
-
-- Advanced lead filters panel simplified into **Journey**, **Pipeline**, and **Commercial scope**.
-- Repeated route-lock helper copy replaced with one clear route-lock note.
-
-Completed Sprint 7E:
-
+- Row click, **Open**, and compact **More** are the protected row model.
+- Advanced lead filters are grouped into **Journey**, **Pipeline**, and **Commercial scope**.
 - European country/market data corrected, including Ireland and Austria.
-- Avanti Foods Limited default country/default market pairing corrected to Ireland/Europe.
-- New workspace provisioning now preserves country market by matching market name.
-- Advanced country and market filters now stay connected.
+- Advanced country and market filters stay connected.
+- Top inline lead filters respond to **Source Event** selection and narrow owner, stage, country, market, and product options to values present in the event's lead set.
 
-Completed Sprint 7F:
+Current Sprint 7 focus:
 
-- Top inline lead filters now respond to **Source Event** selection.
-- Selecting a source event narrows owner, stage, country, market, and product options to values present in that event's lead set.
-- Clearing Source Event restores the full option lists.
-- Incompatible selected inline options are cleared when the selected event does not contain them.
-- This was implemented as a small mounted helper to avoid rewriting the large lead workspace and to protect row/action behavior.
+- Smoke-check top inline Source Event filter behavior in production.
+- Confirm Source Event narrows only values captured in that event.
+- Continue the next screenshot-based cleanup only after the current surface is confirmed.
 
-Current focus:
+### Dashboard Map UX — Country auto-focus
 
-- Smoke-check the production top inline filter bar after deployment.
-- Confirm Source Event narrows only the values captured in that event.
-- Continue the next screenshot-based cleanup only after that surface is confirmed.
+Status: `DONE`
+Progress: 100%
+
+Completed:
+
+- Dashboard world coverage map now auto-focuses/zooms when a country filter is selected.
+- Clearing the country filter resets the map to the full world view.
+- Manual zoom, pan, and Reset controls remain available after auto-focus.
+- Selected country highlight remains intact.
+- Setu Guru dashboard context and dashboard help now explain country focus and reset behavior.
 
 ### Sprint 8 — Orders and execution readiness
 
@@ -139,10 +125,11 @@ Progress: 100%
 
 ## 4. Readiness tracking
 
-- Overall CRM readiness: 99.3%
+- Overall CRM readiness: 99.35%
 - Active Sprint 7 Lead command center cleanup: 76%
-- Setu Guru intelligence readiness: 99.5%
-- UX cleanup readiness: 88%
+- Dashboard map UX readiness: 100%
+- Setu Guru intelligence readiness: 99.55%
+- UX cleanup readiness: 89%
 - Quote/compliance maturity: 96%
 - Product catalog maturity: 94%
 
@@ -180,16 +167,15 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and Sprint 10 are 100% complete. Sprint 7 Lead command center cleanup is active. Preserve quote continuation, quote PDF/share/send, quote-review compliance, catalog import/product cleanup, and lead row Open/More behavior.
+Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, and Sprint 10 are 100% complete. Sprint 7 Lead command center cleanup is active. Dashboard map country auto-focus is complete. Preserve quote continuation, quote PDF/share/send, quote-review compliance, catalog import/product cleanup, and lead row Open/More behavior.
 ```
 
 ---
 
 ## 7. Next recommended pass
 
-Continue Sprint 7:
-
-1. Smoke-check top inline Source Event filter behavior in production.
-2. Verify event-scoped owner, stage, country, market, and product options.
-3. Confirm clearing Source Event restores all options.
-4. Continue only the next visibly dense lead area from screenshot review.
+1. Smoke-check dashboard country filter auto-focus in production.
+2. Verify selecting a country zooms/focuses the map to that country.
+3. Verify clearing the country filter resets to world view.
+4. Verify manual zoom, pan, and Reset remain usable after auto-focus.
+5. Continue Sprint 7 only after dashboard map behavior is confirmed.
