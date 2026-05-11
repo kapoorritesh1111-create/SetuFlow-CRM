@@ -56,6 +56,20 @@ function applyLeadsFilterStability() {
   }
 }
 
+function isLeadsControlTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  if (!target.closest('.mobile-premium-leads, #app-content')) return false;
+  const control = target.closest('input, select, button, a');
+  if (!(control instanceof HTMLElement)) return false;
+  const label = `${control.textContent ?? ''} ${control.getAttribute('aria-label') ?? ''} ${control.getAttribute('placeholder') ?? ''}`;
+  const href = control instanceof HTMLAnchorElement ? control.getAttribute('href') ?? '' : '';
+  return label.includes('Search') || label.includes('Buyers') || label.includes('Suppliers') || label.includes('Clear all') || href.startsWith('/leads');
+}
+
+function restoreScrollPosition(scrollY: number) {
+  window.scrollTo({ top: scrollY, left: window.scrollX, behavior: 'instant' });
+}
+
 export function LeadsFilterStability() {
   const pathname = usePathname();
 
@@ -83,6 +97,33 @@ export function LeadsFilterStability() {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('resize', schedule);
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!pathname?.startsWith('/leads')) return;
+
+    let restoreTimer = 0;
+    const holdViewport = (event: Event) => {
+      if (!isLeadsControlTarget(event.target)) return;
+      const y = window.scrollY;
+      window.clearTimeout(restoreTimer);
+      restoreScrollPosition(y);
+      requestAnimationFrame(() => restoreScrollPosition(y));
+      restoreTimer = window.setTimeout(() => restoreScrollPosition(y), 120);
+      window.setTimeout(() => restoreScrollPosition(y), 260);
+      window.setTimeout(() => restoreScrollPosition(y), 520);
+    };
+
+    document.addEventListener('input', holdViewport, true);
+    document.addEventListener('change', holdViewport, true);
+    document.addEventListener('click', holdViewport, true);
+
+    return () => {
+      window.clearTimeout(restoreTimer);
+      document.removeEventListener('input', holdViewport, true);
+      document.removeEventListener('change', holdViewport, true);
+      document.removeEventListener('click', holdViewport, true);
     };
   }, [pathname]);
 
