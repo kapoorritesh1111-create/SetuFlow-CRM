@@ -43,17 +43,23 @@ const DOCUMENT_WORKFLOW = [
   {
     key: 'quote',
     label: 'Quote PDF',
+    status: 'Available in Quotes',
+    actionLabel: 'Open quote source',
     description: 'Commercial offer already lives in Quotes. Use it as the buyer-facing source document.',
   },
   {
     key: 'order',
     label: 'Order confirmation',
-    description: 'Use the signed contract and locked line items as the order execution source.',
+    status: 'Generator planned',
+    actionLabel: 'Generate order PDF',
+    description: 'Next route will create an order confirmation PDF from the signed contract and locked line items.',
   },
   {
     key: 'invoice',
     label: 'Invoice',
-    description: 'Create after release/dispatch posture is clear so invoice evidence matches execution state.',
+    status: 'Generator planned',
+    actionLabel: 'Generate invoice',
+    description: 'Next route will create an invoice after release/dispatch posture is clear so billing matches execution state.',
   },
 ];
 
@@ -117,15 +123,28 @@ export function OrderDetailPanel({
       {/* ── PANEL HEADER ─────────────────────────────────────────────────────── */}
       <div style={{ padding: '18px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #dbe7f3', background: 'white' }}>
         <div>
-          <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', color: '#0c7fff', marginBottom: '3px' }}>Order command center</div>
+          <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', color: '#0c7fff', marginBottom: '3px' }}>Native order workspace</div>
           <div style={{ fontSize: '17px', fontWeight: 800, color: '#0b2e4a' }}>{companyName}</div>
           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>Updated {fmt(updatedAt)} · {pricingBasisLabel} · {currency ?? 'USD'} {dealValue != null ? Number(dealValue).toLocaleString() : '—'}</div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <a href={`#${documentKitAnchor}`} style={{ padding: '7px 14px', borderRadius: '999px', border: '1px solid #bfdbfe', background: '#eff6ff', fontSize: '11px', fontWeight: 800, color: '#1d4ed8', textDecoration: 'none' }}>Document kit</a>
-          <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${quoteId}`} style={{ padding: '7px 14px', borderRadius: '999px', border: '1px solid #dbe7f3', background: 'white', fontSize: '11px', fontWeight: 700, color: '#334155', textDecoration: 'none' }}>Quote record</Link>
+          <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${quoteId}`} style={{ padding: '7px 14px', borderRadius: '999px', border: '1px solid #dbe7f3', background: 'white', fontSize: '11px', fontWeight: 700, color: '#334155', textDecoration: 'none' }}>Quote source</Link>
           <Link href={`${PRODUCT_ROUTES.app.leads}?leadId=${leadId}&view=cc`} style={{ padding: '7px 14px', borderRadius: '999px', border: '1px solid #0b2e4a', background: '#0b2e4a', fontSize: '11px', fontWeight: 800, color: 'white', textDecoration: 'none' }}>Lead record →</Link>
           <Link href={`${PRODUCT_ROUTES.app.orders}?mode=buyers`} style={{ padding: '7px 14px', borderRadius: '999px', border: '1px solid #dbe7f3', background: '#f8fafc', fontSize: '11px', fontWeight: 700, color: '#475569', textDecoration: 'none' }}>Back to queue</Link>
+        </div>
+      </div>
+
+      <div style={{ padding: '13px 20px', borderBottom: '1px solid #dbe7f3', background: 'linear-gradient(90deg,#0b2e4a 0%,#123d63 55%,#1f487c 100%)', color: 'white' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '.14em', textTransform: 'uppercase', color: '#bfdbfe', marginBottom: '3px' }}>Execution control lane</div>
+            <div style={{ fontSize: '13px', fontWeight: 800 }}>This order is managed inside SETU Flow, not as an embedded file frame.</div>
+            <div style={{ fontSize: '11px', color: '#dbeafe', marginTop: '3px' }}>Use the document kit for generated order confirmation / invoice planning, then attach final signed evidence when ready.</div>
+          </div>
+          <span style={{ padding: '6px 10px', borderRadius: '999px', border: '1px solid rgba(255,255,255,.24)', background: dispatchReady ? 'rgba(16,185,129,.22)' : 'rgba(255,255,255,.12)', fontSize: '11px', fontWeight: 800, color: 'white' }}>
+            {dispatchReady ? 'Ready for next execution step' : 'Readiness review active'}
+          </span>
         </div>
       </div>
 
@@ -220,9 +239,9 @@ export function OrderDetailPanel({
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px', marginBottom: '12px', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>Execution document kit</div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0b2e4a' }}>Quote → order confirmation → invoice</div>
-            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px', maxWidth: '740px' }}>
-              Use the quote record as the commercial source, this order as the execution source, and upload only final evidence that supports release, dispatch, or invoicing.
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0b2e4a' }}>Quote PDF → generated order confirmation → invoice</div>
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px', maxWidth: '760px' }}>
+              This pass plans the generated Order Confirmation PDF and Invoice actions as first-class order routes. Until those generators are wired, attach signed/final evidence here and keep the quote PDF in Quotes.
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -236,10 +255,15 @@ export function OrderDetailPanel({
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '7px' }}>
                 <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a' }}>{index + 1}. {item.label}</div>
                 <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: index === 0 ? '#2563eb' : index === 1 ? '#059669' : '#7c3aed', background: index === 0 ? '#eff6ff' : index === 1 ? '#ecfdf5' : '#f5f3ff', borderRadius: '999px', padding: '3px 8px' }}>
-                  {index === 0 ? 'Quote' : index === 1 ? 'Order' : 'Invoice'}
+                  {item.status}
                 </span>
               </div>
-              <div style={{ fontSize: '11px', lineHeight: 1.55, color: '#64748b' }}>{item.description}</div>
+              <div style={{ fontSize: '11px', lineHeight: 1.55, color: '#64748b', minHeight: '50px' }}>{item.description}</div>
+              {item.key === 'quote' ? (
+                <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${quoteId}`} style={{ display: 'inline-flex', marginTop: '10px', padding: '7px 11px', borderRadius: '999px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: '10px', fontWeight: 900, textDecoration: 'none' }}>{item.actionLabel}</Link>
+              ) : (
+                <span title="Generator route is planned for the next Orders document pass" style={{ display: 'inline-flex', marginTop: '10px', padding: '7px 11px', borderRadius: '999px', background: '#f8fafc', color: '#64748b', border: '1px solid #dbe7f3', fontSize: '10px', fontWeight: 900 }}>{item.actionLabel} · planned</span>
+              )}
             </div>
           ))}
         </div>
