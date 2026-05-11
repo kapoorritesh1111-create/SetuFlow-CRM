@@ -36,30 +36,6 @@ const STAGE_META: Record<StageKey, { action: string }> = {
   completed: { action: '' },
 };
 
-const DOCUMENT_WORKFLOW = [
-  {
-    key: 'quote',
-    label: 'Quote PDF',
-    status: 'Ready',
-    actionLabel: 'Open quote',
-    description: 'Commercial source document.',
-  },
-  {
-    key: 'order',
-    label: 'Order confirmation',
-    status: 'Coming next',
-    actionLabel: 'Generate order PDF',
-    description: 'From signed contract and locked order lines.',
-  },
-  {
-    key: 'invoice',
-    label: 'Invoice',
-    status: 'Coming next',
-    actionLabel: 'Generate invoice',
-    description: 'After release or dispatch approval.',
-  },
-];
-
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
@@ -107,6 +83,40 @@ export function OrderDetailPanel({
   const isSigned = Boolean(contractSignedAt) || ['signed', 'active', 'completed'].includes(String(executionState).toLowerCase());
   const isLocked = ['accepted_locked', 'contract_locked', 'locked'].includes(String(commercialLockState ?? '').toLowerCase());
   const documentKitAnchor = `order-doc-kit-${contractId ?? quoteId}`;
+  const orderPdfHref = contractId ? `/api/orders/${contractId}/order-confirmation/pdf` : `#${documentKitAnchor}`;
+  const invoicePdfHref = contractId ? `/api/orders/${contractId}/invoice/pdf` : `#${documentKitAnchor}`;
+  const documentWorkflow = [
+    {
+      key: 'quote',
+      label: 'Quote PDF',
+      status: 'Ready',
+      actionLabel: 'Open quote',
+      description: 'Commercial source document.',
+      href: `${PRODUCT_ROUTES.app.quotes}?quoteId=${quoteId}`,
+      tone: 'green' as const,
+      linkTone: 'blue' as const,
+    },
+    {
+      key: 'order',
+      label: 'Order confirmation',
+      status: contractId ? 'Ready to generate' : 'Contract needed',
+      actionLabel: 'Generate order PDF',
+      description: 'From signed contract and locked order lines.',
+      href: orderPdfHref,
+      tone: contractId ? 'blue' as const : 'amber' as const,
+      linkTone: contractId ? 'blue' as const : 'white' as const,
+    },
+    {
+      key: 'invoice',
+      label: 'Invoice',
+      status: contractId ? 'Ready to generate' : 'Contract needed',
+      actionLabel: 'Generate invoice',
+      description: 'After release or dispatch approval.',
+      href: invoicePdfHref,
+      tone: contractId ? 'blue' as const : 'amber' as const,
+      linkTone: contractId ? 'blue' as const : 'white' as const,
+    },
+  ];
 
   const pill = (text: string, tone: 'green' | 'blue' | 'slate' | 'amber' | 'red' = 'slate') => {
     const styles = {
@@ -169,8 +179,8 @@ export function OrderDetailPanel({
         ) : (
           pill('Contract needed', 'amber')
         )}
-        <a href={`#${documentKitAnchor}`} style={buttonStyle('blue')}>Generate order PDF</a>
-        <a href={`#${documentKitAnchor}`} style={buttonStyle('blue')}>Generate invoice</a>
+        <a href={orderPdfHref} target={contractId ? '_blank' : undefined} rel={contractId ? 'noreferrer' : undefined} style={buttonStyle('blue')}>Generate order PDF</a>
+        <a href={invoicePdfHref} target={contractId ? '_blank' : undefined} rel={contractId ? 'noreferrer' : undefined} style={buttonStyle('blue')}>Generate invoice</a>
         <a href="#order-upload-document" style={buttonStyle('white')}>Attach evidence</a>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {pill(isLocked ? 'Commercial locked' : 'Commercial pending', isLocked ? 'green' : 'amber')}
@@ -202,18 +212,14 @@ export function OrderDetailPanel({
           {pill('Quote → Order → Invoice', 'blue')}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px' }}>
-          {DOCUMENT_WORKFLOW.map((item, index) => (
+          {documentWorkflow.map((item, index) => (
             <div key={item.key} style={{ border: '1px solid #dbe7f3', background: '#f8fafc', borderRadius: '12px', padding: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
                 <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a' }}>{index + 1}. {item.label}</div>
-                {pill(item.status, item.key === 'quote' ? 'green' : 'slate')}
+                {pill(item.status, item.tone)}
               </div>
               <div style={{ fontSize: '10px', lineHeight: 1.35, color: '#64748b', minHeight: '28px' }}>{item.description}</div>
-              {item.key === 'quote' ? (
-                <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${quoteId}`} style={{ ...buttonStyle('blue'), display: 'inline-flex', marginTop: '8px', padding: '6px 10px', fontSize: '10px' }}>{item.actionLabel}</Link>
-              ) : (
-                <span style={{ ...buttonStyle('white'), display: 'inline-flex', marginTop: '8px', padding: '6px 10px', fontSize: '10px', cursor: 'default' }}>{item.actionLabel} · coming next</span>
-              )}
+              <a href={item.href} target={item.key === 'quote' || !contractId ? undefined : '_blank'} rel={item.key === 'quote' || !contractId ? undefined : 'noreferrer'} style={{ ...buttonStyle(item.linkTone), display: 'inline-flex', marginTop: '8px', padding: '6px 10px', fontSize: '10px' }}>{item.actionLabel}</a>
             </div>
           ))}
         </div>
