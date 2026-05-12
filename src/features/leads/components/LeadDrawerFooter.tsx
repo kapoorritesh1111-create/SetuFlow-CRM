@@ -1,6 +1,5 @@
 "use client";
 
-import React from 'react';
 import { DrawerActionBar } from '@/components/RightDrawer';
 
 type WizardFooterMeta = {
@@ -28,40 +27,23 @@ interface LeadDrawerFooterProps {
   quickScanStatus?: { tone: 'idle' | 'loading' | 'success' | 'error'; message: string };
 }
 
-function dispatchLeadCaptureSubmit(event: React.MouseEvent<HTMLButtonElement>, formId?: string) {
-  const form = formId
-    ? (document.getElementById(formId) as HTMLFormElement | null)
-    : event.currentTarget.closest('form');
-
-  if (!form || form.dataset.leadContactValidation !== 'app-owned') return;
-
-  // Quick Add Lead owns validation in React/server code. When browser-native
-  // validation has been relaxed for the Email OR Phone OR WhatsApp rule, make
-  // sure the footer button still sends the event through the app submit handler.
-  event.preventDefault();
-  const submitted = form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-  if (submitted && typeof form.requestSubmit === 'function') {
-    // If no React handler cancelled the submit event, fall back to requestSubmit.
-    // This preserves normal form behavior for future forms using the same footer.
-    form.requestSubmit();
-  }
-}
-
-export default function LeadDrawerFooter({
-  error,
-  success,
-  isQuickMode,
-  isEditingExistingLead,
-  isPending,
-  onCancel,
-  onCreateQuote,
-  formId,
-  wizard,
-  disableSubmit = false,
-  submitLabel,
-  quickScanStatus,
-}: LeadDrawerFooterProps) {
+export default function LeadDrawerFooter(props: LeadDrawerFooterProps) {
+  const {
+    error,
+    success,
+    isQuickMode,
+    isEditingExistingLead,
+    isPending,
+    onCancel,
+    onCreateQuote,
+    formId,
+    wizard,
+    disableSubmit = false,
+    submitLabel,
+    quickScanStatus,
+  } = props;
   const isFinalStep = wizard ? wizard.activeStepIndex === wizard.totalSteps - 1 : true;
+  const label = isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : submitLabel ?? (isQuickMode ? '✓ Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead');
 
   return (
     <div className="space-y-3">
@@ -70,92 +52,32 @@ export default function LeadDrawerFooter({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Lead wizard</p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">
-                Step {wizard.activeStepIndex + 1} of {wizard.totalSteps}: {wizard.activeStepTitle}
-              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">Step {wizard.activeStepIndex + 1} of {wizard.totalSteps}: {wizard.activeStepTitle}</p>
             </div>
             <div className="flex min-w-[132px] items-center gap-2">
               {Array.from({ length: wizard.totalSteps }).map((_, index) => (
-                <span
-                  key={index}
-                  className={[
-                    'h-2 flex-1 rounded-full',
-                    index <= wizard.activeStepIndex ? 'bg-slate-900' : 'bg-slate-200',
-                  ].join(' ')}
-                />
+                <span key={index} className={['h-2 flex-1 rounded-full', index <= wizard.activeStepIndex ? 'bg-slate-900' : 'bg-slate-200'].join(' ')} />
               ))}
             </div>
           </div>
         </div>
       ) : null}
       {quickScanStatus?.tone === 'loading' ? (
-        <div
-          className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800"
-          aria-live="assertive"
-          role="status"
-        >
-          Reading card…
-          <span className="mt-1 block text-xs font-medium text-sky-700">Filling contact fields…</span>
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800" aria-live="assertive" role="status">
+          Reading card…<span className="mt-1 block text-xs font-medium text-sky-700">Filling contact fields…</span>
         </div>
       ) : null}
       {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
       {success && !quickScanStatus?.message ? <p className="text-sm font-medium text-emerald-600">{success}</p> : null}
-      <DrawerActionBar
-        title={isQuickMode ? 'Lead capture' : 'Lead workflow'}
-        description={
-          isFinalStep
-            ? isQuickMode
-              ? 'Review the details, then save this lead.'
-              : 'Save changes and return to the list.'
-            : 'Continue to the next section.'
-        }
-      >
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-        >
-          Cancel
-        </button>
-        {wizard && wizard.canGoBack ? (
-          <button
-            type="button"
-            onClick={wizard.onBack}
-            disabled={isPending}
-            className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Previous step
-          </button>
-        ) : null}
+      <DrawerActionBar title={isQuickMode ? 'Lead capture' : 'Lead workflow'} description={isFinalStep ? (isQuickMode ? 'Review the details, then save this lead.' : 'Save changes and return to the list.') : 'Continue to the next section.'}>
+        <button type="button" onClick={onCancel} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+        {wizard && wizard.canGoBack ? <button type="button" onClick={wizard.onBack} disabled={isPending} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Previous step</button> : null}
         {wizard && !isFinalStep ? (
-          <button
-            type="button"
-            onClick={wizard.onNext}
-            disabled={!wizard.canGoNext || isPending}
-            className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-          >
-            Continue
-          </button>
+          <button type="button" onClick={wizard.onNext} disabled={!wizard.canGoNext || isPending} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">Continue</button>
         ) : (
-          <button
-            type="submit"
-            form={formId}
-            disabled={isPending || disableSubmit}
-            onClick={(event) => dispatchLeadCaptureSubmit(event, formId)}
-            className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-          >
-            {isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : submitLabel ?? (isQuickMode ? '✓ Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead')}
-          </button>
+          <button type="submit" form={formId} disabled={isPending || disableSubmit} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{label}</button>
         )}
-        {isEditingExistingLead && !isQuickMode && isFinalStep && onCreateQuote ? (
-          <button
-            type="button"
-            onClick={onCreateQuote}
-            className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-          >
-            Create Quote
-          </button>
-        ) : null}
+        {isEditingExistingLead && !isQuickMode && isFinalStep && onCreateQuote ? <button type="button" onClick={onCreateQuote} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Create Quote</button> : null}
       </DrawerActionBar>
     </div>
   );
