@@ -3,6 +3,7 @@ import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
 import { LeadEventFilterNarrower } from '@/features/leads/components/lead-event-filter-narrower';
+import { LeadCaptureValidationGuard } from '@/features/leads/components/lead-capture-validation-guard';
 import { QuoteReviewInlineComplianceFix } from '@/features/leads/components/quote-review-inline-compliance-fix';
 import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -83,6 +84,7 @@ export default async function LeadsPage({
 
   return (
     <div className="space-y-4">
+      <LeadCaptureValidationGuard />
       <div className="md:hidden">
         {quickLeadEnabled ? (
           <MobileBusinessCardScanner
