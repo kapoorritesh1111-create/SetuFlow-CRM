@@ -8,6 +8,30 @@ Last updated: 2026-05-12
 
 Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, shipment progress, and order closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
 
+## Sprint 8S order document gates and send tracking
+
+Sprint 8S adds the first structured order-document send gate on top of the Sprint 8R stage shell.
+
+New behavior:
+
+1. Order document send state is persisted in `order_documents`.
+2. Send activity is recorded in `order_stage_events`.
+3. The stage panel now includes **Send tracked** after Prepare, Previewed, and Approve controls.
+4. The supported first-document types are:
+   - `order_confirmation` for regional orders.
+   - `proforma_invoice` for export orders.
+   - `dispatch_invoice` for later dispatch invoice work.
+5. Sending records channel, recipient, note, source quote ID, and source quote version ID in the document snapshot.
+6. If no current document tracking row exists, the send action creates an approved `order_documents` row before marking it sent.
+7. Send tracking works from structured `orders`, not legacy contract-only workflow.
+8. Quote history is not mutated.
+
+Important limitation for this pass:
+
+- Sprint 8S persists send/open-tracking state and records stage events, but it does not yet rebuild final buyer-facing PDF design or external email/WhatsApp transport. The button records the structured send event and returns to Orders.
+
+Setu Guru should explain that Sprint 8S introduces the workflow truth for order documents: **Prepare → Preview → Approve → Send tracked**. Guru must not say a document has been externally delivered unless a future transport integration or explicit external send confirmation exists.
+
 ## Sprint 8R structured Orders stage shell
 
 Sprint 8R makes the Orders workspace structured-order first.
@@ -96,7 +120,7 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 ## Best for
 
 - Turning accepted quotes into controlled execution work.
-- Tracking accepted quote-version lineage, actual order lines, document readiness, release readiness, and dispatch posture.
+- Tracking accepted quote-version lineage, actual order lines, document readiness, release readiness, send state, and dispatch posture.
 - Separating accepted quote status from fulfillment readiness.
 - Managing order documents without changing accepted quote terms.
 - Giving operators a clear next action after quote acceptance.
@@ -107,6 +131,7 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - Is this order commercially accepted but not execution-ready?
 - Which quote version is the source for this order?
 - What stage is this order in?
+- Has the order confirmation or proforma been sent/tracked?
 - What evidence is missing before dispatch?
 - Which documents are advisory, required, expired, or pending review?
 - Is this a commercial, payment, document, compliance, packing, freight, or dispatch blocker?
@@ -127,7 +152,7 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - Commercial lock, payment status, or release readiness is incomplete.
 - Actual order lines have not been prepared from the approved quote yet.
 - Actual order lines have not been internally approved yet.
-- First document gate has not been prepared, previewed, or approved.
+- First document gate has not been prepared, previewed, approved, or sent/tracked.
 - Packing sheet has not been prepared, previewed, or approved.
 - Freight/delivery rate request has not been prepared, previewed, or approved.
 - Dispatch evidence is missing or pending review.
@@ -142,6 +167,7 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - `order_lines` actual buyer order lines.
 - Accepted quote and accepted quote version.
 - `quote_version_line_items` as the accepted commercial source snapshot.
+- `order_documents` for prepare/approve/send/open tracking state.
 - Order approval gates and order stage events.
 - Packing plans and packing plan lines.
 - Freight rate requests and freight rate quotes.
@@ -155,6 +181,7 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - Explain execution readiness and next action.
 - Route to order document upload, Compliance Assist, or the linked lead/quote.
 - Explain accepted quote-version lineage and source version health.
+- Explain order document send status when recorded in `order_documents`.
 - Explain that actual order lines are prepared from the approved quote without mutating quote history.
 - Explain internal approval and first document gate steps.
 - Explain packing sheet and freight/delivery request steps.
@@ -197,6 +224,18 @@ Use live order context first when available. If only dashboard context is availa
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the readiness lanes and the safest next route.
 
+## Sprint 8S smoke-check checklist
+
+Use this checklist before the next Orders pass:
+
+- Does the stage panel show Send tracked after Prepare, Previewed, and Approve?
+- Does Send tracked create or update an `order_documents` row?
+- Does the row store status `sent`, sent timestamp, recipient, channel, note, source quote ID, and source quote version ID?
+- Does send create an `order_stage_events` record?
+- Does the send action work from structured `orders`, not contract-only fallback?
+- Does quote history remain untouched?
+- Are quote/compliance/catalog/lead protected flows untouched?
+
 ## Sprint 8R smoke-check checklist
 
 Use this checklist before the next Orders pass:
@@ -217,6 +256,7 @@ Use this checklist before the next Orders pass:
 - What is blocking this order?
 - Is this order ready for dispatch?
 - Which quote version created this order?
+- Has this order confirmation been sent?
 - Which evidence is missing before release?
 - Is this a quote issue or an order execution issue?
 - Where do I create the order confirmation and invoice?
