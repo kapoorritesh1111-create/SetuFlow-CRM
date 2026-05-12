@@ -4,13 +4,12 @@ import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
 import { LeadEventFilterNarrower } from '@/features/leads/components/lead-event-filter-narrower';
 import { LeadCaptureValidationGuard } from '@/features/leads/components/lead-capture-validation-guard';
+import { LeadsMobileSurface } from '@/features/leads/components/leads-mobile-surface';
 import { QuoteReviewInlineComplianceFix } from '@/features/leads/components/quote-review-inline-compliance-fix';
 import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page-view-model';
-import { RoleAwareLeadList } from '@/features/mobile/components/role-aware-lead-list';
-import { MobileBusinessCardScanner } from '@/features/mobile/components/mobile-business-card-scanner';
 import { buildMobileLeadCardsFromAppData, buildMobileSignedInSummary, buildMobileUserContextFromWorkspace } from '@/features/mobile/lib/app-mobile-leads';
 
 function readParam(value?: string | string[]) {
@@ -81,24 +80,18 @@ export default async function LeadsPage({
       }
     : null;
 
-
   return (
     <div className="space-y-4">
       <LeadCaptureValidationGuard />
       <div className="md:hidden">
-        {quickLeadEnabled ? (
-          <MobileBusinessCardScanner
-            initialLeadType={readParam(searchParams?.sourceType).trim() === 'supplier' ? 'supplier' : 'buyer'}
-            eventId={eventId || null}
-          />
-        ) : (
-          <RoleAwareLeadList
-            leads={mobileLeadCards}
-            user={mobileUser}
-            signedIn={mobileSignedIn}
-            allowRolePreview={false}
-          />
-        )}
+        <LeadsMobileSurface
+          quickLeadEnabled={quickLeadEnabled}
+          initialLeadType={readParam(searchParams?.sourceType).trim() === 'supplier' ? 'supplier' : 'buyer'}
+          eventId={eventId || null}
+          leads={mobileLeadCards}
+          user={mobileUser}
+          signedIn={mobileSignedIn}
+        />
       </div>
 
       <div className="hidden space-y-4 md:block">
