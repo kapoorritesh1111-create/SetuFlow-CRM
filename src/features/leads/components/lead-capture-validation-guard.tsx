@@ -24,6 +24,63 @@ function hasContactChannel(form: HTMLFormElement) {
   );
 }
 
+function closestDrawerRoot(form: HTMLFormElement) {
+  return (
+    form.closest('[role="dialog"]') ||
+    form.closest('.inset-0') ||
+    form.parentElement
+  ) as HTMLElement | null;
+}
+
+function leadFormScore(form: HTMLFormElement) {
+  const textValue = (name: string) =>
+    String((form.querySelector(`[name="${name}"]`) as HTMLInputElement | HTMLSelectElement | null)?.value ?? "").trim();
+  let score = 0;
+  ["company_name", "country_id", "contact_name", "job_title", "email", "phone", "whatsapp_number"].forEach((name) => {
+    if (textValue(name)) score += 1;
+  });
+  const root = closestDrawerRoot(form);
+  const rect = root?.getBoundingClientRect();
+  if (rect && rect.width > 0 && rect.height > 0) score += 2;
+  return score;
+}
+
+function enforceSingleLeadDrawer() {
+  const forms = Array.from(document.querySelectorAll<HTMLFormElement>('form#lead-drawer-form')).filter(isLeadCaptureForm);
+  if (forms.length <= 1) {
+    forms.forEach((form) => {
+      form.removeAttribute("aria-hidden");
+      closestDrawerRoot(form)?.style.removeProperty("display");
+      form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
+        field.removeAttribute("tabindex");
+      });
+    });
+    return;
+  }
+
+  const winner = [...forms].sort((a, b) => leadFormScore(b) - leadFormScore(a))[0];
+
+  forms.forEach((form) => {
+    const root = closestDrawerRoot(form);
+    const isWinner = form === winner;
+    form.setAttribute("data-lead-drawer-singleton", isWinner ? "active" : "suppressed");
+    if (isWinner) {
+      form.removeAttribute("aria-hidden");
+      root?.style.removeProperty("display");
+      form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
+        field.removeAttribute("tabindex");
+      });
+      return;
+    }
+
+    form.setAttribute("aria-hidden", "true");
+    form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
+      field.setAttribute("tabindex", "-1");
+    });
+    if (root) root.style.display = "none";
+  });
+}
+
 function relaxNativeLeadValidation(root: ParentNode = document) {
   root.querySelectorAll("form").forEach((node) => {
     const form = node as HTMLFormElement;
@@ -45,6 +102,7 @@ function relaxNativeLeadValidation(root: ParentNode = document) {
       field.setCustomValidity("");
     });
   });
+  enforceSingleLeadDrawer();
 }
 
 export function LeadCaptureValidationGuard() {
@@ -58,11 +116,16 @@ export function LeadCaptureValidationGuard() {
     };
 
     const observer = new MutationObserver((mutations) => {
+      let shouldSync = false;
       for (const mutation of mutations) {
         mutation.addedNodes.forEach((node) => {
-          if (node instanceof HTMLElement) relaxNativeLeadValidation(node);
+          if (node instanceof HTMLElement) {
+            relaxNativeLeadValidation(node);
+            shouldSync = true;
+          }
         });
       }
+      if (shouldSync) window.requestAnimationFrame(enforceSingleLeadDrawer);
     });
 
     document.addEventListener("input", onInput, true);
