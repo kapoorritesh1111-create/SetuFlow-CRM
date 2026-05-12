@@ -1,6 +1,6 @@
 # SETU Flow CRM Master Implementation Roadmap
 
-Last updated: 2026-05-11
+Last updated: 2026-05-12
 Owner: Ritesh Kapoor
 Repository: `kapoorritesh1111-create/SetuFlow-CRM`
 Production domain: `https://www.setuflowcrm.com/`
@@ -24,7 +24,7 @@ Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
 ## 2. Operating principles
 
-- Ask Ritesh for approval before GitHub writes.
+- Ask Ritesh for approval before GitHub writes unless the current user instruction explicitly asks to update repository docs/code.
 - After approval, prepare the full pass and make one final commit to GitHub `main` unless Ritesh asks for a branch or PR.
 - Do not run `npm ci` in the sandbox.
 - After a GitHub push, wait 1 minute 5 seconds before the first Vercel build-status check unless Ritesh explicitly overrides this.
@@ -37,7 +37,42 @@ Do not regress any item listed in `docs/implementation/DO_NOT_REGRESS.md`.
 
 ---
 
-## 3. Sprint roadmap
+## 3. Non-negotiable commercial workflow truth
+
+### Quote version source of truth
+
+`quote_versions` and `quote_version_line_items` are the commercial source of truth for quotes, buyer-facing quote PDFs, quote review, quote acceptance, and order creation.
+
+Rules:
+
+1. Parent `quotes` is a workflow shell and summary only.
+2. `quotes.current_version_id` points to the active working/latest quote version.
+3. `quotes.accepted_version_id` points only to the buyer-accepted / order-source version.
+4. Sending a quote must never set `accepted_version_id` by itself. **Sent is not accepted.**
+5. Once a quote version is sent, approved, accepted, rejected, expired, or used by an order, that version becomes immutable.
+6. Editing a sent/approved/accepted quote must create a new `quote_versions` row with `version_no + 1` and fresh `quote_version_line_items`.
+7. Earlier versions remain viewable, auditable, and PDF-reproducible.
+8. Order creation must reference `orders.source_quote_id` and `orders.source_quote_version_id`; order lines must reference `order_lines.source_quote_version_line_item_id` where available.
+9. Actual order lines may differ from quote lines, but quote history must not be mutated.
+10. Setu Guru may explain quote revision history, but must not silently edit, send, accept, supersede, or delete quote versions.
+
+### Deprecated quote workflows
+
+Mark these as compatibility-only and then delete after migration checks:
+
+| Old workflow/table/path | Status | Replacement |
+| --- | --- | --- |
+| `quote_line_items` as commercial truth | Deprecated / compatibility-only | `quote_version_line_items` |
+| Delete-and-reinsert quote lines during quote update | Deprecated | Create new quote version and new version line items |
+| Setting `accepted_version_id` when quote is merely sent | Must fix immediately | Set only on explicit buyer acceptance / conversion approval |
+| Editing a sent PDF/version in place | Forbidden | Create revised version |
+| Orders from parent quote summary only | Deprecated | Orders from accepted `source_quote_version_id` |
+| Generic direct PDF button as workflow driver | Deprecated | Prepare → Preview → Approve → Send/Advance gates |
+| Lead-scoped compliance as order execution blocker | Deprecated for Orders | `trade_requirements` scoped to order/stage/line |
+
+---
+
+## 4. Sprint roadmap
 
 ### Sprint 1 — Implementation control and anti-drift system
 
@@ -115,8 +150,8 @@ Completed:
 
 ### Sprint 8 — Industry-neutral Orders execution workflow
 
-Status: `ACTIVE — REPLANNED`
-Progress: 45%
+Status: `ACTIVE — QUOTE VERSION + ORDERS UI ALIGNMENT`
+Progress: 58%
 
 Sprint 8 was initially focused on Orders visual cleanup, order/invoice generation, and basic send tracking. Those passes improved the production Orders surface, but the sprint is now replanned around the approved full workflow design so SETU Flow becomes an industry-neutral import/export/distribution execution CRM, not a food-only compliance or generic PDF-button tool.
 
@@ -137,8 +172,8 @@ Sprint 8 product direction:
 Protected Sprint 8 UX workflow:
 
 ```text
-Approved quote
-→ Confirm actual buyer order lines
+Accepted quote version
+→ Confirm actual buyer order lines from accepted version snapshot
 → Internal approval gate
 → Preview / approve / send Order Confirmation or Proforma Invoice
 → Packing Sheet for freight/delivery rate request
@@ -178,16 +213,20 @@ Current Sprint 8 completed / useful work:
 - Row/header click route cleanup.
 - Order PDF and invoice generation proof of concept.
 - Basic order/invoice send-link direction and open tracking proof point.
+- Sprint 8I planning doc completed.
+- Sprint 8J additive Orders execution schema foundation exists for `orders`, `order_lines`, gates, events, order documents, trade requirements, packing, freight, shipments, and finance sync records.
+- Seeded SETU Flow workflow test data exists: 45 leads, 20 quotes, 10 accepted quotes converted into 10 execution orders across 10 order stages.
 - Build-fix discipline restored after Sprint 8H error.
 
 Current Sprint 8 constraints after replan:
 
 - Do not continue adding direct PDF buttons as the core workflow.
 - Do not advance order state directly from generation alone unless an approved gate allows it.
-- Do not treat order lines as an immutable copy of quote lines. Approved quote is the source input; actual order lines can differ in product selection and quantity.
+- Do not treat order lines as an immutable copy of quote lines. Approved quote version is the source input; actual order lines can differ in product selection and quantity.
 - Do not force export documents onto regional/distribution orders.
 - Do not make COA, phytosanitary, shelf-life, food inspection, or similar food/agri requirements global blockers.
 - Do not remove quote-review compliance protections. Instead, introduce order-stage trade requirement gates for execution.
+- Do not mutate any sent/approved/accepted quote version while building Orders.
 
 Industry-neutral trade requirement model:
 
@@ -275,43 +314,125 @@ Protected during Sprint 8:
 - Do not reopen Catalog Admin/import/product cleanup unless a production screenshot shows a defect.
 - Do not regress lead row **Open / More**, Source Event narrowing, advanced filter grouping, country/market correctness, or dashboard country auto-focus/reset.
 
-Next Sprint 8 implementation sequence:
+### Sprint 8Q — Quote version integrity and Orders UI workflow alignment
 
-1. **Sprint 8I — Orders schema and execution workflow redesign foundation plan only**
-   - Planning/doc pass only.
-   - Produce current schema map, additive schema proposal, guardrail changes, live trade requirement search architecture, migration phases, and regression plan.
-   - Do not implement UI or schema in this pass.
+Status: `NEXT RECOMMENDED PASS`
+Progress target after completion: Sprint 8 to 65%
 
-2. **Sprint 8J — Additive Orders execution schema foundation**
-   - Add schema only after approval.
-   - Include `orders`, `order_lines`, approval gates, order documents, stage events, trade requirements, packing plans, freight request skeleton, and RLS.
-   - Keep legacy contracts compatible.
+Purpose: fix quote revision data risk before expanding Orders UI. This pass must make quote version immutability and accepted-version lineage explicit in server actions, UI, docs, and tests.
 
-3. **Sprint 8K — Actual order lines from approved quote**
-   - UI starts from accepted quote but confirms actual buyer lines and quantities.
-   - Do not mutate quote history.
+Required scope:
 
-4. **Sprint 8L — Internal approval and document gates**
-   - Preview / approve / send Regional Order Confirmation or Export Proforma Invoice.
-   - Tracked send links and open follow-up.
+1. Audit all quote create/update/send/accept actions.
+2. Remove any logic that sets `accepted_version_id` on send.
+3. Allow editing in place only for a never-sent working draft version.
+4. For sent, approved, accepted, rejected, expired, or order-linked versions, **Revise quote** must create a new version.
+5. Copy prior version lines into the new draft revision as editable starting data.
+6. Keep prior PDFs/documents/events tied to the original version.
+7. Parent quote card must show current version, last sent version, accepted version, and order-source version when applicable.
+8. Add UI badges: `Draft`, `Needs approval`, `Sent`, `Accepted`, `Superseded by vN`, `Order source`.
+9. Orders UI must start only from accepted version and show the accepted version number in the order header.
+10. Mark `quote_line_items` usage as compatibility-only in code comments/docs; no new commercial logic should depend on it.
+11. Add regression tests for: sent quote edited → v2 created; v1 immutable; accepted_version_id unchanged until acceptance; order source keeps accepted version.
+12. Update Setu Guru quote help so it explains revisions and never recommends editing sent quote history.
 
-5. **Sprint 8M — Packing Sheet and Freight Rate Request foundation**
-   - Packing plan templates for regional truck, 20ft, 40ft, custom org/product templates.
-   - Preview / approve packing sheet before rate request.
-   - Email/WhatsApp fallback first; integration adapter later.
+Files likely involved:
 
-6. **Sprint 8N — Industry-neutral live trade requirement search and attach**
-   - Country/product/category/HS/HSN/order-type requirement lookup.
-   - Store source snapshots and human-confirmed requirements.
-   - Attach requirements to order stages.
+```text
+src/features/quotes/server/actions.ts
+src/features/quotes/components/quote-wizard-form.tsx
+src/lib/quoteWorkflow.ts
+src/features/orders/server/execution-order-actions.ts
+src/features/orders/components/OrderDetailPanel.tsx
+src/app/(app)/orders/page.tsx
+docs/help/quotes.md
+docs/help/orders.md
+docs/implementation/CHANGELOG_DECISIONS.md
+docs/implementation/DO_NOT_REGRESS.md
+```
 
-7. **Sprint 8O — Packing List, logistics, dispatch, final invoice gates**
-   - Packing list preview and packed-for-loading confirmation.
-   - Logistics docs/delivery note by order type.
-   - Final invoice from actual dispatched/shipped quantities with preview/approve/send gate.
+Acceptance checks:
 
-8. **Sprint 8P — Finance/freight integration adapter boundaries**
-   - Adapter interfaces and safe sync boundaries only after structured records exist.
+- Existing sent/accepted quote versions remain immutable.
+- Editing a sent quote creates a new version and does not alter v1 line items.
+- Sending v2 does not mark v2 accepted.
+- Accepting v2 changes `accepted_version_id` only after explicit buyer/internal acceptance action.
+- Creating an order from quote uses `accepted_version_id`, not `current_version_id` unless they are the same accepted version.
+- Existing quote PDF/share/send protections still work.
+- Existing quote-review compliance blockers still work.
+- Seeded SETU Flow test data still shows 20 quotes, 10 accepted quotes, and 10 orders across 10 stages.
+- Vercel build returns READY.
+
+### Sprint 8R — Orders execution UI stage shell from seeded data
+
+Status: `PLANNED AFTER 8Q`
+
+Purpose: implement the approved Orders Full Redesign layout against the structured execution tables and seeded workflow records.
+
+Scope:
+
+- Left order queue.
+- Right open order workspace.
+- Stage strip.
+- Stage-specific action panel.
+- Order source quote-version badge.
+- Health checks per stage.
+- Read-only legacy compatibility view when no `orders` record exists.
+
+### Sprint 8S — Order document gates and send/open tracking
+
+Status: `PLANNED AFTER 8R`
+
+Purpose: move document generation away from one-off PDF buttons into structured gates.
+
+Scope:
+
+- Regional Order Confirmation gate.
+- Export Proforma Invoice gate.
+- Prepare / Preview / Approve / Send.
+- Tracked send link and open follow-up.
+- `order_documents` and `order_stage_events` as UI truth.
+
+### Sprint 8T — Packing, freight, dispatch and final invoice UI
+
+Status: `PLANNED AFTER 8S`
+
+Purpose: expose packing plan, freight request, shipment, dispatch invoice, payment, receipt, and archive stages.
+
+Scope:
+
+- Packing Sheet stage.
+- Freight Rate Request stage.
+- Packing List / Pick-Pack-QC.
+- Shipment Booking.
+- Dispatch Invoice.
+- Payment / receipt / closeout.
+
+### Sprint 8U — Industry-neutral trade requirement search and attach
+
+Status: `PLANNED AFTER CORE ORDER UI`
+
+Purpose: attach rules/live sources to order stages without making food/agri compliance global.
+
+Scope:
+
+- Search context by order type/country/product/category/HS/HSN/shipment mode/incoterm.
+- Source snapshot storage.
+- Human-confirmed requirement attachment.
+- Advisory/required/blocking gate behavior.
+
+### Sprint 8V — Finance/freight adapter boundaries
+
+Status: `PLANNED AFTER STRUCTURED UI`
+
+Purpose: add safe adapter interfaces only after structured records and approval gates are live.
+
+Scope:
+
+- `FreightAdapter.quote/book/track/documents`.
+- `FinanceAdapter.createInvoice/updateInvoice/recordPayment/voidInvoice/syncCustomer`.
+- No external integration turned on by default.
+- Final invoice sync only after final invoice approval and dispatch/shipped quantity validation.
 
 ### Sprint 9 — Admin and organization setup cleanup
 
@@ -325,20 +446,20 @@ Progress: 100%
 
 ---
 
-## 4. Readiness tracking
+## 5. Readiness tracking
 
-- Overall CRM readiness: 99.60%
+- Overall CRM readiness: 99.62%
 - Sprint 7 Lead command center cleanup: 100%
-- Active Sprint 8 Orders and execution workflow: 45%
+- Active Sprint 8 Orders and execution workflow: 58%
 - Dashboard map UX readiness: 100%
-- Setu Guru intelligence readiness: 99.78%
+- Setu Guru intelligence readiness: 99.79%
 - UX cleanup readiness: 93%
-- Quote/compliance maturity: 96%
+- Quote/compliance maturity: 96.5%
 - Product catalog maturity: 94%
 
 ---
 
-## 5. Required summary format after every pass
+## 6. Required summary format after every pass
 
 ```text
 Build status: READY / BUILDING / ERROR
@@ -356,7 +477,7 @@ Next pass:
 
 ---
 
-## 6. New chat continuation prompt
+## 7. New chat continuation prompt
 
 ```text
 We are continuing SETU Flow CRM development. Use GitHub repo `kapoorritesh1111-create/SetuFlow-CRM`, Vercel project `setu-flow-crm`, Supabase project `sjzfzloggabsmcuxktnl`, production domain `https://www.setuflowcrm.com/`.
@@ -368,24 +489,31 @@ Before making changes, read:
 - docs/implementation/CHANGELOG_DECISIONS.md
 - docs/implementation/APPROVAL_AND_DIRECT_MAIN_RULE.md
 
-Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes, commit the full approved pass once to main, wait 1 minute 5 seconds after pushing before checking Vercel, and report readiness/sprint percentages at the end.
+Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes unless the current prompt explicitly requests repository updates, commit the full approved pass once to main, wait 1 minute 5 seconds after pushing before checking Vercel, and report readiness/sprint percentages at the end.
 
 Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, and Sprint 10 are 100% complete. Sprint 8 Orders is active and replanned around the exact approved HTML preview `Orders Full Redesign Approval Walkthrough`. Sprint 8 must become an industry-neutral import/export/distribution execution workflow, not food-only compliance and not generic PDF buttons. Preserve quote continuation, quote PDF/share/send, quote-review compliance, catalog import/product cleanup, lead row Open/More behavior, Source Event narrowing, advanced filter grouping, country/market correctness, and dashboard map country auto-focus/reset.
+
+Critical quote-version rule: `quote_versions` and `quote_version_line_items` are the quote commercial source of truth. Never mutate sent/approved/accepted quote versions. Editing a sent quote creates a new version. Sending a quote does not mean acceptance. `accepted_version_id` changes only through explicit quote acceptance/conversion. Orders must start from accepted quote version lineage.
 ```
 
 ---
 
-## 7. Next recommended pass
+## 8. Next recommended pass
 
-Sprint 8I — Orders schema and execution workflow redesign foundation plan only:
+Sprint 8Q — Quote version integrity and Orders UI workflow alignment:
 
-1. Re-read current schema, RLS, constraints, and existing Orders/Quotes/Compliance code paths.
-2. Produce an additive schema plan for industry-neutral Orders execution.
-3. Map current legacy `contracts` / `contract_line_items` behavior into the new `orders` / `order_lines` model without breaking production.
-4. Define approval gates for actual lines, proforma/order confirmation, packing sheet, packing list, logistics docs, final invoice, docs release, and closeout.
-5. Define industry-neutral trade requirement rules and live search/source snapshot architecture.
-6. Define packing plan and freight rate request records with email/WhatsApp fallback and future integration adapter points.
-7. Define finance sync boundaries so draft/proforma documents do not become real accounting invoices by accident.
-8. Produce a regression plan and implementation sequence before any schema migration or UI implementation.
-9. Anchor all workflow decisions to the approved HTML preview: **Orders Full Redesign Approval Walkthrough**.
-10. No UI or schema changes in Sprint 8I unless Ritesh separately approves them.
+1. Re-read current schema, RLS, constraints, quote actions, quote UI, order execution actions, and Orders UI.
+2. Fix quote update/send/accept logic so sent quote edits create new immutable versions and `accepted_version_id` changes only on acceptance.
+3. Mark `quote_line_items` as deprecated compatibility-only and prevent new commercial truth from depending on it.
+4. Update quote UI to show current/sent/accepted/order-source version states clearly.
+5. Update Orders UI/action guards so order creation reads from accepted quote version and shows source version lineage.
+6. Add tests for quote revision immutability, sent-vs-accepted separation, and order-source version stability.
+7. Update Setu Guru quote/orders help and roadmap/changelog guardrails.
+8. Verify seeded SETU Flow data remains valid: 45 leads, 20 quotes, 10 accepted quotes, 10 orders across 10 stages.
+9. Verify Vercel build READY.
+
+Suggested approval text:
+
+```text
+APPROVED — Sprint 8Q quote version integrity and Orders UI workflow alignment in one commit
+```
