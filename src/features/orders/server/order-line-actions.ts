@@ -24,6 +24,10 @@ function text(value: unknown) {
   return raw.length ? raw : null;
 }
 
+function isPreviewLineId(value: string) {
+  return value.startsWith('quote-') || value.startsWith('preview-');
+}
+
 async function requireOrderWriteAccess() {
   if (!hasSupabaseEnv) redirect(buildRedirect('order-config-error'));
   const workspace = await getWorkspaceAccess();
@@ -49,6 +53,7 @@ export async function updateActualOrderLineAction(formData: FormData) {
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   const orderLineId = String(formData.get('order_line_id') ?? '').trim();
   if (!quoteId || !orderLineId) redirect(buildRedirect('order-line-action-invalid', quoteId));
+  if (isPreviewLineId(orderLineId)) redirect(buildRedirect('prepare-actual-lines-first', quoteId));
 
   const db = (await createClient()) as any;
   const organizationId = workspace.organization.id;
@@ -63,23 +68,29 @@ export async function updateActualOrderLineAction(formData: FormData) {
   const lineStatus = orderedQuantity <= 0 ? 'removed' : 'confirmed';
   const lineTotal = unitPrice == null ? null : orderedQuantity * unitPrice;
 
-  const { data: before } = await db.from('order_lines').select('id, ordered_quantity, unit_price, line_status').eq('organization_id', organizationId).eq('order_id', order.id).eq('id', orderLineId).maybeSingle();
+  const { data: before } = await db.from('order_lines').select('id, ordered_quantity, unit_price, line_status, line_total').eq('organization_id', organizationId).eq('order_id', order.id).eq('id', orderLineId).maybeSingle();
+  if (!before?.id) redirect(buildRedirect('actual-order-line-not-found', quoteId));
+
   const { error: updateError } = await db
     .from('order_lines')
-    .update({ ordered_quantity: orderedQuantity, unit_price: unitPrice, line_total: lineTotal, line_status: lineStatus, change_type: 'manual_review', change_reason: reason, updated_at: new Date().toISOString() })
+    .update({ ordered_quantity: orderedQuantity, unit_price: unitPrice, line_total: lineTotal, line_status: lineStatus, change_type: orderedQuantity <= 0 ? 'removed_after_quote' : 'manual_review', change_reason: reason, updated_at: new Date().toISOString() })
     .eq('organization_id', organizationId)
     .eq('order_id', order.id)
     .eq('id', orderLineId);
   if (updateError) redirect(buildRedirect('order-line-update-error', quoteId));
 
-  await writeAuditLog({ organizationId, action: 'actual_order_line_updated', entityType: 'order_line', entityId: orderLineId, actorUserId, payload: { previous: before ?? null, new: { ordered_quantity: orderedQuantity, unit_price: unitPrice, line_status: lineStatus, change_reason: reason }, metadata: { quote_id: quoteId, order_id: order.id } } });
+  await writeAuditLog({ organizationId, action: orderedQuantity <= 0 ? 'actual_order_line_removed' : 'actual_order_line_updated', entityType: 'order_line', entityId: orderLineId, actorUserId, payload: { previous: before ?? null, new: { ordered_quantity: orderedQuantity, unit_price: unitPrice, line_status: lineStatus, change_reason: reason }, metadata: { quote_id: quoteId, order_id: order.id } } });
 
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
-  redirect(buildRedirect('order-line-updated', quoteId));
+  redirect(buildRedirect(orderedQuantity <= 0 ? 'order-line-removed' : 'order-line-updated', quoteId));
 }
 
 export async function removeActualOrderLineAction(formData: FormData) {
+  const quoteId = String(formData.get('quote_id') ?? '').trim();
+  const orderLineId = String(formData.get('order_line_id') ?? '').trim();
+  if (!quoteId || !orderLineId) redirect(buildRedirect('order-line-action-invalid', quoteId));
+  if (isPreviewLineId(orderLineId)) redirect(buildRedirect('prepare-actual-lines-first', quoteId));
   formData.set('ordered_quantity', '0');
   if (!formData.get('change_reason')) formData.set('change_reason', 'Buyer did not include this quoted line in the actual order.');
   return updateActualOrderLineAction(formData);
