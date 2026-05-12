@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { OrdersCommercialSourceSummary8U, type OrdersCommercialSourceItem8U } from '@/features/orders/components/OrdersCommercialSourceSummary8U';
 import { OrdersProductionWorkspace8S, type CatalogOrderOption8S, type OrderLineComparison8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace8S';
+import { OrdersExecutionLogistics8T, type OrderLogistics8T } from '@/features/orders/components/OrdersExecutionLogistics8T';
 
 function num(value: unknown) {
   const parsed = Number(value);
@@ -154,7 +155,7 @@ export default async function OrdersLayout() {
   const orderIds = orderRows.map((order: any) => order.id).filter(Boolean);
   const sourceVersionIds = [...new Set(orderRows.map((order: any) => order.source_quote_version_id).filter(Boolean))];
 
-  const [quotesResult, leadsResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult] = await Promise.all([
+  const [quotesResult, leadsResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult, packingResult, freightRequestsResult, freightQuotesResult, shipmentsResult, orderDocumentsResult, financeSyncResult] = await Promise.all([
     quoteIds.length ? db.from('quotes').select('id, status, currency, lead_id, current_version_id, accepted_version_id, approved_at, pricing_basis').eq('organization_id', orgId).in('id', quoteIds) : Promise.resolve({ data: [] }),
     leadIds.length ? db.from('leads').select('id, company_name, country, deal_value, deal_currency, lead_type').eq('organization_id', orgId).in('id', leadIds) : Promise.resolve({ data: [] }),
     quoteIds.length || orderIds.length ? db.from('documents').select('id, related_id, linked_quote_id, related_entity, status, doc_type, file_name').eq('organization_id', orgId).or(`linked_quote_id.in.(${quoteIds.join(',')}),related_id.in.(${[...quoteIds, ...orderIds].join(',')})`).order('uploaded_at', { ascending: false }) : Promise.resolve({ data: [] }),
@@ -163,6 +164,12 @@ export default async function OrdersLayout() {
     sourceVersionIds.length ? db.from('quote_versions').select('id, version_no, status, approved_at, sent_at, total_line_count').in('id', sourceVersionIds) : Promise.resolve({ data: [] }),
     orderIds.length ? db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, created_at, pricing_snapshot').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: true }) : Promise.resolve({ data: [] }),
     db.from('active_product_pricing_rules_v').select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg').eq('organization_id', orgId).eq('is_active', true).eq('is_quoteable', true).order('product_name', { ascending: true }).limit(200),
+    orderIds.length ? db.from('packing_plans').select('id, order_id, status, plan_type, template_key, total_pallets, total_master_cases, total_units, total_net_weight_kg, total_gross_weight_kg, total_cbm, created_at').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
+    orderIds.length ? db.from('freight_rate_requests').select('id, order_id, packing_plan_id, request_method, status, shipment_mode, origin_port, destination_port, sent_at, selected_quote_id, created_at').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
+    db.from('freight_rate_quotes').select('id, request_id, provider_name, quoted_amount, currency, transit_days, status').eq('organization_id', orgId),
+    orderIds.length ? db.from('shipments').select('id, order_id, freight_rate_quote_id, shipment_mode, carrier_name, forwarder_name, booking_reference, bol_awb_number, tracking_number, status, dispatched_at, delivered_at, created_at').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
+    orderIds.length ? db.from('order_documents').select('id, order_id, document_type, status, sent_at, opened_at, created_at').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
+    orderIds.length ? db.from('finance_sync_records').select('id, order_id, finance_document_type, external_system, external_id, sync_status, synced_at, error_message, created_at').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
   ]);
 
   const quoteMap = new Map((Array.isArray(quotesResult.data) ? quotesResult.data : []).map((quote: any) => [quote.id, quote]));
@@ -172,6 +179,12 @@ export default async function OrdersLayout() {
   const gateRows = Array.isArray(gatesResult.data) ? gatesResult.data : [];
   const quoteLines = Array.isArray(quoteLinesResult.data) ? quoteLinesResult.data : [];
   const orderLines = Array.isArray(orderLinesResult.data) ? orderLinesResult.data : [];
+  const packingRows = Array.isArray(packingResult.data) ? packingResult.data : [];
+  const freightRows = Array.isArray(freightRequestsResult.data) ? freightRequestsResult.data : [];
+  const freightQuoteRows = Array.isArray(freightQuotesResult.data) ? freightQuotesResult.data : [];
+  const shipmentRows = Array.isArray(shipmentsResult.data) ? shipmentsResult.data : [];
+  const orderDocumentRows = Array.isArray(orderDocumentsResult.data) ? orderDocumentsResult.data : [];
+  const financeRows = Array.isArray(financeSyncResult.data) ? financeSyncResult.data : [];
 
   const catalogOptions: CatalogOrderOption8S[] = (Array.isArray(catalogResult.data) ? catalogResult.data : []).map((rule: any) => {
     const price = basisPrice(rule);
@@ -193,6 +206,7 @@ export default async function OrdersLayout() {
   });
 
   const sourceItems: OrdersCommercialSourceItem8U[] = [];
+  const logisticsOrders: OrderLogistics8T[] = [];
 
   const orders: ProductionOrder8S[] = orderRows.map((order: any) => {
     const quote = quoteMap.get(order.source_quote_id) as any;
@@ -264,6 +278,75 @@ export default async function OrdersLayout() {
     const sourceHealthy = sourceItem.state === 'clean' || sourceItem.state === 'pdf_fallback';
     const { nextAction, blockerReasons } = nextActionAndBlockers({ lines: comparisonLines, currentStage: order.current_stage, approvalState: order.approval_state, sourceHealthy, sourceReason: sourceItem.detail, documentCount: docsForOrder.length, gateCount: gatesForOrder.length });
 
+    const packing = packingRows.find((row: any) => row.order_id === order.id) ?? null;
+    const freight = freightRows.find((row: any) => row.order_id === order.id) ?? null;
+    const freightQuote = freight?.selected_quote_id ? freightQuoteRows.find((row: any) => row.id === freight.selected_quote_id) : freight ? freightQuoteRows.find((row: any) => row.request_id === freight.id) : null;
+    const shipment = shipmentRows.find((row: any) => row.order_id === order.id) ?? null;
+    const dispatchDocument = orderDocumentRows.find((row: any) => row.order_id === order.id && ['dispatch_invoice', 'completion_packet'].includes(String(row.document_type ?? ''))) ?? orderDocumentRows.find((row: any) => row.order_id === order.id && String(row.document_type ?? '').includes('invoice')) ?? null;
+    const financeSync = financeRows.find((row: any) => row.order_id === order.id) ?? null;
+    logisticsOrders.push({
+      orderId: order.id,
+      companyName: lead?.company_name ?? order.order_number ?? 'Structured order',
+      currentStage: order.current_stage ?? null,
+      packingPlan: packing ? {
+        id: packing.id,
+        status: packing.status ?? null,
+        planType: packing.plan_type ?? null,
+        templateKey: packing.template_key ?? null,
+        pallets: num(packing.total_pallets),
+        cases: num(packing.total_master_cases),
+        units: num(packing.total_units),
+        netWeightKg: num(packing.total_net_weight_kg),
+        grossWeightKg: num(packing.total_gross_weight_kg),
+        cbm: num(packing.total_cbm),
+      } : null,
+      freightRequest: freight ? {
+        id: freight.id,
+        status: freight.status ?? null,
+        shipmentMode: freight.shipment_mode ?? null,
+        requestMethod: freight.request_method ?? null,
+        originPort: freight.origin_port ?? null,
+        destinationPort: freight.destination_port ?? null,
+        sentAt: freight.sent_at ?? null,
+        selectedQuoteId: freight.selected_quote_id ?? null,
+      } : null,
+      freightQuote: freightQuote ? {
+        id: freightQuote.id,
+        providerName: freightQuote.provider_name ?? null,
+        quotedAmount: num(freightQuote.quoted_amount),
+        currency: freightQuote.currency ?? null,
+        transitDays: num(freightQuote.transit_days),
+        status: freightQuote.status ?? null,
+      } : null,
+      shipment: shipment ? {
+        id: shipment.id,
+        status: shipment.status ?? null,
+        shipmentMode: shipment.shipment_mode ?? null,
+        carrierName: shipment.carrier_name ?? null,
+        forwarderName: shipment.forwarder_name ?? null,
+        bookingReference: shipment.booking_reference ?? null,
+        bolAwbNumber: shipment.bol_awb_number ?? null,
+        trackingNumber: shipment.tracking_number ?? null,
+        dispatchedAt: shipment.dispatched_at ?? null,
+        deliveredAt: shipment.delivered_at ?? null,
+      } : null,
+      dispatchDocument: dispatchDocument ? {
+        id: dispatchDocument.id,
+        status: dispatchDocument.status ?? null,
+        documentType: dispatchDocument.document_type ?? null,
+        sentAt: dispatchDocument.sent_at ?? null,
+        openedAt: dispatchDocument.opened_at ?? null,
+      } : null,
+      financeSync: financeSync ? {
+        id: financeSync.id,
+        status: financeSync.sync_status ?? null,
+        externalSystem: financeSync.external_system ?? null,
+        externalId: financeSync.external_id ?? null,
+        syncedAt: financeSync.synced_at ?? null,
+        errorMessage: financeSync.error_message ?? null,
+      } : null,
+    });
+
     return {
       orderId: order.id,
       quoteId: order.source_quote_id,
@@ -299,6 +382,7 @@ export default async function OrdersLayout() {
         <OrdersCommercialSourceSummary8U items={sourceItems} />
       </div>
       <OrdersProductionWorkspace8S orders={orders} catalogOptions={catalogOptions} />
+      <OrdersExecutionLogistics8T orders={logisticsOrders} />
     </>
   );
 }
