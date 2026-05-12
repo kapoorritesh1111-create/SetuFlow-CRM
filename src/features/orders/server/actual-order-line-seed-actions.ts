@@ -72,6 +72,142 @@ async function savePreparedGate(db: any, organizationId: string, orderId: string
   return db.from('order_approval_gates').insert(payload);
 }
 
+async function saveCommercialReconciliationGate(db: any, organizationId: string, orderId: string, snapshot: Record<string, unknown>) {
+  const now = new Date().toISOString();
+  const { data: existingGate } = await db
+    .from('order_approval_gates')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('order_id', orderId)
+    .eq('stage_key', 'quote_approved')
+    .eq('gate_type', 'commercial_reconciliation')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const payload = {
+    organization_id: organizationId,
+    order_id: orderId,
+    stage_key: 'quote_approved',
+    gate_type: 'commercial_reconciliation',
+    status: 'prepared',
+    preview_snapshot: snapshot,
+    updated_at: now,
+  };
+
+  if (existingGate?.id) {
+    return db.from('order_approval_gates').update(payload).eq('organization_id', organizationId).eq('id', existingGate.id);
+  }
+  return db.from('order_approval_gates').insert(payload);
+}
+
+export async function reconcileApprovedPdfSourceAction(formData: FormData) {
+  const workspace = await requireOrderWriteAccess();
+  const quoteId = String(formData.get('quote_id') ?? '').trim();
+  const reason = firstText(formData.get('reconciliation_reason'), 'Approved buyer-facing PDF/source will be used as commercial reference for this historical quote-version issue.');
+  if (!quoteId) redirect(buildRedirect('order-action-invalid'));
+
+  const db = (await createClient()) as any;
+  const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
+
+  const { data: quote, error: quoteError } = await db
+    .from('quotes')
+    .select('id, status, lead_id, accepted_version_id, current_version_id, currency, pricing_basis')
+    .eq('organization_id', organizationId)
+    .eq('id', quoteId)
+    .maybeSingle();
+  if (quoteError || !quote?.id) redirect(buildRedirect('order-quote-missing'));
+
+  const leadId = String(quote.lead_id ?? '').trim();
+  const sourceQuoteVersionId = String(quote.accepted_version_id ?? quote.current_version_id ?? '').trim();
+  if (!leadId || !sourceQuoteVersionId) redirect(buildRedirect('actual-order-lines-missing-source', quoteId));
+
+  const [{ data: lead }, { data: contract }, { data: existingOrder }, { data: version }, { data: documents }, { data: quoteLines }] = await Promise.all([
+    db.from('leads').select('id, lead_type, country, deal_currency, deal_value, company_name').eq('organization_id', organizationId).eq('id', leadId).maybeSingle(),
+    db.from('contracts').select('id, quote_id, lead_id, accepted_quote_version_id, pricing_basis, quote_currency, accepted_at').eq('organization_id', organizationId).eq('quote_id', quoteId).maybeSingle(),
+    db.from('orders').select('id, lead_id, source_quote_id, source_quote_version_id, legacy_contract_id, total_order_value').eq('organization_id', organizationId).eq('source_quote_id', quoteId).maybeSingle(),
+    db.from('quote_versions').select('id, status, approved_at, sent_at, total_line_count').eq('id', sourceQuoteVersionId).maybeSingle(),
+    db.from('documents').select('id, related_id, linked_quote_id, doc_type, file_name, status').eq('organization_id', organizationId).or(`linked_quote_id.eq.${quoteId},related_id.eq.${quoteId}`),
+    db.from('quote_version_line_items').select('id').eq('quote_version_id', sourceQuoteVersionId),
+  ]);
+
+  let orderId = existingOrder?.id as string | undefined;
+  const legacyContractId = contract?.id ?? existingOrder?.legacy_contract_id ?? null;
+
+  if (!orderId) {
+    const { data: insertedOrder, error: orderError } = await db
+      .from('orders')
+      .insert({
+        organization_id: organizationId,
+        legacy_contract_id: legacyContractId,
+        lead_id: leadId,
+        source_quote_id: quoteId,
+        source_quote_version_id: sourceQuoteVersionId,
+        order_type: 'regional',
+        current_stage: 'quote_approved',
+        status: 'draft',
+        approval_state: 'draft',
+        currency: quote.currency ?? contract?.quote_currency ?? lead?.deal_currency ?? null,
+        pricing_basis: quote.pricing_basis ?? contract?.pricing_basis ?? null,
+        total_order_value: lead?.deal_value ?? null,
+        metadata: { source: 'reconcileApprovedPdfSourceAction', approved_quote_status: quote.status, buyer_country: lead?.country ?? null, lead_type: lead?.lead_type ?? null },
+        created_by: actorUserId,
+        updated_by: actorUserId,
+      })
+      .select('id')
+      .single();
+    if (orderError || !insertedOrder?.id) redirect(buildRedirect('commercial-reconciliation-error', quoteId));
+    orderId = insertedOrder.id as string;
+  }
+
+  const pdfCount = Array.isArray(documents) ? documents.length : 0;
+  const quoteLineCount = Array.isArray(quoteLines) ? quoteLines.length : 0;
+  const expectedLineCount = safeNumber(version?.total_line_count, -1);
+  const snapshot = {
+    source: 'approved_pdf_fallback',
+    source_quote_id: quoteId,
+    source_quote_version_id: sourceQuoteVersionId,
+    quote_status: quote.status,
+    buyer_name: lead?.company_name ?? null,
+    pdf_or_source_count: pdfCount,
+    quote_line_count: quoteLineCount,
+    expected_line_count: expectedLineCount >= 0 ? expectedLineCount : null,
+    version_status: version?.status ?? null,
+    version_approved_at: version?.approved_at ?? null,
+    version_sent_at: version?.sent_at ?? null,
+    contract_accepted_at: contract?.accepted_at ?? null,
+    reason,
+    policy: 'Do not mutate quote history. Use approved PDF/source as commercial truth, then prepare/review actual order lines before buyer-facing execution documents.',
+  };
+
+  const { error: gateError } = await saveCommercialReconciliationGate(db, organizationId, orderId, snapshot);
+  if (gateError) redirect(buildRedirect('commercial-reconciliation-error', quoteId));
+
+  await db.from('order_stage_events').insert({
+    organization_id: organizationId,
+    order_id: orderId,
+    stage_key: 'quote_approved',
+    event_type: 'commercial_source_reconciled',
+    actor_user_id: actorUserId,
+    summary: 'Approved PDF/source selected as commercial reference for Orders reconciliation.',
+    payload: snapshot,
+  });
+
+  await writeAuditLog({
+    organizationId,
+    action: 'orders_approved_pdf_source_reconciled',
+    entityType: 'order',
+    entityId: orderId,
+    actorUserId,
+    payload: { previous: null, new: snapshot, metadata: { quote_id: quoteId, lead_id: leadId, legacy_contract_id: legacyContractId } },
+  });
+
+  revalidatePath('/orders');
+  revalidatePath(`/leads/${leadId}`);
+  redirect(buildRedirect('commercial-source-reconciled', quoteId));
+}
+
 export async function prepareActualOrderLinesRobustAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
