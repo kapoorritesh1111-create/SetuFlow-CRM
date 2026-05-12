@@ -15,6 +15,19 @@ function clean(value: unknown) {
   return text.length ? text : null;
 }
 
+function basisPrice(rule: any) {
+  return num(rule.fob_usd_per_case ?? rule.fob_usd_per_unit ?? rule.fob_usd) ?? num(rule.ex_factory_usd_per_case ?? rule.ex_factory_usd_per_unit ?? rule.ex_factory_usd) ?? num(rule.bulk_usd_per_kg ?? rule.bulk_ex_factory_usd_per_kg);
+}
+
+function detectOrderType(orderType: unknown, leadCountry: unknown, organizationCountry: unknown): 'regional' | 'export' {
+  const explicit = clean(orderType)?.toLowerCase();
+  if (explicit === 'export' || explicit === 'regional') return explicit;
+  const lead = clean(leadCountry)?.toLowerCase();
+  const org = clean(organizationCountry)?.toLowerCase();
+  if (!lead || !org) return 'regional';
+  return lead === org ? 'regional' : 'export';
+}
+
 function lineStatus(quoted: number | null, actual: number | null, changeType?: string | null): OrderLineComparison8S['status'] {
   if (changeType === 'added_after_quote' || changeType === 'added_catalog_after_quote' || (quoted == null && actual != null)) return 'added';
   if (actual == null) return 'needs_actual_lines';
@@ -23,61 +36,86 @@ function lineStatus(quoted: number | null, actual: number | null, changeType?: s
   return 'unchanged';
 }
 
-function detectOrderType(leadCountry: unknown, organizationCountry: unknown): 'regional' | 'export' {
-  const lead = clean(leadCountry)?.toLowerCase();
-  const org = clean(organizationCountry)?.toLowerCase();
-  if (!lead || !org) return 'regional';
-  return lead === org ? 'regional' : 'export';
-}
+function nextActionAndBlockers(args: { lines: OrderLineComparison8S[]; currentStage: string | null; approvalState: string | null; sourceHealthy: boolean; sourceReason?: string; documentCount: number; gateCount: number }) {
+  const reasons: string[] = [];
+  if (!args.sourceHealthy) reasons.push(args.sourceReason ?? 'Accepted quote-version source needs review.');
+  if (!args.lines.length) reasons.push('Actual order lines are not loaded for this order.');
+  if (args.lines.some((line) => line.status === 'needs_actual_lines')) reasons.push('Actual order lines required before internal approval.');
+  if (args.lines.some((line) => ['changed', 'removed', 'added'].includes(line.status) && !clean(line.reason))) reasons.push('Changed, removed, or added lines need a human reason.');
+  if (!args.gateCount && !reasons.length) reasons.push('First approval gate is pending.');
+  if (!args.documentCount && ['dispatch_invoice', 'completed'].includes(String(args.currentStage ?? '')) && !reasons.length) reasons.push('Dispatch/completion document evidence is pending.');
 
-function nextActionAndBlockers(lines: OrderLineComparison8S[], executionState: string, blockers: string[], docCount: number, commercialReasons: string[] = []) {
-  const reasons: string[] = [...commercialReasons];
-  if (!lines.length) reasons.push('Approved quote lines are not loaded for this order.');
-  if (lines.some((line) => line.status === 'needs_actual_lines')) reasons.push('Actual order lines required before internal approval.');
-  if (lines.some((line) => ['changed', 'removed', 'added'].includes(line.status) && !clean(line.reason))) reasons.push('Changed, removed, or added lines need a human reason.');
-  blockers.forEach((item) => reasons.push(String(item)));
-  if (!String(executionState).includes('approved') && !reasons.length) reasons.push('Internal approval is pending before buyer document can be sent.');
-  if (docCount === 0 && !reasons.length) reasons.push('Document evidence is pending for this order.');
   const first = reasons[0] ?? '';
-  const nextAction = first.includes('Commercial') || first.includes('approved PDF')
-    ? 'Reconcile approved commercial source'
-    : first.includes('Actual order lines') || first.includes('quote lines')
+  const nextAction = first.includes('source') || first.includes('version')
+    ? 'Reconcile accepted quote version'
+    : first.includes('Actual order lines') || first.includes('loaded')
       ? 'Confirm actual order lines'
       : first.includes('human reason')
         ? 'Add change reasons'
-        : first.includes('Internal approval')
+        : first.includes('approval gate')
           ? 'Approve actual lines'
-          : first.includes('Document evidence')
-            ? 'Attach or generate documents'
-            : first
-              ? 'Resolve blocker'
-              : 'Ready for next gate';
+          : first.includes('document evidence')
+            ? 'Attach order evidence'
+            : 'Ready for next stage gate';
   return { nextAction, blockerReasons: reasons };
 }
 
-function basisPrice(rule: any) {
-  return num(rule.fob_usd_per_case ?? rule.fob_usd_per_unit ?? rule.fob_usd) ?? num(rule.ex_factory_usd_per_case ?? rule.ex_factory_usd_per_unit ?? rule.ex_factory_usd) ?? num(rule.bulk_usd_per_kg ?? rule.bulk_ex_factory_usd_per_kg);
-}
-
-function commercialSourceFor(args: { quote: any; version: any; companyName: string; quoteLineCount: number; docCount: number; contract: any }): OrdersCommercialSourceItem8U {
+function commercialSourceFor(args: { quote: any; version: any; order: any; companyName: string; quoteLineCount: number; docCount: number }): OrdersCommercialSourceItem8U {
   const expectedLineCount = num(args.version?.total_line_count);
-  const approvedAt = args.version?.approved_at ?? args.contract?.accepted_at ?? null;
-  const accepted = args.quote?.status === 'accepted' || args.version?.status === 'accepted' || Boolean(approvedAt);
+  const approvedAt = args.version?.approved_at ?? args.quote?.approved_at ?? null;
+  const accepted = args.quote?.status === 'accepted' && args.quote?.accepted_version_id && args.order?.source_quote_version_id === args.quote.accepted_version_id;
   const hasPdf = args.docCount > 0;
 
   if (!accepted) {
-    return { quoteId: args.quote.id, companyName: args.companyName, state: 'pdf_fallback', label: 'Quote not fully accepted', detail: 'Quote is visible in Orders but buyer approval is not fully locked yet. Use Lead Command Center PDF/source before creating buyer execution documents.', pdfCount: args.docCount, quoteLineCount: args.quoteLineCount, expectedLineCount, approvedAt };
+    return {
+      quoteId: args.quote?.id ?? args.order?.source_quote_id,
+      companyName: args.companyName,
+      state: 'needs_reconciliation',
+      label: 'Accepted version mismatch',
+      detail: 'The order source version must match the quote accepted_version_id before buyer-facing execution documents are trusted.',
+      pdfCount: args.docCount,
+      quoteLineCount: args.quoteLineCount,
+      expectedLineCount,
+      approvedAt,
+    };
   }
   if (expectedLineCount != null && expectedLineCount > 0 && expectedLineCount !== args.quoteLineCount) {
-    return { quoteId: args.quote.id, companyName: args.companyName, state: 'needs_reconciliation', label: 'Quote-version line mismatch', detail: `Accepted quote expects ${expectedLineCount} lines but ${args.quoteLineCount} loaded rows are available. Reconcile against the approved PDF/source before generating Order Confirmation or Proforma.`, pdfCount: args.docCount, quoteLineCount: args.quoteLineCount, expectedLineCount, approvedAt };
+    return {
+      quoteId: args.quote.id,
+      companyName: args.companyName,
+      state: 'needs_reconciliation',
+      label: 'Quote-version line mismatch',
+      detail: `Accepted quote expects ${expectedLineCount} lines but ${args.quoteLineCount} loaded rows are available. Reconcile against the accepted version before generating order documents.`,
+      pdfCount: args.docCount,
+      quoteLineCount: args.quoteLineCount,
+      expectedLineCount,
+      approvedAt,
+    };
   }
-  if (expectedLineCount === 0 && args.quoteLineCount > 0) {
-    return { quoteId: args.quote.id, companyName: args.companyName, state: hasPdf ? 'pdf_fallback' : 'needs_reconciliation', label: hasPdf ? 'Approved PDF fallback available' : 'Approved snapshot incomplete', detail: hasPdf ? 'Historical quote-version header has no line count, but an approved PDF/source is available. Use the approved PDF/source as the commercial reference.' : 'Historical quote-version header has no line count and no linked PDF/source was found. Reconcile before buyer-facing documents.', pdfCount: args.docCount, quoteLineCount: args.quoteLineCount, expectedLineCount, approvedAt };
+  if (!hasPdf) {
+    return {
+      quoteId: args.quote.id,
+      companyName: args.companyName,
+      state: 'pdf_fallback',
+      label: 'Accepted source version present',
+      detail: 'Accepted quote-version lines are present. PDF/source evidence is not linked yet, so buyer-facing documents should show a source-evidence warning.',
+      pdfCount: args.docCount,
+      quoteLineCount: args.quoteLineCount,
+      expectedLineCount,
+      approvedAt,
+    };
   }
-  if (!hasPdf && accepted) {
-    return { quoteId: args.quote.id, companyName: args.companyName, state: 'missing', label: 'Approved PDF/source missing', detail: 'Accepted quote has no linked approved PDF/source record in Orders. Use Lead Command Center source before buyer-facing execution documents.', pdfCount: args.docCount, quoteLineCount: args.quoteLineCount, expectedLineCount, approvedAt };
-  }
-  return { quoteId: args.quote.id, companyName: args.companyName, state: 'clean', label: 'Approved commercial source present', detail: 'Approved PDF/source and quote-version line count are available for this order.', pdfCount: args.docCount, quoteLineCount: args.quoteLineCount, expectedLineCount, approvedAt };
+  return {
+    quoteId: args.quote.id,
+    companyName: args.companyName,
+    state: 'clean',
+    label: 'Accepted commercial source verified',
+    detail: 'Accepted quote-version lineage and source evidence are available for this order.',
+    pdfCount: args.docCount,
+    quoteLineCount: args.quoteLineCount,
+    expectedLineCount,
+    approvedAt,
+  };
 }
 
 export default async function OrdersLayout() {
@@ -95,52 +133,45 @@ export default async function OrdersLayout() {
   const orgId = workspace.organization.id;
   const orgCountry = clean((workspace.organization as any).country ?? (workspace.organization as any).country_name ?? (workspace.organization as any).billing_country);
 
-  const { data: quotes, error } = await db
-    .from('quotes')
-    .select('id, status, currency, updated_at, lead_id, accepted_version_id, current_version_id')
+  const { data: rawOrders, error: ordersError } = await db
+    .from('orders')
+    .select('id, lead_id, source_quote_id, source_quote_version_id, order_number, order_type, current_stage, status, approval_state, currency, pricing_basis, total_order_value, destination_country_id, created_at, updated_at')
     .eq('organization_id', orgId)
-    .in('status', ['accepted', 'sent'])
     .order('updated_at', { ascending: false })
     .limit(500);
 
-  if (error) {
-    return <EmptyState title="Could not load orders" description={String(error.message ?? 'Unknown error')} />;
+  if (ordersError) {
+    return <EmptyState title="Could not load structured orders" description={String(ordersError.message ?? 'Unknown error')} />;
   }
 
-  const quoteRows = Array.isArray(quotes) ? quotes : [];
-  const quoteIds = quoteRows.map((quote: any) => quote.id).filter(Boolean);
-  const leadIds = [...new Set(quoteRows.map((quote: any) => quote.lead_id).filter(Boolean))];
-  const versionIds = [...new Set(quoteRows.map((quote: any) => quote.accepted_version_id ?? quote.current_version_id).filter(Boolean))];
+  const orderRows = Array.isArray(rawOrders) ? rawOrders : [];
+  if (!orderRows.length) {
+    return <OrdersProductionWorkspace8S orders={[]} catalogOptions={[]} />;
+  }
 
-  const [leadsResult, docsResult, contractsResult, executionOrdersResult, quoteLinesResult, versionsResult, catalogResult] = await Promise.all([
-    leadIds.length
-      ? db.from('leads').select('id, company_name, country, deal_value, deal_currency, lead_type').eq('organization_id', orgId).in('id', leadIds)
-      : Promise.resolve({ data: [] }),
-    quoteIds.length
-      ? db.from('documents').select('id, related_id, linked_quote_id, related_entity, status, doc_type, file_name').eq('organization_id', orgId).or(`linked_quote_id.in.(${quoteIds.join(',')}),related_id.in.(${quoteIds.join(',')})`).order('uploaded_at', { ascending: false })
-      : Promise.resolve({ data: [] }),
-    quoteIds.length
-      ? db.from('contracts').select('id, quote_id, execution_state, execution_blockers, status, pricing_basis, quote_currency, accepted_at').eq('organization_id', orgId).in('quote_id', quoteIds)
-      : Promise.resolve({ data: [] }),
-    quoteIds.length
-      ? db.from('orders').select('id, source_quote_id, approval_state, current_stage, total_order_value, pricing_basis, currency').eq('organization_id', orgId).in('source_quote_id', quoteIds)
-      : Promise.resolve({ data: [] }),
-    versionIds.length
-      ? db.from('quote_version_line_items').select('id, quote_version_id, product_name, pack_label, sku_code, hsn_code, moq, final_unit_price, final_case_price, final_kg_price, display_currency, sort_order, basis_applied, pricing_mode, catalog_price_snapshot').in('quote_version_id', versionIds).order('sort_order', { ascending: true })
-      : Promise.resolve({ data: [] }),
-    versionIds.length
-      ? db.from('quote_versions').select('id, status, approved_at, sent_at, total_line_count').in('id', versionIds)
-      : Promise.resolve({ data: [] }),
+  const quoteIds = [...new Set(orderRows.map((order: any) => order.source_quote_id).filter(Boolean))];
+  const leadIds = [...new Set(orderRows.map((order: any) => order.lead_id).filter(Boolean))];
+  const orderIds = orderRows.map((order: any) => order.id).filter(Boolean);
+  const sourceVersionIds = [...new Set(orderRows.map((order: any) => order.source_quote_version_id).filter(Boolean))];
+
+  const [quotesResult, leadsResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult] = await Promise.all([
+    quoteIds.length ? db.from('quotes').select('id, status, currency, lead_id, current_version_id, accepted_version_id, approved_at, pricing_basis').eq('organization_id', orgId).in('id', quoteIds) : Promise.resolve({ data: [] }),
+    leadIds.length ? db.from('leads').select('id, company_name, country, deal_value, deal_currency, lead_type').eq('organization_id', orgId).in('id', leadIds) : Promise.resolve({ data: [] }),
+    quoteIds.length || orderIds.length ? db.from('documents').select('id, related_id, linked_quote_id, related_entity, status, doc_type, file_name').eq('organization_id', orgId).or(`linked_quote_id.in.(${quoteIds.join(',')}),related_id.in.(${[...quoteIds, ...orderIds].join(',')})`).order('uploaded_at', { ascending: false }) : Promise.resolve({ data: [] }),
+    orderIds.length ? db.from('order_approval_gates').select('id, order_id, stage_key, gate_type, status').eq('organization_id', orgId).in('order_id', orderIds) : Promise.resolve({ data: [] }),
+    sourceVersionIds.length ? db.from('quote_version_line_items').select('id, quote_version_id, product_name, pack_label, sku_code, hsn_code, moq, final_unit_price, final_case_price, final_kg_price, display_currency, sort_order, basis_applied, pricing_mode, catalog_price_snapshot').in('quote_version_id', sourceVersionIds).order('sort_order', { ascending: true }) : Promise.resolve({ data: [] }),
+    sourceVersionIds.length ? db.from('quote_versions').select('id, version_no, status, approved_at, sent_at, total_line_count').in('id', sourceVersionIds) : Promise.resolve({ data: [] }),
+    orderIds.length ? db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, created_at, pricing_snapshot').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: true }) : Promise.resolve({ data: [] }),
     db.from('active_product_pricing_rules_v').select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg').eq('organization_id', orgId).eq('is_active', true).eq('is_quoteable', true).order('product_name', { ascending: true }).limit(200),
   ]);
 
-  const leads = new Map((Array.isArray(leadsResult.data) ? leadsResult.data : []).map((lead: any) => [lead.id, lead]));
-  const contracts = new Map((Array.isArray(contractsResult.data) ? contractsResult.data : []).map((contract: any) => [contract.quote_id, contract]));
-  const executionOrders = new Map((Array.isArray(executionOrdersResult.data) ? executionOrdersResult.data : []).map((order: any) => [order.source_quote_id, order]));
-  const quoteVersions = new Map((Array.isArray(versionsResult.data) ? versionsResult.data : []).map((version: any) => [version.id, version]));
-  const documents = Array.isArray(docsResult.data) ? docsResult.data : [];
+  const quoteMap = new Map((Array.isArray(quotesResult.data) ? quotesResult.data : []).map((quote: any) => [quote.id, quote]));
+  const leadMap = new Map((Array.isArray(leadsResult.data) ? leadsResult.data : []).map((lead: any) => [lead.id, lead]));
+  const versionMap = new Map((Array.isArray(versionsResult.data) ? versionsResult.data : []).map((version: any) => [version.id, version]));
+  const documentRows = Array.isArray(documentsResult.data) ? documentsResult.data : [];
+  const gateRows = Array.isArray(gatesResult.data) ? gatesResult.data : [];
   const quoteLines = Array.isArray(quoteLinesResult.data) ? quoteLinesResult.data : [];
-  const executionOrderIds = (Array.isArray(executionOrdersResult.data) ? executionOrdersResult.data : []).map((order: any) => order.id).filter(Boolean);
+  const orderLines = Array.isArray(orderLinesResult.data) ? orderLinesResult.data : [];
 
   const catalogOptions: CatalogOrderOption8S[] = (Array.isArray(catalogResult.data) ? catalogResult.data : []).map((rule: any) => {
     const price = basisPrice(rule);
@@ -161,30 +192,20 @@ export default async function OrdersLayout() {
     };
   });
 
-  const { data: actualLinesData } = executionOrderIds.length
-    ? await db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, created_at, pricing_snapshot').eq('organization_id', orgId).in('order_id', executionOrderIds).order('created_at', { ascending: true })
-    : { data: [] };
-  const actualLines = Array.isArray(actualLinesData) ? actualLinesData : [];
   const sourceItems: OrdersCommercialSourceItem8U[] = [];
 
-  const orders: ProductionOrder8S[] = quoteRows.map((quote: any) => {
-    const lead = leads.get(quote.lead_id) as any;
-    const contract = contracts.get(quote.id) as any;
-    const executionOrder = executionOrders.get(quote.id) as any;
-    const docsForQuote = documents.filter((doc: any) => doc.linked_quote_id === quote.id || doc.related_id === quote.id || doc.related_id === quote.lead_id || doc.related_id === contract?.id);
-    const docCount = docsForQuote.length;
-    const contractBlockers = Array.isArray(contract?.execution_blockers) ? contract.execution_blockers.map((item: any) => String(item)) : [];
-    const sourceVersionId = quote.accepted_version_id ?? quote.current_version_id;
-    const version = quoteVersions.get(sourceVersionId) as any;
-    const qLines = quoteLines.filter((line: any) => line.quote_version_id === sourceVersionId);
-    const sourceItem = commercialSourceFor({ quote, version, companyName: lead?.company_name ?? 'Unmapped buyer', quoteLineCount: qLines.length, docCount, contract });
-    sourceItems.push(sourceItem);
-    const commercialReasons = sourceItem.state === 'clean' || sourceItem.state === 'pdf_fallback' ? [] : [sourceItem.detail];
-    const aLines = actualLines.filter((line: any) => line.order_id === executionOrder?.id);
+  const orders: ProductionOrder8S[] = orderRows.map((order: any) => {
+    const quote = quoteMap.get(order.source_quote_id) as any;
+    const lead = leadMap.get(order.lead_id) as any;
+    const version = versionMap.get(order.source_quote_version_id) as any;
+    const docsForOrder = documentRows.filter((doc: any) => doc.linked_quote_id === order.source_quote_id || doc.related_id === order.source_quote_id || doc.related_id === order.id);
+    const gatesForOrder = gateRows.filter((gate: any) => gate.order_id === order.id);
+    const qLines = quoteLines.filter((line: any) => line.quote_version_id === order.source_quote_version_id);
+    const aLines = orderLines.filter((line: any) => line.order_id === order.id);
     const actualByQuoteLine = new Map(aLines.filter((line: any) => line.source_quote_version_line_item_id).map((line: any) => [line.source_quote_version_line_item_id, line]));
     const usedActual = new Set<string>();
     let quotedTotal = 0;
-    const orderPricingBasis = clean(executionOrder?.pricing_basis ?? contract?.pricing_basis ?? qLines[0]?.basis_applied ?? qLines[0]?.pricing_mode ?? 'FOB');
+    const orderPricingBasis = clean(order.pricing_basis ?? quote?.pricing_basis ?? qLines[0]?.basis_applied ?? qLines[0]?.pricing_mode ?? 'FOB');
 
     const comparisonLines: OrderLineComparison8S[] = qLines.map((line: any) => {
       const actual = actualByQuoteLine.get(line.id) as any;
@@ -204,7 +225,7 @@ export default async function OrdersLayout() {
         actualQuantity: actualQty,
         unitOfMeasure: actual?.unit_of_measure ?? 'units',
         unitPrice,
-        currency: actual?.currency ?? line.display_currency ?? quote.currency ?? lead?.deal_currency ?? null,
+        currency: actual?.currency ?? line.display_currency ?? order.currency ?? quote?.currency ?? lead?.deal_currency ?? null,
         quotedTotal: qTotal,
         lineTotal: actual ? num(actual.line_total) : actualQty != null && unitPrice != null ? actualQty * unitPrice : null,
         status: lineStatus(quotedQty, actualQty, actual?.change_type),
@@ -226,7 +247,7 @@ export default async function OrdersLayout() {
         actualQuantity: actualQty,
         unitOfMeasure: line.unit_of_measure ?? 'units',
         unitPrice: num(line.unit_price),
-        currency: line.currency ?? quote.currency ?? lead?.deal_currency ?? null,
+        currency: line.currency ?? order.currency ?? quote?.currency ?? lead?.deal_currency ?? null,
         quotedTotal: null,
         lineTotal: num(line.line_total),
         status: lineStatus(num(line.quoted_quantity), actualQty, line.change_type),
@@ -237,25 +258,33 @@ export default async function OrdersLayout() {
     });
 
     const actualTotalFromLines = comparisonLines.reduce((sum, line) => sum + Number(line.lineTotal ?? 0), 0);
-    const actualTotal = actualTotalFromLines || num(executionOrder?.total_order_value);
-    const executionState = executionOrder?.approval_state ?? contract?.execution_state ?? 'quote_approved';
-    const { nextAction, blockerReasons } = nextActionAndBlockers(comparisonLines, executionState, contractBlockers, docCount, commercialReasons);
-    const orderType = detectOrderType(lead?.country, orgCountry);
+    const actualTotal = actualTotalFromLines || num(order.total_order_value);
+    const sourceItem = commercialSourceFor({ quote, version, order, companyName: lead?.company_name ?? 'Unmapped buyer', quoteLineCount: qLines.length, docCount: docsForOrder.length });
+    sourceItems.push(sourceItem);
+    const sourceHealthy = sourceItem.state === 'clean' || sourceItem.state === 'pdf_fallback';
+    const { nextAction, blockerReasons } = nextActionAndBlockers({ lines: comparisonLines, currentStage: order.current_stage, approvalState: order.approval_state, sourceHealthy, sourceReason: sourceItem.detail, documentCount: docsForOrder.length, gateCount: gatesForOrder.length });
 
     return {
-      quoteId: quote.id,
-      leadId: quote.lead_id,
-      contractId: contract?.id ?? null,
-      companyName: lead?.company_name ?? 'Unmapped buyer',
+      orderId: order.id,
+      quoteId: order.source_quote_id,
+      leadId: order.lead_id,
+      contractId: null,
+      companyName: lead?.company_name ?? order.order_number ?? 'Structured order',
       country: lead?.country ?? null,
       orgCountry,
-      orderType,
-      currency: quote.currency ?? executionOrder?.currency ?? contract?.quote_currency ?? lead?.deal_currency ?? null,
+      orderType: detectOrderType(order.order_type, lead?.country, orgCountry),
+      currency: order.currency ?? quote?.currency ?? lead?.deal_currency ?? null,
       quotedTotal: quotedTotal || null,
       actualTotal,
-      status: quote.status ?? 'accepted',
-      executionState,
-      documentCount: docCount,
+      status: order.status ?? quote?.status ?? 'accepted',
+      executionState: order.approval_state ?? order.current_stage ?? 'quote_approved',
+      currentStage: order.current_stage ?? null,
+      approvalState: order.approval_state ?? null,
+      sourceQuoteVersionId: order.source_quote_version_id ?? null,
+      acceptedVersionId: quote?.accepted_version_id ?? null,
+      versionLabel: version?.version_no ? `v${version.version_no} · ${version.status ?? 'accepted'}` : order.source_quote_version_id ? 'accepted source version' : 'source version missing',
+      documentCount: docsForOrder.length,
+      gateCount: gatesForOrder.length,
       blockerCount: blockerReasons.length,
       blockerReasons,
       nextAction,
