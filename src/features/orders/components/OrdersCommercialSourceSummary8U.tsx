@@ -1,3 +1,5 @@
+'use client';
+
 export type OrdersCommercialSourceItem8U = {
   quoteId: string;
   companyName: string;
