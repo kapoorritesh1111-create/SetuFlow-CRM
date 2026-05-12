@@ -28,6 +28,25 @@ interface LeadDrawerFooterProps {
   quickScanStatus?: { tone: 'idle' | 'loading' | 'success' | 'error'; message: string };
 }
 
+function dispatchLeadCaptureSubmit(event: React.MouseEvent<HTMLButtonElement>, formId?: string) {
+  const form = formId
+    ? (document.getElementById(formId) as HTMLFormElement | null)
+    : event.currentTarget.closest('form');
+
+  if (!form || form.dataset.leadContactValidation !== 'app-owned') return;
+
+  // Quick Add Lead owns validation in React/server code. When browser-native
+  // validation has been relaxed for the Email OR Phone OR WhatsApp rule, make
+  // sure the footer button still sends the event through the app submit handler.
+  event.preventDefault();
+  const submitted = form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  if (submitted && typeof form.requestSubmit === 'function') {
+    // If no React handler cancelled the submit event, fall back to requestSubmit.
+    // This preserves normal form behavior for future forms using the same footer.
+    form.requestSubmit();
+  }
+}
+
 export default function LeadDrawerFooter({
   error,
   success,
@@ -122,6 +141,7 @@ export default function LeadDrawerFooter({
             type="submit"
             form={formId}
             disabled={isPending || disableSubmit}
+            onClick={(event) => dispatchLeadCaptureSubmit(event, formId)}
             className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : submitLabel ?? (isQuickMode ? '✓ Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead')}
