@@ -1,5 +1,6 @@
 'use server';
 
+import { randomUUID } from 'crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
@@ -9,6 +10,10 @@ import { hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { writeAuditLog } from '@/lib/auditLog';
 
 type DocumentType = 'order_confirmation' | 'proforma_invoice' | 'dispatch_invoice';
+
+function buildAppOrigin() {
+  return (process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://www.setuflowcrm.com').replace(/\/$/, '');
+}
 
 function normalizeDocumentType(value: FormDataEntryValue | null): DocumentType {
   const raw = String(value ?? '').trim().toLowerCase();
@@ -110,6 +115,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   const orderId = String(formData.get('order_id') ?? '').trim();
   const contractId = String(formData.get('contract_id') ?? '').trim();
   const recipient = String(formData.get('recipient') ?? '').trim();
+  const recipientRole = String(formData.get('recipient_role') ?? '').trim();
   const note = String(formData.get('note') ?? '').trim();
   const documentType = normalizeDocumentType(formData.get('document_type') ?? formData.get('document_kind'));
   const channel = normalizeChannel(formData.get('channel'));
@@ -162,6 +168,30 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   const resolvedRecipient = recipient || lead?.email || lead?.whatsapp || lead?.phone || '';
   const now = new Date().toISOString();
   const documentLabel = labelFor(documentType);
+  const shareToken = randomUUID();
+  const shareUrl = `${buildAppOrigin()}/order-documents/preview/${shareToken}`;
+
+  const { data: sendRow } = await db.from('order_document_sends').insert({
+    organization_id: workspace.organization.id,
+    order_id: order.id,
+    order_document_id: trackedDocument.id,
+    document_type: documentType,
+    channel,
+    recipient: resolvedRecipient || null,
+    recipient_role: recipientRole || null,
+    note: note || null,
+    status: 'sent',
+    share_token: shareToken,
+    share_url: shareUrl,
+    sent_at: now,
+    created_by: workspace.user.id,
+    metadata: {
+      source: 'sendOrderDocumentLinkAction',
+      source_quote_id: order.source_quote_id ?? null,
+      source_quote_version_id: order.source_quote_version_id ?? null,
+      lead_id: order.lead_id ?? null,
+    },
+  }).select('id').single();
 
   await db.from('order_documents').update({
     status: 'sent',
@@ -170,6 +200,8 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     source_snapshot: {
       sent_channel: channel,
       sent_recipient: resolvedRecipient || null,
+      latest_send_id: sendRow?.id ?? null,
+      latest_share_url: shareUrl,
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
       note: note || null,
@@ -183,11 +215,13 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     stageKey: documentType,
     eventType: `${documentType}_sent`,
     actorUserId: workspace.user.id,
-    summary: `${documentLabel} marked sent${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
+    summary: `${documentLabel} tracked send${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
     eventPayload: {
       order_document_id: trackedDocument.id,
+      order_document_send_id: sendRow?.id ?? null,
       channel,
       recipient: resolvedRecipient || null,
+      share_url: shareUrl,
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
     },
@@ -198,20 +232,20 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     lead_id: order.lead_id,
     actor_user_id: workspace.user.id,
     kind: 'order_document_sent',
-    message: `${documentLabel} marked sent${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
+    message: `${documentLabel} tracked send${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
     occurred_at: now,
   }).then(() => null);
 
   await writeAuditLog({
     organizationId: workspace.organization.id,
     action: 'order_document_sent',
-    entityType: 'order_document',
-    entityId: trackedDocument.id,
+    entityType: 'order_document_send',
+    entityId: sendRow?.id ?? trackedDocument.id,
     actorUserId: workspace.user.id,
     payload: {
-      previous: { status: trackedDocument.status },
-      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now },
-      metadata: { source: 'sendOrderDocumentLinkAction', order_id: order.id, quote_id: order.source_quote_id, lead_id: order.lead_id, note },
+      previous: { document_status: trackedDocument.status },
+      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now, share_url: shareUrl },
+      metadata: { source: 'sendOrderDocumentLinkAction', order_id: order.id, quote_id: order.source_quote_id, lead_id: order.lead_id, order_document_id: trackedDocument.id, note },
     },
   });
 
