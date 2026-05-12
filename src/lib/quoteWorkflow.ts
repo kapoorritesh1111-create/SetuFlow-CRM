@@ -17,6 +17,41 @@ export const QUOTE_STATUSES = [
 
 export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
 
+export const QUOTE_VERSION_IMMUTABLE_STATUSES = [
+  'sent',
+  'approved',
+  'accepted',
+  'rejected',
+  'expired',
+] as const;
+
+export type QuoteVersionImmutableStatus = (typeof QUOTE_VERSION_IMMUTABLE_STATUSES)[number];
+
+export function isQuoteVersionImmutableStatus(status: string | null | undefined): boolean {
+  return QUOTE_VERSION_IMMUTABLE_STATUSES.includes(String(status ?? '') as QuoteVersionImmutableStatus);
+}
+
+export function shouldQuoteStatusSetAcceptedVersionId(status: string | null | undefined): boolean {
+  return String(status ?? '').trim().toLowerCase() === 'accepted';
+}
+
+export function getQuoteVersionLineageLabel(input: {
+  versionNo?: number | string | null;
+  isCurrent?: boolean;
+  isAccepted?: boolean;
+  isOrderSource?: boolean;
+  status?: string | null;
+}) {
+  const label = input.versionNo ? `v${input.versionNo}` : 'version';
+  const badges = [
+    input.isCurrent ? 'current' : null,
+    input.isAccepted ? 'accepted' : null,
+    input.isOrderSource ? 'order source' : null,
+    input.status ? String(input.status) : null,
+  ].filter(Boolean);
+  return badges.length ? `${label} (${badges.join(', ')})` : label;
+}
+
 export type QuoteWorkflowMeta = {
   templateId?: string | null;
   pricingBasis?: QuotePricingBasis | null;
