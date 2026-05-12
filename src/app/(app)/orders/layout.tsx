@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import { OrdersProductionWorkspace8S, type OrderLineComparison8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace8S';
+import { OrdersProductionWorkspace8S, type CatalogOrderOption8S, type OrderLineComparison8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace8S';
 
 function num(value: unknown) {
   const parsed = Number(value);
@@ -15,7 +15,7 @@ function clean(value: unknown) {
 }
 
 function lineStatus(quoted: number | null, actual: number | null, changeType?: string | null): OrderLineComparison8S['status'] {
-  if (changeType === 'added_after_quote' || (quoted == null && actual != null)) return 'added';
+  if (changeType === 'added_after_quote' || changeType === 'added_catalog_after_quote' || (quoted == null && actual != null)) return 'added';
   if (actual == null) return 'needs_actual_lines';
   if (actual <= 0) return 'removed';
   if (quoted != null && actual !== quoted) return 'changed';
@@ -51,6 +51,10 @@ function nextActionAndBlockers(lines: OrderLineComparison8S[], executionState: s
   return { nextAction, blockerReasons: reasons };
 }
 
+function basisPrice(rule: any) {
+  return num(rule.fob_usd_per_case ?? rule.fob_usd_per_unit ?? rule.fob_usd) ?? num(rule.ex_factory_usd_per_case ?? rule.ex_factory_usd_per_unit ?? rule.ex_factory_usd) ?? num(rule.bulk_usd_per_kg ?? rule.bulk_ex_factory_usd_per_kg);
+}
+
 export default async function OrdersLayout() {
   const workspace = await getWorkspaceAccess();
 
@@ -83,7 +87,7 @@ export default async function OrdersLayout() {
   const leadIds = [...new Set(quoteRows.map((quote: any) => quote.lead_id).filter(Boolean))];
   const versionIds = [...new Set(quoteRows.map((quote: any) => quote.accepted_version_id ?? quote.current_version_id).filter(Boolean))];
 
-  const [leadsResult, docsResult, contractsResult, executionOrdersResult, quoteLinesResult] = await Promise.all([
+  const [leadsResult, docsResult, contractsResult, executionOrdersResult, quoteLinesResult, catalogResult] = await Promise.all([
     leadIds.length
       ? db.from('leads').select('id, company_name, country, deal_value, deal_currency, lead_type').eq('organization_id', orgId).in('id', leadIds)
       : Promise.resolve({ data: [] }),
@@ -91,14 +95,15 @@ export default async function OrdersLayout() {
       ? db.from('documents').select('id, related_id, related_entity, status').eq('organization_id', orgId).in('related_entity', ['quote', 'lead', 'contract']).order('uploaded_at', { ascending: false })
       : Promise.resolve({ data: [] }),
     quoteIds.length
-      ? db.from('contracts').select('id, quote_id, execution_state, execution_blockers, status').eq('organization_id', orgId).in('quote_id', quoteIds)
+      ? db.from('contracts').select('id, quote_id, execution_state, execution_blockers, status, pricing_basis, quote_currency').eq('organization_id', orgId).in('quote_id', quoteIds)
       : Promise.resolve({ data: [] }),
     quoteIds.length
-      ? db.from('orders').select('id, source_quote_id, approval_state, current_stage, total_order_value').eq('organization_id', orgId).in('source_quote_id', quoteIds)
+      ? db.from('orders').select('id, source_quote_id, approval_state, current_stage, total_order_value, pricing_basis, currency').eq('organization_id', orgId).in('source_quote_id', quoteIds)
       : Promise.resolve({ data: [] }),
     versionIds.length
-      ? db.from('quote_version_line_items').select('id, quote_version_id, product_name, pack_label, sku_code, hsn_code, moq, final_unit_price, final_case_price, final_kg_price, display_currency, sort_order').in('quote_version_id', versionIds).order('sort_order', { ascending: true })
+      ? db.from('quote_version_line_items').select('id, quote_version_id, product_name, pack_label, sku_code, hsn_code, moq, final_unit_price, final_case_price, final_kg_price, display_currency, sort_order, basis_applied, pricing_mode, catalog_price_snapshot').in('quote_version_id', versionIds).order('sort_order', { ascending: true })
       : Promise.resolve({ data: [] }),
+    db.from('active_product_pricing_rules_v').select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg').eq('organization_id', orgId).eq('is_active', true).eq('is_quoteable', true).order('product_name', { ascending: true }).limit(200),
   ]);
 
   const leads = new Map((Array.isArray(leadsResult.data) ? leadsResult.data : []).map((lead: any) => [lead.id, lead]));
@@ -108,8 +113,27 @@ export default async function OrdersLayout() {
   const quoteLines = Array.isArray(quoteLinesResult.data) ? quoteLinesResult.data : [];
   const executionOrderIds = (Array.isArray(executionOrdersResult.data) ? executionOrdersResult.data : []).map((order: any) => order.id).filter(Boolean);
 
+  const catalogOptions: CatalogOrderOption8S[] = (Array.isArray(catalogResult.data) ? catalogResult.data : []).map((rule: any) => {
+    const price = basisPrice(rule);
+    const basisLabel = rule.fob_usd_per_case || rule.fob_usd_per_unit || rule.fob_usd ? 'FOB' : rule.ex_factory_usd_per_case || rule.ex_factory_usd_per_unit || rule.ex_factory_usd ? 'EXW' : rule.bulk_usd_per_kg || rule.bulk_ex_factory_usd_per_kg ? 'BULK' : 'Pricing review';
+    return {
+      id: rule.id,
+      label: `${rule.product_name ?? 'Catalog product'}${rule.pack_label ? ` · ${rule.pack_label}` : ''}${rule.sku_code ? ` · ${rule.sku_code}` : ''}${price != null ? ` · ${basisLabel} USD ${price}` : ''}`,
+      productName: rule.product_name ?? 'Catalog product',
+      variantName: rule.pack_label ?? null,
+      skuCode: rule.sku_code ?? null,
+      hsnCode: rule.hsn_code ?? null,
+      pricingType: rule.pricing_type ?? null,
+      basisLabel,
+      fobPrice: num(rule.fob_usd_per_case ?? rule.fob_usd_per_unit ?? rule.fob_usd),
+      exFactoryPrice: num(rule.ex_factory_usd_per_case ?? rule.ex_factory_usd_per_unit ?? rule.ex_factory_usd),
+      bulkPrice: num(rule.bulk_usd_per_kg ?? rule.bulk_ex_factory_usd_per_kg),
+      currency: 'USD',
+    };
+  });
+
   const { data: actualLinesData } = executionOrderIds.length
-    ? await db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, created_at').eq('organization_id', orgId).in('order_id', executionOrderIds).order('created_at', { ascending: true })
+    ? await db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, created_at, pricing_snapshot').eq('organization_id', orgId).in('order_id', executionOrderIds).order('created_at', { ascending: true })
     : { data: [] };
   const actualLines = Array.isArray(actualLinesData) ? actualLinesData : [];
 
@@ -125,6 +149,7 @@ export default async function OrdersLayout() {
     const actualByQuoteLine = new Map(aLines.filter((line: any) => line.source_quote_version_line_item_id).map((line: any) => [line.source_quote_version_line_item_id, line]));
     const usedActual = new Set<string>();
     let quotedTotal = 0;
+    const orderPricingBasis = clean(executionOrder?.pricing_basis ?? contract?.pricing_basis ?? qLines[0]?.basis_applied ?? qLines[0]?.pricing_mode ?? 'FOB');
 
     const comparisonLines: OrderLineComparison8S[] = qLines.map((line: any) => {
       const actual = actualByQuoteLine.get(line.id) as any;
@@ -150,6 +175,7 @@ export default async function OrdersLayout() {
         status: lineStatus(quotedQty, actualQty, actual?.change_type),
         reason: actual?.change_reason ?? null,
         isActual: Boolean(actual?.id),
+        pricingBasis: clean(actual?.pricing_snapshot?.pricing_basis ?? line.basis_applied ?? line.pricing_mode ?? orderPricingBasis),
       };
     });
 
@@ -171,6 +197,7 @@ export default async function OrdersLayout() {
         status: lineStatus(num(line.quoted_quantity), actualQty, line.change_type),
         reason: line.change_reason ?? null,
         isActual: true,
+        pricingBasis: clean(line.pricing_snapshot?.pricing_basis ?? orderPricingBasis),
       });
     });
 
@@ -188,7 +215,7 @@ export default async function OrdersLayout() {
       country: lead?.country ?? null,
       orgCountry,
       orderType,
-      currency: quote.currency ?? lead?.deal_currency ?? null,
+      currency: quote.currency ?? executionOrder?.currency ?? contract?.quote_currency ?? lead?.deal_currency ?? null,
       quotedTotal: quotedTotal || null,
       actualTotal,
       status: quote.status ?? 'accepted',
@@ -198,8 +225,9 @@ export default async function OrdersLayout() {
       blockerReasons,
       nextAction,
       lines: comparisonLines,
+      pricingBasis: orderPricingBasis,
     };
   });
 
-  return <OrdersProductionWorkspace8S orders={orders} />;
+  return <OrdersProductionWorkspace8S orders={orders} catalogOptions={catalogOptions} />;
 }
