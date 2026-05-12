@@ -6,7 +6,36 @@ Last updated: 2026-05-12
 
 ## Purpose
 
-Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, shipment progress, and order closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
+Use Orders after quote acceptance to manage execution readiness, release evidence, dispatch documents, shipment progress, trade requirements, and order closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, or close execution.
+
+## Sprint 8U industry-neutral trade requirement search and attach
+
+Sprint 8U adds an order-stage trade requirements panel below the structured Orders execution workspace.
+
+New behavior:
+
+1. The panel reads live `trade_requirements` and `trade_requirement_sources` records.
+2. Requirements attach to a specific `order_id`, optional `order_line_id`, and `stage_key`.
+3. The Attach requirements form uses order context such as:
+   - order type;
+   - country/destination;
+   - product/category/line summary;
+   - HS/HSN where available;
+   - shipment mode;
+   - Incoterm;
+   - buyer/bank/source notes.
+4. The server action matches active `trade_requirement_rules` where available.
+5. If no rule matches, it creates fallback human-review requirements so the operator still has a structured checklist.
+6. Source snapshots are stored in `trade_requirement_sources` with query context, source title, URL where supplied, checked date, and confidence.
+7. Requirements are human-confirmable with **Confirm source**.
+8. Lead compliance remains active for lead/quote readiness, but Orders use order-stage `trade_requirements` as execution blockers.
+9. Quote history is not mutated.
+
+Important limitation for this pass:
+
+- Sprint 8U does not automatically browse official government sites, waive requirements, approve requirements, or advance order stages. It creates and displays structured human-confirmable requirement snapshots.
+
+Setu Guru should explain that Sprint 8U separates lead compliance from order execution blockers. It should route execution questions to order-stage requirements and should not treat every food/agri/export document as globally required. Requirements depend on the order type, country pair, product/category, HS/HSN, shipment mode, Incoterm, buyer/bank terms, and human-confirmed source.
 
 ## Sprint 8T packing, freight, dispatch, and closeout UI
 
@@ -146,7 +175,7 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 ## Best for
 
 - Turning accepted quotes into controlled execution work.
-- Tracking accepted quote-version lineage, actual order lines, packing, freight, document readiness, release readiness, send state, shipment, dispatch, finance sync, and closeout posture.
+- Tracking accepted quote-version lineage, actual order lines, order-stage trade requirements, packing, freight, document readiness, release readiness, send state, shipment, dispatch, finance sync, and closeout posture.
 - Separating accepted quote status from fulfillment readiness.
 - Managing order documents without changing accepted quote terms.
 - Giving operators a clear next action after quote acceptance.
@@ -157,6 +186,8 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - Is this order commercially accepted but not execution-ready?
 - Which quote version is the source for this order?
 - What stage is this order in?
+- Which trade requirements apply to this order stage?
+- Has the trade requirement source been human-confirmed?
 - Has the order confirmation or proforma been sent/tracked?
 - Is packing approved for this order?
 - Has a freight quote been selected?
@@ -165,7 +196,7 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - Is finance sync or receipt closeout complete?
 - What evidence is missing before dispatch?
 - Which documents are advisory, required, expired, or pending review?
-- Is this a commercial, payment, document, compliance, packing, freight, or dispatch blocker?
+- Is this a commercial, payment, document, compliance, packing, freight, trade requirement, or dispatch blocker?
 - What is the next safe execution action?
 - Where do I get the quote PDF, order confirmation, and invoice?
 - Why is order upload not accepting my file?
@@ -184,6 +215,8 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - Actual order lines have not been prepared from the approved quote yet.
 - Actual order lines have not been internally approved yet.
 - First document gate has not been prepared, previewed, approved, or sent/tracked.
+- Order-stage trade requirement has not been attached or source-confirmed.
+- Required or blocking trade requirement is still pending review.
 - Packing sheet has not been prepared, previewed, or approved.
 - Freight/delivery rate request has not been prepared, previewed, or approved.
 - Freight quote has not been selected.
@@ -202,6 +235,9 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - `order_lines` actual buyer order lines.
 - Accepted quote and accepted quote version.
 - `quote_version_line_items` as the accepted commercial source snapshot.
+- `trade_requirement_rules` for reusable matching logic.
+- `trade_requirements` for attached order-stage requirements.
+- `trade_requirement_sources` for source snapshots and human confirmation.
 - `order_documents` for prepare/approve/send/open tracking state.
 - Order approval gates and order stage events.
 - Packing plans and packing plan lines.
@@ -209,7 +245,6 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - Shipments.
 - Finance sync records.
 - Documents attached to order, lead, quote, or dispatch.
-- Order-stage trade requirements and document requirement rules.
 - Buyer/supplier and shipment notes.
 - Payment, release, fulfillment, and dispatch status fields where available.
 
@@ -219,21 +254,22 @@ Setu Guru must also explain that Sprint 8K does not yet replace the legacy order
 - Route to order document upload, Compliance Assist, or the linked lead/quote.
 - Explain accepted quote-version lineage and source version health.
 - Explain order document send status when recorded in `order_documents`.
+- Explain order-stage trade requirements and whether their sources are human-confirmed.
 - Explain packing, freight, shipment, dispatch invoice, and finance closeout readiness from structured records.
 - Explain that actual order lines are prepared from the approved quote without mutating quote history.
 - Explain internal approval and first document gate steps.
 - Explain packing sheet and freight/delivery request steps.
-- Separate commercial, payment, document, compliance, packing, freight, shipment, finance, and dispatch blockers.
+- Separate commercial, payment, document, compliance, packing, freight, shipment, finance, trade requirement, and dispatch blockers.
 - Draft an evidence checklist for human review.
 - Explain the approval boundary before a user advances order execution.
-- Explain the quote PDF → actual lines → internal approval → order confirmation/proforma → packing sheet → freight request → dispatch invoice sequence.
+- Explain the quote PDF → actual lines → internal approval → order confirmation/proforma → trade requirements → packing sheet → freight request → dispatch invoice sequence.
 
 ## Setu Guru order action buttons
 
 Order actions are guidance and routing only unless a future approved pass adds an explicit approval-safe write path. Current safe behaviors:
 
 - **Open Orders** routes to the Orders workspace.
-- **Check order blockers** asks Setu Guru to inspect commercial, payment/release, document, compliance, packing, freight, shipment, finance, and dispatch blockers without advancing order state.
+- **Check order blockers** asks Setu Guru to inspect commercial, payment/release, document, compliance, trade requirement, packing, freight, shipment, finance, and dispatch blockers without advancing order state.
 - **Draft dispatch evidence checklist** queues a checklist prompt in the composer.
 - **Review order approval boundary** explains which order actions require human approval.
 
@@ -253,6 +289,8 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - editing actual order lines without user confirmation;
 - marking internal review or first document gates complete without user action;
 - approving a packing sheet;
+- attaching or confirming trade requirements without human action;
+- waiving trade requirements;
 - sending or approving a freight/delivery rate request;
 - selecting a freight quote or booking a shipment;
 - marking shipment dispatched or delivered;
@@ -263,6 +301,20 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 Use live order context first when available. If only dashboard context is available, explain the likely blocker category and route the user to the exact order or execution queue. Success/failure messages should say whether Setu Guru queued guidance, routed the user, or could not complete the action.
 
 When no live order context is visible, Setu Guru should ask the user to open the order or provide the order reference before giving record-specific status. It may still explain the readiness lanes and the safest next route.
+
+## Sprint 8U smoke-check checklist
+
+Use this checklist before the next Orders pass:
+
+- Does the trade requirement panel load below the structured Orders workspace?
+- Does it read `trade_requirements` and `trade_requirement_sources`?
+- Does each order show attached requirements grouped with severity, status, document type, stage, source, checked date, and confirmation status?
+- Does Attach requirements call the structured server action and store order-stage requirements?
+- Does Confirm source update the requirement/source as human-confirmed?
+- Does the panel clearly separate lead compliance from order-stage requirements?
+- Does it avoid auto-waiving, auto-clearing, or advancing order state?
+- Does quote history remain untouched?
+- Are quote/compliance/catalog/lead protected flows untouched?
 
 ## Sprint 8T smoke-check checklist
 
@@ -306,6 +358,8 @@ Use this checklist before the next Orders pass:
 ## Suggested prompts
 
 - What is blocking this order?
+- Which trade requirements apply to this order?
+- Is this trade requirement confirmed?
 - Is this order ready for dispatch?
 - Which quote version created this order?
 - Has this order confirmation been sent?
