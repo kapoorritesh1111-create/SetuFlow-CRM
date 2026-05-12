@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace8S';
+import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace8X';
 
 function num(value: unknown) {
   const parsed = Number(value);
@@ -64,7 +64,7 @@ export default async function OrdersLayout() {
   const orderIds = orderRows.map((order: any) => order.id).filter(Boolean);
   const sourceVersionIds = [...new Set(orderRows.map((order: any) => order.source_quote_version_id).filter(Boolean))];
 
-  const [quotesResult, leadsResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult, orderDocumentsResult] = await Promise.all([
+  const [quotesResult, leadsResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult, orderDocumentsResult, sendHistoryResult] = await Promise.all([
     quoteIds.length ? db.from('quotes').select('id, status, currency, lead_id, current_version_id, accepted_version_id, approved_at, pricing_basis').eq('organization_id', orgId).in('id', quoteIds) : Promise.resolve({ data: [] }),
     leadIds.length ? db.from('leads').select('id, company_name, country, deal_value, deal_currency, lead_type').eq('organization_id', orgId).in('id', leadIds) : Promise.resolve({ data: [] }),
     quoteIds.length || orderIds.length ? db.from('documents').select('id, related_id, linked_quote_id, related_entity, status, doc_type, file_name').eq('organization_id', orgId).or(`linked_quote_id.in.(${quoteIds.join(',')}),related_id.in.(${[...quoteIds, ...orderIds].join(',')})`).order('uploaded_at', { ascending: false }) : Promise.resolve({ data: [] }),
@@ -74,6 +74,7 @@ export default async function OrdersLayout() {
     orderIds.length ? db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_id, product_variant_id, product_category_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, created_at, pricing_snapshot').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: true }) : Promise.resolve({ data: [] }),
     db.from('active_product_pricing_rules_v').select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg').eq('organization_id', orgId).eq('is_active', true).eq('is_quoteable', true).order('product_name', { ascending: true }).limit(200),
     orderIds.length ? db.from('order_documents').select('id, order_id, document_type, status, sent_at, opened_at, created_at').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
+    orderIds.length ? db.from('order_document_sends').select('id, order_id, order_document_id, document_type, channel, recipient, recipient_role, status, share_url, sent_at, opened_at, open_count').eq('organization_id', orgId).in('order_id', orderIds).order('sent_at', { ascending: false }) : Promise.resolve({ data: [] }),
   ]);
 
   const quoteMap = new Map((Array.isArray(quotesResult.data) ? quotesResult.data : []).map((quote: any) => [quote.id, quote]));
@@ -84,6 +85,7 @@ export default async function OrdersLayout() {
   const quoteLines = Array.isArray(quoteLinesResult.data) ? quoteLinesResult.data : [];
   const orderLines = Array.isArray(orderLinesResult.data) ? orderLinesResult.data : [];
   const orderDocumentRows = Array.isArray(orderDocumentsResult.data) ? orderDocumentsResult.data : [];
+  const sendRows = Array.isArray(sendHistoryResult.data) ? sendHistoryResult.data : [];
 
   const catalogOptions: CatalogOrderOption8S[] = (Array.isArray(catalogResult.data) ? catalogResult.data : []).map((rule: any) => {
     const price = basisPrice(rule);
@@ -129,6 +131,7 @@ export default async function OrdersLayout() {
     if (comparisonLines.some((line) => line.status === 'needs_actual_lines')) blockers.push('Actual order lines required before internal approval.');
     if (!gatesForOrder.length && !blockers.length) blockers.push('First approval gate is pending.');
     const nextAction = blockers.length ? 'Review blocker' : 'Ready for next stage gate';
+    const docsForStructuredOrder = orderDocumentRows.filter((doc: any) => doc.order_id === order.id);
 
     return {
       orderId: order.id,
@@ -149,14 +152,31 @@ export default async function OrdersLayout() {
       sourceQuoteVersionId: order.source_quote_version_id ?? null,
       acceptedVersionId: quote?.accepted_version_id ?? null,
       versionLabel: version?.version_no ? `v${version.version_no} · ${version.status ?? 'accepted'}` : order.source_quote_version_id ? 'accepted source version' : 'source version missing',
-      documentCount: docsForOrder.length + orderDocumentRows.filter((doc: any) => doc.order_id === order.id).length,
+      documentCount: docsForOrder.length + docsForStructuredOrder.length,
       gateCount: gatesForOrder.length,
       blockerCount: blockers.length,
       blockerReasons: blockers,
       nextAction,
       lines: comparisonLines,
       pricingBasis: orderPricingBasis,
-      documents: orderDocumentRows.filter((doc: any) => doc.order_id === order.id).map((doc: any) => ({ id: doc.id, documentType: doc.document_type ?? null, status: doc.status ?? null, sentAt: doc.sent_at ?? null, openedAt: doc.opened_at ?? null })),
+      documents: docsForStructuredOrder.map((doc: any) => ({
+        id: doc.id,
+        documentType: doc.document_type ?? null,
+        status: doc.status ?? null,
+        sentAt: doc.sent_at ?? null,
+        openedAt: doc.opened_at ?? null,
+        sends: sendRows.filter((send: any) => send.order_document_id === doc.id).map((send: any) => ({
+          id: send.id,
+          channel: send.channel ?? null,
+          recipient: send.recipient ?? null,
+          recipientRole: send.recipient_role ?? null,
+          status: send.status ?? null,
+          shareUrl: send.share_url ?? null,
+          sentAt: send.sent_at ?? null,
+          openedAt: send.opened_at ?? null,
+          openCount: num(send.open_count),
+        })),
+      })),
     };
   });
 
