@@ -13,7 +13,9 @@ type DocumentType = 'order_confirmation' | 'proforma_invoice' | 'dispatch_invoic
 type SendChannel = 'email' | 'whatsapp' | 'preview';
 
 function buildAppOrigin() {
-  return (process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://www.setuflowcrm.com').replace(/\/$/, '');
+  const raw = (process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://www.setuflowcrm.com').replace(/\/$/, '');
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw}`;
 }
 
 function clean(value: unknown) {
@@ -24,7 +26,7 @@ function clean(value: unknown) {
 function fallbackRecipientForChannel(channel: SendChannel, lead: any) {
   if (channel === 'preview') return '';
   if (channel === 'email') return clean(lead?.email);
-  if (channel === 'whatsapp') return clean(lead?.whatsapp) || clean(lead?.phone);
+  if (channel === 'whatsapp') return clean(lead?.whatsapp_number) || clean(lead?.phone);
   return '';
 }
 
@@ -115,7 +117,7 @@ async function findOrCreateApprovedOrderDocument(db: any, input: {
       source_snapshot: {
         source_quote_id: input.sourceQuoteId ?? null,
         source_quote_version_id: input.sourceQuoteVersionId ?? null,
-        workflow: 'prepare_preview_approve_send',
+        workflow: 'order_confirmed_then_proforma_then_logistics',
       },
       approved_by: input.actorUserId,
       approved_at: now,
@@ -173,7 +175,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   if (!order?.id) redirect('/orders?notice=order-share-order-missing');
 
   const { data: lead } = order.lead_id
-    ? await db.from('leads').select('id, company_name, contact_name, email, phone, whatsapp').eq('organization_id', workspace.organization.id).eq('id', order.lead_id).maybeSingle()
+    ? await db.from('leads').select('id, company_name, contact_name, email, phone, whatsapp_number').eq('organization_id', workspace.organization.id).eq('id', order.lead_id).maybeSingle()
     : { data: null };
 
   let trackedDocument: any;
@@ -215,7 +217,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       source: 'sendOrderDocumentLinkAction',
       preview_only: previewOnly,
       transport_delivery_confirmed: false,
-      channel_default_source: recipient ? 'manual_recipient' : channel === 'email' ? 'lead_email' : channel === 'whatsapp' ? 'lead_whatsapp_or_phone' : 'preview',
+      channel_default_source: recipient ? 'manual_recipient' : channel === 'email' ? 'lead_email' : channel === 'whatsapp' ? 'lead_whatsapp_number_or_phone' : 'preview',
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
       lead_id: order.lead_id ?? null,
@@ -236,7 +238,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
       note: note || null,
-      workflow: 'prepare_preview_approve_send',
+      workflow: 'order_confirmed_then_proforma_then_logistics',
     },
   }).eq('organization_id', workspace.organization.id).eq('id', trackedDocument.id);
 
@@ -244,9 +246,9 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     organizationId: workspace.organization.id,
     orderId: order.id,
     stageKey: documentType,
-    eventType: previewOnly ? `${documentType}_preview_link_created` : `${documentType}_tracked_link_created`,
+    eventType: previewOnly ? `${documentType}_preview_link_created` : `${documentType}_review_link_created`,
     actorUserId: workspace.user.id,
-    summary: previewOnly ? `${documentLabel} preview link created.` : `${documentLabel} tracked ${channel} link${resolvedRecipient ? ` for ${resolvedRecipient}` : ''} created.`,
+    summary: previewOnly ? `${documentLabel} preview link created.` : `${documentLabel} ${channel} review link${resolvedRecipient ? ` for ${resolvedRecipient}` : ''} created.`,
     eventPayload: {
       order_document_id: trackedDocument.id,
       order_document_send_id: sendRow?.id ?? null,
@@ -265,15 +267,15 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       organization_id: workspace.organization.id,
       lead_id: order.lead_id,
       actor_user_id: workspace.user.id,
-      kind: 'order_document_link_created',
-      message: `${documentLabel} tracked ${channel} link${resolvedRecipient ? ` for ${resolvedRecipient}` : ''} created.`,
+      kind: 'order_document_review_link_created',
+      message: `${documentLabel} ${channel} review link${resolvedRecipient ? ` for ${resolvedRecipient}` : ''} created.`,
       occurred_at: now,
     }).then(() => null);
   }
 
   await writeAuditLog({
     organizationId: workspace.organization.id,
-    action: previewOnly ? 'order_document_preview_link_created' : 'order_document_tracked_link_created',
+    action: previewOnly ? 'order_document_preview_link_created' : 'order_document_review_link_created',
     entityType: 'order_document_send',
     entityId: sendRow?.id ?? trackedDocument.id,
     actorUserId: workspace.user.id,
@@ -286,5 +288,5 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
 
   revalidatePath('/orders');
   if (previewOnly) redirect(shareUrl);
-  redirect(`/orders?notice=order-document-link-created&openOrderId=${encodeURIComponent(order.source_quote_id ?? order.id)}`);
+  redirect(`/orders?notice=order-document-review-link-created&openOrderId=${encodeURIComponent(order.source_quote_id ?? order.id)}`);
 }
