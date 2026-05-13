@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
+import { PrintPdfButton } from './PrintPdfButton';
 
 function titleCase(value: string | null | undefined) {
   return String(value ?? '').split(/[\s_-]+/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ') || '—';
@@ -131,8 +132,8 @@ function maybeArray(value: any, fallback: string[]) {
 function PrintToolbar({ title, docNo }: { title: string; docNo: string }) {
   return <aside className="odx-toolbar" aria-label="Document actions">
     <div><strong>{title}</strong><span>{docNo}</span></div>
-    <button type="button" onClick={() => window.print()}>Download / Print PDF</button>
-    <small>Uses the approved v3 preview as the source. In the print dialog, choose “Save as PDF”.</small>
+    <PrintPdfButton />
+    <small>Uses the approved v3 preview as the source. In the print dialog, choose Save as PDF.</small>
   </aside>;
 }
 
@@ -245,8 +246,8 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
     .maybeSingle();
 
   const now = new Date().toISOString();
-  await db.from('order_document_sends').update({ opened_at: send.opened_at ?? now, open_count: Number(send.open_count ?? 0) + 1, updated_at: now }).eq('id', send.id).then(() => null);
-  await db.from('order_documents').update({ opened_at: send.order_documents?.opened_at ?? now, updated_at: now }).eq('id', send.order_document_id).then(() => null);
+  await db.from('order_document_sends').update({ opened_at: send.opened_at ?? now, open_count: Number(send.open_count ?? 0) + 1 }).eq('id', send.id).then(() => null);
+  await db.from('order_documents').update({ opened_at: send.order_documents?.opened_at ?? now }).eq('id', send.order_document_id).then(() => null);
 
   const title = documentTitle(documentType, exportMode);
   const [label, docNo] = templateCode(documentType, exportMode, order.order_number || send.id.slice(0, 8));
@@ -273,7 +274,7 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
         ]} /></div>
         <div><h2>Buyer / Consignee</h2><FieldTable rows={[
           [exportMode ? 'Importer / Buyer' : 'Buyer', lead.company_name || 'Buyer pending'],
-          ['Buyer Tax ID', lead.metadata?.tax_id || 'Configured per buyer'],
+          ['Buyer Tax ID', 'Configured per buyer'],
           ['Contact', [lead.contact_name, lead.email, lead.phone].filter(Boolean).join(', ') || 'Contact pending'],
           ['Ship To / Consignee', order.destination_place || lead.country || 'Destination pending'],
           ['Notify Party', exportMode ? 'Same as consignee / nominated forwarder' : 'Not applicable'],
@@ -309,7 +310,7 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
 
       <SignatureBoxes labels={signatureBoxes} />
       <TermsBlock terms={pageTerms} />
-      <footer className="odx-footer"><span>Tracked send: {fmtDate(send.sent_at)} · {send.channel}{send.recipient ? ` · ${send.recipient}` : ''}</span><span>Open count after this view: {Number(send.open_count ?? 0) + 1}</span></footer>
+      <footer className="odx-footer"><span>Tracked link: {fmtDate(send.sent_at)} · {send.channel}{send.recipient ? ` · ${send.recipient}` : ''}</span><span>Open count after this view: {Number(send.open_count ?? 0) + 1}</span></footer>
     </section>
     <Annexure title={title} terms={annexureTerms} profile={profile} />
     <style>{styles}</style>
