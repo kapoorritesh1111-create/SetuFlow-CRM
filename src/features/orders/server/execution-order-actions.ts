@@ -33,6 +33,10 @@ function normalizeFirstDocumentGate(value: unknown, orderType?: unknown) {
   return String(orderType ?? '').toLowerCase() === 'export' ? 'proforma_invoice' : 'order_confirmation';
 }
 
+function nextStageAfterFirstDocument(orderType?: unknown) {
+  return String(orderType ?? '').toLowerCase() === 'export' ? 'freight_request' : 'packing_sheet';
+}
+
 async function requireOrderWriteAccess() {
   if (!hasSupabaseEnv) redirect(buildRedirect('order-config-error'));
   const workspace = await getWorkspaceAccess();
@@ -360,12 +364,13 @@ export async function approveFirstDocumentGateAction(formData: FormData) {
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
   if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
   const gateType = normalizeFirstDocumentGate(formData.get('document_gate_type'), order.order_type);
+  const nextStage = nextStageAfterFirstDocument(order.order_type);
   const now = new Date().toISOString();
-  const { error: gateError } = await saveGate(db, { organizationId, orderId: order.id, stageKey: 'first_document', gateType, status: 'approved', actorUserId, reason: 'Human approved first order document for send gate.', previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType, approved_at: now } });
+  const { error: gateError } = await saveGate(db, { organizationId, orderId: order.id, stageKey: 'first_document', gateType, status: 'approved', actorUserId, reason: 'Human approved first order document for send gate.', previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType, approved_at: now, next_stage: nextStage } });
   if (gateError) redirect(buildRedirect('order-gate-update-failed', quoteId));
-  await db.from('orders').update({ current_stage: 'first_document', approval_state: `${gateType}_approved`, updated_by: actorUserId, updated_at: now }).eq('organization_id', organizationId).eq('id', order.id);
-  await recordOrderStageEvent(db, { organizationId, orderId: order.id, stageKey: 'first_document', eventType: `${gateType}_approved`, actorUserId, summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice approved for sending.' : 'Regional Order Confirmation approved for sending.', eventPayload: { source_quote_id: quoteId, document_gate_type: gateType } });
-  await writeAuditLog({ organizationId, action: 'order_gate_approved', entityType: 'order', entityId: order.id, actorUserId, payload: { previous: { approval_state: order.approval_state }, new: { approval_state: `${gateType}_approved` }, metadata: { source: 'approveFirstDocumentGateAction', quote_id: quoteId, gate_type: gateType } } });
+  await db.from('orders').update({ current_stage: nextStage, approval_state: `${gateType}_approved`, updated_by: actorUserId, updated_at: now }).eq('organization_id', organizationId).eq('id', order.id);
+  await recordOrderStageEvent(db, { organizationId, orderId: order.id, stageKey: 'first_document', eventType: `${gateType}_approved`, actorUserId, summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice approved; order advanced to freight/packing stage.' : 'Regional Order Confirmation approved; order advanced to packing stage.', eventPayload: { source_quote_id: quoteId, document_gate_type: gateType, next_stage: nextStage } });
+  await writeAuditLog({ organizationId, action: 'order_gate_approved', entityType: 'order', entityId: order.id, actorUserId, payload: { previous: { approval_state: order.approval_state, current_stage: order.current_stage }, new: { approval_state: `${gateType}_approved`, current_stage: nextStage }, metadata: { source: 'approveFirstDocumentGateAction', quote_id: quoteId, gate_type: gateType } } });
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
   redirect(buildRedirect('first-document-gate-approved', quoteId));
