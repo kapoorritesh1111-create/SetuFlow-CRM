@@ -16,6 +16,18 @@ function buildAppOrigin() {
   return (process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://www.setuflowcrm.com').replace(/\/$/, '');
 }
 
+function clean(value: unknown) {
+  const text = String(value ?? '').trim();
+  return text.length ? text : '';
+}
+
+function fallbackRecipientForChannel(channel: SendChannel, lead: any) {
+  if (channel === 'preview') return '';
+  if (channel === 'email') return clean(lead?.email);
+  if (channel === 'whatsapp') return clean(lead?.whatsapp) || clean(lead?.phone);
+  return '';
+}
+
 function normalizeDocumentType(value: FormDataEntryValue | null): DocumentType {
   const raw = String(value ?? '').trim().toLowerCase();
   if (raw === 'proforma_invoice') return 'proforma_invoice';
@@ -178,12 +190,12 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     redirect('/orders?notice=order-share-document-track-failed');
   }
 
-  const resolvedRecipient = previewOnly ? '' : recipient || lead?.email || lead?.whatsapp || lead?.phone || '';
+  const resolvedRecipient = previewOnly ? '' : recipient || fallbackRecipientForChannel(channel, lead);
   const now = new Date().toISOString();
   const documentLabel = labelFor(documentType);
   const shareToken = randomUUID();
   const shareUrl = `${buildAppOrigin()}/order-documents/preview/${shareToken}`;
-  const sendStatus = previewOnly ? 'previewed' : 'sent';
+  const sendStatus = previewOnly ? 'previewed' : 'link_created';
 
   const { data: sendRow } = await db.from('order_document_sends').insert({
     organization_id: workspace.organization.id,
@@ -203,6 +215,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       source: 'sendOrderDocumentLinkAction',
       preview_only: previewOnly,
       transport_delivery_confirmed: false,
+      channel_default_source: recipient ? 'manual_recipient' : channel === 'email' ? 'lead_email' : channel === 'whatsapp' ? 'lead_whatsapp_or_phone' : 'preview',
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
       lead_id: order.lead_id ?? null,
@@ -210,7 +223,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   }).select('id').single();
 
   await db.from('order_documents').update({
-    status: previewOnly ? trackedDocument.status ?? 'approved' : 'sent',
+    status: previewOnly ? trackedDocument.status ?? 'approved' : 'link_created',
     sent_at: previewOnly ? trackedDocument.sent_at ?? null : now,
     updated_at: now,
     source_snapshot: {
@@ -219,6 +232,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       latest_send_id: sendRow?.id ?? null,
       latest_share_url: shareUrl,
       preview_only: previewOnly,
+      transport_delivery_confirmed: false,
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
       note: note || null,
@@ -230,9 +244,9 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     organizationId: workspace.organization.id,
     orderId: order.id,
     stageKey: documentType,
-    eventType: previewOnly ? `${documentType}_preview_link_created` : `${documentType}_tracked_send_created`,
+    eventType: previewOnly ? `${documentType}_preview_link_created` : `${documentType}_tracked_link_created`,
     actorUserId: workspace.user.id,
-    summary: previewOnly ? `${documentLabel} preview link created.` : `${documentLabel} tracked send${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
+    summary: previewOnly ? `${documentLabel} preview link created.` : `${documentLabel} tracked ${channel} link${resolvedRecipient ? ` for ${resolvedRecipient}` : ''} created.`,
     eventPayload: {
       order_document_id: trackedDocument.id,
       order_document_send_id: sendRow?.id ?? null,
@@ -240,6 +254,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       recipient: resolvedRecipient || null,
       share_url: shareUrl,
       preview_only: previewOnly,
+      transport_delivery_confirmed: false,
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
     },
@@ -250,26 +265,26 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       organization_id: workspace.organization.id,
       lead_id: order.lead_id,
       actor_user_id: workspace.user.id,
-      kind: 'order_document_sent',
-      message: `${documentLabel} tracked send${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
+      kind: 'order_document_link_created',
+      message: `${documentLabel} tracked ${channel} link${resolvedRecipient ? ` for ${resolvedRecipient}` : ''} created.`,
       occurred_at: now,
     }).then(() => null);
   }
 
   await writeAuditLog({
     organizationId: workspace.organization.id,
-    action: previewOnly ? 'order_document_preview_link_created' : 'order_document_sent',
+    action: previewOnly ? 'order_document_preview_link_created' : 'order_document_tracked_link_created',
     entityType: 'order_document_send',
     entityId: sendRow?.id ?? trackedDocument.id,
     actorUserId: workspace.user.id,
     payload: {
       previous: { document_status: trackedDocument.status },
-      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now, share_url: shareUrl, preview_only: previewOnly },
+      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now, share_url: shareUrl, preview_only: previewOnly, transport_delivery_confirmed: false },
       metadata: { source: 'sendOrderDocumentLinkAction', order_id: order.id, quote_id: order.source_quote_id, lead_id: order.lead_id, order_document_id: trackedDocument.id, note },
     },
   });
 
   revalidatePath('/orders');
   if (previewOnly) redirect(shareUrl);
-  redirect(`/orders?notice=order-document-sent&openOrderId=${encodeURIComponent(order.source_quote_id ?? order.id)}`);
+  redirect(`/orders?notice=order-document-link-created&openOrderId=${encodeURIComponent(order.source_quote_id ?? order.id)}`);
 }
