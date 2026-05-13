@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import { hasSupabaseEnv } from '@/lib/env';
-import { createServiceClient } from '@/lib/supabase/service';
 import { createClient } from '@/lib/supabase/server';
 import { OrderPreviewPrintButton } from '@/features/orders/components/OrderPreviewPrintButton';
 
@@ -9,7 +8,11 @@ export const dynamic = 'force-dynamic';
 type AnyRow = Record<string, any>;
 
 function titleCase(value: string | null | undefined) {
-  return String(value ?? '').split(/[\s_-]+/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ') || '—';
+  return String(value ?? '')
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ') || '—';
 }
 
 function num(value: unknown) {
@@ -45,31 +48,35 @@ function isExportDoc(type: string, order: AnyRow) {
 }
 
 function terms(exportMode: boolean) {
-  return exportMode ? [
-    'Export documents are subject to buyer, bank, customs, and destination-country requirements.',
-    'Incoterm and named place define cost, risk transfer, insurance, and customs responsibility.',
-    'Buyer/importer is responsible for import duty and local taxes unless agreed otherwise.',
-    'HS/ITC-HS, origin, value, weights, package marks, and shipment details must be confirmed before dispatch.',
-  ] : [
-    'Prices and taxes are subject to final invoice and applicable place-of-supply rules.',
-    'Dispatch is subject to payment/credit release, stock, and approved actual order lines.',
-    'Shortage or damage claims require written notice with evidence within the agreed claim window.',
-    'Goods must be handled and stored as per product label and agreed conditions.',
-  ];
+  return exportMode
+    ? [
+        'Export documents are subject to buyer, bank, customs, and destination-country requirements.',
+        'Incoterm and named place define cost, risk transfer, insurance, and customs responsibility.',
+        'Buyer/importer is responsible for import duty and local taxes unless agreed otherwise.',
+        'HS/ITC-HS, origin, value, weights, package marks, and shipment details must be confirmed before dispatch.',
+      ]
+    : [
+        'Prices and taxes are subject to final invoice and applicable place-of-supply rules.',
+        'Dispatch is subject to payment/credit release, stock, and approved actual order lines.',
+        'Shortage or damage claims require written notice with evidence within the agreed claim window.',
+        'Goods must be handled and stored as per product label and agreed conditions.',
+      ];
 }
 
 function annexure(exportMode: boolean) {
-  return exportMode ? [
-    'This document is subject to final seller acceptance, export eligibility, packing approval, payment release, and availability of required export/import documents.',
-    'Incoterms rule and named place determine allocation of costs, risks, transport, insurance, export/import formalities, packaging, marking, and related obligations.',
-    'Export under LUT/without IGST or export on payment of IGST must be configured per organization and shipment. Buyer remains responsible for import duties, taxes, licenses, clearance, and local compliance unless explicitly agreed otherwise.',
-    'Special documents such as certificate of origin, inspection, phytosanitary, fumigation, insurance, bank documents, or chamber certificates apply when required by product, country, buyer, bank, or freight terms.',
-  ] : [
-    'This document is subject to final seller acceptance, stock availability, credit/payment release, and applicable taxes at dispatch.',
-    'Taxes are shown using GST/VAT/sales-tax style fields. Actual rates, exemptions, place-of-supply rules, e-invoice, and e-way bill obligations must be configured per organization and jurisdiction.',
-    'Goods once dispatched are subject to the agreed return/replacement policy, quality claim window, and documented proof of discrepancy or damage.',
-    'Risk transfers according to the agreed delivery term and named place. Title transfer, if different from risk transfer, must be defined by organization terms.',
-  ];
+  return exportMode
+    ? [
+        'This document is subject to final seller acceptance, export eligibility, packing approval, payment release, and availability of required export/import documents.',
+        'Incoterms rule and named place determine allocation of costs, risks, transport, insurance, export/import formalities, packaging, marking, and related obligations.',
+        'Export under LUT/without IGST or export on payment of IGST must be configured per organization and shipment. Buyer remains responsible for import duties, taxes, licenses, clearance, and local compliance unless explicitly agreed otherwise.',
+        'Special documents such as certificate of origin, inspection, phytosanitary, fumigation, insurance, bank documents, or chamber certificates apply when required by product, country, buyer, bank, or freight terms.',
+      ]
+    : [
+        'This document is subject to final seller acceptance, stock availability, credit/payment release, and applicable taxes at dispatch.',
+        'Taxes are shown using GST/VAT/sales-tax style fields. Actual rates, exemptions, place-of-supply rules, e-invoice, and e-way bill obligations must be configured per organization and jurisdiction.',
+        'Goods once dispatched are subject to the agreed return/replacement policy, quality claim window, and documented proof of discrepancy or damage.',
+        'Risk transfers according to the agreed delivery term and named place. Title transfer, if different from risk transfer, must be defined by organization terms.',
+      ];
 }
 
 function quantity(line: AnyRow) {
@@ -116,36 +123,22 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
   const token = String(resolvedParams.token ?? '').trim();
   if (!token) notFound();
 
-  const service = createServiceClient();
-  const db = (service ?? await createClient()) as any;
+  const db = (await createClient()) as any;
+  const { data: preview, error: previewError } = await db.rpc('get_order_document_preview_by_token', { p_share_token: token });
+  if (previewError || !preview?.send) notFound();
 
-  const { data: send, error: sendError } = await db
-    .from('order_document_sends')
-    .select('id, organization_id, order_id, order_document_id, document_type, channel, recipient, recipient_role, note, status, share_url, sent_at, opened_at, open_count, metadata, order_documents(id, version_no, status, approved_at, source_snapshot), orders(id, order_number, order_type, current_stage, source_quote_id, source_quote_version_id, currency, total_order_value, incoterm, payment_terms, origin_place, destination_place, destination_port, buyer_reference, customer_notes, leads(company_name, contact_name, country, email, phone, whatsapp))')
-    .eq('share_token', token)
-    .maybeSingle();
-
-  if (sendError || !send?.id) notFound();
-
-  const [orgResult, linesResult] = await Promise.all([
-    db.from('organizations').select('id, name, display_name, address, billing_address, metadata, tax_id').eq('id', send.organization_id).maybeSingle(),
-    db.from('order_lines').select('*').eq('organization_id', send.organization_id).eq('order_id', send.order_id).order('created_at', { ascending: true }),
-  ]);
-
-  const now = new Date().toISOString();
-  await db.from('order_document_sends').update({ opened_at: send.opened_at ?? now, open_count: Number(send.open_count ?? 0) + 1 }).eq('id', send.id).then(() => null);
-  await db.from('order_documents').update({ opened_at: send.order_documents?.opened_at ?? now }).eq('id', send.order_document_id).then(() => null);
-
-  const org = orgResult.data ?? {};
-  const order = send.orders ?? {};
-  const lead = order.leads ?? {};
-  const lines = Array.isArray(linesResult.data) ? linesResult.data : [];
+  const send = preview.send ?? {};
+  const org = preview.organization ?? {};
+  const order = preview.order ?? {};
+  const lead = preview.lead ?? {};
+  const lines = Array.isArray(preview.lines) ? preview.lines : [];
   const documentType = String(send.document_type ?? 'order_confirmation').toLowerCase();
   const exportMode = isExportDoc(documentType, order);
   const title = docTitle(documentType, order.order_type);
   const currency = order.currency || (exportMode ? 'USD' : 'INR');
-  const documentNo = `${exportMode ? 'EXP' : 'REG'}-${order.order_number || send.id.slice(0, 8)}`;
+  const documentNo = `${exportMode ? 'EXP' : 'REG'}-${order.order_number || String(send.id ?? '').slice(0, 8)}`;
   const subtotal = lines.reduce((sum: number, line: AnyRow) => sum + lineTotal(line), 0);
+  const openCountAfterView = Number(send.open_count_after_view ?? send.open_count ?? 0);
 
   return <main className="odx-page">
     <aside className="odx-toolbar"><div><strong>{title}</strong><span>{documentNo}</span></div><OrderPreviewPrintButton /><small>Uses the approved v3 preview as the source. In the print dialog, choose Save as PDF.</small></aside>
@@ -189,7 +182,7 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
 
       <SignatureBoxes exportMode={exportMode} />
       <Terms exportMode={exportMode} />
-      <footer className="odx-footer"><span>Tracked link: {fmtDate(send.sent_at)} · {send.channel}{send.recipient ? ` · ${send.recipient}` : ''}</span><span>Open count after this view: {Number(send.open_count ?? 0) + 1}</span></footer>
+      <footer className="odx-footer"><span>Tracked link: {fmtDate(send.sent_at)} · {send.channel}{send.recipient ? ` · ${send.recipient}` : ''}</span><span>Open count after this view: {openCountAfterView}</span></footer>
     </section>
     <Annexure title={title} exportMode={exportMode} />
     <style>{styles}</style>
