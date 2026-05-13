@@ -14,6 +14,10 @@ function clean(value: unknown) {
   return text.length ? text : null;
 }
 
+function displayLeadName(lead: any) {
+  return clean(lead?.company_name) ?? clean(lead?.contact_name) ?? 'Lead missing / needs contact';
+}
+
 function detectOrderType(orderType: unknown, leadCountry: unknown, organizationCountry: unknown): 'regional' | 'export' {
   const explicit = clean(orderType)?.toLowerCase();
   if (explicit === 'export' || explicit === 'regional') return explicit;
@@ -150,7 +154,7 @@ export default async function OrdersLayout() {
       quoteId: order.source_quote_id,
       leadId: order.lead_id,
       contractId: null,
-      companyName: lead?.company_name ?? order.order_number ?? 'Structured order',
+      companyName: displayLeadName(lead),
       contactName: clean(lead?.contact_name),
       defaultRecipient: contact,
       defaultEmailRecipient: emailContact,
