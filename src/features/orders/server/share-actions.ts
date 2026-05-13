@@ -9,7 +9,8 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { writeAuditLog } from '@/lib/auditLog';
 
-type DocumentType = 'order_confirmation' | 'proforma_invoice' | 'dispatch_invoice';
+type DocumentType = 'order_confirmation' | 'proforma_invoice' | 'dispatch_invoice' | 'packing_sheet' | 'packing_list' | 'delivery_note' | 'freight_request';
+type SendChannel = 'email' | 'whatsapp' | 'preview';
 
 function buildAppOrigin() {
   return (process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://www.setuflowcrm.com').replace(/\/$/, '');
@@ -18,17 +19,28 @@ function buildAppOrigin() {
 function normalizeDocumentType(value: FormDataEntryValue | null): DocumentType {
   const raw = String(value ?? '').trim().toLowerCase();
   if (raw === 'proforma_invoice') return 'proforma_invoice';
-  if (raw === 'dispatch_invoice' || raw === 'invoice') return 'dispatch_invoice';
+  if (raw === 'dispatch_invoice' || raw === 'invoice' || raw === 'commercial_invoice') return 'dispatch_invoice';
+  if (raw === 'packing_sheet') return 'packing_sheet';
+  if (raw === 'packing_list') return 'packing_list';
+  if (raw === 'delivery_note') return 'delivery_note';
+  if (raw === 'freight_request' || raw === 'shipment_instruction') return 'freight_request';
   return 'order_confirmation';
 }
 
-function normalizeChannel(value: FormDataEntryValue | null) {
-  return String(value ?? '') === 'whatsapp' ? 'whatsapp' : 'email';
+function normalizeChannel(value: FormDataEntryValue | null): SendChannel {
+  const raw = String(value ?? '').trim().toLowerCase();
+  if (raw === 'whatsapp') return 'whatsapp';
+  if (raw === 'preview') return 'preview';
+  return 'email';
 }
 
 function labelFor(type: DocumentType) {
   if (type === 'proforma_invoice') return 'Proforma Invoice';
   if (type === 'dispatch_invoice') return 'Dispatch Invoice';
+  if (type === 'packing_sheet') return 'Packing Sheet';
+  if (type === 'packing_list') return 'Packing List';
+  if (type === 'delivery_note') return 'Delivery Note';
+  if (type === 'freight_request') return 'Freight Request';
   return 'Order Confirmation';
 }
 
@@ -119,6 +131,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   const note = String(formData.get('note') ?? '').trim();
   const documentType = normalizeDocumentType(formData.get('document_type') ?? formData.get('document_kind'));
   const channel = normalizeChannel(formData.get('channel'));
+  const previewOnly = channel === 'preview' || String(formData.get('preview_only') ?? '') === 'true';
   if (!orderId && !contractId) redirect('/orders?notice=order-share-missing-order');
 
   const db = (await createClient()) as any;
@@ -165,11 +178,12 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     redirect('/orders?notice=order-share-document-track-failed');
   }
 
-  const resolvedRecipient = recipient || lead?.email || lead?.whatsapp || lead?.phone || '';
+  const resolvedRecipient = previewOnly ? '' : recipient || lead?.email || lead?.whatsapp || lead?.phone || '';
   const now = new Date().toISOString();
   const documentLabel = labelFor(documentType);
   const shareToken = randomUUID();
   const shareUrl = `${buildAppOrigin()}/order-documents/preview/${shareToken}`;
+  const sendStatus = previewOnly ? 'previewed' : 'sent';
 
   const { data: sendRow } = await db.from('order_document_sends').insert({
     organization_id: workspace.organization.id,
@@ -180,13 +194,15 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     recipient: resolvedRecipient || null,
     recipient_role: recipientRole || null,
     note: note || null,
-    status: 'sent',
+    status: sendStatus,
     share_token: shareToken,
     share_url: shareUrl,
     sent_at: now,
     created_by: workspace.user.id,
     metadata: {
       source: 'sendOrderDocumentLinkAction',
+      preview_only: previewOnly,
+      transport_delivery_confirmed: false,
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
       lead_id: order.lead_id ?? null,
@@ -194,14 +210,15 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   }).select('id').single();
 
   await db.from('order_documents').update({
-    status: 'sent',
-    sent_at: now,
+    status: previewOnly ? trackedDocument.status ?? 'approved' : 'sent',
+    sent_at: previewOnly ? trackedDocument.sent_at ?? null : now,
     updated_at: now,
     source_snapshot: {
       sent_channel: channel,
       sent_recipient: resolvedRecipient || null,
       latest_send_id: sendRow?.id ?? null,
       latest_share_url: shareUrl,
+      preview_only: previewOnly,
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
       note: note || null,
@@ -213,42 +230,46 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     organizationId: workspace.organization.id,
     orderId: order.id,
     stageKey: documentType,
-    eventType: `${documentType}_sent`,
+    eventType: previewOnly ? `${documentType}_preview_link_created` : `${documentType}_tracked_send_created`,
     actorUserId: workspace.user.id,
-    summary: `${documentLabel} tracked send${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
+    summary: previewOnly ? `${documentLabel} preview link created.` : `${documentLabel} tracked send${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
     eventPayload: {
       order_document_id: trackedDocument.id,
       order_document_send_id: sendRow?.id ?? null,
       channel,
       recipient: resolvedRecipient || null,
       share_url: shareUrl,
+      preview_only: previewOnly,
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
     },
   });
 
-  await db.from('lead_activities').insert({
-    organization_id: workspace.organization.id,
-    lead_id: order.lead_id,
-    actor_user_id: workspace.user.id,
-    kind: 'order_document_sent',
-    message: `${documentLabel} tracked send${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
-    occurred_at: now,
-  }).then(() => null);
+  if (!previewOnly) {
+    await db.from('lead_activities').insert({
+      organization_id: workspace.organization.id,
+      lead_id: order.lead_id,
+      actor_user_id: workspace.user.id,
+      kind: 'order_document_sent',
+      message: `${documentLabel} tracked send${resolvedRecipient ? ` to ${resolvedRecipient}` : ''} by ${channel}.`,
+      occurred_at: now,
+    }).then(() => null);
+  }
 
   await writeAuditLog({
     organizationId: workspace.organization.id,
-    action: 'order_document_sent',
+    action: previewOnly ? 'order_document_preview_link_created' : 'order_document_sent',
     entityType: 'order_document_send',
     entityId: sendRow?.id ?? trackedDocument.id,
     actorUserId: workspace.user.id,
     payload: {
       previous: { document_status: trackedDocument.status },
-      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now, share_url: shareUrl },
+      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now, share_url: shareUrl, preview_only: previewOnly },
       metadata: { source: 'sendOrderDocumentLinkAction', order_id: order.id, quote_id: order.source_quote_id, lead_id: order.lead_id, order_document_id: trackedDocument.id, note },
     },
   });
 
   revalidatePath('/orders');
+  if (previewOnly) redirect(shareUrl);
   redirect(`/orders?notice=order-document-sent&openOrderId=${encodeURIComponent(order.source_quote_id ?? order.id)}`);
 }
