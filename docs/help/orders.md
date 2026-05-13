@@ -2,11 +2,47 @@
 
 Route: `/orders`
 Owner: Setu Guru knowledge base
-Last updated: 2026-05-12
+Last updated: 2026-05-13
 
 ## Purpose
 
 Use Orders after quote acceptance to manage execution readiness, documents, trade requirements, packing, freight, shipment, dispatch invoice, payment, and closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, invoice, or close execution.
+
+## Sprint 8.1B channel-aware tracked links
+
+Sprint 8.1B keeps Orders inside Sprint 8 and tightens the document send workflow.
+
+New behavior:
+
+1. The `/orders` workspace continues to use the focused Sprint 8.1 UI shell.
+2. Preview / PDF opens an existing tracked preview link when available.
+3. If no preview link exists, Preview / PDF creates a preview-only tracked link and redirects to `/order-documents/preview/[token]`.
+4. Email channel defaults only to the lead email.
+5. WhatsApp channel defaults to lead WhatsApp, then lead phone.
+6. If the selected channel has no matching lead contact, the recipient field stays blank and the user must add a recipient manually.
+7. Users can override or add another recipient before creating a tracked link.
+8. Server fallback is also channel-aware so WhatsApp cannot silently use lead email if the browser submits a blank recipient.
+9. Tracked send rows now use truthful status wording: `link_created` for email/WhatsApp link creation and `previewed` for preview-only links.
+10. The UI describes actions as tracked links, not confirmed external delivery.
+11. External delivery remains unconfirmed until a future real email/WhatsApp transport adapter records provider confirmation.
+
+Important rule:
+
+> Do not say an order document was delivered by email or WhatsApp unless a transport provider confirms delivery. Until then, it is a tracked link created for that channel.
+
+## Sprint 8.1A Orders preview/send CTA fix
+
+Sprint 8.1A fixed placeholder buttons in the Orders page.
+
+Behavior:
+
+1. `/orders` uses a focused Orders workspace component for preview/send CTAs.
+2. Preview buttons create or open tracked preview/PDF routes.
+3. Send tracked creates per-recipient send-history rows.
+4. The recipient field initially defaults from lead contact information.
+5. If there is no lead email, WhatsApp, or phone, the recipient field stays blank so the user can add one.
+6. The route still uses `/order-documents/preview/[token]` as the source for browser print/PDF.
+7. Quote history remains untouched.
 
 ## Sprint 8Z print PDF action and Admin T&C placeholder
 
@@ -224,8 +260,9 @@ Protected behavior:
 - Can I preview this document again?
 - Can I print or download this document as PDF?
 - Can I send this document again to another user?
-- Who did we send this document to?
+- Who did we create this tracked link for?
 - Was this tracked document link opened?
+- Was this actually delivered by email/WhatsApp, or only link-created?
 - Which terms profile is used for this document?
 - Is this using regional or export document terms?
 - Has this order confirmation or proforma been sent/tracked?
@@ -246,7 +283,8 @@ Protected behavior:
 - Actual order lines have not been prepared from the approved quote yet.
 - Actual order lines have not been internally approved yet.
 - First document gate has not been prepared, previewed, approved, or sent/tracked.
-- Document was sent but there is no child send-history row for the recipient.
+- Document link was created but there is no provider-confirmed external delivery.
+- Document was link-created but there is no child send-history row for the recipient.
 - Organization terms profile is missing or not configured for document type/country.
 - Organization identity, tax IDs, bank details, stamp, or signature settings are not configured.
 - Order-stage trade requirement has not been attached or source-confirmed.
@@ -297,6 +335,21 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - selecting a freight quote or booking a shipment;
 - marking shipment dispatched or delivered;
 - syncing finance or closing payment/receipt.
+
+## Sprint 8.1B smoke-check checklist
+
+Use this checklist before the next Orders pass:
+
+- Does email channel default only to lead email?
+- Does WhatsApp channel default to lead WhatsApp, then phone?
+- Does changing channel update the recipient field?
+- Does a missing channel contact leave the recipient field blank?
+- Does server fallback respect the selected channel?
+- Do send-history rows use `link_created` instead of falsely saying `sent`?
+- Does the document tray show tracked link/open truthfully?
+- Does preview-only still create/open `/order-documents/preview/[token]`?
+- Does quote history remain untouched?
+- Are quote/compliance/catalog/lead protected flows untouched?
 
 ## Sprint 8Z smoke-check checklist
 
@@ -349,9 +402,11 @@ Use this checklist before the next Orders pass:
 - What is blocking this order?
 - Can I preview the Proforma again?
 - Print this document as PDF.
+- Create a tracked email link for this order confirmation.
+- Create a tracked WhatsApp link for this proforma.
 - Send this packing sheet again to another forwarder.
 - Who opened the order confirmation link?
-- Which document sends are still unopened?
+- Which document links are still unopened?
 - Which quote version created this order?
 - Which terms profile is used for this document?
 - Is this regional or export document rendering?
