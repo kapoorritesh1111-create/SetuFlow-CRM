@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace81A';
+import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace81C';
 
 function num(value: unknown) {
   const parsed = Number(value);
@@ -146,6 +146,7 @@ export default async function OrdersLayout() {
 
     return {
       orderId: order.id,
+      orderNumber: order.order_number ?? null,
       quoteId: order.source_quote_id,
       leadId: order.lead_id,
       contractId: null,
