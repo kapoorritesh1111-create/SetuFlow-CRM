@@ -8,42 +8,82 @@ Last updated: 2026-05-12
 
 Use Orders after quote acceptance to manage execution readiness, documents, trade requirements, packing, freight, shipment, dispatch invoice, payment, and closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, invoice, or close execution.
 
+## Sprint 8Y v3 document body renderer and default terms profiles
+
+Sprint 8Y implements the approved v3 document direction from the reviewed sample pack. The preview route now renders real document bodies instead of only showing tracking metadata.
+
+Approved sample reference:
+
+- `SETU_Order_Document_Sample_Pack_v3.pdf`
+- Regional documents: Order Confirmation, Packing/Picklist/QC, Delivery Note, Regional Tax/Dispatch Invoice.
+- Export documents: Proforma Invoice, Export Packing List, Freight Rate Request / Shipment Instruction, Export Commercial/Dispatch Invoice.
+
+New behavior:
+
+1. Adds `organization_document_terms_profiles` as the default terms/declarations/tax-profile source for order documents.
+2. Existing organizations receive default regional/export terms profiles.
+3. New organizations automatically receive default document terms profiles using organization country defaults where available.
+4. The tracked preview route `/order-documents/preview/[token]` renders a v3-style document body using:
+   - structured `orders`;
+   - `order_lines`;
+   - `order_documents`;
+   - `order_document_sends`;
+   - buyer/lead context;
+   - organization identity placeholders;
+   - `organization_document_terms_profiles`.
+5. Regional/export templates are separated.
+6. Documents include line-level tax/customs placeholders:
+   - regional: GST/VAT/sales-tax style fields, HSN/category basis, CGST/SGST/IGST placeholders;
+   - export: HS/ITC-HS, country of origin, declared value, LUT/IGST declaration, importer duties/taxes, currency/FX placeholders.
+7. Documents include stamp/signature zones by document type.
+8. Page 1 uses compact operational terms so long item tables have room.
+9. Annexure terms render after page 1 and are designed for future Admin configuration.
+10. Opening the tracked preview still increments send open tracking.
+11. Quote history remains untouched.
+
+Important limitation:
+
+- Sprint 8Y renders the HTML/print preview body and structured terms. Browser print can be used as the immediate PDF path. A dedicated server-side PDF generation/download action can be added later.
+- The terms are default operational templates and not final legal/tax advice. They must become Admin-managed by organization.
+
+Future Admin requirement:
+
+Create:
+
+`Admin → Document Templates → Terms & Conditions`
+
+Admin must allow each organization to manage:
+
+- regional/export template family;
+- document type;
+- organization country default;
+- tax profile;
+- page-1 compact terms;
+- annexure terms;
+- export declarations;
+- bank details;
+- GST/VAT/TRN/GSTIN/IEC/PAN/AD Code/LUT ARN fields;
+- stamp/signature settings;
+- country-pair/product/category/HSN/HS/Incoterm-specific clauses;
+- buyer/bank/compliance-specific clauses.
+
+Setu Guru must explain that every sendable document should include default industry-standard terms based on organization country and document type when an org is created. Guru must also make clear that Admin-managed templates will override defaults later.
+
 ## Sprint 8X order document send history and preview routes
 
 Sprint 8X adds the missing document-send foundation below the clean Sprint 8W Orders UI.
 
-New behavior:
+Behavior:
 
 1. Adds additive child table `order_document_sends`.
 2. Each **Send tracked** action now creates one send-history row instead of only overwriting the parent `order_documents` row.
-3. Each send-history row stores:
-   - `order_document_id`;
-   - `order_id`;
-   - document type;
-   - channel;
-   - recipient;
-   - recipient role;
-   - note;
-   - send status;
-   - unique share token;
-   - preview/share URL;
-   - sent timestamp;
-   - opened timestamp;
-   - open count;
-   - created by;
-   - metadata.
+3. Each send-history row stores recipient, channel, role, note, send status, unique share token, preview URL, sent timestamp, opened timestamp, open count, created by, and metadata.
 4. The parent `order_documents` row still stores latest status and latest send snapshot for fast status display.
-5. The Orders document tray now reads send history and shows recent sends, preview links, recipients, and open counts.
-6. A tracked preview route exists at `/order-documents/preview/[token]`.
-7. Opening the preview route increments `open_count` on the specific send row and updates opened timestamps.
-8. The preview route currently verifies tracked link, document lineage, order context, and open tracking. Final buyer-facing PDF/body rendering can plug into the same route later.
-9. Quote history remains untouched.
+5. The Orders document tray reads send history and shows recent sends, preview links, recipients, and open counts.
+6. Opening the preview route increments `open_count` on the specific send row and updates opened timestamps.
+7. Quote history remains untouched.
 
-Important limitation:
-
-- Sprint 8X creates preview-link and open-tracking foundation. It does not yet render the final production PDF body for every order document type. It should not claim external email/WhatsApp delivery unless a future transport adapter confirms delivery.
-
-Setu Guru should now distinguish between:
+Setu Guru should distinguish between:
 
 - parent document status in `order_documents`; and
 - per-recipient/per-send history in `order_document_sends`.
@@ -69,16 +109,13 @@ New behavior:
    - Paid & Closed
 5. Backend records still keep the more detailed execution truth: `orders`, `order_lines`, `order_approval_gates`, `order_documents`, `packing_plans`, `freight_rate_requests`, `shipments`, `trade_requirements`, and `finance_sync_records`.
 6. Completed stages remain clickable. Done means locked from unsafe edits, not hidden.
-7. The stage panel now carries the relevant work for that stage instead of pushing more content below the page.
+7. The stage panel carries the relevant work for that stage instead of pushing more content below the page.
 8. A compact document tray appears in document stages so users can preview documents at any time and resend approved/sent documents to different stakeholders.
-9. Re-send is treated as normal workflow behavior: send to buyer, finance, warehouse, logistics provider, or another stakeholder without mutating quote history.
-10. Quote history remains untouched.
+9. Re-send is treated as normal workflow behavior and does not mutate quote history.
 
 Important design rule:
 
 > Do not keep expanding the Orders page downward. Fold new capability into the selected stage panel, document tray, or a focused modal/drawer.
-
-Setu Guru should explain Orders using the clean model: queue → selected order → stage strip → active stage panel → document tray / action bar. Guru should not describe logistics or trade requirements as separate products below the Orders workspace.
 
 ## Document preview and resend rule
 
@@ -87,18 +124,18 @@ Every created order document should be previewable after creation and sendable a
 Target document behavior:
 
 - Preview
-- Download / PDF
+- Browser print / PDF path
 - Send tracked
 - Send again
 - Copy link
 - View history
 - Create new version where revision is allowed
 
-Sprint 8X makes repeat send history real with `order_document_sends`. A single document may now have many sends to many recipients.
+A single document may have many sends to many recipients through `order_document_sends`.
 
 ## Sprint 8U industry-neutral trade requirement search and attach
 
-Sprint 8U introduced order-stage trade requirements using `trade_requirements` and `trade_requirement_sources`. After Sprint 8W/8X, these should be presented inside the relevant active stage panel or drawer, not as a full-width permanent section below Orders.
+Sprint 8U introduced order-stage trade requirements using `trade_requirements` and `trade_requirement_sources`. After Sprint 8W/8X/8Y, these should be presented inside the relevant active stage panel or drawer, not as a full-width permanent section below Orders.
 
 Rules remain:
 
@@ -110,7 +147,7 @@ Rules remain:
 
 ## Sprint 8T packing, freight, dispatch, and closeout UI
 
-Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rate_requests`, `freight_rate_quotes`, `shipments`, `order_documents`, and `finance_sync_records`. After Sprint 8W/8X, that data should appear inside the relevant stage panel:
+Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rate_requests`, `freight_rate_quotes`, `shipments`, `order_documents`, and `finance_sync_records`. After Sprint 8W/8X/8Y, that data should appear inside the relevant stage panel:
 
 - Packing / Freight stage shows packing sheet, freight request, and selected quote.
 - Processing stage shows pick/pack/QC and packing list readiness.
@@ -118,11 +155,9 @@ Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rat
 - Dispatch / Invoice stage shows dispatch invoice evidence and send status.
 - Paid & Closed stage shows finance sync, payment, receipt, archive, and closeout.
 
-Do not render a separate logistics dashboard below the active order workspace unless it is intentionally opened as a detail drawer.
-
 ## Sprint 8S order document gates and send tracking
 
-Sprint 8S added the first structured order-document send gate on top of the stage shell. Sprint 8X extends that with child send history.
+Sprint 8S added the first structured order-document send gate on top of the stage shell. Sprint 8X extends that with child send history and Sprint 8Y adds v3 document bodies.
 
 Behavior:
 
@@ -133,14 +168,14 @@ Behavior:
 5. Supported first-document types include:
    - `order_confirmation` for regional orders;
    - `proforma_invoice` for export orders;
-   - `dispatch_invoice` for later dispatch invoice work.
+   - `dispatch_invoice` for invoice/commercial invoice work.
 6. Sending records channel, recipient, note, source quote ID, and source quote version ID.
-7. The current send action records structured send state but does not yet guarantee external delivery.
+7. The current send action records structured send state but does not yet guarantee external email/WhatsApp delivery.
 8. Quote history is not mutated.
 
 ## Sprint 8R structured Orders shell
 
-Sprint 8R made the Orders workspace structured-order first. Sprint 8W/8X keep that but simplify the user-facing shell.
+Sprint 8R made the Orders workspace structured-order first. Sprint 8W/8X/8Y keep that but simplify the user-facing shell.
 
 Protected behavior:
 
@@ -157,6 +192,7 @@ Protected behavior:
 - Turning accepted quotes into controlled execution work.
 - Showing one clear next action instead of stacked dashboards.
 - Previewing and resending order documents anytime.
+- Rendering regional/export documents with industry-ready tax/customs/stamp sections.
 - Tracking each document send to each recipient separately.
 - Tracking document opens per send link.
 - Tracking accepted quote-version lineage, actual order lines, documents, trade requirements, packing, freight, shipment, dispatch, finance sync, and closeout posture.
@@ -171,6 +207,8 @@ Protected behavior:
 - Can I send this document again to another user?
 - Who did we send this document to?
 - Was this tracked document link opened?
+- Which terms profile is used for this document?
+- Is this using regional or export document terms?
 - Has this order confirmation or proforma been sent/tracked?
 - Which trade requirements apply to this order stage?
 - Is packing approved for this order?
@@ -190,7 +228,8 @@ Protected behavior:
 - Actual order lines have not been internally approved yet.
 - First document gate has not been prepared, previewed, approved, or sent/tracked.
 - Document was sent but there is no child send-history row for the recipient.
-- Tracked preview route exists but final buyer-facing PDF rendering is not plugged in yet.
+- Organization terms profile is missing or not configured for document type/country.
+- Organization identity, tax IDs, bank details, stamp, or signature settings are not configured.
 - Order-stage trade requirement has not been attached or source-confirmed.
 - Required or blocking trade requirement is still pending review.
 - Packing sheet has not been prepared, previewed, or approved.
@@ -208,6 +247,7 @@ Protected behavior:
 - `quote_version_line_items` as the accepted commercial source snapshot.
 - `order_documents` for parent document state.
 - `order_document_sends` for per-recipient send/open history.
+- `organization_document_terms_profiles` for default and future Admin-managed terms/declarations/tax/stamp settings.
 - `order_approval_gates` and `order_stage_events`.
 - `trade_requirement_rules`, `trade_requirements`, and `trade_requirement_sources`.
 - Packing plans and packing plan lines.
@@ -239,6 +279,23 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - marking shipment dispatched or delivered;
 - syncing finance or closing payment/receipt.
 
+## Sprint 8Y smoke-check checklist
+
+Use this checklist before the next Orders pass:
+
+- Does `organization_document_terms_profiles` exist with RLS enabled?
+- Do existing organizations have default regional/export terms profiles?
+- Does new organization creation seed default document terms profiles?
+- Does `/order-documents/preview/[token]` render v3-style document body, not just metadata?
+- Does regional vs export document rendering differ visibly?
+- Do regional documents show tax placeholders such as GST/VAT/CGST/SGST/IGST/HSN/category?
+- Do export documents show HS/ITC-HS, country of origin, declared value, LUT/IGST/import duty placeholders?
+- Do documents show stamp/signature zones?
+- Do documents show compact page-1 terms and annexure terms?
+- Does preview still increment open tracking?
+- Does quote history remain untouched?
+- Are quote/compliance/catalog/lead protected flows untouched?
+
 ## Sprint 8X smoke-check checklist
 
 Use this checklist before the next Orders pass:
@@ -254,22 +311,6 @@ Use this checklist before the next Orders pass:
 - Does quote history remain untouched?
 - Are quote/compliance/catalog/lead protected flows untouched?
 
-## Sprint 8W smoke-check checklist
-
-Use this checklist before the next Orders pass:
-
-- Does `/orders` render one clean workspace rather than stacked 8T/8U panels?
-- Does the left queue stay compact?
-- Does exactly one selected order open on the right?
-- Does the user-facing stage strip show seven business stages?
-- Are completed stages clickable?
-- Can a user return to a cleared stage to preview/send again?
-- Is there a document tray in document-related stages?
-- Does Send tracked remain available for approved/sent documents?
-- Does the UI avoid claiming external delivery unless confirmed?
-- Does quote history remain untouched?
-- Are quote/compliance/catalog/lead protected flows untouched?
-
 ## Suggested prompts
 
 - What is blocking this order?
@@ -278,6 +319,8 @@ Use this checklist before the next Orders pass:
 - Who opened the order confirmation link?
 - Which document sends are still unopened?
 - Which quote version created this order?
+- Which terms profile is used for this document?
+- Is this regional or export document rendering?
 - Which trade requirements apply to this order?
 - Is packing approved for this order?
 - Has freight been selected for this order?
