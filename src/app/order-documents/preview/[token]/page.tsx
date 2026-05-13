@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createServiceClient } from '@/lib/supabase/service';
 import { createClient } from '@/lib/supabase/server';
-import { PrintPdfButton } from './PrintPdfButton';
+import { OrderPreviewPrintButton } from '@/features/orders/components/OrderPreviewPrintButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,7 +104,7 @@ function Terms({ exportMode }: { exportMode: boolean }) {
 
 function Annexure({ title, exportMode }: { title: string; exportMode: boolean }) {
   return <section className="odx-annexure"><h2>Annexure - Terms, declarations, and configuration notes</h2><p>{title} default terms. Final terms must be managed per organization in Admin.</p><ol>{annexure(exportMode).map((term) => <li key={term}>{term}</li>)}</ol><FieldTable rows={[
-    ['Future Admin page', 'Admin → Document Templates → Terms & Conditions'],
+    ['Future Admin page', 'Admin - Document Templates - Terms & Conditions'],
     ['Template controls', 'Regional/export family, document type, org country, tax profile, declarations, bank details, stamp/signature settings.'],
     ['Compliance controls', 'COO, inspection, phytosanitary, fumigation, insurance, bank docs, destination control text, buyer/bank requirements.'],
   ]} /></section>;
@@ -148,7 +148,7 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
   const subtotal = lines.reduce((sum: number, line: AnyRow) => sum + lineTotal(line), 0);
 
   return <main className="odx-page">
-    <aside className="odx-toolbar"><div><strong>{title}</strong><span>{documentNo}</span></div><PrintPdfButton /><small>Uses the approved v3 preview as the source. In the print dialog, choose Save as PDF.</small></aside>
+    <aside className="odx-toolbar"><div><strong>{title}</strong><span>{documentNo}</span></div><OrderPreviewPrintButton /><small>Uses the approved v3 preview as the source. In the print dialog, choose Save as PDF.</small></aside>
     <section className="odx-document">
       <header className="odx-doc-head"><div><b>SETU Flow - Document Preview</b><span>Token-based tracked preview. No workspace route required.</span></div><em>www.setuflowcrm.com</em></header>
       <h1>{title}</h1>
