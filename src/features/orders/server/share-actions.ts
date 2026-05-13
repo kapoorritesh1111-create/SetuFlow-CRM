@@ -81,13 +81,17 @@ async function recordOrderStageEvent(db: any, payload: {
   return db.from('order_stage_events').insert({ organization_id: payload.organizationId, order_id: payload.orderId, stage_key: payload.stageKey, event_type: payload.eventType, actor_user_id: payload.actorUserId, summary: payload.summary, payload: payload.eventPayload ?? {} });
 }
 
-async function findOrCreateApprovedOrderDocument(db: any, input: { organizationId: string; orderId: string; documentType: DocumentType; actorUserId: string; sourceQuoteId?: string | null; sourceQuoteVersionId?: string | null }) {
-  const { data: existing } = await db.from('order_documents').select('id, version_no, status').eq('organization_id', input.organizationId).eq('order_id', input.orderId).eq('document_type', input.documentType).is('superseded_by', null).order('version_no', { ascending: false }).limit(1).maybeSingle();
+async function findOrCreatePreviewOrderDocument(db: any, input: { organizationId: string; orderId: string; documentType: DocumentType; actorUserId: string; sourceQuoteId?: string | null; sourceQuoteVersionId?: string | null }) {
+  const { data: existing } = await db.from('order_documents').select('id, version_no, status, sent_at').eq('organization_id', input.organizationId).eq('order_id', input.orderId).eq('document_type', input.documentType).is('superseded_by', null).order('version_no', { ascending: false }).limit(1).maybeSingle();
   if (existing?.id) return existing;
-  const now = new Date().toISOString();
-  const { data: inserted, error } = await db.from('order_documents').insert({ organization_id: input.organizationId, order_id: input.orderId, document_type: input.documentType, stage_key: input.documentType, status: 'approved', version_no: 1, generated_from_snapshot: { source: 'sendOrderDocumentLinkAction', source_quote_id: input.sourceQuoteId ?? null, source_quote_version_id: input.sourceQuoteVersionId ?? null }, source_snapshot: { source_quote_id: input.sourceQuoteId ?? null, source_quote_version_id: input.sourceQuoteVersionId ?? null, workflow: 'order_confirmed_then_proforma_then_logistics' }, approved_by: input.actorUserId, approved_at: now }).select('id, version_no, status').single();
-  if (error || !inserted?.id) throw error ?? new Error('Could not create order document tracking row');
+  const { data: inserted, error } = await db.from('order_documents').insert({ organization_id: input.organizationId, order_id: input.orderId, document_type: input.documentType, stage_key: input.documentType, status: 'draft', version_no: 1, generated_from_snapshot: { source: 'sendOrderDocumentLinkAction.preview', source_quote_id: input.sourceQuoteId ?? null, source_quote_version_id: input.sourceQuoteVersionId ?? null }, source_snapshot: { source_quote_id: input.sourceQuoteId ?? null, source_quote_version_id: input.sourceQuoteVersionId ?? null, workflow: 'order_confirmed_then_proforma_then_logistics', preview_only: true }, created_by: input.actorUserId }).select('id, version_no, status, sent_at').single();
+  if (error || !inserted?.id) throw error ?? new Error('Could not create draft order document tracking row');
   return inserted;
+}
+
+async function findApprovedOrderDocument(db: any, input: { organizationId: string; orderId: string; documentType: DocumentType }) {
+  const { data: existing } = await db.from('order_documents').select('id, version_no, status, sent_at').eq('organization_id', input.organizationId).eq('order_id', input.orderId).eq('document_type', input.documentType).is('superseded_by', null).order('version_no', { ascending: false }).limit(1).maybeSingle();
+  return existing?.status === 'approved' ? existing : null;
 }
 
 export async function sendOrderDocumentLinkAction(formData: FormData) {
@@ -124,10 +128,13 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
 
   let trackedDocument: any;
   try {
-    trackedDocument = await findOrCreateApprovedOrderDocument(db, { organizationId: workspace.organization.id, orderId: order.id, documentType, actorUserId: workspace.user.id, sourceQuoteId: order.source_quote_id ?? null, sourceQuoteVersionId: order.source_quote_version_id ?? null });
+    trackedDocument = previewOnly
+      ? await findOrCreatePreviewOrderDocument(db, { organizationId: workspace.organization.id, orderId: order.id, documentType, actorUserId: workspace.user.id, sourceQuoteId: order.source_quote_id ?? null, sourceQuoteVersionId: order.source_quote_version_id ?? null })
+      : await findApprovedOrderDocument(db, { organizationId: workspace.organization.id, orderId: order.id, documentType });
   } catch {
     redirect('/orders?notice=order-share-document-track-failed');
   }
+  if (!trackedDocument?.id) redirect('/orders?notice=order-share-approval-required');
 
   const resolvedRecipient = previewOnly ? '' : recipient || fallbackRecipientForChannel(channel, lead);
   const now = new Date().toISOString();
@@ -139,7 +146,8 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
 
   const { data: sendRow } = await db.from('order_document_sends').insert({ organization_id: workspace.organization.id, order_id: order.id, order_document_id: trackedDocument.id, document_type: documentType, channel, recipient: resolvedRecipient || null, recipient_role: recipientRole || null, note: note || null, status: sendStatus, share_token: shareToken, share_url: shareUrl, sent_at: now, created_by: workspace.user.id, metadata: { source: 'sendOrderDocumentLinkAction', preview_only: previewOnly, transport_delivery_confirmed: false, compose_url_created: Boolean(composeUrl), channel_default_source: recipient ? 'manual_recipient' : channel === 'email' ? 'lead_email' : channel === 'whatsapp' ? 'lead_whatsapp_number_or_phone' : 'preview', source_quote_id: order.source_quote_id ?? null, source_quote_version_id: order.source_quote_version_id ?? null, lead_id: order.lead_id ?? null } }).select('id').single();
 
-  await db.from('order_documents').update({ status: previewOnly ? trackedDocument.status ?? 'approved' : 'link_created', sent_at: previewOnly ? trackedDocument.sent_at ?? null : now, updated_at: now, source_snapshot: { sent_channel: channel, sent_recipient: resolvedRecipient || null, latest_send_id: sendRow?.id ?? null, latest_share_url: shareUrl, preview_only: previewOnly, transport_delivery_confirmed: false, source_quote_id: order.source_quote_id ?? null, source_quote_version_id: order.source_quote_version_id ?? null, note: note || null, workflow: 'order_confirmed_then_proforma_then_logistics' } }).eq('organization_id', workspace.organization.id).eq('id', trackedDocument.id);
+  const nextDocumentStatus = previewOnly ? (trackedDocument.status === 'approved' ? 'approved' : 'previewed') : 'link_created';
+  await db.from('order_documents').update({ status: nextDocumentStatus, sent_at: previewOnly ? trackedDocument.sent_at ?? null : now, updated_at: now, source_snapshot: { sent_channel: channel, sent_recipient: resolvedRecipient || null, latest_send_id: sendRow?.id ?? null, latest_share_url: shareUrl, preview_only: previewOnly, transport_delivery_confirmed: false, source_quote_id: order.source_quote_id ?? null, source_quote_version_id: order.source_quote_version_id ?? null, note: note || null, workflow: 'order_confirmed_then_proforma_then_logistics' } }).eq('organization_id', workspace.organization.id).eq('id', trackedDocument.id);
 
   await recordOrderStageEvent(db, { organizationId: workspace.organization.id, orderId: order.id, stageKey: documentType, eventType: previewOnly ? `${documentType}_preview_link_created` : `${documentType}_review_link_created`, actorUserId: workspace.user.id, summary: previewOnly ? `${documentLabel} preview link created.` : `${documentLabel} ${channel} review link${resolvedRecipient ? ` for ${resolvedRecipient}` : ''} created.`, eventPayload: { order_document_id: trackedDocument.id, order_document_send_id: sendRow?.id ?? null, channel, recipient: resolvedRecipient || null, share_url: shareUrl, compose_url: composeUrl || null, preview_only: previewOnly, transport_delivery_confirmed: false, source_quote_id: order.source_quote_id ?? null, source_quote_version_id: order.source_quote_version_id ?? null } });
 
