@@ -92,12 +92,65 @@ function lineTotal(line: AnyRow) {
   return stored || quantity(line) * unitPrice(line);
 }
 
+function estimateUnitsPerCase(line: AnyRow) {
+  return num(line.product_snapshot?.units_per_case ?? line.product_snapshot?.moq) || (/powder/i.test(String(line.product_name_snapshot ?? '')) ? 12 : 24);
+}
+
+function estimateUnitWeight(line: AnyRow) {
+  const stored = num(line.product_snapshot?.net_weight_kg_per_unit);
+  if (stored) return stored;
+  const name = String(line.product_name_snapshot ?? '');
+  if (/chips|snack/i.test(name)) return 0.08;
+  if (/powder/i.test(name)) return 0.5;
+  return 0.25;
+}
+
+function packingRows(lines: AnyRow[]) {
+  return lines.map((line, index) => {
+    const units = quantity(line);
+    const unitsPerCase = estimateUnitsPerCase(line);
+    const cartons = Math.max(1, Math.ceil(units / unitsPerCase));
+    const netWeight = units * estimateUnitWeight(line);
+    const grossWeight = netWeight + cartons * 0.75;
+    const cbm = cartons * (/chips|snack/i.test(String(line.product_name_snapshot ?? '')) ? 0.045 : 0.035);
+    return { line, index, units, unitsPerCase, cartons, netWeight, grossWeight, cbm, pallets: Math.max(1, Math.ceil(cartons / 40)) };
+  });
+}
+
 function FieldTable({ rows }: { rows: Array<[string, any]> }) {
   return <table className="odx-field"><tbody>{rows.map(([label, value]) => <tr key={label}><th>{label}</th><td>{value || '—'}</td></tr>)}</tbody></table>;
 }
 
 function ItemsTable({ lines, exportMode, currency }: { lines: AnyRow[]; exportMode: boolean; currency: string }) {
   return <table className="odx-items"><thead><tr><th>#</th><th>SKU</th><th>Description</th><th>{exportMode ? 'HS / ITC-HS' : 'HSN'}</th><th>Origin</th><th>Qty</th><th>UOM</th><th>Unit</th><th>{exportMode ? 'Declared value' : 'Taxable value'}</th><th>{exportMode ? 'Tax / duty note' : 'Tax note'}</th></tr></thead><tbody>{lines.length ? lines.map((line, index) => <tr key={line.id ?? index}><td>{index + 1}</td><td>{line.sku_code || '—'}</td><td>{line.product_name_snapshot || 'Product line'}</td><td>{line.hs_code || line.hsn_code || '—'}</td><td>{line.product_snapshot?.origin_country || 'India'}</td><td>{quantity(line).toLocaleString()}</td><td>{line.unit_of_measure || 'Ctn'}</td><td>{money(unitPrice(line), currency)}</td><td>{money(lineTotal(line), currency)}</td><td>{exportMode ? 'Zero-rated/LUT or IGST as configured; import duty for buyer' : 'GST/VAT/CGST/SGST/IGST by HSN/category'}</td></tr>) : <tr><td colSpan={10}>No order lines found for this tracked document.</td></tr>}</tbody></table>;
+}
+
+function PackingTable({ lines }: { lines: AnyRow[] }) {
+  const rows = packingRows(lines);
+  return <section className="odx-specific"><h2>Packing / freight-rate details</h2><p>Operational packing estimate for preview and freight-rate sharing. Values should be confirmed by the organization before dispatch.</p><table className="odx-items"><thead><tr><th>#</th><th>Product</th><th>Units</th><th>Units / case</th><th>Cartons</th><th>Net kg</th><th>Gross kg</th><th>CBM</th><th>Pallets</th><th>Marks / notes</th></tr></thead><tbody>{rows.length ? rows.map((row) => <tr key={row.line.id ?? row.index}><td>{row.index + 1}</td><td>{row.line.product_name_snapshot || 'Product line'}</td><td>{row.units.toLocaleString()}</td><td>{row.unitsPerCase.toLocaleString()}</td><td>{row.cartons.toLocaleString()}</td><td>{row.netWeight.toFixed(2)}</td><td>{row.grossWeight.toFixed(2)}</td><td>{row.cbm.toFixed(3)}</td><td>{row.pallets}</td><td>{row.line.sku_code || 'Confirm marks and numbers'}</td></tr>) : <tr><td colSpan={10}>No packing rows available.</td></tr>}</tbody></table><table className="odx-total"><tbody><tr><th>Total cartons</th><td>{rows.reduce((s, r) => s + r.cartons, 0).toLocaleString()}</td></tr><tr><th>Total gross weight</th><td>{rows.reduce((s, r) => s + r.grossWeight, 0).toFixed(2)} kg</td></tr><tr><th>Total CBM</th><td>{rows.reduce((s, r) => s + r.cbm, 0).toFixed(3)}</td></tr></tbody></table></section>;
+}
+
+function DeliverySummary({ order, lead }: { order: AnyRow; lead: AnyRow }) {
+  return <section className="odx-specific"><h2>Delivery note controls</h2><FieldTable rows={[
+    ['Delivery / ship-to', order.destination_place || lead.country || 'Destination pending'],
+    ['Receiver acknowledgement', 'Receiver name, signature, date, stamp, and condition-at-receipt to be captured on delivery.'],
+    ['Vehicle / LR / docket', 'To be added by logistics before dispatch or by carrier.'],
+    ['Shortage / damage note', 'Any shortage, leakage, damage, or seal issue must be recorded at receipt.'],
+  ]} /></section>;
+}
+
+function InvoiceSummary({ exportMode, order, subtotal, currency }: { exportMode: boolean; order: AnyRow; subtotal: number; currency: string }) {
+  return <section className="odx-specific"><h2>{exportMode ? 'Commercial invoice controls' : 'Final tax invoice controls'}</h2><FieldTable rows={exportMode ? [
+    ['Invoice basis', 'Declared value should match approved order, packing, customs, and bank documentation.'],
+    ['Incoterm', `${order.incoterm || 'FOB'} ${order.origin_place || 'Named place pending'}`],
+    ['Declared value', money(subtotal, currency)],
+    ['Freight / insurance', 'Shown separately if required by Incoterm, buyer, bank, or customs.'],
+  ] : [
+    ['Taxable value', money(subtotal, currency)],
+    ['Tax calculation', 'GST/VAT/CGST/SGST/IGST by HSN/category and place-of-supply rules.'],
+    ['E-invoice / e-way bill', 'Generated when applicable before dispatch.'],
+    ['Payment / credit release', 'Must be confirmed before order closure.'],
+  ]} /></section>;
 }
 
 function SignatureBoxes({ exportMode }: { exportMode: boolean }) {
@@ -139,6 +192,9 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
   const documentNo = `${exportMode ? 'EXP' : 'REG'}-${order.order_number || String(send.id ?? '').slice(0, 8)}`;
   const subtotal = lines.reduce((sum: number, line: AnyRow) => sum + lineTotal(line), 0);
   const openCountAfterView = Number(send.open_count_after_view ?? send.open_count ?? 0);
+  const packingDoc = ['packing_sheet', 'packing_list', 'freight_request'].includes(documentType);
+  const deliveryDoc = documentType === 'delivery_note';
+  const invoiceDoc = documentType === 'dispatch_invoice';
 
   return <main className="odx-page">
     <aside className="odx-toolbar"><div><strong>{title}</strong><span>{documentNo}</span></div><OrderPreviewPrintButton /><small>Uses the approved v3 preview as the source. In the print dialog, choose Save as PDF.</small></aside>
@@ -156,7 +212,7 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
         ['Bank', org.metadata?.bank_details || 'Bank details configured in Admin'],
       ]} /></div><div><h2>Buyer / Consignee</h2><FieldTable rows={[
         [exportMode ? 'Importer / Buyer' : 'Buyer', lead.company_name || 'Buyer pending'],
-        ['Contact', [lead.contact_name, lead.email, lead.whatsapp, lead.phone].filter(Boolean).join(', ') || 'Contact pending'],
+        ['Contact', [lead.contact_name, lead.email, lead.whatsapp_number, lead.whatsapp, lead.phone].filter(Boolean).join(', ') || 'Contact pending'],
         ['Ship To / Consignee', order.destination_place || lead.country || 'Destination pending'],
         ['Notify Party', exportMode ? 'Same as consignee / nominated forwarder' : 'Not applicable'],
         ['Buyer reference', order.buyer_reference || '—'],
@@ -178,6 +234,10 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
         ['Payment terms', order.payment_terms || 'Configured on order'],
       ]} /></section>
 
+      {packingDoc ? <PackingTable lines={lines} /> : null}
+      {deliveryDoc ? <DeliverySummary order={order} lead={lead} /> : null}
+      {invoiceDoc ? <InvoiceSummary exportMode={exportMode} order={order} subtotal={subtotal} currency={currency} /> : null}
+
       <section><h2>{exportMode ? 'Line items - declared customs values' : 'Line items - tax by HSN/category'}</h2><ItemsTable lines={lines} exportMode={exportMode} currency={currency} /><table className="odx-total"><tbody><tr><th>{exportMode ? 'Declared / FOB value' : 'Taxable value'}</th><td>{money(subtotal, currency)}</td></tr><tr><th>{exportMode ? 'Freight / Insurance' : 'Tax total'}</th><td>{exportMode ? 'As per Incoterm / freight invoice' : 'Calculated by org tax profile'}</td></tr><tr><th>Total</th><td>{money(subtotal, currency)}</td></tr></tbody></table></section>
 
       <SignatureBoxes exportMode={exportMode} />
@@ -189,4 +249,4 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
   </main>;
 }
 
-const styles = `@page{size:A4;margin:10mm}.odx-page{min-height:100vh;background:#eef4f8;padding:24px;color:#123047;font-family:Inter,Arial,sans-serif}.odx-toolbar{max-width:1040px;margin:0 auto 14px;background:#082f49;color:white;border-radius:18px;box-shadow:0 12px 30px #0f172a20;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}.odx-toolbar strong,.odx-toolbar span,.odx-toolbar small{display:block}.odx-toolbar span{color:#bfdbfe;font-size:12px;margin-top:3px}.odx-toolbar small{grid-column:1/-1;color:#dbeafe;font-size:11px}.odx-toolbar button{border:0;border-radius:999px;background:white;color:#082f49;padding:10px 14px;font-size:12px;font-weight:900;cursor:pointer}.odx-document,.odx-annexure{max-width:1040px;margin:0 auto 18px;background:white;border:1px solid #cfe0ea;border-radius:10px;box-shadow:0 12px 30px #0f172a12;padding:22px}.odx-doc-head{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid #dbe7f3;padding-bottom:8px;font-size:11px;color:#64748b}.odx-doc-head b{color:#0b3d5c}.odx-doc-head span{margin-left:8px}.odx-doc-head em{font-style:normal;color:#64748b}.odx-document h1{font-size:30px;letter-spacing:-.04em;margin:22px 0 4px;color:#0b3d5c}.odx-subtitle{font-size:12px;color:#64748b;margin:0 0 12px}.odx-banner{display:grid;grid-template-columns:1fr 1fr 1fr;background:#eaf3fb;border:1px solid #c9dce8;margin:10px 0 18px}.odx-banner strong{padding:8px 10px;font-size:11px;text-transform:uppercase;color:#123047}.odx-parties{display:grid;grid-template-columns:1fr 1fr;gap:22px}.odx-document h2,.odx-annexure h2{font-size:17px;color:#0b3d5c;margin:16px 0 7px}.odx-annexure h3{font-size:14px;color:#0b3d5c;margin:18px 0 7px}.odx-field,.odx-items,.odx-total{width:100%;border-collapse:collapse;font-size:11px}.odx-field th,.odx-field td,.odx-items th,.odx-items td,.odx-total th,.odx-total td{border:1px solid #cfe0ea;padding:6px;vertical-align:top}.odx-field th{width:30%;text-align:left;color:#0b5c8e;background:#f8fbfd}.odx-items th{background:#075f94;color:white;text-align:left;font-size:10px}.odx-items tr:nth-child(even) td{background:#f8fbfd}.odx-total{width:48%;margin:12px 0 0 auto}.odx-total th{text-align:left;background:#f8fbfd}.odx-total tr:last-child th,.odx-total tr:last-child td{background:#eaf3fb;font-weight:800}.odx-signatures{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:18px 0}.odx-sign{height:112px;border:1px solid #cfe0ea;display:flex;flex-direction:column;justify-content:space-between;padding:10px;font-size:11px}.odx-sign strong{color:#123047}.odx-sign span{color:#64748b}.odx-terms{border:1px solid #cfe0ea;background:#f8fbfd;margin-top:12px;padding:10px;font-size:11px}.odx-terms strong{color:#123047}.odx-terms ul{margin:7px 0 0;padding-left:18px;line-height:1.55}.odx-annexure{page-break-before:always}.odx-annexure p,.odx-annexure li{font-size:12px;color:#334155;line-height:1.55}.odx-annexure ol{padding-left:18px}.odx-footer{display:flex;justify-content:space-between;border-top:1px solid #dbe7f3;margin-top:16px;padding-top:8px;color:#64748b;font-size:10px}@media print{.odx-toolbar{display:none}.odx-page{background:white;padding:0}.odx-document,.odx-annexure{box-shadow:none;border-radius:0;margin:0 0 8mm;padding:0;border:0}.odx-document h1{font-size:24px}.odx-sign{height:88px}.odx-items,.odx-field,.odx-total{font-size:9px}.odx-doc-head{font-size:9px}.odx-terms{font-size:9px}.odx-footer{font-size:8px}}@media(max-width:760px){.odx-page{padding:12px}.odx-toolbar,.odx-parties,.odx-banner,.odx-signatures{grid-template-columns:1fr}.odx-total{width:100%}}`;
+const styles = `@page{size:A4;margin:10mm}.odx-page{min-height:100vh;background:#eef4f8;padding:24px;color:#123047;font-family:Inter,Arial,sans-serif}.odx-toolbar{max-width:1040px;margin:0 auto 14px;background:#082f49;color:white;border-radius:18px;box-shadow:0 12px 30px #0f172a20;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}.odx-toolbar strong,.odx-toolbar span,.odx-toolbar small{display:block}.odx-toolbar span{color:#bfdbfe;font-size:12px;margin-top:3px}.odx-toolbar small{grid-column:1/-1;color:#dbeafe;font-size:11px}.odx-toolbar button{border:0;border-radius:999px;background:white;color:#082f49;padding:10px 14px;font-size:12px;font-weight:900;cursor:pointer}.odx-document,.odx-annexure{max-width:1040px;margin:0 auto 18px;background:white;border:1px solid #cfe0ea;border-radius:10px;box-shadow:0 12px 30px #0f172a12;padding:22px}.odx-doc-head{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid #dbe7f3;padding-bottom:8px;font-size:11px;color:#64748b}.odx-doc-head b{color:#0b3d5c}.odx-doc-head span{margin-left:8px}.odx-doc-head em{font-style:normal;color:#64748b}.odx-document h1{font-size:30px;letter-spacing:-.04em;margin:22px 0 4px;color:#0b3d5c}.odx-subtitle{font-size:12px;color:#64748b;margin:0 0 12px}.odx-banner{display:grid;grid-template-columns:1fr 1fr 1fr;background:#eaf3fb;border:1px solid #c9dce8;margin:10px 0 18px}.odx-banner strong{padding:8px 10px;font-size:11px;text-transform:uppercase;color:#123047}.odx-parties{display:grid;grid-template-columns:1fr 1fr;gap:22px}.odx-document h2,.odx-annexure h2{font-size:17px;color:#0b3d5c;margin:16px 0 7px}.odx-specific{border:1px solid #cfe0ea;background:#fbfdff;padding:12px;margin:14px 0}.odx-specific p{font-size:11px;color:#64748b;margin:0 0 8px}.odx-field,.odx-items,.odx-total{width:100%;border-collapse:collapse;font-size:11px}.odx-field th,.odx-field td,.odx-items th,.odx-items td,.odx-total th,.odx-total td{border:1px solid #cfe0ea;padding:6px;vertical-align:top}.odx-field th{width:30%;text-align:left;color:#0b5c8e;background:#f8fbfd}.odx-items th{background:#075f94;color:white;text-align:left;font-size:10px}.odx-items tr:nth-child(even) td{background:#f8fbfd}.odx-total{width:48%;margin:12px 0 0 auto}.odx-total th{text-align:left;background:#f8fbfd}.odx-total tr:last-child th,.odx-total tr:last-child td{background:#eaf3fb;font-weight:800}.odx-signatures{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:18px 0}.odx-sign{height:112px;border:1px solid #cfe0ea;display:flex;flex-direction:column;justify-content:space-between;padding:10px;font-size:11px}.odx-sign strong{color:#123047}.odx-sign span{color:#64748b}.odx-terms{border:1px solid #cfe0ea;background:#f8fbfd;margin-top:12px;padding:10px;font-size:11px}.odx-terms strong{color:#123047}.odx-terms ul{margin:7px 0 0;padding-left:18px;line-height:1.55}.odx-annexure{page-break-before:always}.odx-annexure p,.odx-annexure li{font-size:12px;color:#334155;line-height:1.55}.odx-annexure ol{padding-left:18px}.odx-footer{display:flex;justify-content:space-between;border-top:1px solid #dbe7f3;margin-top:16px;padding-top:8px;color:#64748b;font-size:10px}@media print{.odx-toolbar{display:none}.odx-page{background:white;padding:0}.odx-document,.odx-annexure{box-shadow:none;border-radius:0;margin:0 0 8mm;padding:0;border:0}.odx-document h1{font-size:24px}.odx-sign{height:88px}.odx-items,.odx-field,.odx-total{font-size:9px}.odx-doc-head{font-size:9px}.odx-terms{font-size:9px}.odx-footer{font-size:8px}}@media(max-width:760px){.odx-page{padding:12px}.odx-toolbar,.odx-parties,.odx-banner,.odx-signatures{grid-template-columns:1fr}.odx-total{width:100%}}`;
