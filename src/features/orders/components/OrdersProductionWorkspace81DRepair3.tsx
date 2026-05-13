@@ -1,3 +1,8 @@
+// DEPRECATED: Sprint 8.1G
+// This temporary Repair-3 Orders workspace is no longer active.
+// Active Orders UI is src/features/orders/components/OrdersProductionWorkspace81F.tsx.
+// Keep this file only as historical reference until final cleanup removes old sprint variants.
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
