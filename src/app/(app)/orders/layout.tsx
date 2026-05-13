@@ -27,6 +27,11 @@ function detectOrderType(orderType: unknown, leadCountry: unknown, organizationC
   return lead === org ? 'regional' : 'export';
 }
 
+function discountType(value: unknown): 'percent' | 'amount' | null {
+  const raw = clean(value)?.toLowerCase();
+  return raw === 'percent' || raw === 'amount' ? raw : null;
+}
+
 function lineStatus(quoted: number | null, actual: number | null, changeType?: string | null): OrderLineComparison8S['status'] {
   if (changeType === 'added_after_quote' || changeType === 'added_catalog_after_quote' || (quoted == null && actual != null)) return 'added';
   if (actual == null) return 'needs_actual_lines';
@@ -62,7 +67,7 @@ export default async function OrdersLayout() {
 
   const { data: rawOrders, error: ordersError } = await db
     .from('orders')
-    .select('id, lead_id, source_quote_id, source_quote_version_id, order_number, order_type, current_stage, status, approval_state, currency, pricing_basis, total_order_value, incoterm, destination_port, created_at, updated_at')
+    .select('id, lead_id, source_quote_id, source_quote_version_id, order_number, order_type, current_stage, status, approval_state, currency, pricing_basis, total_order_value, order_discount_type, order_discount_value, order_discount_amount, order_discount_reason, incoterm, destination_port, created_at, updated_at')
     .eq('organization_id', orgId)
     .order('updated_at', { ascending: false })
     .limit(500);
@@ -75,14 +80,16 @@ export default async function OrdersLayout() {
   const orderIds = orderRows.map((order: any) => order.id).filter(Boolean);
   const sourceVersionIds = [...new Set(orderRows.map((order: any) => order.source_quote_version_id).filter(Boolean))];
 
-  const [quotesResult, leadDisplayResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult, orderDocumentsResult, sendHistoryResult] = await Promise.all([
+  const [quotesResult, leadDisplayResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, processingChecksResult, packingPlansResult, catalogResult, orderDocumentsResult, sendHistoryResult] = await Promise.all([
     quoteIds.length ? db.from('quotes').select('id, status, currency, lead_id, current_version_id, accepted_version_id, approved_at, pricing_basis').eq('organization_id', orgId).in('id', quoteIds) : Promise.resolve({ data: [] }),
     db.rpc('get_orders_execution_lead_display', { p_org_id: orgId }),
     quoteIds.length || orderIds.length ? db.from('documents').select('id, related_id, linked_quote_id, related_entity, status, doc_type, file_name').eq('organization_id', orgId).or(`linked_quote_id.in.(${quoteIds.join(',')}),related_id.in.(${[...quoteIds, ...orderIds].join(',')})`).order('uploaded_at', { ascending: false }) : Promise.resolve({ data: [] }),
     orderIds.length ? db.from('order_approval_gates').select('id, order_id, stage_key, gate_type, status').eq('organization_id', orgId).in('order_id', orderIds) : Promise.resolve({ data: [] }),
     sourceVersionIds.length ? db.from('quote_version_line_items').select('id, quote_version_id, product_name, pack_label, sku_code, hsn_code, moq, final_unit_price, final_case_price, final_kg_price, display_currency, sort_order, basis_applied, pricing_mode, catalog_price_snapshot').in('quote_version_id', sourceVersionIds).order('sort_order', { ascending: true }) : Promise.resolve({ data: [] }),
     sourceVersionIds.length ? db.from('quote_versions').select('id, version_no, status, approved_at, sent_at, total_line_count').in('id', sourceVersionIds) : Promise.resolve({ data: [] }),
-    orderIds.length ? db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_id, product_variant_id, product_category_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, created_at, pricing_snapshot').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: true }) : Promise.resolve({ data: [] }),
+    orderIds.length ? db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_id, product_variant_id, product_category_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, line_discount_type, line_discount_value, line_discount_amount, line_discount_reason, created_at, pricing_snapshot').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: true }) : Promise.resolve({ data: [] }),
+    orderIds.length ? db.from('order_processing_checks').select('id, order_id, order_line_id, picked, packed, qc_checked, batch_lot_note, processing_note, checked_at').eq('organization_id', orgId).in('order_id', orderIds) : Promise.resolve({ data: [] }),
+    orderIds.length ? db.from('packing_plans').select('id, order_id, total_units, total_master_cases, total_pallets, total_net_weight_kg, total_gross_weight_kg, total_cbm, pickup_location, delivery_destination, freight_notes, override_snapshot, updated_at').eq('organization_id', orgId).in('order_id', orderIds).order('updated_at', { ascending: false }) : Promise.resolve({ data: [] }),
     db.from('active_product_pricing_rules_v').select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg').eq('organization_id', orgId).eq('is_active', true).eq('is_quoteable', true).order('product_name', { ascending: true }).limit(200),
     orderIds.length ? db.from('order_documents').select('id, order_id, document_type, status, sent_at, opened_at, created_at').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
     orderIds.length ? db.from('order_document_sends').select('id, order_id, order_document_id, document_type, channel, recipient, recipient_role, status, share_url, sent_at, opened_at, open_count').eq('organization_id', orgId).in('order_id', orderIds).order('sent_at', { ascending: false }) : Promise.resolve({ data: [] }),
@@ -95,8 +102,13 @@ export default async function OrdersLayout() {
   const gateRows = Array.isArray(gatesResult.data) ? gatesResult.data : [];
   const quoteLines = Array.isArray(quoteLinesResult.data) ? quoteLinesResult.data : [];
   const orderLines = Array.isArray(orderLinesResult.data) ? orderLinesResult.data : [];
+  const processingRows = Array.isArray(processingChecksResult.data) ? processingChecksResult.data : [];
+  const packingRows = Array.isArray(packingPlansResult.data) ? packingPlansResult.data : [];
   const orderDocumentRows = Array.isArray(orderDocumentsResult.data) ? orderDocumentsResult.data : [];
   const sendRows = Array.isArray(sendHistoryResult.data) ? sendHistoryResult.data : [];
+  const processingByLine = new Map(processingRows.map((row: any) => [row.order_line_id, row]));
+  const packingByOrder = new Map<string, any>();
+  packingRows.forEach((row: any) => { if (!packingByOrder.has(row.order_id)) packingByOrder.set(row.order_id, row); });
 
   const catalogOptions: CatalogOrderOption8S[] = (Array.isArray(catalogResult.data) ? catalogResult.data : []).map((rule: any) => {
     const price = basisPrice(rule);
@@ -120,21 +132,24 @@ export default async function OrdersLayout() {
     const comparisonLines: OrderLineComparison8S[] = qLines.map((line: any) => {
       const actual = actualByQuoteLine.get(line.id) as any;
       if (actual?.id) usedActual.add(actual.id);
+      const checked = actual?.id ? processingByLine.get(actual.id) as any : null;
       const quotedQty = num(line.moq);
       const actualQty = actual ? num(actual.ordered_quantity) : null;
       const unitPrice = actual ? num(actual.unit_price) : num(line.final_unit_price ?? line.final_case_price ?? line.final_kg_price);
       const qTotal = unitPrice != null && quotedQty != null ? unitPrice * quotedQty : null;
       if (qTotal != null) quotedTotal += qTotal;
-      return { id: actual?.id ?? `quote-${line.id}`, productName: actual?.product_name_snapshot ?? line.product_name ?? 'Quoted line', variantName: actual?.variant_name_snapshot ?? line.pack_label ?? null, skuCode: actual?.sku_code ?? line.sku_code ?? null, hsnCode: actual?.hsn_code ?? line.hsn_code ?? null, quotedQuantity: quotedQty, actualQuantity: actualQty, unitOfMeasure: actual?.unit_of_measure ?? 'units', unitPrice, currency: actual?.currency ?? line.display_currency ?? order.currency ?? quote?.currency ?? lead?.deal_currency ?? null, quotedTotal: qTotal, lineTotal: actual ? num(actual.line_total) : actualQty != null && unitPrice != null ? actualQty * unitPrice : null, status: lineStatus(quotedQty, actualQty, actual?.change_type), reason: actual?.change_reason ?? null, isActual: Boolean(actual?.id), pricingBasis: clean(actual?.pricing_snapshot?.pricing_basis ?? line.basis_applied ?? line.pricing_mode ?? orderPricingBasis) };
+      return { id: actual?.id ?? `quote-${line.id}`, productName: actual?.product_name_snapshot ?? line.product_name ?? 'Quoted line', variantName: actual?.variant_name_snapshot ?? line.pack_label ?? null, skuCode: actual?.sku_code ?? line.sku_code ?? null, hsnCode: actual?.hsn_code ?? line.hsn_code ?? null, quotedQuantity: quotedQty, actualQuantity: actualQty, unitOfMeasure: actual?.unit_of_measure ?? 'units', unitPrice, currency: actual?.currency ?? line.display_currency ?? order.currency ?? quote?.currency ?? lead?.deal_currency ?? null, quotedTotal: qTotal, lineTotal: actual ? num(actual.line_total) : actualQty != null && unitPrice != null ? actualQty * unitPrice : null, status: lineStatus(quotedQty, actualQty, actual?.change_type), reason: actual?.change_reason ?? null, isActual: Boolean(actual?.id), pricingBasis: clean(actual?.pricing_snapshot?.pricing_basis ?? line.basis_applied ?? line.pricing_mode ?? orderPricingBasis), lineDiscountType: discountType(actual?.line_discount_type), lineDiscountValue: num(actual?.line_discount_value), lineDiscountAmount: num(actual?.line_discount_amount), lineDiscountReason: clean(actual?.line_discount_reason), processingCheck: checked ? { picked: checked.picked, packed: checked.packed, qcChecked: checked.qc_checked, batchLotNote: clean(checked.batch_lot_note), processingNote: clean(checked.processing_note), checkedAt: checked.checked_at ?? null } : null };
     });
 
     aLines.filter((line: any) => !usedActual.has(line.id)).forEach((line: any) => {
       const actualQty = num(line.ordered_quantity);
-      comparisonLines.push({ id: line.id, productName: line.product_name_snapshot ?? 'Added order line', variantName: line.variant_name_snapshot ?? null, skuCode: line.sku_code ?? null, hsnCode: line.hsn_code ?? null, quotedQuantity: num(line.quoted_quantity), actualQuantity: actualQty, unitOfMeasure: line.unit_of_measure ?? 'units', unitPrice: num(line.unit_price), currency: line.currency ?? order.currency ?? quote?.currency ?? lead?.deal_currency ?? null, quotedTotal: null, lineTotal: num(line.line_total), status: lineStatus(num(line.quoted_quantity), actualQty, line.change_type), reason: line.change_reason ?? null, isActual: true, pricingBasis: clean(line.pricing_snapshot?.pricing_basis ?? orderPricingBasis) });
+      const checked = processingByLine.get(line.id) as any;
+      comparisonLines.push({ id: line.id, productName: line.product_name_snapshot ?? 'Added order line', variantName: line.variant_name_snapshot ?? null, skuCode: line.sku_code ?? null, hsnCode: line.hsn_code ?? null, quotedQuantity: num(line.quoted_quantity), actualQuantity: actualQty, unitOfMeasure: line.unit_of_measure ?? 'units', unitPrice: num(line.unit_price), currency: line.currency ?? order.currency ?? quote?.currency ?? lead?.deal_currency ?? null, quotedTotal: null, lineTotal: num(line.line_total), status: lineStatus(num(line.quoted_quantity), actualQty, line.change_type), reason: line.change_reason ?? null, isActual: true, pricingBasis: clean(line.pricing_snapshot?.pricing_basis ?? orderPricingBasis), lineDiscountType: discountType(line.line_discount_type), lineDiscountValue: num(line.line_discount_value), lineDiscountAmount: num(line.line_discount_amount), lineDiscountReason: clean(line.line_discount_reason), processingCheck: checked ? { picked: checked.picked, packed: checked.packed, qcChecked: checked.qc_checked, batchLotNote: clean(checked.batch_lot_note), processingNote: clean(checked.processing_note), checkedAt: checked.checked_at ?? null } : null });
     });
 
     const actualTotalFromLines = comparisonLines.reduce((sum, line) => sum + Number(line.lineTotal ?? 0), 0);
-    const actualTotal = actualTotalFromLines || num(order.total_order_value);
+    const orderDiscountAmount = num(order.order_discount_amount) ?? 0;
+    const actualTotal = Math.max(0, (actualTotalFromLines || num(order.total_order_value) || 0) - orderDiscountAmount);
     const sourceHealthy = quote?.status === 'accepted' && quote?.accepted_version_id && order.source_quote_version_id === quote.accepted_version_id;
     const blockers: string[] = [];
     if (!sourceHealthy) blockers.push('Accepted quote-version source needs review.');
@@ -147,6 +162,8 @@ export default async function OrdersLayout() {
     const whatsappOrPhone = whatsappContact(lead);
     const contact = defaultContact(lead);
     const productContext = clean(lead?.products_or_needs) ?? clean(lead?.product_type) ?? clean(qLines[0]?.product_name) ?? 'Order products';
+    const packing = packingByOrder.get(order.id);
+    const override = packing?.override_snapshot ?? {};
 
     return {
       orderId: order.id,
@@ -166,6 +183,11 @@ export default async function OrdersLayout() {
       currency: order.currency ?? quote?.currency ?? lead?.deal_currency ?? null,
       quotedTotal: quotedTotal || null,
       actualTotal,
+      orderDiscountType: discountType(order.order_discount_type),
+      orderDiscountValue: num(order.order_discount_value),
+      orderDiscountAmount: num(order.order_discount_amount),
+      orderDiscountReason: clean(order.order_discount_reason),
+      packingOverride: packing ? { totalUnits: num(override.total_units ?? packing.total_units), unitsPerCase: num(override.units_per_case), cartons: num(override.cartons ?? packing.total_master_cases), netWeightKg: num(override.net_weight_kg ?? packing.total_net_weight_kg), grossWeightKg: num(override.gross_weight_kg ?? packing.total_gross_weight_kg), pallets: num(override.pallets ?? packing.total_pallets), cbm: num(override.cbm ?? packing.total_cbm), destination: clean(override.destination ?? packing.delivery_destination), pickupLocation: clean(override.pickup_location ?? packing.pickup_location), freightNotes: clean(override.freight_notes ?? packing.freight_notes) } : null,
       status: order.status ?? quote?.status ?? 'accepted',
       executionState: order.approval_state ?? order.current_stage ?? 'quote_approved',
       currentStage: order.current_stage ?? null,
