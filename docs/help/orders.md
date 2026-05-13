@@ -8,6 +8,68 @@ Last updated: 2026-05-13
 
 Use Orders after quote acceptance to manage execution readiness, documents, trade requirements, packing, freight, shipment, dispatch invoice, payment, and closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, invoice, or close execution.
 
+## Sprint 8.1H accepted Orders baseline
+
+Sprint 8.1H makes Sprint 8.1F the accepted Orders workspace baseline and documents the final CTA expectations.
+
+Active UI:
+
+```text
+src/features/orders/components/OrdersProductionWorkspace81F.tsx
+```
+
+Active route import:
+
+```text
+src/app/(app)/orders/layout.tsx
+```
+
+Historical-only components:
+
+```text
+src/features/orders/components/OrdersProductionWorkspace81C.tsx
+src/features/orders/components/OrdersProductionWorkspace81DRepair3.tsx
+```
+
+Do not rewire `/orders` back to old variants unless explicitly approved.
+
+Accepted workflow:
+
+```text
+Actual Lines
+→ Proforma / Order Confirmation
+→ Packing / Rates
+→ Processing
+→ Delivery Note
+→ Final / Commercial Invoice
+→ Paid & Closed
+```
+
+Functional CTA checklist:
+
+1. Actual Lines: Save line, Add catalog product, Send for internal approval.
+2. Proforma / Order Confirmation: Prepare draft, Preview in new tab, Approve, Send Email/WhatsApp composer.
+3. Packing / Rates: Prepare packing sheet, Preview in new tab, Send composer, Approve packing sheet, Prepare freight request, Preview freight request, Ready for logistics handoff.
+4. Processing: local Pick / Pack / QC checklist, Open Packing Sheet, Preview Delivery Note, Send Delivery Note review link.
+5. Delivery Note: Prepare, Preview in new tab, Approve, Send composer.
+6. Final / Commercial Invoice: Prepare, Preview in new tab, Approve, Send composer.
+7. Paid & Closed: show completed state while keeping document tray/history accessible.
+
+The detailed acceptance doc is:
+
+```text
+docs/implementation/ORDERS_8_1H_ACCEPTANCE.md
+```
+
+Important rules:
+
+- Every preview/review link must open in a new tab/window.
+- Canonical preview route is `https://www.setuflowcrm.com/order-documents/preview/<token>`.
+- Send currently opens email/WhatsApp composer with tracked link. It is not provider-confirmed delivery.
+- Do not claim provider-confirmed delivery until a real adapter records it.
+- Do not mutate accepted quote versions.
+- Do not use Lead Compliance as an Orders blocker.
+
 ## Sprint 8.1B channel-aware tracked links
 
 Sprint 8.1B keeps Orders inside Sprint 8 and tightens the document send workflow.
@@ -335,6 +397,23 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - selecting a freight quote or booking a shipment;
 - marking shipment dispatched or delivered;
 - syncing finance or closing payment/receipt.
+
+## Sprint 8.1H acceptance smoke-check checklist
+
+Use this checklist before the next Orders pass:
+
+- Does `/orders` import `OrdersProductionWorkspace81F.tsx` only?
+- Are old Orders workspace variants treated as historical only?
+- Does every Preview / Review / Open link use `target="_blank"` or otherwise open a new tab/window?
+- Does every generated preview route canonicalize to `https://www.setuflowcrm.com/order-documents/preview/<token>`?
+- Does Email create a tracked link and open a mailto composer with the link?
+- Does WhatsApp create a tracked link and open a `wa.me` composer with the link?
+- Does the UI avoid claiming provider-confirmed delivery?
+- Does Prepare / Approve exist for Delivery Note and Final / Commercial Invoice?
+- Does Delivery Note approval advance to Final / Commercial Invoice?
+- Does Final / Commercial Invoice approval advance to Paid & Closed / completed?
+- Does quote version integrity remain untouched?
+- Is Pick / Pack / QC clearly local-only until persistence is added?
 
 ## Sprint 8.1B smoke-check checklist
 
