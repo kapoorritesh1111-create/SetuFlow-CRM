@@ -1,0 +1,121 @@
+import Link from 'next/link';
+import { SectionCard } from '@/components/ui/section-card';
+import { StateMessage } from '@/components/ui/state-message';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';
+import { hasSupabaseEnv } from '@/lib/env';
+import { createClient } from '@/lib/supabase/server';
+import { requireAdminWorkspace } from '@/lib/workspace/auth';
+
+type TermsProfile = {
+  id: string;
+  region_type: string;
+  document_type: string;
+  profile_name: string;
+  org_country: string | null;
+  is_default: boolean;
+  is_active: boolean;
+  page_one_terms: string[] | null;
+  annexure_terms: string[] | null;
+  tax_profile: Record<string, unknown> | null;
+  identity_fields: Record<string, unknown> | null;
+  stamp_settings: Record<string, unknown> | null;
+};
+
+function titleCase(value: string | null | undefined) {
+  return String(value ?? '').split(/[\s_-]+/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ') || 'Profile';
+}
+
+function summarizeJson(value: Record<string, unknown> | null | undefined) {
+  if (!value || typeof value !== 'object') return 'Default placeholders';
+  const keys = Object.keys(value);
+  if (!keys.length) return 'Default placeholders';
+  return keys.slice(0, 3).map(titleCase).join(', ') + (keys.length > 3 ? ` +${keys.length - 3}` : '');
+}
+
+function ProfileCard({ profile }: { profile: TermsProfile }) {
+  const compactCount = profile.page_one_terms?.length ?? 0;
+  const annexureCount = profile.annexure_terms?.length ?? 0;
+  return (
+    <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.06)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">{profile.region_type} · {profile.org_country ?? 'country default'}</p>
+          <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">{titleCase(profile.document_type)}</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{profile.profile_name}</p>
+        </div>
+        <StatusBadge label={profile.is_active ? 'Active default' : 'Inactive'} tone={profile.is_active ? 'success' : 'warning'} dot={false} />
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Compact terms</p><strong className="mt-1 block text-slate-950">{compactCount}</strong></div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Annexure terms</p><strong className="mt-1 block text-slate-950">{annexureCount}</strong></div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Tax profile</p><strong className="mt-1 block text-xs text-slate-700">{summarizeJson(profile.tax_profile)}</strong></div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Stamp settings</p><strong className="mt-1 block text-xs text-slate-700">{summarizeJson(profile.stamp_settings)}</strong></div>
+      </div>
+      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+        Placeholder only: editing is intentionally deferred. Future pass will add versioned editor, approval workflow, and legal/tax review guardrails.
+      </div>
+    </article>
+  );
+}
+
+export default async function AdminDocumentTemplatesPage() {
+  if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using the organization workspace." tone="warning" />;
+
+  const { missingEnv, membership, organization } = await requireAdminWorkspace();
+  if (missingEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using the organization workspace." tone="warning" />;
+  if (!membership || !organization) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('organization_document_terms_profiles')
+    .select('id, region_type, document_type, profile_name, org_country, is_default, is_active, page_one_terms, annexure_terms, tax_profile, identity_fields, stamp_settings')
+    .eq('organization_id', organization.id)
+    .order('region_type', { ascending: false })
+    .order('document_type', { ascending: true });
+
+  if (error) return <StateMessage title="Could not load document terms profiles" description={error.message} tone="danger" />;
+
+  const profiles = (data ?? []) as TermsProfile[];
+  const regional = profiles.filter((profile) => profile.region_type === 'regional');
+  const exportProfiles = profiles.filter((profile) => profile.region_type === 'export');
+  const missingCount = profiles.length < 8 ? 1 : 0;
+  const gapItems: AdminGapItem[] = missingCount ? [{ icon: '📄', text: 'Default terms profile coverage incomplete', href: '/admin/document-templates' }] : [];
+
+  return (
+    <AdminSettingsShell active="document-templates" organizationName={organization.name} missingCount={missingCount} sectionTitle="Document governance" gapItems={gapItems}>
+      <AdminPageHero
+        title="Document Templates / Terms & Conditions"
+        description="Preview the default regional and export terms profiles used by order document previews. Full editing is intentionally deferred until the Admin T&C editor pass."
+        badge={organization.name}
+        cta={<Link href="/orders" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Open Orders</Link>}
+        stats={[{ label: 'Profiles', value: profiles.length, tone: profiles.length >= 8 ? 'success' : 'warning' }, { label: 'Regional', value: regional.length, tone: regional.length >= 4 ? 'success' : 'warning' }, { label: 'Export', value: exportProfiles.length, tone: exportProfiles.length >= 4 ? 'success' : 'warning' }]}
+      />
+
+      <SectionCard eyebrow="Sprint 8Z placeholder" title="What this page does now" description="This is a safe visibility page, not the final editor.">
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4"><p className="font-semibold text-emerald-900">Shows current defaults</p><p className="mt-2 text-sm leading-6 text-emerald-800">Regional/export profiles seeded for each organization are visible here.</p></div>
+          <div className="rounded-[1.5rem] border border-blue-200 bg-blue-50 p-4"><p className="font-semibold text-blue-900">Protects v3 renderer</p><p className="mt-2 text-sm leading-6 text-blue-800">The preview route remains the source for print/PDF output.</p></div>
+          <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-4"><p className="font-semibold text-amber-900">Editor deferred</p><p className="mt-2 text-sm leading-6 text-amber-800">Full T&C editing needs versioning, legal review, approvals, and audit history.</p></div>
+        </div>
+      </SectionCard>
+
+      <SectionCard eyebrow="Future editor scope" title="Admin T&C editor backlog" description="The next full editor pass should add these controls without breaking the v3 order document renderer.">
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {['Regional / export template family', 'Document type terms', 'Organization country defaults', 'Tax profile and declarations', 'Bank / tax identity fields', 'Signature and stamp settings', 'Category / HSN / HS clauses', 'Country-pair and Incoterm clauses', 'Buyer / bank / compliance-specific clauses', 'Version history and approval workflow', 'Legal/tax review status', 'Preview before publish'].map((item) => (
+            <div key={item} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{item}</div>
+          ))}
+        </div>
+      </SectionCard>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <SectionCard eyebrow="Regional defaults" title="Regional document profiles" description="Used for domestic/regional order confirmations, picklist/QC, delivery notes, and tax invoices.">
+          <div className="grid gap-4">{regional.map((profile) => <ProfileCard key={profile.id} profile={profile} />)}</div>
+        </SectionCard>
+        <SectionCard eyebrow="Export defaults" title="Export document profiles" description="Used for proforma invoices, export packing lists, freight requests, and commercial invoices.">
+          <div className="grid gap-4">{exportProfiles.map((profile) => <ProfileCard key={profile.id} profile={profile} />)}</div>
+        </SectionCard>
+      </section>
+    </AdminSettingsShell>
+  );
+}
