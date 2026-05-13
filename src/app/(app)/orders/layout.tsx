@@ -72,13 +72,12 @@ export default async function OrdersLayout() {
   if (!orderRows.length) return <OrdersProductionWorkspace8S orders={[]} catalogOptions={[]} />;
 
   const quoteIds = [...new Set(orderRows.map((order: any) => order.source_quote_id).filter(Boolean))];
-  const leadIds = [...new Set(orderRows.map((order: any) => order.lead_id).filter(Boolean))];
   const orderIds = orderRows.map((order: any) => order.id).filter(Boolean);
   const sourceVersionIds = [...new Set(orderRows.map((order: any) => order.source_quote_version_id).filter(Boolean))];
 
-  const [quotesResult, leadsResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult, orderDocumentsResult, sendHistoryResult] = await Promise.all([
+  const [quotesResult, leadDisplayResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult, orderDocumentsResult, sendHistoryResult] = await Promise.all([
     quoteIds.length ? db.from('quotes').select('id, status, currency, lead_id, current_version_id, accepted_version_id, approved_at, pricing_basis').eq('organization_id', orgId).in('id', quoteIds) : Promise.resolve({ data: [] }),
-    leadIds.length ? db.from('leads').select('id, company_name, contact_name, country, deal_value, deal_currency, lead_type, email, phone, whatsapp').eq('organization_id', orgId).in('id', leadIds) : Promise.resolve({ data: [] }),
+    db.rpc('get_orders_execution_lead_display', { p_org_id: orgId }),
     quoteIds.length || orderIds.length ? db.from('documents').select('id, related_id, linked_quote_id, related_entity, status, doc_type, file_name').eq('organization_id', orgId).or(`linked_quote_id.in.(${quoteIds.join(',')}),related_id.in.(${[...quoteIds, ...orderIds].join(',')})`).order('uploaded_at', { ascending: false }) : Promise.resolve({ data: [] }),
     orderIds.length ? db.from('order_approval_gates').select('id, order_id, stage_key, gate_type, status').eq('organization_id', orgId).in('order_id', orderIds) : Promise.resolve({ data: [] }),
     sourceVersionIds.length ? db.from('quote_version_line_items').select('id, quote_version_id, product_name, pack_label, sku_code, hsn_code, moq, final_unit_price, final_case_price, final_kg_price, display_currency, sort_order, basis_applied, pricing_mode, catalog_price_snapshot').in('quote_version_id', sourceVersionIds).order('sort_order', { ascending: true }) : Promise.resolve({ data: [] }),
@@ -90,7 +89,7 @@ export default async function OrdersLayout() {
   ]);
 
   const quoteMap = new Map((Array.isArray(quotesResult.data) ? quotesResult.data : []).map((quote: any) => [quote.id, quote]));
-  const leadMap = new Map((Array.isArray(leadsResult.data) ? leadsResult.data : []).map((lead: any) => [lead.id, lead]));
+  const leadMap = new Map((Array.isArray(leadDisplayResult.data) ? leadDisplayResult.data : []).map((lead: any) => [lead.order_id, lead]));
   const versionMap = new Map((Array.isArray(versionsResult.data) ? versionsResult.data : []).map((version: any) => [version.id, version]));
   const documentRows = Array.isArray(documentsResult.data) ? documentsResult.data : [];
   const gateRows = Array.isArray(gatesResult.data) ? gatesResult.data : [];
@@ -107,7 +106,7 @@ export default async function OrdersLayout() {
 
   const orders: ProductionOrder8S[] = orderRows.map((order: any) => {
     const quote = quoteMap.get(order.source_quote_id) as any;
-    const lead = leadMap.get(order.lead_id) as any;
+    const lead = leadMap.get(order.id) as any;
     const version = versionMap.get(order.source_quote_version_id) as any;
     const qLines = quoteLines.filter((line: any) => line.quote_version_id === order.source_quote_version_id);
     const aLines = orderLines.filter((line: any) => line.order_id === order.id);
@@ -147,6 +146,7 @@ export default async function OrdersLayout() {
     const emailContact = clean(lead?.email);
     const whatsappOrPhone = whatsappContact(lead);
     const contact = defaultContact(lead);
+    const productContext = clean(lead?.products_or_needs) ?? clean(lead?.product_type) ?? clean(qLines[0]?.product_name) ?? 'Order products';
 
     return {
       orderId: order.id,
@@ -180,6 +180,7 @@ export default async function OrdersLayout() {
       nextAction,
       lines: comparisonLines,
       pricingBasis: orderPricingBasis,
+      productContext,
       documents: docsForStructuredOrder.map((doc: any) => ({
         id: doc.id,
         documentType: doc.document_type ?? null,
@@ -198,7 +199,7 @@ export default async function OrdersLayout() {
           openCount: num(send.open_count),
         })),
       })),
-    };
+    } as ProductionOrder8S;
   });
 
   return <OrdersProductionWorkspace8S orders={orders} catalogOptions={catalogOptions} />;
