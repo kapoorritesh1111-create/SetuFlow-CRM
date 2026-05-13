@@ -35,6 +35,10 @@ function basisPrice(rule: any) {
   return num(rule.fob_usd_per_case ?? rule.fob_usd_per_unit ?? rule.fob_usd) ?? num(rule.ex_factory_usd_per_case ?? rule.ex_factory_usd_per_unit ?? rule.ex_factory_usd) ?? num(rule.bulk_usd_per_kg ?? rule.bulk_ex_factory_usd_per_kg);
 }
 
+function defaultContact(lead: any) {
+  return clean(lead?.email) ?? clean(lead?.whatsapp) ?? clean(lead?.phone);
+}
+
 export default async function OrdersLayout() {
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {
@@ -66,7 +70,7 @@ export default async function OrdersLayout() {
 
   const [quotesResult, leadsResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult, orderDocumentsResult, sendHistoryResult] = await Promise.all([
     quoteIds.length ? db.from('quotes').select('id, status, currency, lead_id, current_version_id, accepted_version_id, approved_at, pricing_basis').eq('organization_id', orgId).in('id', quoteIds) : Promise.resolve({ data: [] }),
-    leadIds.length ? db.from('leads').select('id, company_name, country, deal_value, deal_currency, lead_type').eq('organization_id', orgId).in('id', leadIds) : Promise.resolve({ data: [] }),
+    leadIds.length ? db.from('leads').select('id, company_name, contact_name, country, deal_value, deal_currency, lead_type, email, phone, whatsapp').eq('organization_id', orgId).in('id', leadIds) : Promise.resolve({ data: [] }),
     quoteIds.length || orderIds.length ? db.from('documents').select('id, related_id, linked_quote_id, related_entity, status, doc_type, file_name').eq('organization_id', orgId).or(`linked_quote_id.in.(${quoteIds.join(',')}),related_id.in.(${[...quoteIds, ...orderIds].join(',')})`).order('uploaded_at', { ascending: false }) : Promise.resolve({ data: [] }),
     orderIds.length ? db.from('order_approval_gates').select('id, order_id, stage_key, gate_type, status').eq('organization_id', orgId).in('order_id', orderIds) : Promise.resolve({ data: [] }),
     sourceVersionIds.length ? db.from('quote_version_line_items').select('id, quote_version_id, product_name, pack_label, sku_code, hsn_code, moq, final_unit_price, final_case_price, final_kg_price, display_currency, sort_order, basis_applied, pricing_mode, catalog_price_snapshot').in('quote_version_id', sourceVersionIds).order('sort_order', { ascending: true }) : Promise.resolve({ data: [] }),
@@ -132,6 +136,7 @@ export default async function OrdersLayout() {
     if (!gatesForOrder.length && !blockers.length) blockers.push('First approval gate is pending.');
     const nextAction = blockers.length ? 'Review blocker' : 'Ready for next stage gate';
     const docsForStructuredOrder = orderDocumentRows.filter((doc: any) => doc.order_id === order.id);
+    const contact = defaultContact(lead);
 
     return {
       orderId: order.id,
@@ -139,6 +144,9 @@ export default async function OrdersLayout() {
       leadId: order.lead_id,
       contractId: null,
       companyName: lead?.company_name ?? order.order_number ?? 'Structured order',
+      contactName: clean(lead?.contact_name),
+      defaultRecipient: contact,
+      defaultRecipientRole: contact ? 'buyer' : null,
       country: lead?.country ?? null,
       orgCountry,
       orderType: detectOrderType(order.order_type, lead?.country, orgCountry),
