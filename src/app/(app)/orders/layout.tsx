@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace81C';
+import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace81DRepair3';
 
 function num(value: unknown) {
   const parsed = Number(value);
