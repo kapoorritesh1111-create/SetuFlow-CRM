@@ -79,17 +79,42 @@ function annexure(exportMode: boolean) {
       ];
 }
 
-function quantity(line: AnyRow) {
-  return num(line.dispatched_quantity ?? line.approved_quantity ?? line.ordered_quantity ?? line.quoted_quantity);
+function quantityForDocument(line: AnyRow, documentType: string) {
+  if (documentType === 'proforma_invoice' || documentType === 'order_confirmation') {
+    return num(line.ordered_quantity ?? line.actual_quantity ?? line.approved_quantity ?? line.quoted_quantity);
+  }
+  if (documentType === 'packing_sheet' || documentType === 'packing_list' || documentType === 'freight_request') {
+    return num(line.packed_quantity ?? line.loaded_quantity ?? line.ordered_quantity ?? line.actual_quantity ?? line.approved_quantity ?? line.quoted_quantity);
+  }
+  if (documentType === 'delivery_note' || documentType === 'dispatch_invoice') {
+    return num(line.dispatched_quantity ?? line.delivered_quantity ?? line.ordered_quantity ?? line.actual_quantity ?? line.approved_quantity ?? line.quoted_quantity);
+  }
+  return num(line.ordered_quantity ?? line.actual_quantity ?? line.approved_quantity ?? line.quoted_quantity);
 }
 
 function unitPrice(line: AnyRow) {
   return num(line.unit_price);
 }
 
-function lineTotal(line: AnyRow) {
+function discountMultiplier(line: AnyRow) {
+  const discountType = String(line.discount_type ?? line.line_discount_type ?? '').toLowerCase();
+  const discountValue = num(line.discount_value ?? line.line_discount_value ?? line.discount_percent ?? line.line_discount_percent);
+  if (!discountValue) return 1;
+  if (discountType.includes('amount') || discountType === 'flat') {
+    const q = num(line.ordered_quantity ?? line.actual_quantity ?? line.approved_quantity ?? line.quoted_quantity) || 1;
+    const base = unitPrice(line) * q;
+    return base > 0 ? Math.max(0, (base - discountValue) / base) : 1;
+  }
+  return Math.max(0, 1 - discountValue / 100);
+}
+
+function lineTotalForDocument(line: AnyRow, documentType: string) {
+  const q = quantityForDocument(line, documentType);
+  const price = unitPrice(line);
+  const calculated = q * price * discountMultiplier(line);
+  if (documentType === 'proforma_invoice' || documentType === 'order_confirmation') return calculated;
   const stored = num(line.line_total);
-  return stored || quantity(line) * unitPrice(line);
+  return stored || calculated;
 }
 
 function estimateUnitsPerCase(line: AnyRow) {
@@ -105,9 +130,9 @@ function estimateUnitWeight(line: AnyRow) {
   return 0.25;
 }
 
-function packingRows(lines: AnyRow[]) {
+function packingRows(lines: AnyRow[], documentType: string) {
   return lines.map((line, index) => {
-    const units = quantity(line);
+    const units = quantityForDocument(line, documentType);
     const unitsPerCase = estimateUnitsPerCase(line);
     const cartons = Math.max(1, Math.ceil(units / unitsPerCase));
     const netWeight = units * estimateUnitWeight(line);
@@ -121,12 +146,12 @@ function FieldTable({ rows }: { rows: Array<[string, any]> }) {
   return <table className="odx-field"><tbody>{rows.map(([label, value]) => <tr key={label}><th>{label}</th><td>{value || '—'}</td></tr>)}</tbody></table>;
 }
 
-function ItemsTable({ lines, exportMode, currency }: { lines: AnyRow[]; exportMode: boolean; currency: string }) {
-  return <table className="odx-items"><thead><tr><th>#</th><th>SKU</th><th>Description</th><th>{exportMode ? 'HS / ITC-HS' : 'HSN'}</th><th>Origin</th><th>Qty</th><th>UOM</th><th>Unit</th><th>{exportMode ? 'Declared value' : 'Taxable value'}</th><th>{exportMode ? 'Tax / duty note' : 'Tax note'}</th></tr></thead><tbody>{lines.length ? lines.map((line, index) => <tr key={line.id ?? index}><td>{index + 1}</td><td>{line.sku_code || '—'}</td><td>{line.product_name_snapshot || 'Product line'}</td><td>{line.hs_code || line.hsn_code || '—'}</td><td>{line.product_snapshot?.origin_country || 'India'}</td><td>{quantity(line).toLocaleString()}</td><td>{line.unit_of_measure || 'Ctn'}</td><td>{money(unitPrice(line), currency)}</td><td>{money(lineTotal(line), currency)}</td><td>{exportMode ? 'Zero-rated/LUT or IGST as configured; import duty for buyer' : 'GST/VAT/CGST/SGST/IGST by HSN/category'}</td></tr>) : <tr><td colSpan={10}>No order lines found for this tracked document.</td></tr>}</tbody></table>;
+function ItemsTable({ lines, exportMode, currency, documentType }: { lines: AnyRow[]; exportMode: boolean; currency: string; documentType: string }) {
+  return <table className="odx-items"><thead><tr><th>#</th><th>SKU</th><th>Description</th><th>{exportMode ? 'HS / ITC-HS' : 'HSN'}</th><th>Origin</th><th>Qty</th><th>UOM</th><th>Unit</th><th>{exportMode ? 'Declared value' : 'Taxable value'}</th><th>{exportMode ? 'Tax / duty note' : 'Tax note'}</th></tr></thead><tbody>{lines.length ? lines.map((line, index) => <tr key={line.id ?? index}><td>{index + 1}</td><td>{line.sku_code || '—'}</td><td>{line.product_name_snapshot || 'Product line'}</td><td>{line.hs_code || line.hsn_code || '—'}</td><td>{line.product_snapshot?.origin_country || 'India'}</td><td>{quantityForDocument(line, documentType).toLocaleString()}</td><td>{line.unit_of_measure || 'Ctn'}</td><td>{money(unitPrice(line), currency)}</td><td>{money(lineTotalForDocument(line, documentType), currency)}</td><td>{exportMode ? 'Zero-rated/LUT or IGST as configured; import duty for buyer' : 'GST/VAT/CGST/SGST/IGST by HSN/category'}</td></tr>) : <tr><td colSpan={10}>No order lines found for this tracked document.</td></tr>}</tbody></table>;
 }
 
-function PackingTable({ lines }: { lines: AnyRow[] }) {
-  const rows = packingRows(lines);
+function PackingTable({ lines, documentType }: { lines: AnyRow[]; documentType: string }) {
+  const rows = packingRows(lines, documentType);
   return <section className="odx-specific"><h2>Packing / freight-rate details</h2><p>Operational packing estimate for preview and freight-rate sharing. Values should be confirmed by the organization before dispatch.</p><table className="odx-items"><thead><tr><th>#</th><th>Product</th><th>Units</th><th>Units / case</th><th>Cartons</th><th>Net kg</th><th>Gross kg</th><th>CBM</th><th>Pallets</th><th>Marks / notes</th></tr></thead><tbody>{rows.length ? rows.map((row) => <tr key={row.line.id ?? row.index}><td>{row.index + 1}</td><td>{row.line.product_name_snapshot || 'Product line'}</td><td>{row.units.toLocaleString()}</td><td>{row.unitsPerCase.toLocaleString()}</td><td>{row.cartons.toLocaleString()}</td><td>{row.netWeight.toFixed(2)}</td><td>{row.grossWeight.toFixed(2)}</td><td>{row.cbm.toFixed(3)}</td><td>{row.pallets}</td><td>{row.line.sku_code || 'Confirm marks and numbers'}</td></tr>) : <tr><td colSpan={10}>No packing rows available.</td></tr>}</tbody></table><table className="odx-total"><tbody><tr><th>Total cartons</th><td>{rows.reduce((s, r) => s + r.cartons, 0).toLocaleString()}</td></tr><tr><th>Total gross weight</th><td>{rows.reduce((s, r) => s + r.grossWeight, 0).toFixed(2)} kg</td></tr><tr><th>Total CBM</th><td>{rows.reduce((s, r) => s + r.cbm, 0).toFixed(3)}</td></tr></tbody></table></section>;
 }
 
@@ -190,14 +215,14 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
   const title = docTitle(documentType, order.order_type);
   const currency = order.currency || (exportMode ? 'USD' : 'INR');
   const documentNo = `${exportMode ? 'EXP' : 'REG'}-${order.order_number || String(send.id ?? '').slice(0, 8)}`;
-  const subtotal = lines.reduce((sum: number, line: AnyRow) => sum + lineTotal(line), 0);
+  const subtotal = lines.reduce((sum: number, line: AnyRow) => sum + lineTotalForDocument(line, documentType), 0);
   const openCountAfterView = Number(send.open_count_after_view ?? send.open_count ?? 0);
   const packingDoc = ['packing_sheet', 'packing_list', 'freight_request'].includes(documentType);
   const deliveryDoc = documentType === 'delivery_note';
   const invoiceDoc = documentType === 'dispatch_invoice';
 
   return <main className="odx-page">
-    <aside className="odx-toolbar"><div><strong>{title}</strong><span>{documentNo}</span></div><OrderPreviewPrintButton /><small>Uses the approved v3 preview as the source. In the print dialog, choose Save as PDF.</small></aside>
+    <aside className="odx-toolbar"><div><strong>{title}</strong><span>{documentNo}</span></div><OrderPreviewPrintButton /><small>Uses a stage-aware preview snapshot. In the print dialog, choose Save as PDF.</small></aside>
     <section className="odx-document">
       <header className="odx-doc-head"><div><b>SETU Flow - Document Preview</b><span>Token-based tracked preview. No workspace route required.</span></div><em>www.setuflowcrm.com</em></header>
       <h1>{title}</h1>
@@ -234,11 +259,11 @@ export default async function OrderDocumentPreviewPage({ params }: { params: Pro
         ['Payment terms', order.payment_terms || 'Configured on order'],
       ]} /></section>
 
-      {packingDoc ? <PackingTable lines={lines} /> : null}
+      {packingDoc ? <PackingTable lines={lines} documentType={documentType} /> : null}
       {deliveryDoc ? <DeliverySummary order={order} lead={lead} /> : null}
       {invoiceDoc ? <InvoiceSummary exportMode={exportMode} order={order} subtotal={subtotal} currency={currency} /> : null}
 
-      <section><h2>{exportMode ? 'Line items - declared customs values' : 'Line items - tax by HSN/category'}</h2><ItemsTable lines={lines} exportMode={exportMode} currency={currency} /><table className="odx-total"><tbody><tr><th>{exportMode ? 'Declared / FOB value' : 'Taxable value'}</th><td>{money(subtotal, currency)}</td></tr><tr><th>{exportMode ? 'Freight / Insurance' : 'Tax total'}</th><td>{exportMode ? 'As per Incoterm / freight invoice' : 'Calculated by org tax profile'}</td></tr><tr><th>Total</th><td>{money(subtotal, currency)}</td></tr></tbody></table></section>
+      <section><h2>{exportMode ? 'Line items - declared customs values' : 'Line items - tax by HSN/category'}</h2><ItemsTable lines={lines} exportMode={exportMode} currency={currency} documentType={documentType} /><table className="odx-total"><tbody><tr><th>{exportMode ? 'Declared / FOB value' : 'Taxable value'}</th><td>{money(subtotal, currency)}</td></tr><tr><th>{exportMode ? 'Freight / Insurance' : 'Tax total'}</th><td>{exportMode ? 'As per Incoterm / freight invoice' : 'Calculated by org tax profile'}</td></tr><tr><th>Total</th><td>{money(subtotal, currency)}</td></tr></tbody></table></section>
 
       <SignatureBoxes exportMode={exportMode} />
       <Terms exportMode={exportMode} />
