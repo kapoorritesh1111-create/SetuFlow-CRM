@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace81DRepair3';
+import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace81F';
 
 function num(value: unknown) {
   const parsed = Number(value);
@@ -40,11 +40,11 @@ function basisPrice(rule: any) {
 }
 
 function defaultContact(lead: any) {
-  return clean(lead?.email) ?? clean(lead?.whatsapp) ?? clean(lead?.phone);
+  return clean(lead?.email) ?? clean(lead?.whatsapp_number) ?? clean(lead?.whatsapp) ?? clean(lead?.phone);
 }
 
 function whatsappContact(lead: any) {
-  return clean(lead?.whatsapp) ?? clean(lead?.phone);
+  return clean(lead?.whatsapp_number) ?? clean(lead?.whatsapp) ?? clean(lead?.phone);
 }
 
 export default async function OrdersLayout() {
