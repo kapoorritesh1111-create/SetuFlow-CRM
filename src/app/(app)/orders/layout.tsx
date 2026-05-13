@@ -39,6 +39,10 @@ function defaultContact(lead: any) {
   return clean(lead?.email) ?? clean(lead?.whatsapp) ?? clean(lead?.phone);
 }
 
+function whatsappContact(lead: any) {
+  return clean(lead?.whatsapp) ?? clean(lead?.phone);
+}
+
 export default async function OrdersLayout() {
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {
@@ -136,6 +140,8 @@ export default async function OrdersLayout() {
     if (!gatesForOrder.length && !blockers.length) blockers.push('First approval gate is pending.');
     const nextAction = blockers.length ? 'Review blocker' : 'Ready for next stage gate';
     const docsForStructuredOrder = orderDocumentRows.filter((doc: any) => doc.order_id === order.id);
+    const emailContact = clean(lead?.email);
+    const whatsappOrPhone = whatsappContact(lead);
     const contact = defaultContact(lead);
 
     return {
@@ -146,6 +152,8 @@ export default async function OrdersLayout() {
       companyName: lead?.company_name ?? order.order_number ?? 'Structured order',
       contactName: clean(lead?.contact_name),
       defaultRecipient: contact,
+      defaultEmailRecipient: emailContact,
+      defaultWhatsappRecipient: whatsappOrPhone,
       defaultRecipientRole: contact ? 'buyer' : null,
       country: lead?.country ?? null,
       orgCountry,
