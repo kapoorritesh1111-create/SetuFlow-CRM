@@ -8,6 +8,47 @@ Last updated: 2026-05-12
 
 Use Orders after quote acceptance to manage execution readiness, documents, trade requirements, packing, freight, shipment, dispatch invoice, payment, and closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, invoice, or close execution.
 
+## Sprint 8Z print PDF action and Admin T&C placeholder
+
+Sprint 8Z adds the first user-facing PDF path and an Admin visibility surface for future document terms management.
+
+New behavior:
+
+1. The tracked document preview route now shows a **Download / Print PDF** action.
+2. The action uses browser print from the approved v3 preview route as the source.
+3. Print CSS hides the action toolbar from the PDF output.
+4. The route still renders v3-style regional/export document bodies from structured order data and terms profiles.
+5. The route still increments tracked open counts when opened.
+6. Admin navigation now includes **Documents → Templates & terms**.
+7. A placeholder page exists at `/admin/document-templates`.
+8. The placeholder page shows current regional/export default terms profiles for the active organization.
+9. The placeholder page intentionally does not edit terms yet.
+10. The future full editor remains deferred until versioning, legal/tax review status, approvals, and audit history are designed.
+
+Important limitation:
+
+- Sprint 8Z does not add a server-side PDF binary generator yet. Users can choose **Download / Print PDF** and use the browser print dialog to save the preview as PDF.
+- The Admin page is a safe visibility/readiness page. It is not the final T&C editor.
+
+Future Admin T&C editor requirements remain:
+
+- regional/export template family;
+- document type;
+- organization country default;
+- tax profile;
+- page-1 compact terms;
+- annexure terms;
+- export declarations;
+- bank details;
+- GST/VAT/TRN/GSTIN/IEC/PAN/AD Code/LUT ARN fields;
+- stamp/signature settings;
+- country-pair/product/category/HSN/HS/Incoterm-specific clauses;
+- buyer/bank/compliance-specific clauses;
+- version history;
+- legal/tax review status;
+- approval workflow;
+- preview before publish.
+
 ## Sprint 8Y v3 document body renderer and default terms profiles
 
 Sprint 8Y implements the approved v3 document direction from the reviewed sample pack. The preview route now renders real document bodies instead of only showing tracking metadata.
@@ -41,31 +82,7 @@ New behavior:
 10. Opening the tracked preview still increments send open tracking.
 11. Quote history remains untouched.
 
-Important limitation:
-
-- Sprint 8Y renders the HTML/print preview body and structured terms. Browser print can be used as the immediate PDF path. A dedicated server-side PDF generation/download action can be added later.
-- The terms are default operational templates and not final legal/tax advice. They must become Admin-managed by organization.
-
-Future Admin requirement:
-
-Create:
-
-`Admin → Document Templates → Terms & Conditions`
-
-Admin must allow each organization to manage:
-
-- regional/export template family;
-- document type;
-- organization country default;
-- tax profile;
-- page-1 compact terms;
-- annexure terms;
-- export declarations;
-- bank details;
-- GST/VAT/TRN/GSTIN/IEC/PAN/AD Code/LUT ARN fields;
-- stamp/signature settings;
-- country-pair/product/category/HSN/HS/Incoterm-specific clauses;
-- buyer/bank/compliance-specific clauses.
+The terms are default operational templates and not final legal/tax advice. They must become Admin-managed by organization.
 
 Setu Guru must explain that every sendable document should include default industry-standard terms based on organization country and document type when an org is created. Guru must also make clear that Admin-managed templates will override defaults later.
 
@@ -135,7 +152,7 @@ A single document may have many sends to many recipients through `order_document
 
 ## Sprint 8U industry-neutral trade requirement search and attach
 
-Sprint 8U introduced order-stage trade requirements using `trade_requirements` and `trade_requirement_sources`. After Sprint 8W/8X/8Y, these should be presented inside the relevant active stage panel or drawer, not as a full-width permanent section below Orders.
+Sprint 8U introduced order-stage trade requirements using `trade_requirements` and `trade_requirement_sources`. After Sprint 8W/8X/8Y/8Z, these should be presented inside the relevant active stage panel or drawer, not as a full-width permanent section below Orders.
 
 Rules remain:
 
@@ -147,7 +164,7 @@ Rules remain:
 
 ## Sprint 8T packing, freight, dispatch, and closeout UI
 
-Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rate_requests`, `freight_rate_quotes`, `shipments`, `order_documents`, and `finance_sync_records`. After Sprint 8W/8X/8Y, that data should appear inside the relevant stage panel:
+Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rate_requests`, `freight_rate_quotes`, `shipments`, `order_documents`, and `finance_sync_records`. After Sprint 8W/8X/8Y/8Z, that data should appear inside the relevant stage panel:
 
 - Packing / Freight stage shows packing sheet, freight request, and selected quote.
 - Processing stage shows pick/pack/QC and packing list readiness.
@@ -157,7 +174,7 @@ Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rat
 
 ## Sprint 8S order document gates and send tracking
 
-Sprint 8S added the first structured order-document send gate on top of the stage shell. Sprint 8X extends that with child send history and Sprint 8Y adds v3 document bodies.
+Sprint 8S added the first structured order-document send gate on top of the stage shell. Sprint 8X extends that with child send history, Sprint 8Y adds v3 document bodies, and Sprint 8Z adds the print/PDF path.
 
 Behavior:
 
@@ -175,7 +192,7 @@ Behavior:
 
 ## Sprint 8R structured Orders shell
 
-Sprint 8R made the Orders workspace structured-order first. Sprint 8W/8X/8Y keep that but simplify the user-facing shell.
+Sprint 8R made the Orders workspace structured-order first. Sprint 8W/8X/8Y/8Z keep that but simplify the user-facing shell.
 
 Protected behavior:
 
@@ -193,6 +210,7 @@ Protected behavior:
 - Showing one clear next action instead of stacked dashboards.
 - Previewing and resending order documents anytime.
 - Rendering regional/export documents with industry-ready tax/customs/stamp sections.
+- Downloading/printing tracked previews as PDFs through browser print.
 - Tracking each document send to each recipient separately.
 - Tracking document opens per send link.
 - Tracking accepted quote-version lineage, actual order lines, documents, trade requirements, packing, freight, shipment, dispatch, finance sync, and closeout posture.
@@ -204,6 +222,7 @@ Protected behavior:
 - Which stage is this order in?
 - Which quote version created this order?
 - Can I preview this document again?
+- Can I print or download this document as PDF?
 - Can I send this document again to another user?
 - Who did we send this document to?
 - Was this tracked document link opened?
@@ -279,6 +298,20 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - marking shipment dispatched or delivered;
 - syncing finance or closing payment/receipt.
 
+## Sprint 8Z smoke-check checklist
+
+Use this checklist before the next Orders pass:
+
+- Does tracked preview show Download / Print PDF action?
+- Does browser print hide the toolbar?
+- Does print preserve the v3 document body and annexure?
+- Does `/admin/document-templates` load for admins?
+- Does Admin navigation show Documents → Templates & terms?
+- Does the placeholder page show regional/export terms profile coverage?
+- Does the placeholder page clearly defer editing until versioning/legal/audit workflow is designed?
+- Does quote history remain untouched?
+- Are quote/compliance/catalog/lead protected flows untouched?
+
 ## Sprint 8Y smoke-check checklist
 
 Use this checklist before the next Orders pass:
@@ -315,6 +348,7 @@ Use this checklist before the next Orders pass:
 
 - What is blocking this order?
 - Can I preview the Proforma again?
+- Print this document as PDF.
 - Send this packing sheet again to another forwarder.
 - Who opened the order confirmation link?
 - Which document sends are still unopened?
