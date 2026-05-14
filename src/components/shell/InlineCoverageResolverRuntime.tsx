@@ -11,18 +11,35 @@ declare global { interface Window { __setuCoverageResolverOpen?: boolean } }
 
 function textOf(element?: Element | null) { return (element?.textContent || '').replace(/\s+/g, ' ').trim(); }
 function visible(element: Element) { const rect = element.getBoundingClientRect(); const style = window.getComputedStyle(element); return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden'; }
-function findCoveragePanel() { const blocks = Array.from(document.querySelectorAll<HTMLElement>('section, article, div')).filter(visible); return blocks.find((block) => /coverage\s+[-—]\s+product and market mapping/i.test(textOf(block))) ?? blocks.find((block) => /products and markets define the commercial scope/i.test(textOf(block))) ?? null; }
-function findActiveLeadCompany() { const blocks = Array.from(document.querySelectorAll<HTMLElement>('article, section, div')).filter(visible); const activeCard = blocks.find((node) => /create quote/i.test(textOf(node)) && /buyer|supplier/i.test(textOf(node))); const headingText = textOf(activeCard?.querySelector<HTMLElement>('h1, h2, h3, strong, b')); if (headingText && !/trade command center|follow-up|coverage|required|create quote/i.test(headingText)) return headingText; const headings = Array.from(document.querySelectorAll<HTMLElement>('h1, h2, h3, strong, b')).map((node) => textOf(node)).filter(Boolean); return headings.find((item) => !/trade command center|follow-up|coverage|required|create quote|quick lead|filters/i.test(item)) || ''; }
+
+function findResolverPanel() {
+  const blocks = Array.from(document.querySelectorAll<HTMLElement>('section, article, div')).filter(visible);
+  return blocks.find((block) => /product scope/i.test(textOf(block)) && /no products mapped|open coverage manager|add products|product required/i.test(textOf(block)))
+    ?? blocks.find((block) => /coverage\s+[-—]\s+product and market mapping/i.test(textOf(block)))
+    ?? blocks.find((block) => /products and markets define the commercial scope/i.test(textOf(block)))
+    ?? null;
+}
+
+function findActiveLeadCompany() {
+  const blocks = Array.from(document.querySelectorAll<HTMLElement>('article, section, div')).filter(visible);
+  const activeCard = blocks.find((node) => /create quote|quote preview|product scope/i.test(textOf(node)) && /buyer|supplier|company/i.test(textOf(node)));
+  const headingText = textOf(activeCard?.querySelector<HTMLElement>('h1, h2, h3, strong, b'));
+  if (headingText && !/trade command center|follow-up|coverage|required|create quote|product scope/i.test(headingText)) return headingText;
+  const headings = Array.from(document.querySelectorAll<HTMLElement>('h1, h2, h3, strong, b')).map((node) => textOf(node)).filter(Boolean);
+  return headings.find((item) => !/trade command center|follow-up|coverage|required|create quote|quick lead|filters|product scope|quote preview/i.test(item)) || '';
+}
 
 function ensureResolverMount() {
-  const panel = findCoveragePanel();
+  const panel = findResolverPanel();
   if (!panel) return null;
   panel.querySelectorAll('[data-inline-coverage-resolver]').forEach((node) => node.remove());
   const mount = document.createElement('div');
   mount.setAttribute('data-inline-coverage-resolver', 'true');
   mount.className = 'my-4 rounded-[24px] border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm';
-  const anchor = Array.from(panel.children).find((child) => /products and markets define the commercial scope/i.test(textOf(child))) ?? panel.children[1] ?? null;
+  const text = textOf(panel);
+  const anchor = Array.from(panel.children).find((child) => /no products mapped|product scope|products and markets define/i.test(textOf(child))) ?? panel.children[1] ?? null;
   if (anchor?.nextSibling) panel.insertBefore(mount, anchor.nextSibling); else panel.appendChild(mount);
+  if (/product scope/i.test(text)) mount.setAttribute('data-inline-coverage-location', 'product-scope');
   mount.scrollIntoView({ behavior: 'smooth', block: 'center' });
   return mount;
 }
