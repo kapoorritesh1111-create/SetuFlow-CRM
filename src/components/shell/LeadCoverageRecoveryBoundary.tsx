@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-type RecoveryState = {
-  visible: boolean;
-  reason: string;
-};
+type RecoveryState = { visible: boolean; reason: string };
 
-function isLeadsPath(pathname: string | null) {
-  return String(pathname ?? '').startsWith('/leads');
+function isLeadsPath() {
+  if (typeof window === 'undefined') return false;
+  return window.location.pathname.startsWith('/leads');
+}
+
+function getCurrentParams() {
+  if (typeof window === 'undefined') return new URLSearchParams();
+  return new URLSearchParams(window.location.search);
 }
 
 function findClickableByText(pattern: RegExp) {
@@ -26,17 +28,30 @@ function clickCoverageTarget() {
   return false;
 }
 
+function updateLeadsCoverageUrl() {
+  const params = getCurrentParams();
+  const leadId = params.get('leadId') ?? params.get('openLeadId') ?? params.get('id') ?? '';
+  if (leadId) params.set('openLeadId', leadId);
+  params.set('initialStepId', 'coverage');
+  params.set('focus', 'coverage');
+  const nextUrl = `/leads?${params.toString()}`;
+  window.history.replaceState(window.history.state, '', nextUrl);
+  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
+}
+
 export function LeadCoverageRecoveryBoundary() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const router = useRouter();
   const [state, setState] = useState<RecoveryState>({ visible: false, reason: '' });
-  const enabled = isLeadsPath(pathname);
-  const leadId = useMemo(() => searchParams.get('leadId') ?? searchParams.get('openLeadId') ?? searchParams.get('id') ?? '', [searchParams]);
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    const syncEnabled = () => setEnabled(isLeadsPath());
+    syncEnabled();
+    window.addEventListener('popstate', syncEnabled);
+    return () => window.removeEventListener('popstate', syncEnabled);
+  }, []);
 
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
-
     const showRecovery = (reason: string) => setState({ visible: true, reason });
     const inspect = () => {
       const bodyText = document.body?.innerText ?? '';
@@ -44,7 +59,6 @@ export function LeadCoverageRecoveryBoundary() {
         showRecovery('Product coverage is required before quote creation. Open Coverage, select product and market coverage, save, then create the quote again.');
       }
     };
-
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof HTMLElement ? event.target.closest('button, a') : null;
       const label = target?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
@@ -58,7 +72,6 @@ export function LeadCoverageRecoveryBoundary() {
         }, 500);
       }
     };
-
     inspect();
     document.addEventListener('click', onClick, true);
     const observer = new MutationObserver(() => inspect());
@@ -71,22 +84,19 @@ export function LeadCoverageRecoveryBoundary() {
 
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
-    if (searchParams.get('step') === 'coverage' || searchParams.get('initialStepId') === 'coverage' || searchParams.get('focus') === 'coverage') {
+    const params = getCurrentParams();
+    if (params.get('step') === 'coverage' || params.get('initialStepId') === 'coverage' || params.get('focus') === 'coverage') {
       window.setTimeout(() => clickCoverageTarget(), 300);
       window.setTimeout(() => clickCoverageTarget(), 900);
     }
-  }, [enabled, searchParams]);
+  }, [enabled]);
 
   if (!enabled || !state.visible) return null;
 
   const openCoverage = () => {
     setState({ visible: false, reason: '' });
     if (clickCoverageTarget()) return;
-    const params = new URLSearchParams(searchParams.toString());
-    if (leadId) params.set('openLeadId', leadId);
-    params.set('initialStepId', 'coverage');
-    params.set('focus', 'coverage');
-    router.replace(`/leads?${params.toString()}`, { scroll: false });
+    updateLeadsCoverageUrl();
     window.setTimeout(() => clickCoverageTarget(), 500);
   };
 
