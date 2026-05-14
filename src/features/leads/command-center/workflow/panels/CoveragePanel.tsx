@@ -1,8 +1,22 @@
+'use client'
+
 import type { LeadProfileSnapshot } from '../../types'
 import { getActionIcon, getWorkflowIcon, ICON_CONTAINER_CLASS } from '../../ui-system'
 
 function CoverageTag({ label, tone = 'neutral' }: { label: string; tone?: 'neutral' | 'accent' }) {
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${tone === 'accent' ? 'bg-status-ready/10 text-status-ready' : 'bg-neutral-50 text-neutral-600'}`}>{label}</span>
+}
+
+function openInlineCoverageResolver() {
+  if (typeof window === 'undefined') return
+  window.__setuCoverageResolverOpen = true
+  window.dispatchEvent(new Event('setu:open-inline-coverage-resolver'))
+}
+
+declare global {
+  interface Window {
+    __setuCoverageResolverOpen?: boolean
+  }
 }
 
 export function CoveragePanel({
@@ -14,6 +28,8 @@ export function CoveragePanel({
 }) {
   const CoverageIcon = getWorkflowIcon('coverage')
   const OpenIcon = getActionIcon('open')
+  const hasMarketCoverage = mapping.marketCount > 0
+  const buttonCopy = mapping.productCount > 0 ? 'Edit products' : 'Add products'
 
   return (
     <section className="premium-surface rounded-[12px] p-5 md:p-6">
@@ -23,14 +39,16 @@ export function CoveragePanel({
             <span className={ICON_CONTAINER_CLASS}><CoverageIcon className="h-4 w-4 text-neutral-600" /></span>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-600">Coverage manager</p>
-              <h3 className="mt-1 text-xl font-semibold text-neutral-900">Edit mapped products and market context</h3>
+              <h3 className="mt-1 text-xl font-semibold text-neutral-900">Add products for quote coverage</h3>
             </div>
           </div>
-          <p className="mt-3 text-sm leading-7 text-neutral-600">Keep product coverage clean before quote work starts. Products define the quote path, while markets add team context when trade fit matters.</p>
+          <p className="mt-3 text-sm leading-7 text-neutral-600">
+            Product coverage unlocks quote creation. {hasMarketCoverage ? 'Market context is already linked and will be kept.' : 'Add a market only if none is already linked.'}
+          </p>
         </div>
-        <button type="button" onClick={onEditCoverage} className="inline-flex items-center gap-2 rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark">
+        <button type="button" onClick={openInlineCoverageResolver} className="inline-flex items-center gap-2 rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark">
           <span className={ICON_CONTAINER_CLASS}><OpenIcon className="h-4 w-4 text-neutral-900" /></span>
-          Open coverage manager
+          {buttonCopy}
         </button>
       </div>
 
