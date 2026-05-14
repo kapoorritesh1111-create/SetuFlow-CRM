@@ -26,34 +26,18 @@ function focusPanel(element: HTMLElement) {
   window.setTimeout(() => element.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2'), 1800);
 }
 
-function focusCoveragePanel() {
+function getCoverageSummaryPanel() {
   const blocks = Array.from(document.querySelectorAll<HTMLElement>('section, article, div')).filter(visible);
-  const exact = blocks.find((block) => /coverage\s+[-—]\s+product and market mapping/i.test(textOf(block)));
-  if (exact) {
-    focusPanel(exact);
-    return true;
-  }
-  const fallback = blocks.find((block) => /products and markets define the commercial scope/i.test(textOf(block)));
-  if (fallback) {
-    focusPanel(fallback);
-    return true;
-  }
-  return false;
+  return blocks.find((block) => /coverage\s+[-—]\s+product and market mapping/i.test(textOf(block)))
+    ?? blocks.find((block) => /products and markets define the commercial scope/i.test(textOf(block)))
+    ?? null;
 }
 
-function openCoveragePanel() {
-  if (focusCoveragePanel()) return true;
-  const controls = Array.from(document.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('button, a')).filter(visible);
-  const control = controls.find((button) => {
-    const label = textOf(button);
-    if (/close panel|dismiss|back to queue/i.test(label)) return false;
-    const parent = textOf(button.closest('section, article, div'));
-    return /inspect|open coverage|edit coverage|edit product coverage/i.test(label) && /coverage|product.*market|market.*product/i.test(parent);
-  });
-  if (!control) return false;
-  control.click();
-  window.setTimeout(() => focusCoveragePanel(), 300);
-  return true;
+function getQuickEditButton() {
+  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('button, a')).filter(visible);
+  return buttons.find((button) => /^quick edit$/i.test(textOf(button)))
+    ?? buttons.find((button) => /quick edit/i.test(textOf(button)))
+    ?? null;
 }
 
 function setCoverageUrlHint() {
@@ -63,6 +47,27 @@ function setCoverageUrlHint() {
   params.set('initialStepId', 'coverage');
   params.set('focus', 'coverage');
   window.history.replaceState(window.history.state, '', `/leads?${params.toString()}`);
+}
+
+function openCoverageManager() {
+  setCoverageUrlHint();
+  const quickEdit = getQuickEditButton();
+  if (quickEdit) {
+    quickEdit.click();
+    window.setTimeout(() => {
+      const coverageTab = Array.from(document.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('button, a'))
+        .filter(visible)
+        .find((button) => /coverage/i.test(textOf(button)) && !/close panel/i.test(textOf(button)));
+      coverageTab?.click();
+    }, 250);
+    return true;
+  }
+  const panel = getCoverageSummaryPanel();
+  if (panel) {
+    focusPanel(panel);
+    return true;
+  }
+  return false;
 }
 
 export function LeadCoverageRecoveryBoundary() {
@@ -93,7 +98,7 @@ export function LeadCoverageRecoveryBoundary() {
       }
       if (/quick edit|edit lead|open lead/i.test(label)) {
         window.setTimeout(() => {
-          if (/coverage/.test(window.location.search.toLowerCase())) openCoveragePanel();
+          if (/coverage/.test(window.location.search.toLowerCase())) openCoverageManager();
         }, 500);
       }
     };
@@ -111,8 +116,8 @@ export function LeadCoverageRecoveryBoundary() {
     if (!enabled) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('step') === 'coverage' || params.get('initialStepId') === 'coverage' || params.get('focus') === 'coverage') {
-      window.setTimeout(() => openCoveragePanel(), 300);
-      window.setTimeout(() => openCoveragePanel(), 900);
+      window.setTimeout(() => openCoverageManager(), 300);
+      window.setTimeout(() => openCoverageManager(), 900);
     }
   }, [enabled]);
 
@@ -121,9 +126,7 @@ export function LeadCoverageRecoveryBoundary() {
   const openCoverage = () => {
     setState({ visible: false, reason: '' });
     window.setTimeout(() => {
-      if (openCoveragePanel()) return;
-      setCoverageUrlHint();
-      window.setTimeout(() => openCoveragePanel(), 350);
+      openCoverageManager();
     }, 0);
   };
 
