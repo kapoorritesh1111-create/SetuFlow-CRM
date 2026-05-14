@@ -9,7 +9,7 @@ function onLeadsPage() {
   return typeof window !== 'undefined' && window.location.pathname.startsWith('/leads');
 }
 
-function textOf(element: Element | null) {
+function textOf(element?: Element | null) {
   return (element?.textContent || '').replace(/\s+/g, ' ').trim();
 }
 
