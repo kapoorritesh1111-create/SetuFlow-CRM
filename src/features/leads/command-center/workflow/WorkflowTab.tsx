@@ -112,7 +112,6 @@ export function WorkflowTab({
   pendingFollowUpId,
   activePanel,
   onPanelChange,
-  onEditCoverage,
   onOpenQuote,
   onFollowUpSaved,
 }: {
@@ -121,7 +120,7 @@ export function WorkflowTab({
   pendingFollowUpId?: string | null
   activePanel: WorkflowActionKey | null
   onPanelChange: (key: WorkflowActionKey | null) => void
-  onEditCoverage: () => void
+  onEditCoverage?: () => void
   onOpenQuote: () => void
   onFollowUpSaved?: (payload?: { nextFollowUpAt?: string | null; followUpId?: string | null }) => void
 }) {
@@ -166,7 +165,6 @@ export function WorkflowTab({
             leadId={leadId}
             pendingFollowUpId={pendingFollowUpId}
             onOpenQuote={onOpenQuote}
-            onEditCoverage={onEditCoverage}
             onFollowUpSaved={onFollowUpSaved}
           />
         </SupportDetailShell>
