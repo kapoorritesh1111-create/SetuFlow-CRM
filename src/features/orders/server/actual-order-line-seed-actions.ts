@@ -8,9 +8,9 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { writeAuditLog } from '@/lib/auditLog';
 
-function buildRedirect(notice: string, quoteId?: string) {
+function buildRedirect(notice: string, openOrderId?: string) {
   const params = new URLSearchParams({ notice });
-  if (quoteId) params.set('openOrderId', quoteId);
+  if (openOrderId) params.set('openOrderId', openOrderId);
   return `/orders?${params.toString()}`;
 }
 
@@ -182,7 +182,7 @@ export async function reconcileApprovedPdfSourceAction(formData: FormData) {
   };
 
   const { error: gateError } = await saveCommercialReconciliationGate(db, organizationId, orderId, snapshot);
-  if (gateError) redirect(buildRedirect('commercial-reconciliation-error', quoteId));
+  if (gateError) redirect(buildRedirect('commercial-reconciliation-error', orderId));
 
   await db.from('order_stage_events').insert({
     organization_id: organizationId,
@@ -205,7 +205,7 @@ export async function reconcileApprovedPdfSourceAction(formData: FormData) {
 
   revalidatePath('/orders');
   revalidatePath(`/leads/${leadId}`);
-  redirect(buildRedirect('commercial-source-reconciled', quoteId));
+  redirect(buildRedirect('commercial-source-reconciled', orderId));
 }
 
 export async function prepareActualOrderLinesRobustAction(formData: FormData) {
@@ -273,7 +273,7 @@ export async function prepareActualOrderLinesRobustAction(formData: FormData) {
   if (Array.isArray(existingLines) && existingLines.length > 0) {
     await savePreparedGate(db, organizationId, orderId, actorUserId, { line_count: existingLines.length, source_quote_id: quoteId, source_quote_version_id: sourceQuoteVersionId, reused_existing_lines: true });
     revalidatePath('/orders');
-    redirect(buildRedirect('actual-order-lines-ready', quoteId));
+    redirect(buildRedirect('actual-order-lines-ready', orderId));
   }
 
   let orderLines: any[] = [];
@@ -369,9 +369,9 @@ export async function prepareActualOrderLinesRobustAction(formData: FormData) {
     });
   }
 
-  if (orderLines.length === 0) redirect(buildRedirect('actual-order-lines-empty', quoteId));
+  if (orderLines.length === 0) redirect(buildRedirect('actual-order-lines-empty', orderId));
   const { error: lineError } = await db.from('order_lines').insert(orderLines);
-  if (lineError) redirect(buildRedirect('actual-order-lines-error', quoteId));
+  if (lineError) redirect(buildRedirect('actual-order-lines-error', orderId));
 
   const totalOrderValue = orderLines.reduce((sum, line) => sum + safeNumber(line.line_total, 0), 0);
   await db.from('orders').update({ total_order_value: totalOrderValue || null, updated_by: actorUserId, updated_at: new Date().toISOString() }).eq('organization_id', organizationId).eq('id', orderId);
@@ -382,5 +382,5 @@ export async function prepareActualOrderLinesRobustAction(formData: FormData) {
   revalidatePath('/orders');
   revalidatePath('/quotes');
   revalidatePath(`/leads/${leadId}`);
-  redirect(buildRedirect('actual-order-lines-created', quoteId));
+  redirect(buildRedirect('actual-order-lines-created', orderId));
 }

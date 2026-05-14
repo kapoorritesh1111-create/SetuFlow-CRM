@@ -1569,6 +1569,18 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
  * markQuoteAsDirectOrder — B6 fix
  * Bypasses external send/accept for direct sales (trade show, phone, WhatsApp).
  */
+async function findOrderForQuote(db: any, organizationId: string, quoteId: string) {
+  const { data } = await db
+    .from('orders')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('source_quote_id', quoteId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.id ? { id: data.id as string } : null;
+}
+
 export async function markQuoteAsDirectOrder(_: QuoteActionState | undefined, formData: FormData): Promise<QuoteActionState> {
   const workspace = await getWorkspaceAccess();
   if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
@@ -1591,7 +1603,10 @@ export async function markQuoteAsDirectOrder(_: QuoteActionState | undefined, fo
   if (existingError) return { error: existingError.message };
   if (!existing) return { error: 'Quote not found.' };
   const currentStatus = String(existing.status ?? '').trim().toLowerCase();
-  if (currentStatus === 'accepted') return { success: 'Order already exists for this quote.', mode: 'update' };
+  if (currentStatus === 'accepted') {
+    const order = await findOrderForQuote(db, organization.id, quoteId);
+    return { success: 'Order already exists for this quote.', mode: 'update', record: { quoteId, orderId: order?.id ?? null } };
+  }
   const nowIso = new Date().toISOString();
   const versionId = existing.accepted_version_id ?? existing.current_version_id ?? null;
   if (currentStatus !== 'sent') {
@@ -1608,7 +1623,8 @@ export async function markQuoteAsDirectOrder(_: QuoteActionState | undefined, fo
   revalidateCommercialViews(existing.lead_id);
   revalidatePath('/orders');
   revalidatePath('/contracts');
-  return { success: 'Order created. Track it under Orders / Execution.', mode: 'update' };
+  const order = await findOrderForQuote(db, organization.id, quoteId);
+  return { success: 'Order created. Track it under Orders / Execution.', mode: 'update', record: { quoteId, orderId: order?.id ?? null } };
 }
 
 

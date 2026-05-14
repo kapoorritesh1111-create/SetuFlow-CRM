@@ -981,6 +981,14 @@ export function LeadsWorkspace({
       setSpotlightLeadId(lead.id);
     }
 
+    const needsCoverageAfterQuickLead = drawerState.mode === 'quick' && lead && (!selectedProductIds || selectedProductIds.length === 0);
+    if (needsCoverageAfterQuickLead) {
+      setActiveLeadId(lead.id);
+      setActiveView('cc');
+      setDrawerState({ open: true, mode: 'full', leadId: lead.id, initialStepId: 'coverage' });
+      return;
+    }
+
     if (drawerState.mode === 'quick' && resetForNextLead) {
       setDrawerState({ open: true, mode: 'quick', leadId: null, initialStepId: 'basics' });
       return;
@@ -1976,6 +1984,7 @@ function InlineLeadWorkspace({
           onRejectQuoteAdjustment={onRejectQuoteAdjustment}
           onMarkDirectOrder={onMarkDirectOrder}
           onOpenCommandCenter={onOpenCommandCenter}
+          onOpenCoverageManager={() => onOpenEditDrawer(lead.id, 'coverage')}
         />
       ) : (
         <InlineCommandCenter
@@ -2314,6 +2323,10 @@ function InlineCommandCenter({
                 ) : activePillar === 'coverage' ? (
                   <div>
                     <p className="text-[12px] text-[#64748b] leading-[1.6] mb-3">Products and markets define the commercial scope of this lead.</p>
+                    <button type="button" onClick={() => onOpenEditDrawer(lead.id, 'coverage')}
+                      className="mb-3 rounded-[6px] bg-[#0b2e4a] px-[14px] py-[7px] text-[12px] font-bold text-white">
+                      Open coverage manager
+                    </button>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px]">
                         <div className="text-[11px] font-bold uppercase tracking-[.14em] text-[#94a3b8] mb-2">Products</div>
@@ -2497,6 +2510,7 @@ function InlineQuoteBuilder({
   onRejectQuoteAdjustment,
   onMarkDirectOrder,
   onOpenCommandCenter,
+  onOpenCoverageManager,
 }: {
   lead: LeadRow;
   stageName: string;
@@ -2527,8 +2541,9 @@ function InlineQuoteBuilder({
   onRejectQuoteAdjustment: (leadId: string, quoteId?: string | null) => void;
   onMarkDirectOrder: (leadId: string, quoteId?: string | null, notes?: string | null) => void;
   onOpenCommandCenter: () => void;
+  onOpenCoverageManager: () => void;
 }) {
-  const [builderStep, setBuilderStep] = React.useState(1);
+  const [builderStep, setBuilderStep] = React.useState(() => selectedProductIds.length ? 1 : 0);
   const [directOrderNote, setDirectOrderNote] = React.useState('');
   const steps = ['Product', 'Terms', 'Pricing', 'Review', 'Send gate'];
   const latestQuote = [...quotes].sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
@@ -2712,6 +2727,11 @@ function InlineQuoteBuilder({
   };
 
   const displayLines = editableLines;
+
+  React.useEffect(() => {
+    if (!selectedProductIds.length && !displayLines.length) setBuilderStep(0);
+  }, [displayLines.length, selectedProductIds.length]);
+
   const subtotal = displayLines.reduce((sum, item) => sum + item.total, 0);
   const currency = termsCurrency || displayLines.find((item) => item.currency)?.currency || lead.deal_currency || 'USD';
   const blockerCount = readiness?.blockerCount ?? complianceItems.length;
@@ -2875,7 +2895,14 @@ function InlineQuoteBuilder({
                   <div className="mb-2 text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Product scope</div>
                   {selectedProductNames.length ? selectedProductNames.map((p) => (
                     <div key={p} className="mb-[4px] text-[11px] font-semibold text-[#334155]">· {p}</div>
-                  )) : <div className="text-[11px] text-[#94a3b8]">No products mapped yet</div>}
+                  )) : (
+                    <div className="space-y-2">
+                      <div className="text-[11px] text-[#94a3b8]">No products mapped yet</div>
+                      <button type="button" onClick={onOpenCoverageManager} className="rounded-[6px] bg-[#0b2e4a] px-[10px] py-[6px] text-[10px] font-bold text-white">
+                        Open coverage manager
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : builderStep === 2 ? (

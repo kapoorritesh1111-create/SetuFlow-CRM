@@ -3,7 +3,6 @@ import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegistration';
 import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
-import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -11,6 +10,8 @@ const jakarta = Plus_Jakarta_Sans({
   variable: '--font-jakarta',
   display: 'swap',
 });
+
+// ─── Structured Data ─────────────────────────────────────────────────────────
 
 const organizationSchema = {
   '@context': 'https://schema.org',
@@ -25,7 +26,9 @@ const organizationSchema = {
     areaServed: ['IN', 'IE', 'GB', 'DE', 'US'],
     availableLanguage: 'English',
   },
-  sameAs: ['https://www.setuflowcrm.com'],
+  sameAs: [
+    'https://www.setuflowcrm.com',
+  ],
 };
 
 const softwareSchema = {
@@ -36,7 +39,8 @@ const softwareSchema = {
   applicationSubCategory: 'CRM',
   operatingSystem: 'Web, iOS, Android',
   url: 'https://www.setuflowcrm.com',
-  description: 'Trade execution CRM for import-export teams in India, Ireland, UK, Germany and the US. Manage leads, quotes, approvals, orders and shipment execution in one connected system.',
+  description:
+    'Trade execution CRM for import-export teams in India, Ireland, UK, Germany and the US. Manage leads, quotes, approvals, orders and shipment execution in one connected system.',
   featureList: [
     'FOB/CIF/Ex-Factory pricing basis',
     'Live FX locked-rate quoting',
@@ -47,7 +51,6 @@ const softwareSchema = {
     'WhatsApp quote delivery',
     'Country compliance checklist',
     'Digital vCard with QR code',
-    'Lead product and market coverage gating',
   ],
   areaServed: [
     { '@type': 'Country', name: 'India', sameAs: 'https://www.wikidata.org/wiki/Q668' },
@@ -62,30 +65,108 @@ const softwareSchema = {
       name: 'Starter',
       price: '199',
       priceCurrency: 'USD',
-      priceSpecification: { '@type': 'UnitPriceSpecification', price: '199', priceCurrency: 'USD', unitText: 'MONTH' },
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: '199',
+        priceCurrency: 'USD',
+        unitText: 'MONTH',
+      },
     },
     {
       '@type': 'Offer',
       name: 'Growth',
       price: '499',
       priceCurrency: 'USD',
-      priceSpecification: { '@type': 'UnitPriceSpecification', price: '499', priceCurrency: 'USD', unitText: 'MONTH' },
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: '499',
+        priceCurrency: 'USD',
+        unitText: 'MONTH',
+      },
     },
   ],
 };
 
+// ─── Metadata ─────────────────────────────────────────────────────────────────
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.setuflowcrm.com'),
-  title: { default: 'Setu Flow — Trade Execution CRM for Import-Export Teams', template: '%s | Setu Flow' },
-  description: 'Setu Flow is the trade execution CRM built for import-export teams in India, Ireland, UK, Germany and the US. Manage leads, quotes, approvals, orders and shipment execution in one connected system. Operational in under 5 days.',
+
+  title: {
+    default: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
+    template: '%s | Setu Flow',
+  },
+
+  description:
+    'Setu Flow is the trade execution CRM built for import-export teams in India, Ireland, UK, Germany and the US. Manage leads, quotes, approvals, orders and shipment execution in one connected system. Operational in under 5 days.',
+
   keywords: [
-    'trade execution CRM', 'import export CRM', 'CRM for exporters', 'CRM for importers', 'trade operations software', 'international trade CRM', 'export management software', 'B2B trade CRM', 'quote management CRM', 'FOB CIF pricing software', 'trade show lead capture', 'shipment tracking CRM', 'FX rate locked quoting', 'export compliance CRM', 'approval workflow CRM', 'trade CRM India', 'export CRM India', 'import export software India', 'CRM for Indian exporters', 'EXIM CRM India', 'B2B CRM India', 'export management India', 'trade software for SMEs India', 'trade CRM Ireland', 'export CRM Ireland', 'import export software Ireland', 'CRM for Irish exporters', 'trade software Ireland', 'SME export CRM Ireland', 'trade CRM UK', 'export management software UK', 'import export CRM United Kingdom', 'CRM for UK exporters', 'trade execution software UK', 'B2B CRM UK', 'trade CRM Germany', 'export management software Germany', 'import export CRM Deutschland', 'CRM for German exporters', 'Handelssoftware exporteur', 'B2B CRM Germany', 'trade CRM USA', 'export management software United States', 'import export CRM America', 'CRM for US exporters', 'trade software United States', 'B2B trade software USA',
+    'trade execution CRM',
+    'import export CRM',
+    'CRM for exporters',
+    'CRM for importers',
+    'trade operations software',
+    'international trade CRM',
+    'export management software',
+    'B2B trade CRM',
+    'quote management CRM',
+    'FOB CIF pricing software',
+    'trade show lead capture',
+    'shipment tracking CRM',
+    'FX rate locked quoting',
+    'export compliance CRM',
+    'approval workflow CRM',
+    'trade CRM India',
+    'export CRM India',
+    'import export software India',
+    'CRM for Indian exporters',
+    'EXIM CRM India',
+    'B2B CRM India',
+    'export management India',
+    'trade software for SMEs India',
+    'trade CRM Ireland',
+    'export CRM Ireland',
+    'import export software Ireland',
+    'CRM for Irish exporters',
+    'trade software Ireland',
+    'SME export CRM Ireland',
+    'trade CRM UK',
+    'export management software UK',
+    'import export CRM United Kingdom',
+    'CRM for UK exporters',
+    'trade execution software UK',
+    'B2B CRM UK',
+    'trade CRM Germany',
+    'export management software Germany',
+    'import export CRM Deutschland',
+    'CRM for German exporters',
+    'Handelssoftware exporteur',
+    'B2B CRM Germany',
+    'trade CRM USA',
+    'export management software United States',
+    'import export CRM America',
+    'CRM for US exporters',
+    'trade software United States',
+    'B2B trade software USA',
   ],
+
   authors: [{ name: 'Setu Groups', url: 'https://www.setuflowcrm.com' }],
   creator: 'Setu Groups',
   publisher: 'Setu Groups',
   category: 'technology',
-  robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large', 'max-snippet': -1 } },
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+
   openGraph: {
     type: 'website',
     locale: 'en_GB',
@@ -93,11 +174,29 @@ export const metadata: Metadata = {
     url: 'https://www.setuflowcrm.com',
     siteName: 'Setu Flow',
     title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
-    description: 'From first contact to final shipment, Setu Flow runs your entire trade operation in one connected system. Built for teams in India, Ireland, UK, Germany and the US. Operational in days — not months.',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Setu Flow — Trade Execution CRM for import-export teams' }],
+    description:
+      'From first contact to final shipment, Setu Flow runs your entire trade operation in one connected system. Built for teams in India, Ireland, UK, Germany and the US. Operational in days — not months.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Setu Flow — Trade Execution CRM for import-export teams',
+      },
+    ],
   },
-  twitter: { card: 'summary_large_image', title: 'Setu Flow — Trade Execution CRM for Import-Export Teams', description: 'From first contact to final shipment, Setu Flow runs your entire trade operation in one connected system.', images: ['/og-image.png'] },
-  alternates: { canonical: 'https://www.setuflowcrm.com' },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
+    description: 'From first contact to final shipment, Setu Flow runs your entire trade operation in one connected system.',
+    images: ['/og-image.png'],
+  },
+
+  alternates: {
+    canonical: 'https://www.setuflowcrm.com',
+  },
+
   manifest: '/manifest.json',
   appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent' },
   icons: {
@@ -107,7 +206,9 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = { themeColor: '#0c7fff' };
+export const viewport: Viewport = {
+  themeColor: '#0c7fff',
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -118,12 +219,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#0c7fff" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([organizationSchema, softwareSchema]) }} />
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([organizationSchema, softwareSchema]),
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
         <ServiceWorkerRegistration />
         <LeadsFilterStability />
-        <LeadCoverageRecoveryBoundary />
         {children}
       </body>
     </html>

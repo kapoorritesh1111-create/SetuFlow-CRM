@@ -8,9 +8,9 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { writeAuditLog } from '@/lib/auditLog';
 
-function buildRedirect(notice: string, quoteId?: string) {
+function buildRedirect(notice: string, openOrderId?: string) {
   const params = new URLSearchParams({ notice });
-  if (quoteId) params.set('openOrderId', quoteId);
+  if (openOrderId) params.set('openOrderId', openOrderId);
   return `/orders?${params.toString()}`;
 }
 
@@ -24,25 +24,22 @@ function text(value: unknown) {
   return raw.length ? raw : null;
 }
 
+function discountAmount(lineTotal: number, discountType: string | null, discountValue: number) {
+  if (!lineTotal || discountValue <= 0) return 0;
+  if (discountType === 'percent') return Math.min(lineTotal, lineTotal * (discountValue / 100));
+  if (discountType === 'amount') return Math.min(lineTotal, discountValue);
+  return 0;
+}
+
+async function recalculateOrderTotal(db: any, organizationId: string, orderId: string, actorUserId: string) {
+  const { data: lines } = await db.from('order_lines').select('line_total').eq('organization_id', organizationId).eq('order_id', orderId);
+  const total = (Array.isArray(lines) ? lines : []).reduce((sum: number, line: any) => sum + safeNumber(line.line_total, 0), 0);
+  await db.from('orders').update({ total_order_value: total || null, updated_by: actorUserId, updated_at: new Date().toISOString() }).eq('organization_id', organizationId).eq('id', orderId);
+  return total;
+}
+
 function isPreviewLineId(value: string) {
   return value.startsWith('quote-') || value.startsWith('preview-');
-}
-
-function discountType(value: unknown): 'percent' | 'amount' | null {
-  const raw = String(value ?? '').trim().toLowerCase();
-  if (raw === 'percent' || raw === 'amount') return raw;
-  return null;
-}
-
-function discountValue(value: unknown) {
-  if (value === null || value === undefined || String(value).trim() === '') return null;
-  return Math.max(0, safeNumber(value, 0));
-}
-
-function discountAmount(type: 'percent' | 'amount' | null, value: number | null, base: number | null) {
-  if (!type || value == null || base == null) return null;
-  const raw = type === 'percent' ? (base * value) / 100 : value;
-  return Math.min(Math.max(0, raw), Math.max(0, base));
 }
 
 async function requireOrderWriteAccess() {
@@ -62,7 +59,7 @@ async function requireOrderWriteAccess() {
 }
 
 async function findOrder(db: any, organizationId: string, quoteId: string) {
-  return db.from('orders').select('id, lead_id, source_quote_id, approval_state, pricing_basis, currency').eq('organization_id', organizationId).eq('source_quote_id', quoteId).maybeSingle();
+  return db.from('orders').select('id, lead_id, source_quote_id, approval_state, pricing_basis, currency, metadata, total_order_value').eq('organization_id', organizationId).eq('source_quote_id', quoteId).maybeSingle();
 }
 
 export async function updateActualOrderLineAction(formData: FormData) {
@@ -81,42 +78,39 @@ export async function updateActualOrderLineAction(formData: FormData) {
   const orderedQuantity = safeNumber(formData.get('ordered_quantity'), 0);
   const unitPriceRaw = formData.get('unit_price');
   const unitPrice = unitPriceRaw === null || String(unitPriceRaw).trim() === '' ? null : safeNumber(unitPriceRaw, 0);
-  const type = discountType(formData.get('line_discount_type'));
-  const value = discountValue(formData.get('line_discount_value'));
-  const baseLineTotal = unitPrice == null ? null : orderedQuantity * unitPrice;
-  const amount = discountAmount(type, value, baseLineTotal);
-  const lineTotal = baseLineTotal == null ? null : Math.max(0, baseLineTotal - (amount ?? 0));
-  const reason = text(formData.get('change_reason')) ?? text(formData.get('line_discount_reason')) ?? 'Actual order line updated by human reviewer.';
+  const reason = text(formData.get('change_reason')) ?? 'Actual order line updated by human reviewer.';
+  const lineDiscountType = text(formData.get('line_discount_type'));
+  const lineDiscountValue = safeNumber(formData.get('line_discount_value'), 0);
+  const lineDiscountReason = text(formData.get('line_discount_reason')) ?? reason;
   const lineStatus = orderedQuantity <= 0 ? 'removed' : 'confirmed';
+  const grossLineTotal = unitPrice == null ? null : orderedQuantity * unitPrice;
+  const appliedLineDiscount = grossLineTotal == null ? 0 : discountAmount(grossLineTotal, lineDiscountType, lineDiscountValue);
+  const lineTotal = grossLineTotal == null ? null : Math.max(0, grossLineTotal - appliedLineDiscount);
 
-  const { data: before } = await db.from('order_lines').select('id, ordered_quantity, unit_price, line_status, line_total, line_discount_type, line_discount_value, line_discount_amount, line_discount_reason').eq('organization_id', organizationId).eq('order_id', order.id).eq('id', orderLineId).maybeSingle();
-  if (!before?.id) redirect(buildRedirect('actual-order-line-not-found', quoteId));
+  const { data: before } = await db.from('order_lines').select('id, ordered_quantity, unit_price, line_status, line_total, pricing_snapshot').eq('organization_id', organizationId).eq('order_id', order.id).eq('id', orderLineId).maybeSingle();
+  if (!before?.id) redirect(buildRedirect('actual-order-line-not-found', order.id));
+  const pricingSnapshot = {
+    ...(before.pricing_snapshot && typeof before.pricing_snapshot === 'object' ? before.pricing_snapshot : {}),
+    line_discount_type: lineDiscountType ?? 'none',
+    line_discount_value: lineDiscountValue,
+    line_discount_amount: appliedLineDiscount,
+    line_discount_reason: lineDiscountReason,
+  };
 
   const { error: updateError } = await db
     .from('order_lines')
-    .update({
-      ordered_quantity: orderedQuantity,
-      unit_price: unitPrice,
-      line_total: lineTotal,
-      line_status: lineStatus,
-      change_type: orderedQuantity <= 0 ? 'removed_after_quote' : 'manual_review',
-      change_reason: reason,
-      line_discount_type: type,
-      line_discount_value: value,
-      line_discount_amount: amount,
-      line_discount_reason: text(formData.get('line_discount_reason')) ?? reason,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ ordered_quantity: orderedQuantity, unit_price: unitPrice, line_total: lineTotal, line_status: lineStatus, change_type: orderedQuantity <= 0 ? 'removed_after_quote' : 'manual_review', change_reason: reason, pricing_snapshot: pricingSnapshot, updated_at: new Date().toISOString() })
     .eq('organization_id', organizationId)
     .eq('order_id', order.id)
     .eq('id', orderLineId);
-  if (updateError) redirect(buildRedirect('order-line-update-error', quoteId));
+  if (updateError) redirect(buildRedirect('order-line-update-error', order.id));
 
-  await writeAuditLog({ organizationId, action: orderedQuantity <= 0 ? 'actual_order_line_removed' : 'actual_order_line_updated', entityType: 'order_line', entityId: orderLineId, actorUserId, payload: { previous: before ?? null, new: { ordered_quantity: orderedQuantity, unit_price: unitPrice, line_status: lineStatus, line_total: lineTotal, change_reason: reason, line_discount_type: type, line_discount_value: value, line_discount_amount: amount }, metadata: { quote_id: quoteId, order_id: order.id } } });
+  await recalculateOrderTotal(db, organizationId, order.id, actorUserId);
+  await writeAuditLog({ organizationId, action: orderedQuantity <= 0 ? 'actual_order_line_removed' : 'actual_order_line_updated', entityType: 'order_line', entityId: orderLineId, actorUserId, payload: { previous: before ?? null, new: { ordered_quantity: orderedQuantity, unit_price: unitPrice, line_status: lineStatus, change_reason: reason, line_discount_type: lineDiscountType ?? 'none', line_discount_value: lineDiscountValue, line_discount_amount: appliedLineDiscount, line_total: lineTotal }, metadata: { quote_id: quoteId, order_id: order.id } } });
 
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
-  redirect(buildRedirect(orderedQuantity <= 0 ? 'order-line-removed' : 'order-line-updated', quoteId));
+  redirect(buildRedirect(orderedQuantity <= 0 ? 'order-line-removed' : 'order-line-updated', order.id));
 }
 
 export async function removeActualOrderLineAction(formData: FormData) {
@@ -170,7 +164,7 @@ export async function addManualActualOrderLineAction(formData: FormData) {
       .eq('organization_id', organizationId)
       .eq('id', pricingRuleId)
       .maybeSingle();
-    if (ruleError || !rule?.id) redirect(buildRedirect('catalog-pricing-rule-not-found', quoteId));
+    if (ruleError || !rule?.id) redirect(buildRedirect('catalog-pricing-rule-not-found', order.id));
     productName = text(rule.product_name) ?? productName;
     variantName = text(rule.pack_label) ?? variantName;
     skuCode = text(rule.sku_code) ?? skuCode;
@@ -201,12 +195,19 @@ export async function addManualActualOrderLineAction(formData: FormData) {
     productSnapshot = { source: 'catalog_pricing_rule', product_id: productId, product_variant_id: productVariantId, category_type: rule.category_type ?? null, category_name: rule.category_name ?? null, pack_label: rule.pack_label ?? null, units_per_case: rule.units_per_case ?? null, moq: rule.moq ?? null };
   }
 
-  const type = discountType(formData.get('line_discount_type'));
-  const value = discountValue(formData.get('line_discount_value'));
-  const baseLineTotal = unitPrice == null ? null : quantity * unitPrice;
-  const amount = discountAmount(type, value, baseLineTotal);
-  const lineTotal = baseLineTotal == null ? null : Math.max(0, baseLineTotal - (amount ?? 0));
-  const reason = text(formData.get('change_reason')) ?? text(formData.get('line_discount_reason')) ?? (pricingRuleId ? 'Buyer added catalog product after quote approval.' : 'Buyer added this line after quote approval.');
+  const reason = text(formData.get('change_reason')) ?? (pricingRuleId ? 'Buyer added catalog product after quote approval.' : 'Buyer added this line after quote approval.');
+  const lineDiscountType = text(formData.get('line_discount_type'));
+  const lineDiscountValue = safeNumber(formData.get('line_discount_value'), 0);
+  const grossLineTotal = unitPrice == null ? null : quantity * unitPrice;
+  const appliedLineDiscount = grossLineTotal == null ? 0 : discountAmount(grossLineTotal, lineDiscountType, lineDiscountValue);
+  const lineTotal = grossLineTotal == null ? null : Math.max(0, grossLineTotal - appliedLineDiscount);
+  pricingSnapshot = {
+    ...pricingSnapshot,
+    line_discount_type: lineDiscountType ?? 'none',
+    line_discount_value: lineDiscountValue,
+    line_discount_amount: appliedLineDiscount,
+    line_discount_reason: text(formData.get('line_discount_reason')) ?? reason,
+  };
 
   const { data: inserted, error: insertError } = await db
     .from('order_lines')
@@ -228,20 +229,57 @@ export async function addManualActualOrderLineAction(formData: FormData) {
       line_status: 'added',
       change_type: pricingRuleId ? 'added_catalog_after_quote' : 'added_after_quote',
       change_reason: reason,
-      line_discount_type: type,
-      line_discount_value: value,
-      line_discount_amount: amount,
-      line_discount_reason: text(formData.get('line_discount_reason')) ?? reason,
       pricing_snapshot: pricingSnapshot,
       product_snapshot: productSnapshot,
     })
     .select('id')
     .single();
-  if (insertError || !inserted?.id) redirect(buildRedirect('order-line-add-error', quoteId));
+  if (insertError || !inserted?.id) redirect(buildRedirect('order-line-add-error', order.id));
 
-  await writeAuditLog({ organizationId, action: 'actual_order_line_added', entityType: 'order_line', entityId: inserted.id, actorUserId, payload: { previous: null, new: { product_name: productName, ordered_quantity: quantity, unit_price: unitPrice, currency, change_reason: reason, pricing_rule_id: pricingRuleId, pricing_basis: requestedBasis, line_discount_type: type, line_discount_value: value, line_discount_amount: amount }, metadata: { quote_id: quoteId, order_id: order.id } } });
+  await recalculateOrderTotal(db, organizationId, order.id, actorUserId);
+  await writeAuditLog({ organizationId, action: 'actual_order_line_added', entityType: 'order_line', entityId: inserted.id, actorUserId, payload: { previous: null, new: { product_name: productName, ordered_quantity: quantity, unit_price: unitPrice, currency, change_reason: reason, pricing_rule_id: pricingRuleId, pricing_basis: requestedBasis, line_discount_type: lineDiscountType ?? 'none', line_discount_value: lineDiscountValue, line_discount_amount: appliedLineDiscount, line_total: lineTotal }, metadata: { quote_id: quoteId, order_id: order.id } } });
 
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
-  redirect(buildRedirect('order-line-added', quoteId));
+  redirect(buildRedirect('order-line-added', order.id));
+}
+
+export async function saveOrderDiscountAction(formData: FormData) {
+  const workspace = await requireOrderWriteAccess();
+  const quoteId = String(formData.get('quote_id') ?? '').trim();
+  if (!quoteId) redirect(buildRedirect('order-discount-action-invalid'));
+
+  const db = (await createClient()) as any;
+  const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
+  const { data: order, error } = await findOrder(db, organizationId, quoteId);
+  if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
+
+  const orderDiscountType = text(formData.get('order_discount_type'));
+  const orderDiscountValue = safeNumber(formData.get('order_discount_value'), 0);
+  const orderDiscountReason = text(formData.get('order_discount_reason')) ?? 'Order-level discount saved during actual line review.';
+  const { data: lines } = await db.from('order_lines').select('line_total').eq('organization_id', organizationId).eq('order_id', order.id);
+  const baseTotal = (Array.isArray(lines) ? lines : []).reduce((sum: number, line: any) => sum + safeNumber(line.line_total, 0), 0);
+  const appliedOrderDiscount = discountAmount(baseTotal, orderDiscountType, orderDiscountValue);
+  const totalAfterDiscount = Math.max(0, baseTotal - appliedOrderDiscount);
+  const metadata = {
+    ...(order.metadata && typeof order.metadata === 'object' ? order.metadata : {}),
+    order_discount: {
+      type: orderDiscountType ?? 'none',
+      value: orderDiscountValue,
+      amount: appliedOrderDiscount,
+      reason: orderDiscountReason,
+      base_total: baseTotal,
+      total_after_discount: totalAfterDiscount,
+      updated_at: new Date().toISOString(),
+    },
+  };
+
+  const { error: updateError } = await db.from('orders').update({ metadata, total_order_value: totalAfterDiscount || null, updated_by: actorUserId, updated_at: new Date().toISOString() }).eq('organization_id', organizationId).eq('id', order.id);
+  if (updateError) redirect(buildRedirect('order-discount-save-error', order.id));
+
+  await writeAuditLog({ organizationId, action: 'order_discount_saved', entityType: 'order', entityId: order.id, actorUserId, payload: { previous: { total_order_value: order.total_order_value, order_discount: order.metadata?.order_discount ?? null }, new: metadata.order_discount, metadata: { quote_id: quoteId, order_id: order.id } } });
+  revalidatePath('/orders');
+  if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
+  redirect(buildRedirect('order-discount-saved', order.id));
 }

@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SETU Flow Orders Sprint 8.1E Modal Send Gate Prototype</title>
+  <style>
+    :root{
+      --navy:#0b2e4a;
+      --ink:#0f172a;
+      --muted:#64748b;
+      --soft:#94a3b8;
+      --line:#e2e8f0;
+      --line-strong:#dbe7f3;
+      --page:#f0f4f8;
+      --panel:#ffffff;
+      --shade:#f8fafc;
+      --blue:#0c7fff;
+      --blue-soft:#eff6ff;
+      --green:#059669;
+      --green-soft:#ecfdf5;
+      --amber:#d97706;
+      --amber-soft:#fffbeb;
+      --purple:#7c3aed;
+      --purple-soft:#f5f3ff;
+      --red:#dc2626;
+      --red-soft:#fff1f2;
+      --shadow:0 18px 46px rgba(15,23,42,.08);
+      --soft-shadow:0 1px 3px rgba(15,23,42,.06);
+      --side:64px;
+    }
+    *{box-sizing:border-box}
+    html,body{min-height:100%;margin:0;background:var(--page);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",sans-serif;font-size:13px;line-height:1.5}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    h1,h2,h3,p{margin:0}
+    .app{min-height:100vh;display:grid;grid-template-columns:var(--side) 1fr}
+    .side{height:100vh;position:sticky;top:0;background:#07263d;color:white;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:10px}
+    .logo{width:42px;height:42px;border-radius:14px;background:#031827;color:#7dd3fc;display:grid;place-items:center;font-weight:950}
+    .nav{width:46px;height:44px;border-radius:13px;color:rgba(255,255,255,.72);display:grid;place-items:center;font-size:10px;font-weight:800}
+    .nav.active{background:rgba(255,255,255,.13);color:white}
+    .main{padding:0 24px 96px;max-width:1880px;width:100%;margin:0 auto}
+    .topbar{height:56px;display:flex;align-items:center;justify-content:space-between;gap:14px;background:white;border-bottom:1px solid var(--line);margin:0 -24px 0;padding:0 24px;position:sticky;top:0;z-index:30}
+    .brand{display:flex;align-items:center;gap:14px}
+    .brand-card{display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:6px;background:rgba(31,72,124,.06);border:1px solid rgba(31,72,124,.12)}
+    .brand-card b{font-size:11px;color:#1f487c;letter-spacing:-.1px}
+    .brand-card span{display:block;font-size:8px;color:var(--soft);letter-spacing:.1em;text-transform:uppercase}
+    .divider{width:1px;height:24px;background:var(--line)}
+    .eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--blue)}
+    h1{font-size:16px;font-weight:800;color:#1e293b;letter-spacing:-.3px}
+    h2{font-size:20px;font-weight:900;color:var(--ink);letter-spacing:-.03em}
+    h3{font-size:14px;font-weight:900;color:var(--ink)}
+    .sub{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.55}
+    .btn{border:1px solid var(--line);background:white;color:#334155;border-radius:12px;min-height:36px;padding:8px 12px;font-size:12px;font-weight:850;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+    .btn:hover{box-shadow:var(--soft-shadow)}
+    .btn.primary{background:var(--navy);border-color:var(--navy);color:white}
+    .btn.blue{background:var(--blue-soft);border-color:#bfdbfe;color:#1d4ed8}
+    .btn.green{background:var(--green-soft);border-color:#a7f3d0;color:#047857}
+    .btn.amber{background:var(--amber-soft);border-color:#fde68a;color:#92400e}
+    .btn.purple{background:var(--purple-soft);border-color:#ddd6fe;color:#6d28d9}
+    .btn.red{background:var(--red-soft);border-color:#fecaca;color:#be123c}
+    .btn.full{width:100%}
+    .btn.ghost{background:transparent}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:white;border-radius:999px;padding:4px 9px;color:#475569;font-size:10px;font-weight:900;white-space:nowrap}
+    .pill.blue{background:var(--blue-soft);border-color:#bfdbfe;color:#1d4ed8}
+    .pill.green{background:var(--green-soft);border-color:#a7f3d0;color:#047857}
+    .pill.amber{background:var(--amber-soft);border-color:#fde68a;color:#92400e}
+    .pill.purple{background:var(--purple-soft);border-color:#ddd6fe;color:#6d28d9}
+    .pill.red{background:var(--red-soft);border-color:#fecaca;color:#be123c}
+    .mode{display:flex;background:#f1f5f9;border-radius:6px;padding:3px;border:1px solid var(--line);gap:2px}
+    .mode button{border:0;background:transparent;border-radius:5px;padding:4px 11px;font-size:11px;font-weight:700;color:var(--muted)}
+    .mode button.active{background:var(--navy);color:white}
+    .command{margin-top:14px;border:1px solid rgba(226,232,240,.9);background:white;border-radius:26px;padding:12px 18px;box-shadow:var(--shadow);ring:1px solid rgba(15,23,42,.02)}
+    .command-top{display:flex;flex-direction:column;gap:12px}
+    .command-row{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
+    .command-main{flex:1;min-width:0}
+    .command-label{margin-bottom:8px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.18em;color:#94a3b8}
+    .field{display:block;min-width:170px;border:1px solid var(--line);background:rgba(248,250,252,.8);border-radius:18px;padding:8px 10px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+    .field.search{min-width:320px}
+    .field span{display:block;margin-bottom:4px;color:#94a3b8;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.16em}
+    .field input,.field select{width:100%;height:36px;border:1px solid var(--line);background:white;border-radius:12px;padding:0 10px;font-size:12px;font-weight:800;color:#0f172a;outline:none}
+    .field input:focus,.field select:focus,.modal-field input:focus,.modal-field textarea:focus,.drawer-field input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px #dbeafe}
+    .command-summary{font-size:12px;font-weight:800;color:#64748b;padding-bottom:8px}
+    .chips{border-top:1px solid #f1f5f9;margin-top:12px;padding-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:16px}
+    .kpi{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:white;padding:13px 15px;box-shadow:var(--soft-shadow);cursor:pointer}
+    .kpi::before{content:"";position:absolute;left:0;top:0;right:0;height:3px;background:#cbd5e1}
+    .kpi.blue::before{background:var(--blue)}.kpi.green::before{background:var(--green)}.kpi.amber::before{background:var(--amber)}.kpi.purple::before{background:var(--purple)}.kpi.red::before{background:var(--red)}
+    .kpi .label{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:7px}
+    .kpi .value{font-size:22px;font-weight:900;letter-spacing:-.03em;color:#0f172a;line-height:1}
+    .kpi .meta{font-size:10px;color:#94a3b8;margin-top:4px;font-weight:700}
+    .work{display:grid;grid-template-columns:390px minmax(0,1fr);gap:14px;margin-top:14px;align-items:start}
+    .panel{background:white;border:1px solid var(--line);border-radius:22px;box-shadow:var(--soft-shadow);overflow:hidden}
+    .panel-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .panel-label{font-size:9px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:var(--blue);margin-bottom:2px}
+    .queue-list{display:grid;max-height:calc(100vh - 360px);overflow:auto}
+    .order-row{display:grid;gap:8px;border:0;border-bottom:1px solid var(--line);background:white;text-align:left;padding:12px 18px;text-decoration:none;color:inherit}
+    .order-row:hover,.order-row.selected{background:rgba(12,127,255,.04)}
+    .order-row.selected{box-shadow:inset 3px 0 0 var(--blue)}
+    .order-top{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:start}
+    .avatar{width:34px;height:34px;border-radius:12px;background:var(--blue);color:white;display:grid;place-items:center;font-weight:950;font-size:12px}
+    .order-row h3{font-size:13px;font-weight:900}
+    .order-row small{display:block;color:#64748b;font-size:10.5px;margin-top:2px}
+    .amount{text-align:right;font-weight:950;color:#0f172a;font-size:12px}
+    .progress{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .dot{height:7px;border-radius:999px;background:#dbe4ef}
+    .dot.done{background:var(--green)}
+    .dot.active{background:var(--blue)}
+    .workspace{display:grid;gap:14px}
+    .summary-top{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+    .summary-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:#fbfdff;padding:14px 18px}
+    .metric{border:1px solid var(--line);background:white;border-radius:14px;padding:11px;min-height:64px}
+    .metric span{display:block;color:#94a3b8;font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+    .metric strong{display:block;margin-top:5px;color:#0f172a;font-size:14px;font-weight:950}
+    .stage-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:12px;background:white;border:1px solid var(--line);border-radius:22px;box-shadow:var(--soft-shadow)}
+    .stage-step{border:1px solid var(--line);background:white;border-radius:14px;min-height:64px;padding:9px 10px;text-align:left}
+    .stage-step.done{background:var(--green-soft);border-color:#a7f3d0}
+    .stage-step.active{background:var(--blue-soft);border-color:#93c5fd;box-shadow:0 0 0 3px rgba(12,127,255,.08)}
+    .stage-step strong{display:block;font-size:10px;color:#0f172a;line-height:1.15}
+    .stage-step span{display:block;margin-top:4px;color:#64748b;font-size:9.5px;line-height:1.2}
+    .main-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+    .card{border:1px solid var(--line);background:white;border-radius:18px;box-shadow:var(--soft-shadow);overflow:hidden}
+    .card-pad{padding:14px}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid #edf2f7;padding:9px 8px;text-align:left;vertical-align:middle;font-size:12px}
+    th{background:#f8fafc;color:#94a3b8;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+    .number{text-align:right}
+    .doc-card{display:grid;gap:10px;border-bottom:1px solid var(--line);padding:13px 14px}
+    .doc-card:last-child{border-bottom:0}
+    .doc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .doc-top strong{font-size:13px;color:#0f172a}
+    .doc-top small{display:block;color:#64748b;font-size:10.5px;margin-top:2px}
+    .link-box{border:1px dashed #bfdbfe;background:var(--blue-soft);border-radius:12px;padding:9px;color:#1d4ed8;font-size:11px;line-height:1.45;word-break:break-all}
+    .action-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .notice{border:1px solid #fde68a;background:#fffbeb;border-radius:14px;padding:10px;color:#92400e;font-size:12px;line-height:1.5}
+    .history-list{display:grid;gap:8px}
+    .history-item{border:1px solid var(--line);background:#fbfdff;border-radius:14px;padding:10px;color:#334155;font-size:12px;line-height:1.45}
+    .history-item b{color:#0f172a}
+    .drawer{position:fixed;left:var(--side);right:0;bottom:0;z-index:35;background:white;border-top:1px solid var(--line);box-shadow:0 -18px 48px rgba(15,23,42,.14);max-height:52vh;transform:translateY(calc(100% - 54px));transition:transform .18s ease}
+    .drawer.open{transform:translateY(0)}
+    .drawer-head{height:54px;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(180deg,#ffffff,#f8fbff)}
+    .drawer-title{display:flex;align-items:center;gap:10px;min-width:0}
+    .drawer-title h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .drawer-body{padding:0 24px 18px;overflow:auto;max-height:calc(52vh - 54px)}
+    .drawer-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+    .drawer-section{border:1px solid var(--line);border-radius:18px;background:#fbfdff;padding:14px}
+    .drawer-section.white{background:white}
+    .drawer-copy{color:#334155;font-size:13px;line-height:1.6}
+    .drawer-field-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+    .drawer-field span,.modal-field span{display:block;color:#94a3b8;font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;margin-bottom:4px}
+    .drawer-field input,.modal-field input,.modal-field textarea{width:100%;border:1px solid var(--line);background:white;border-radius:12px;padding:9px 10px;font-size:12px;font-weight:700;color:#334155;outline:none}
+    .modal-field textarea{min-height:86px;resize:vertical;line-height:1.45}
+    .packing-summary{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px}
+    .packing-note{margin-top:10px;color:#64748b;font-size:12px;line-height:1.55}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.42);z-index:60;display:none;align-items:center;justify-content:center;padding:24px}
+    .modal-backdrop.open{display:flex}
+    .modal{width:min(1040px,calc(100vw - 48px));max-height:calc(100vh - 48px);overflow:hidden;background:white;border:1px solid #dbe4ef;border-radius:28px;box-shadow:0 28px 80px rgba(15,23,42,.28);display:grid;grid-template-rows:auto minmax(0,1fr)}
+    .modal-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:linear-gradient(135deg,#ffffff,#f8fbff)}
+    .modal-body{padding:18px 22px;overflow:auto;display:grid;grid-template-columns:1fr 320px;gap:18px}
+    .send-preview{border:1px solid var(--line);border-radius:18px;overflow:hidden}
+    .send-preview-head{padding:12px;background:#f8fafc;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .send-preview-body{padding:14px;display:grid;gap:10px}
+    .send-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    .send-summary .metric{min-height:58px}
+    .channel-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .channel-tabs button{border:1px solid var(--line);background:white;border-radius:12px;padding:9px 10px;font-size:12px;font-weight:900;color:#475569}
+    .channel-tabs button.active{background:var(--navy);border-color:var(--navy);color:white}
+    .modal-aside{display:grid;gap:12px;align-content:start}
+    .toast{position:fixed;right:24px;bottom:72px;background:var(--navy);color:white;border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);font-weight:850;font-size:12px;display:none;z-index:80;max-width:420px}
+    .toast.show{display:block}
+    @media(max-width:1360px){
+      .main-grid{grid-template-columns:1fr}
+      .summary-grid{grid-template-columns:repeat(3,1fr)}
+      .drawer-grid,.modal-body{grid-template-columns:1fr}
+      .packing-summary{grid-template-columns:repeat(3,1fr)}
+    }
+    @media(max-width:1120px){
+      .work{grid-template-columns:1fr}
+      .queue-list{max-height:none}
+      .kpis{grid-template-columns:repeat(3,1fr)}
+      .stage-strip{grid-template-columns:repeat(4,1fr)}
+      .drawer{left:0}
+    }
+    @media(max-width:760px){
+      .app{grid-template-columns:1fr}
+      .side{display:none}
+      .main{padding:0 14px 92px}
+      .topbar{margin:0 -14px;padding:0 14px}
+      .brand-card,.divider{display:none}
+      .command-row,.summary-top,.summary-actions{align-items:stretch;flex-direction:column}
+      .field,.field.search{min-width:0;width:100%}
+      .kpis,.summary-grid,.stage-strip,.drawer-field-grid,.packing-summary,.send-summary{grid-template-columns:1fr}
+      .drawer{left:0}
+      .modal{width:calc(100vw - 20px);border-radius:18px}
+      .modal-backdrop{padding:10px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <div class="logo">SF</div>
+      <div class="nav">Dash</div>
+      <div class="nav">Leads</div>
+      <div class="nav">Quotes</div>
+      <div class="nav active">Orders</div>
+      <div class="nav">Docs</div>
+      <div class="nav">Tasks</div>
+      <div style="flex:1"></div>
+      <div class="nav">Admin</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-card"><div><b>SETU <span style="display:inline;color:#279491;font-size:11px;text-transform:none;letter-spacing:0">Flow</span> CRM</b><span>SETU Groups LLC</span></div></div>
+          <div class="divider"></div>
+          <div><div class="eyebrow">Execution</div><h1>Orders Desk</h1></div>
+        </div>
+        <div class="action-row">
+          <div class="mode" aria-label="Mode">
+            <button type="button" data-mode="all" onclick="setMode('all')">All</button>
+            <button type="button" data-mode="regional" onclick="setMode('regional')">Regional</button>
+            <button type="button" data-mode="export" onclick="setMode('export')">Export</button>
+          </div>
+          <button class="btn" type="button" onclick="toast('Prototype export action.')">Export</button>
+        </div>
+      </header>
+
+      <section class="command">
+        <div class="command-top">
+          <div class="command-row">
+            <div class="command-main">
+              <div class="command-label">Execution filters</div>
+              <div class="command-row">
+                <label class="field search"><span>Search</span><input id="search" placeholder="Search buyer, order, product, country, document" oninput="renderQueue()" /></label>
+                <label class="field"><span>Order type</span><select id="typeFilter" onchange="setMode(this.value)"><option value="all">All types</option><option value="regional">Regional</option><option value="export">Export</option></select></label>
+                <label class="field"><span>Stage</span><select id="stageFilter" onchange="setStageFilter(this.value)"><option value="all">All stages</option></select></label>
+                <label class="field"><span>Action state</span><select id="actionFilter" onchange="setActionFilter(this.value)"><option value="all">All actions</option><option value="ready">Ready from quote</option><option value="approval">Needs approval</option><option value="send">Ready to send</option><option value="packing">Packing/rates</option></select></label>
+                <button class="btn primary" type="button" onclick="renderQueue()">Apply</button>
+              </div>
+            </div>
+            <div class="command-summary" id="commandSummary">0 orders</div>
+          </div>
+          <div class="chips" id="activeChips"></div>
+        </div>
+      </section>
+
+      <section class="kpis" id="kpis"></section>
+
+      <section class="work">
+        <aside class="panel">
+          <div class="panel-head">
+            <div><div class="panel-label">Order queue</div><h3>Active execution</h3></div>
+            <span class="pill blue" id="queueCount">0 visible</span>
+          </div>
+          <div class="queue-list" id="queueList"></div>
+        </aside>
+
+        <section class="workspace">
+          <article class="panel">
+            <div class="summary-top">
+              <div>
+                <div class="panel-label">Open order</div>
+                <h2 id="openName">Order</h2>
+                <p class="sub" id="openSub">Select an order from the queue.</p>
+              </div>
+              <div class="summary-actions">
+                <button class="btn blue" type="button" onclick="openStageDrawer()">Stage drawer</button>
+                <button class="btn primary" type="button" onclick="openSendModal(currentStageDoc(currentOrder(), selectedStage), preferredChannel(currentOrder()))">Send current document</button>
+              </div>
+            </div>
+            <div class="summary-grid" id="summaryGrid"></div>
+          </article>
+
+          <nav class="stage-strip" id="stageStrip" aria-label="Order stages"></nav>
+
+          <section class="main-grid">
+            <article class="card">
+              <div class="panel-head">
+                <div><div class="panel-label">Commercial truth</div><h3>Actual order lines</h3></div>
+                <span class="pill amber">Quote can differ</span>
+              </div>
+              <div class="card-pad">
+                <table>
+                  <thead><tr><th>Product</th><th class="number">Quoted</th><th class="number">Actual</th><th class="number">Discount</th><th class="number">Actual value</th></tr></thead>
+                  <tbody id="lineRows"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="panel-head">
+                <div><div class="panel-label">Document tray</div><h3>Tracked review links</h3></div>
+                <span class="pill green" id="docCount">0 links</span>
+              </div>
+              <div id="documentTray"></div>
+            </article>
+
+            <article class="card">
+              <div class="panel-head">
+                <div><div class="panel-label">Stage history</div><h3>Audit events</h3></div>
+              </div>
+              <div class="card-pad history-list" id="historyList"></div>
+            </article>
+
+            <article class="card">
+              <div class="panel-head">
+                <div><div class="panel-label">Next action</div><h3 id="nextActionTitle">Next action</h3></div>
+              </div>
+              <div class="card-pad" id="nextActionPanel"></div>
+            </article>
+          </section>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <section class="drawer open" id="stageDrawer" aria-label="Stage drawer">
+    <div class="drawer-head">
+      <div class="drawer-title">
+        <span class="pill blue" id="drawerStageNo">Stage</span>
+        <div><h3 id="drawerTitle">Stage drawer</h3><p class="sub" id="drawerSub">Stage details.</p></div>
+      </div>
+      <div class="action-row">
+        <button class="btn blue" type="button" onclick="toggleDrawer()">Minimize</button>
+        <button class="btn primary" type="button" onclick="advanceStage()">Advance stage</button>
+      </div>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </section>
+
+  <section class="modal-backdrop" id="sendModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <div>
+          <div class="panel-label">Approval - Send</div>
+          <h2 id="modalTitle">Confirm send</h2>
+          <p class="sub" id="modalSub">Review what is being sent.</p>
+        </div>
+        <div class="action-row">
+          <button class="btn" type="button" onclick="closeSendModal()">Close</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <section class="send-preview">
+          <div class="send-preview-head">
+            <div><h3 id="modalDocName">Document</h3><p class="sub" id="modalDocMeta">Order and buyer details</p></div>
+            <span class="pill green">Ready link</span>
+          </div>
+          <div class="send-preview-body" id="modalPreview"></div>
+        </section>
+        <aside class="modal-aside" id="modalControls"></aside>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const canonicalOrigin = 'https://www.setuflowcrm.com';
+    const stages = [
+      ['actual_lines','Actual Lines','Actual order lines'],
+      ['first_document','Proforma / Confirmation','Buyer-facing first document'],
+      ['packing_rates','Packing / Rates','Packing sheet and freight rate request'],
+      ['processing','Processing','Pick, pack, QC'],
+      ['logistics','Logistics','Delivery or shipping handoff'],
+      ['invoice','Invoice','Final invoice or commercial invoice'],
+      ['closed','Paid & Closed','Receipt and archive']
+    ];
+    const orders = [
+      {
+        id:'o-007', orderNo:'SF-O-202605-007', type:'regional', buyer:'Cape Town Health Mart', contact:'Buyer Contact 07', email:'cape.town.health.mart@example.test', whatsapp:'+1-555-0007', country:'Canada', product:'Moringa + Beetroot Powder', stage:2, status:'Packing active', currency:'CAD', incoterm:'FOB', amount:24855, quoteNo:'SF-Q-202605-099', quoteVersion:'Accepted v3', next:'Approve packing sheet and send freight rate request',
+        lines:[['Moringa Powder Organic','MOR-250',1200,1200,14.5,0],['Beetroot Powder','BEE-200',400,350,21.3,3],['Banana Chips','BAN-500',800,0,18.4,0]],
+        packing:{cartons:1550,units:70500,net:15880,gross:17024,cbm:47.4,pallets:38,pickup:'SETU warehouse',destination:'Canada',shipDate:'2026-05-20',notes:'Regional truck quote with pickup slot and unloading notes.'},
+        docs:[doc('Order Confirmation','approved','whatsapp','+1-555-0007','oc-007-demo',2,'Buyer review link created. External delivery not confirmed.'),doc('Packing Sheet','previewed','preview','internal','20774301-ecfe-4e55-adb2-ca8a107a91f4',1,'Internal preview link.')],
+        history:['Actual lines saved from accepted quote v3.','Order Confirmation approved by operations.','Order Confirmation review link created for WhatsApp.']
+      },
+      {
+        id:'o-010', orderNo:'SF-O-202605-010', type:'export', buyer:'Blue Harbour Wholesale', contact:'Buyer Contact 10', email:'blue.harbour.wholesale@example.test', whatsapp:'+1-555-0010', country:'Argentina', product:'Beetroot Powder Export', stage:5, status:'Invoice preview', currency:'CAD', incoterm:'FOB', amount:52200, quoteNo:'SF-Q-202605-121', quoteVersion:'Accepted v2', next:'Approve commercial invoice and send review link',
+        lines:[['Beetroot Powder','BEE-200-EXP',1800,1788,24.5,0],['Moringa Powder Organic','MOR-250-EXP',650,650,28.4,1]],
+        packing:{cartons:2438,units:95568,net:21126,gross:22954,cbm:70.2,pallets:57,pickup:'Maharashtra, India',destination:'Rotterdam / Argentina',shipDate:'2026-05-24',notes:'Forwarder quote required with validity, surcharges and transit time.'},
+        docs:[doc('Proforma Invoice','approved','email','blue.harbour.wholesale@example.test','pi-010-demo',3,'Buyer opened review link.'),doc('Packing List','approved','email','forwarder@example.test','pl-010-demo',1,'Forwarder rate request shared.'),doc('Commercial Invoice','previewed','preview','internal','7604bb28-8b46-4c69-a464-09bdea74ec5d',1,'Internal preview link.')],
+        history:['Proforma approved and sent to buyer.','Packing List approved for freight request.','Commercial Invoice preview opened.']
+      },
+      {
+        id:'o-003', orderNo:'SF-O-202605-003', type:'export', buyer:'Trustbrands Trading LLC', contact:'Procurement Lead', email:'', whatsapp:'+971-55-000-0303', country:'United Arab Emirates', product:'Snack chips mixed SKU', stage:1, status:'Needs approval', currency:'USD', incoterm:'CIF', amount:34900, quoteNo:'SF-Q-202605-088', quoteVersion:'Accepted v4', next:'Preview and approve Proforma Invoice',
+        lines:[['Mango Chips','MAN-500',500,620,20.4,2],['Jackfruit Chips','JAC-500',400,400,22.2,0]],
+        packing:{cartons:1020,units:24480,net:12240,gross:13107,cbm:40.8,pallets:29,pickup:'Navi Mumbai warehouse',destination:'Dubai',shipDate:'2026-05-22',notes:'CIF quote pending forwarder confirmation.'},
+        docs:[],
+        history:['Actual lines changed from quote.','Internal commercial review pending.']
+      },
+      {
+        id:'o-001', orderNo:'SF-O-202605-001', type:'regional', buyer:'Pacific Wellness Foods', contact:'Operations Buyer', email:'buyer@example.test', whatsapp:'', country:'Australia', product:'Moringa, Beetroot, Mango', stage:0, status:'Ready from quote', currency:'AUD', incoterm:'EXW', amount:18700, quoteNo:'SF-Q-202605-075', quoteVersion:'Accepted v1', next:'Confirm actual order lines',
+        lines:[['Moringa Powder Organic','MOR-250',600,600,14.8,0],['Mango Chips','MAN-500',350,0,19.1,0]],
+        packing:{cartons:600,units:28800,net:7200,gross:7632,cbm:18.6,pallets:15,pickup:'SETU warehouse',destination:'Australia',shipDate:'2026-05-21',notes:'Buyer removed Mango Chips before first document.'},
+        docs:[],
+        history:['Accepted quote version bound to order.']
+      }
+    ];
+    let selectedId = orders[0].id;
+    let selectedStage = orders[0].stage;
+    let modeFilter = 'all';
+    let stageFilter = 'all';
+    let actionFilter = 'all';
+    let drawerOpen = true;
+    let modalDoc = 'Packing Sheet';
+    let modalChannel = 'whatsapp';
+
+    function doc(type,status,channel,recipient,token,opened,note){return {type,status,channel,recipient,link:`${canonicalOrigin}/order-documents/preview/${token}`,opened,note};}
+    function currentOrder(){return orders.find(o => o.id === selectedId) || orders[0];}
+    function currentStageDoc(order,index){
+      if(index === 1) return order.type === 'export' ? 'Proforma Invoice' : 'Order Confirmation';
+      if(index === 2) return order.type === 'export' ? 'Packing List + Freight Rate Request' : 'Packing Sheet + Freight Rate Request';
+      if(index === 4) return order.type === 'export' ? 'Shipping Document Set' : 'Delivery Note';
+      if(index === 5) return order.type === 'export' ? 'Commercial Invoice' : 'Final Invoice';
+      if(index === 6) return 'Receipt + Archive';
+      return stages[index]?.[2] || 'Order document';
+    }
+    function preferredChannel(order){return order.whatsapp ? 'whatsapp' : 'email';}
+    function money(value,currency){return `${currency || 'USD'} ${Number(value || 0).toLocaleString(undefined,{maximumFractionDigits:2})}`;}
+    function initials(name){return String(name || 'SF').split(/\s+/).filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase();}
+    function escapeHtml(value){return String(value ?? '').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+    function lineNet(line){return Number(line[3] || 0) * Number(line[4] || 0) * (1 - Number(line[5] || 0) / 100);}
+    function orderTotal(order){return order.lines.reduce((sum,line)=>sum+lineNet(line),0);}
+    function canonicalDocUrl(order,docName){return `${canonicalOrigin}/order-documents/preview/${`${order.orderNo}-${docName}`.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}`;}
+    function toast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove('show'),2400);}
+
+    function init(){
+      document.getElementById('stageFilter').innerHTML = '<option value="all">All stages</option>' + stages.map((s,i)=>`<option value="${i}">${s[1]}</option>`).join('');
+      render();
+    }
+    function render(){
+      renderCommand();
+      renderKpis();
+      renderQueue();
+      renderOrder();
+      renderDrawer();
+    }
+    function visibleOrders(){
+      const q=(document.getElementById('search')?.value || '').trim().toLowerCase();
+      return orders.filter(order=>{
+        const hay=`${order.buyer} ${order.orderNo} ${order.quoteNo} ${order.product} ${order.country} ${order.status} ${order.next} ${currentStageDoc(order,order.stage)}`.toLowerCase();
+        if(q && !hay.includes(q)) return false;
+        if(modeFilter !== 'all' && order.type !== modeFilter) return false;
+        if(stageFilter !== 'all' && Number(stageFilter) !== order.stage) return false;
+        if(actionFilter === 'ready' && order.stage !== 0) return false;
+        if(actionFilter === 'approval' && !(order.stage === 1 || order.status.toLowerCase().includes('approval'))) return false;
+        if(actionFilter === 'send' && !order.docs.some(d => d.status === 'approved')) return false;
+        if(actionFilter === 'packing' && order.stage !== 2) return false;
+        return true;
+      });
+    }
+    function renderCommand(){
+      document.querySelectorAll('[data-mode]').forEach(btn=>btn.classList.toggle('active',btn.dataset.mode===modeFilter));
+      document.getElementById('typeFilter').value = modeFilter;
+      document.getElementById('stageFilter').value = stageFilter;
+      document.getElementById('actionFilter').value = actionFilter;
+      const visible=visibleOrders();
+      document.getElementById('commandSummary').textContent = `${visible.length} orders | ${money(visible.reduce((s,o)=>s+orderTotal(o),0),'USD')} execution value`;
+      const chips=[];
+      if(modeFilter !== 'all') chips.push(`<button class="pill purple" type="button" onclick="setMode('all')">Mode: ${modeFilter} x</button>`);
+      if(stageFilter !== 'all') chips.push(`<button class="pill blue" type="button" onclick="setStageFilter('all')">Stage: ${stages[Number(stageFilter)][1]} x</button>`);
+      if(actionFilter !== 'all') chips.push(`<button class="pill amber" type="button" onclick="setActionFilter('all')">Action: ${actionFilter} x</button>`);
+      const q=(document.getElementById('search')?.value || '').trim();
+      if(q) chips.push(`<button class="pill blue" type="button" onclick="clearSearch()">Search: ${escapeHtml(q)} x</button>`);
+      chips.push(`<button class="btn" type="button" onclick="clearFilters()">Clear all</button>`);
+      document.getElementById('activeChips').innerHTML = chips.join('');
+    }
+    function renderKpis(){
+      const data=[
+        ['Ready from quote',orders.filter(o=>o.stage===0).length,'Need actual lines','blue','ready'],
+        ['Needs approval',orders.filter(o=>o.stage===1).length,'Human send gate','amber','approval'],
+        ['Packing/rates',orders.filter(o=>o.stage===2).length,'Packing or freight','purple','packing'],
+        ['Ready to send',orders.filter(o=>o.docs.some(d=>d.status==='approved')).length,'Approved documents','green','send'],
+        ['Blocked',orders.filter(o=>!o.email && !o.whatsapp).length,'Missing contact','red','all'],
+        ['Active orders',orders.length,'Current queue','', 'all']
+      ];
+      document.getElementById('kpis').innerHTML=data.map(item=>`<button class="kpi ${item[3]}" type="button" onclick="setActionFilter('${item[4]}')"><div class="label">${item[0]}</div><div class="value">${item[1]}</div><div class="meta">${item[2]}</div></button>`).join('');
+    }
+    function renderQueue(){
+      const list=visibleOrders();
+      document.getElementById('queueCount').textContent=`${list.length} visible`;
+      const container=document.getElementById('queueList');
+      if(!list.length){container.innerHTML='<div class="card-pad"><p class="sub">No orders match the active filters.</p></div>';return;}
+      container.innerHTML=list.map(order=>{
+        const dots=stages.map((_,i)=>`<span class="dot ${i<order.stage?'done':i===order.stage?'active':''}"></span>`).join('');
+        return `<button class="order-row ${order.id===selectedId?'selected':''}" type="button" onclick="selectOrder('${order.id}')">
+          <div class="order-top"><span class="avatar" style="background:${order.type==='export'?'#7c3aed':'#0c7fff'}">${initials(order.buyer)}</span><span><h3>${escapeHtml(order.buyer)}</h3><small>${order.type.toUpperCase()} | ${escapeHtml(order.product)} | ${escapeHtml(stages[order.stage][1])}</small></span><span class="amount">${money(orderTotal(order),order.currency)}<small>${escapeHtml(order.status)}</small></span></div>
+          <div class="progress">${dots}</div><small>Next: ${escapeHtml(order.next)}</small>
+        </button>`;
+      }).join('');
+    }
+    function renderOrder(){
+      const order=currentOrder();
+      document.getElementById('openName').textContent=order.buyer;
+      document.getElementById('openSub').textContent=`${order.orderNo} | ${order.type.toUpperCase()} | ${order.quoteNo} | ${order.quoteVersion}`;
+      document.getElementById('summaryGrid').innerHTML=[
+        ['Actual total',money(orderTotal(order),order.currency)],
+        ['Buyer contact',order.contact],
+        ['Order type',order.type === 'export' ? 'Export' : 'Regional'],
+        ['Source version',order.quoteVersion],
+        ['Current document',currentStageDoc(order,selectedStage)]
+      ].map(([a,b])=>`<div class="metric"><span>${a}</span><strong>${escapeHtml(b)}</strong></div>`).join('');
+      document.getElementById('stageStrip').innerHTML=stages.map((stage,i)=>`<button class="stage-step ${i<order.stage?'done':''} ${i===selectedStage?'active':''}" type="button" onclick="selectStage(${i})"><strong>${stage[1]}</strong><span>${escapeHtml(currentStageDoc(order,i))}</span></button>`).join('');
+      document.getElementById('lineRows').innerHTML=order.lines.map(line=>`<tr><td><strong>${escapeHtml(line[0])}</strong><small style="display:block;color:#64748b">${escapeHtml(line[1])}</small></td><td class="number">${Number(line[2]).toLocaleString()}</td><td class="number">${Number(line[3]).toLocaleString()}</td><td class="number">${Number(line[5])}%</td><td class="number"><strong>${money(lineNet(line),order.currency)}</strong></td></tr>`).join('');
+      renderTray(order);
+      renderHistory(order);
+      renderNextAction(order);
+    }
+    function renderTray(order){
+      document.getElementById('docCount').textContent=`${order.docs.length} links`;
+      const tray=document.getElementById('documentTray');
+      if(!order.docs.length){tray.innerHTML='<div class="card-pad"><div class="notice">No tracked review links yet. Preview or send from a cleared stage to create one automatically.</div></div>';return;}
+      tray.innerHTML=order.docs.map((doc,index)=>`<div class="doc-card"><div class="doc-top"><div><strong>${escapeHtml(doc.type)}</strong><small>${escapeHtml(order.orderNo)} review link | ${escapeHtml(doc.channel)} | ${escapeHtml(doc.recipient)}</small></div><span class="pill ${doc.status==='approved'?'green':doc.status==='previewed'?'blue':'amber'}">${escapeHtml(doc.status)}</span></div><div class="link-box">${escapeHtml(doc.link)}</div><small>${escapeHtml(doc.note)} Opened ${doc.opened} time${doc.opened===1?'':'s'}.</small><div class="action-row"><button class="btn blue" type="button" onclick="previewExisting(${index})">Preview</button><button class="btn" type="button" onclick="openSendModal('${escapeHtml(doc.type)}','${doc.channel==='whatsapp'?'whatsapp':'email'}')">Send again</button></div></div>`).join('');
+    }
+    function renderHistory(order){
+      document.getElementById('historyList').innerHTML=order.history.slice().reverse().map(item=>`<div class="history-item"><b>${escapeHtml(order.orderNo)}</b><br>${escapeHtml(item)}</div>`).join('');
+    }
+    function renderNextAction(order){
+      document.getElementById('nextActionTitle').textContent=stages[selectedStage][1];
+      document.getElementById('nextActionPanel').innerHTML=`<p class="sub">${escapeHtml(order.next)}</p><div class="action-row" style="margin-top:12px"><button class="btn blue" type="button" onclick="openStageDrawer()">Open stage drawer</button><button class="btn primary" type="button" onclick="openSendModal('${escapeHtml(currentStageDoc(order,selectedStage))}','${preferredChannel(order)}')">Send current document</button></div>`;
+    }
+    function renderDrawer(){
+      const order=currentOrder();
+      const stage=stages[selectedStage];
+      const drawer=document.getElementById('stageDrawer');
+      drawer.classList.toggle('open',drawerOpen);
+      document.getElementById('drawerStageNo').textContent=`Stage ${selectedStage+1}`;
+      document.getElementById('drawerTitle').textContent=`${stage[1]} - ${currentStageDoc(order,selectedStage)}`;
+      document.getElementById('drawerSub').textContent=stage[2];
+      document.getElementById('drawerBody').innerHTML = selectedStage === 2 ? packingDrawer(order) : genericStageDrawer(order);
+    }
+    function genericStageDrawer(order){
+      const docName=currentStageDoc(order,selectedStage);
+      return `<div class="drawer-grid"><section class="drawer-section white"><h3>${escapeHtml(docName)}</h3><p class="drawer-copy">${stageCopy(selectedStage,order)}</p><div class="action-row" style="margin-top:12px"><button class="btn blue" type="button" onclick="previewDocument('${escapeHtml(docName)}')">Preview internally</button><button class="btn green" type="button" onclick="approveDocument('${escapeHtml(docName)}')">Approve document</button><button class="btn primary" type="button" onclick="openSendModal('${escapeHtml(docName)}','${preferredChannel(order)}')">Send approved document</button></div></section><aside class="drawer-section"><h3>Gate checklist</h3><p class="drawer-copy">The stage remains clickable after completion. Preview and send again stay available from the document tray.</p><div class="notice" style="margin-top:12px">Send does not claim external delivery. It creates a tracked review link and records that delivery is not confirmed.</div></aside></div>`;
+    }
+    function packingDrawer(order){
+      const p=order.packing;
+      return `<div class="drawer-grid"><section class="drawer-section white"><h3>Aggregate packing summary</h3><p class="drawer-copy">No product-by-product packing breakdown in the stage UI. The team sees the totals being used for the Packing Sheet, Packing List, and Freight Rate Request, with editable assumptions where operations needs to adjust.</p><div class="packing-summary">${[['Cartons',p.cartons],['Units',p.units],['Net kg',p.net],['Gross kg',p.gross],['CBM',p.cbm],['Pallets',p.pallets]].map(([k,v])=>`<div class="metric"><span>${k}</span><strong>${Number(v).toLocaleString()}</strong></div>`).join('')}</div><div class="drawer-field-grid"><label class="drawer-field"><span>Pickup</span><input value="${escapeHtml(p.pickup)}"></label><label class="drawer-field"><span>Destination</span><input value="${escapeHtml(p.destination)}"></label><label class="drawer-field"><span>Ship date</span><input type="date" value="${p.shipDate}"></label><label class="drawer-field"><span>Freight notes</span><input value="${escapeHtml(p.notes)}"></label></div><p class="packing-note">Source: actual order lines plus product pack metadata. Values are labeled as estimates until operations confirms the final packing sheet.</p></section><aside class="drawer-section"><h3>Packing send gates</h3><p class="drawer-copy">The same send modal handles Packing Sheet, Packing List, and Freight Rate Request. It only shows the document being sent, the recipient, message, and tracked link.</p><div class="action-row" style="margin-top:12px"><button class="btn blue" type="button" onclick="previewDocument('${order.type==='export'?'Packing List':'Packing Sheet'}')">Preview ${order.type==='export'?'Packing List':'Packing Sheet'}</button><button class="btn green" type="button" onclick="approveDocument('${order.type==='export'?'Packing List':'Packing Sheet'}')">Approve</button><button class="btn primary" type="button" onclick="openSendModal('Freight Rate Request','email')">Send Freight Rate Request</button></div></aside></div>`;
+    }
+    function stageCopy(stageIndex,order){
+      if(stageIndex===0) return 'Confirm the actual order before any buyer-facing document. The accepted quote version remains immutable and only acts as source truth.';
+      if(stageIndex===1) return 'Prepare, preview, approve, and send the first buyer-facing document. Regional orders use Order Confirmation; export orders use Proforma Invoice.';
+      if(stageIndex===3) return 'Operations confirms pick, pack, QC, and physical readiness before logistics handoff continues.';
+      if(stageIndex===4) return order.type==='export' ? 'Book forwarder coordination and shipping documents from the approved packing data.' : 'Book regional transport and create the delivery note from approved packing data.';
+      if(stageIndex===5) return 'Final invoice reflects actual dispatched goods and is approved before the buyer receives a review link.';
+      return 'Record payment, send receipt if needed, and archive the full document history.';
+    }
+    function renderModal(){
+      const order=currentOrder();
+      const docName=modalDoc;
+      const link=canonicalDocUrl(order,docName);
+      const recipient=modalChannel==='email' ? (order.email || '') : (order.whatsapp || order.email || '');
+      document.getElementById('modalTitle').textContent=`Confirm ${docName} send`;
+      document.getElementById('modalSub').textContent='This modal only shows what will be sent now.';
+      document.getElementById('modalDocName').textContent=docName;
+      document.getElementById('modalDocMeta').textContent=`${order.orderNo} | ${order.buyer}`;
+      const packingDoc = docName.toLowerCase().includes('packing') || docName.toLowerCase().includes('freight');
+      document.getElementById('modalPreview').innerHTML=`<div class="send-summary"><div class="metric"><span>Buyer / recipient</span><strong>${escapeHtml(order.buyer)}</strong></div><div class="metric"><span>Order</span><strong>${escapeHtml(order.orderNo)}</strong></div><div class="metric"><span>Document</span><strong>${escapeHtml(docName)}</strong></div><div class="metric"><span>Channel</span><strong>${modalChannel}</strong></div></div>${packingDoc?`<table><tr><th>What gets sent</th><th class="number">Value</th></tr><tr><td>Cartons</td><td class="number">${order.packing.cartons.toLocaleString()}</td></tr><tr><td>Gross weight kg</td><td class="number">${order.packing.gross.toLocaleString()}</td></tr><tr><td>CBM</td><td class="number">${order.packing.cbm.toLocaleString()}</td></tr><tr><td>Destination</td><td class="number">${escapeHtml(order.packing.destination)}</td></tr></table>`:`<table><tr><th>What gets sent</th><th class="number">Value</th></tr><tr><td>Actual order total</td><td class="number">${money(orderTotal(order),order.currency)}</td></tr><tr><td>Source quote version</td><td class="number">${escapeHtml(order.quoteVersion)}</td></tr><tr><td>Incoterm</td><td class="number">${escapeHtml(order.incoterm)}</td></tr></table>`}<div class="link-box">${escapeHtml(link)}</div><div class="notice">Result after send: link created and ready. External ${modalChannel} delivery is not confirmed until a transport adapter confirms it.</div>`;
+      document.getElementById('modalControls').innerHTML=`<div class="channel-tabs"><button type="button" class="${modalChannel==='whatsapp'?'active':''}" onclick="setModalChannel('whatsapp')">WhatsApp primary</button><button type="button" class="${modalChannel==='email'?'active':''}" onclick="setModalChannel('email')">Email secondary</button></div><label class="modal-field"><span>${modalChannel==='email'?'Email recipient':'WhatsApp recipient'}</span><input id="modalRecipient" value="${escapeHtml(recipient)}" placeholder="${modalChannel==='email'?'buyer@example.com':'+15550000000'}"></label><label class="modal-field"><span>Recipient role</span><input id="modalRole" value="${packingDoc?'freight / logistics':'buyer'}"></label><label class="modal-field"><span>Optional message</span><textarea id="modalMessage">Please review the approved ${escapeHtml(docName)} for ${escapeHtml(order.orderNo)}.</textarea></label><button class="btn primary full" type="button" onclick="createTrackedLink()">Create ${modalChannel} review link</button><button class="btn blue full" type="button" onclick="previewDocument('${escapeHtml(docName)}')">Preview internally</button><button class="btn full" type="button" onclick="closeSendModal()">Cancel</button>`;
+    }
+    function openSendModal(docName,channel){modalDoc=docName;modalChannel=channel || preferredChannel(currentOrder());document.getElementById('sendModal').classList.add('open');document.getElementById('sendModal').setAttribute('aria-hidden','false');renderModal();}
+    function closeSendModal(){document.getElementById('sendModal').classList.remove('open');document.getElementById('sendModal').setAttribute('aria-hidden','true');}
+    function setModalChannel(channel){modalChannel=channel;renderModal();}
+    function createTrackedLink(){
+      const order=currentOrder();
+      const recipient=document.getElementById('modalRecipient')?.value.trim() || 'manual recipient pending';
+      order.docs.unshift({type:modalDoc,status:'link_created',channel:modalChannel,recipient,link:canonicalDocUrl(order,modalDoc),opened:0,note:'Link created and ready. External delivery not confirmed.'});
+      order.history.push(`${modalDoc} ${modalChannel} review link created for ${recipient}. External delivery not confirmed.`);
+      closeSendModal();
+      render();
+      toast(`${modalDoc} link created. External delivery not confirmed.`);
+    }
+    function previewDocument(docName){const order=currentOrder();order.docs.unshift({type:docName,status:'previewed',channel:'preview',recipient:'internal',link:canonicalDocUrl(order,docName),opened:1,note:'Internal preview link created.'});order.history.push(`${docName} preview opened internally.`);render();toast(`Preview created for ${docName}.`);}
+    function approveDocument(docName){const order=currentOrder();const existing=order.docs.find(d=>d.type===docName);if(existing) existing.status='approved';else order.docs.unshift({type:docName,status:'approved',channel:'internal',recipient:'approver',link:canonicalDocUrl(order,docName),opened:0,note:'Document approved and ready to send.'});order.history.push(`${docName} approved for send gate.`);render();toast(`${docName} approved.`);}
+    function previewExisting(index){const order=currentOrder();if(!order.docs[index])return;order.docs[index].opened += 1;order.history.push(`${order.docs[index].type} opened from document tray.`);render();toast('Preview opened from tray.');}
+    function selectOrder(id){selectedId=id;selectedStage=currentOrder().stage;drawerOpen=true;render();}
+    function selectStage(index){selectedStage=index;drawerOpen=true;render();}
+    function openStageDrawer(){drawerOpen=true;renderDrawer();}
+    function toggleDrawer(){drawerOpen=!drawerOpen;renderDrawer();}
+    function advanceStage(){const order=currentOrder();if(selectedStage<stages.length-1){selectedStage+=1;order.stage=Math.max(order.stage,selectedStage);order.history.push(`Advanced to ${stages[selectedStage][1]}.`);render();toast(`Moved to ${stages[selectedStage][1]}.`);}else toast('Order is already paid and closed.');}
+    function setMode(mode){modeFilter=mode;render();}
+    function setStageFilter(value){stageFilter=value;render();}
+    function setActionFilter(value){actionFilter=value;render();}
+    function clearSearch(){document.getElementById('search').value='';render();}
+    function clearFilters(){modeFilter='all';stageFilter='all';actionFilter='all';document.getElementById('search').value='';render();}
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSendModal();});
+    document.getElementById('sendModal').addEventListener('click',event=>{if(event.target.id==='sendModal')closeSendModal();});
+    init();
+  </script>
+</body>
+</html>

@@ -8,9 +8,9 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
-function buildRedirect(notice: string, quoteId?: string) {
+function buildRedirect(notice: string, openOrderId?: string) {
   const params = new URLSearchParams({ notice });
-  if (quoteId) params.set('openOrderId', quoteId);
+  if (openOrderId) params.set('openOrderId', openOrderId);
   return `/orders?${params.toString()}`;
 }
 
@@ -127,6 +127,20 @@ async function recordOrderStageEvent(db: any, payload: {
   });
 }
 
+async function hasApprovedGate(db: any, organizationId: string, orderId: string, stageKey: string, gateType: string) {
+  const { data } = await db
+    .from('order_approval_gates')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('order_id', orderId)
+    .eq('stage_key', stageKey)
+    .eq('gate_type', gateType)
+    .eq('status', 'approved')
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data?.id);
+}
+
 export async function ensureActualOrderLinesAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
@@ -140,7 +154,7 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
 
   const { data: existingOrder, error: existingError } = await db.from('orders').select('id').eq('organization_id', organizationId).eq('source_quote_id', quoteId).maybeSingle();
   if (existingError) redirect(buildRedirect('actual-order-lines-error', quoteId));
-  if (existingOrder?.id) redirect(buildRedirect('actual-order-lines-ready', quoteId));
+  if (existingOrder?.id) redirect(buildRedirect('actual-order-lines-ready', existingOrder.id));
 
   const { data: quote, error: quoteError } = await db
     .from('quotes')
@@ -294,7 +308,7 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
   revalidatePath('/orders');
   revalidatePath('/quotes');
   revalidatePath(`/leads/${leadId}`);
-  redirect(buildRedirect('actual-order-lines-created', quoteId));
+  redirect(buildRedirect('actual-order-lines-created', orderId));
 }
 
 export async function approveActualOrderLinesGateAction(formData: FormData) {
@@ -316,7 +330,7 @@ export async function approveActualOrderLinesGateAction(formData: FormData) {
 
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
-  redirect(buildRedirect('actual-order-lines-approved', quoteId));
+  redirect(buildRedirect('actual-order-lines-approved', order.id));
 }
 
 export async function prepareFirstDocumentGateAction(formData: FormData) {
@@ -328,13 +342,14 @@ export async function prepareFirstDocumentGateAction(formData: FormData) {
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
   if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
+  if (!await hasApprovedGate(db, organizationId, order.id, 'internal_review', 'actual_lines')) redirect(buildRedirect('actual-lines-approval-required', order.id));
   const gateType = normalizeFirstDocumentGate(formData.get('document_gate_type'), order.order_type);
   const { error: gateError } = await saveGate(db, { organizationId, orderId: order.id, stageKey: 'first_document', gateType, status: 'prepared', actorUserId, previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType } });
   if (gateError) redirect(buildRedirect('order-gate-update-failed', quoteId));
   await db.from('orders').update({ current_stage: 'first_document', approval_state: `${gateType}_prepared`, updated_by: actorUserId, updated_at: new Date().toISOString() }).eq('organization_id', organizationId).eq('id', order.id);
   await recordOrderStageEvent(db, { organizationId, orderId: order.id, stageKey: 'first_document', eventType: `${gateType}_prepared`, actorUserId, summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice gate prepared.' : 'Regional Order Confirmation gate prepared.', eventPayload: { source_quote_id: quoteId, document_gate_type: gateType } });
   revalidatePath('/orders');
-  redirect(buildRedirect('first-document-gate-prepared', quoteId));
+  redirect(buildRedirect('first-document-gate-prepared', order.id));
 }
 
 export async function previewFirstDocumentGateAction(formData: FormData) {
@@ -346,12 +361,13 @@ export async function previewFirstDocumentGateAction(formData: FormData) {
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
   if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
+  if (!await hasApprovedGate(db, organizationId, order.id, 'internal_review', 'actual_lines')) redirect(buildRedirect('actual-lines-approval-required', order.id));
   const gateType = normalizeFirstDocumentGate(formData.get('document_gate_type'), order.order_type);
   const { error: gateError } = await saveGate(db, { organizationId, orderId: order.id, stageKey: 'first_document', gateType, status: 'previewed', actorUserId, previewSnapshot: { source_quote_id: quoteId, order_type: order.order_type, document_gate_type: gateType, previewed_by: actorUserId } });
   if (gateError) redirect(buildRedirect('order-gate-update-failed', quoteId));
   await recordOrderStageEvent(db, { organizationId, orderId: order.id, stageKey: 'first_document', eventType: `${gateType}_previewed`, actorUserId, summary: gateType === 'proforma_invoice' ? 'Export Proforma Invoice preview marked complete.' : 'Regional Order Confirmation preview marked complete.', eventPayload: { source_quote_id: quoteId, document_gate_type: gateType } });
   revalidatePath('/orders');
-  redirect(buildRedirect('first-document-gate-previewed', quoteId));
+  redirect(buildRedirect('first-document-gate-previewed', order.id));
 }
 
 export async function approveFirstDocumentGateAction(formData: FormData) {
@@ -363,6 +379,7 @@ export async function approveFirstDocumentGateAction(formData: FormData) {
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
   if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
+  if (!await hasApprovedGate(db, organizationId, order.id, 'internal_review', 'actual_lines')) redirect(buildRedirect('actual-lines-approval-required', order.id));
   const gateType = normalizeFirstDocumentGate(formData.get('document_gate_type'), order.order_type);
   const nextStage = nextStageAfterFirstDocument(order.order_type);
   const now = new Date().toISOString();
@@ -373,5 +390,5 @@ export async function approveFirstDocumentGateAction(formData: FormData) {
   await writeAuditLog({ organizationId, action: 'order_gate_approved', entityType: 'order', entityId: order.id, actorUserId, payload: { previous: { approval_state: order.approval_state, current_stage: order.current_stage }, new: { approval_state: `${gateType}_approved`, current_stage: nextStage }, metadata: { source: 'approveFirstDocumentGateAction', quote_id: quoteId, gate_type: gateType } } });
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
-  redirect(buildRedirect('first-document-gate-approved', quoteId));
+  redirect(buildRedirect('first-document-gate-approved', order.id));
 }

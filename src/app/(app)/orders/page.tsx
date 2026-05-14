@@ -272,7 +272,7 @@ function decodeNotice(noticeKey: string | null) {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default async function OrdersPage({ searchParams }: { searchParams?: { notice?: string | string[]; mode?: string | string[]; handoff?: string | string[]; quoteId?: string | string[]; leadId?: string | string[]; openOrderId?: string | string[] } }) {
+export default async function OrdersPage({ searchParams }: { searchParams?: { notice?: string | string[]; mode?: string | string[]; handoff?: string | string[]; quoteId?: string | string[]; leadId?: string | string[]; openOrderId?: string | string[]; sourceQuoteId?: string | string[] } }) {
   const workspace = await getWorkspaceAccess();
 
   if (!workspace.membership || !workspace.organization) {
@@ -299,6 +299,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
   const requestedQuoteId = Array.isArray(searchParams?.quoteId) ? searchParams?.quoteId[0] ?? null : searchParams?.quoteId ?? null;
   const requestedLeadId = Array.isArray(searchParams?.leadId) ? searchParams?.leadId[0] ?? null : searchParams?.leadId ?? null;
   const openOrderId = Array.isArray(searchParams?.openOrderId) ? searchParams?.openOrderId[0] ?? null : searchParams?.openOrderId ?? null;
+  const openSourceQuoteId = Array.isArray(searchParams?.sourceQuoteId) ? searchParams?.sourceQuoteId[0] ?? null : searchParams?.sourceQuoteId ?? openOrderId;
   const normalizedRoles = new Set((workspace.currentRoles ?? []).map((role) => String(role).trim().toLowerCase()).filter(Boolean));
   const primaryOperationalContext = normalizedRoles.has('sourcing') || normalizedRoles.has('procurement')
     ? 'supplier'
@@ -733,7 +734,7 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                   <div className="rounded-2xl bg-slate-50 p-3"><b className="block text-slate-950">{order.documents.length}</b><span className="text-slate-500">documents</span></div>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Link href={`${PRODUCT_ROUTES.app.orders}?mode=${perspectiveMode}&openOrderId=${order.quoteId}`} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black text-white">Open</Link>
+                  <Link href={`${PRODUCT_ROUTES.app.orders}?mode=${perspectiveMode}&sourceQuoteId=${order.quoteId}`} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black text-white">Open</Link>
                   <Link href={`${PRODUCT_ROUTES.app.leads}/${order.leadId}`} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-blue-600 text-sm font-black text-white">Lead</Link>
                 </div>
               </article>
@@ -855,12 +856,12 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                   <div style={{display:'flex',gap:'6px',marginTop:'4px'}}>
                     <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${order.quoteId}`} style={{padding:'6px 14px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:700,color:'#334155',textDecoration:'none'}}>View quote</Link>
                     <Link
-                      href={openOrderId === order.quoteId
+                      href={openSourceQuoteId === order.quoteId
                         ? `${PRODUCT_ROUTES.app.orders}?mode=${perspectiveMode}`
-                        : `${PRODUCT_ROUTES.app.orders}?mode=${perspectiveMode}&openOrderId=${order.quoteId}`}
-                      style={{padding:'6px 14px',borderRadius:'6px',background: openOrderId === order.quoteId ? '#334155' : '#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}
+                        : `${PRODUCT_ROUTES.app.orders}?mode=${perspectiveMode}&sourceQuoteId=${order.quoteId}`}
+                      style={{padding:'6px 14px',borderRadius:'6px',background: openSourceQuoteId === order.quoteId ? '#334155' : '#0b2e4a',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}
                     >
-                      {openOrderId === order.quoteId ? 'Close order' : 'Open order'}
+                      {openSourceQuoteId === order.quoteId ? 'Close order' : 'Open order'}
                     </Link>
                   </div>
                 </div>
@@ -985,8 +986,8 @@ export default async function OrdersPage({ searchParams }: { searchParams?: { no
                 </div>
               </div>
 
-              {/* ── ORDER DETAIL PANEL — expands when openOrderId matches ── */}
-              {openOrderId === order.quoteId && (
+              {/* ── ORDER DETAIL PANEL — expands when sourceQuoteId matches this legacy quote view ── */}
+              {openSourceQuoteId === order.quoteId && (
                 <OrderDetailPanel
                   quoteId={order.quoteId}
                   leadId={order.leadId}

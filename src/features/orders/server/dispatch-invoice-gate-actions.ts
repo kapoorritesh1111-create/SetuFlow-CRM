@@ -8,9 +8,9 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
-function buildRedirect(notice: string, quoteId?: string) {
+function buildRedirect(notice: string, openOrderId?: string) {
   const params = new URLSearchParams({ notice });
-  if (quoteId) params.set('openOrderId', quoteId);
+  if (openOrderId) params.set('openOrderId', openOrderId);
   return `/orders?${params.toString()}`;
 }
 
@@ -114,6 +114,20 @@ async function recordOrderStageEvent(db: any, payload: {
   });
 }
 
+async function hasApprovedGate(db: any, organizationId: string, orderId: string, stageKey: string, gateType?: string) {
+  let query = db
+    .from('order_approval_gates')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('order_id', orderId)
+    .eq('stage_key', stageKey)
+    .eq('status', 'approved')
+    .limit(1);
+  if (gateType) query = query.eq('gate_type', gateType);
+  const { data } = await query.maybeSingle();
+  return Boolean(data?.id);
+}
+
 async function getOrderLines(db: any, organizationId: string, orderId: string) {
   const { data } = await db
     .from('order_lines')
@@ -161,15 +175,15 @@ export async function approveLogisticsDocsGateAction(formData: FormData) {
 }
 
 export async function prepareFinalInvoiceGateAction(formData: FormData) {
-  return updateDocumentGate(formData, 'final_invoice', 'final_invoice', 'prepared');
+  return updateDocumentGate(formData, 'final_invoice', 'dispatch_invoice', 'prepared');
 }
 
 export async function previewFinalInvoiceGateAction(formData: FormData) {
-  return updateDocumentGate(formData, 'final_invoice', 'final_invoice', 'previewed');
+  return updateDocumentGate(formData, 'final_invoice', 'dispatch_invoice', 'previewed');
 }
 
 export async function approveFinalInvoiceGateAction(formData: FormData) {
-  return updateDocumentGate(formData, 'final_invoice', 'final_invoice', 'approved');
+  return updateDocumentGate(formData, 'final_invoice', 'dispatch_invoice', 'approved');
 }
 
 async function updateDocumentGate(formData: FormData, stageKey: string, gateType: string, status: 'prepared' | 'previewed' | 'approved') {
@@ -184,16 +198,22 @@ async function updateDocumentGate(formData: FormData, stageKey: string, gateType
   if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
 
   const lines = await getOrderLines(db, organizationId, order.id);
-  if (!lines.length) redirect(buildRedirect('actual-order-lines-required', quoteId));
-
-  if (status === 'approved' && (gateType === 'logistics_documents' || gateType === 'final_invoice')) {
-    const openRequirements = await ensureRequiredTradeRequirementsReviewed(db, organizationId, order.id, ['trade_requirements', 'logistics', 'docs_release', 'final_invoice']);
-    if (openRequirements.length) redirect(buildRedirect('trade-requirements-open', quoteId));
+  if (!lines.length) redirect(buildRedirect('actual-order-lines-required', order.id));
+  if (stageKey === 'final_invoice' && !await hasApprovedGate(db, organizationId, order.id, 'delivery_note', 'delivery_note')) {
+    redirect(buildRedirect('delivery-note-approval-required', order.id));
   }
 
-  const totalQuantity = lines.reduce((sum: number, line: any) => sum + safeNumber(line.approved_quantity ?? line.ordered_quantity, 0), 0);
+  if (status === 'approved' && (gateType === 'logistics_documents' || gateType === 'dispatch_invoice')) {
+    const openRequirements = await ensureRequiredTradeRequirementsReviewed(db, organizationId, order.id, ['trade_requirements', 'logistics', 'docs_release', 'final_invoice']);
+    if (openRequirements.length) redirect(buildRedirect('trade-requirements-open', order.id));
+  }
+
+  const quantityForDocument = (line: any) => gateType === 'dispatch_invoice'
+    ? safeNumber(line.dispatched_quantity ?? line.loaded_quantity ?? line.packed_quantity ?? line.ordered_quantity, 0)
+    : safeNumber(line.approved_quantity ?? line.ordered_quantity, 0);
+  const totalQuantity = lines.reduce((sum: number, line: any) => sum + quantityForDocument(line), 0);
   const totalValue = lines.reduce((sum: number, line: any) => {
-    const qty = safeNumber(line.dispatched_quantity ?? line.loaded_quantity ?? line.approved_quantity ?? line.ordered_quantity, 0);
+    const qty = quantityForDocument(line);
     const unit = safeNumber(line.unit_price, 0);
     return sum + (unit ? qty * unit : safeNumber(line.line_total, 0));
   }, 0);
@@ -220,7 +240,7 @@ async function updateDocumentGate(formData: FormData, stageKey: string, gateType
     reason: status === 'approved' ? `Human approved ${gateType.replace(/_/g, ' ')} gate.` : null,
     previewSnapshot: snapshot,
   });
-  if (gateError) redirect(buildRedirect('order-gate-update-failed', quoteId));
+  if (gateError) redirect(buildRedirect('order-gate-update-failed', order.id));
 
   if (status === 'prepared') {
     const { data: existingDocument } = await db
@@ -288,7 +308,7 @@ async function updateDocumentGate(formData: FormData, stageKey: string, gateType
 
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
-  redirect(buildRedirect(`${gateType}-${status}`, quoteId));
+  redirect(buildRedirect(`${gateType}-${status}`, order.id));
 }
 
 export async function createShipmentDraftGateAction(formData: FormData) {

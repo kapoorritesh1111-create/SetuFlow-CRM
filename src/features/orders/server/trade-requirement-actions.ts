@@ -8,9 +8,9 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
-function buildRedirect(notice: string, quoteId?: string) {
+function buildRedirect(notice: string, openOrderId?: string) {
   const params = new URLSearchParams({ notice });
-  if (quoteId) params.set('openOrderId', quoteId);
+  if (openOrderId) params.set('openOrderId', openOrderId);
   return `/orders?${params.toString()}`;
 }
 
@@ -239,7 +239,7 @@ export async function searchAndAttachTradeRequirementsAction(formData: FormData)
     .eq('order_id', order.id)
     .order('created_at', { ascending: true });
   const orderLines = Array.isArray(lines) ? lines : [];
-  if (!orderLines.length) redirect(buildRedirect('actual-order-lines-required', quoteId));
+  if (!orderLines.length) redirect(buildRedirect('actual-order-lines-required', order.id));
 
   const { data: rules } = await db
     .from('trade_requirement_rules')
@@ -302,7 +302,7 @@ export async function searchAndAttachTradeRequirementsAction(formData: FormData)
       }));
 
   const { data: inserted, error: insertError } = await db.from('trade_requirements').insert(requirementRows).select('id, requirement_code');
-  if (insertError) redirect(buildRedirect('trade-requirements-error', quoteId));
+  if (insertError) redirect(buildRedirect('trade-requirements-error', order.id));
 
   const insertedRows = Array.isArray(inserted) ? inserted : [];
   const sourceRows = insertedRows.map((row: any) => ({
@@ -349,7 +349,7 @@ export async function searchAndAttachTradeRequirementsAction(formData: FormData)
 
   revalidatePath('/orders');
   if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
-  redirect(buildRedirect('trade-requirements-attached', quoteId));
+  redirect(buildRedirect('trade-requirements-attached', order.id));
 }
 
 export async function confirmTradeRequirementSourceAction(formData: FormData) {
@@ -380,5 +380,5 @@ export async function confirmTradeRequirementSourceAction(formData: FormData) {
 
   await recordOrderStageEvent(db, { organizationId, orderId: order.id, stageKey: 'trade_requirements', eventType: 'trade_requirement_source_confirmed', actorUserId, summary: 'Trade requirement source confirmed by human reviewer.', eventPayload: { requirement_id: requirementId } });
   revalidatePath('/orders');
-  redirect(buildRedirect('trade-requirement-confirmed', quoteId));
+  redirect(buildRedirect('trade-requirement-confirmed', order.id));
 }

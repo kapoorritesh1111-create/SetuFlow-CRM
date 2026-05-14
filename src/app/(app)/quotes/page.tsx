@@ -162,7 +162,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const selected = (selectedQuoteId ? viewModel.items.find(i => i.id === selectedQuoteId) : null) ?? filteredItems[0] ?? viewModel.selectedItem;
   const selectedMode = selected?.leadType === 'buyer' ? 'buyers' : selected?.leadType === 'supplier' ? 'suppliers' : null;
   const selectedApprovalHref = selected ? buildApprovalSendHref({queue:'approvals',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-approval-status'}, selectedMode) : PRODUCT_ROUTES.app.integrations;
-  const selectedOrderHref = selected ? buildOrdersHref({notice:'quote-accepted',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-to-orders',openOrderId:selected.id}, selectedMode) : PRODUCT_ROUTES.app.orders;
+  const selectedOrderHref = selected ? buildOrdersHref({notice:'quote-accepted',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-to-orders',sourceQuoteId:selected.id}, selectedMode) : PRODUCT_ROUTES.app.orders;
   const selectedSendHref = selected ? `/approval-send?quoteId=${encodeURIComponent(selected.id)}` : '/approval-send';
   const closeHref = filters.mode !== 'all' ? `/quotes?mode=${encodeURIComponent(filters.mode)}` : '/quotes';
   const selectedHistory = selected ? (selected.id === viewModel.selectedItem?.id ? viewModel.selectedHistory : buildQuotesPageViewModel({...baseViewModelInput, selectedQuoteId:selected.id}).selectedHistory) : [];
@@ -195,7 +195,11 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     if (!quoteId) redirect('/quotes?notice=quote-order-missing');
     const result = await markQuoteAsDirectOrder(undefined, formData);
     if (result?.error) redirect(`/quotes?quoteId=${quoteId}&notice=quote-order-error`);
-    redirect(`/orders?notice=quote-accepted&quoteId=${quoteId}&openOrderId=${quoteId}`);
+    const params = new URLSearchParams({ notice: 'quote-accepted', quoteId });
+    const orderId = String(result.record?.orderId ?? '').trim();
+    if (orderId) params.set('openOrderId', orderId);
+    else params.set('sourceQuoteId', quoteId);
+    redirect(`/orders?${params.toString()}`);
   }
 
   const approvalQueue = viewModel.items.filter(i => i.status === 'pending_approval');
