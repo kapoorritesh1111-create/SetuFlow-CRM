@@ -20,7 +20,7 @@ function textOf(element?: Element | null) {
 
 function hasCoverageBlocker() {
   const bodyText = document.body?.innerText || '';
-  return /link at least one product|no products mapped|product coverage required|add product coverage|product scope/i.test(bodyText);
+  return /link at least one product|no products mapped|product coverage required|add product coverage|product scope|product & buyer lock/i.test(bodyText);
 }
 
 function legacyDrawerVisible() {
@@ -45,7 +45,7 @@ function findLegacyDrawerCloseButton() {
   const viewportWidth = window.innerWidth || 0;
   return controls
     .map((button) => ({ button, rect: button.getBoundingClientRect() }))
-    .filter(({ rect }) => rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.top < 220 && rect.right > viewportWidth - 220)
+    .filter(({ rect }) => rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.top < 240 && rect.right > viewportWidth - 260)
     .sort((a, b) => a.rect.top - b.rect.top || b.rect.right - a.rect.right)[0]?.button ?? null;
 }
 
@@ -82,36 +82,55 @@ export function LeadCoverageRecoveryBoundary() {
       openResolver();
     };
 
-    const onClick = (event: MouseEvent) => {
+    const handleCoverageEvent = (event: Event) => {
       const target = event.target instanceof HTMLElement ? event.target.closest('button, a') : null;
       const label = textOf(target);
       const isCoverageAction = /open coverage manager|add products|edit products|adjust coverage/i.test(label);
+      if (!isCoverageAction) return false;
+      event.preventDefault();
+      event.stopPropagation();
+      if ('stopImmediatePropagation' in event) event.stopImmediatePropagation();
+      openResolver();
+      window.setTimeout(closeLegacyDrawer, 20);
+      window.setTimeout(closeLegacyDrawer, 80);
+      window.setTimeout(closeLegacyDrawer, 180);
+      window.setTimeout(closeLegacyDrawer, 400);
+      return true;
+    };
 
-      if (isCoverageAction) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        openResolver();
-        window.setTimeout(closeLegacyDrawer, 20);
-        window.setTimeout(closeLegacyDrawer, 80);
-        window.setTimeout(closeLegacyDrawer, 180);
-        window.setTimeout(closeLegacyDrawer, 400);
-        return;
-      }
+    const onPointerDown = (event: PointerEvent) => {
+      handleCoverageEvent(event);
+    };
 
+    const onMouseDown = (event: MouseEvent) => {
+      handleCoverageEvent(event);
+    };
+
+    const onClick = (event: MouseEvent) => {
+      if (handleCoverageEvent(event)) return;
+      const target = event.target instanceof HTMLElement ? event.target.closest('button, a') : null;
+      const label = textOf(target);
       if (/create quote|quote preview|open quote|start quote|create\/open draft preview/i.test(label)) {
         window.setTimeout(openInlineResolverIfBlocked, 250);
         window.setTimeout(openInlineResolverIfBlocked, 900);
       }
     };
 
+    window.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('mousedown', onMouseDown, true);
+    document.addEventListener('mousedown', onMouseDown, true);
     window.addEventListener('click', onClick, true);
     document.addEventListener('click', onClick, true);
     const observer = new MutationObserver(openInlineResolverIfBlocked);
     observer.observe(document.body, { childList: true, subtree: true });
-    const interval = window.setInterval(openInlineResolverIfBlocked, 350);
+    const interval = window.setInterval(openInlineResolverIfBlocked, 250);
 
     return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('mousedown', onMouseDown, true);
+      document.removeEventListener('mousedown', onMouseDown, true);
       window.removeEventListener('click', onClick, true);
       document.removeEventListener('click', onClick, true);
       observer.disconnect();
