@@ -5,6 +5,8 @@ import { InlineCoverageResolverRuntime, openInlineCoverageResolver } from '@/com
 
 type RecoveryState = { visible: boolean; reason: string };
 
+declare global { interface Window { __setuCoverageResolverOpen?: boolean } }
+
 function onLeadsPage() {
   return typeof window !== 'undefined' && window.location.pathname.startsWith('/leads');
 }
@@ -24,11 +26,11 @@ function focusCoverageSummary() {
   const panel = blocks.find((block) => /coverage\s+[-—]\s+product and market mapping/i.test(textOf(block)))
     ?? blocks.find((block) => /products and markets define the commercial scope/i.test(textOf(block)))
     ?? null;
-  if (!panel) return;
-  panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  panel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function openResolver() {
+  window.__setuCoverageResolverOpen = true;
   focusCoverageSummary();
   openInlineCoverageResolver();
 }
@@ -37,7 +39,7 @@ function openResolver() {
  * Deprecated behavior note:
  * Previous versions used this recovery card to click Quick Edit and then move into Coverage.
  * That created a poor SaaS UX because coverage recovery is a focused unblock task, not a full lead-edit task.
- * Keep this component only as the blocker detector/entry point; all recovery now happens in the inline center-panel resolver.
+ * Keep this component only as the blocker detector/last-resort entry point; all recovery now happens in the inline center-panel resolver.
  */
 export function LeadCoverageRecoveryBoundary() {
   const [state, setState] = useState<RecoveryState>({ visible: false, reason: '' });
@@ -53,6 +55,10 @@ export function LeadCoverageRecoveryBoundary() {
   useEffect(() => {
     if (!enabled) return;
     const inspect = () => {
+      if (window.__setuCoverageResolverOpen || document.querySelector('[data-inline-coverage-resolver]')) {
+        setState({ visible: false, reason: '' });
+        return;
+      }
       const bodyText = document.body?.innerText || '';
       if (/link at least one product|no products mapped|product coverage required|add product coverage/i.test(bodyText)) {
         setState({ visible: true, reason: 'Product coverage is required before quote creation. Add product and market coverage inline, then create the quote again.' });
