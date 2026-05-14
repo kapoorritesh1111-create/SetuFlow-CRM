@@ -23,6 +23,11 @@ function hasCoverageBlocker() {
   return /link at least one product|no products mapped|product coverage required|add product coverage|product scope/i.test(bodyText);
 }
 
+function legacyDrawerVisible() {
+  const bodyText = document.body?.innerText || '';
+  return /Edit Lead/i.test(bodyText) && /Lead wizard|Lead basics|Step 1 of 4/i.test(bodyText);
+}
+
 function coverageResolverMounted() {
   return Boolean(window.__setuCoverageResolverOpen || document.querySelector('[data-inline-coverage-resolver]'));
 }
@@ -37,21 +42,18 @@ function findLegacyDrawerCloseButton() {
   const controls = Array.from(document.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('button, a'));
   const textual = controls.find((button) => /^x$|^×$|close|cancel/i.test(textOf(button)) || button.getAttribute('aria-label')?.toLowerCase().includes('close'));
   if (textual) return textual;
-
   const viewportWidth = window.innerWidth || 0;
-  const topRightControls = controls
+  return controls
     .map((button) => ({ button, rect: button.getBoundingClientRect() }))
-    .filter(({ rect }) => rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.top < 180 && rect.right > viewportWidth - 180)
-    .sort((a, b) => a.rect.top - b.rect.top || b.rect.right - a.rect.right);
-
-  return topRightControls[0]?.button ?? null;
+    .filter(({ rect }) => rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.top < 220 && rect.right > viewportWidth - 220)
+    .sort((a, b) => a.rect.top - b.rect.top || b.rect.right - a.rect.right)[0]?.button ?? null;
 }
 
 function closeLegacyDrawer() {
   const redirectAt = window.__setuCoverageRedirectAt ?? 0;
-  if (!redirectAt || Date.now() - redirectAt > 8000) return;
-  const bodyText = document.body?.innerText || '';
-  if (!/Edit Lead/i.test(bodyText) || !/Lead wizard|Lead basics|Step 1 of 4/i.test(bodyText)) return;
+  const recentCoverageAction = Boolean(redirectAt && Date.now() - redirectAt <= 8000);
+  if (!legacyDrawerVisible()) return;
+  if (!recentCoverageAction && !hasCoverageBlocker()) return;
   findLegacyDrawerCloseButton()?.click();
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   window.setTimeout(() => openInlineCoverageResolver(), 80);
@@ -90,9 +92,10 @@ export function LeadCoverageRecoveryBoundary() {
         event.stopPropagation();
         event.stopImmediatePropagation();
         openResolver();
-        window.setTimeout(closeLegacyDrawer, 30);
-        window.setTimeout(closeLegacyDrawer, 120);
-        window.setTimeout(closeLegacyDrawer, 350);
+        window.setTimeout(closeLegacyDrawer, 20);
+        window.setTimeout(closeLegacyDrawer, 80);
+        window.setTimeout(closeLegacyDrawer, 180);
+        window.setTimeout(closeLegacyDrawer, 400);
         return;
       }
 
@@ -106,11 +109,13 @@ export function LeadCoverageRecoveryBoundary() {
     document.addEventListener('click', onClick, true);
     const observer = new MutationObserver(openInlineResolverIfBlocked);
     observer.observe(document.body, { childList: true, subtree: true });
+    const interval = window.setInterval(openInlineResolverIfBlocked, 350);
 
     return () => {
       window.removeEventListener('click', onClick, true);
       document.removeEventListener('click', onClick, true);
       observer.disconnect();
+      window.clearInterval(interval);
     };
   }, [enabled]);
 
