@@ -19,13 +19,7 @@ declare global {
   }
 }
 
-export function CoveragePanel({
-  mapping,
-  onEditCoverage,
-}: {
-  mapping: LeadProfileSnapshot['mapping']
-  onEditCoverage: () => void
-}) {
+export function CoveragePanel({ mapping }: { mapping: LeadProfileSnapshot['mapping'] }) {
   const CoverageIcon = getWorkflowIcon('coverage')
   const OpenIcon = getActionIcon('open')
   const hasMarketCoverage = mapping.marketCount > 0
