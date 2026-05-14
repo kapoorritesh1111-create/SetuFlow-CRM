@@ -27,17 +27,6 @@ function openResolver() {
   openInlineCoverageResolver();
 }
 
-/**
- * Headless bridge for lead quote blockers.
- *
- * Deprecated and removed from this path:
- * - floating bottom-right coverage card
- * - Quick Edit / full lead drawer detour for product mapping
- *
- * Product-grade behavior:
- * - intercept quote Product Scope / Coverage buttons before their old drawer handlers run
- * - open the product-only inline resolver in the current card
- */
 export function LeadCoverageRecoveryBoundary() {
   const [enabled, setEnabled] = useState(false);
   const lastOpenAtRef = useRef(0);
@@ -64,11 +53,12 @@ export function LeadCoverageRecoveryBoundary() {
       const target = event.target instanceof HTMLElement ? event.target.closest('button, a') : null;
       const label = textOf(target);
       const parentText = textOf(target?.closest('section, article, div'));
+      const isCoverageAction = /open coverage manager|add products|edit products|adjust coverage/i.test(label);
+      const isCoverageContext = /product scope|no products mapped|coverage|quote preview|lead tools/i.test(parentText);
 
-      if (/open coverage manager|add products|edit products/i.test(label) && /product scope|no products mapped|coverage|quote preview/i.test(parentText)) {
+      if (isCoverageAction && isCoverageContext) {
         event.preventDefault();
         event.stopPropagation();
-        event.stopImmediatePropagation();
         openResolver();
         return;
       }
