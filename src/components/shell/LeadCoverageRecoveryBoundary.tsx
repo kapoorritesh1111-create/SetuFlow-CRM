@@ -14,15 +14,48 @@ function getCurrentParams() {
   return new URLSearchParams(window.location.search);
 }
 
-function findClickableByText(pattern: RegExp) {
-  const candidates = Array.from(document.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('button, a'));
-  return candidates.find((element) => pattern.test((element.textContent ?? '').replace(/\s+/g, ' ').trim())) ?? null;
+function normalizedText(element: Element | null) {
+  return (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
-function clickCoverageTarget() {
-  const coverage = findClickableByText(/coverage|product.*market|market.*product|edit product coverage|open coverage manager/i);
+function isVisibleElement(element: Element) {
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+}
+
+function focusCoveragePanel() {
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>('section, article, div, main'))
+    .filter((element) => isVisibleElement(element))
+    .filter((element) => /coverage\s+[-—]\s+product and market mapping|products and markets define the commercial scope/i.test(normalizedText(element)));
+  const panel = candidates.sort((a, b) => a.getBoundingClientRect().height - b.getBoundingClientRect().height)[0];
+  if (!panel) return false;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  panel.setAttribute('tabindex', '-1');
+  panel.focus({ preventScroll: true });
+  panel.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2');
+  window.setTimeout(() => panel.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2'), 1800);
+  return true;
+}
+
+function findCoverageOpenControl() {
+  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('button, a'))
+    .filter((element) => isVisibleElement(element));
+  return buttons.find((element) => {
+    const label = normalizedText(element);
+    if (/close panel|dismiss|back to queue/i.test(label)) return false;
+    const containerText = normalizedText(element.closest('section, article, div'));
+    return (/inspect|open coverage|edit coverage|open coverage manager|edit product coverage/i.test(label) && /coverage|product.*market|market.*product/i.test(containerText))
+      || /open coverage manager|edit product coverage/i.test(label);
+  }) ?? null;
+}
+
+function openCoverageTarget() {
+  if (focusCoveragePanel()) return true;
+  const coverage = findCoverageOpenControl();
   if (coverage) {
     coverage.click();
+    window.setTimeout(() => focusCoveragePanel(), 250);
     return true;
   }
   return false;
@@ -61,14 +94,14 @@ export function LeadCoverageRecoveryBoundary() {
     };
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof HTMLElement ? event.target.closest('button, a') : null;
-      const label = target?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+      const label = normalizedText(target);
       if (/create quote|quote preview|open quote|start quote/i.test(label)) {
         window.setTimeout(inspect, 350);
         window.setTimeout(inspect, 1200);
       }
       if (/quick edit|edit lead|open lead/i.test(label)) {
         window.setTimeout(() => {
-          if (/coverage/.test(window.location.search.toLowerCase())) clickCoverageTarget();
+          if (/coverage/.test(window.location.search.toLowerCase())) openCoverageTarget();
         }, 500);
       }
     };
@@ -86,18 +119,23 @@ export function LeadCoverageRecoveryBoundary() {
     if (!enabled || typeof window === 'undefined') return;
     const params = getCurrentParams();
     if (params.get('step') === 'coverage' || params.get('initialStepId') === 'coverage' || params.get('focus') === 'coverage') {
-      window.setTimeout(() => clickCoverageTarget(), 300);
-      window.setTimeout(() => clickCoverageTarget(), 900);
+      window.setTimeout(() => openCoverageTarget(), 300);
+      window.setTimeout(() => openCoverageTarget(), 900);
     }
   }, [enabled]);
 
   if (!enabled || !state.visible) return null;
 
   const openCoverage = () => {
-    setState({ visible: false, reason: '' });
-    if (clickCoverageTarget()) return;
+    if (openCoverageTarget()) {
+      setState({ visible: false, reason: '' });
+      return;
+    }
     updateLeadsCoverageUrl();
-    window.setTimeout(() => clickCoverageTarget(), 500);
+    window.setTimeout(() => {
+      openCoverageTarget();
+      setState({ visible: false, reason: '' });
+    }, 500);
   };
 
   return (
