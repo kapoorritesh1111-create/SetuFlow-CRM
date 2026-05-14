@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { InlineCoverageResolverRuntime, openInlineCoverageResolver } from '@/components/shell/InlineCoverageResolverRuntime';
 
-declare global { interface Window { __setuCoverageResolverOpen?: boolean } }
+declare global {
+  interface Window {
+    __setuCoverageResolverOpen?: boolean;
+    __setuCoverageRedirectAt?: number;
+  }
+}
 
 function onLeadsPage() {
   return typeof window !== 'undefined' && window.location.pathname.startsWith('/leads');
@@ -23,8 +28,20 @@ function coverageResolverMounted() {
 }
 
 function openResolver() {
+  window.__setuCoverageRedirectAt = Date.now();
   window.__setuCoverageResolverOpen = true;
   openInlineCoverageResolver();
+}
+
+function closeLegacyDrawer() {
+  const redirectAt = window.__setuCoverageRedirectAt ?? 0;
+  if (!redirectAt || Date.now() - redirectAt > 6000) return;
+  const bodyText = document.body?.innerText || '';
+  if (!/Edit Lead/i.test(bodyText) || !/Lead wizard|Lead basics|Step 1 of 4/i.test(bodyText)) return;
+  const controls = Array.from(document.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('button, a'));
+  const closeButton = controls.find((button) => /^x$|^×$|close|cancel/i.test(textOf(button)) || button.getAttribute('aria-label')?.toLowerCase().includes('close'));
+  closeButton?.click();
+  window.setTimeout(() => openInlineCoverageResolver(), 80);
 }
 
 export function LeadCoverageRecoveryBoundary() {
@@ -42,6 +59,7 @@ export function LeadCoverageRecoveryBoundary() {
     if (!enabled) return;
 
     const openInlineResolverIfBlocked = () => {
+      closeLegacyDrawer();
       if (!hasCoverageBlocker() || coverageResolverMounted()) return;
       const now = Date.now();
       if (now - lastOpenAtRef.current < 1200) return;
@@ -58,6 +76,8 @@ export function LeadCoverageRecoveryBoundary() {
         event.preventDefault();
         event.stopPropagation();
         openResolver();
+        window.setTimeout(closeLegacyDrawer, 50);
+        window.setTimeout(closeLegacyDrawer, 250);
         return;
       }
 
