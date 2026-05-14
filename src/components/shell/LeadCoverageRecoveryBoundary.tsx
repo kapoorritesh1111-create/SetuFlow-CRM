@@ -52,11 +52,9 @@ export function LeadCoverageRecoveryBoundary() {
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof HTMLElement ? event.target.closest('button, a') : null;
       const label = textOf(target);
-      const parentText = textOf(target?.closest('section, article, div'));
       const isCoverageAction = /open coverage manager|add products|edit products|adjust coverage/i.test(label);
-      const isCoverageContext = /product scope|no products mapped|coverage|quote preview|lead tools/i.test(parentText);
 
-      if (isCoverageAction && isCoverageContext) {
+      if (isCoverageAction) {
         event.preventDefault();
         event.stopPropagation();
         openResolver();
@@ -69,11 +67,13 @@ export function LeadCoverageRecoveryBoundary() {
       }
     };
 
+    window.addEventListener('click', onClick, true);
     document.addEventListener('click', onClick, true);
     const observer = new MutationObserver(openInlineResolverIfBlocked);
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
+      window.removeEventListener('click', onClick, true);
       document.removeEventListener('click', onClick, true);
       observer.disconnect();
     };
