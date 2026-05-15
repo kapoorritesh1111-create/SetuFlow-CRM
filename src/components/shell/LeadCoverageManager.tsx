@@ -33,7 +33,10 @@ async function fetchCoverage(leadId?: string | null, companyName?: string | null
   const params = new URLSearchParams();
   if (leadId) params.set('leadId', leadId);
   // Temporary legacy fallback only. Normal UI flows should pass leadId.
-  if (!leadId && companyName) params.set('company', companyName);
+  if (!leadId && companyName) {
+    params.set('company', companyName);
+    params.set('legacyCompanyFallback', '1');
+  }
 
   const response = await fetch(`/api/leads/coverage-resolver?${params.toString()}`, { cache: 'no-store' });
   const payload = await response.json().catch(() => ({}));
