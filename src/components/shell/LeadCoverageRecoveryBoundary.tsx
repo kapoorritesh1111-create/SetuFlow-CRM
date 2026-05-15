@@ -11,6 +11,8 @@ declare global {
   }
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function onLeadsPage() {
   return typeof window !== 'undefined' && window.location.pathname.startsWith('/leads');
 }
@@ -28,6 +30,17 @@ function cleanCompany(value?: string | null) {
   return candidate;
 }
 
+function readSelectedLeadIdFromPage() {
+  if (typeof document === 'undefined') return '';
+  if (window.__setuCoverageResolverLeadId && UUID_PATTERN.test(window.__setuCoverageResolverLeadId)) return window.__setuCoverageResolverLeadId;
+  const selects = Array.from(document.querySelectorAll<HTMLSelectElement>('#app-content select, select'));
+  for (const select of selects) {
+    const value = String(select.value ?? '').trim();
+    if (UUID_PATTERN.test(value)) return value;
+  }
+  return '';
+}
+
 function extractCompanyFromSelectedHero(scope: ParentNode) {
   const headings = Array.from(scope.querySelectorAll<HTMLElement>('h1, h2, h3, [class*="company-name"]'))
     .map((node) => cleanCompany(textOf(node)))
@@ -36,10 +49,6 @@ function extractCompanyFromSelectedHero(scope: ParentNode) {
   if (heading) return heading;
 
   const text = textOf(scope as Element);
-
-  // Lead hero DOM usually reads like:
-  // "Setu Groups buyer · Owner: Ritesh Kapoor · Source: ..."
-  // or "Setu Groups buyer · Ritesh Kapoor · North America · New Lead".
   const heroPatterns = [
     /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+·\s+Owner:/i,
     /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+·\s+[^·]{2,60}\s+·\s+[^·]{2,60}/i,
@@ -66,12 +75,16 @@ function extractCompanyFromQuoteContext(scope: ParentNode) {
 
 function primeCoverageContext(target: HTMLElement | null) {
   if (typeof window === 'undefined') return;
+
+  const selectedLeadId = readSelectedLeadIdFromPage();
+  if (selectedLeadId) {
+    window.__setuCoverageResolverLeadId = selectedLeadId;
+    window.__setuCoverageResolverCompany = '';
+    return;
+  }
+
   const workspace = target?.closest('#inline-lead-workspace') ?? document.querySelector('#inline-lead-workspace');
   const scope = workspace ?? document.body;
-
-  // This fallback is only for old inline workspace coverage buttons. The new
-  // direct manager path should pass leadId. Clear stale lead IDs but provide a
-  // reliable company fallback so legacy buttons can still load product/market data.
   window.__setuCoverageResolverLeadId = '';
 
   const company = extractCompanyFromSelectedHero(scope) || extractCompanyFromQuoteContext(scope);
@@ -97,6 +110,15 @@ export function LeadCoverageRecoveryBoundary() {
   useEffect(() => {
     if (!enabled) return;
 
+    const rememberLeadId = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLSelectElement)) return;
+      const value = String(target.value ?? '').trim();
+      if (!UUID_PATTERN.test(value)) return;
+      window.__setuCoverageResolverLeadId = value;
+      window.__setuCoverageResolverCompany = '';
+    };
+
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof HTMLElement ? event.target.closest('button, a') as HTMLElement | null : null;
       if (!target || !target.closest('#inline-lead-workspace')) return;
@@ -109,8 +131,12 @@ export function LeadCoverageRecoveryBoundary() {
       openResolver(target);
     };
 
+    document.addEventListener('change', rememberLeadId, true);
     document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
+    return () => {
+      document.removeEventListener('change', rememberLeadId, true);
+      document.removeEventListener('click', onClick, true);
+    };
   }, [enabled]);
 
   if (!enabled) return null;
