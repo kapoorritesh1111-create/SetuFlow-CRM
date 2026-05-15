@@ -72,14 +72,10 @@ function getLeadIdFromLocation() {
 
 function candidateFromBuyerContextText(text: string) {
   const normal = text.replace(/\s+/g, ' ').trim();
-
-  // Common two-column grid DOM order: labels first, then values.
-  // Example: BUYER CONTEXT Company Lead type Market Currency Setu Groups buyer North America USD
   const gridMatch = normal.match(/company\s+lead type\s+market\s+currency\s+(.+?)\s+(buyer|supplier)\s+/i);
   const gridCandidate = cleanCompanyCandidate(gridMatch?.[1]);
   if (gridCandidate) return gridCandidate;
 
-  // Common linear DOM order: label followed by value.
   const linearMatch = normal.match(/company\s+(.+?)\s+(lead type|market|currency)\b/i);
   const linearCandidate = cleanCompanyCandidate(linearMatch?.[1]);
   if (linearCandidate) return linearCandidate;
@@ -177,6 +173,7 @@ function InlineCoverageResolver({ onClose }: { onClose: () => void }) {
   const [productIds, setProductIds] = useState<string[]>([]);
   const [marketIds, setMarketIds] = useState<string[]>([]);
   const [query, setQuery] = useState('');
+  const [productSelectValue, setProductSelectValue] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -202,20 +199,31 @@ function InlineCoverageResolver({ onClose }: { onClose: () => void }) {
 
   const marketsAlreadyMapped = (data?.selectedMarketIds?.length ?? 0) > 0;
   const selectedMarketNames = useMemo(() => (data?.markets ?? []).filter((market) => marketIds.includes(market.id)).map((market) => market.name), [data?.markets, marketIds]);
-  const pricedProducts = useMemo(() => (data?.products ?? []).filter((product) => product.hasPricing), [data?.products]);
+  const products = data?.products ?? [];
+  const selectedProducts = useMemo(() => products.filter((product) => productIds.includes(product.id)), [productIds, products]);
+  const pricedProducts = useMemo(() => products.filter((product) => product.hasPricing), [products]);
   const filteredProducts = useMemo(() => {
     const value = query.trim().toLowerCase();
-    const source = value ? (data?.products ?? []) : (pricedProducts.length ? pricedProducts : data?.products ?? []);
+    const source = value ? products : (pricedProducts.length ? pricedProducts : products);
     return source
+      .filter((product) => !productIds.includes(product.id))
       .filter((product) => !value || `${product.name} ${product.sku ?? ''}`.toLowerCase().includes(value))
       .sort((a, b) => Number(Boolean(b.hasPricing)) - Number(Boolean(a.hasPricing)) || a.name.localeCompare(b.name))
-      .slice(0, 24);
-  }, [data?.products, pricedProducts, query]);
+      .slice(0, 80);
+  }, [pricedProducts, productIds, products, query]);
 
-  const toggleProduct = (id: string) => {
+  const addProduct = (id: string) => {
+    if (!id) return;
     setError('');
     setSuccess('');
-    setProductIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+    setProductIds((current) => current.includes(id) ? current : [...current, id]);
+    setProductSelectValue('');
+  };
+
+  const removeProduct = (id: string) => {
+    setError('');
+    setSuccess('');
+    setProductIds((current) => current.filter((item) => item !== id));
   };
 
   const toggleMarket = (id: string) => {
@@ -261,13 +269,12 @@ function InlineCoverageResolver({ onClose }: { onClose: () => void }) {
       <section className="rounded-2xl border border-slate-200 bg-white p-3">
         <div className="flex items-center justify-between gap-3"><label className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Products</label><span className="text-xs font-bold text-slate-500">{productIds.length} selected</span></div>
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products or SKU..." className="mt-2 h-10 w-full rounded-2xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-400" />
-        <div className="mt-3 grid max-h-72 gap-2 overflow-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
-          {filteredProducts.map((product) => {
-            const checked = productIds.includes(product.id);
-            return <button key={product.id} type="button" onClick={() => toggleProduct(product.id)} className={`rounded-2xl border px-3 py-2 text-left transition ${checked ? 'border-blue-400 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-200'}`}><span className="block truncate text-sm font-bold text-slate-950">{product.name}</span><span className="mt-1 flex flex-wrap gap-2 text-[11px] text-slate-500">{product.sku ? <span>SKU {product.sku}</span> : null}<span className={product.hasPricing ? 'text-emerald-700' : 'text-amber-700'}>{product.hasPricing ? 'Pricing ready' : 'Needs pricing'}</span></span></button>;
-          })}
-          {!filteredProducts.length ? <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm font-semibold text-slate-500 sm:col-span-2 xl:col-span-3">No catalog products found for this workspace. Check Product Management if this looks wrong.</div> : null}
-        </div>
+        <select value={productSelectValue} onChange={(event) => { setProductSelectValue(event.target.value); addProduct(event.target.value); }} className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400">
+          <option value="">Select product...</option>
+          {filteredProducts.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ''}{product.hasPricing ? ' · Pricing ready' : ' · Needs pricing'}</option>)}
+        </select>
+        {selectedProducts.length ? <div className="mt-3 flex flex-wrap gap-2">{selectedProducts.map((product) => <span key={product.id} className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800"><span>{product.name}</span>{product.sku ? <span className="text-blue-500">{product.sku}</span> : null}<button type="button" onClick={() => removeProduct(product.id)} className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-black text-blue-700">Remove</button></span>)}</div> : null}
+        {!filteredProducts.length && !selectedProducts.length ? <div className="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-sm font-semibold text-slate-500">No catalog products found for this workspace. Check Product Management if this looks wrong.</div> : null}
       </section>
 
       {!marketsAlreadyMapped ? <section className="rounded-2xl border border-slate-200 bg-white p-3"><div className="flex items-center justify-between gap-3"><label className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Market</label><span className="text-xs font-bold text-slate-500">{marketIds.length} selected</span></div><div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-auto pr-1">{(data?.markets ?? []).map((market) => { const checked = marketIds.includes(market.id); return <button key={market.id} type="button" onClick={() => toggleMarket(market.id)} className={`rounded-full border px-3 py-2 text-xs font-bold transition ${checked ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200'}`}>{market.name}</button>; })}</div></section> : null}
