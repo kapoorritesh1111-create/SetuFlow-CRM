@@ -3,6 +3,7 @@
 import React from 'react';
 import NewMarketForm from './NewMarketForm';
 import { checkboxClassName } from '@/components/ui/checkbox';
+import { LeadCoverageManager } from '@/components/shell/LeadCoverageManager';
 
 type Product = { id: string; name: string; sku: string | null; category_id: string | null };
 type ProductCategory = { id: string; name: string; is_active?: boolean; sort_order?: number; parent_id?: string | null };
@@ -46,6 +47,25 @@ interface ProductMarketsSectionProps {
   onAddMarket: () => void;
 }
 
+function useLeadContextFromDrawerForm() {
+  const [leadContext, setLeadContext] = React.useState<{ leadId: string; companyName: string }>({ leadId: '', companyName: '' });
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const sync = () => {
+      const leadId = String((document.querySelector('input[name="lead_id"]') as HTMLInputElement | null)?.value ?? '').trim();
+      const companyName = String((document.querySelector('input[name="company_name"]') as HTMLInputElement | null)?.value ?? '').trim();
+      setLeadContext({ leadId, companyName });
+    };
+
+    sync();
+    const frame = window.requestAnimationFrame(sync);
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  return leadContext;
+}
 
 export default function ProductMarketsSection({
   categoryTree,
@@ -72,11 +92,46 @@ export default function ProductMarketsSection({
   showInterestSelectors = true,
   onAddMarket,
 }: ProductMarketsSectionProps) {
+  const { leadId, companyName } = useLeadContextFromDrawerForm();
   const selectedCountry = countries.find((country) => country.id === countryId) ?? null;
   const countryLinkedMarket = selectedCountry?.market_id ?? null;
   const availableMarkets = countryLinkedMarket
     ? markets.filter((market) => market.id !== countryLinkedMarket)
     : markets;
+
+  if (showInterestSelectors && leadId) {
+    return (
+      <section className="rounded-3xl border border-slate-200 p-4">
+        <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">Coverage manager</p>
+          <h3 className="mt-2 text-base font-bold text-slate-950">Manage product coverage for this lead</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            This step now uses the selected lead ID directly. Product and market coverage are saved through the coverage resolver, not the legacy Quick Edit product/category form.
+          </p>
+        </div>
+
+        <div className="mt-4 rounded-[24px] border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm">
+          <LeadCoverageManager leadId={leadId} companyName={companyName || null} />
+        </div>
+
+        <div className="mt-4 space-y-4">
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes</span>
+            <textarea
+              name="notes"
+              value={notesValue}
+              onChange={(event) => onNotesChange(event.target.value)}
+              rows={4}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+            />
+          </label>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Legacy category/product checkboxes are deprecated for existing leads. Use the coverage manager above so quote builder receives saved lead_product_interests from the selected lead ID.
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-3xl border border-slate-200 p-4">
