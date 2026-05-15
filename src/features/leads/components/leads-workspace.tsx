@@ -26,6 +26,7 @@ import { CollapsiblePanel } from '@/components/ui/collapsible-panel';
 import { workspaceInsetClass, workspaceTableShellClass } from '@/components/ui/workspace-surfaces';
 import { buildTodayLayerState } from '@/features/workspace/today';
 import { LeadTableRow, LeadTableHeader, type LeadTableRowProps } from '@/features/leads/ui/lead-table-row';
+import { InlineCoverageResolverRuntime, openInlineCoverageResolver } from '@/components/shell/InlineCoverageResolverRuntime';
 import type { LeadDrawerLead, LeadDrawerSavePayload, LeadsWorkspaceProps } from '@/features/leads/types/workspace';
 import type {
   TodayFilterKey,
@@ -1421,6 +1422,7 @@ export function LeadsWorkspace({
 
   return (
     <div className="mobile-premium-leads flex flex-col">
+      <InlineCoverageResolverRuntime />
       {inlineNoticeDescription ? (
         <NoticeToast title={inlineNoticeTitle} description={inlineNoticeDescription} tone={inlineActionState.error ? 'danger' : 'success'} />
       ) : null}
@@ -1984,7 +1986,7 @@ function InlineLeadWorkspace({
           onRejectQuoteAdjustment={onRejectQuoteAdjustment}
           onMarkDirectOrder={onMarkDirectOrder}
           onOpenCommandCenter={onOpenCommandCenter}
-          onOpenCoverageManager={() => onOpenEditDrawer(lead.id, 'coverage')}
+          onOpenCoverageManager={() => openInlineCoverageResolver(lead.id)}
         />
       ) : (
         <InlineCommandCenter
@@ -2323,7 +2325,7 @@ function InlineCommandCenter({
                 ) : activePillar === 'coverage' ? (
                   <div>
                     <p className="text-[12px] text-[#64748b] leading-[1.6] mb-3">Products and markets define the commercial scope of this lead.</p>
-                    <button type="button" onClick={() => onOpenEditDrawer(lead.id, 'coverage')}
+                    <button type="button" onClick={() => openInlineCoverageResolver(lead.id)}
                       className="mb-3 rounded-[6px] bg-[#0b2e4a] px-[14px] py-[7px] text-[12px] font-bold text-white">
                       Open coverage manager
                     </button>
