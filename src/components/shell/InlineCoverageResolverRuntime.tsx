@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { LeadCoverageManager } from '@/components/shell/LeadCoverageManager';
 
@@ -27,6 +27,15 @@ function area(element: HTMLElement) {
   return rect.width * rect.height;
 }
 
+function cleanCompany(value?: string | null) {
+  const candidate = String(value ?? '')
+    .replace(/^[\s:·\-/—]+|[\s:·\-/—]+$/g, '')
+    .trim();
+  if (!candidate || candidate.length > 90) return '';
+  if (/next move|lead queue|hot list|coverage|commercial|qualification|follow-up|quick edit|create quote|open coverage manager|stage progress|deal value|scheduled actions|product required|quote preview|trade command center|command center|buyer context|product scope/i.test(candidate)) return '';
+  return candidate;
+}
+
 function findResolverPanel() {
   const blocks = Array.from(document.querySelectorAll<HTMLElement>('section, article, div')).filter(visible);
   const productScope = blocks
@@ -38,6 +47,33 @@ function findResolverPanel() {
     .filter((block) => /coverage\s+[-—]\s+product and market mapping|products and markets define the commercial scope/i.test(textOf(block)))
     .sort((a, b) => area(a) - area(b))[0];
   return coverage ?? null;
+}
+
+function inferCompanyFromWorkspace(mount?: HTMLElement | null) {
+  const workspace = mount?.closest('#inline-lead-workspace') ?? document.querySelector('#inline-lead-workspace') ?? document.body;
+  const text = textOf(workspace);
+
+  // Quote Product step renders a structured Buyer Context grid:
+  // Company <value> Lead type buyer Market North America Currency USD.
+  const buyerContextPattern = /buyer context\s+company\s+(.+?)\s+lead type\s+(buyer|supplier)\s+market\s+/i;
+  const buyerContextCompany = cleanCompany(text.match(buyerContextPattern)?.[1]);
+  if (buyerContextCompany) return buyerContextCompany;
+
+  // Command Center hero can render with or without literal "Owner:".
+  const heroPatterns = [
+    /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+·\s+Owner:/i,
+    /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+·\s+[^·]{2,60}\s+·\s+[^·]{2,60}/i,
+    /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+Owner:/i,
+  ];
+  for (const pattern of heroPatterns) {
+    const company = cleanCompany(text.match(pattern)?.[1]);
+    if (company) return company;
+  }
+
+  const headings = Array.from(workspace.querySelectorAll<HTMLElement>('h1, h2, h3, [class*="company-name"]'))
+    .map((node) => cleanCompany(textOf(node)))
+    .filter(Boolean);
+  return headings.find((heading) => !/follow-up|quote preview|product|required/i.test(heading)) ?? '';
 }
 
 function ensureResolverMount() {
@@ -54,6 +90,11 @@ function ensureResolverMount() {
   if (anchor?.nextSibling) panel.insertBefore(mount, anchor.nextSibling);
   else if (anchor) panel.appendChild(mount);
   else panel.appendChild(mount);
+
+  const inferredCompany = inferCompanyFromWorkspace(mount);
+  if (!window.__setuCoverageResolverLeadId && inferredCompany) {
+    window.__setuCoverageResolverCompany = inferredCompany;
+  }
 
   mount.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   return mount;
@@ -76,13 +117,18 @@ export function InlineCoverageResolverRuntime() {
     return () => window.removeEventListener('setu:open-inline-coverage-resolver', open);
   }, []);
 
+  const resolvedCompany = useMemo(() => {
+    if (!mount) return '';
+    return window.__setuCoverageResolverCompany || inferCompanyFromWorkspace(mount);
+  }, [mount, version]);
+
   if (!mount) return null;
 
   return createPortal(
     <LeadCoverageManager
       key={version}
       leadId={window.__setuCoverageResolverLeadId || null}
-      companyName={window.__setuCoverageResolverCompany || null}
+      companyName={resolvedCompany || null}
       onClose={() => {
         window.__setuCoverageResolverOpen = false;
         mount.remove();
