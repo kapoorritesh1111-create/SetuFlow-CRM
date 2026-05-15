@@ -38,6 +38,10 @@ async function fetchCoverage(leadId?: string | null, companyName?: string | null
     params.set('legacyCompanyFallback', '1');
   }
 
+  if (![...params.keys()].length) {
+    throw new Error('Lead context is missing. Open coverage from a selected lead or quote workspace.');
+  }
+
   const response = await fetch(`/api/leads/coverage-resolver?${params.toString()}`, { cache: 'no-store' });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error || 'Could not load lead coverage.');
@@ -68,9 +72,21 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
+    const hasContext = Boolean(leadId || companyName);
+    setLoading(hasContext);
     setError('');
     setSuccess('');
+
+    if (!hasContext) {
+      setData(null);
+      setProductIds([]);
+      setMarketIds([]);
+      setLoading(false);
+      setError('Lead context is missing. Use Coverage from a selected lead, not a generic page action.');
+      return () => {
+        active = false;
+      };
+    }
 
     fetchCoverage(leadId, companyName)
       .then((nextData) => {
@@ -183,7 +199,7 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
           <span className="text-xs font-bold text-slate-500">{productIds.length} selected</span>
         </div>
         <div className="relative mt-2">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products or SKU..." className="h-10 w-full rounded-2xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-400" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} disabled={!data?.lead?.id} placeholder="Search products or SKU..." className="h-10 w-full rounded-2xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-400 disabled:bg-slate-50 disabled:text-slate-400" />
           {query.trim() ? (
             <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-y-auto rounded-2xl border border-blue-100 bg-white p-1 shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
               {suggestions.length ? suggestions.map((product) => (
@@ -198,7 +214,7 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
             </div>
           ) : null}
         </div>
-        <select value={selectValue} onChange={(event) => { setSelectValue(event.target.value); addProduct(event.target.value); }} className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400">
+        <select value={selectValue} disabled={!data?.lead?.id} onChange={(event) => { setSelectValue(event.target.value); addProduct(event.target.value); }} className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 disabled:bg-slate-50 disabled:text-slate-400">
           <option value="">Select product...</option>
           {filteredProducts.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ''}{product.hasPricing ? ' · Pricing ready' : ' · Needs pricing'}</option>)}
         </select>
@@ -213,10 +229,10 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
             ))}
           </div>
         ) : null}
-        {!filteredProducts.length && !selectedProducts.length ? <div className="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-sm font-semibold text-slate-500">No catalog products found for this workspace. Check Product Management if this looks wrong.</div> : null}
+        {!filteredProducts.length && !selectedProducts.length && data?.lead?.id ? <div className="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-sm font-semibold text-slate-500">No catalog products found for this workspace. Check Product Management if this looks wrong.</div> : null}
       </section>
 
-      {!marketsAlreadyMapped ? (
+      {!marketsAlreadyMapped && data?.lead?.id ? (
         <section className="rounded-2xl border border-slate-200 bg-white p-3">
           <div className="flex items-center justify-between gap-3">
             <label className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Market</label>
@@ -232,8 +248,8 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
       ) : null}
 
       <div className="sticky bottom-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
-        <div className="text-sm text-slate-600"><strong className="text-slate-950">{productIds.length}</strong> product{productIds.length === 1 ? '' : 's'}{marketsAlreadyMapped ? ' selected' : <> · <strong className="text-slate-950">{marketIds.length}</strong> market{marketIds.length === 1 ? '' : 's'}</>}</div>
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save products and unlock quote'}</button>
+        <div className="text-sm text-slate-600"><strong className="text-slate-950">{productIds.length}</strong> product{productIds.length === 1 ? '' : 's'}{marketsAlreadyMapped ? ' selected' : data?.lead?.id ? <> · <strong className="text-slate-950">{marketIds.length}</strong> market{marketIds.length === 1 ? '' : 's'}</> : null}</div>
+        <button type="button" onClick={handleSave} disabled={saving || !data?.lead?.id} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save products and unlock quote'}</button>
       </div>
     </div>
   );
