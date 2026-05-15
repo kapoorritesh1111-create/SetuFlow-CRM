@@ -11,7 +11,7 @@ function escapeIlike(value: string) {
   return value.replace(/[\\%_]/g, (match) => `\\${match}`);
 }
 
-async function resolveLead(admin: any, organizationId: string, leadId?: string, company?: string) {
+async function resolveLead(admin: any, organizationId: string, leadId?: string, company?: string, allowCompanyFallback = false) {
   const normalizedLeadId = clean(leadId);
   const normalizedCompany = clean(company).replace(/\s+/g, ' ');
 
@@ -25,14 +25,10 @@ async function resolveLead(admin: any, organizationId: string, leadId?: string, 
     return { lead: data ?? null, error };
   }
 
-  if (!normalizedCompany) return { lead: null, error: null };
+  if (!allowCompanyFallback || !normalizedCompany) return { lead: null, error: null };
 
   const escapedCompany = escapeIlike(normalizedCompany);
-  const patterns = [
-    normalizedCompany,
-    `${escapedCompany}%`,
-    `%${escapedCompany}%`,
-  ];
+  const patterns = [normalizedCompany, `${escapedCompany}%`, `%${escapedCompany}%`];
 
   for (const pattern of patterns) {
     const { data, error } = await admin
@@ -68,9 +64,10 @@ export async function GET(request: NextRequest) {
 
   const organizationId = workspace.organization.id;
   const searchParams = request.nextUrl.searchParams;
-  const { lead, error: leadError } = await resolveLead(admin, organizationId, searchParams.get('leadId') ?? '', searchParams.get('company') ?? '');
+  const allowCompanyFallback = searchParams.get('legacyCompanyFallback') === '1';
+  const { lead, error: leadError } = await resolveLead(admin, organizationId, searchParams.get('leadId') ?? '', searchParams.get('company') ?? '', allowCompanyFallback);
   if (leadError) return NextResponse.json({ error: leadError.message }, { status: 500 });
-  if (!lead?.id) return NextResponse.json({ error: 'Could not resolve the active lead for coverage editing.' }, { status: 404 });
+  if (!lead?.id) return NextResponse.json({ error: 'Could not resolve the active lead for coverage editing. Lead ID is required for normal coverage workflows.' }, { status: 404 });
 
   const [{ data: products, error: productsError }, { data: markets, error: marketsError }, { data: selectedProducts, error: selectedProductsError }, { data: selectedMarkets, error: selectedMarketsError }, { data: pricingRules, error: pricingError }] = await Promise.all([
     admin
@@ -149,7 +146,7 @@ export async function POST(request: NextRequest) {
   if (!productIds.length) return NextResponse.json({ error: 'Select at least one product.' }, { status: 400 });
   if (!marketIds.length) return NextResponse.json({ error: 'Select at least one market.' }, { status: 400 });
 
-  const { lead, error: leadError } = await resolveLead(admin, organizationId, leadId, '');
+  const { lead, error: leadError } = await resolveLead(admin, organizationId, leadId, '', false);
   if (leadError) return NextResponse.json({ error: leadError.message }, { status: 500 });
   if (!lead?.id) return NextResponse.json({ error: 'Lead not found.' }, { status: 404 });
 
@@ -169,7 +166,7 @@ export async function POST(request: NextRequest) {
   if (deleteProductError || deleteMarketError) return NextResponse.json({ error: deleteProductError?.message || deleteMarketError?.message }, { status: 500 });
 
   const [{ error: insertProductError }, { error: insertMarketError }] = await Promise.all([
-    admin.from('lead_product_interests').insert(productIds.map((productId) => ({ organization_id: organizationId, lead_id: leadId, product_id: productId, interest_type: 'confirmed_product', source_context: { source: 'inline_coverage_resolver' } }))),
+    admin.from('lead_product_interests').insert(productIds.map((productId) => ({ organization_id: organizationId, lead_id: leadId, product_id: productId, interest_type: 'confirmed_product', source_context: { source: 'lead_coverage_manager' } }))),
     admin.from('lead_markets').insert(marketIds.map((marketId) => ({ organization_id: organizationId, lead_id: leadId, market_id: marketId }))),
   ]);
   if (insertProductError || insertMarketError) return NextResponse.json({ error: insertProductError?.message || insertMarketError?.message }, { status: 500 });
@@ -179,7 +176,7 @@ export async function POST(request: NextRequest) {
     lead_id: leadId,
     actor_user_id: workspace.user?.id ?? null,
     kind: 'coverage_updated',
-    message: `Coverage updated from inline resolver: ${productIds.length} product${productIds.length === 1 ? '' : 's'} and ${marketIds.length} market${marketIds.length === 1 ? '' : 's'} mapped.`,
+    message: `Coverage updated from lead coverage manager: ${productIds.length} product${productIds.length === 1 ? '' : 's'} and ${marketIds.length} market${marketIds.length === 1 ? '' : 's'} mapped.`,
     occurred_at: new Date().toISOString(),
   }).then(() => null);
 
