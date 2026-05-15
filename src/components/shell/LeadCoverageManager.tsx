@@ -7,75 +7,8 @@ type MarketOption = { id: string; name: string };
 type ResolverData = { lead: { id: string; company_name: string; lead_type?: string | null }; products: ProductOption[]; markets: MarketOption[]; selectedProductIds: string[]; selectedMarketIds: string[] };
 type LeadCoverageManagerProps = { leadId?: string | null; companyName?: string | null; onClose?: () => void; onSaved?: () => void };
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function cleanCandidate(value?: string | null) {
-  const next = String(value ?? '').replace(/^[-: .]+|[-: .]+$/g, '').trim();
-  if (!next || next.length > 96) return '';
-  if (/next move|lead queue|coverage|commercial|qualification|follow-up|quick edit|create quote|open coverage|stage progress|product required|quote preview|command center|buyer context|product scope|save products/i.test(next)) return '';
-  return next;
-}
-
-function compactText(node?: Element | Document | null) {
-  return (node?.textContent || '').replace(/\s+/g, ' ').trim();
-}
-
-function deriveLeadIdFromPage() {
-  if (typeof document === 'undefined') return '';
-
-  const inlineWorkspace = document.querySelector('#inline-lead-workspace');
-  const searchScopes = [inlineWorkspace?.parentElement, document.querySelector('#app-content'), document.body].filter(Boolean) as Element[];
-
-  for (const scope of searchScopes) {
-    const selects = Array.from(scope.querySelectorAll<HTMLSelectElement>('select'));
-    for (const select of selects) {
-      const value = String(select.value ?? '').trim();
-      if (!UUID_PATTERN.test(value)) continue;
-      const selectedText = select.selectedOptions?.[0]?.textContent ?? '';
-      const nearbyText = compactText(select.closest('div') ?? select.parentElement ?? select);
-      const looksLikeLeadSelector = /lead|company|buyer|supplier|codex|setu|cape|health|test/i.test(`${selectedText} ${nearbyText}`);
-      if (looksLikeLeadSelector) return value;
-    }
-  }
-
-  const urlMatch = window.location.pathname.match(/\/leads\/([0-9a-f-]{36})/i);
-  if (urlMatch?.[1] && UUID_PATTERN.test(urlMatch[1])) return urlMatch[1];
-
-  return '';
-}
-
-function deriveCompanyFromPage() {
-  if (typeof document === 'undefined') return '';
-  const scopes = [document.querySelector('#inline-lead-workspace'), document.body].filter(Boolean) as Element[];
-  for (const scope of scopes) {
-    const text = compactText(scope);
-    const lower = text.toLowerCase();
-    const marker = 'buyer context company lead type market currency ';
-    const markerAt = lower.indexOf(marker);
-    if (markerAt >= 0) {
-      const rest = text.slice(markerAt + marker.length);
-      const match = rest.match(/^(.+?)\s+(buyer|supplier)\s+/i);
-      const candidate = cleanCandidate(match?.[1]);
-      if (candidate) return candidate;
-    }
-    const paired = text.match(/buyer context\s+company\s+(.+?)\s+lead type\s+(buyer|supplier)\s+market\s+/i);
-    const pairedCandidate = cleanCandidate(paired?.[1]);
-    if (pairedCandidate) return pairedCandidate;
-    const hero = text.match(/([A-Za-z0-9][A-Za-z0-9 &'.,()\-]{1,96}?)\s+(buyer|supplier)\s+/i);
-    const heroCandidate = cleanCandidate(hero?.[1]);
-    if (heroCandidate) return heroCandidate;
-  }
-  return '';
-}
-
-async function fetchCoverage(leadId?: string | null, companyName?: string | null) {
-  const params = new URLSearchParams();
-  if (leadId) params.set('leadId', leadId);
-  if (!leadId && companyName) {
-    params.set('company', companyName);
-    params.set('legacyCompanyFallback', '1');
-  }
-  if (![...params.keys()].length) throw new Error('Lead context is missing. Use Coverage from a selected lead, not a generic page action.');
+async function fetchCoverage(leadId: string) {
+  const params = new URLSearchParams({ leadId });
   const response = await fetch(`/api/leads/coverage-resolver?${params.toString()}`, { cache: 'no-store' });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error || 'Could not load lead coverage.');
@@ -89,8 +22,8 @@ async function saveCoverage(leadId: string, productIds: string[], marketIds: str
   return payload;
 }
 
-export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: LeadCoverageManagerProps) {
-  const [loading, setLoading] = useState(true);
+export function LeadCoverageManager({ leadId, onClose, onSaved }: LeadCoverageManagerProps) {
+  const [loading, setLoading] = useState(Boolean(leadId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -102,20 +35,21 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
 
   useEffect(() => {
     let active = true;
-    const resolvedLeadId = leadId || deriveLeadIdFromPage();
-    const resolvedCompany = resolvedLeadId ? '' : companyName || deriveCompanyFromPage();
-    setLoading(Boolean(resolvedLeadId || resolvedCompany));
+    const resolvedLeadId = String(leadId ?? '').trim();
+    setLoading(Boolean(resolvedLeadId));
     setError('');
     setSuccess('');
-    if (!resolvedLeadId && !resolvedCompany) {
+
+    if (!resolvedLeadId) {
       setData(null);
       setProductIds([]);
       setMarketIds([]);
       setLoading(false);
-      setError('Lead context is missing. Use Coverage from a selected lead, not a generic page action.');
+      setError('Developer setup error: LeadCoverageManager requires leadId. Lead CC and Quote Builder must pass selectedLead.id/lead.id directly.');
       return () => { active = false; };
     }
-    fetchCoverage(resolvedLeadId, resolvedCompany).then((nextData) => {
+
+    fetchCoverage(resolvedLeadId).then((nextData) => {
       if (!active) return;
       setData(nextData);
       setProductIds(nextData.selectedProductIds ?? []);
@@ -127,12 +61,11 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
       setLoading(false);
     });
     return () => { active = false; };
-  }, [companyName, leadId]);
+  }, [leadId]);
 
   const products = data?.products ?? [];
   const selectedProducts = useMemo(() => products.filter((product) => productIds.includes(product.id)), [productIds, products]);
   const pricedProducts = useMemo(() => products.filter((product) => product.hasPricing), [products]);
-  const marketsAlreadyMapped = (data?.selectedMarketIds?.length ?? 0) > 0;
   const selectedMarketNames = useMemo(() => (data?.markets ?? []).filter((market) => marketIds.includes(market.id)).map((market) => market.name), [data?.markets, marketIds]);
   const filteredProducts = useMemo(() => {
     const value = query.trim().toLowerCase();
@@ -153,7 +86,7 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
   const toggleMarket = (id: string) => { setError(''); setSuccess(''); setMarketIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]); };
 
   const handleSave = async () => {
-    const resolvedLeadId = data?.lead?.id || leadId || '';
+    const resolvedLeadId = data?.lead?.id || String(leadId ?? '').trim();
     if (!resolvedLeadId) return setError('Lead context is required before saving coverage.');
     if (!productIds.length) return setError('Select at least one product before saving coverage.');
     if (!marketIds.length) return setError('Select at least one market before saving coverage.');
@@ -179,11 +112,11 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
         <div>
           <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Product required</div>
           <h3 className="mt-1 text-base font-black text-slate-950">Add products to unlock quote</h3>
-          <p className="mt-1 text-sm leading-6 text-slate-600">{data?.lead?.company_name ? `${data.lead.company_name}: ` : ''}Select products from the catalog. Existing market coverage is kept automatically.</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{data?.lead?.company_name ? `${data.lead.company_name}: ` : ''}Select products from the active catalog. Existing market coverage or the lead country market is kept automatically.</p>
         </div>
         {onClose ? <button type="button" onClick={onClose} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700">Close</button> : null}
       </div>
-      {marketsAlreadyMapped ? <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800"><span>Market already linked:</span>{selectedMarketNames.map((name) => <span key={name} className="rounded-full bg-white px-2 py-1">{name}</span>)}</div> : null}
+      {selectedMarketNames.length ? <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800"><span>Market linked:</span>{selectedMarketNames.map((name) => <span key={name} className="rounded-full bg-white px-2 py-1">{name}</span>)}</div> : null}
       {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</div> : null}
       {success ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{success}</div> : null}
       <section className="rounded-2xl border border-slate-200 bg-white p-3">
@@ -194,10 +127,10 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
         </div>
         <select value={selectValue} disabled={!data?.lead?.id} onChange={(event) => { setSelectValue(event.target.value); addProduct(event.target.value); }} className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 disabled:bg-slate-50 disabled:text-slate-400"><option value="">Select product...</option>{filteredProducts.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ''}{product.hasPricing ? ' · Pricing ready' : ' · Needs pricing'}</option>)}</select>
         {selectedProducts.length ? <div className="mt-3 flex flex-wrap gap-2">{selectedProducts.map((product) => <span key={product.id} className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800"><span>{product.name}</span>{product.sku ? <span className="text-blue-500">{product.sku}</span> : null}<button type="button" onClick={() => removeProduct(product.id)} className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-black text-blue-700">Remove</button></span>)}</div> : null}
-        {!filteredProducts.length && !selectedProducts.length && data?.lead?.id ? <div className="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-sm font-semibold text-slate-500">No catalog products found for this workspace. Check Product Management if this looks wrong.</div> : null}
+        {!filteredProducts.length && !selectedProducts.length && data?.lead?.id ? <div className="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-sm font-semibold text-slate-500">No active catalog products found for this workspace. Check Product Management if this looks wrong.</div> : null}
       </section>
-      {!marketsAlreadyMapped && data?.lead?.id ? <section className="rounded-2xl border border-slate-200 bg-white p-3"><div className="flex items-center justify-between gap-3"><label className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Market</label><span className="text-xs font-bold text-slate-500">{marketIds.length} selected</span></div><div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-auto pr-1">{(data?.markets ?? []).map((market) => { const checked = marketIds.includes(market.id); return <button key={market.id} type="button" onClick={() => toggleMarket(market.id)} className={`rounded-full border px-3 py-2 text-xs font-bold transition ${checked ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200'}`}>{market.name}</button>; })}</div></section> : null}
-      <div className="sticky bottom-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur"><div className="text-sm text-slate-600"><strong className="text-slate-950">{productIds.length}</strong> product{productIds.length === 1 ? '' : 's'}{marketsAlreadyMapped ? ' selected' : data?.lead?.id ? <> · <strong className="text-slate-950">{marketIds.length}</strong> market{marketIds.length === 1 ? '' : 's'}</> : null}</div><button type="button" onClick={handleSave} disabled={saving || !data?.lead?.id} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save products and unlock quote'}</button></div>
+      {data?.lead?.id ? <section className="rounded-2xl border border-slate-200 bg-white p-3"><div className="flex items-center justify-between gap-3"><label className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Market</label><span className="text-xs font-bold text-slate-500">{marketIds.length} selected</span></div><div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-auto pr-1">{(data?.markets ?? []).map((market) => { const checked = marketIds.includes(market.id); return <button key={market.id} type="button" onClick={() => toggleMarket(market.id)} className={`rounded-full border px-3 py-2 text-xs font-bold transition ${checked ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200'}`}>{market.name}</button>; })}</div></section> : null}
+      <div className="sticky bottom-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur"><div className="text-sm text-slate-600"><strong className="text-slate-950">{productIds.length}</strong> product{productIds.length === 1 ? '' : 's'}{data?.lead?.id ? <> · <strong className="text-slate-950">{marketIds.length}</strong> market{marketIds.length === 1 ? '' : 's'}</> : null}</div><button type="button" onClick={handleSave} disabled={saving || !data?.lead?.id} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save products and unlock quote'}</button></div>
     </div>
   );
 }
