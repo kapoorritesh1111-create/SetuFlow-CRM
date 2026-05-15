@@ -21,7 +21,7 @@ export function WorkflowInlinePanelHost({
 }) {
   if (!activeKey) return null
   if (activeKey === 'qualification') return <QualificationPanel leadId={leadId} qualification={snapshot.qualification} />
-  if (activeKey === 'coverage') return <CoveragePanel mapping={snapshot.mapping} />
+  if (activeKey === 'coverage') return <CoveragePanel leadId={leadId} companyName={snapshot.lead.companyName} mapping={snapshot.mapping} />
   if (activeKey === 'commercial') {
     return <CommercialPanel commercial={snapshot.commercial} quoteFocus={snapshot.quoteFocus} onOpenQuote={onOpenQuote} />
   }
