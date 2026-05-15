@@ -29,7 +29,7 @@ function area(element: HTMLElement) {
 
 function cleanCompany(value?: string | null) {
   const candidate = String(value ?? '')
-    .replace(/^[\s:·\-/—]+|[\s:·\-/—]+$/g, '')
+    .replace(/^[\s:.-]+|[\s:.-]+$/g, '')
     .trim();
   if (!candidate || candidate.length > 90) return '';
   if (/next move|lead queue|hot list|coverage|commercial|qualification|follow-up|quick edit|create quote|open coverage manager|stage progress|deal value|scheduled actions|product required|quote preview|trade command center|command center|buyer context|product scope/i.test(candidate)) return '';
@@ -49,17 +49,40 @@ function findResolverPanel() {
   return coverage ?? null;
 }
 
+function findCompanyAfterBuyerContext(text: string) {
+  const marker = 'buyer context company lead type market currency ';
+  const lower = text.toLowerCase();
+  const start = lower.indexOf(marker);
+  if (start >= 0) {
+    const rest = text.slice(start + marker.length);
+    const match = rest.match(/^(.+?)\s+(buyer|supplier)\s+/i);
+    const candidate = cleanCompany(match?.[1]);
+    if (candidate) return candidate;
+  }
+
+  const inlineMarker = 'buyer context company ';
+  const inlineStart = lower.indexOf(inlineMarker);
+  if (inlineStart >= 0) {
+    const rest = text.slice(inlineStart + inlineMarker.length);
+    const match = rest.match(/^(.+?)\s+lead type\s+(buyer|supplier)\s+market\s+/i);
+    const candidate = cleanCompany(match?.[1]);
+    if (candidate) return candidate;
+  }
+
+  return '';
+}
+
 function inferCompanyFromWorkspace(mount?: HTMLElement | null) {
   const workspace = mount?.closest('#inline-lead-workspace') ?? document.querySelector('#inline-lead-workspace') ?? document.body;
   const text = textOf(workspace);
 
-  // Quote Product step renders a structured Buyer Context grid:
-  // Company <value> Lead type buyer Market North America Currency USD.
-  const buyerContextPattern = /buyer context\s+company\s+(.+?)\s+lead type\s+(buyer|supplier)\s+market\s+/i;
-  const buyerContextCompany = cleanCompany(text.match(buyerContextPattern)?.[1]);
+  const buyerContextCompany = findCompanyAfterBuyerContext(text);
   if (buyerContextCompany) return buyerContextCompany;
 
-  // Command Center hero can render with or without literal "Owner:".
+  const linearCompany = text.match(/company\s+(.+?)\s+(lead type|market|currency)\b/i);
+  const linearCompanyValue = cleanCompany(linearCompany?.[1]);
+  if (linearCompanyValue) return linearCompanyValue;
+
   const heroPatterns = [
     /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+·\s+Owner:/i,
     /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+·\s+[^·]{2,60}\s+·\s+[^·]{2,60}/i,
