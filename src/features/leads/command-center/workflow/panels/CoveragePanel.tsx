@@ -7,8 +7,10 @@ function CoverageTag({ label, tone = 'neutral' }: { label: string; tone?: 'neutr
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${tone === 'accent' ? 'bg-status-ready/10 text-status-ready' : 'bg-neutral-50 text-neutral-600'}`}>{label}</span>
 }
 
-function openInlineCoverageResolver() {
+function openInlineCoverageResolver(leadId: string, companyName?: string | null) {
   if (typeof window === 'undefined') return
+  window.__setuCoverageResolverLeadId = leadId
+  window.__setuCoverageResolverCompany = companyName || ''
   window.__setuCoverageResolverOpen = true
   window.dispatchEvent(new Event('setu:open-inline-coverage-resolver'))
 }
@@ -16,10 +18,12 @@ function openInlineCoverageResolver() {
 declare global {
   interface Window {
     __setuCoverageResolverOpen?: boolean
+    __setuCoverageResolverLeadId?: string
+    __setuCoverageResolverCompany?: string
   }
 }
 
-export function CoveragePanel({ mapping }: { mapping: LeadProfileSnapshot['mapping'] }) {
+export function CoveragePanel({ leadId, companyName, mapping }: { leadId: string; companyName?: string | null; mapping: LeadProfileSnapshot['mapping'] }) {
   const CoverageIcon = getWorkflowIcon('coverage')
   const OpenIcon = getActionIcon('open')
   const hasMarketCoverage = mapping.marketCount > 0
@@ -40,7 +44,7 @@ export function CoveragePanel({ mapping }: { mapping: LeadProfileSnapshot['mappi
             Product coverage unlocks quote creation. {hasMarketCoverage ? 'Market context is already linked and will be kept.' : 'Add a market only if none is already linked.'}
           </p>
         </div>
-        <button type="button" onClick={openInlineCoverageResolver} className="inline-flex items-center gap-2 rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark">
+        <button type="button" onClick={() => openInlineCoverageResolver(leadId, companyName)} className="inline-flex items-center gap-2 rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark">
           <span className={ICON_CONTAINER_CLASS}><OpenIcon className="h-4 w-4 text-neutral-900" /></span>
           {buttonCopy}
         </button>
