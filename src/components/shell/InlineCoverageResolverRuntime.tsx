@@ -36,6 +36,13 @@ function area(element: HTMLElement) {
   return rect.width * rect.height;
 }
 
+function cleanCompanyCandidate(value?: string | null) {
+  return String(value ?? '')
+    .replace(/\b(buyer|supplier|lead type|market|currency|usd|cad|eur|inr|north america|new lead)\b.*$/i, '')
+    .replace(/^[\s:·-]+|[\s:·-]+$/g, '')
+    .trim();
+}
+
 function findResolverPanel() {
   const blocks = Array.from(document.querySelectorAll<HTMLElement>('section, article, div')).filter(visible);
   const productScope = blocks
@@ -56,16 +63,38 @@ function getLeadIdFromLocation() {
   return decodeURIComponent(candidate);
 }
 
+function findCompanyFromBuyerContext() {
+  const blocks = Array.from(document.querySelectorAll<HTMLElement>('section, article, div')).filter(visible);
+  const contextBlocks = blocks
+    .filter((block) => /buyer context/i.test(textOf(block)) && /company/i.test(textOf(block)))
+    .sort((a, b) => area(a) - area(b));
+
+  for (const block of contextBlocks) {
+    const text = textOf(block);
+    const match = text.match(/company\s+(.+?)\s+(lead type|market|currency)\b/i);
+    const candidate = cleanCompanyCandidate(match?.[1]);
+    if (candidate && !/company|buyer context/i.test(candidate)) return candidate;
+  }
+
+  const pageText = textOf(document.body);
+  const pageMatch = pageText.match(/buyer context\s+company\s+(.+?)\s+lead type\b/i);
+  return cleanCompanyCandidate(pageMatch?.[1]);
+}
+
 function findActiveLeadCompany() {
   if (window.__setuCoverageResolverCompany) return window.__setuCoverageResolverCompany;
+
+  const buyerContextCompany = findCompanyFromBuyerContext();
+  if (buyerContextCompany) return buyerContextCompany;
+
   const blocks = Array.from(document.querySelectorAll<HTMLElement>('article, section, div')).filter(visible);
   const activeCard = blocks
     .filter((node) => /create quote|quote preview|product scope/i.test(textOf(node)))
     .sort((a, b) => area(a) - area(b))[0];
   const headingText = textOf(activeCard?.querySelector<HTMLElement>('h1, h2, h3, strong, b'));
-  if (headingText && !/trade command center|follow-up|coverage|required|create quote|product scope/i.test(headingText)) return headingText;
+  if (headingText && !/trade command center|follow-up|coverage|required|create quote|product scope/i.test(headingText)) return cleanCompanyCandidate(headingText);
   const headings = Array.from(document.querySelectorAll<HTMLElement>('h1, h2, h3, strong, b')).map((node) => textOf(node)).filter(Boolean);
-  return headings.find((item) => !/trade command center|follow-up|coverage|required|create quote|quick lead|filters|product scope|quote preview/i.test(item)) || '';
+  return cleanCompanyCandidate(headings.find((item) => !/trade command center|follow-up|coverage|required|create quote|quick lead|filters|product scope|quote preview/i.test(item)) || '');
 }
 
 function ensureResolverMount() {
