@@ -20,38 +20,62 @@ function textOf(element?: Element | null) {
 }
 
 function cleanCompany(value?: string | null) {
-  const candidate = String(value ?? '').trim();
+  const candidate = String(value ?? '')
+    .replace(/^[\s:·\-/—]+|[\s:·\-/—]+$/g, '')
+    .trim();
   if (!candidate || candidate.length > 90) return '';
-  if (/next move|lead queue|hot list|coverage|commercial|qualification|follow-up|quick edit|create quote|open coverage manager|stage progress|deal value|scheduled actions|product required|quote preview/i.test(candidate)) return '';
+  if (/next move|lead queue|hot list|coverage|commercial|qualification|follow-up|quick edit|create quote|open coverage manager|stage progress|deal value|scheduled actions|product required|quote preview|trade command center|command center/i.test(candidate)) return '';
   return candidate;
+}
+
+function extractCompanyFromSelectedHero(scope: ParentNode) {
+  const headings = Array.from(scope.querySelectorAll<HTMLElement>('h1, h2, h3, [class*="company-name"]'))
+    .map((node) => cleanCompany(textOf(node)))
+    .filter(Boolean);
+  const heading = headings.find((value) => !/follow-up|quote preview|product|required/i.test(value));
+  if (heading) return heading;
+
+  const text = textOf(scope as Element);
+
+  // Lead hero DOM usually reads like:
+  // "Setu Groups buyer · Owner: Ritesh Kapoor · Source: ..."
+  // or "Setu Groups buyer · Ritesh Kapoor · North America · New Lead".
+  const heroPatterns = [
+    /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+·\s+Owner:/i,
+    /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+·\s+[^·]{2,60}\s+·\s+[^·]{2,60}/i,
+    /([A-Za-z0-9][A-Za-z0-9 &'.,/&()\-]{1,90}?)\s+(buyer|supplier)\s+Owner:/i,
+  ];
+
+  for (const pattern of heroPatterns) {
+    const candidate = cleanCompany(text.match(pattern)?.[1]);
+    if (candidate) return candidate;
+  }
+
+  return '';
+}
+
+function extractCompanyFromQuoteContext(scope: ParentNode) {
+  const text = textOf(scope as Element);
+  const quoteGridMatch = text.match(/company\s+lead type\s+market\s+currency\s+(.+?)\s+(buyer|supplier)\s+/i);
+  const quoteCompany = cleanCompany(quoteGridMatch?.[1]);
+  if (quoteCompany) return quoteCompany;
+
+  const linearMatch = text.match(/company\s+(.+?)\s+(lead type|market|currency)\b/i);
+  return cleanCompany(linearMatch?.[1]);
 }
 
 function primeCoverageContext(target: HTMLElement | null) {
   if (typeof window === 'undefined') return;
   const workspace = target?.closest('#inline-lead-workspace') ?? document.querySelector('#inline-lead-workspace');
   const scope = workspace ?? document.body;
-  const text = textOf(scope);
 
+  // This fallback is only for old inline workspace coverage buttons. The new
+  // direct manager path should pass leadId. Clear stale lead IDs but provide a
+  // reliable company fallback so legacy buttons can still load product/market data.
   window.__setuCoverageResolverLeadId = '';
 
-  const heroMatch = text.match(/(.+?)\s+(buyer|supplier)\s+Owner:/i);
-  const heroCompany = cleanCompany(heroMatch?.[1]);
-  if (heroCompany) {
-    window.__setuCoverageResolverCompany = heroCompany;
-    return;
-  }
-
-  const quoteGridMatch = text.match(/company\s+lead type\s+market\s+currency\s+(.+?)\s+(buyer|supplier)\s+/i);
-  const quoteCompany = cleanCompany(quoteGridMatch?.[1]);
-  if (quoteCompany) {
-    window.__setuCoverageResolverCompany = quoteCompany;
-    return;
-  }
-
-  const headingCandidate = Array.from(scope.querySelectorAll<HTMLElement>('h1, h2, h3'))
-    .map((node) => cleanCompany(textOf(node)))
-    .find(Boolean);
-  if (headingCandidate) window.__setuCoverageResolverCompany = headingCandidate;
+  const company = extractCompanyFromSelectedHero(scope) || extractCompanyFromQuoteContext(scope);
+  if (company) window.__setuCoverageResolverCompany = company;
 }
 
 function openResolver(target: HTMLElement | null) {
