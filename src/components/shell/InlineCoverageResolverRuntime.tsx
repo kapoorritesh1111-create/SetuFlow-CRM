@@ -36,11 +36,18 @@ function area(element: HTMLElement) {
   return rect.width * rect.height;
 }
 
+function isBadCompanyCandidate(value?: string | null) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return true;
+  return /^(lead queue|hot list|priority action|compliance|gate status|quote preview|product scope|product required|add products|open coverage manager|no blockers|follow-up|filters|quick lead|events|help|all|buyers|suppliers)$/i.test(normalized);
+}
+
 function cleanCompanyCandidate(value?: string | null) {
-  return String(value ?? '')
+  const candidate = String(value ?? '')
     .replace(/\b(buyer|supplier|lead type|market|currency|usd|cad|eur|inr|north america|new lead)\b.*$/i, '')
     .replace(/^[\s:·-]+|[\s:·-]+$/g, '')
     .trim();
+  return isBadCompanyCandidate(candidate) ? '' : candidate;
 }
 
 function findResolverPanel() {
@@ -63,6 +70,23 @@ function getLeadIdFromLocation() {
   return decodeURIComponent(candidate);
 }
 
+function candidateFromBuyerContextText(text: string) {
+  const normal = text.replace(/\s+/g, ' ').trim();
+
+  // Common two-column grid DOM order: labels first, then values.
+  // Example: BUYER CONTEXT Company Lead type Market Currency Setu Groups buyer North America USD
+  const gridMatch = normal.match(/company\s+lead type\s+market\s+currency\s+(.+?)\s+(buyer|supplier)\s+/i);
+  const gridCandidate = cleanCompanyCandidate(gridMatch?.[1]);
+  if (gridCandidate) return gridCandidate;
+
+  // Common linear DOM order: label followed by value.
+  const linearMatch = normal.match(/company\s+(.+?)\s+(lead type|market|currency)\b/i);
+  const linearCandidate = cleanCompanyCandidate(linearMatch?.[1]);
+  if (linearCandidate) return linearCandidate;
+
+  return '';
+}
+
 function findCompanyFromBuyerContext() {
   const blocks = Array.from(document.querySelectorAll<HTMLElement>('section, article, div')).filter(visible);
   const contextBlocks = blocks
@@ -70,19 +94,23 @@ function findCompanyFromBuyerContext() {
     .sort((a, b) => area(a) - area(b));
 
   for (const block of contextBlocks) {
-    const text = textOf(block);
-    const match = text.match(/company\s+(.+?)\s+(lead type|market|currency)\b/i);
-    const candidate = cleanCompanyCandidate(match?.[1]);
-    if (candidate && !/company|buyer context/i.test(candidate)) return candidate;
+    const candidate = candidateFromBuyerContextText(textOf(block));
+    if (candidate) return candidate;
+
+    const valueTexts = Array.from(block.querySelectorAll<HTMLElement>('strong, b, span, dd, p, div'))
+      .map((node) => cleanCompanyCandidate(textOf(node)))
+      .filter(Boolean)
+      .filter((value) => !/^(buyer|supplier|north america|usd|cad|eur|inr)$/i.test(value));
+    const shortValue = valueTexts.find((value) => value.length >= 2 && value.length <= 80 && !/buyer context|company|lead type|market|currency/i.test(value));
+    if (shortValue) return shortValue;
   }
 
   const pageText = textOf(document.body);
-  const pageMatch = pageText.match(/buyer context\s+company\s+(.+?)\s+lead type\b/i);
-  return cleanCompanyCandidate(pageMatch?.[1]);
+  return candidateFromBuyerContextText(pageText);
 }
 
 function findActiveLeadCompany() {
-  if (window.__setuCoverageResolverCompany) return window.__setuCoverageResolverCompany;
+  if (window.__setuCoverageResolverCompany && !isBadCompanyCandidate(window.__setuCoverageResolverCompany)) return window.__setuCoverageResolverCompany;
 
   const buyerContextCompany = findCompanyFromBuyerContext();
   if (buyerContextCompany) return buyerContextCompany;
@@ -91,10 +119,10 @@ function findActiveLeadCompany() {
   const activeCard = blocks
     .filter((node) => /create quote|quote preview|product scope/i.test(textOf(node)))
     .sort((a, b) => area(a) - area(b))[0];
-  const headingText = textOf(activeCard?.querySelector<HTMLElement>('h1, h2, h3, strong, b'));
-  if (headingText && !/trade command center|follow-up|coverage|required|create quote|product scope/i.test(headingText)) return cleanCompanyCandidate(headingText);
-  const headings = Array.from(document.querySelectorAll<HTMLElement>('h1, h2, h3, strong, b')).map((node) => textOf(node)).filter(Boolean);
-  return cleanCompanyCandidate(headings.find((item) => !/trade command center|follow-up|coverage|required|create quote|quick lead|filters|product scope|quote preview/i.test(item)) || '');
+  const headingText = cleanCompanyCandidate(textOf(activeCard?.querySelector<HTMLElement>('h1, h2, h3, strong, b')));
+  if (headingText && !/trade command center|follow-up|coverage|required|create quote|product scope|lead queue/i.test(headingText)) return headingText;
+  const headings = Array.from(document.querySelectorAll<HTMLElement>('h1, h2, h3, strong, b')).map((node) => cleanCompanyCandidate(textOf(node))).filter(Boolean);
+  return headings.find((item) => !/trade command center|follow-up|coverage|required|create quote|quick lead|filters|product scope|quote preview|lead queue/i.test(item)) || '';
 }
 
 function ensureResolverMount() {
