@@ -21,6 +21,8 @@ declare global {
   }
 }
 
+const BAD_COMPANY_RE = /lead queue|hot list|priority action|compliance|gate status|quote preview|product scope|product required|add products|open coverage manager|no blockers|follow-up|filters|quick lead|events|help|all|buyers|suppliers|contactstage|stage progress|deal value|owneropen|scheduled actions|coverage|commercial|qualification|pipeline|command center/i;
+
 function textOf(element?: Element | null) {
   return (element?.textContent || '').replace(/\s+/g, ' ').trim();
 }
@@ -37,15 +39,18 @@ function area(element: HTMLElement) {
 }
 
 function isBadCompanyCandidate(value?: string | null) {
-  const normalized = String(value ?? '').trim().toLowerCase();
+  const normalized = String(value ?? '').replace(/\s+/g, ' ').trim();
   if (!normalized) return true;
-  return /^(lead queue|hot list|priority action|compliance|gate status|quote preview|product scope|product required|add products|open coverage manager|no blockers|follow-up|filters|quick lead|events|help|all|buyers|suppliers)$/i.test(normalized);
+  if (normalized.length > 80) return true;
+  if (/^[\/\-—•·\s]+$/.test(normalized)) return true;
+  if (BAD_COMPANY_RE.test(normalized)) return true;
+  return false;
 }
 
 function cleanCompanyCandidate(value?: string | null) {
   const candidate = String(value ?? '')
     .replace(/\b(buyer|supplier|lead type|market|currency|usd|cad|eur|inr|north america|new lead)\b.*$/i, '')
-    .replace(/^[\s:·-]+|[\s:·-]+$/g, '')
+    .replace(/^[\s:·\-/—]+|[\s:·\-/—]+$/g, '')
     .trim();
   return isBadCompanyCandidate(candidate) ? '' : candidate;
 }
@@ -105,20 +110,40 @@ function findCompanyFromBuyerContext() {
   return candidateFromBuyerContextText(pageText);
 }
 
+function findCompanyFromSelectedLeadCard() {
+  const blocks = Array.from(document.querySelectorAll<HTMLElement>('article, section, div')).filter(visible);
+  const selectedBlocks = blocks
+    .filter((block) => /create quote|quick edit|schedule follow-up|next move|last activity|source:/i.test(textOf(block)))
+    .filter((block) => /buyer|supplier/i.test(textOf(block)))
+    .sort((a, b) => area(a) - area(b));
+
+  for (const block of selectedBlocks) {
+    const heading = Array.from(block.querySelectorAll<HTMLElement>('h1, h2, h3, strong, b'))
+      .map((node) => cleanCompanyCandidate(textOf(node)))
+      .find(Boolean);
+    if (heading) return heading;
+
+    const lines = textOf(block).split(/\s{2,}|\|/).map(cleanCompanyCandidate).filter(Boolean);
+    const shortLine = lines.find((line) => !BAD_COMPANY_RE.test(line));
+    if (shortLine) return shortLine;
+  }
+
+  return '';
+}
+
 function findActiveLeadCompany() {
   if (window.__setuCoverageResolverCompany && !isBadCompanyCandidate(window.__setuCoverageResolverCompany)) return window.__setuCoverageResolverCompany;
+
+  const cardCompany = findCompanyFromSelectedLeadCard();
+  if (cardCompany) return cardCompany;
 
   const buyerContextCompany = findCompanyFromBuyerContext();
   if (buyerContextCompany) return buyerContextCompany;
 
-  const blocks = Array.from(document.querySelectorAll<HTMLElement>('article, section, div')).filter(visible);
-  const activeCard = blocks
-    .filter((node) => /create quote|quote preview|product scope/i.test(textOf(node)))
-    .sort((a, b) => area(a) - area(b))[0];
-  const headingText = cleanCompanyCandidate(textOf(activeCard?.querySelector<HTMLElement>('h1, h2, h3, strong, b')));
-  if (headingText && !/trade command center|follow-up|coverage|required|create quote|product scope|lead queue/i.test(headingText)) return headingText;
-  const headings = Array.from(document.querySelectorAll<HTMLElement>('h1, h2, h3, strong, b')).map((node) => cleanCompanyCandidate(textOf(node))).filter(Boolean);
-  return headings.find((item) => !/trade command center|follow-up|coverage|required|create quote|quick lead|filters|product scope|quote preview|lead queue/i.test(item)) || '';
+  const headings = Array.from(document.querySelectorAll<HTMLElement>('h1, h2, h3'))
+    .map((node) => cleanCompanyCandidate(textOf(node)))
+    .filter(Boolean);
+  return headings.find((item) => !BAD_COMPANY_RE.test(item)) || '';
 }
 
 function ensureResolverMount() {
