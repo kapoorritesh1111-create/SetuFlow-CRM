@@ -7,6 +7,8 @@ type MarketOption = { id: string; name: string };
 type ResolverData = { lead: { id: string; company_name: string; lead_type?: string | null }; products: ProductOption[]; markets: MarketOption[]; selectedProductIds: string[]; selectedMarketIds: string[] };
 type LeadCoverageManagerProps = { leadId?: string | null; companyName?: string | null; onClose?: () => void; onSaved?: () => void };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function cleanCandidate(value?: string | null) {
   const next = String(value ?? '').replace(/^[-: .]+|[-: .]+$/g, '').trim();
   if (!next || next.length > 96) return '';
@@ -16,6 +18,30 @@ function cleanCandidate(value?: string | null) {
 
 function compactText(node?: Element | Document | null) {
   return (node?.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function deriveLeadIdFromPage() {
+  if (typeof document === 'undefined') return '';
+
+  const inlineWorkspace = document.querySelector('#inline-lead-workspace');
+  const searchScopes = [inlineWorkspace?.parentElement, document.querySelector('#app-content'), document.body].filter(Boolean) as Element[];
+
+  for (const scope of searchScopes) {
+    const selects = Array.from(scope.querySelectorAll<HTMLSelectElement>('select'));
+    for (const select of selects) {
+      const value = String(select.value ?? '').trim();
+      if (!UUID_PATTERN.test(value)) continue;
+      const selectedText = select.selectedOptions?.[0]?.textContent ?? '';
+      const nearbyText = compactText(select.closest('div') ?? select.parentElement ?? select);
+      const looksLikeLeadSelector = /lead|company|buyer|supplier|codex|setu|cape|health|test/i.test(`${selectedText} ${nearbyText}`);
+      if (looksLikeLeadSelector) return value;
+    }
+  }
+
+  const urlMatch = window.location.pathname.match(/\/leads\/([0-9a-f-]{36})/i);
+  if (urlMatch?.[1] && UUID_PATTERN.test(urlMatch[1])) return urlMatch[1];
+
+  return '';
 }
 
 function deriveCompanyFromPage() {
@@ -76,11 +102,12 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
 
   useEffect(() => {
     let active = true;
-    const resolvedCompany = companyName || deriveCompanyFromPage();
-    setLoading(Boolean(leadId || resolvedCompany));
+    const resolvedLeadId = leadId || deriveLeadIdFromPage();
+    const resolvedCompany = resolvedLeadId ? '' : companyName || deriveCompanyFromPage();
+    setLoading(Boolean(resolvedLeadId || resolvedCompany));
     setError('');
     setSuccess('');
-    if (!leadId && !resolvedCompany) {
+    if (!resolvedLeadId && !resolvedCompany) {
       setData(null);
       setProductIds([]);
       setMarketIds([]);
@@ -88,7 +115,7 @@ export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: L
       setError('Lead context is missing. Use Coverage from a selected lead, not a generic page action.');
       return () => { active = false; };
     }
-    fetchCoverage(leadId, resolvedCompany).then((nextData) => {
+    fetchCoverage(resolvedLeadId, resolvedCompany).then((nextData) => {
       if (!active) return;
       setData(nextData);
       setProductIds(nextData.selectedProductIds ?? []);
