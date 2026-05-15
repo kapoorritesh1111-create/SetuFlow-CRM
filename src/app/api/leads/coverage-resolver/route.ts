@@ -7,9 +7,13 @@ function clean(value: unknown) {
   return String(value ?? '').trim();
 }
 
+function escapeIlike(value: string) {
+  return value.replace(/[\\%_]/g, (match) => `\\${match}`);
+}
+
 async function resolveLead(admin: any, organizationId: string, leadId?: string, company?: string) {
   const normalizedLeadId = clean(leadId);
-  const normalizedCompany = clean(company);
+  const normalizedCompany = clean(company).replace(/\s+/g, ' ');
 
   if (normalizedLeadId) {
     const { data, error } = await admin
@@ -23,17 +27,29 @@ async function resolveLead(admin: any, organizationId: string, leadId?: string, 
 
   if (!normalizedCompany) return { lead: null, error: null };
 
-  const { data, error } = await admin
-    .from('leads')
-    .select('id, company_name, lead_type, country_id, updated_at, created_at')
-    .eq('organization_id', organizationId)
-    .ilike('company_name', normalizedCompany)
-    .order('updated_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false, nullsFirst: false })
-    .limit(1)
-    .maybeSingle();
+  const escapedCompany = escapeIlike(normalizedCompany);
+  const patterns = [
+    normalizedCompany,
+    `${escapedCompany}%`,
+    `%${escapedCompany}%`,
+  ];
 
-  return { lead: data ?? null, error };
+  for (const pattern of patterns) {
+    const { data, error } = await admin
+      .from('leads')
+      .select('id, company_name, lead_type, country_id, updated_at, created_at')
+      .eq('organization_id', organizationId)
+      .ilike('company_name', pattern)
+      .order('updated_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return { lead: null, error };
+    if (data?.id) return { lead: data, error: null };
+  }
+
+  return { lead: null, error: null };
 }
 
 export async function GET(request: NextRequest) {
@@ -61,9 +77,8 @@ export async function GET(request: NextRequest) {
       .from('products')
       .select('id, name, sku, sku_code, category_id, is_active')
       .eq('organization_id', organizationId)
-      .eq('is_active', true)
       .order('name', { ascending: true })
-      .limit(150),
+      .limit(300),
     admin
       .from('markets')
       .select('id, name')
@@ -102,7 +117,7 @@ export async function GET(request: NextRequest) {
       const sku = clean(product.sku_code || product.sku);
       const name = clean(product.name);
       const hasPricing = quoteableProductIds.has(product.id) || quoteableNames.has(name.toLowerCase()) || (sku ? quoteableSkus.has(sku.toLowerCase()) : false);
-      return { id: product.id, name, sku, category_id: product.category_id, hasPricing };
+      return { id: product.id, name, sku, category_id: product.category_id, hasPricing, is_active: product.is_active };
     }),
     markets: (markets ?? []).map((market: any) => ({ id: market.id, name: market.name })),
     selectedProductIds: (selectedProducts ?? []).map((row: any) => row.product_id).filter(Boolean),
