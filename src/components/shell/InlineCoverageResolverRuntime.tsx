@@ -212,12 +212,15 @@ function InlineCoverageResolver({ onClose }: { onClose: () => void }) {
       .slice(0, 80);
   }, [pricedProducts, productIds, products, query]);
 
+  const visibleSuggestions = query.trim() ? filteredProducts.slice(0, 8) : [];
+
   const addProduct = (id: string) => {
     if (!id) return;
     setError('');
     setSuccess('');
     setProductIds((current) => current.includes(id) ? current : [...current, id]);
     setProductSelectValue('');
+    setQuery('');
   };
 
   const removeProduct = (id: string) => {
@@ -268,7 +271,19 @@ function InlineCoverageResolver({ onClose }: { onClose: () => void }) {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-3">
         <div className="flex items-center justify-between gap-3"><label className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Products</label><span className="text-xs font-bold text-slate-500">{productIds.length} selected</span></div>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products or SKU..." className="mt-2 h-10 w-full rounded-2xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-400" />
+        <div className="relative mt-2">
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products or SKU..." className="h-10 w-full rounded-2xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-400" />
+          {query.trim() ? (
+            <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-y-auto rounded-2xl border border-blue-100 bg-white p-1 shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
+              {visibleSuggestions.length ? visibleSuggestions.map((product) => (
+                <button key={product.id} type="button" onClick={() => addProduct(product.id)} className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-blue-50">
+                  <span className="min-w-0"><span className="block truncate text-sm font-bold text-slate-950">{product.name}</span>{product.sku ? <span className="mt-0.5 block text-[11px] font-semibold text-slate-500">SKU {product.sku}</span> : null}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black ${product.hasPricing ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{product.hasPricing ? 'Pricing ready' : 'Needs pricing'}</span>
+                </button>
+              )) : <div className="rounded-xl px-3 py-3 text-sm font-semibold text-slate-500">No matching products found.</div>}
+            </div>
+          ) : null}
+        </div>
         <select value={productSelectValue} onChange={(event) => { setProductSelectValue(event.target.value); addProduct(event.target.value); }} className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400">
           <option value="">Select product...</option>
           {filteredProducts.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ''}{product.hasPricing ? ' · Pricing ready' : ' · Needs pricing'}</option>)}
