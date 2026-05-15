@@ -77,25 +77,28 @@ export function LeadsFilterStability() {
     if (!pathname?.startsWith('/leads')) return;
 
     let frame = 0;
+    let observer: MutationObserver | null = null;
     const schedule = () => {
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(applyLeadsFilterStability);
     };
 
-    schedule();
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['style', 'class'],
-    });
+    const install = () => {
+      const shell = document.querySelector('.mobile-premium-leads');
+      if (!(shell instanceof HTMLElement)) return;
+      schedule();
+      observer = new MutationObserver(schedule);
+      observer.observe(shell, { childList: true, subtree: true });
+      window.addEventListener('resize', schedule);
+    };
 
-    window.addEventListener('resize', schedule);
+    // Wait for Next/React streaming hydration to settle before applying imperative style fixes.
+    const hydrationDelay = window.setTimeout(install, 1200);
 
     return () => {
+      window.clearTimeout(hydrationDelay);
       window.cancelAnimationFrame(frame);
-      observer.disconnect();
+      observer?.disconnect();
       window.removeEventListener('resize', schedule);
     };
   }, [pathname]);
@@ -104,7 +107,13 @@ export function LeadsFilterStability() {
     if (!pathname?.startsWith('/leads')) return;
 
     let restoreTimer = 0;
+    let enabled = false;
+    const enableTimer = window.setTimeout(() => {
+      enabled = true;
+    }, 1200);
+
     const holdViewport = (event: Event) => {
+      if (!enabled) return;
       if (!isLeadsControlTarget(event.target)) return;
       const y = window.scrollY;
       window.clearTimeout(restoreTimer);
@@ -120,6 +129,7 @@ export function LeadsFilterStability() {
     document.addEventListener('click', holdViewport, true);
 
     return () => {
+      window.clearTimeout(enableTimer);
       window.clearTimeout(restoreTimer);
       document.removeEventListener('input', holdViewport, true);
       document.removeEventListener('change', holdViewport, true);
