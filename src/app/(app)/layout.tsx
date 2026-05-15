@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/layout/app-shell';
+import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -56,6 +57,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       cardSettings={myCardSettings}
       cardShareSlug={myCardSettingsRow?.share_slug ?? null}
     >
+      <LeadCoverageRecoveryBoundary />
       {children}
     </AppShell>
   );
