@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { LeadCoverageManager } from '@/components/shell/LeadCoverageManager'
 import type { LeadProfileSnapshot } from '../../types'
 import { getActionIcon, getWorkflowIcon, ICON_CONTAINER_CLASS } from '../../ui-system'
 
@@ -7,23 +9,8 @@ function CoverageTag({ label, tone = 'neutral' }: { label: string; tone?: 'neutr
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${tone === 'accent' ? 'bg-status-ready/10 text-status-ready' : 'bg-neutral-50 text-neutral-600'}`}>{label}</span>
 }
 
-function openInlineCoverageResolver(leadId: string, companyName?: string | null) {
-  if (typeof window === 'undefined') return
-  window.__setuCoverageResolverLeadId = leadId
-  window.__setuCoverageResolverCompany = companyName || ''
-  window.__setuCoverageResolverOpen = true
-  window.dispatchEvent(new Event('setu:open-inline-coverage-resolver'))
-}
-
-declare global {
-  interface Window {
-    __setuCoverageResolverOpen?: boolean
-    __setuCoverageResolverLeadId?: string
-    __setuCoverageResolverCompany?: string
-  }
-}
-
 export function CoveragePanel({ leadId, companyName, mapping }: { leadId: string; companyName?: string | null; mapping: LeadProfileSnapshot['mapping'] }) {
+  const [managerOpen, setManagerOpen] = useState(mapping.productCount === 0)
   const CoverageIcon = getWorkflowIcon('coverage')
   const OpenIcon = getActionIcon('open')
   const hasMarketCoverage = mapping.marketCount > 0
@@ -44,11 +31,17 @@ export function CoveragePanel({ leadId, companyName, mapping }: { leadId: string
             Product coverage unlocks quote creation. {hasMarketCoverage ? 'Market context is already linked and will be kept.' : 'Add a market only if none is already linked.'}
           </p>
         </div>
-        <button type="button" onClick={() => openInlineCoverageResolver(leadId, companyName)} className="inline-flex items-center gap-2 rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark">
+        <button type="button" onClick={() => setManagerOpen((value) => !value)} className="inline-flex items-center gap-2 rounded-[8px] bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark">
           <span className={ICON_CONTAINER_CLASS}><OpenIcon className="h-4 w-4 text-neutral-900" /></span>
-          {buttonCopy}
+          {managerOpen ? 'Hide manager' : buttonCopy}
         </button>
       </div>
+
+      {managerOpen ? (
+        <div className="mt-5 rounded-[24px] border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm">
+          <LeadCoverageManager leadId={leadId} companyName={companyName} onClose={() => setManagerOpen(false)} />
+        </div>
+      ) : null}
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-[10px] bg-neutral-50 p-4">
