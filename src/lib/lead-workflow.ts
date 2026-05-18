@@ -28,6 +28,7 @@ export type ParsedLeadWorkflow = {
 
 const MARKER_PREFIX = '<!-- SETU_LEAD_WORKFLOW:';
 const MARKER_SUFFIX = '-->';
+const MARKER_PATTERN = /<!--\s*SETU_LEAD_WORKFLOW:[\s\S]*?-->/g;
 
 export const DEFAULT_LEAD_WORKFLOW: LeadWorkflowState = {
   qualificationStatus: 'not_started',
@@ -45,6 +46,10 @@ export const DEFAULT_LEAD_WORKFLOW: LeadWorkflowState = {
 function sanitizeString(value: unknown) {
   const text = typeof value === 'string' ? value.trim() : '';
   return text.length ? text : null;
+}
+
+export function stripLeadWorkflowMetadata(notes: string | null | undefined) {
+  return sanitizeString(String(notes ?? '').replace(MARKER_PATTERN, '').trim());
 }
 
 function sanitizeStringArray(value: unknown) {
@@ -99,7 +104,7 @@ export function parseLeadWorkflow(notes: string | null | undefined): ParsedLeadW
   const markerIndex = raw.lastIndexOf(MARKER_PREFIX);
   if (markerIndex === -1) {
     return {
-      plainNotes: sanitizeString(raw),
+      plainNotes: stripLeadWorkflowMetadata(raw),
       workflow: { ...DEFAULT_LEAD_WORKFLOW },
     };
   }
@@ -107,12 +112,12 @@ export function parseLeadWorkflow(notes: string | null | undefined): ParsedLeadW
   const suffixIndex = raw.indexOf(MARKER_SUFFIX, markerIndex);
   if (suffixIndex === -1) {
     return {
-      plainNotes: sanitizeString(raw),
+      plainNotes: stripLeadWorkflowMetadata(raw),
       workflow: { ...DEFAULT_LEAD_WORKFLOW },
     };
   }
 
-  const plainNotes = sanitizeString(raw.slice(0, markerIndex).trim());
+  const plainNotes = stripLeadWorkflowMetadata(raw.slice(0, markerIndex).trim());
   const jsonPayload = raw.slice(markerIndex + MARKER_PREFIX.length, suffixIndex).trim();
 
   try {
@@ -123,17 +128,15 @@ export function parseLeadWorkflow(notes: string | null | undefined): ParsedLeadW
     };
   } catch {
     return {
-      plainNotes: sanitizeString(raw),
+      plainNotes: stripLeadWorkflowMetadata(raw),
       workflow: { ...DEFAULT_LEAD_WORKFLOW },
     };
   }
 }
 
 export function serializeLeadWorkflow(plainNotes: string | null | undefined, workflowInput: Partial<LeadWorkflowState> | null | undefined) {
-  const normalizedWorkflow = normalizeLeadWorkflowState(workflowInput);
-  const safeNotes = sanitizeString(plainNotes);
-  const marker = `${MARKER_PREFIX}${JSON.stringify(normalizedWorkflow)} ${MARKER_SUFFIX}`;
-  return safeNotes ? `${safeNotes}\n\n${marker}` : marker;
+  normalizeLeadWorkflowState(workflowInput);
+  return stripLeadWorkflowMetadata(plainNotes);
 }
 
 export function deriveProductMappingStatus(productIds: string[], marketIds: string[], coverageSelections: LeadCoverageSelection[] = []): LeadProductMappingStatus {
