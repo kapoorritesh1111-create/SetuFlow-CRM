@@ -15,6 +15,9 @@ type SendSyncStatus = {
   error?: string;
 };
 
+const SYNC_CACHE_TTL_MS = 15_000;
+const syncCache = new Map<string, { at: number; promise: Promise<SendSyncStatus | null> }>();
+
 function textOf(node: Element | null) {
   return String(node?.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
@@ -32,15 +35,27 @@ function findQuoteNumber() {
 async function syncSendGate() {
   const quoteNumber = findQuoteNumber();
   if (!quoteNumber) return null;
-  const response = await fetch('/api/compliance/quote-send-sync', {
+
+  const cached = syncCache.get(quoteNumber);
+  if (cached && Date.now() - cached.at < SYNC_CACHE_TTL_MS) {
+    return cached.promise;
+  }
+
+  const promise = fetch('/api/compliance/quote-send-sync', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     cache: 'no-store',
     body: JSON.stringify({ quoteNumber }),
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) return { error: payload?.error || 'Could not sync quote send gate.' } as SendSyncStatus;
-  return payload as SendSyncStatus;
+  })
+    .then(async (response) => {
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) return { error: payload?.error || 'Could not sync quote send gate.' } as SendSyncStatus;
+      return payload as SendSyncStatus;
+    })
+    .catch(() => ({ error: 'Could not sync quote send gate.' } as SendSyncStatus));
+
+  syncCache.set(quoteNumber, { at: Date.now(), promise });
+  return promise;
 }
 
 function makeGreen(node: HTMLElement) {
@@ -117,12 +132,14 @@ export function QuoteReviewInlineComplianceFix() {
 
   useEffect(() => {
     let cancelled = false;
+    let refreshQueued = false;
 
     async function run() {
       const status = await syncSendGate();
       if (cancelled || !status?.sendReady) return;
       const changed = clearSendGateActiveBlocker(status);
-      if (changed) {
+      if (changed && !refreshQueued) {
+        refreshQueued = true;
         window.setTimeout(() => {
           if (!cancelled) router.refresh();
         }, 250);
@@ -130,14 +147,11 @@ export function QuoteReviewInlineComplianceFix() {
     }
 
     void run();
-    const timers = [300, 900, 1800, 3600].map((delay) => window.setTimeout(() => void run(), delay));
-    const onClick = () => window.setTimeout(() => void run(), 50);
-    document.addEventListener('click', onClick, true);
+    const timer = window.setTimeout(() => void run(), 900);
 
     return () => {
       cancelled = true;
-      timers.forEach((timer) => window.clearTimeout(timer));
-      document.removeEventListener('click', onClick, true);
+      window.clearTimeout(timer);
     };
   }, [router]);
 
