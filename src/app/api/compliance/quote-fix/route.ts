@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { hasSupabaseEnv } from '@/lib/env';
+import { safeApiError, logServerError } from '@/lib/safe-error';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
 const CLEAR_STATUSES = new Set(['approved', 'complete', 'completed', 'ready', 'waived']);
+const GENERIC_QUOTE_FIX_ERROR = 'Could not update quote compliance. Please refresh and try again.';
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
@@ -18,6 +20,11 @@ function normalize(value: unknown) {
 
 function toStringSet(rows: any[], key: string) {
   return new Set<string>(rows.map((row: any) => clean(row?.[key])).filter((value: string) => value.length > 0));
+}
+
+function quoteFixError(error: unknown, status = 500) {
+  logServerError('quote-fix', error);
+  return NextResponse.json(safeApiError(error, GENERIC_QUOTE_FIX_ERROR), { status });
 }
 
 function ruleApplies(rule: any, lead: any, marketIds: Set<string>, productIds: Set<string>) {
@@ -39,7 +46,7 @@ async function getMissingQuoteRequirementCodes(db: any, organizationId: string, 
   ]);
 
   for (const result of [leadMarketsResult, leadProductsResult, rulesResult, documentsResult]) {
-    if (result.error) throw new Error(result.error.message);
+    if (result.error) throw result.error;
   }
 
   const marketIds = toStringSet(leadMarketsResult.data ?? [], 'market_id');
@@ -77,25 +84,25 @@ async function saveDocumentIdempotently(db: any, lookup: DocumentLookup, payload
     if (value != null) findQuery = findQuery.eq(key, value);
   }
   const { data: existingRows, error: findError } = await findQuery.order('uploaded_at', { ascending: false }).limit(1);
-  if (findError) throw new Error(findError.message);
+  if (findError) throw findError;
   const existingId = Array.isArray(existingRows) ? existingRows[0]?.id : null;
 
   if (existingId) {
     const { data, error } = await db.from('documents').update(payload).eq('id', existingId).select('id').single();
-    if (error) throw new Error(error.message);
+    if (error) throw error;
     return { id: data?.id ?? existingId, created: false };
   }
 
   const { data, error } = await db.from('documents').insert(payload).select('id').single();
-  if (error) throw new Error(error.message);
+  if (error) throw error;
   return { id: data?.id ?? null, created: true };
 }
 
 export async function POST(request: Request) {
-  if (!hasSupabaseEnv) return NextResponse.json({ error: 'Missing Supabase environment variables.' }, { status: 500 });
+  if (!hasSupabaseEnv) return NextResponse.json({ error: 'System configuration is incomplete. Please contact an admin.' }, { status: 500 });
 
   const workspace = await getWorkspaceAccess();
-  if (!workspace.user || !workspace.organization) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+  if (!workspace.user || !workspace.organization) return NextResponse.json({ error: 'Please sign in again to continue.' }, { status: 401 });
 
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
@@ -123,7 +130,7 @@ export async function POST(request: Request) {
     .eq('organization_id', organizationId)
     .eq('id', quoteId)
     .maybeSingle();
-  if (quoteError) return NextResponse.json({ error: quoteError.message }, { status: 500 });
+  if (quoteError) return quoteFixError(quoteError);
   if (!quote?.id) return NextResponse.json({ error: 'Quote not found in this organization.' }, { status: 404 });
 
   const { data: lead, error: leadError } = await db
@@ -132,7 +139,7 @@ export async function POST(request: Request) {
     .eq('organization_id', organizationId)
     .eq('id', quote.lead_id)
     .maybeSingle();
-  if (leadError) return NextResponse.json({ error: leadError.message }, { status: 500 });
+  if (leadError) return quoteFixError(leadError);
   if (!lead?.id) return NextResponse.json({ error: 'Quote lead was not found.' }, { status: 404 });
 
   const now = new Date().toISOString();
@@ -169,7 +176,7 @@ export async function POST(request: Request) {
   try {
     if (action === 'attach') {
       const { data, error } = await mutationDb.from('documents').insert(quoteDocumentPayload).select('id').single();
-      if (error) throw new Error(error.message);
+      if (error) throw error;
       quoteDocument = { id: data?.id ?? null, created: true };
     } else {
       quoteDocument = await saveDocumentIdempotently(mutationDb, {
@@ -182,7 +189,7 @@ export async function POST(request: Request) {
       }, quoteDocumentPayload);
     }
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not save quote document.' }, { status: 500 });
+    return quoteFixError(error);
   }
 
   let approvedLeadRequirements = 0;
@@ -193,7 +200,12 @@ export async function POST(request: Request) {
   let quoteLineCount = 0;
 
   if (action === 'waive' || action === 'defer') {
-    const missingCodes = await getMissingQuoteRequirementCodes(db, organizationId, lead);
+    let missingCodes: string[] = [];
+    try {
+      missingCodes = await getMissingQuoteRequirementCodes(db, organizationId, lead);
+    } catch (error) {
+      return quoteFixError(error);
+    }
     const leadRequirementCodes = Array.from(new Set(['quote_review_document', ...missingCodes]));
 
     for (const code of leadRequirementCodes) {
@@ -228,7 +240,7 @@ export async function POST(request: Request) {
         if (result.created) approvedLeadRequirements += 1;
         else updatedLeadRequirements += 1;
       } catch (error) {
-        return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not save lead requirement clearance.' }, { status: 500 });
+        return quoteFixError(error);
       }
     }
 
@@ -238,7 +250,7 @@ export async function POST(request: Request) {
       .eq('organization_id', organizationId)
       .eq('linked_quote_id', quote.id)
       .eq('requirement_code', 'quote_review_document');
-    if (pendingQuoteReviewError) return NextResponse.json({ error: pendingQuoteReviewError.message }, { status: 500 });
+    if (pendingQuoteReviewError) return quoteFixError(pendingQuoteReviewError);
 
     const pendingQuoteReviewIds = (pendingQuoteReviewDocuments ?? [])
       .filter((document: any) => !CLEAR_STATUSES.has(normalize(document.status)))
@@ -251,12 +263,12 @@ export async function POST(request: Request) {
         .update({ status: 'approved', reviewer_user_id: actorUserId, reviewed_at: now, review_notes: `${action} decision cleared quote review: ${notes}` })
         .in('id', pendingQuoteReviewIds)
         .eq('organization_id', organizationId);
-      if (supersedeError) return NextResponse.json({ error: supersedeError.message }, { status: 500 });
+      if (supersedeError) return quoteFixError(supersedeError);
       supersededQuoteReviewDocuments = pendingQuoteReviewIds.length;
     }
 
     const { data: quoteLines, error: quoteLinesError } = await db.from('quote_line_items').select('id').eq('quote_id', quote.id);
-    if (quoteLinesError) return NextResponse.json({ error: quoteLinesError.message }, { status: 500 });
+    if (quoteLinesError) return quoteFixError(quoteLinesError);
     quoteLineCount = Array.isArray(quoteLines) ? quoteLines.length : 0;
 
     const { error: quoteUpdateError } = await mutationDb
@@ -269,7 +281,7 @@ export async function POST(request: Request) {
       })
       .eq('organization_id', organizationId)
       .eq('id', quote.id);
-    if (quoteUpdateError) return NextResponse.json({ error: quoteUpdateError.message }, { status: 500 });
+    if (quoteUpdateError) return quoteFixError(quoteUpdateError);
     quoteReviewApproved = true;
 
     const quoteVersionUpdate: Record<string, unknown> = { approved_at: now, approved_by: actorUserId, updated_at: now };
@@ -277,14 +289,14 @@ export async function POST(request: Request) {
     let quoteVersionQuery = mutationDb.from('quote_versions').update(quoteVersionUpdate).eq('quote_id', quote.id);
     if (quote.current_version_id) quoteVersionQuery = quoteVersionQuery.eq('id', quote.current_version_id);
     const { error: quoteVersionUpdateError } = await quoteVersionQuery;
-    if (quoteVersionUpdateError) return NextResponse.json({ error: quoteVersionUpdateError.message }, { status: 500 });
+    if (quoteVersionUpdateError) return quoteFixError(quoteVersionUpdateError);
 
     const { data: openItems, error: openItemsError } = await db
       .from('lead_compliance_items')
       .select('id, status')
       .eq('organization_id', organizationId)
       .eq('lead_id', lead.id);
-    if (openItemsError) return NextResponse.json({ error: openItemsError.message }, { status: 500 });
+    if (openItemsError) return quoteFixError(openItemsError);
 
     const openItemIds = (openItems ?? [])
       .filter((item: any) => !CLEAR_STATUSES.has(normalize(item.status)))
@@ -297,12 +309,12 @@ export async function POST(request: Request) {
         .update({ status: 'approved', submitted_at: now, approved_at: now, reviewer_user_id: actorUserId, reviewed_at: now, review_notes: notes })
         .in('id', openItemIds)
         .eq('organization_id', organizationId);
-      if (clearError) return NextResponse.json({ error: clearError.message }, { status: 500 });
+      if (clearError) return quoteFixError(clearError);
       clearedComplianceItems = openItemIds.length;
     }
   }
 
-  await mutationDb.from('audit_logs').insert({
+  const { error: auditError } = await mutationDb.from('audit_logs').insert({
     organization_id: organizationId,
     actor_user_id: actorUserId,
     action: action === 'attach' ? 'quote_compliance_evidence_attached' : action === 'waive' ? 'quote_compliance_waived' : 'quote_compliance_deferred_to_dispatch',
@@ -314,6 +326,7 @@ export async function POST(request: Request) {
       metadata: { source: 'quote_review_gate_fix', idempotent_decision: action !== 'attach' }
     },
   });
+  if (auditError) return quoteFixError(auditError);
 
   revalidatePath('/leads');
   revalidatePath(`/leads/${lead.id}`);
