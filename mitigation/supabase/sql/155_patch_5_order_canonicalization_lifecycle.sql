@@ -1,0 +1,51 @@
+-- 155_patch_5_order_canonicalization_lifecycle.sql
+-- Patch 5 was applied live to Supabase through the MCP migration runner.
+-- Purpose: make orders the canonical execution header after quote acceptance.
+
+-- Live migration changes applied:
+-- 1. Added order lifecycle foundation columns:
+--    orders.order_lifecycle_status text not null default 'order_created'
+--    orders.payment_status text not null default 'not_requested'
+--    orders.fulfillment_status text not null default 'not_started'
+--    orders.dispatch_status text not null default 'not_ready'
+--    orders.completed_at timestamptz null
+--    orders.cancelled_at timestamptz null
+--
+-- 2. Added check constraints for allowed order lifecycle values:
+--    order_created, payment_requested, payment_partial, payment_paid,
+--    production_ready, production_in_progress, dispatch_ready, dispatched,
+--    delivered, completed, cancelled.
+--
+-- 3. Added check constraints for payment, fulfillment, and dispatch status values.
+--
+-- 4. Added idempotency indexes:
+--    uq_orders_org_source_quote on orders(organization_id, source_quote_id)
+--    uq_order_lines_order_source_quote_version_line on order_lines(order_id, source_quote_version_line_item_id)
+--
+-- 5. Created public.app_ensure_order_for_accepted_quote_tx(
+--      p_organization_id uuid,
+--      p_quote_id uuid,
+--      p_lead_id uuid,
+--      p_actor_user_id uuid default null,
+--      p_notes text default null
+--    )
+--    returns table(order_id uuid, quote_id uuid, lead_id uuid, created boolean, seeded_line_count integer)
+--
+--    The function enforces:
+--    - quote exists in organization
+--    - quote.status = 'accepted'
+--    - quotes.accepted_version_id is not null
+--    - quote.lead_id matches p_lead_id
+--    - exactly one orders row per accepted quote
+--    - order_lines seeded from accepted quote_version_line_items idempotently
+--    - audit_logs records order_created_from_accepted_quote or order_ensured_from_accepted_quote
+--
+-- 6. Replaced public.app_ensure_contract_for_accepted_quote_tx(...) live so it first calls
+--    public.app_ensure_order_for_accepted_quote_tx(...), then preserves existing contract
+--    creation/lookup behavior and links orders.legacy_contract_id for compatibility.
+--
+-- 7. Ran non-destructive backfill for currently accepted quotes with accepted_version_id.
+--
+-- Verification should check the live DB function definitions rather than relying only on this
+-- migration note, because the full function body was applied by MCP and summarized here to avoid
+-- unsafe full-file connector replacement issues.
