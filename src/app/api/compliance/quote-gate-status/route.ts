@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { hasSupabaseEnv } from '@/lib/env';
+import { safeApiError, logServerError } from '@/lib/safe-error';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
 const CLEAR_DOCUMENT_STATUSES = new Set(['approved', 'complete', 'completed', 'ready', 'waived']);
 const OPEN_COMPLIANCE_STATUSES = new Set(['blocked', 'missing', 'rejected', 'overdue', 'pending', 'submitted', 'in_review', 'pending_review', 'revision_requested']);
+const GENERIC_GATE_ERROR = 'Could not load quote gate status. Please refresh and try again.';
 
 type QuoteGateRow = {
   id: string;
@@ -22,18 +24,23 @@ function normalize(value: unknown) {
   return clean(value).toLowerCase();
 }
 
+function gateError(error: unknown, status = 500) {
+  logServerError('quote-gate-status', error);
+  return NextResponse.json(safeApiError(error, GENERIC_GATE_ERROR), { status });
+}
+
 export async function GET(request: Request) {
-  if (!hasSupabaseEnv) return NextResponse.json({ error: 'Missing Supabase environment variables.' }, { status: 500 });
+  if (!hasSupabaseEnv) return NextResponse.json({ error: 'System configuration is incomplete. Please contact an admin.' }, { status: 500 });
 
   const workspace = await getWorkspaceAccess();
-  if (!workspace.user || !workspace.organization) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+  if (!workspace.user || !workspace.organization) return NextResponse.json({ error: 'Please sign in again to continue.' }, { status: 401 });
 
   const organizationId = workspace.organization.id;
   const { searchParams } = new URL(request.url);
   const quoteId = clean(searchParams.get('quoteId'));
   const quoteNumber = clean(searchParams.get('quoteNumber'));
 
-  if (!quoteId && !quoteNumber) return NextResponse.json({ error: 'quoteId or quoteNumber is required.' }, { status: 400 });
+  if (!quoteId && !quoteNumber) return NextResponse.json({ error: 'A quote ID or quote number is required.' }, { status: 400 });
 
   const supabase = await createClient();
   let quoteQuery = (supabase as any)
@@ -44,7 +51,7 @@ export async function GET(request: Request) {
 
   quoteQuery = quoteId ? quoteQuery.eq('id', quoteId) : quoteQuery.eq('quote_number', quoteNumber);
   const quoteResult = await quoteQuery;
-  if (quoteResult.error) return NextResponse.json({ error: quoteResult.error.message }, { status: 500 });
+  if (quoteResult.error) return gateError(quoteResult.error);
   const quote = ((Array.isArray(quoteResult.data) ? quoteResult.data[0] : null) ?? null) as QuoteGateRow | null;
   if (!quote?.id || !quote?.lead_id) return NextResponse.json({ error: 'Quote not found in this organization.' }, { status: 404 });
 
@@ -76,7 +83,7 @@ export async function GET(request: Request) {
   ]);
 
   for (const result of [quoteDocsResult, leadDocsResult, complianceResult, versionResult]) {
-    if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 });
+    if (result.error) return gateError(result.error);
   }
 
   const documents = [...(quoteDocsResult.data ?? []), ...(leadDocsResult.data ?? [])];
