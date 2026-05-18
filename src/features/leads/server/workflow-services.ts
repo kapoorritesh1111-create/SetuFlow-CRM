@@ -12,6 +12,7 @@ export type LeadRelationReplacementInput = {
   marketIds: string[];
   productIds: string[];
   sourceContext?: Record<string, unknown> | null;
+  productInsertExtras?: Record<string, Record<string, unknown>>;
 };
 
 export type LeadFollowUpReplacementInput = {
@@ -52,7 +53,7 @@ export function leadWorkflowError(scope: string, error: unknown, fallback = 'The
   return safeUserError(error, fallback);
 }
 
-export async function replaceLeadCoverageRelations({ db, organizationId, leadId, marketIds, productIds, sourceContext }: LeadRelationReplacementInput): Promise<LeadWorkflowServiceResult> {
+export async function replaceLeadCoverageRelations({ db, organizationId, leadId, marketIds, productIds, sourceContext, productInsertExtras }: LeadRelationReplacementInput): Promise<LeadWorkflowServiceResult> {
   const [{ error: deleteMarketsError }, { error: deleteProductsError }] = await Promise.all([
     db.from('lead_markets').delete().eq('lead_id', leadId),
     db.from('lead_product_interests').delete().eq('lead_id', leadId),
@@ -72,6 +73,7 @@ export async function replaceLeadCoverageRelations({ db, organizationId, leadId,
       product_id: productId,
       interest_type: 'confirmed_product',
       source_context: sourceContext ?? { source: 'lead_workspace' },
+      ...(productInsertExtras?.[productId] ?? {}),
     })));
     if (error) return { error: leadWorkflowError('lead-coverage.insert-products', error, 'Coverage products could not be saved.') };
   }

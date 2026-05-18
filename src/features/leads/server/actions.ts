@@ -14,6 +14,7 @@ import { type ActionState, type LeadRecord, type QuoteDraftActionState, normaliz
 import { convertQuoteLinePrice, getQuoteFxLockFromNotes, resolveWeeklyQuoteFxLock, type QuoteFxLock } from '@/lib/quote-fx';
 import { parseQuoteWorkflow, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
 import { normalizeQuoteDisplayCurrency } from '@/lib/catalog-pricing-model';
+import { leadWorkflowError, replaceLeadCoverageRelations, replaceLeadFollowUp, recordLeadTimelineFanout, recordLeadAudit } from './workflow-services';
 
 type ExistingLeadSnapshot = {
   id: string;
@@ -294,8 +295,7 @@ function formatLeadActionError(error: any, fallback = 'The lead action could not
   if (message.includes('lead_id') && message.includes('ambiguous')) {
     return 'The batch update could not be saved because the live database procedure needs a qualified lead reference. This build uses the safe app-side update path; refresh and retry.';
   }
-  if (message.includes('violates') || message.includes('constraint') || message.includes('database')) return fallback;
-  return String(error?.message ?? '') || fallback;
+  return leadWorkflowError('lead-action', error, fallback);
 }
 
 async function refreshLeadRelationsDirect(db: any, params: {
@@ -304,30 +304,16 @@ async function refreshLeadRelationsDirect(db: any, params: {
   marketIds: string[];
   productIds: string[];
 }) {
-  const [{ error: deleteMarketsError }, { error: deleteProductsError }] = await Promise.all([
-    db.from('lead_markets').delete().eq('lead_id', params.leadId),
-    db.from('lead_product_interests').delete().eq('lead_id', params.leadId),
-  ]);
-  if (deleteMarketsError) return { error: deleteMarketsError };
-  if (deleteProductsError) return { error: deleteProductsError };
+  const result = await replaceLeadCoverageRelations({
+    db,
+    organizationId: params.organizationId,
+    leadId: params.leadId,
+    marketIds: params.marketIds,
+    productIds: params.productIds,
+    sourceContext: { source: 'lead_workspace' },
+  });
 
-  if (params.marketIds.length) {
-    const { error } = await db.from('lead_markets').insert(params.marketIds.map((marketId) => ({ organization_id: params.organizationId, lead_id: params.leadId, market_id: marketId })));
-    if (error) return { error };
-  }
-
-  if (params.productIds.length) {
-    const { error } = await db.from('lead_product_interests').insert(params.productIds.map((productId) => ({
-      organization_id: params.organizationId,
-      lead_id: params.leadId,
-      product_id: productId,
-      interest_type: 'confirmed_product',
-      source_context: { source: 'lead_workspace' },
-    })));
-    if (error) return { error };
-  }
-
-  return { error: null };
+  return { error: result.error ? { message: result.error } : null };
 }
 
 async function replaceLeadFollowUpDirect(db: any, params: {
@@ -336,27 +322,15 @@ async function replaceLeadFollowUpDirect(db: any, params: {
   scheduledAt: string;
   actorUserId: string;
 }) {
-  await db
-    .from('lead_follow_ups')
-    .update({ status: 'cancelled' })
-    .eq('organization_id', params.organizationId)
-    .eq('lead_id', params.leadId)
-    .in('status', ['pending', 'scheduled']);
+  const result = await replaceLeadFollowUp({
+    db,
+    organizationId: params.organizationId,
+    leadId: params.leadId,
+    scheduledAt: params.scheduledAt,
+    actorUserId: params.actorUserId,
+  });
 
-  const { data, error } = await db
-    .from('lead_follow_ups')
-    .insert({
-      organization_id: params.organizationId,
-      lead_id: params.leadId,
-      scheduled_at: params.scheduledAt,
-      status: 'scheduled',
-      assigned_user_id: params.actorUserId,
-      created_by: params.actorUserId,
-    })
-    .select('id, lead_id, scheduled_at, status')
-    .single();
-
-  return { data, error };
+  return { data: result.data, error: result.error ? { message: result.error } : null };
 }
 
 async function recordLeadStageHistoryDirect(db: any, params: {
@@ -1691,9 +1665,9 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
       db.from('lead_markets').select('market_id').eq('lead_id', parsed.data.lead_id),
     ]);
 
-    if (leadError) return { error: leadError.message };
-    if (productError) return { error: productError.message };
-    if (marketError) return { error: marketError.message };
+    if (leadError) return { error: formatLeadActionError(leadError) };
+    if (productError) return { error: formatLeadActionError(productError) };
+    if (marketError) return { error: formatLeadActionError(marketError) };
 
     existingLead = (leadRow ?? null) as ExistingLeadSnapshot | null;
     existingWorkflow = parseLeadWorkflow(existingLead?.notes);
@@ -1784,7 +1758,7 @@ const contactSourceContext = {
       .select('id, company_name')
       .single();
 
-    if (insertError) return { error: insertError.message };
+    if (insertError) return { error: formatLeadActionError(insertError) };
 
     const createdLeadRow = (createdLead ?? null) as LeadSummary | null;
     leadId = createdLeadRow?.id ?? null;
@@ -1801,9 +1775,9 @@ const contactSourceContext = {
   });
 
   if (relationRpcError) {
-    if (!isMissingRpcFunction(relationRpcError) && !isLeadRelationOrganizationIdError(relationRpcError)) return { error: relationRpcError.message };
+    if (!isMissingRpcFunction(relationRpcError) && !isLeadRelationOrganizationIdError(relationRpcError)) return { error: formatLeadActionError(relationRpcError) };
     const relationFallback = await refreshLeadRelationsDirect(db, { organizationId: organization.id, leadId, marketIds, productIds });
-    if (relationFallback.error) return { error: relationFallback.error.message };
+    if (relationFallback.error) return { error: formatLeadActionError(relationFallback.error) };
   }
 
   const workflowWrite = await appendLeadWorkflowState(db, {
@@ -1817,7 +1791,7 @@ const contactSourceContext = {
     autoQualifyBuyer: (existingLead?.lead_type ?? parsed.data.lead_type) !== 'supplier' && productIds.length > 0,
     actorUserId: currentUser.id,
   });
-  if (workflowWrite.error?.message) return { error: workflowWrite.error.message };
+  if (workflowWrite.error?.message) return { error: formatLeadActionError(workflowWrite.error) };
   payload.notes = workflowWrite.notes;
 
   if (shouldWriteFollowUp && nextFollowUpAt) {
@@ -1830,14 +1804,14 @@ const contactSourceContext = {
 
     let replacedFollowUpRow = Array.isArray(replacedFollowUp) ? replacedFollowUp[0] : replacedFollowUp;
     if (replaceFollowUpRpcError) {
-      if (!isMissingRpcFunction(replaceFollowUpRpcError)) return { error: replaceFollowUpRpcError.message };
+      if (!isMissingRpcFunction(replaceFollowUpRpcError)) return { error: formatLeadActionError(replaceFollowUpRpcError) };
       const fallback = await replaceLeadFollowUpDirect(db, {
         organizationId: organization.id,
         leadId,
         scheduledAt: nextFollowUpAt,
         actorUserId: currentUser.id,
       });
-      if (fallback.error) return { error: fallback.error.message };
+      if (fallback.error) return { error: formatLeadActionError(fallback.error) };
       replacedFollowUpRow = fallback.data;
     }
 
@@ -1890,7 +1864,7 @@ const contactSourceContext = {
 
     let stageHistoryRow = Array.isArray(stageHistoryResult) ? stageHistoryResult[0] : stageHistoryResult;
     if (stageHistoryRpcError) {
-      if (!isMissingRpcFunction(stageHistoryRpcError)) return { error: stageHistoryRpcError.message };
+      if (!isMissingRpcFunction(stageHistoryRpcError)) return { error: formatLeadActionError(stageHistoryRpcError) };
       const fallback = await recordLeadStageHistoryDirect(db, {
         organizationId: organization.id,
         leadId,
@@ -1898,7 +1872,7 @@ const contactSourceContext = {
         toStageId: payload.stage_id,
         actorUserId: currentUser.id,
       });
-      if (fallback.error) return { error: fallback.error.message };
+      if (fallback.error) return { error: formatLeadActionError(fallback.error) };
       stageHistoryRow = fallback.data;
     }
 
@@ -1917,7 +1891,7 @@ const contactSourceContext = {
 
     let stageChangeFanoutRow = Array.isArray(stageChangeFanoutResult) ? stageChangeFanoutResult[0] : stageChangeFanoutResult;
     if (stageChangeFanoutRpcError) {
-      if (!isMissingRpcFunction(stageChangeFanoutRpcError)) return { error: stageChangeFanoutRpcError.message };
+      if (!isMissingRpcFunction(stageChangeFanoutRpcError)) return { error: formatLeadActionError(stageChangeFanoutRpcError) };
       const fallback = await recordLeadStageFanoutDirect(db, {
         organizationId: organization.id,
         leadId,
@@ -1926,7 +1900,7 @@ const contactSourceContext = {
         actorUserId: currentUser.id,
         companyName,
       });
-      if (fallback.error) return { error: fallback.error.message };
+      if (fallback.error) return { error: formatLeadActionError(fallback.error) };
       stageChangeFanoutRow = fallback.data;
     }
 
@@ -1944,14 +1918,14 @@ const contactSourceContext = {
 
   let nonStageFanoutRow = Array.isArray(nonStageFanoutResult) ? nonStageFanoutResult[0] : nonStageFanoutResult;
   if (nonStageFanoutRpcError) {
-    if (!isMissingRpcFunction(nonStageFanoutRpcError)) return { error: nonStageFanoutRpcError.message };
+    if (!isMissingRpcFunction(nonStageFanoutRpcError)) return { error: formatLeadActionError(nonStageFanoutRpcError) };
     const fallback = await recordLeadNonStageFanoutDirect(db, {
       organizationId: organization.id,
       leadId,
       actorUserId: currentUser.id,
       payload: nonStageFanoutPayload,
     });
-    if (fallback.error) return { error: fallback.error.message };
+    if (fallback.error) return { error: formatLeadActionError(fallback.error) };
     nonStageFanoutRow = fallback.data;
   }
 
@@ -1966,7 +1940,7 @@ const contactSourceContext = {
     .eq('organization_id', organization.id)
     .maybeSingle();
 
-  if (savedLeadError) return { error: savedLeadError.message };
+  if (savedLeadError) return { error: formatLeadActionError(savedLeadError) };
   if (!savedLeadRow) return { error: 'Unable to load saved lead snapshot.' };
 
   await writeLeadAuditLog({
@@ -2037,7 +2011,7 @@ export async function saveLeadDetails(_: ActionState | undefined, formData: Form
     .eq('organization_id', organization.id)
     .maybeSingle();
 
-  if (existingLeadError || !existingLead) return { error: existingLeadError?.message ?? 'Lead not found.' };
+  if (existingLeadError || !existingLead) return { error: existingLeadError ? formatLeadActionError(existingLeadError, 'Lead not found.') : 'Lead not found.' };
 
   const { error: updateError } = await db
     .from('leads')
@@ -2052,7 +2026,7 @@ export async function saveLeadDetails(_: ActionState | undefined, formData: Form
     .eq('id', leadId)
     .eq('organization_id', organization.id);
 
-  if (updateError) return { error: updateError.message };
+  if (updateError) return { error: formatLeadActionError(updateError) };
 
   const detailChanges = [
     existingLead.company_name !== companyName ? 'company' : null,
@@ -2088,8 +2062,8 @@ export async function saveLeadDetails(_: ActionState | undefined, formData: Form
     }),
   ]);
 
-  if (activityResult.error?.message) return { error: activityResult.error.message };
-  if (communicationResult.error?.message) return { error: communicationResult.error.message };
+  if (activityResult.error?.message) return { error: formatLeadActionError(activityResult.error) };
+  if (communicationResult.error?.message) return { error: formatLeadActionError(communicationResult.error) };
 
   await writeLeadAuditLog({
     organizationId: organization.id,
@@ -2151,9 +2125,9 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
     db.from('lead_markets').select('market_id').eq('lead_id', leadId),
   ]);
 
-  if (leadError || !leadRow) return { error: leadError?.message ?? 'Lead not found.' };
-  if (productError) return { error: productError.message };
-  if (marketError) return { error: marketError.message };
+  if (leadError || !leadRow) return { error: leadError ? formatLeadActionError(leadError, 'Lead not found.') : 'Lead not found.' };
+  if (productError) return { error: formatLeadActionError(productError) };
+  if (marketError) return { error: formatLeadActionError(marketError) };
 
   const existingLead = leadRow as ExistingLeadSnapshot;
   const previousProductIds = (productRows ?? []).map((item: { product_id: string }) => item.product_id).sort();
@@ -2193,25 +2167,20 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
     .eq('id', leadId)
     .eq('organization_id', organization.id);
 
-  if (updatedByError) return { error: updatedByError.message };
+  if (updatedByError) return { error: formatLeadActionError(updatedByError, 'Lead coverage could not be updated. Please refresh and try again.') };
 
-  const { error: deleteMarketsError } = await db.from('lead_markets').delete().eq('lead_id', leadId);
-  if (deleteMarketsError) return { error: deleteMarketsError.message };
-
-  if (marketIds.length > 0) {
-    const marketInsertRows = marketIds.map((marketId) => ({ organization_id: organization.id, lead_id: leadId, market_id: marketId }));
-    const { error: insertMarketsError } = await db.from('lead_markets').insert(marketInsertRows);
-    if (insertMarketsError) return { error: insertMarketsError.message };
-  }
-
-  const { error: deleteProductsError } = await db.from('lead_product_interests').delete().eq('lead_id', leadId);
-  if (deleteProductsError) return { error: deleteProductsError.message };
-
-  if (productIds.length > 0) {
-    const productInsertRows = productIds.map((productId) => ({ organization_id: organization.id, lead_id: leadId, product_id: productId, interest_type: 'confirmed_product', source_context: contactSourceContext, label: JSON.stringify({ categoryId: categoryByProductId.get(productId) ?? null, interestType: 'confirmed_product', sourceContext: contactSourceContext }) }));
-    const { error: insertProductsError } = await db.from('lead_product_interests').insert(productInsertRows);
-    if (insertProductsError) return { error: insertProductsError.message };
-  }
+  const coverageReplacement = await replaceLeadCoverageRelations({
+    db,
+    organizationId: organization.id,
+    leadId,
+    marketIds,
+    productIds,
+    sourceContext: contactSourceContext,
+    productInsertExtras: Object.fromEntries(productIds.map((productId) => [productId, {
+      label: JSON.stringify({ categoryId: categoryByProductId.get(productId) ?? null, interestType: 'confirmed_product', sourceContext: contactSourceContext }),
+    }])),
+  });
+  if (coverageReplacement.error) return { error: coverageReplacement.error };
 
   const existingWorkflow = parseLeadWorkflow(existingLead.notes);
   const workflowWrite = await appendLeadWorkflowState(db, {
@@ -2226,7 +2195,7 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
     actorUserId: currentUser.id,
   });
 
-  if (workflowWrite.error?.message) return { error: workflowWrite.error.message };
+  if (workflowWrite.error?.message) return { error: formatLeadActionError(workflowWrite.error) };
 
   const autoQualifiedBuyer = existingLead.lead_type !== 'supplier'
     && productIds.length > 0
@@ -2334,11 +2303,11 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
 
   const activityResults = await Promise.all(activityJobs);
   const activityError = activityResults.find((item) => item.error?.message)?.error;
-  if (activityError?.message) return { error: activityError.message };
+  if (activityError?.message) return { error: formatLeadActionError(activityError) };
 
   const communicationResults = await Promise.all(communicationJobs);
   const communicationError = communicationResults.find((item) => item.error?.message)?.error;
-  if (communicationError?.message) return { error: communicationError.message };
+  if (communicationError?.message) return { error: formatLeadActionError(communicationError) };
 
   await writeLeadAuditLog({
     organizationId: organization.id,
@@ -2395,7 +2364,7 @@ export async function deleteLead(_: ActionState | undefined, formData: FormData)
     .eq('id', leadId)
     .maybeSingle();
 
-  if (leadError) return { error: leadError.message };
+  if (leadError) return { error: formatLeadActionError(leadError) };
   if (!lead?.id) return { error: 'Lead not found in the active workspace.' };
 
   // Keep this compatibility cleanup even though production now cascades scheduled_tasks.
@@ -2405,7 +2374,7 @@ export async function deleteLead(_: ActionState | undefined, formData: FormData)
     .delete()
     .eq('organization_id', organizationId)
     .eq('lead_id', leadId);
-  if (taskDeleteError) return { error: taskDeleteError.message };
+  if (taskDeleteError) return { error: formatLeadActionError(taskDeleteError) };
 
   await writeAuditLog({
     organizationId,
@@ -2426,7 +2395,7 @@ export async function deleteLead(_: ActionState | undefined, formData: FormData)
     .eq('organization_id', organizationId)
     .eq('id', leadId);
 
-  if (deleteError) return { error: deleteError.message };
+  if (deleteError) return { error: formatLeadActionError(deleteError) };
 
   revalidateLeadSurfaces(leadId);
   return { success: `${lead.company_name} was deleted.` };
@@ -2455,7 +2424,7 @@ export async function batchDeleteLeads(_: ActionState | undefined, formData: For
     .eq('organization_id', organizationId)
     .in('id', leadIds);
 
-  if (leadsError) return { error: leadsError.message };
+  if (leadsError) return { error: formatLeadActionError(leadsError) };
   const foundLeads = Array.isArray(leads) ? leads : [];
   if (foundLeads.length !== leadIds.length) {
     return { error: 'One or more selected leads are not available in the active workspace.' };
@@ -2466,7 +2435,7 @@ export async function batchDeleteLeads(_: ActionState | undefined, formData: For
     .delete()
     .eq('organization_id', organizationId)
     .in('lead_id', leadIds);
-  if (taskDeleteError) return { error: taskDeleteError.message };
+  if (taskDeleteError) return { error: formatLeadActionError(taskDeleteError) };
 
   await Promise.all(foundLeads.map((lead: any) => writeAuditLog({
     organizationId,
@@ -2487,7 +2456,7 @@ export async function batchDeleteLeads(_: ActionState | undefined, formData: For
     .eq('organization_id', organizationId)
     .in('id', leadIds);
 
-  if (deleteError) return { error: deleteError.message };
+  if (deleteError) return { error: formatLeadActionError(deleteError) };
 
   revalidateLeadSurfaces();
   return { success: `${foundLeads.length} lead${foundLeads.length === 1 ? '' : 's'} deleted.` };
@@ -2517,7 +2486,7 @@ export async function scheduleLeadFollowUp(_: ActionState | undefined, formData:
     .eq('organization_id', organization.id)
     .maybeSingle();
 
-  if (leadError || !lead) return { error: leadError?.message ?? 'Lead not found.' };
+  if (leadError || !lead) return { error: leadError ? formatLeadActionError(leadError, 'Lead not found.') : 'Lead not found.' };
 
   const { error: updateLeadError } = await db
     .from('leads')
@@ -2525,7 +2494,7 @@ export async function scheduleLeadFollowUp(_: ActionState | undefined, formData:
     .eq('id', leadId)
     .eq('organization_id', organization.id);
 
-  if (updateLeadError) return { error: updateLeadError.message };
+  if (updateLeadError) return { error: formatLeadActionError(updateLeadError) };
 
   const { error: deletePendingError } = await db
     .from('lead_follow_ups')
@@ -2534,7 +2503,7 @@ export async function scheduleLeadFollowUp(_: ActionState | undefined, formData:
     .eq('lead_id', leadId)
     .neq('status', 'completed');
 
-  if (deletePendingError) return { error: deletePendingError.message };
+  if (deletePendingError) return { error: formatLeadActionError(deletePendingError) };
 
   const { data: insertedFollowUp, error: insertFollowUpError } = await db
     .from('lead_follow_ups')
@@ -2542,7 +2511,7 @@ export async function scheduleLeadFollowUp(_: ActionState | undefined, formData:
     .select('id')
     .single();
 
-  if (insertFollowUpError) return { error: insertFollowUpError.message };
+  if (insertFollowUpError) return { error: formatLeadActionError(insertFollowUpError) };
 
   const activityResult = await insertActivity(db, {
     organization_id: organization.id,
@@ -2552,7 +2521,7 @@ export async function scheduleLeadFollowUp(_: ActionState | undefined, formData:
     message: `Follow-up scheduled for ${lead.company_name}.`,
   });
 
-  if (activityResult.error?.message) return { error: activityResult.error.message };
+  if (activityResult.error?.message) return { error: formatLeadActionError(activityResult.error) };
 
   const { error: communicationError } = await insertCommunication(db, {
     organization_id: organization.id,
@@ -2568,7 +2537,7 @@ export async function scheduleLeadFollowUp(_: ActionState | undefined, formData:
     metadata: { source: 'scheduleLeadFollowUp' },
   });
 
-  if (communicationError?.message) return { error: communicationError.message };
+  if (communicationError?.message) return { error: formatLeadActionError(communicationError) };
 
   await writeLeadAuditLog({
     organizationId: organization.id,
@@ -2613,7 +2582,7 @@ export async function batchScheduleLeadFollowUps(_: ActionState | undefined, for
     .eq('organization_id', organization.id)
     .in('id', leadIds);
 
-  if (leadError) return { error: leadError.message };
+  if (leadError) return { error: formatLeadActionError(leadError) };
 
   const leads = (leadRows ?? []) as LeadSummary[];
   if (leads.length !== leadIds.length) return { error: 'One or more selected leads are not available in the active organization.' };
@@ -2624,7 +2593,7 @@ export async function batchScheduleLeadFollowUps(_: ActionState | undefined, for
     .eq('organization_id', organization.id)
     .in('id', leadIds);
 
-  if (updateLeadError) return { error: updateLeadError.message };
+  if (updateLeadError) return { error: formatLeadActionError(updateLeadError) };
 
   const { error: deleteFollowUpsError } = await db
     .from('lead_follow_ups')
@@ -2633,7 +2602,7 @@ export async function batchScheduleLeadFollowUps(_: ActionState | undefined, for
     .in('lead_id', leadIds)
     .neq('status', 'completed');
 
-  if (deleteFollowUpsError) return { error: deleteFollowUpsError.message };
+  if (deleteFollowUpsError) return { error: formatLeadActionError(deleteFollowUpsError) };
 
   const followUpRows = leadIds.map((leadId) => ({
     organization_id: organization.id,
@@ -2643,7 +2612,7 @@ export async function batchScheduleLeadFollowUps(_: ActionState | undefined, for
   }));
 
   const { error: insertFollowUpsError } = await db.from('lead_follow_ups').insert(followUpRows);
-  if (insertFollowUpsError) return { error: insertFollowUpsError.message };
+  if (insertFollowUpsError) return { error: formatLeadActionError(insertFollowUpsError) };
 
   const activityRows = leads.map((lead) => ({
     organization_id: organization.id,
@@ -2655,7 +2624,7 @@ export async function batchScheduleLeadFollowUps(_: ActionState | undefined, for
   }));
 
   const { error: activityInsertError } = await db.from('lead_activities').insert(activityRows);
-  if (activityInsertError) return { error: activityInsertError.message };
+  if (activityInsertError) return { error: formatLeadActionError(activityInsertError) };
 
   const communicationRows = leads.map((lead) => ({
     organization_id: organization.id,
@@ -2678,7 +2647,7 @@ export async function batchScheduleLeadFollowUps(_: ActionState | undefined, for
   }));
 
   const { error: communicationInsertError } = await db.from('communications').insert(communicationRows);
-  if (communicationInsertError) return { error: communicationInsertError.message };
+  if (communicationInsertError) return { error: formatLeadActionError(communicationInsertError) };
 
   await writeLeadAuditLog({
     organizationId: organization.id,
@@ -2725,7 +2694,7 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
     .maybeSingle();
 
   if (stageError || !stageRow) {
-    return { error: stageError?.message ?? 'Target stage not found.' };
+    return { error: stageError ? formatLeadActionError(stageError, 'Target stage not found.') : 'Target stage not found.' };
   }
   const targetStage = stageRow as { id: string; name: string };
 
