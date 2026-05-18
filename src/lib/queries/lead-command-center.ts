@@ -171,11 +171,12 @@ export function getAiQueueStatus(data: LeadProfileData) {
 
 export function getQualificationState(data: LeadProfileData) {
   const workflow = data.workflow
+  const mapping = getMappingState(data)
   const missingFields: string[] = []
   if (!data.lead?.contact_name) missingFields.push('Primary contact')
   if (!data.lead?.email) missingFields.push('Email')
   if (!data.lead?.country && !data.lead?.country_id) missingFields.push('Country')
-  if (!workflow.mappedProductIds.length) missingFields.push('Product mapping')
+  if (!mapping.productCount) missingFields.push('Product mapping')
 
   return {
     status: workflow.qualificationStatus,
@@ -187,28 +188,33 @@ export function getQualificationState(data: LeadProfileData) {
 
 export function getMappingState(data: LeadProfileData) {
   const workflow = data.workflow
-  const mappedProductNames = workflow.mappedProductIds
-    .map((productId) => data.products.find((product) => product.id === productId)?.name)
+  const relationProductIds = Array.from(new Set((data.linkedProducts ?? []).map((product) => product.id).filter(Boolean)))
+  const relationMarketIds = Array.from(new Set((data.linkedMarkets ?? []).map((market) => market.id).filter(Boolean)))
+  const productIds = relationProductIds.length ? relationProductIds : workflow.mappedProductIds
+  const marketIds = relationMarketIds.length ? relationMarketIds : workflow.mappedMarketIds
+
+  const mappedProductNames = productIds
+    .map((productId) => data.products.find((product) => product.id === productId)?.name ?? data.linkedProducts.find((product) => product.id === productId)?.name)
     .filter((value): value is string => Boolean(value))
-  const mappedMarketNames = workflow.mappedMarketIds
-    .map((marketId) => data.markets.find((market) => market.id === marketId)?.name)
+  const mappedMarketNames = marketIds
+    .map((marketId) => data.markets.find((market) => market.id === marketId)?.name ?? data.linkedMarkets.find((market) => market.id === marketId)?.name)
     .filter((value): value is string => Boolean(value))
   const confirmedSelections = workflow.coverageSelections.filter((item) => item.interestType === 'confirmed_product' && item.productIds.length > 0)
   const categoryOnlySelections = workflow.coverageSelections.filter((item) => item.interestType === 'category_only' || item.productIds.length === 0)
-  const hasConfirmedProductInterest = confirmedSelections.length > 0 || workflow.mappedProductIds.length > 0
-  const hasMarketCoverage = workflow.mappedMarketIds.length > 0
+  const hasConfirmedProductInterest = productIds.length > 0 || confirmedSelections.length > 0
+  const hasMarketCoverage = marketIds.length > 0
 
   return {
-    productCount: workflow.mappedProductIds.length,
-    marketCount: workflow.mappedMarketIds.length,
-    confirmedProductCount: confirmedSelections.length,
+    productCount: productIds.length,
+    marketCount: marketIds.length,
+    confirmedProductCount: productIds.length || confirmedSelections.length,
     categoryOnlyCount: categoryOnlySelections.length,
     hasConfirmedProductInterest,
     hasMarketCoverage,
     isComplete: hasConfirmedProductInterest && hasMarketCoverage,
     productNames: mappedProductNames,
     marketNames: mappedMarketNames,
-    status: workflow.productMappingStatus,
+    status: hasConfirmedProductInterest && hasMarketCoverage ? 'ready' : workflow.productMappingStatus,
     notes: workflow.productMappingNotes,
   }
 }
