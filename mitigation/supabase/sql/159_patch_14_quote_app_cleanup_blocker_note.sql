@@ -1,0 +1,26 @@
+-- 159_patch_14_quote_app_cleanup_blocker_note.sql
+-- Patch 14 attempted quote actions app-code cleanup.
+--
+-- Runtime environment limitation:
+-- The sandbox cannot reach github.com for local checkout, and the GitHub connector
+-- only supports full-file replacement for update_file. Because
+-- src/features/quotes/server/actions.ts is large, a safe hunk-level edit could not be
+-- performed directly in this session without risking a full-file rewrite/regression.
+--
+-- Live DB safety already applied in Patch 13:
+-- - app_enforce_quote_accepted_version_integrity prevents accepted_version_id changes
+--   unless quote.status = 'accepted'.
+-- - app_safe_accept_sent_quote_tx performs canonical acceptance/order handoff.
+-- - app_prevent_locked_quote_version_mutation blocks commercial edits of locked versions.
+--
+-- Required next code cleanup:
+-- - Update src/features/quotes/server/actions.ts locally with hunk-level edits:
+--   * Import safeUserError/logServerError.
+--   * Add quoteActionError formatter.
+--   * updateQuoteDirect(): sent path must set current_version_id + sent_version_id only.
+--   * updateQuoteWorkflow(): missing-RPC send fallback must set sent_version_id only.
+--   * recordQuoteOutcomeWorkflow(): use app_safe_accept_sent_quote_tx for acceptance.
+--   * markQuoteAsDirectOrder(): call send RPC then app_safe_accept_sent_quote_tx.
+--   * Replace raw .message returns in quote action surfaces with sanitized errors.
+--
+-- No schema changes in this migration note.
