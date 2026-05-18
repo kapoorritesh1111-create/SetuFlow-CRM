@@ -60,6 +60,14 @@ export function LeadCommandHeader({
   const avatarGradient = getAvatarGradient(lead.companyName);
   const initials = getLeadInitials(lead.companyName);
 
+  const runToolAction = (event: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const menu = event.currentTarget.closest('details') as HTMLDetailsElement | null;
+    if (menu) menu.open = false;
+    action();
+  };
+
   // Status chips — spec: .lhc-chip variants
   const chips: Array<{ label: string; tone: 'amber' | 'green' | 'slate' | 'blue' }> = [
     {
@@ -154,7 +162,7 @@ export function LeadCommandHeader({
                   { label: '📦 Adjust coverage', onClick: onEditCoverage },
                   { label: '📝 Add note to log', onClick: onOpenActivity },
                 ].map((item) => (
-                  <button key={item.label} type="button" onClick={item.onClick}
+                  <button key={item.label} type="button" onClick={(event) => runToolAction(event, item.onClick)}
                     style={{ display: 'block', width: '100%', padding: '7px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#334155', border: 'none', background: 'none', textAlign: 'left' }}
                     onMouseOver={(e) => { (e.target as HTMLElement).style.background = '#f8fafc'; }}
                     onMouseOut={(e) => { (e.target as HTMLElement).style.background = ''; }}
