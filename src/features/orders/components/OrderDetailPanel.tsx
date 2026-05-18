@@ -1,29 +1,8 @@
-/**
- * OrderDetailPanel — compact execution drawer rendered inline when an order is open.
- *
- * The order card already shows the timeline and readiness summary, so this panel
- * intentionally avoids repeating workflow/status rows. It only contains the
- * action strip, document readiness, upload, and collapsible evidence list.
- */
-
 import Link from 'next/link';
 import { progressOrderExecution, signContractAction, uploadOrderDocumentAction } from '@/features/orders/server/actions';
-import {
-  approveActualOrderLinesGateAction,
-  approveFirstDocumentGateAction,
-  ensureActualOrderLinesAction,
-  prepareFirstDocumentGateAction,
-  previewFirstDocumentGateAction,
-} from '@/features/orders/server/execution-order-actions';
-import {
-  approveFreightRateRequestAction,
-  approvePackingSheetAction,
-  prepareFreightRateRequestAction,
-  preparePackingSheetAction,
-  previewFreightRateRequestAction,
-  previewPackingSheetAction,
-} from '@/features/orders/server/packing-freight-actions';
+import { ensureActualOrderLinesAction } from '@/features/orders/server/execution-order-actions';
 import { sendOrderDocumentLinkAction } from '@/features/orders/server/share-actions';
+import { OrderStageAdvanceStrip } from '@/features/orders/components/OrderStageAdvanceStrip';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 type DocRow = {
@@ -54,49 +33,6 @@ const STAGE_META: Record<StageKey, { action: string }> = {
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function GateForm({
-  action,
-  quoteId,
-  documentGateType,
-  label,
-  tone,
-}: {
-  action: (formData: FormData) => Promise<void>;
-  quoteId: string;
-  documentGateType?: 'order_confirmation' | 'proforma_invoice';
-  label: string;
-  tone: 'primary' | 'blue' | 'white' | 'green';
-}) {
-  const styles = {
-    primary: { bg: '#0b2e4a', color: 'white', border: '#0b2e4a' },
-    green: { bg: '#059669', color: 'white', border: '#059669' },
-    blue: { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
-    white: { bg: 'white', color: '#334155', border: '#dbe7f3' },
-  }[tone];
-  return (
-    <form action={action}>
-      <input type="hidden" name="quote_id" value={quoteId} />
-      {documentGateType ? <input type="hidden" name="document_gate_type" value={documentGateType} /> : null}
-      <button
-        type="submit"
-        style={{
-          padding: '7px 11px',
-          borderRadius: '999px',
-          background: styles.bg,
-          color: styles.color,
-          border: `1px solid ${styles.border}`,
-          fontSize: '10px',
-          fontWeight: 800,
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {label}
-      </button>
-    </form>
-  );
 }
 
 export function OrderDetailPanel({
@@ -144,38 +80,6 @@ export function OrderDetailPanel({
   const documentKitAnchor = `order-doc-kit-${contractId ?? quoteId}`;
   const orderPdfHref = contractId ? `/api/orders/${contractId}/order-confirmation/pdf` : `#${documentKitAnchor}`;
   const invoicePdfHref = contractId ? `/api/orders/${contractId}/invoice/pdf` : `#${documentKitAnchor}`;
-  const documentWorkflow = [
-    {
-      key: 'quote',
-      label: 'Quote PDF',
-      status: 'Ready',
-      actionLabel: 'Open quote',
-      description: 'Commercial source document.',
-      href: `${PRODUCT_ROUTES.app.quotes}?quoteId=${quoteId}`,
-      tone: 'green' as const,
-      linkTone: 'blue' as const,
-    },
-    {
-      key: 'order',
-      label: 'Order confirmation',
-      status: contractId ? 'Ready to generate' : 'Contract needed',
-      actionLabel: 'Generate order PDF',
-      description: 'From signed contract and locked order lines.',
-      href: orderPdfHref,
-      tone: contractId ? 'blue' as const : 'amber' as const,
-      linkTone: contractId ? 'blue' as const : 'white' as const,
-    },
-    {
-      key: 'invoice',
-      label: 'Invoice',
-      status: contractId ? 'Ready to generate' : 'Contract needed',
-      actionLabel: 'Generate invoice',
-      description: 'After release or dispatch approval.',
-      href: invoicePdfHref,
-      tone: contractId ? 'blue' as const : 'amber' as const,
-      linkTone: contractId ? 'blue' as const : 'white' as const,
-    },
-  ];
 
   const pill = (text: string, tone: 'green' | 'blue' | 'slate' | 'amber' | 'red' = 'slate') => {
     const styles = {
@@ -210,7 +114,6 @@ export function OrderDetailPanel({
   };
 
   const sendButtonStyle = { ...buttonStyle('white'), padding: '7px 11px', fontSize: '10px' };
-  const fieldStyle = { padding: '7px 9px', borderRadius: '9px', border: '1px solid #dbe7f3', background: 'white', color: '#334155', fontSize: '10px', fontWeight: 700 };
 
   return (
     <div style={{ borderTop: '1px solid #dbe7f3', background: 'white', padding: '0' }}>
@@ -256,88 +159,7 @@ export function OrderDetailPanel({
         </div>
       </div>
 
-      <div style={{ padding: '10px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'grid', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {pill('Sprint 8L gates', 'blue')}
-          <span style={{ fontSize: '11px', color: '#64748b' }}>Internal approval and first document gates use the new order schema. Quote history stays unchanged.</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px' }}>
-          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: 'white', padding: '10px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>1. Internal review</div>
-            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Approve actual buyer lines before any first document is sent.</div>
-            <GateForm action={approveActualOrderLinesGateAction} quoteId={quoteId} label="Approve actual lines" tone="green" />
-          </div>
-          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: 'white', padding: '10px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>2. Regional document gate</div>
-            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Prepare, preview, and approve Order Confirmation.</div>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <GateForm action={prepareFirstDocumentGateAction} quoteId={quoteId} documentGateType="order_confirmation" label="Prepare" tone="white" />
-              <GateForm action={previewFirstDocumentGateAction} quoteId={quoteId} documentGateType="order_confirmation" label="Previewed" tone="blue" />
-              <GateForm action={approveFirstDocumentGateAction} quoteId={quoteId} documentGateType="order_confirmation" label="Approve" tone="green" />
-            </div>
-          </div>
-          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: 'white', padding: '10px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>3. Export document gate</div>
-            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Prepare, preview, and approve Proforma Invoice.</div>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <GateForm action={prepareFirstDocumentGateAction} quoteId={quoteId} documentGateType="proforma_invoice" label="Prepare" tone="white" />
-              <GateForm action={previewFirstDocumentGateAction} quoteId={quoteId} documentGateType="proforma_invoice" label="Previewed" tone="blue" />
-              <GateForm action={approveFirstDocumentGateAction} quoteId={quoteId} documentGateType="proforma_invoice" label="Approve" tone="green" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ padding: '10px 20px', borderBottom: '1px solid #e2e8f0', background: 'white', display: 'grid', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {pill('Sprint 8M packing + freight', 'blue')}
-          <span style={{ fontSize: '11px', color: '#64748b' }}>Create a packing sheet first, then preview and approve the freight/delivery rate request. Integration can plug in later.</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '8px' }}>
-          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: '#f8fafc', padding: '10px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>4. Packing sheet</div>
-            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Use regional truck, 20ft, 40ft, or custom template before asking logistics for rates.</div>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <form action={preparePackingSheetAction} style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                <input type="hidden" name="quote_id" value={quoteId} />
-                <select name="template_key" defaultValue="regional_truck" style={fieldStyle}>
-                  <option value="regional_truck">Regional truck</option>
-                  <option value="20ft_container">20ft container</option>
-                  <option value="40ft_container">40ft container</option>
-                  <option value="custom">Custom</option>
-                </select>
-                <button type="submit" style={{ ...buttonStyle('white'), padding: '7px 11px', fontSize: '10px' }}>Prepare</button>
-              </form>
-              <GateForm action={previewPackingSheetAction} quoteId={quoteId} label="Previewed" tone="blue" />
-              <GateForm action={approvePackingSheetAction} quoteId={quoteId} label="Approve" tone="green" />
-            </div>
-          </div>
-          <div style={{ border: '1px solid #dbe7f3', borderRadius: '12px', background: '#f8fafc', padding: '10px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a', marginBottom: '4px' }}>5. Freight rate request</div>
-            <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35, marginBottom: '8px' }}>Prepare a tracked fallback request now; freight integrations can use the same record later.</div>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <form action={prepareFreightRateRequestAction} style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                <input type="hidden" name="quote_id" value={quoteId} />
-                <select name="shipment_mode" defaultValue="road" style={fieldStyle}>
-                  <option value="road">Road</option>
-                  <option value="sea">Sea</option>
-                  <option value="air">Air</option>
-                  <option value="courier">Courier</option>
-                </select>
-                <select name="request_method" defaultValue="email" style={fieldStyle}>
-                  <option value="email">Email</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="manual">Manual</option>
-                  <option value="integration_ready">Integration-ready</option>
-                </select>
-                <button type="submit" style={{ ...buttonStyle('white'), padding: '7px 11px', fontSize: '10px' }}>Prepare</button>
-              </form>
-              <GateForm action={previewFreightRateRequestAction} quoteId={quoteId} label="Previewed" tone="blue" />
-              <GateForm action={approveFreightRateRequestAction} quoteId={quoteId} label="Approve" tone="green" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <OrderStageAdvanceStrip sourceQuoteId={quoteId} contractId={contractId} currentStage={executionState} />
 
       {contractId && !isComplete && !isSigned && (
         <div style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
@@ -360,19 +182,24 @@ export function OrderDetailPanel({
       <div id={documentKitAnchor} style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '9px', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#94a3b8' }}>Document readiness</div>
-          {pill('Quote → Actual lines → Gate → Packing → Freight', 'blue')}
+          {pill('Quote → Actual lines → Lifecycle → Evidence', 'blue')}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px' }}>
-          {documentWorkflow.map((item, index) => (
-            <div key={item.key} style={{ border: '1px solid #dbe7f3', background: '#f8fafc', borderRadius: '12px', padding: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 900, color: '#0b2e4a' }}>{index + 1}. {item.label}</div>
-                {pill(item.status, item.tone)}
-              </div>
-              <div style={{ fontSize: '10px', lineHeight: 1.35, color: '#64748b', minHeight: '28px' }}>{item.description}</div>
-              <a href={item.href} target={item.key === 'quote' || !contractId ? undefined : '_blank'} rel={item.key === 'quote' || !contractId ? undefined : 'noreferrer'} style={{ ...buttonStyle(item.linkTone), display: 'inline-flex', marginTop: '8px', padding: '6px 10px', fontSize: '10px' }}>{item.actionLabel}</a>
-            </div>
-          ))}
+          <div style={{ border: '1px solid #dbe7f3', background: '#f8fafc', borderRadius: '12px', padding: '10px' }}>
+            <strong style={{ fontSize: '11px', color: '#0b2e4a' }}>Quote PDF</strong>
+            <div style={{ fontSize: '10px', lineHeight: 1.35, color: '#64748b', minHeight: '28px' }}>Commercial source document.</div>
+            <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${quoteId}`} style={{ ...buttonStyle('blue'), display: 'inline-flex', marginTop: '8px', padding: '6px 10px', fontSize: '10px' }}>Open quote</Link>
+          </div>
+          <div style={{ border: '1px solid #dbe7f3', background: '#f8fafc', borderRadius: '12px', padding: '10px' }}>
+            <strong style={{ fontSize: '11px', color: '#0b2e4a' }}>Order confirmation</strong>
+            <div style={{ fontSize: '10px', lineHeight: 1.35, color: '#64748b', minHeight: '28px' }}>{contractId ? 'Ready to generate.' : 'Contract needed.'}</div>
+            <a href={orderPdfHref} target={contractId ? '_blank' : undefined} rel={contractId ? 'noreferrer' : undefined} style={{ ...buttonStyle('blue'), display: 'inline-flex', marginTop: '8px', padding: '6px 10px', fontSize: '10px' }}>Generate order PDF</a>
+          </div>
+          <div style={{ border: '1px solid #dbe7f3', background: '#f8fafc', borderRadius: '12px', padding: '10px' }}>
+            <strong style={{ fontSize: '11px', color: '#0b2e4a' }}>Invoice</strong>
+            <div style={{ fontSize: '10px', lineHeight: 1.35, color: '#64748b', minHeight: '28px' }}>{contractId ? 'Ready to generate.' : 'Contract needed.'}</div>
+            <a href={invoicePdfHref} target={contractId ? '_blank' : undefined} rel={contractId ? 'noreferrer' : undefined} style={{ ...buttonStyle('blue'), display: 'inline-flex', marginTop: '8px', padding: '6px 10px', fontSize: '10px' }}>Generate invoice</a>
+          </div>
         </div>
       </div>
 
@@ -384,10 +211,7 @@ export function OrderDetailPanel({
               <form key={kind} action={sendOrderDocumentLinkAction} style={{ border: '1px solid #dbe7f3', borderRadius: '12px', padding: '10px', background: '#f8fafc', display: 'grid', gap: '8px' }}>
                 <input type="hidden" name="contract_id" value={contractId} />
                 <input type="hidden" name="document_kind" value={kind} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                  <strong style={{ fontSize: '11px', color: '#0b2e4a' }}>{kind === 'invoice' ? 'Send invoice' : 'Send order PDF'}</strong>
-                  {pill('Tracked link', 'blue')}
-                </div>
+                <strong style={{ fontSize: '11px', color: '#0b2e4a' }}>{kind === 'invoice' ? 'Send invoice' : 'Send order PDF'}</strong>
                 <input name="recipient" placeholder="Additional email or WhatsApp" style={{ width: '100%', padding: '8px 10px', borderRadius: '9px', border: '1px solid #dbe7f3', fontSize: '11px' }} />
                 <input name="note" placeholder="Optional note" style={{ width: '100%', padding: '8px 10px', borderRadius: '9px', border: '1px solid #dbe7f3', fontSize: '11px' }} />
                 <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
