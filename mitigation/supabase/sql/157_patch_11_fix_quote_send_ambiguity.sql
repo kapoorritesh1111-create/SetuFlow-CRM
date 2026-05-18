@@ -1,0 +1,23 @@
+-- 157_patch_11_fix_quote_send_ambiguity.sql
+-- Patch 11 E2E validation fix.
+-- Live issue found during final workflow validation:
+-- public.app_send_quote_version_with_fanout_tx(...) failed with:
+--   column reference "quote_id" is ambiguous
+--
+-- Root cause:
+-- The function returns TABLE(quote_id uuid, lead_id uuid, quote_version_id uuid),
+-- so unqualified column references named quote_id can collide with output column names
+-- inside PL/pgSQL SQL statements.
+--
+-- Live fix applied in Supabase:
+-- - Replaced unqualified quote_versions/quotes update references with table aliases.
+-- - Specifically, update public.quote_versions now uses qv.quote_id, qv.id, qv.status.
+-- - update public.quotes now uses q.id and q.valid_until.
+-- - Preserve send semantics from Patch 2:
+--   * set current_version_id = p_quote_version_id
+--   * set sent_version_id = p_quote_version_id
+--   * set status = 'sent'
+--   * do not set accepted_version_id
+--
+-- Verification:
+-- select position('qv.quote_id = v_quote_id' in pg_get_functiondef('public.app_send_quote_version_with_fanout_tx(uuid,uuid,text,text,boolean,text,text)'::regprocedure)) > 0;
