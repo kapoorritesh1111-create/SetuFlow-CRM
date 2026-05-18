@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { hasSupabaseEnv } from '@/lib/env';
+import { safeApiError, logServerError } from '@/lib/safe-error';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
 const CLEAR_DOCUMENT_STATUSES = new Set(['approved', 'complete', 'completed', 'ready', 'waived']);
 const OPEN_COMPLIANCE_STATUSES = new Set(['blocked', 'missing', 'rejected', 'overdue', 'pending', 'submitted', 'in_review', 'pending_review', 'revision_requested']);
+const GENERIC_SYNC_ERROR = 'Could not sync quote send readiness. Please refresh and try again.';
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
@@ -21,15 +23,20 @@ function hasMoney(value: unknown) {
   return Number.isFinite(number) && number > 0;
 }
 
+function syncError(error: unknown, status = 500) {
+  logServerError('quote-send-sync', error);
+  return NextResponse.json(safeApiError(error, GENERIC_SYNC_ERROR), { status });
+}
+
 export async function POST(request: Request) {
-  if (!hasSupabaseEnv) return NextResponse.json({ error: 'Missing Supabase environment variables.' }, { status: 500 });
+  if (!hasSupabaseEnv) return NextResponse.json({ error: 'System configuration is incomplete. Please contact an admin.' }, { status: 500 });
   const workspace = await getWorkspaceAccess();
-  if (!workspace.user || !workspace.organization) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+  if (!workspace.user || !workspace.organization) return NextResponse.json({ error: 'Please sign in again to continue.' }, { status: 401 });
 
   const payload = await request.json().catch(() => ({}));
   const quoteId = clean(payload.quoteId);
   const quoteNumber = clean(payload.quoteNumber);
-  if (!quoteId && !quoteNumber) return NextResponse.json({ error: 'quoteId or quoteNumber is required.' }, { status: 400 });
+  if (!quoteId && !quoteNumber) return NextResponse.json({ error: 'A quote ID or quote number is required.' }, { status: 400 });
 
   const organizationId = workspace.organization.id;
   const supabase = await createClient();
@@ -42,7 +49,7 @@ export async function POST(request: Request) {
     .limit(1);
   quoteQuery = quoteId ? quoteQuery.eq('id', quoteId) : quoteQuery.eq('quote_number', quoteNumber);
   const quoteResult = await quoteQuery;
-  if (quoteResult.error) return NextResponse.json({ error: quoteResult.error.message }, { status: 500 });
+  if (quoteResult.error) return syncError(quoteResult.error);
   const quote = Array.isArray(quoteResult.data) ? quoteResult.data[0] : null;
   if (!quote?.id || !quote?.lead_id) return NextResponse.json({ error: 'Quote not found in this organization.' }, { status: 404 });
 
@@ -57,7 +64,7 @@ export async function POST(request: Request) {
   ]);
 
   for (const result of [quoteDocsResult, leadDocsResult, complianceResult, versionResult, lineResult]) {
-    if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 });
+    if (result.error) return syncError(result.error);
   }
 
   const docs = [...(quoteDocsResult.data ?? []), ...(leadDocsResult.data ?? [])];
@@ -81,8 +88,9 @@ export async function POST(request: Request) {
       .from('quote_versions')
       .update({ total_line_count: lines.length, approved_at: versionResult.data?.approved_at ?? now })
       .eq('id', quote.current_version_id);
-    if (versionUpdateError) return NextResponse.json({ error: versionUpdateError.message }, { status: 500 });
-    await mutationDb.from('quotes').update({ approved_at: quote.approved_at ?? now, updated_at: now }).eq('organization_id', organizationId).eq('id', quote.id);
+    if (versionUpdateError) return syncError(versionUpdateError);
+    const { error: quoteUpdateError } = await mutationDb.from('quotes').update({ approved_at: quote.approved_at ?? now, updated_at: now }).eq('organization_id', organizationId).eq('id', quote.id);
+    if (quoteUpdateError) return syncError(quoteUpdateError);
     revalidatePath('/leads');
     revalidatePath(`/leads/${quote.lead_id}`);
   }
