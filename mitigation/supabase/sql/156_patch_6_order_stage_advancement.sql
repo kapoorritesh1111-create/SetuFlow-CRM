@@ -1,0 +1,68 @@
+-- 156_patch_6_order_stage_advancement.sql
+-- Patch 6 was applied live to Supabase through the MCP migration runner.
+-- Purpose: canonical order stage advancement with payment/fulfillment/dispatch gates.
+
+-- Live migration changes applied:
+--
+-- 1. Created helper:
+--    public.app_order_payment_gate_satisfied(p_order public.orders, p_payload jsonb default '{}'::jsonb)
+--
+--    This helper treats the payment gate as satisfied when:
+--    - orders.payment_status in ('paid','partial'), OR
+--    - metadata/payment payload explicitly approves deferred payment or waives the gate, OR
+--    - payment_terms indicate post-delivery/deferred/credit/net/COD/against-delivery terms.
+--
+--    This preserves the operating workflow where partial payment can initiate dispatch,
+--    and where payment may be contractually due after delivery.
+--
+-- 2. Created canonical command:
+--    public.app_advance_order_stage_tx(
+--      p_organization_id uuid,
+--      p_order_id uuid,
+--      p_target_stage text,
+--      p_actor_user_id uuid default null,
+--      p_payload jsonb default '{}'::jsonb
+--    )
+--    returns table(
+--      order_id uuid,
+--      previous_stage text,
+--      new_stage text,
+--      payment_status text,
+--      fulfillment_status text,
+--      dispatch_status text,
+--      changed boolean
+--    )
+--
+-- 3. Enforced transitions:
+--    order_created -> payment_requested
+--    payment_requested -> payment_partial
+--    payment_requested/payment_partial -> payment_paid
+--    order_created/payment_requested/payment_partial/payment_paid -> production_ready when payment gate is satisfied
+--    production_ready -> production_in_progress
+--    production_in_progress -> dispatch_ready
+--    dispatch_ready -> dispatched
+--    dispatched -> delivered
+--    delivered -> completed
+--    any non-completed stage -> cancelled
+--
+-- 4. Side effects:
+--    payment_requested sets payment_status='requested'
+--    payment_partial sets payment_status='partial'
+--    payment_paid sets payment_status='paid'
+--    production_ready sets fulfillment_status='production_ready'
+--    production_in_progress sets fulfillment_status='in_production'
+--    dispatch_ready sets fulfillment_status='ready_for_dispatch' and dispatch_status='ready'
+--    dispatched sets dispatch_status='dispatched'
+--    delivered sets dispatch_status='delivered' and fulfillment_status='fulfilled'
+--    completed sets status='completed', completed_at, delivered/fulfilled statuses
+--    cancelled sets status='cancelled', cancelled_at, cancelled fulfillment/dispatch statuses
+--
+-- 5. Idempotency:
+--    The function accepts payload.idempotency_key. If omitted, it derives a key from
+--    order_id + previous_stage + target_stage. Applied transition keys are stored in
+--    orders.metadata.stage_transition_keys. Replays return changed=false without duplicate audit.
+--
+-- 6. Audit:
+--    Every non-idempotent transition writes audit_logs.action='order_stage_advanced'.
+--
+-- Verify live DB function definitions for exact SQL body.
