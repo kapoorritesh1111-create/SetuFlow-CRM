@@ -4,6 +4,8 @@ import { ensureActualOrderLinesAction } from '@/features/orders/server/execution
 import { sendOrderDocumentLinkAction } from '@/features/orders/server/share-actions';
 import { OrderStageAdvanceStrip } from '@/features/orders/components/OrderStageAdvanceStrip';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
+import { createClient } from '@/lib/supabase/server';
+import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
 type DocRow = {
   id: string;
@@ -18,6 +20,16 @@ type BlockerItem = {
   code: string;
   title: string;
   doc_type?: string;
+};
+
+type CanonicalOrderSnapshot = {
+  id: string;
+  source_quote_id: string | null;
+  legacy_contract_id: string | null;
+  order_lifecycle_status: string | null;
+  payment_status: string | null;
+  fulfillment_status: string | null;
+  dispatch_status: string | null;
 };
 
 type StageKey = 'draft' | 'confirmed' | 'ready' | 'released' | 'dispatched' | 'completed';
@@ -35,10 +47,19 @@ function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export function OrderDetailPanel({
+function humanize(v: string | null | undefined) {
+  return String(v ?? 'pending').split(/[_\s-]+/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+}
+
+export async function OrderDetailPanel({
   quoteId,
   leadId,
   contractId,
+  orderId,
+  orderLifecycleStatus,
+  paymentStatus,
+  fulfillmentStatus,
+  dispatchStatus,
   companyName,
   executionState,
   executionBlockers,
@@ -57,6 +78,11 @@ export function OrderDetailPanel({
   quoteId: string;
   leadId: string;
   contractId: string | null;
+  orderId?: string | null;
+  orderLifecycleStatus?: string | null;
+  paymentStatus?: string | null;
+  fulfillmentStatus?: string | null;
+  dispatchStatus?: string | null;
   companyName: string;
   executionState: string;
   executionBlockers: string[];
@@ -72,7 +98,46 @@ export function OrderDetailPanel({
   contractSignedAt?: string | null;
   commercialLockState?: string | null;
 }) {
-  const isComplete = executionState === 'completed';
+  let canonicalOrder: CanonicalOrderSnapshot | null = orderId ? {
+    id: orderId,
+    source_quote_id: quoteId,
+    legacy_contract_id: contractId,
+    order_lifecycle_status: orderLifecycleStatus ?? null,
+    payment_status: paymentStatus ?? null,
+    fulfillment_status: fulfillmentStatus ?? null,
+    dispatch_status: dispatchStatus ?? null,
+  } : null;
+
+  if (!canonicalOrder) {
+    try {
+      const workspace = await getWorkspaceAccess();
+      if (workspace.organization) {
+        const db = (await createClient()) as any;
+        const { data: byQuote } = await db
+          .from('orders')
+          .select('id, source_quote_id, legacy_contract_id, order_lifecycle_status, payment_status, fulfillment_status, dispatch_status')
+          .eq('organization_id', workspace.organization.id)
+          .eq('source_quote_id', quoteId)
+          .maybeSingle();
+        canonicalOrder = byQuote as CanonicalOrderSnapshot | null;
+
+        if (!canonicalOrder && contractId) {
+          const { data: byContract } = await db
+            .from('orders')
+            .select('id, source_quote_id, legacy_contract_id, order_lifecycle_status, payment_status, fulfillment_status, dispatch_status')
+            .eq('organization_id', workspace.organization.id)
+            .eq('legacy_contract_id', contractId)
+            .maybeSingle();
+          canonicalOrder = byContract as CanonicalOrderSnapshot | null;
+        }
+      }
+    } catch {
+      canonicalOrder = null;
+    }
+  }
+
+  const canonicalStage = canonicalOrder?.order_lifecycle_status ?? orderLifecycleStatus ?? executionState;
+  const isComplete = executionState === 'completed' || canonicalStage === 'completed';
   const currentMeta = STAGE_META[executionState as StageKey] ?? STAGE_META.draft;
   const isBlocked = executionBlockers.length > 0 || !canAdvance;
   const isSigned = Boolean(contractSignedAt) || ['signed', 'active', 'completed'].includes(String(executionState).toLowerCase());
@@ -154,12 +219,16 @@ export function OrderDetailPanel({
         <a href={invoicePdfHref} target={contractId ? '_blank' : undefined} rel={contractId ? 'noreferrer' : undefined} style={buttonStyle('blue')}>Generate invoice</a>
         <a href="#order-upload-document" style={buttonStyle('white')}>Attach evidence</a>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {canonicalOrder ? pill(`Order ${humanize(canonicalStage)}`, 'blue') : pill('Canonical order pending', 'amber')}
+          {pill(`Payment ${humanize(canonicalOrder?.payment_status ?? paymentStatus)}`, canonicalOrder?.payment_status === 'paid' ? 'green' : canonicalOrder?.payment_status === 'partial' ? 'blue' : 'slate')}
+          {pill(`Fulfillment ${humanize(canonicalOrder?.fulfillment_status ?? fulfillmentStatus)}`, canonicalOrder?.fulfillment_status === 'fulfilled' ? 'green' : 'slate')}
+          {pill(`Dispatch ${humanize(canonicalOrder?.dispatch_status ?? dispatchStatus)}`, canonicalOrder?.dispatch_status === 'delivered' ? 'green' : canonicalOrder?.dispatch_status === 'dispatched' ? 'blue' : 'slate')}
           {pill(isLocked ? 'Commercial locked' : 'Commercial pending', isLocked ? 'green' : 'amber')}
           {pill(`${docOk.length}/${docOk.length + docBlockers.length} docs`, docBlockers.length ? 'amber' : 'green')}
         </div>
       </div>
 
-      <OrderStageAdvanceStrip sourceQuoteId={quoteId} contractId={contractId} currentStage={executionState} />
+      <OrderStageAdvanceStrip orderId={canonicalOrder?.id ?? orderId ?? null} sourceQuoteId={quoteId} contractId={contractId} currentStage={canonicalStage} />
 
       {contractId && !isComplete && !isSigned && (
         <div style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
