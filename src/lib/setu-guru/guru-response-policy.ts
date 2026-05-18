@@ -1,6 +1,6 @@
 export type SetuGuruAnswerSource = 'page_context' | 'live_organization_data' | 'route_help_registry' | 'live_research' | 'generic_guidance';
 
-export type SetuGuruIntent = 'quote_blockers' | 'dispatch_docs' | 'hs_code' | 'compliance' | 'catalog' | 'general';
+export type SetuGuruIntent = 'quote_blockers' | 'quote_lifecycle' | 'order_lifecycle' | 'dispatch_docs' | 'hs_code' | 'compliance' | 'catalog' | 'general';
 
 export const SETU_GURU_RESPONSE_POLICY = {
   answerOrder: ['page_context', 'live_organization_data', 'route_help_registry', 'live_research', 'generic_guidance'] as SetuGuruAnswerSource[],
@@ -12,7 +12,17 @@ export const SETU_GURU_RESPONSE_POLICY = {
     'buyers',
     'suppliers',
     'quotes',
+    'quote versions',
+    'sent version',
+    'accepted version',
+    'quote lifecycle',
+    'direct order',
     'orders',
+    'canonical order',
+    'order lifecycle',
+    'payment status',
+    'fulfillment status',
+    'dispatch status',
     'documents',
     'compliance',
     'blockers',
@@ -41,14 +51,25 @@ export const SETU_GURU_RESPONSE_POLICY = {
     'waive',
     'write back',
     'send',
+    'accept quote',
+    'reject quote',
+    'direct order',
     'delete',
     'clear compliance',
     'advance order',
+    'dispatch',
+    'mark dispatched',
     'change pricing defaults',
     'change compliance policy',
   ],
   stageRules: [
     'Separate quote-send blockers from order and dispatch requirements.',
+    'Sending a quote sets current_version_id and sent_version_id only; acceptance, and only acceptance, sets accepted_version_id.',
+    'Accepted quotes hand off to the canonical orders header through app_safe_accept_sent_quote_tx and app_ensure_order_for_accepted_quote_tx.',
+    'Direct-order close must still use the send path first when needed, then safe quote acceptance and canonical order handoff.',
+    'Treat orders as the canonical execution header after quote acceptance; contracts remain compatibility records.',
+    'Order advancement must follow the canonical stage command and idempotency key; do not start parallel workflows for the same event.',
+    'Partial payment and explicitly approved deferred/post-delivery terms can satisfy the production gate; dispatch still requires dispatch_ready first.',
     'Treat COA and Packing List as advisory before dispatch unless an organization rule explicitly makes them quote-send mandatory.',
     'Treat live research as draft guidance until a human reviews the sources.',
     'Never invent HS or HSN codes. Only cite codes that exist in product/catalog data or a source-backed research result.',
@@ -58,6 +79,8 @@ export const SETU_GURU_RESPONSE_POLICY = {
 
 const COMPLIANCE_WORDS = ['compliance', 'blocker', 'document', 'evidence', 'certificate', 'coa', 'packing list', 'dispatch', 'ignore', 'waive', 'fix this', 'fix compliance', 'required document'];
 const QUOTE_BLOCKER_WORDS = ['quote blocker', 'quote blockers', 'quote send', 'send blocker', 'send blockers', 'review blocker', 'quote review', 'why is quote blocked', 'cannot send quote'];
+const QUOTE_LIFECYCLE_WORDS = ['quote lifecycle', 'quote version', 'sent version', 'accepted version', 'sent_version_id', 'accepted_version_id', 'direct order', 'quote accepted', 'quote rejected', 'quote acceptance'];
+const ORDER_LIFECYCLE_WORDS = ['canonical order', 'order lifecycle', 'order stage', 'payment requested', 'partial payment', 'deferred payment', 'post delivery', 'production ready', 'dispatch ready', 'mark dispatched', 'order dispatch'];
 const DISPATCH_DOC_WORDS = ['dispatch doc', 'dispatch docs', 'dispatch document', 'dispatch documents', 'packing list', 'coa', 'certificate of analysis', 'before dispatch', 'order dispatch', 'shipment document'];
 const HS_CODE_WORDS = ['hs code', 'hs-code', 'hsn', 'hsn code', 'tariff code', 'customs code'];
 const ORG_SEARCH_PHRASES = [
@@ -85,6 +108,12 @@ const ORG_SEARCH_PHRASES = [
   'filter',
   'listed products',
   'category',
+  'quote lifecycle',
+  'order lifecycle',
+  'canonical order',
+  'payment status',
+  'fulfillment status',
+  'dispatch status',
 ];
 const PRICING_DEFAULT_PHRASES = ['pricing calculator', 'calculator default', 'price calculator', 'default margin', 'default markup', 'distributor margin', 'retail margin'];
 
@@ -96,6 +125,8 @@ function includesAny(value: string, phrases: readonly string[]) {
 export function getSetuGuruIntents(question: string): SetuGuruIntent[] {
   const intents = new Set<SetuGuruIntent>();
   if (includesAny(question, QUOTE_BLOCKER_WORDS)) intents.add('quote_blockers');
+  if (includesAny(question, QUOTE_LIFECYCLE_WORDS)) intents.add('quote_lifecycle');
+  if (includesAny(question, ORDER_LIFECYCLE_WORDS)) intents.add('order_lifecycle');
   if (includesAny(question, DISPATCH_DOC_WORDS)) intents.add('dispatch_docs');
   if (includesAny(question, HS_CODE_WORDS)) intents.add('hs_code');
   if (isSetuGuruComplianceQuestion(question)) intents.add('compliance');
@@ -133,6 +164,8 @@ export function getSetuGuruPolicyReminder(question: string) {
   const intents = getSetuGuruIntents(question);
   if (intents.length > 1 || !intents.includes('general')) reminders.push(`Handle detected intents separately: ${intents.join(', ')}.`);
   if (intents.includes('quote_blockers')) reminders.push('Use live quote/compliance state and distinguish quote-send blockers from dispatch-only document tasks.');
+  if (intents.includes('quote_lifecycle')) reminders.push('Quote send sets sent_version_id only; acceptance sets accepted_version_id and triggers canonical order handoff.');
+  if (intents.includes('order_lifecycle')) reminders.push('Use canonical order lifecycle state and do not start duplicate order workflows for the same accepted quote.');
   if (intents.includes('dispatch_docs')) reminders.push('Dispatch documents are order/shipment readiness unless an active rule makes them quote-send mandatory.');
   if (intents.includes('hs_code')) reminders.push('Do not hallucinate HS/HSN codes; answer only from catalog fields or source-backed research, otherwise say verification is needed.');
   if (shouldUseLiveOrganizationData(question)) reminders.push('Use live organization data before generic workflow guidance.');
