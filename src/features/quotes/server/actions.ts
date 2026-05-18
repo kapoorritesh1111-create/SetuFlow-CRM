@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
+import { safeUserError, logServerError } from '@/lib/safe-error';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { APPROVAL_STATES, type ApprovalState } from '@/lib/approvalRouting';
@@ -62,6 +63,11 @@ async function insertCommunication(db: any, payload: CommunicationWritePayload) 
 function isMissingRpcFunction(error: any) {
   const message = String(error?.message ?? '').toLowerCase();
   return message.includes('could not find the function') || message.includes('schema cache') || message.includes('function public.');
+}
+
+function quoteActionError(scope: string, error: unknown, fallback = 'Quote workflow could not be saved. Please refresh and try again.') {
+  logServerError(scope, error);
+  return safeUserError(error, fallback);
 }
 
 const QUOTE_PRICING_BASIS_VALUES = PRICING_BASIS_VALUES satisfies readonly QuotePricingBasis[];
@@ -251,9 +257,9 @@ async function updateQuoteDirect(db: any, params: {
     const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
     if (versionLineError) return { data: null, error: versionLineError };
   }
-  // Set current_version_id and accepted_version_id (on send) atomically
+  // Set current_version_id and sent_version_id atomically. Acceptance is handled only by acceptance workflows.
   const versionUpdatePayload: Record<string, unknown> = { current_version_id: versionId, updated_at: nowIso };
-  if (params.status === 'sent') versionUpdatePayload.accepted_version_id = versionId;
+  if (params.status === 'sent') versionUpdatePayload.sent_version_id = versionId;
   const { error: quoteVersionUpdateError } = await db.from('quotes').update(versionUpdatePayload).eq('id', params.quoteId);
   if (quoteVersionUpdateError) return { data: null, error: quoteVersionUpdateError };
 
@@ -798,7 +804,7 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
       .eq('id', leadId)
       .maybeSingle();
 
-    if (leadError) return { error: leadError.message };
+    if (leadError) return { error: quoteActionError('createQuote.load-lead', leadError, 'Lead details could not be verified before sending the quote.') };
     if (!leadRecord) return { error: 'Lead not found for quote progression checks.' };
 
     const guard = await getLeadProgressionGuard(db, {
@@ -891,7 +897,7 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
 
   let quote = Array.isArray(createdQuoteResult) ? createdQuoteResult[0] : createdQuoteResult;
   if (createQuoteTxError) {
-    if (!isMissingRpcFunction(createQuoteTxError)) return { error: createQuoteTxError.message };
+    if (!isMissingRpcFunction(createQuoteTxError)) return { error: quoteActionError('createQuote.rpc', createQuoteTxError, 'Quote could not be created. Please refresh and try again.') };
     const fallback = await createQuoteDirect(db, {
       organizationId: organization.id,
       leadId,
@@ -905,7 +911,7 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
       approvalRequired,
       approvalState,
     });
-    if (fallback.error) return { error: fallback.error.message };
+    if (fallback.error) return { error: quoteActionError('createQuote.fallback', fallback.error, 'Quote could not be created. Please refresh and try again.') };
     quote = fallback.data;
   }
 
@@ -952,7 +958,7 @@ export async function logQuoteNegotiationResponse(_: QuoteActionState | undefine
     .eq('id', quoteId)
     .maybeSingle();
 
-  if (existingError) return { error: existingError.message };
+  if (existingError) return { error: quoteActionError('logQuoteNegotiationResponse.load-quote', existingError, 'Quote details could not be loaded. Please refresh and try again.') };
   if (!existing) return { error: 'Quote not found.' };
 
   const responseMeta = responseType === 'counter_offer'
@@ -1026,12 +1032,12 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
   const db = supabase as any;
   const { data: existing, error: existingError } = await db
     .from('quotes')
-    .select('id, lead_id, organization_id, status, notes, current_version_id, accepted_version_id')
+    .select('id, lead_id, organization_id, status, notes, current_version_id, sent_version_id, accepted_version_id')
     .eq('organization_id', organization.id)
     .eq('id', quoteId)
     .maybeSingle();
 
-  if (existingError) return { error: existingError.message };
+  if (existingError) return { error: quoteActionError('recordQuoteOutcomeWorkflow.load-quote', existingError, 'Quote details could not be loaded. Please refresh and try again.') };
   if (!existing) return { error: 'Quote not found.' };
 
   const previousStatus = String(existing.status ?? '').trim().toLowerCase();
@@ -1053,44 +1059,44 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
   }
 
   const nowIso = new Date().toISOString();
-  const outcomeVersionId = existing.accepted_version_id ?? existing.current_version_id ?? null;
-  const { error: quoteUpdateError } = await db
-    .from('quotes')
-    .update({
-      status: outcome,
-      accepted_version_id: outcome === 'accepted' ? outcomeVersionId : existing.accepted_version_id ?? outcomeVersionId,
-      updated_at: nowIso,
-    })
-    .eq('organization_id', organization.id)
-    .eq('id', quoteId)
-    .eq('status', 'sent');
-  if (quoteUpdateError) return { error: quoteUpdateError.message };
-
-  if (outcomeVersionId) {
-    const versionPatch = outcome === 'accepted'
-      ? { status: 'accepted', updated_at: nowIso }
-      : { status: 'rejected', updated_at: nowIso };
-    const { error: versionUpdateError } = await db
-      .from('quote_versions')
-      .update(versionPatch)
-      .eq('id', outcomeVersionId)
-      .eq('quote_id', quoteId);
-    if (versionUpdateError) return { error: versionUpdateError.message };
-  }
-
+  let outcomeVersionId = existing.accepted_version_id ?? existing.sent_version_id ?? existing.current_version_id ?? null;
   let handoffContractId: string | null = null;
+  let handoffOrderId: string | null = null;
+
   if (outcome === 'accepted') {
-    const { data: handoffResult, error: handoffError } = await db.rpc('app_ensure_contract_for_accepted_quote_tx', {
+    const { data: acceptanceResult, error: acceptanceError } = await db.rpc('app_safe_accept_sent_quote_tx', {
       p_organization_id: organization.id,
       p_quote_id: quoteId,
-      p_lead_id: existing.lead_id,
+      p_actor_user_id: currentUser.id,
       p_notes: plainNotes || 'Quote accepted; order execution handoff created from quote outcome action.',
     });
-    if (handoffError) {
-      return { error: `Quote accepted status was recorded, but order handoff failed: ${handoffError.message}` };
+    if (acceptanceError) {
+      return { error: quoteActionError('recordQuoteOutcomeWorkflow.safe-accept', acceptanceError, 'Quote acceptance could not be completed. Please refresh and try again.') };
     }
-    const handoffRow = Array.isArray(handoffResult) ? handoffResult[0] : handoffResult;
-    handoffContractId = handoffRow?.contract_id ?? null;
+    const acceptanceRow = Array.isArray(acceptanceResult) ? acceptanceResult[0] : acceptanceResult;
+    outcomeVersionId = acceptanceRow?.accepted_version_id ?? outcomeVersionId;
+    handoffContractId = acceptanceRow?.contract_id ?? null;
+    handoffOrderId = acceptanceRow?.order_id ?? null;
+  } else {
+    const { error: quoteUpdateError } = await db
+      .from('quotes')
+      .update({
+        status: outcome,
+        updated_at: nowIso,
+      })
+      .eq('organization_id', organization.id)
+      .eq('id', quoteId)
+      .eq('status', 'sent');
+    if (quoteUpdateError) return { error: quoteActionError('recordQuoteOutcomeWorkflow.reject-quote', quoteUpdateError, 'Quote rejection could not be saved. Please refresh and try again.') };
+
+    if (outcomeVersionId) {
+      const { error: versionUpdateError } = await db
+        .from('quote_versions')
+        .update({ status: 'rejected', updated_at: nowIso })
+        .eq('id', outcomeVersionId)
+        .eq('quote_id', quoteId);
+      if (versionUpdateError) return { error: quoteActionError('recordQuoteOutcomeWorkflow.reject-version', versionUpdateError, 'Quote rejection could not be saved. Please refresh and try again.') };
+    }
   }
 
   const subject = outcome === 'accepted' ? 'Quote accepted' : 'Quote rejected';
@@ -1110,9 +1116,9 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
     body,
     summary: outcome === 'accepted' ? 'Quote accepted and handed to Orders.' : 'Quote rejected and locked.',
     created_by: currentUser.id,
-    metadata: { source: 'recordQuoteOutcomeWorkflow', outcome, quote_version_id: outcomeVersionId, contract_id: handoffContractId },
+    metadata: { source: 'recordQuoteOutcomeWorkflow', outcome, quote_version_id: outcomeVersionId, contract_id: handoffContractId, order_id: handoffOrderId },
   });
-  if (communicationError?.message) return { error: communicationError.message };
+  if (communicationError?.message) return { error: quoteActionError('recordQuoteOutcomeWorkflow.communication', communicationError, 'Quote outcome was saved, but the timeline note could not be recorded.') };
 
   const { error: negotiationError } = await insertNegotiationEvent(db, {
     quote_id: quoteId,
@@ -1121,9 +1127,9 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
     actor_user_id: currentUser.id,
     actor_name: currentUser.email ?? currentUser.id,
     message: body,
-    payload: { source: 'recordQuoteOutcomeWorkflow', outcome, contract_id: handoffContractId },
+    payload: { source: 'recordQuoteOutcomeWorkflow', outcome, contract_id: handoffContractId, order_id: handoffOrderId },
   });
-  if (negotiationError?.message) return { error: negotiationError.message };
+  if (negotiationError?.message) return { error: quoteActionError('recordQuoteOutcomeWorkflow.negotiation-event', negotiationError, 'Quote outcome was saved, but the negotiation event could not be recorded.') };
 
   await writeQuoteAuditLog({
     organizationId: organization.id,
@@ -1132,7 +1138,7 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
     quoteId,
     leadId: existing.lead_id,
     previous: { status: previousStatus },
-    next: { status: outcome, quote_version_id: outcomeVersionId, contract_id: handoffContractId },
+    next: { status: outcome, quote_version_id: outcomeVersionId, contract_id: handoffContractId, order_id: handoffOrderId },
     metadata: { source: 'recordQuoteOutcomeWorkflow', handoff: outcome === 'accepted' ? 'orders_contract_rpc' : 'outcome_only' },
   });
 
@@ -1173,7 +1179,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     .eq('id', quoteId)
     .maybeSingle();
 
-  if (existingError) return { error: existingError.message };
+  if (existingError) return { error: quoteActionError('updateQuoteWorkflow.load-quote', existingError, 'Quote details could not be loaded. Please refresh and try again.') };
   if (!existing) return { error: 'Quote not found.' };
 
   // Sprint 5 Batch 1 — lock-state enforcement.
@@ -1265,14 +1271,14 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
           .eq('id', existing.current_version_id)
           .maybeSingle()
       : { data: null, error: null };
-    if (versionError) return { error: versionError.message };
+    if (versionError) return { error: quoteActionError('updateQuoteWorkflow.load-version', versionError, 'Quote version could not be loaded. Please refresh and try again.') };
 
     const { data: pricingEngineSettings, error: pricingEngineSettingsError } = await db
       .from('pricing_engine_settings')
       .select('approval_threshold_percent')
       .eq('organization_id', organization.id)
       .maybeSingle();
-    if (pricingEngineSettingsError) return { error: pricingEngineSettingsError.message };
+    if (pricingEngineSettingsError) return { error: quoteActionError('updateQuoteWorkflow.load-pricing-settings', pricingEngineSettingsError, 'Quote send readiness could not be checked. Please refresh and try again.') };
 
     const sendSnapshot = buildQuoteSendDecisionSnapshot({
       quoteId,
@@ -1324,7 +1330,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
         send_readiness_object: sendSnapshot,
       },
     });
-    if (snapshotCommunicationError?.message) return { error: snapshotCommunicationError.message };
+    if (snapshotCommunicationError?.message) return { error: quoteActionError('updateQuoteWorkflow.snapshot-communication', snapshotCommunicationError, 'Quote send readiness could not be recorded. Please refresh and try again.') };
 
     if (existing.current_version_id) {
       const { error: sendFanoutError } = await db.rpc('app_send_quote_version_with_fanout_tx', {
@@ -1337,14 +1343,14 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
         p_action_source: 'updateQuoteWorkflow',
       });
       if (sendFanoutError) {
-        if (!isMissingRpcFunction(sendFanoutError)) return { error: sendFanoutError.message };
+        if (!isMissingRpcFunction(sendFanoutError)) return { error: quoteActionError('updateQuoteWorkflow.send-rpc', sendFanoutError, 'Quote could not be sent. Please refresh and try again.') };
         const sentAt = new Date().toISOString();
         const [{ error: quoteSendError }, { error: versionSendError }] = await Promise.all([
-          db.from('quotes').update({ status: 'sent', accepted_version_id: existing.current_version_id, updated_at: sentAt }).eq('organization_id', organization.id).eq('id', quoteId),
+          db.from('quotes').update({ status: 'sent', current_version_id: existing.current_version_id, sent_version_id: existing.current_version_id, updated_at: sentAt }).eq('organization_id', organization.id).eq('id', quoteId),
           db.from('quote_versions').update({ status: 'sent', sent_at: sentAt, sent_by: currentUser.id, updated_at: sentAt }).eq('id', existing.current_version_id),
         ]);
-        if (quoteSendError) return { error: quoteSendError.message };
-        if (versionSendError) return { error: versionSendError.message };
+        if (quoteSendError) return { error: quoteActionError('updateQuoteWorkflow.send-fallback-quote', quoteSendError, 'Quote could not be sent. Please refresh and try again.') };
+        if (versionSendError) return { error: quoteActionError('updateQuoteWorkflow.send-fallback-version', versionSendError, 'Quote could not be sent. Please refresh and try again.') };
         const sendCommunication = await insertCommunication(db, {
           organization_id: organization.id,
           lead_id: existing.lead_id,
@@ -1359,7 +1365,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
           created_by: currentUser.id,
           metadata: { source: 'direct_quote_send_fanout', quote_version_id: existing.current_version_id },
         });
-        if (sendCommunication.error) return { error: sendCommunication.error.message };
+        if (sendCommunication.error) return { error: quoteActionError('updateQuoteWorkflow.send-communication', sendCommunication.error, 'Quote send note could not be recorded. Please refresh and try again.') };
       }
 
       await writeQuoteAuditLog({
@@ -1532,7 +1538,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
 
   let updatedQuote = Array.isArray(updatedQuoteResult) ? updatedQuoteResult[0] : updatedQuoteResult;
   if (updateQuoteTxError) {
-    if (!isMissingRpcFunction(updateQuoteTxError)) return { error: updateQuoteTxError.message };
+    if (!isMissingRpcFunction(updateQuoteTxError)) return { error: quoteActionError('updateQuoteWorkflow.rpc', updateQuoteTxError, 'Quote workflow could not be updated. Please refresh and try again.') };
     const fallback = await updateQuoteDirect(db, {
       organizationId: organization.id,
       quoteId,
@@ -1547,7 +1553,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
       approvalRequired,
       approvalState,
     });
-    if (fallback.error) return { error: fallback.error.message };
+    if (fallback.error) return { error: quoteActionError('updateQuoteWorkflow.fallback', fallback.error, 'Quote workflow could not be updated. Please refresh and try again.') };
     updatedQuote = fallback.data;
   }
 
@@ -1589,42 +1595,76 @@ export async function markQuoteAsDirectOrder(_: QuoteActionState | undefined, fo
   if (!hasWorkspaceCapability(workspace.currentRoles, 'quote.send')) {
     return { error: getReadOnlyWorkspaceMessage(workspace.currentRoles, 'quote.send') ?? 'You do not have permission to close orders directly.' };
   }
+
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   const plainNotes = String(formData.get('notes') ?? '').trim() || 'Marked as direct order — deal closed outside the system.';
   if (!quoteId) return { error: 'Quote ID is required.' };
+
   const supabase = await createClient();
   const db = supabase as any;
   const { data: existing, error: existingError } = await db
     .from('quotes')
-    .select('id, lead_id, organization_id, status, current_version_id, accepted_version_id')
+    .select('id, lead_id, organization_id, status, current_version_id, sent_version_id, accepted_version_id')
     .eq('organization_id', organization.id)
     .eq('id', quoteId)
     .maybeSingle();
-  if (existingError) return { error: existingError.message };
+  if (existingError) return { error: quoteActionError('markQuoteAsDirectOrder.load-quote', existingError, 'Quote details could not be loaded. Please refresh and try again.') };
   if (!existing) return { error: 'Quote not found.' };
+
   const currentStatus = String(existing.status ?? '').trim().toLowerCase();
   if (currentStatus === 'accepted') {
     const order = await findOrderForQuote(db, organization.id, quoteId);
     return { success: 'Order already exists for this quote.', mode: 'update', record: { quoteId, orderId: order?.id ?? null } };
   }
-  const nowIso = new Date().toISOString();
-  const versionId = existing.accepted_version_id ?? existing.current_version_id ?? null;
+
+  const versionId = existing.sent_version_id ?? existing.current_version_id ?? null;
+  if (!versionId) return { error: 'Quote must have a version before it can be closed as an order.' };
+
   if (currentStatus !== 'sent') {
-    const { error: sentError } = await db.from('quotes').update({ status: 'sent', accepted_version_id: versionId, updated_at: nowIso }).eq('organization_id', organization.id).eq('id', quoteId);
-    if (sentError) return { error: `Could not mark quote as sent: ${sentError.message}` };
-    if (versionId) { await db.from('quote_versions').update({ status: 'sent', updated_at: nowIso }).eq('id', versionId).eq('quote_id', quoteId); }
+    const { error: sendFanoutError } = await db.rpc('app_send_quote_version_with_fanout_tx', {
+      p_quote_version_id: versionId,
+      p_actor_user_id: currentUser.id,
+      p_actor_name: currentUser.email ?? currentUser.id,
+      p_plain_notes: plainNotes,
+      p_approval_required: false,
+      p_approval_state: 'not_required',
+      p_action_source: 'markQuoteAsDirectOrder',
+    });
+    if (sendFanoutError) {
+      if (!isMissingRpcFunction(sendFanoutError)) {
+        return { error: quoteActionError('markQuoteAsDirectOrder.send-rpc', sendFanoutError, 'Quote could not be marked as sent before closing. Please refresh and try again.') };
+      }
+      const sentAt = new Date().toISOString();
+      const [{ error: quoteSendError }, { error: versionSendError }] = await Promise.all([
+        db.from('quotes').update({ status: 'sent', current_version_id: versionId, sent_version_id: versionId, updated_at: sentAt }).eq('organization_id', organization.id).eq('id', quoteId),
+        db.from('quote_versions').update({ status: 'sent', sent_at: sentAt, sent_by: currentUser.id, updated_at: sentAt }).eq('id', versionId).eq('quote_id', quoteId),
+      ]);
+      if (quoteSendError) return { error: quoteActionError('markQuoteAsDirectOrder.send-fallback-quote', quoteSendError, 'Quote could not be marked as sent before closing. Please refresh and try again.') };
+      if (versionSendError) return { error: quoteActionError('markQuoteAsDirectOrder.send-fallback-version', versionSendError, 'Quote could not be marked as sent before closing. Please refresh and try again.') };
+    }
   }
-  const { error: acceptError } = await db.from('quotes').update({ status: 'accepted', accepted_version_id: versionId, updated_at: nowIso }).eq('organization_id', organization.id).eq('id', quoteId);
-  if (acceptError) return { error: `Could not mark quote as accepted: ${acceptError.message}` };
-  if (versionId) { await db.from('quote_versions').update({ status: 'accepted', updated_at: nowIso }).eq('id', versionId).eq('quote_id', quoteId); }
-  const { error: contractError } = await db.rpc('app_ensure_contract_for_accepted_quote_tx', { p_organization_id: organization.id, p_quote_id: quoteId, p_lead_id: existing.lead_id, p_notes: plainNotes });
-  if (contractError) return { error: `Order creation failed: ${contractError.message}` };
-  await writeAuditLog({ organizationId: organization.id, actorUserId: currentUser.id, action: 'quote_accepted', entityType: 'quote', entityId: quoteId, payload: { source: 'markQuoteAsDirectOrder', notes: plainNotes } });
+
+  const { data: acceptanceResult, error: acceptanceError } = await db.rpc('app_safe_accept_sent_quote_tx', {
+    p_organization_id: organization.id,
+    p_quote_id: quoteId,
+    p_actor_user_id: currentUser.id,
+    p_notes: plainNotes,
+  });
+  if (acceptanceError) return { error: quoteActionError('markQuoteAsDirectOrder.safe-accept', acceptanceError, 'Order creation failed. Please refresh and try again.') };
+
+  const acceptanceRow = Array.isArray(acceptanceResult) ? acceptanceResult[0] : acceptanceResult;
+  await writeAuditLog({
+    organizationId: organization.id,
+    actorUserId: currentUser.id,
+    action: 'quote_accepted',
+    entityType: 'quote',
+    entityId: quoteId,
+    payload: { source: 'markQuoteAsDirectOrder', notes: plainNotes, accepted_version_id: acceptanceRow?.accepted_version_id ?? versionId, order_id: acceptanceRow?.order_id ?? null, contract_id: acceptanceRow?.contract_id ?? null },
+  });
+
   revalidateCommercialViews(existing.lead_id);
   revalidatePath('/orders');
   revalidatePath('/contracts');
   const order = await findOrderForQuote(db, organization.id, quoteId);
-  return { success: 'Order created. Track it under Orders / Execution.', mode: 'update', record: { quoteId, orderId: order?.id ?? null } };
+  return { success: 'Order created. Track it under Orders / Execution.', mode: 'update', record: { quoteId, orderId: order?.id ?? acceptanceRow?.order_id ?? null } };
 }
-
-
