@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import { formatDate } from '@/lib/utils'
 import type { GateStatus, LeadProfileSnapshot, PricingReadiness, QuoteFocusSummary } from './types'
 
@@ -60,7 +61,7 @@ export function LeadCommandHeader({
   const avatarGradient = getAvatarGradient(lead.companyName);
   const initials = getLeadInitials(lead.companyName);
 
-  const runToolAction = (event: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
+  const runToolAction = (event: MouseEvent<HTMLButtonElement>, action: () => void) => {
     event.preventDefault();
     event.stopPropagation();
     const menu = event.currentTarget.closest('details') as HTMLDetailsElement | null;
