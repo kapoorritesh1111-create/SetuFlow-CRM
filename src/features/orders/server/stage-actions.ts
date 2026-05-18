@@ -132,6 +132,7 @@ async function resolveOrderForStageAction(db: any, organizationId: string, input
 
 export async function advanceOrderStageAction(formData: FormData): Promise<void> {
   const sourceQuoteId = clean(formData.get('source_quote_id')) || clean(formData.get('quote_id')) || null;
+  let redirectTo = buildOrdersRedirect('order-state-blocked:Order stage could not be updated. Please refresh and try again.', sourceQuoteId);
 
   try {
     if (!hasSupabaseEnv) throw new Error('Supabase environment variables are not configured.');
@@ -186,9 +187,11 @@ export async function advanceOrderStageAction(formData: FormData): Promise<void>
     if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
     revalidatePath('/leads');
 
-    redirect(buildOrdersRedirect(`order-stage-${changed}:${targetStage}`, order.source_quote_id ?? sourceQuoteId));
+    redirectTo = buildOrdersRedirect(`order-stage-${changed}:${targetStage}`, order.source_quote_id ?? sourceQuoteId);
   } catch (error) {
     const message = orderStageError(error, 'Order stage could not be updated. Please refresh and try again.');
-    redirect(buildOrdersRedirect(`order-state-blocked:${message}`, sourceQuoteId));
+    redirectTo = buildOrdersRedirect(`order-state-blocked:${message}`, sourceQuoteId);
   }
+
+  redirect(redirectTo);
 }
