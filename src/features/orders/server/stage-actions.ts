@@ -187,7 +187,7 @@ export async function advanceOrderStageAction(formData: FormData): Promise<void>
     if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
     revalidatePath('/leads');
 
-    redirectTo = buildOrdersRedirect(`order-stage-${changed}:${targetStage}`, order.source_quote_id ?? sourceQuoteId);
+    redirectTo = buildOrdersRedirect(changed === 'unchanged' ? `order-state-progressed:${targetStage}` : `order-state-progressed:${targetStage}`, order.source_quote_id ?? sourceQuoteId);
   } catch (error) {
     const message = orderStageError(error, 'Order stage could not be updated. Please refresh and try again.');
     redirectTo = buildOrdersRedirect(`order-state-blocked:${message}`, sourceQuoteId);
