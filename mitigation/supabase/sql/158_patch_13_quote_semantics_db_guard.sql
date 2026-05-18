@@ -1,0 +1,34 @@
+-- 158_patch_13_quote_semantics_db_guard.sql
+-- Patch 13: quote fallback/direct-order semantics guard.
+-- Applied live through Supabase MCP.
+--
+-- Purpose:
+-- Even if old app fallback/direct-order code attempts to set accepted_version_id during send,
+-- the DB must preserve Patch 2 semantics:
+--   - sending sets sent_version_id/current_version_id
+--   - acceptance, and only acceptance, sets accepted_version_id
+--
+-- Live changes applied:
+--
+-- 1. Replaced public.app_enforce_quote_accepted_version_integrity()
+--    - If quote.status becomes 'sent' and current_version_id exists, sent_version_id is filled.
+--    - If accepted_version_id changes while status is not 'accepted', it is reset to OLD.accepted_version_id.
+--    - sent_version_id and accepted_version_id must reference versions of the same quote.
+--    - If status becomes 'accepted' and accepted_version_id is null, it is filled from sent_version_id/current_version_id.
+--
+-- 2. Added public.app_safe_accept_sent_quote_tx(...)
+--    - Requires quote status sent/accepted.
+--    - Resolves accepted version from accepted_version_id, sent_version_id, or current_version_id.
+--    - Sets status='accepted' and accepted_version_id only in the acceptance path.
+--    - Calls public.app_ensure_contract_for_accepted_quote_tx(...) so canonical order handoff is preserved.
+--    - Writes quote_accepted audit log.
+--
+-- 3. Replaced public.app_prevent_locked_quote_version_mutation()
+--    - Continues blocking commercial edits/deletes of locked versions.
+--    - Allows only terminal status transition sent -> accepted/rejected.
+--    - Prevents direct commercial mutation of locked quote_versions.
+--
+-- Verification queries:
+-- select position('new.accepted_version_id := old.accepted_version_id' in pg_get_functiondef('public.app_enforce_quote_accepted_version_integrity()'::regprocedure)) > 0;
+-- select position('app_ensure_contract_for_accepted_quote_tx' in pg_get_functiondef('public.app_safe_accept_sent_quote_tx(uuid,uuid,uuid,text)'::regprocedure)) > 0;
+-- select position('sent'' and lower(coalesce(new.status' in pg_get_functiondef('public.app_prevent_locked_quote_version_mutation()'::regprocedure)) > 0;
