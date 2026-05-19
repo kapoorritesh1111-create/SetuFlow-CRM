@@ -212,6 +212,11 @@
       "exact": true
     },
     {
+      "href": "/admin/integrations",
+      "label": "Integrations",
+      "exact": true
+    },
+    {
       "href": "/admin/audit",
       "label": "Audit trail",
       "exact": true
@@ -481,7 +486,7 @@
   },
   "releaseGate": {
     "verificationScript": "npm run release:proof",
-    "cleanScript": "npm run clean:verification",
+    "cleanScript": "node scripts/clean-verification.mjs",
     "proofDoc": "docs/RELEASE_PROOF.md",
     "requiredChecks": [
       "clean verification artifacts",
