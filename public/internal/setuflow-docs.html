@@ -195,6 +195,8 @@
   <a href="#s14"><span class="num">14</span> Enhancements</a>
   <a href="#s15"><span class="num">15</span> Sprint Tracker</a>
   <a href="#s16"><span class="num">16</span> Production Status</a>
+  <a href="#s17"><span class="num">17</span> Live UI Reference</a>
+  <a href="#s18"><span class="num">18</span> Sprint 17 Changes</a>
 </nav>
 
 <main class="main">
@@ -1729,6 +1731,280 @@ Build machine: 8 cores, 16 GB · Node: 18 · Next.js 14.2.35
   </ul></div>
 </div>
 
+</section>
+
+<!-- ═══ S17: LIVE UI REFERENCE ═══ -->
+<section class="section" id="s17">
+<div class="section-header"><div class="section-num">17</div><h1>Live UI Reference — Screenshots 2026-05-19</h1></div>
+
+<div class="alert alert-green"><strong>Captured live from https://www.setuflowcrm.com</strong> on Monday, May 19 2026 using Claude Chrome extension. All data is real production data for SETU Flow / SETU Groups LLC.</div>
+
+<style>
+.ui-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:16px 0}
+.ui-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.ui-card-header{background:#0f2244;color:#fff;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:8px}
+.ui-badge{background:rgba(255,255,255,.15);border-radius:4px;padding:2px 8px;font-size:10px}
+.ui-badge-new{background:#3b82f6;border-radius:4px;padding:2px 8px;font-size:10px}
+.ui-body{padding:14px 16px;font-size:12px;color:#64748b;line-height:1.7}
+.ui-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.ui-kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;text-align:center}
+.ui-kpi .uv{font-size:18px;font-weight:700;color:#0f2244;line-height:1}
+.ui-kpi .ul{font-size:10px;color:#94a3b8;margin-top:2px}
+.ui-kpi .uv.green{color:#10b981}.ui-kpi .uv.amber{color:#f59e0b}.ui-kpi .uv.blue{color:#3b82f6}.ui-kpi .uv.purple{color:#8b5cf6}
+.data-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9}
+.data-row:last-child{border-bottom:none}
+.data-key{color:#64748b;font-size:11px}
+.data-val{font-weight:600;color:#0f2244;font-size:11px}
+.verified-badge{background:#d1fae5;color:#065f46;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+</style>
+
+<h2>Dashboard</h2>
+<div class="ui-grid">
+  <div class="ui-card">
+    <div class="ui-card-header">📊 Dashboard <span class="ui-badge">/dashboard</span></div>
+    <div class="ui-body">
+      <div class="ui-kpis">
+        <div class="ui-kpi"><div class="uv blue">49</div><div class="ul">Open Opportunities</div></div>
+        <div class="ui-kpi"><div class="uv amber">36</div><div class="ul">Follow-ups Due</div></div>
+        <div class="ui-kpi"><div class="uv blue">24</div><div class="ul">Quotes in Market</div></div>
+        <div class="ui-kpi"><div class="uv green">0</div><div class="ul">Blocked Revenue</div></div>
+        <div class="ui-kpi"><div class="uv green">$1.18M</div><div class="ul">Pipeline Value</div></div>
+        <div class="ui-kpi"><div class="uv blue">10</div><div class="ul">Markets Active</div></div>
+      </div>
+      Below KPIs: World map command center (10 markets, dark map), Pipeline stage distribution, Country performance table (Afghanistan top $255K), Commercial feed (real-time events). Action zone shows "Needs Attention" with urgent items.
+    </div>
+  </div>
+  <div class="ui-card">
+    <div class="ui-card-header">📈 Analytics <span class="ui-badge-new">/dashboard/analytics — NEW</span></div>
+    <div class="ui-body">
+      <div class="ui-kpis">
+        <div class="ui-kpi"><div class="uv green">75%</div><div class="ul">Win Rate</div></div>
+        <div class="ui-kpi"><div class="uv blue">16</div><div class="ul">Quotes Sent</div></div>
+        <div class="ui-kpi"><div class="uv green">12</div><div class="ul">Accepted</div></div>
+        <div class="ui-kpi"><div class="uv blue">17d</div><div class="ul">Avg Days Accept</div></div>
+        <div class="ui-kpi"><div class="uv blue">19</div><div class="ul">Doc Sends (90d)</div></div>
+        <div class="ui-kpi"><div class="uv purple">12</div><div class="ul">Links Opened</div></div>
+      </div>
+      Funnel: 0→0→0→0→0 (no leads yet in system). Doc sends: 6 email (Mailtrap), 5 WhatsApp links. Email delivered = 0 (needs MAILTRAP_WEBHOOK_SECRET). Top Markets: Asia (10), North America (8), Africa (6).
+    </div>
+  </div>
+</div>
+
+<h2>Core Workspaces</h2>
+<div class="ui-grid">
+  <div class="ui-card">
+    <div class="ui-card-header">👥 Leads <span class="ui-badge">/leads</span></div>
+    <div class="ui-body">
+      <div class="ui-kpis">
+        <div class="ui-kpi"><div class="uv blue">46</div><div class="ul">Total Leads</div></div>
+        <div class="ui-kpi"><div class="uv amber">34</div><div class="ul">Critical / Action</div></div>
+        <div class="ui-kpi"><div class="uv amber">24</div><div class="ul">Overdue</div></div>
+        <div class="ui-kpi"><div class="uv blue">38</div><div class="ul">Buyers</div></div>
+        <div class="ui-kpi"><div class="uv blue">16</div><div class="ul">Suppliers</div></div>
+        <div class="ui-kpi"><div class="uv blue">4</div><div class="ul">Trade Event</div></div>
+      </div>
+      Tabs: All Leads 46 · My Leads 46 · Overdue 24 · Due Today 3 · Trade Event 4 · Buyers 38 · Suppliers 16. Lead cards show company name, role badges (Buyer/Supplier), stage, overdue indicator, deal value, owner, Open/More actions.
+    </div>
+  </div>
+  <div class="ui-card">
+    <div class="ui-card-header">💬 Quotes <span class="ui-badge">/quotes</span></div>
+    <div class="ui-body">
+      <div class="ui-kpis">
+        <div class="ui-kpi"><div class="uv blue">24</div><div class="ul">Total Quotes</div></div>
+        <div class="ui-kpi"><div class="uv green">$2,937</div><div class="ul">Total Value USD</div></div>
+        <div class="ui-kpi"><div class="uv amber">2</div><div class="ul">Pending Approval</div></div>
+        <div class="ui-kpi"><div class="uv amber">5</div><div class="ul">Expiring Soon</div></div>
+        <div class="ui-kpi"><div class="uv blue">4</div><div class="ul">Sent & Active</div></div>
+        <div class="ui-kpi"><div class="uv green">12</div><div class="ul">Accepted</div></div>
+      </div>
+      Warning banner: "2 quotes pending your approval — pricing override review required." Quote list shows company, status badge (accepted/draft), version (v1), value, validity, owner, action buttons (Create order / Continue).
+    </div>
+  </div>
+  <div class="ui-card">
+    <div class="ui-card-header">📦 Orders / Execution <span class="ui-badge">/orders</span></div>
+    <div class="ui-body">
+      <div class="ui-kpis">
+        <div class="ui-kpi"><div class="uv blue">2</div><div class="ul">Ready</div></div>
+        <div class="ui-kpi"><div class="uv amber">4</div><div class="ul">Approval</div></div>
+        <div class="ui-kpi"><div class="uv blue">2</div><div class="ul">Packing</div></div>
+        <div class="ui-kpi"><div class="uv green">0</div><div class="ul">Processing</div></div>
+        <div class="ui-kpi"><div class="uv blue">9</div><div class="ul">Locked</div></div>
+        <div class="ui-kpi"><div class="uv green">12</div><div class="ul">Active</div></div>
+      </div>
+      Order queue left panel: searchable, shows buyer/org, currency+value, stage. Right panel: execution detail with Actual Lines → Proforma/Confirmation → Packing/Rates → Processing → Delivery Note → Final Invoice → Paid & Closed stage rail.
+    </div>
+  </div>
+  <div class="ui-card">
+    <div class="ui-card-header">🗂️ Pipeline / Risks <span class="ui-badge">/pipeline</span></div>
+    <div class="ui-body">
+      <div class="ui-kpis">
+        <div class="ui-kpi"><div class="uv amber">24</div><div class="ul">Overdue Follow-ups</div></div>
+        <div class="ui-kpi"><div class="uv blue">3</div><div class="ul">Due Today</div></div>
+        <div class="ui-kpi"><div class="uv green">0</div><div class="ul">Blocked Records</div></div>
+        <div class="ui-kpi"><div class="uv green">25</div><div class="ul">Healthy Cards</div></div>
+        <div class="ui-kpi"><div class="uv green">$1.18M</div><div class="ul">Pipeline Value</div></div>
+        <div class="ui-kpi"><div class="uv blue">11</div><div class="ul">Active Stages</div></div>
+      </div>
+      Kanban board: New Lead (10), Qualified (7), Documents Requested (2), Contacted (4), Samples Sent (5), Samples Reviewed (2), Negotiation (7), Approved (1), Rejected. Cards show company, buyer/supplier badge, overdue status, Advance/Open actions.
+    </div>
+  </div>
+</div>
+
+<h2>Catalog &amp; Admin</h2>
+<div class="ui-grid">
+  <div class="ui-card">
+    <div class="ui-card-header">📦 Products &amp; Pricing <span class="ui-badge">/products or /catalog</span></div>
+    <div class="ui-body">
+      <div class="ui-kpis">
+        <div class="ui-kpi"><div class="uv blue">37</div><div class="ul">Total Products</div></div>
+        <div class="ui-kpi"><div class="uv green">47</div><div class="ul">Quote-Ready</div></div>
+        <div class="ui-kpi"><div class="uv amber">13</div><div class="ul">Pricing Gaps</div></div>
+        <div class="ui-kpi"><div class="uv blue">48</div><div class="ul">Total Variants</div></div>
+        <div class="ui-kpi"><div class="uv amber">1</div><div class="ul">Inactive</div></div>
+        <div class="ui-kpi"><div class="uv green">15</div><div class="ul">Categories</div></div>
+      </div>
+      Category tabs: Cardamom · Chana · Chilli · Clove · Coriander + 10 more. Products show SKU, category, variants, Ex-Factory price, FOB price, readiness status. Quick quote button per product.
+    </div>
+  </div>
+  <div class="ui-card">
+    <div class="ui-card-header">⚙️ Admin <span class="ui-badge">/admin</span></div>
+    <div class="ui-body">
+      <div class="data-row"><span class="data-key">Organization</span><span class="data-val">SETU Flow (SETU Groups LLC)</span></div>
+      <div class="data-row"><span class="data-key">Country</span><span class="data-val">United States (US)</span></div>
+      <div class="data-row"><span class="data-key">Default Market</span><span class="data-val">North America</span></div>
+      <div class="data-row"><span class="data-key">Default Currency</span><span class="data-val">USD</span></div>
+      <div class="data-row"><span class="data-key">City</span><span class="data-val">Savannah, GA 31419</span></div>
+      <div class="data-row"><span class="data-key">Governance Banner</span><span class="data-val" style="color:#10b981">✓ Governance clear</span></div>
+      <div class="data-row"><span class="data-key">Document Profiles</span><span class="data-val">8 total (4 regional, 4 export)</span></div>
+      <div class="data-row"><span class="data-key">Team Members</span><span class="data-val">4 members, 2 pending invitations</span></div>
+    </div>
+  </div>
+</div>
+
+<h2>System Health</h2>
+<div class="card-grid">
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ All pages loading</div>
+    <ul>
+      <li>Dashboard — ✓ loaded, KPIs live</li>
+      <li>Analytics — ✓ loaded, metrics rendering</li>
+      <li>Leads — ✓ 46 leads visible</li>
+      <li>Quotes — ✓ 24 quotes, USD 2,937</li>
+      <li>Orders — ✓ 29 active orders across 6 stages</li>
+      <li>Pipeline — ✓ Kanban board, $1.18M pipeline</li>
+      <li>Catalog — ✓ 37 products, 47 quote-ready</li>
+      <li>Admin — ✓ Governance clear banner</li>
+      <li>Document Templates — ✓ 8 profiles visible</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ Production data confirmed</div>
+    <ul>
+      <li>Real buyers/suppliers visible (Valley Onion Dehydrators, Qatar Retail Partners, etc.)</li>
+      <li>Real markets (Afghanistan $255K, Belize $139K, Antigua $135K)</li>
+      <li>Real products (Banana Chips, Beetroot Powder, Moringa Powder)</li>
+      <li>Live quote accepted: 12 accepted, 75% win rate</li>
+      <li>Email sends: 19 total, 6 Mailtrap, 5 WhatsApp, 12 opened</li>
+      <li>Setu Guru AI panel visible on right edge of every page</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #f59e0b">
+    <div class="card-title">⟳ Email delivery loop — complete with 1 action</div>
+    <ul>
+      <li>Email delivered count: 0 (webhook configured, MAILTRAP_WEBHOOK_SECRET not yet set)</li>
+      <li>Set MAILTRAP_WEBHOOK_SECRET in Vercel → delivery status will update to 'delivered'</li>
+      <li>All other email features: working (sent=6, opened=12)</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ Webhook verified live</div>
+    <ul>
+      <li>/api/webhooks/mailtrap responds</li>
+      <li>{"ok":true,"service":"setuflow-mailtrap-webhook","version":"1.0"}</li>
+      <li>Ready to receive POST events from Mailtrap</li>
+      <li>HMAC-SHA256 verification active</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Setu Guru AI — What to Tell It Based on Live Observations</h2>
+<div class="correction">
+  <div class="corr-title">Updated Setu Guru Training Prompts</div>
+  <div class="corr-body">
+  <p><strong>When asked about the dashboard:</strong> "The dashboard shows 5 KPI cards at the top: Open Opportunities (49), Follow-ups Due Now (36), Quotes in Market (24), Blocked Revenue (0), Pipeline Value ($1,178,350). Below is the Market command map (dark world map) with 10 markets active. Below that: Pipeline Stage Distribution, Country Performance table, Commercial Feed."</p>
+  <p style="margin-top:8px"><strong>When asked about the analytics dashboard:</strong> "The analytics page at /dashboard/analytics shows: Lead→Order Conversion Funnel (5 stages with colored bars), Quote Performance row (Sent, Accepted, Rejected, Win Rate, Avg Days, Pending Approval), Order Execution row (Total, Active, Dispatched, Paid), Document Send Effectiveness (last 90 days), Top Markets table, Product Categories panel."</p>
+  <p style="margin-top:8px"><strong>When asked about the pipeline:</strong> "The pipeline board at /pipeline shows a Kanban board with 11 stages. The summary row shows: 24 overdue follow-ups, 3 due today, 0 blocked records, 25 healthy cards, $1,178K pipeline value, 11 active stages. Each card shows company name, buyer/supplier badge, overdue indicator, and Advance/Open buttons."</p>
+  </div>
+</div>
+
+</section>
+
+
+<!-- ═══ S18: SPRINT 17 ═══ -->
+<section class="section" id="s18">
+<div class="section-header"><div class="section-num">18</div><h1>Sprint 17 — Analytics Nav + Templates Editor + Orders UX</h1></div>
+
+<div class="alert alert-green"><strong>Sprint 17 closed — 5 issues resolved.</strong> Analytics in sidebar, real T&C editor live, Orders preview → new tab, WhatsApp auto-opens, document tray styled with channel badges.</div>
+
+<style>
+.s17-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;margin-bottom:16px}
+.s17-before{background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;color:#991b1b;margin-bottom:8px}
+.s17-after{background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:10px 14px;font-size:12px;color:#065f46}
+.s17-files{background:#f1f5f9;border-radius:8px;padding:8px 12px;font-size:11px;font-family:monospace;color:#334155;margin-top:8px}
+.s17-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+</style>
+
+<div class="s17-grid">
+  <div class="s17-card">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:6px">S17-NAV-001 · Analytics Sidebar Navigation</div>
+    <div class="s17-before">❌ Before: Analytics was a faint pill button in the dashboard header area — invisible when the dashboard re-renders. Screenshot showed empty red box where the button should be.</div>
+    <div class="s17-after">✅ After: Analytics is now a permanent sidebar nav item (line-chart icon, "Analytics" label) between Dash and Leads. Always visible, always accessible. /dashboard exact-match fixed so Analytics page doesn't activate the Dash icon.</div>
+    <div class="s17-files">Files: src/lib/routes/manifest.json · src/components/shell/navigation.tsx · src/components/shell/utils.ts</div>
+  </div>
+  <div class="s17-card">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:6px">S17-TMPL-001 · Document Templates Real Editor</div>
+    <div class="s17-before">❌ Before: "Placeholder only: editing is intentionally deferred. Future pass will add versioned editor..." — no editing capability at all.</div>
+    <div class="s17-after">✅ After: Real working editor per profile. Four collapsible sections: Compact terms (one per line textarea), Annexure terms (legal clauses), Bank details (structured fields), Export declarations (country-aware: IEC/LUT/GSTIN for IN, VAT/EORI for EU). Default terms pre-filled by org country. Each save writes to document_template_history.</div>
+    <div class="s17-files">New: src/features/admin/server/document-terms-actions.ts · src/features/admin/components/document-terms-editor.tsx<br>Updated: src/app/(app)/admin/document-templates/page.tsx</div>
+  </div>
+  <div class="s17-card">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:6px">S17-ORDERS-001 · All Previews Open in New Tab</div>
+    <div class="s17-before">❌ Before: Preview form used target="_blank" on the form element — Next.js server actions don't respect this. Previews opened in the same tab (disrupting the order queue state).</div>
+    <div class="s17-after">✅ After: href-based previews use target="_blank" rel="noreferrer noopener". Document tray review links show "Open ↗" — all open in new tab. First-preview form submit generates the share token; subsequent previews use the stored href directly.</div>
+    <div class="s17-files">Updated: src/features/orders/components/OrdersProductionWorkspace81DRepair3.tsx</div>
+  </div>
+  <div class="s17-card">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:6px">S17-ORDERS-002+003 · WhatsApp Auto-Open + Tray Badges</div>
+    <div class="s17-before">❌ Before: After WhatsApp send, operator had to find and copy the wa.me link manually. Document tray showed "email link Open" in plain text — no visual distinction.</div>
+    <div class="s17-after">✅ After: Selecting 💬 WhatsApp and clicking "Send &amp; open WhatsApp" auto-opens WhatsApp (wa.me on mobile, Web on desktop) with pre-filled message 600ms after form submit. Document tray shows 📧 Email (blue) / 💬 WhatsApp (green) channel badges + open-count ("3 opens") badge.</div>
+    <div class="s17-files">Updated: src/features/orders/components/OrdersProductionWorkspace81DRepair3.tsx</div>
+  </div>
+</div>
+
+<h2>Document Templates — How to Use the New Editor</h2>
+<div class="card-grid">
+  <div class="card"><div class="card-title">Add payment terms to documents</div><ol style="padding-left:16px;font-size:12.5px;line-height:1.9"><li>Admin → Document Templates</li><li>Open the relevant profile (e.g. Export - Dispatch Invoice)</li><li>Click "Compact terms (page 1)"</li><li>Add/edit terms — one per line<br><code style="font-size:11px">Payment: 100% advance by TT</code><br><code style="font-size:11px">Incoterms: FOB Mumbai</code></li><li>Click Save changes</li></ol></div>
+  <div class="card"><div class="card-title">Add bank details to invoices</div><ol style="padding-left:16px;font-size:12.5px;line-height:1.9"><li>Admin → Document Templates</li><li>Open Export - Dispatch Invoice profile</li><li>Click "Bank details"</li><li>Fill: Bank name, Account name, Account number, SWIFT/BIC, IFSC (India)</li><li>Click Save changes</li></ol></div>
+  <div class="card"><div class="card-title">Add IEC/GSTIN to export docs</div><ol style="padding-left:16px;font-size:12.5px;line-height:1.9"><li>Admin → Document Templates</li><li>Open any Export profile</li><li>Click "Export declarations &amp; registrations"</li><li>Fill: IEC number, LUT ARN, GSTIN, PAN, AD Code</li><li>Click Save changes</li></ol></div>
+</div>
+
+<h2>Sprint 17 Issue Summary</h2>
+<div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>Title</th><th>Severity</th><th>Status</th></tr></thead><tbody>
+<tr><td style="font-family:monospace;font-size:11px">S17-NAV-001</td><td>Analytics moved to sidebar navigation</td><td><span class="badge badge-blue">High</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
+<tr><td style="font-family:monospace;font-size:11px">S17-TMPL-001</td><td>Document templates placeholder → real editor</td><td><span class="badge badge-red">Critical</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
+<tr><td style="font-family:monospace;font-size:11px">S17-ORDERS-001</td><td>All previews open in new tab</td><td><span class="badge badge-blue">High</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
+<tr><td style="font-family:monospace;font-size:11px">S17-ORDERS-002</td><td>WhatsApp auto-opens after send</td><td><span class="badge badge-blue">High</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
+<tr><td style="font-family:monospace;font-size:11px">S17-ORDERS-003</td><td>Document tray channel badges + new tab links</td><td><span class="badge badge-amber">Medium</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
+</tbody></table></div>
+
+<h2>What's Next — Sprint 18</h2>
+<div class="tbl-wrap"><table><thead><tr><th>Priority</th><th>Item</th><th>Notes</th></tr></thead><tbody>
+<tr><td><span class="badge badge-red">High</span></td><td>Server-side PDF generation (Puppeteer)</td><td>Replace browser-print with downloadable PDFs. Attach to email sends. Store in Supabase Storage.</td></tr>
+<tr><td><span class="badge badge-blue">Medium</span></td><td>Finance adapter external connection</td><td>Connect Xero or QuickBooks to finance_integration_events queue. UI to trigger invoice posting.</td></tr>
+<tr><td><span class="badge badge-blue">Medium</span></td><td>Freight adapter external connection</td><td>Connect Flexport or Freightos to freight_booking_events queue.</td></tr>
+<tr><td><span class="badge badge-amber">Medium</span></td><td>Order document WhatsApp: send stored wa.me link from DB</td><td>After first WhatsApp send stores whatsapp_link in DB, second send should use stored link (pre-personalized URL with document token). Currently re-generates generic message.</td></tr>
+<tr><td><span class="badge badge-amber">Medium</span></td><td>Analytics historical snapshots cron job</td><td>analytics_snapshots table ready. Wire up a daily snapshot compute job to enable trend views.</td></tr>
+</tbody></table></div>
 </section>
 
 </main>

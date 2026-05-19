@@ -3,6 +3,8 @@ import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
 export function isNavItemActive(pathname: string, item: NavItem | ContextTab) {
   if (item.exact) return pathname === item.href;
+  // Sprint 17: /dashboard must be exact so /dashboard/analytics doesn't highlight Dash
+  if (item.href === '/dashboard') return pathname === '/dashboard';
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
@@ -31,6 +33,7 @@ export function getNavItemIcon(href: string) {
   if (href.includes('/pipeline')) return 'warning';
   if (href.includes(PRODUCT_ROUTES.app.products)) return 'archive';
   if (href.includes(PRODUCT_ROUTES.app.settings)) return 'sliders';
+  if (href.includes('/dashboard/analytics')) return 'line-chart'; // Sprint 17: before generic /dashboard check
   if (href.includes(PRODUCT_ROUTES.app.dashboard)) return 'dashboard';
   if (href.includes('/trade-events')) return 'calendar';
   if (href.includes('/contact-exchange/vcard')) return 'address-card-o';

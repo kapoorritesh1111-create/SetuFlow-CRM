@@ -256,6 +256,11 @@
           "navKey": "d"
         },
         {
+          "href": "/dashboard/analytics",
+          "label": "Analytics",
+          "requiresAdmin": false
+        },
+        {
           "href": "/pipeline",
           "label": "Pipeline / Risks",
           "exact": true,

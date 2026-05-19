@@ -190,3 +190,28 @@ If all counts are 0: ensure leads, quotes, and orders exist for the organization
 ### Quote share links using wrong domain
 Symptom: Share links show vercel-*.app domain instead of setuflowcrm.com
 Fix: Vercel → Project → Environment Variables → Verify NEXT_PUBLIC_APP_URL = https://www.setuflowcrm.com
+
+---
+
+## SPRINT 17 TROUBLESHOOTING
+
+### Problem: Analytics tab not showing in sidebar after deploy
+**Fix:** Hard-refresh the browser (Ctrl+Shift+R or Cmd+Shift+R). The sidebar nav is client-side cached. If still missing, check that /dashboard/analytics route exists in the Vercel build output — should appear as ƒ /dashboard/analytics.
+
+### Problem: Document terms editor not saving
+**Check:**
+1. You must be an Admin role (not Member) — updatePageOneTermsAction calls requireAdminWorkspace()
+2. The profile must belong to your current organization
+3. Check browser console for errors — if 403, your role may not have admin access
+
+### Problem: WhatsApp not opening after clicking "Send & open WhatsApp"
+**Cause:** Browser popup blocker may be blocking the window.open call.
+**Fix:** Allow popups for setuflowcrm.com in Chrome Settings → Privacy → Pop-ups and redirects → Add setuflowcrm.com as allowed. The 600ms delay is intentional to let the server action complete first.
+
+### Problem: Preview link doesn't open in new tab
+**Cause:** If the document has never been previewed, the first click submits a form to generate a share token (no new tab). After the first preview, the link becomes an anchor and opens in a new tab on every subsequent click.
+**Workaround:** Click Preview once → wait for page to refresh → click Preview again → new tab opens.
+
+### Problem: Bank details not appearing on invoice
+**Cause:** bank_details may be saved to the organization_document_terms_profiles table but the document renderer may not yet be reading from this field.
+**Status:** bank_details is stored correctly. The document preview renderer reads from the profile — confirm the order uses the correct profile (regional vs export) and the profile has bank_details filled.

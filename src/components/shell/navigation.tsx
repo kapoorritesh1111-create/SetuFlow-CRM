@@ -15,6 +15,7 @@ function filterSections(canAccessAdmin: boolean) {
 
 const PRIMARY_LABELS: Record<string, string> = {
   '/dashboard': 'Dash',
+  '/dashboard/analytics': 'Analytics',
   '/leads': 'Leads',
   '/quotes': 'Quotes',
   '/orders': 'Orders',

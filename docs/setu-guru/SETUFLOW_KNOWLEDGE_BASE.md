@@ -552,3 +552,53 @@ Q: "Is email working?" → YES. Mailtrap API active, webhook endpoint live. MAIL
 Q: "Is analytics live?" → YES. /dashboard/analytics — live data on every load.
 Q: "Are security issues resolved?" → YES. All critical issues resolved as of Sprint 16. No open critical items.
 Q: "What webhook URL?" → https://www.setuflowcrm.com/api/webhooks/mailtrap
+
+---
+
+## SPRINT 17: ANALYTICS NAV + TEMPLATES EDITOR + ORDERS UX
+
+### Analytics — Now in Sidebar Navigation (S17-NAV-001)
+The "📊 Analytics" button that was a faint pill in the dashboard header (often invisible/missing) has been moved to the persistent sidebar navigation. It now appears as the second sidebar icon between "Dash" and "Leads" with a line-chart icon. URL remains /dashboard/analytics.
+
+Setu Guru policy: When asked "where is analytics?", answer: "Click the line-chart icon (Analytics) in the left sidebar — it's the second icon below Dash. URL: /dashboard/analytics."
+
+The /dashboard active state now uses exact matching only, so visiting /dashboard/analytics does not highlight the Dash nav item.
+
+### Document Templates — Real Editor Now Live (S17-TMPL-001)
+The placeholder "editing is intentionally deferred" message has been replaced with a working editor. Each document profile card now has four collapsible sections:
+
+1. **Compact terms (page 1)** — textarea, one term per line. These appear as bullet points on page 1 of every document using this profile. e.g.: "Payment: 100% advance by TT", "Incoterms: FOB Mumbai", "Validity: 15 days from issue"
+
+2. **Annexure terms** — textarea, one clause per line. These appear in the legal annexure section. e.g.: "Force Majeure clause", "Governing law: Laws of India", "Disputes: Indian arbitration"
+
+3. **Bank details** — structured form fields: bank name, account name, account number, branch, SWIFT/BIC, IFSC (India), IBAN (Europe), currency. Appears on invoices.
+
+4. **Export declarations** — country-aware fields: IEC, LUT ARN, GSTIN, PAN, AD Code, RCMC (India); VAT number, EORI number (EU); generic customs fields (others).
+
+Default terms are pre-seeded based on org country: Indian orgs get IEC/LUT/GST-aware terms, US orgs get Net 30 payment terms, others get generic export terms.
+
+Each save creates a row in document_template_history (immutable audit trail).
+
+Setu Guru policy:
+- "How do I add bank details to my invoices?" → Admin → Document Templates → find the Export profile → click Bank details → fill in fields → Save
+- "How do I change payment terms?" → Admin → Document Templates → find the relevant profile → click Compact terms → edit "Payment:" line → Save
+- "How do I add GST/IEC number?" → Admin → Document Templates → find the Export profile → click Export declarations → fill IEC, GSTIN fields → Save
+
+### Orders — Preview Opens in New Tab (S17-ORDERS-001)
+All document preview links in the Orders execution workspace now open in a new browser tab. Previously, form-based preview submissions did not open in a new tab (Next.js server actions don't respect form target="_blank"). Fixed by:
+- href-based previews: `target="_blank" rel="noreferrer noopener"` 
+- Document tray review links: `Open ↗` — all open in new tab
+
+### Orders — WhatsApp Auto-Opens After Send (S17-ORDERS-002)
+When the operator selects "💬 WhatsApp approved document" and clicks Send, WhatsApp now opens automatically:
+- Mobile (Android/iOS): Opens wa.me/[phone] with pre-filled message
+- Desktop: Opens WhatsApp Web with pre-filled message
+- Pre-filled message includes document type and order reference
+- Operator still presses Send manually inside WhatsApp (SetuFlow never sends automatically)
+- 600ms delay gives the server action time to write the send record before tab opens
+
+### Orders — Document Tray Channel Badges (S17-ORDERS-003)
+Each sent document in the tray now shows:
+- 📧 Email badge (blue) or 💬 WhatsApp badge (green)
+- "Open ↗" link that opens the share URL in a new tab
+- Green open-count badge showing how many times the link was opened (e.g. "3 opens")

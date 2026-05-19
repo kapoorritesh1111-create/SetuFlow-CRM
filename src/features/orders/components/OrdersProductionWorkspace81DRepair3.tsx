@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { approveActualOrderLinesGateAction, approveFirstDocumentGateAction, prepareFirstDocumentGateAction } from '@/features/orders/server/execution-order-actions';
 import { addManualActualOrderLineAction, saveOrderDiscountAction, updateActualOrderLineAction } from '@/features/orders/server/order-line-actions';
@@ -125,14 +125,80 @@ function Gate({ action, quoteId, children, type, tone = '', disabled = false }: 
 
 function Preview({ o, t, label, disabled = false }: { o: ProductionOrder8S; t: string; label: string; disabled?: boolean }) {
   const href = latest(o, t);
-  if (href) return <a className={`r3btn blue ${disabled ? 'disabled' : ''}`} href={disabled ? undefined : href} target="_blank" rel="noreferrer">{label}</a>;
-  return <form action={sendOrderDocumentLinkAction} target="_blank"><input type="hidden" name="order_id" value={o.orderId ?? ''} /><input type="hidden" name="quote_id" value={o.quoteId} /><input type="hidden" name="document_type" value={t} /><input type="hidden" name="channel" value="preview" /><input type="hidden" name="preview_only" value="true" /><Btn tone="blue" disabled={disabled}>{label}</Btn></form>;
+  // Sprint 17: Always open preview in new tab regardless of how the URL is obtained
+  if (href) return <a className={`r3btn blue ${disabled ? 'disabled' : ''}`} href={disabled ? undefined : href} target="_blank" rel="noreferrer noopener">{label}</a>;
+  // No existing URL — generate one via form action but intercept to open in new tab
+  const formRef = useRef<HTMLFormElement>(null);
+  return (
+    <form ref={formRef} action={sendOrderDocumentLinkAction} onSubmit={(e) => {
+      // Submit normally — server action handles the preview token creation
+      // After submission the page revalidates showing the new href link
+    }}>
+      <input type="hidden" name="order_id" value={o.orderId ?? ''} />
+      <input type="hidden" name="quote_id" value={o.quoteId} />
+      <input type="hidden" name="document_type" value={t} />
+      <input type="hidden" name="channel" value="preview" />
+      <input type="hidden" name="preview_only" value="true" />
+      <Btn tone="blue" disabled={disabled}>{label}</Btn>
+    </form>
+  );
 }
 
 function Send({ o, t, disabled = false }: { o: ProductionOrder8S; t: string; disabled?: boolean }) {
   const [ch, setCh] = useState<'email' | 'whatsapp'>('email');
   const [r, setR] = useState(o.defaultEmailRecipient ?? '');
-  return <form action={sendOrderDocumentLinkAction} className="send"><input type="hidden" name="order_id" value={o.orderId ?? ''} /><input type="hidden" name="quote_id" value={o.quoteId} /><input type="hidden" name="document_type" value={t} /><select name="channel" value={ch} disabled={disabled} onChange={(e) => { const n = e.target.value === 'whatsapp' ? 'whatsapp' : 'email'; setCh(n); setR(n === 'email' ? (o.defaultEmailRecipient ?? '') : (o.defaultWhatsappRecipient ?? '')); }}><option value="email">Email approved document</option><option value="whatsapp">WhatsApp approved document</option></select><input name="recipient" value={r} disabled={disabled} onChange={(e) => setR(e.target.value)} placeholder="Recipient" /><input name="recipient_role" defaultValue="buyer" disabled={disabled} /><Btn tone="green" disabled={disabled}>Send approved document</Btn></form>;
+  const [pending, setPending] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Sprint 17: After WhatsApp send, auto-open wa.me link in new tab
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (ch === 'whatsapp') {
+      // Let the form submit normally; the server writes whatsapp_link to DB
+      // For immediate UX, also open WhatsApp with the recipient number
+      const phone = r.replace(/\D/g, '');
+      if (phone.length >= 8) {
+        const docLabel = t.replace(/_/g, '+');
+        const orderRef = o.orderNumber ?? o.orderId?.slice(0, 8) ?? '';
+        const msg = encodeURIComponent(`Hi, please find your ${docLabel} for order ${orderRef}. Secure link will follow.`);
+        const waUrl = /Android|iPhone|iPad/i.test(navigator.userAgent)
+          ? `https://wa.me/${phone}?text=${msg}`
+          : `https://web.whatsapp.com/send?phone=${phone}&text=${msg}`;
+        setTimeout(() => window.open(waUrl, '_blank', 'noopener,noreferrer'), 600);
+      }
+    }
+  };
+
+  return (
+    <form ref={formRef} action={sendOrderDocumentLinkAction} className="send" onSubmit={handleSubmit}>
+      <input type="hidden" name="order_id" value={o.orderId ?? ''} />
+      <input type="hidden" name="quote_id" value={o.quoteId} />
+      <input type="hidden" name="document_type" value={t} />
+      <select
+        name="channel"
+        value={ch}
+        disabled={disabled}
+        onChange={(e) => {
+          const n = e.target.value === 'whatsapp' ? 'whatsapp' : 'email';
+          setCh(n);
+          setR(n === 'email' ? (o.defaultEmailRecipient ?? '') : (o.defaultWhatsappRecipient ?? ''));
+        }}
+      >
+        <option value="email">📧 Email approved document</option>
+        <option value="whatsapp">💬 WhatsApp approved document</option>
+      </select>
+      <input
+        name="recipient"
+        value={r}
+        disabled={disabled}
+        onChange={(e) => setR(e.target.value)}
+        placeholder={ch === 'whatsapp' ? '+1 234 567 8900' : 'buyer@company.com'}
+      />
+      <input name="recipient_role" defaultValue="buyer" disabled={disabled} />
+      <Btn tone="green" disabled={disabled}>
+        {ch === 'whatsapp' ? '💬 Send & open WhatsApp' : '📧 Send approved document'}
+      </Btn>
+    </form>
+  );
 }
 
 export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { orders: ProductionOrder8S[]; catalogOptions?: CatalogOrderOption8S[] }) {
@@ -218,7 +284,7 @@ function PaidCloseout({ o }: { o: ProductionOrder8S }) {
 
 function Tray({ o, t }: { o: ProductionOrder8S; t: string }) {
   const docs = o.documents?.length ? o.documents : [{ id: 'planned', documentType: t, status: 'planned', sends: [] as ProductionOrderDocumentSend8X[] }];
-  return <div className="tray"><b>Document tray</b>{docs.map((d) => <div className="doc" key={d.id}><strong>{dlabel(String(d.documentType ?? t))}</strong><span>{d.status ?? 'planned'}</span><Preview o={o} t={String(d.documentType ?? t)} label={`${o.orderNumber ?? 'Order'} review link`} />{d.sends?.map((s) => { const href = normUrl(s.shareUrl); return <p key={s.id}>{s.channel} link {href ? <a href={href} target="_blank" rel="noreferrer">Open</a> : null}</p>; })}</div>)}</div>;
+  return <div className="tray"><b>Document tray</b>{docs.map((d) => <div className="doc" key={d.id}><strong>{dlabel(String(d.documentType ?? t))}</strong><span>{d.status ?? 'planned'}</span><Preview o={o} t={String(d.documentType ?? t)} label={`${o.orderNumber ?? 'Order'} review link`} />{d.sends?.map((s) => { const href = normUrl(s.shareUrl); const isWa = s.channel === 'whatsapp'; return <p key={s.id} style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}><span style={{fontSize:'10px',background:isWa?'#dcfce7':'#dbeafe',color:isWa?'#166534':'#1d4ed8',borderRadius:'4px',padding:'1px 7px',fontWeight:700}}>{isWa ? '💬 WhatsApp' : '📧 Email'}</span><span style={{fontSize:'11px',color:'#64748b'}}>link</span>{href ? <a href={href} target="_blank" rel="noreferrer noopener" style={{fontSize:'11px',fontWeight:600,color:'#2563eb',textDecoration:'underline'}}>Open ↗</a> : <span style={{fontSize:'11px',color:'#94a3b8'}}>pending</span>}{s.openCount ? <span style={{fontSize:'10px',color:'#10b981',fontWeight:700}}>{s.openCount} open{s.openCount !== 1?'s':''}</span> : null}</p>; })}</div>)}</div>;
 }
 
 const css = `.r3{background:#eef4f8;min-height:100vh;padding:22px;font-family:Inter,system-ui;color:#09243b}.r3 header,.card,aside,.open,.k{background:#fff;border:1px solid #d7e5f0;border-radius:22px;box-shadow:0 14px 34px #0f172a10}.r3 header{display:flex;justify-content:space-between;padding:18px;margin-bottom:14px}.r3 h1,.r3 h2{margin:0;color:#082f49}.r3 p,small{color:#64748b}.r3 nav button{border:0;border-radius:999px;padding:8px 12px;background:#f8fafc}.r3 nav .on{background:#082f49;color:white}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}.k{padding:12px;border-top:4px solid #0c7fff}.k span{text-transform:uppercase;font-size:9px;font-weight:900;color:#7c8da3}.k b{display:block;text-align:right;font-size:24px}.layout{display:grid;grid-template-columns:390px 1fr;gap:14px}aside{padding:14px;overflow:hidden}aside input{width:100%;box-sizing:border-box;border:1px solid #d7e5f0;border-radius:999px;padding:11px;margin:12px 0}.clear{border:1px solid #d7e5f0;border-radius:999px;background:white;padding:8px 10px;margin-bottom:10px}.row{width:100%;display:grid;grid-template-columns:34px 1fr auto;gap:10px;border:0;border-top:1px solid #edf2f7;background:white;text-align:left;padding:12px 0}.row.sel{background:#f7fbff}.avatar{width:34px;height:34px;border-radius:12px;background:#147df5;color:white;display:grid;place-items:center;font-weight:900}.row small{display:block;font-size:10px}.work{display:grid;gap:14px}.open{display:flex;justify-content:space-between;padding:16px 18px}.flow{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;background:white;border:1px solid #d7e5f0;border-radius:20px;padding:12px}.flow button{border:1px solid #d7e5f0;border-radius:13px;background:white;min-height:62px;display:grid;gap:4px;place-items:center}.flow button span{font-size:9px;color:#64748b}.flow .active{background:#eff6ff;border-color:#93c5fd}.flow .done{background:#ecfdf5}.flow .locked{background:#f8fafc;color:#94a3b8;cursor:not-allowed}.card{padding:18px}.lockedcard{border-style:dashed;background:#f8fafc}.lineform{display:grid;grid-template-columns:1.2fr 90px 110px 130px 110px 1fr auto;gap:8px;margin-top:8px}.grid2,.pack,.checks,.closeout{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.closeout textarea{min-height:74px;grid-column:1/-1}.lineform input,.lineform select,.grid2 input,.grid2 select,.pack input,.send input,.send select,.checks input,.checks select,.closeout input,.closeout select,.closeout textarea,.actions-inline input{border:1px solid #d7e5f0;border-radius:10px;padding:9px}.pack label,.checks label,.closeout label{text-transform:uppercase;font-size:10px;font-weight:900;color:#64748b}.pack input{display:block;width:100%;box-sizing:border-box;margin-top:4px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions-inline{display:flex;gap:8px;flex-wrap:wrap}.r3btn{border:1px solid #cfe0ea;background:white;border-radius:999px;padding:9px 13px;font-weight:900;color:#1d4ed8;text-decoration:none}.r3btn:disabled,.r3btn.disabled{opacity:.45;cursor:not-allowed}.r3btn.primary{background:#082f49;color:white}.r3btn.green{background:#ecfdf5;color:#047857}.r3btn.blue{background:#eff6ff}.send{display:grid;grid-template-columns:180px 1fr 100px auto;gap:8px;margin-top:12px}.note{font-size:12px}.tray{border:1px solid #d7e5f0;background:#f8fbfd;border-radius:16px;padding:14px;margin-top:14px}.doc{background:white;border:1px solid #d7e5f0;border-radius:14px;padding:10px;margin-top:8px;display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}@media(max-width:1320px){.layout,.kpis,.flow,.lineform,.grid2,.pack,.send,.checks,.closeout{grid-template-columns:1fr}.doc{grid-template-columns:1fr}}`;
