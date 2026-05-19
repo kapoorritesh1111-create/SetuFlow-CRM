@@ -10,9 +10,12 @@
  * - A recipient clicks a link (event: click)
  *
  * Setup: Mailtrap Dashboard → Sending → Webhooks → Add endpoint:
- *   https://www.setuflowcrm.com/api/webhooks/mailtrap
+ *   Preferred signed webhook:
+ *     https://www.setuflowcrm.com/api/webhooks/mailtrap
+ *   URL-token fallback for Mailtrap screens without signing-secret support:
+ *     https://www.setuflowcrm.com/api/webhooks/mailtrap?secret=<MAILTRAP_WEBHOOK_SECRET>
  * Select events: delivery, bounce, open, click
- * Copy the signing secret → MAILTRAP_WEBHOOK_SECRET env var
+ * Set the same token in Vercel → MAILTRAP_WEBHOOK_SECRET env var.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -27,9 +30,21 @@ function mapEventToStatus(eventType: string): string {
   return 'sent'; // open/click do not change delivery status
 }
 
-function verifyMailtrapSignature(body: string, signature: string | null): boolean {
+function safeEquals(left: string, right: string): boolean {
+  try {
+    const crypto = require('crypto');
+    const leftBuffer = Buffer.from(left);
+    const rightBuffer = Buffer.from(right);
+    if (leftBuffer.length !== rightBuffer.length) return false;
+    return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+  } catch {
+    return false;
+  }
+}
+
+function verifyMailtrapRequest(body: string, request: NextRequest): boolean {
   const secret = process.env.MAILTRAP_WEBHOOK_SECRET;
-  // If no secret configured, skip verification in dev (warn in prod)
+  // If no secret configured, skip verification in dev only.
   if (!secret) {
     if (process.env.NODE_ENV === 'production') {
       console.error('[mailtrap-webhook] MAILTRAP_WEBHOOK_SECRET not set in production — rejecting');
@@ -38,12 +53,24 @@ function verifyMailtrapSignature(body: string, signature: string | null): boolea
     console.warn('[mailtrap-webhook] MAILTRAP_WEBHOOK_SECRET not set — skipping verification (dev only)');
     return true;
   }
+
+  // Fallback for Mailtrap webhook screens that do not expose a signing-secret field.
+  // The webhook URL can be configured as:
+  // https://www.setuflowcrm.com/api/webhooks/mailtrap?secret=<MAILTRAP_WEBHOOK_SECRET>
+  const urlSecret = request.nextUrl.searchParams.get('secret');
+  const headerSecret = request.headers.get('x-setuflow-webhook-secret');
+  if ((urlSecret && safeEquals(urlSecret, secret)) || (headerSecret && safeEquals(headerSecret, secret))) {
+    return true;
+  }
+
+  // Preferred verification path when Mailtrap sends X-Mailtrap-Signature.
+  const signature = request.headers.get('X-Mailtrap-Signature') || request.headers.get('x-mailtrap-signature');
   if (!signature) return false;
-  // Mailtrap uses HMAC-SHA256 hex signature
+
   try {
     const crypto = require('crypto');
     const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    return safeEquals(signature, expected);
   } catch {
     return false;
   }
@@ -68,8 +95,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Could not read request body' }, { status: 400 });
   }
 
-  const signature = request.headers.get('X-Mailtrap-Signature') || request.headers.get('x-mailtrap-signature');
-  if (!verifyMailtrapSignature(bodyText, signature)) {
+  if (!verifyMailtrapRequest(bodyText, request)) {
     return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
   }
 
@@ -159,5 +185,5 @@ export async function POST(request: NextRequest) {
 
 // Mailtrap also sends GET to verify the webhook endpoint
 export async function GET() {
-  return NextResponse.json({ ok: true, service: 'setuflow-mailtrap-webhook', version: '1.0' });
+  return NextResponse.json({ ok: true, service: 'setuflow-mailtrap-webhook', version: '1.1' });
 }
