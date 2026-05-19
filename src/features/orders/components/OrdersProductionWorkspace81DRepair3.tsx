@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { approveActualOrderLinesGateAction, approveFirstDocumentGateAction, prepareFirstDocumentGateAction } from '@/features/orders/server/execution-order-actions';
 import { addManualActualOrderLineAction, saveOrderDiscountAction, updateActualOrderLineAction } from '@/features/orders/server/order-line-actions';
@@ -125,15 +125,11 @@ function Gate({ action, quoteId, children, type, tone = '', disabled = false }: 
 
 function Preview({ o, t, label, disabled = false }: { o: ProductionOrder8S; t: string; label: string; disabled?: boolean }) {
   const href = latest(o, t);
-  // Sprint 17: Always open preview in new tab regardless of how the URL is obtained
+  // If share URL already exists, open directly in new tab
   if (href) return <a className={`r3btn blue ${disabled ? 'disabled' : ''}`} href={disabled ? undefined : href} target="_blank" rel="noreferrer noopener">{label}</a>;
-  // No existing URL — generate one via form action but intercept to open in new tab
-  const formRef = useRef<HTMLFormElement>(null);
+  // No URL yet — submit form to generate share token; page revalidates and next click uses href path
   return (
-    <form ref={formRef} action={sendOrderDocumentLinkAction} onSubmit={(e) => {
-      // Submit normally — server action handles the preview token creation
-      // After submission the page revalidates showing the new href link
-    }}>
+    <form action={sendOrderDocumentLinkAction}>
       <input type="hidden" name="order_id" value={o.orderId ?? ''} />
       <input type="hidden" name="quote_id" value={o.quoteId} />
       <input type="hidden" name="document_type" value={t} />
@@ -147,14 +143,10 @@ function Preview({ o, t, label, disabled = false }: { o: ProductionOrder8S; t: s
 function Send({ o, t, disabled = false }: { o: ProductionOrder8S; t: string; disabled?: boolean }) {
   const [ch, setCh] = useState<'email' | 'whatsapp'>('email');
   const [r, setR] = useState(o.defaultEmailRecipient ?? '');
-  const [pending, setPending] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
 
-  // Sprint 17: After WhatsApp send, auto-open wa.me link in new tab
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  // Sprint 17: After WhatsApp send, auto-open WhatsApp in new tab
+  const handleSubmit = () => {
     if (ch === 'whatsapp') {
-      // Let the form submit normally; the server writes whatsapp_link to DB
-      // For immediate UX, also open WhatsApp with the recipient number
       const phone = r.replace(/\D/g, '');
       if (phone.length >= 8) {
         const docLabel = t.replace(/_/g, '+');
@@ -169,7 +161,7 @@ function Send({ o, t, disabled = false }: { o: ProductionOrder8S; t: string; dis
   };
 
   return (
-    <form ref={formRef} action={sendOrderDocumentLinkAction} className="send" onSubmit={handleSubmit}>
+    <form action={sendOrderDocumentLinkAction} className="send" onSubmit={handleSubmit}>
       <input type="hidden" name="order_id" value={o.orderId ?? ''} />
       <input type="hidden" name="quote_id" value={o.quoteId} />
       <input type="hidden" name="document_type" value={t} />

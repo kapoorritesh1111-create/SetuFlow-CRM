@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useState } from 'react';
+import { useFormState } from 'react-dom';
 import {
   updateAnnexureTermsAction,
   updateBankDetailsAction,
@@ -11,9 +12,18 @@ import {
 
 const INIT: TermsUpdateResult = { ok: true };
 
-/* ── tiny shared helpers ── */
-function Field({ label, name, defaultValue, placeholder, type = 'text' }: {
-  label: string; name: string; defaultValue?: string; placeholder?: string; type?: string;
+function Field({
+  label,
+  name,
+  defaultValue,
+  placeholder,
+  type = 'text',
+}: {
+  label: string;
+  name: string;
+  defaultValue?: string;
+  placeholder?: string;
+  type?: string;
 }) {
   return (
     <div className="grid gap-1">
@@ -29,28 +39,28 @@ function Field({ label, name, defaultValue, placeholder, type = 'text' }: {
   );
 }
 
-function SaveBtn({ pending }: { pending: boolean }) {
+function SaveBtn({ onClick }: { onClick?: () => void }) {
   return (
     <button
       type="submit"
-      disabled={pending}
-      className="mt-2 rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50"
+      onClick={onClick}
+      className="mt-2 rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-blue-700"
     >
-      {pending ? 'Saving…' : 'Save changes'}
+      Save changes
     </button>
   );
 }
 
-function Result({ state }: { state: TermsUpdateResult }) {
+function ResultMsg({ state }: { state: TermsUpdateResult }) {
   if (state.ok) return null;
   return (
     <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-      {state.error}
+      {(state as { ok: false; error: string }).error}
     </p>
   );
 }
 
-/* ── Compact / Annexure terms editor (textarea — one term per line) ── */
+/* ── Compact / Annexure terms editor ── */
 export function TermsEditor({
   profileId,
   kind,
@@ -63,8 +73,9 @@ export function TermsEditor({
   const action = kind === 'page_one' ? updatePageOneTermsAction : updateAnnexureTermsAction;
   const fieldName = kind === 'page_one' ? 'page_one_terms' : 'annexure_terms';
   const label = kind === 'page_one' ? 'Compact terms (page 1)' : 'Annexure terms';
-  const [state, formAction, pending] = useActionState(action, INIT);
+  const [state, formAction] = useFormState(action, INIT);
   const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   return (
     <div className="mt-3">
@@ -83,7 +94,11 @@ export function TermsEditor({
       </button>
 
       {open && (
-        <form action={formAction} className="mt-2 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
+        <form
+          action={formAction}
+          onSubmit={() => setSaved(true)}
+          className="mt-2 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm"
+        >
           <input type="hidden" name="profile_id" value={profileId} />
           <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
             One term per line
@@ -94,15 +109,17 @@ export function TermsEditor({
             defaultValue={(terms ?? []).join('\n')}
             placeholder={
               kind === 'page_one'
-                ? 'Payment: 100% advance by TT\nIncoterms: FOB Mumbai\nValidity: 15 days from date of issue'
-                : 'Force Majeure clause\nDispute resolution: Indian courts\nGoverning law: Laws of India'
+                ? 'Payment: 100% advance by TT\nIncoterms: FOB Mumbai\nValidity: 15 days'
+                : 'Force Majeure clause\nGoverning law: Laws of India'
             }
             className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
-          <p className="mt-1 text-[10px] text-slate-400">Each non-empty line becomes one term bullet in the document.</p>
-          <SaveBtn pending={pending} />
-          {state.ok === false && <Result state={state} />}
-          {state.ok === true && pending === false && (
+          <p className="mt-1 text-[10px] text-slate-400">
+            Each non-empty line becomes one term bullet in the document.
+          </p>
+          <SaveBtn onClick={() => setSaved(false)} />
+          <ResultMsg state={state} />
+          {saved && state.ok && (
             <p className="mt-2 text-[11px] font-semibold text-emerald-600">✓ Saved</p>
           )}
         </form>
@@ -121,8 +138,9 @@ export function BankDetailsEditor({
   bankDetails: Record<string, unknown> | null;
   orgCountry: string | null;
 }) {
-  const [state, formAction, pending] = useActionState(updateBankDetailsAction, INIT);
+  const [state, formAction] = useFormState(updateBankDetailsAction, INIT);
   const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
   const bd = (bankDetails ?? {}) as Record<string, string>;
   const isIN = (orgCountry ?? '').toUpperCase() === 'IN';
   const filled = Object.values(bd).some((v) => String(v ?? '').trim().length > 0);
@@ -137,21 +155,25 @@ export function BankDetailsEditor({
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Bank details</p>
           <p className="mt-0.5 text-sm font-medium text-slate-700">
-            {filled ? 'Configured — click to edit' : 'Not configured — click to add bank details'}
+            {filled ? 'Configured — click to edit' : 'Not configured — click to add'}
           </p>
         </div>
         <span className="text-slate-400">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <form action={formAction} className="mt-2 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
+        <form
+          action={formAction}
+          onSubmit={() => setSaved(true)}
+          className="mt-2 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm"
+        >
           <input type="hidden" name="profile_id" value={profileId} />
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Bank name" name="bank_name" defaultValue={bd.bank_name} placeholder="State Bank of India" />
             <Field label="Account name" name="account_name" defaultValue={bd.account_name} placeholder="SETU Groups LLC" />
             <Field label="Account number" name="account_number" defaultValue={bd.account_number} />
             <Field label="Branch" name="branch" defaultValue={bd.branch} />
-            <Field label="SWIFT / BIC code" name="swift_code" defaultValue={bd.swift_code} placeholder="SBINIUS..." />
+            <Field label="SWIFT / BIC code" name="swift_code" defaultValue={bd.swift_code} placeholder="SBININBB..." />
             {isIN ? (
               <Field label="IFSC code" name="ifsc" defaultValue={bd.ifsc} placeholder="SBIN0001234" />
             ) : (
@@ -160,9 +182,9 @@ export function BankDetailsEditor({
             <Field label="Currency" name="currency" defaultValue={bd.currency ?? 'USD'} placeholder="USD" />
             <Field label="Sort code (UK)" name="sort_code" defaultValue={bd.sort_code} placeholder="12-34-56" />
           </div>
-          <SaveBtn pending={pending} />
-          {state.ok === false && <Result state={state} />}
-          {state.ok === true && pending === false && (
+          <SaveBtn onClick={() => setSaved(false)} />
+          <ResultMsg state={state} />
+          {saved && state.ok && (
             <p className="mt-2 text-[11px] font-semibold text-emerald-600">✓ Bank details saved</p>
           )}
         </form>
@@ -181,8 +203,9 @@ export function ExportDeclarationsEditor({
   declarations: Record<string, unknown> | null;
   orgCountry: string | null;
 }) {
-  const [state, formAction, pending] = useActionState(updateExportDeclarationsAction, INIT);
+  const [state, formAction] = useFormState(updateExportDeclarationsAction, INIT);
   const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
   const dec = (declarations ?? {}) as Record<string, string>;
   const isIN = (orgCountry ?? '').toUpperCase() === 'IN';
   const isEU = ['DE', 'FR', 'NL', 'BE', 'ES', 'IT', 'PL'].includes((orgCountry ?? '').toUpperCase());
@@ -196,16 +219,22 @@ export function ExportDeclarationsEditor({
         className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
       >
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Export declarations &amp; registrations</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            Export declarations &amp; registrations
+          </p>
           <p className="mt-0.5 text-sm font-medium text-slate-700">
-            {filled ? 'Configured — click to edit' : 'Not configured — click to add IEC/LUT/GSTIN etc.'}
+            {filled ? 'Configured — click to edit' : 'Not configured — click to add IEC/LUT/GSTIN'}
           </p>
         </div>
         <span className="text-slate-400">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <form action={formAction} className="mt-2 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
+        <form
+          action={formAction}
+          onSubmit={() => setSaved(true)}
+          className="mt-2 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm"
+        >
           <input type="hidden" name="profile_id" value={profileId} />
           <div className="grid gap-3 sm:grid-cols-2">
             {isIN && (
@@ -232,9 +261,9 @@ export function ExportDeclarationsEditor({
               </>
             )}
           </div>
-          <SaveBtn pending={pending} />
-          {state.ok === false && <Result state={state} />}
-          {state.ok === true && pending === false && (
+          <SaveBtn onClick={() => setSaved(false)} />
+          <ResultMsg state={state} />
+          {saved && state.ok && (
             <p className="mt-2 text-[11px] font-semibold text-emerald-600">✓ Export declarations saved</p>
           )}
         </form>

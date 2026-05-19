@@ -6,10 +6,46 @@ import { requireAdminWorkspace } from '@/lib/workspace/auth';
 
 export type TermsUpdateResult = { ok: true } | { ok: false; error: string };
 
-/**
- * Update page_one_terms (compact terms) for a profile.
- * Accepts a newline-separated string from a textarea, splits into array.
- */
+// Sprint 13 added columns (page_one_terms, bank_details, export_declarations, etc.)
+// via MCP migrations but generated types have not been regenerated.
+// All .update() calls on organization_document_terms_profiles use `as any` until
+// types are regenerated with: supabase gen types typescript --project-id sjzfzloggabsmcuxktnl
+type ProfileUpdate = Record<string, unknown>;
+
+async function updateProfile(
+  profileId: string,
+  organizationId: string,
+  payload: ProfileUpdate,
+): Promise<TermsUpdateResult> {
+  const db = await createClient();
+  const { error } = await (db as any)
+    .from('organization_document_terms_profiles')
+    .update({ ...payload, updated_at: new Date().toISOString() })
+    .eq('id', profileId)
+    .eq('organization_id', organizationId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+async function writeHistory(
+  organizationId: string,
+  profileId: string,
+  userId: string | null,
+  notes: string,
+  snapshot: ProfileUpdate,
+) {
+  const db = await createClient();
+  await (db as any).from('document_template_history').insert({
+    organization_id: organizationId,
+    profile_id: profileId,
+    version_number: Date.now(),
+    changed_by: userId,
+    change_notes: notes,
+    snapshot,
+  });
+}
+
+/** Update page_one_terms — one term per textarea line */
 export async function updatePageOneTermsAction(
   _prev: TermsUpdateResult,
   formData: FormData,
@@ -18,43 +54,22 @@ export async function updatePageOneTermsAction(
   if (!membership || !organization) return { ok: false, error: 'Unauthorized' };
 
   const profileId = String(formData.get('profile_id') ?? '').trim();
-  const rawTerms = String(formData.get('page_one_terms') ?? '');
   if (!profileId) return { ok: false, error: 'Profile ID required' };
 
-  const terms = rawTerms
+  const terms = String(formData.get('page_one_terms') ?? '')
     .split('\n')
     .map((t) => t.trim())
     .filter(Boolean);
 
-  const db = await createClient();
-  const { error } = await db
-    .from('organization_document_terms_profiles')
-    .update({
-      page_one_terms: terms,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', profileId)
-    .eq('organization_id', organization.id);
+  const result = await updateProfile(profileId, organization.id, { page_one_terms: terms });
+  if (!result.ok) return result;
 
-  if (error) return { ok: false, error: error.message };
-
-  // Write history snapshot
-  await db.from('document_template_history').insert({
-    organization_id: organization.id,
-    profile_id: profileId,
-    version_number: Date.now(), // simple incrementing version for now
-    changed_by: membership.user_id ?? null,
-    change_notes: 'page_one_terms updated via admin editor',
-    snapshot: { page_one_terms: terms },
-  });
-
+  await writeHistory(organization.id, profileId, membership.user_id ?? null, 'page_one_terms updated', { page_one_terms: terms });
   revalidatePath('/admin/document-templates');
   return { ok: true };
 }
 
-/**
- * Update annexure_terms for a profile.
- */
+/** Update annexure_terms — one clause per textarea line */
 export async function updateAnnexureTermsAction(
   _prev: TermsUpdateResult,
   formData: FormData,
@@ -63,43 +78,22 @@ export async function updateAnnexureTermsAction(
   if (!membership || !organization) return { ok: false, error: 'Unauthorized' };
 
   const profileId = String(formData.get('profile_id') ?? '').trim();
-  const rawTerms = String(formData.get('annexure_terms') ?? '');
   if (!profileId) return { ok: false, error: 'Profile ID required' };
 
-  const terms = rawTerms
+  const terms = String(formData.get('annexure_terms') ?? '')
     .split('\n')
     .map((t) => t.trim())
     .filter(Boolean);
 
-  const db = await createClient();
-  const { error } = await db
-    .from('organization_document_terms_profiles')
-    .update({
-      annexure_terms: terms,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', profileId)
-    .eq('organization_id', organization.id);
+  const result = await updateProfile(profileId, organization.id, { annexure_terms: terms });
+  if (!result.ok) return result;
 
-  if (error) return { ok: false, error: error.message };
-
-  await db.from('document_template_history').insert({
-    organization_id: organization.id,
-    profile_id: profileId,
-    version_number: Date.now(),
-    changed_by: membership.user_id ?? null,
-    change_notes: 'annexure_terms updated via admin editor',
-    snapshot: { annexure_terms: terms },
-  });
-
+  await writeHistory(organization.id, profileId, membership.user_id ?? null, 'annexure_terms updated', { annexure_terms: terms });
   revalidatePath('/admin/document-templates');
   return { ok: true };
 }
 
-/**
- * Update bank_details JSON for a profile.
- * Accepts individual named fields from a form.
- */
+/** Update bank_details JSONB */
 export async function updateBankDetailsAction(
   _prev: TermsUpdateResult,
   formData: FormData,
@@ -110,43 +104,27 @@ export async function updateBankDetailsAction(
   const profileId = String(formData.get('profile_id') ?? '').trim();
   if (!profileId) return { ok: false, error: 'Profile ID required' };
 
-  const bankDetails = {
-    bank_name: String(formData.get('bank_name') ?? '').trim(),
-    account_name: String(formData.get('account_name') ?? '').trim(),
+  const bankDetails: ProfileUpdate = {
+    bank_name:      String(formData.get('bank_name') ?? '').trim(),
+    account_name:   String(formData.get('account_name') ?? '').trim(),
     account_number: String(formData.get('account_number') ?? '').trim(),
-    branch: String(formData.get('branch') ?? '').trim(),
-    swift_code: String(formData.get('swift_code') ?? '').trim(),
-    iban: String(formData.get('iban') ?? '').trim(),
-    ifsc: String(formData.get('ifsc') ?? '').trim(),
-    sort_code: String(formData.get('sort_code') ?? '').trim(),
-    currency: String(formData.get('currency') ?? '').trim(),
+    branch:         String(formData.get('branch') ?? '').trim(),
+    swift_code:     String(formData.get('swift_code') ?? '').trim(),
+    iban:           String(formData.get('iban') ?? '').trim(),
+    ifsc:           String(formData.get('ifsc') ?? '').trim(),
+    sort_code:      String(formData.get('sort_code') ?? '').trim(),
+    currency:       String(formData.get('currency') ?? '').trim(),
   };
 
-  const db = await createClient();
-  const { error } = await db
-    .from('organization_document_terms_profiles')
-    .update({ bank_details: bankDetails, updated_at: new Date().toISOString() })
-    .eq('id', profileId)
-    .eq('organization_id', organization.id);
+  const result = await updateProfile(profileId, organization.id, { bank_details: bankDetails });
+  if (!result.ok) return result;
 
-  if (error) return { ok: false, error: error.message };
-
-  await db.from('document_template_history').insert({
-    organization_id: organization.id,
-    profile_id: profileId,
-    version_number: Date.now(),
-    changed_by: membership.user_id ?? null,
-    change_notes: 'bank_details updated',
-    snapshot: { bank_details: bankDetails },
-  });
-
+  await writeHistory(organization.id, profileId, membership.user_id ?? null, 'bank_details updated', { bank_details: bankDetails });
   revalidatePath('/admin/document-templates');
   return { ok: true };
 }
 
-/**
- * Update export_declarations JSON for a profile.
- */
+/** Update export_declarations JSONB */
 export async function updateExportDeclarationsAction(
   _prev: TermsUpdateResult,
   formData: FormData,
@@ -157,35 +135,21 @@ export async function updateExportDeclarationsAction(
   const profileId = String(formData.get('profile_id') ?? '').trim();
   if (!profileId) return { ok: false, error: 'Profile ID required' };
 
-  const declarations = {
-    iec_number: String(formData.get('iec_number') ?? '').trim(),
-    lut_arn: String(formData.get('lut_arn') ?? '').trim(),
-    gstin: String(formData.get('gstin') ?? '').trim(),
-    pan: String(formData.get('pan') ?? '').trim(),
-    ad_code: String(formData.get('ad_code') ?? '').trim(),
+  const declarations: ProfileUpdate = {
+    iec_number:  String(formData.get('iec_number') ?? '').trim(),
+    lut_arn:     String(formData.get('lut_arn') ?? '').trim(),
+    gstin:       String(formData.get('gstin') ?? '').trim(),
+    pan:         String(formData.get('pan') ?? '').trim(),
+    ad_code:     String(formData.get('ad_code') ?? '').trim(),
     rcmc_number: String(formData.get('rcmc_number') ?? '').trim(),
-    vat_number: String(formData.get('vat_number') ?? '').trim(),
+    vat_number:  String(formData.get('vat_number') ?? '').trim(),
     eori_number: String(formData.get('eori_number') ?? '').trim(),
   };
 
-  const db = await createClient();
-  const { error } = await db
-    .from('organization_document_terms_profiles')
-    .update({ export_declarations: declarations, updated_at: new Date().toISOString() })
-    .eq('id', profileId)
-    .eq('organization_id', organization.id);
+  const result = await updateProfile(profileId, organization.id, { export_declarations: declarations });
+  if (!result.ok) return result;
 
-  if (error) return { ok: false, error: error.message };
-
-  await db.from('document_template_history').insert({
-    organization_id: organization.id,
-    profile_id: profileId,
-    version_number: Date.now(),
-    changed_by: membership.user_id ?? null,
-    change_notes: 'export_declarations updated',
-    snapshot: { export_declarations: declarations },
-  });
-
+  await writeHistory(organization.id, profileId, membership.user_id ?? null, 'export_declarations updated', { export_declarations: declarations });
   revalidatePath('/admin/document-templates');
   return { ok: true };
 }
