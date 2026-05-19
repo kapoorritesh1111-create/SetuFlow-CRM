@@ -293,3 +293,106 @@ How to use AI drafts effectively.
 ---
 
 _These workflow guides should be uploaded alongside the main knowledge base to the GPT's Knowledge section._
+
+---
+
+## SPRINT 11 UPDATES: Email and WhatsApp
+
+### Email Integration (Mailtrap — Active)
+
+SetuFlow now sends actual emails via **Mailtrap** as the configured email provider.
+
+**What Mailtrap handles:**
+- Invitation emails (existing, unchanged)
+- Order document sends when channel = `email` and `Send tracked` is clicked
+- Future: quote send notifications, compliance reminders
+
+**Email send flow:**
+1. Operator clicks `Send tracked` with channel = email
+2. Server action creates `order_document_sends` row with `status = link_created`
+3. Server action calls Mailtrap API to send the email with the tracked share link
+4. Mailtrap API returns a message ID stored in `email_send_log.provider_message_id`
+5. `order_document_sends.email_sent = true` and `email_delivery_status = 'sent'` when Mailtrap accepts
+6. External delivery (inbox receipt) remains unconfirmed until a webhook records it
+
+**Important:** `email_sent = true` means Mailtrap accepted the email for delivery. It does NOT prove the recipient's inbox received it. Bounces and delivery failures require webhook integration (future sprint).
+
+**Environment variables:**
+- `MAILTRAP_API_KEY` — required
+- `MAILTRAP_USE_SANDBOX` — set to `true` for testing (requires `MAILTRAP_SANDBOX_ID`)
+- `SETU_EMAIL_PROVIDER` — defaults to `mailtrap`
+- `SETU_NOTIFICATION_FROM_EMAIL` — from address (defaults to `help@setugroups.com`)
+
+**Setu Guru response policy for email questions:**
+- "Was the email sent?" → Check `order_document_sends.email_sent` and `email_delivery_status`. If `email_sent = true`, Mailtrap accepted it. If `email_delivery_status = 'delivered'`, a webhook confirmed delivery (not yet enabled).
+- "Did the recipient open it?" → Check `order_document_sends.open_count`. Open count increments when the tracked share link is accessed. This is document-link-open, not email-open.
+- "Why didn't they receive it?" → Possible bounce or spam filter. Check `email_send_log.bounce_reason` when webhook is enabled. Currently forward to support.
+
+---
+
+### WhatsApp Integration (Link-Based — No API)
+
+SetuFlow does NOT use the WhatsApp Business API. WhatsApp sends are **link-based only**.
+
+**How it works:**
+1. Operator clicks `Send tracked` with channel = whatsapp
+2. Server action creates `order_document_sends` row with `status = link_created`
+3. Server action generates a `wa.me` link (mobile) or `web.whatsapp.com` link (desktop)
+4. The link is stored in `order_document_sends.whatsapp_link`
+5. UI shows an "Open in WhatsApp" button that opens the link in the browser
+6. WhatsApp opens with the message **pre-filled** — the operator must press **Send** inside WhatsApp
+7. SetuFlow records `link_created` — this does NOT confirm the message was sent
+
+**Device behavior:**
+- **Desktop browser**: Opens `https://web.whatsapp.com/send?phone=[number]&text=[message]` (WhatsApp Web)
+- **Mobile browser**: Opens `https://wa.me/[number]?text=[message]` (WhatsApp mobile app)
+- Device detection is automatic based on `navigator.userAgent`
+
+**The pre-filled message includes:**
+- Organization name
+- Document type (e.g. Proforma Invoice)
+- Order number and company name
+- Amount in selected currency (when available)
+- Tracked share URL
+- Optional note from the operator
+
+**Important rules for Setu Guru:**
+- `link_created` for WhatsApp = a wa.me link was generated and shown to the operator
+- It does NOT mean the operator sent it in WhatsApp
+- It does NOT mean the recipient received it
+- The operator must open WhatsApp and press Send manually
+- Setu Guru must NEVER say "the WhatsApp message was sent" based on `link_created` status alone
+- Setu Guru may say: "A WhatsApp link was created. The operator opened WhatsApp with the message pre-filled."
+
+**What Setu Guru should say when asked about WhatsApp delivery:**
+- "A WhatsApp link was generated for [recipient phone]. The operator needs to open WhatsApp and press Send to complete the delivery. SetuFlow does not send WhatsApp messages automatically."
+
+---
+
+### New Database Tables (Sprint 11)
+
+- `email_send_log` — Per-email send event log. One row per Mailtrap API call. Links to `communications` and `order_document_sends`.
+- `sprint_issues` — Internal sprint issue tracker. Maps to Section 15 of the documentation HTML.
+
+### New Schema Columns (Sprint 11)
+
+**`communications` table:**
+- `email_provider` — Provider used (mailtrap | resend)
+- `email_message_id` — Provider message ID from Mailtrap response
+- `email_delivery_status` — pending | sent | delivered | bounced | failed
+- `email_delivered_at`, `email_opened_at`, `email_bounce_reason` — Future webhook fields
+- `whatsapp_link` — Generated wa.me/web.whatsapp.com link
+- `whatsapp_link_type` — wa_me | web_whatsapp | both
+
+**`order_document_sends` table:**
+- `email_sent` — Boolean: Mailtrap accepted the email
+- `email_provider`, `email_message_id`, `email_delivery_status` — Mailtrap tracking
+- `whatsapp_link` — Generated WhatsApp link for the operator to click
+- `whatsapp_phone` — E.164 phone number used for link generation
+
+### Security Fixes (Sprint 11)
+
+Sprint 11 applied RLS policies to 38 tables that previously had RLS enabled but no policies. These tables now enforce org-membership-based access control. Setu Guru should note:
+- `compliance_checklist_items`, `exchange_rates`, `hs_codes`, `hs_duties` are now read-only for authenticated users (global reference data)
+- All `stg_*` staging tables now join through `import_runs` for org isolation
+- `integrations` table is now read-for-members, write-for-admins

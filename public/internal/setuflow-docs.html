@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SetuFlow CRM — Documentation Suite</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --navy: #0f2244;
+    --navy-mid: #1a3a6b;
+    --navy-light: #2d5aa0;
+    --accent: #3b82f6;
+    --accent-soft: #dbeafe;
+    --amber: #f59e0b;
+    --amber-soft: #fef3c7;
+    --green: #10b981;
+    --green-soft: #d1fae5;
+    --red: #ef4444;
+    --red-soft: #fee2e2;
+    --teal: #0d9488;
+    --teal-soft: #ccfbf1;
+    --slate: #64748b;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+  /* NAV */
+  .top-nav { background: var(--navy); color: #fff; padding: 12px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 3px solid var(--accent); }
+  .top-nav .brand { font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+  .top-nav .brand span { color: var(--accent); }
+  .top-nav .version { font-size: 11px; background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 20px; }
+
+  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  .sidebar { background: var(--navy); color: #fff; padding: 16px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .sidebar-section { padding: 8px 16px 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-top: 8px; }
+  .sidebar a { display: block; padding: 6px 16px; color: rgba(255,255,255,0.75); text-decoration: none; font-size: 12.5px; border-left: 3px solid transparent; transition: all 0.15s; }
+  .sidebar a:hover, .sidebar a.active { color: #fff; background: rgba(255,255,255,0.08); border-left-color: var(--accent); }
+  .sidebar .num { background: var(--navy-mid); border-radius: 4px; padding: 1px 5px; font-size: 10px; margin-right: 4px; font-family: var(--mono); }
+
+  .main { padding: 0 32px 60px; overflow-x: hidden; }
+
+  /* SECTIONS */
+  .section { padding: 40px 0 32px; border-bottom: 1px solid var(--border); }
+  .section:last-child { border-bottom: none; }
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .section-num { background: var(--navy); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  h1 { font-size: 24px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; }
+  h2 { font-size: 20px; font-weight: 700; color: var(--navy); margin: 28px 0 12px; letter-spacing: -0.3px; }
+  h3 { font-size: 15px; font-weight: 600; color: var(--navy-mid); margin: 20px 0 8px; }
+  h4 { font-size: 13px; font-weight: 600; color: var(--slate); margin: 12px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  p { margin-bottom: 10px; color: var(--text-muted); }
+
+  /* WORKFLOW PIPELINE */
+  .pipeline { display: flex; align-items: stretch; gap: 0; margin: 20px 0; overflow-x: auto; }
+  .pipeline-stage { flex: 1; min-width: 120px; background: var(--surface); border: 1px solid var(--border); padding: 14px 10px; text-align: center; position: relative; }
+  .pipeline-stage:not(:last-child)::after { content: '→'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%); background: var(--surface); z-index: 1; color: var(--accent); font-weight: 700; font-size: 16px; }
+  .pipeline-stage:first-child { border-radius: 8px 0 0 8px; }
+  .pipeline-stage:last-child { border-radius: 0 8px 8px 0; }
+  .pipeline-stage .stage-label { font-weight: 700; font-size: 12px; color: var(--navy); }
+  .pipeline-stage .stage-route { font-size: 10px; color: var(--slate); font-family: var(--mono); margin-top: 4px; }
+  .pipeline-stage.active { background: var(--accent-soft); border-color: var(--accent); }
+  .pipeline-stage.blocker { background: var(--red-soft); border-color: var(--red); }
+  .pipeline-stage.complete { background: var(--green-soft); border-color: var(--green); }
+
+  /* TABLES */
+  .tbl-wrap { overflow-x: auto; margin: 12px 0 20px; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead tr { background: var(--navy); color: #fff; }
+  th { padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+  tr:nth-child(even) td { background: #fafafa; }
+  tr:nth-child(even):hover td { background: #f1f5f9; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
+  .badge-blue { background: var(--accent-soft); color: #1d4ed8; }
+  .badge-green { background: var(--green-soft); color: #065f46; }
+  .badge-amber { background: var(--amber-soft); color: #92400e; }
+  .badge-red { background: var(--red-soft); color: #991b1b; }
+  .badge-teal { background: var(--teal-soft); color: #134e4a; }
+  .badge-slate { background: #f1f5f9; color: var(--slate); }
+
+  /* CARDS */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 16px 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card .card-title { font-weight: 700; font-size: 13px; color: var(--navy); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .card ul { padding-left: 16px; }
+  .card li { font-size: 12.5px; color: var(--text-muted); margin-bottom: 4px; }
+  .card .cta-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .cta-btn { background: var(--navy); color: #fff; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-family: var(--mono); }
+  .blocker-pill { background: var(--red-soft); color: #991b1b; border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+  .rule-pill { background: var(--teal-soft); color: #134e4a; border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+
+  /* STEP GUIDE */
+  .step-guide { margin: 12px 0; }
+  .step { display: flex; gap: 12px; margin-bottom: 10px; }
+  .step-num { background: var(--accent); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+  .step-body strong { display: block; font-size: 13px; font-weight: 600; color: var(--navy); }
+  .step-body span { font-size: 12px; color: var(--text-muted); }
+  .step-body code { font-family: var(--mono); background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 11px; color: var(--navy-mid); }
+
+  /* MERMAID */
+  .mermaid-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+  .mermaid-wrap .diagram-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--slate); margin-bottom: 12px; }
+  pre.mermaid { background: transparent; }
+
+  /* CODE */
+  code { font-family: var(--mono); background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 11px; color: var(--navy-mid); }
+
+  /* ALERTS */
+  .alert { border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 12.5px; }
+  .alert-blue { background: var(--accent-soft); border-left: 3px solid var(--accent); color: #1e3a8a; }
+  .alert-amber { background: var(--amber-soft); border-left: 3px solid var(--amber); color: #78350f; }
+  .alert-red { background: var(--red-soft); border-left: 3px solid var(--red); color: #7f1d1d; }
+  .alert-green { background: var(--green-soft); border-left: 3px solid var(--green); color: #064e3b; }
+
+  /* CORRECTION ITEMS */
+  .correction { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin: 10px 0; padding: 14px 16px; border-left: 4px solid var(--amber); }
+  .correction.critical { border-left-color: var(--red); }
+  .correction.enhancement { border-left-color: var(--teal); }
+  .correction .corr-title { font-weight: 700; font-size: 13px; color: var(--navy); }
+  .correction .corr-meta { font-size: 11px; color: var(--slate); margin: 2px 0 6px; }
+  .correction .corr-body { font-size: 12.5px; color: var(--text-muted); }
+  .correction code { font-size: 11px; }
+
+  /* SVG ARCH */
+  .svg-arch { width: 100%; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+
+  /* CHEAT SHEET */
+  .cheat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin: 12px 0; overflow: hidden; }
+  .cheat-header { background: var(--navy); color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .cheat-header .cheat-title { font-weight: 700; font-size: 14px; }
+  .cheat-header .cheat-goal { font-size: 11px; opacity: 0.7; }
+  .cheat-body { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .cheat-col { padding: 14px 16px; border-right: 1px solid var(--border); }
+  .cheat-col:last-child { border-right: none; }
+  .cheat-col h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--slate); margin-bottom: 8px; }
+  .cheat-col ul { list-style: none; padding: 0; }
+  .cheat-col li { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; padding-left: 10px; position: relative; }
+  .cheat-col li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+  /* SLIDE DIAGRAMS */
+  .slide { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%); color: #fff; border-radius: 12px; padding: 28px 32px; margin: 12px 0; }
+  .slide-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .slide-sub { font-size: 12px; opacity: 0.65; margin-bottom: 20px; }
+  .slide-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .slide-node { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+  .slide-arrow { color: var(--amber); font-weight: 700; font-size: 16px; }
+  .slide-rules { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .slide-rule { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 11px; opacity: 0.8; }
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <div class="brand">Setu<span>Flow</span> CRM</div>
+  <div class="version">Documentation Suite v2.0 · May 2026</div>
+  <div style="margin-left:auto; font-size:11px; opacity:0.6;">Synthesized from repo + docs + training materials</div>
+</div>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-section">Workflows</div>
+  <a href="#s1"><span class="num">01</span> End-to-End Workflows</a>
+  <a href="#s2"><span class="num">02</span> Detailed Workflows</a>
+  <a href="#s3"><span class="num">03</span> Operator Guides</a>
+
+  <div class="sidebar-section">Testing</div>
+  <a href="#s4"><span class="num">04</span> Automation Tests</a>
+  <a href="#s5"><span class="num">05</span> Manual Tests</a>
+
+  <div class="sidebar-section">Diagrams</div>
+  <a href="#s6"><span class="num">06</span> Mermaid Flowcharts</a>
+  <a href="#s7"><span class="num">07</span> Swimlane Diagrams</a>
+  <a href="#s8"><span class="num">08</span> Slide Diagrams</a>
+  <a href="#s9"><span class="num">09</span> Architecture SVG</a>
+
+  <div class="sidebar-section">Reference</div>
+  <a href="#s10"><span class="num">10</span> Cheat Sheets</a>
+  <a href="#s11"><span class="num">11</span> Repo Corrections</a>
+  <a href="#s12"><span class="num">12</span> Supabase Corrections</a>
+  <a href="#s13"><span class="num">13</span> Recommended Fixes</a>
+  <a href="#s14"><span class="num">14</span> Enhancements</a>
+  <a href="#s15"><span class="num">15</span> Sprint Tracker</a>
+</nav>
+
+<main class="main">
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 1: UPDATED END-TO-END WORKFLOWS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s1">
+<div class="section-header">
+  <div class="section-num">1</div>
+  <h1>Updated End-to-End Workflows</h1>
+</div>
+
+<div class="alert alert-blue">The SetuFlow operating spine: <strong>Capture → Follow-up → Quote → Approval & Send → Orders / Execution → Closeout</strong>. Every commercial deal flows through these stages in sequence. No stage can be skipped without explicit gate approval.</div>
+
+<div class="pipeline">
+  <div class="pipeline-stage complete"><div class="stage-label">Capture</div><div class="stage-route">/contact-exchange/scan</div></div>
+  <div class="pipeline-stage complete"><div class="stage-label">Follow-up</div><div class="stage-route">/leads</div></div>
+  <div class="pipeline-stage active"><div class="stage-label">Quote</div><div class="stage-route">/quotes</div></div>
+  <div class="pipeline-stage"><div class="stage-label">Approval & Send</div><div class="stage-route">/approval-send</div></div>
+  <div class="pipeline-stage"><div class="stage-label">Order Execution</div><div class="stage-route">/orders</div></div>
+  <div class="pipeline-stage"><div class="stage-label">Closeout</div><div class="stage-route">/orders [Paid]</div></div>
+</div>
+
+<div class="tbl-wrap">
+<table>
+<thead><tr>
+  <th>Stage</th><th>Route</th><th>Primary CTAs</th><th>System Behavior</th><th>Readiness / Blockers</th><th>Main Persistence</th>
+</tr></thead>
+<tbody>
+<tr><td><span class="badge badge-teal">Capture</span></td><td><code>/contact-exchange/scan</code><br><code>/trade-events</code></td><td>Review, Save lead, Open follow-up</td><td>Creates/updates lead intake records; links source & event metadata</td><td>Missing company/contact/product/country reduces readiness</td><td><code>leads</code>, <code>trade_events</code>, <code>trade_event_entries</code>, <code>lead_activities</code></td></tr>
+<tr><td><span class="badge badge-blue">Follow-up</span></td><td><code>/leads</code><br><code>/leads/[leadId]</code></td><td>Open, More, Continue quote, Edit lead, Plan follow-up</td><td>Owns qualification, follow-ups, product interests, stage, compliance posture</td><td>Disqualified lead, no product interest, missing buyer country/market, compliance blocker</td><td><code>leads</code>, <code>lead_product_interests</code>, <code>lead_markets</code>, <code>lead_follow_ups</code></td></tr>
+<tr><td><span class="badge badge-slate">RFQ (Optional)</span></td><td><code>/leads/[id]/rfq/new</code></td><td>Create RFQ, Update RFQ, Open quote workspace</td><td>Captures supplier request context before quote</td><td>Supplier response rows required before sent_to_suppliers</td><td><code>rfqs</code>, <code>rfq_line_items</code></td></tr>
+<tr><td><span class="badge badge-blue">Quote Draft</span></td><td><code>/quotes</code></td><td>Create quote, Add product, Save draft</td><td>Builds quote from catalog data, line items, FX, freight assumptions, manual override reasons</td><td>Needs org, lead, currency, line items, product coverage, valid pricing context</td><td><code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, <code>quote_pricing_snapshots</code></td></tr>
+<tr><td><span class="badge badge-amber">Quote Approval & Send</span></td><td><code>/quotes</code><br><code>/approval-send</code></td><td>Send quote, Approve & allow send, Attach evidence, Waive, Defer</td><td>Send checks current version, approval, blockers, compliance posture</td><td>Pending approval, missing evidence, send blockers, no current version</td><td><code>quotes</code>, <code>quote_versions</code>, <code>communications</code>, <code>quote_negotiation_events</code></td></tr>
+<tr><td><span class="badge badge-green">Quote Outcome</span></td><td><code>/quotes</code></td><td>Mark accepted, Mark rejected, Create order</td><td>Accepted version becomes commercial source for contract/order execution</td><td>Only sent quotes can be accepted/rejected through normal path</td><td><code>quotes.accepted_version_id</code>, <code>contracts</code>, <code>orders</code></td></tr>
+<tr><td><span class="badge badge-green">Order Actual Lines</span></td><td><code>/orders</code></td><td>Open, Prepare actual lines, Save, Add line, Approve actual lines</td><td>Seeds order lines from accepted quote; permits actual differences with reasons</td><td>Accepted quote lineage required; preview line IDs cannot be edited before prepare</td><td><code>orders</code>, <code>order_lines</code>, <code>order_approval_gates</code>, <code>order_stage_events</code></td></tr>
+<tr><td><span class="badge badge-blue">First Buyer Document</span></td><td><code>/orders</code><br><code>/order-documents/preview/[token]</code></td><td>Prepare document, Preview, Approve, Send tracked, Print PDF</td><td>Creates proforma invoice (export) or order confirmation (regional)</td><td>Actual lines gate must be approved before document gates</td><td><code>order_documents</code>, <code>order_document_sends</code>, <code>order_approval_gates</code></td></tr>
+<tr><td><span class="badge badge-teal">Packing & Freight</span></td><td><code>/orders</code></td><td>Prepare packing sheet, Preview, Approve, Prepare freight request</td><td>Creates packing plans and freight requests after first document approval</td><td>First document approval required before packing; packing before freight</td><td><code>packing_plans</code>, <code>packing_plan_lines</code>, <code>freight_rate_requests</code>, <code>freight_rate_quotes</code></td></tr>
+<tr><td><span class="badge badge-slate">Trade Requirements</span></td><td><code>/orders</code></td><td>Search and attach requirements, Confirm source</td><td>Matches rules by order/product/country/HS data; creates human-review fallback</td><td>Blocking severities must be reviewed before dispatch</td><td><code>trade_requirements</code>, <code>trade_requirement_sources</code></td></tr>
+<tr><td><span class="badge badge-amber">Processing</span></td><td><code>/orders</code></td><td>Save processing check, Approve pick-pack-QC</td><td>Records picked, packed, QC, notes; unlocks delivery note when complete</td><td>Packing sheet approval required</td><td><code>order_processing_checks</code>, gates, events</td></tr>
+<tr><td><span class="badge badge-amber">Logistics & Dispatch</span></td><td><code>/orders</code></td><td>Approve logistics docs, Create shipment draft, Approve dispatch</td><td>Dispatch requires shipment draft and open blocking requirements resolved</td><td>Delivery note ordering enforced by server gates</td><td><code>shipments</code>, <code>order_approval_gates</code>, <code>order_stage_events</code></td></tr>
+<tr><td><span class="badge badge-green">Finance & Closeout</span></td><td><code>/orders</code></td><td>Prepare final invoice, Approve, Generate receipt + close</td><td>Final invoice approval gates paid closeout; requires payment, reconciliation, receipt, archive</td><td>Final invoice approved; all closeout conditions true</td><td><code>finance_sync_records</code>, <code>orders.status</code>, gates/events</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Data Truth Hierarchy</h2>
+<div class="alert alert-amber"><strong>Immutability rule:</strong> Commercial immutability starts at sent/accepted quote versions, NOT at lead stage. Order changes happen in <code>order_lines</code>, never by mutating the accepted quote version lines.</div>
+<div class="card-grid">
+  <div class="card"><div class="card-title">🏷 Catalog Pricing</div><ul><li><code>pricing_rule_sets</code></li><li><code>product_pricing_rules</code></li><li><code>pricing_engine_settings</code></li></ul></div>
+  <div class="card"><div class="card-title">📋 Quote Versions</div><ul><li><code>quote_versions</code> (immutable once sent)</li><li><code>quote_version_line_items</code></li><li><code>quote_pricing_snapshots</code></li></ul></div>
+  <div class="card"><div class="card-title">📦 Order Execution</div><ul><li><code>orders</code> + <code>order_lines</code></li><li><code>order_documents</code> + <code>order_document_sends</code></li><li><code>packing_plans</code>, <code>shipments</code></li></ul></div>
+  <div class="card"><div class="card-title">🔐 Permissions</div><ul><li><code>profiles</code>, <code>organizations</code></li><li><code>organization_members</code></li><li><code>roles</code>, <code>role_permissions</code>, <code>user_roles</code></li></ul></div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 2: DETAILED WORKFLOWS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s2">
+<div class="section-header">
+  <div class="section-num">2</div>
+  <h1>Detailed Workflows (All Phases)</h1>
+</div>
+
+<!-- LEAD WORKFLOW -->
+<h2>2.1 Lead Workflow</h2>
+<div class="card-grid">
+  <div class="card">
+    <div class="card-title">🎯 High-Level Flow</div>
+    <div style="font-size:12px; color:var(--text-muted);">Capture → Follow-up queue → Command Center → Qualification / Coverage / Follow-up → Quote readiness → Quote workspace</div>
+  </div>
+  <div class="card">
+    <div class="card-title">📌 CTAs</div>
+    <div class="cta-list">
+      <span class="cta-btn">Open</span><span class="cta-btn">More</span><span class="cta-btn">Continue quote</span><span class="cta-btn">Create quote</span><span class="cta-btn">Edit lead</span><span class="cta-btn">Plan follow-up</span><span class="cta-btn">Open coverage manager</span><span class="cta-btn">Compliance check</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🚫 Blockers</div>
+    <div class="cta-list">
+      <span class="blocker-pill">No product interest</span><span class="blocker-pill">Missing country/market</span><span class="blocker-pill">Disqualified lead</span><span class="blocker-pill">Missing follow-up</span><span class="blocker-pill">Compliance evidence missing</span>
+    </div>
+  </div>
+</div>
+<div class="tbl-wrap">
+<table>
+<thead><tr><th>Rule Category</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Data Truth</td><td><code>leads</code> is identity/commercial context. <code>lead_product_interests</code> is quote readiness source. <code>lead_markets</code> defines geographic context.</td></tr>
+<tr><td>Persistence</td><td>Lead basics → <code>leads</code>. Product coverage → <code>lead_product_interests</code>. Stage → <code>lead_stage_history</code>. Notes → <code>lead_activities</code> + <code>communications</code>.</td></tr>
+<tr><td>Audit</td><td>Stage changes, notes, communication drafts/sends, coverage changes, and quote-blocker events recorded in activity/audit style tables.</td></tr>
+<tr><td>Versioning</td><td>Leads are mutable operating records. Commercial immutability starts at sent/accepted quote versions.</td></tr>
+<tr><td>Required Documents</td><td>None at initial creation. Quote-review documents required by compliance rules before quote send.</td></tr>
+<tr><td>Readiness Rules</td><td>Lead exists, not disqualified, at least one product interest exists, country/market sufficiently clear.</td></tr>
+<tr><td>Error States</td><td><code>lead-not-found</code>, <code>lead-disqualified</code>, <code>missing-product-interest</code>, validation errors, missing auth/org, permission denial.</td></tr>
+<tr><td>Edge Cases</td><td>Event leads may already be converted → open existing lead. Coverage data non-persistence is a known regression risk.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- QUOTE WORKFLOW -->
+<h2>2.2 Quote & Quote Versioning Workflow</h2>
+<div class="alert alert-blue"><strong>Version policy:</strong> <code>current_version_id</code> → active working version. <code>accepted_version_id</code> → buyer-accepted/order-source version. These must NEVER be confused.</div>
+<div class="card-grid">
+  <div class="card">
+    <div class="card-title">🔄 Version States</div>
+    <ul>
+      <li><strong>Draft</strong> — editable working version</li>
+      <li><strong>Needs approval</strong> — pending before send</li>
+      <li><strong>Sent</strong> — customer-facing, locked</li>
+      <li><strong>Accepted</strong> — buyer accepted this version</li>
+      <li><strong>Order source</strong> — execution order created</li>
+      <li><strong>Superseded by vN</strong> — older, has newer version</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📌 CTAs</div>
+    <div class="cta-list">
+      <span class="cta-btn">Create quote</span><span class="cta-btn">Create quote with caution</span><span class="cta-btn">Add product</span><span class="cta-btn">Save draft</span><span class="cta-btn">Send quote</span><span class="cta-btn">Open customer PDF</span><span class="cta-btn">Mark accepted</span><span class="cta-btn">Mark rejected</span><span class="cta-btn">Approve & allow send</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🚫 Blockers</div>
+    <div class="cta-list">
+      <span class="blocker-pill">Missing lead/currency/lines</span><span class="blocker-pill">Approval pending</span><span class="blocker-pill">Compliance evidence missing</span><span class="blocker-pill">No FX snapshot</span><span class="blocker-pill">No current version</span>
+    </div>
+  </div>
+</div>
+<div class="tbl-wrap">
+<table>
+<thead><tr><th>Rule Category</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Data Truth</td><td><code>quotes</code> = header/current-status. <code>quote_versions</code> = immutable commercial version once sent/accepted. <code>quote_version_line_items</code> = line-item source of truth.</td></tr>
+<tr><td>Persistence</td><td>Draft/new → <code>quotes</code> + version + line tables. Send updates <code>quotes.sent_at</code>, <code>quotes.sent_version_id</code>, <code>quote_versions.status</code>.</td></tr>
+<tr><td>Immutability</td><td>Editing a sent/approved/accepted/rejected/expired/order-source quote must create a NEW quote version. Earlier versions remain readable for audit.</td></tr>
+<tr><td>Send Gate</td><td>Requires: <code>quote.send</code> permission, current version, line count, approval readiness, no active send blockers.</td></tr>
+<tr><td>Integration Boundary</td><td>Email/WhatsApp send tracking is internal unless a provider connector confirms delivery. <code>link_created</code> ≠ delivered.</td></tr>
+<tr><td>Audit</td><td>Send-blocked decisions recorded. Send/outcome events through communication, negotiation, activity, and audit paths.</td></tr>
+<tr><td>Quote PDF Policy</td><td>Light white/slate layout. Shows: SKU, Product, Pack (g), Units/Case, MOQ cases, Basis, Selected currency per unit/case, Line total. Must not hardcode USD when quote is in AUD/EUR/GBP/INR.</td></tr>
+<tr><td>Share Link Policy</td><td>Must use production-domain buyer-facing pages from <code>https://www.setuflowcrm.com</code>. Never expose Vercel preview URLs. Must show org logo when available.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ORDER EXECUTION WORKFLOW -->
+<h2>2.3 Order Execution Workflow</h2>
+<div class="pipeline">
+  <div class="pipeline-stage complete"><div class="stage-label">Quote Approved</div></div>
+  <div class="pipeline-stage"><div class="stage-label">Internal Approval</div></div>
+  <div class="pipeline-stage"><div class="stage-label">Packing / Freight</div></div>
+  <div class="pipeline-stage"><div class="stage-label">Processing</div></div>
+  <div class="pipeline-stage"><div class="stage-label">Logistics</div></div>
+  <div class="pipeline-stage"><div class="stage-label">Dispatch / Invoice</div></div>
+  <div class="pipeline-stage"><div class="stage-label">Paid & Closed</div></div>
+</div>
+
+<div class="tbl-wrap">
+<table>
+<thead><tr><th>Stage</th><th>Preconditions</th><th>Key Actions</th><th>Persistence</th><th>Blockers</th></tr></thead>
+<tbody>
+<tr><td><span class="badge badge-blue">Actual Lines</span></td><td>Accepted quote lineage, <code>orders.source_quote_version_id</code> set</td><td>Prepare actual lines, Save qty/price/reason, Add line, Approve actual lines</td><td><code>order_lines</code>, <code>order_approval_gates</code></td><td>No accepted quote lineage; preview lines before prepare</td></tr>
+<tr><td><span class="badge badge-blue">First Document</span></td><td>Actual lines approved</td><td>Prepare document, Preview, Approve, Send tracked, Print PDF</td><td><code>order_documents</code>, <code>order_document_sends</code></td><td>Actual lines gate not approved; doc not approved before external send</td></tr>
+<tr><td><span class="badge badge-teal">Packing</span></td><td>First document approved</td><td>Prepare packing sheet, Preview packing sheet, Approve packing sheet</td><td><code>packing_plans</code>, <code>packing_plan_lines</code></td><td>First document not approved</td></tr>
+<tr><td><span class="badge badge-teal">Freight</span></td><td>Packing approved</td><td>Prepare freight request, Preview, Approve freight request</td><td><code>freight_rate_requests</code>, <code>freight_rate_quotes</code></td><td>Packing not approved; external booking not automatic</td></tr>
+<tr><td><span class="badge badge-slate">Trade Requirements</span></td><td>Order exists with product/country context</td><td>Search and attach requirements, Confirm source</td><td><code>trade_requirements</code>, <code>trade_requirement_sources</code></td><td>Blocking requirements stop dispatch release</td></tr>
+<tr><td><span class="badge badge-amber">Processing</span></td><td>Packing approved</td><td>Save processing check (Pick, Pack, QC), Complete processing</td><td><code>order_processing_checks</code>, metadata, gates</td><td>Packing not approved; delivery note locked until complete</td></tr>
+<tr><td><span class="badge badge-amber">Logistics</span></td><td>Processing complete</td><td>Approve logistics docs, Create shipment draft</td><td><code>shipments</code>, <code>order_approval_gates</code></td><td>No shipment draft; blocking trade requirements</td></tr>
+<tr><td><span class="badge badge-red">Dispatch</span></td><td>Shipment draft exists; blockers resolved</td><td>Approve dispatch</td><td>Shipment dispatched, order stage dispatch</td><td>Open blocking trade requirements; no shipment draft</td></tr>
+<tr><td><span class="badge badge-green">Finance & Closeout</span></td><td>Delivery note approved, dispatch complete</td><td>Prepare final invoice, Approve, Generate receipt + close</td><td><code>finance_sync_records</code>, order completed</td><td>Outstanding amount above zero; archive not confirmed; invoice not approved</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>2.4 Support Workflows</h2>
+<div class="card-grid">
+  <div class="card">
+    <div class="card-title">📦 Product Setup</div>
+    <ul>
+      <li>Admin → Categories (parent first, then child)</li>
+      <li>Set category-level pricing defaults</li>
+      <li>Products workspace → Add Product</li>
+      <li>Add Variants (pack size, UOM, MOQ)</li>
+      <li>Set Pricing (starting level, cost layers, margins)</li>
+      <li>Bulk import via CSV (Categories → Products → Pricing)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">👥 User Onboarding</div>
+    <ul>
+      <li>Admin → Invitations → Enter email + role → Send</li>
+      <li>User clicks link → creates password → lands in workspace</li>
+      <li>Admin → Users → Verify role is correct</li>
+      <li>User sets up Profile → My Card → vCard</li>
+      <li>TodayBar shows assigned leads needing action</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">🎪 Trade Events</div>
+    <ul>
+      <li>Admin → Trade Events → Create event</li>
+      <li>Assign team members; confirm scan readiness</li>
+      <li>During event: Business Card Scan or Quick Entry</li>
+      <li>Share vCard via QR or link</li>
+      <li>Post-event: filter leads by Source Event</li>
+      <li>AI Suggestions may draft follow-up messages</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 Compliance & Documents</div>
+    <ul>
+      <li>Document Blocker = required doc not uploaded</li>
+      <li>Compliance Blocker = checklist item unresolved</li>
+      <li>Attach evidence → Waive for quote → Defer to dispatch</li>
+      <li>Waivers require human reviewer reason</li>
+      <li>Resolve = Compliance Assist from lead/quote context</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">💱 FX & Pricing</div>
+    <ul>
+      <li>USD identity handled automatically</li>
+      <li>Manual FX can be allowed by settings</li>
+      <li>Non-USD requires <code>exchange_rates</code> snapshot</li>
+      <li>Override requires reason; may trigger approval</li>
+      <li>Pricing rule sets cascade: org → category → product</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">🤖 AI Suggestions</div>
+    <ul>
+      <li>AI drafts follow-up emails, cover notes, summaries</li>
+      <li>AI does NOT set prices, approve quotes, or send messages</li>
+      <li>AI does NOT advance order states or make compliance decisions</li>
+      <li>Always review and edit before using a draft</li>
+      <li>Dismiss or provide better lead context to improve quality</li>
+    </ul>
+  </div>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 3: CLICK-BY-CLICK OPERATOR GUIDES -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s3">
+<div class="section-header">
+  <div class="section-num">3</div>
+  <h1>Click-By-Click Operator Guides</h1>
+</div>
+
+<h2>Guide 1: Lead to Quote</h2>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Click <code>Follow-up</code> in main navigation</strong><span>Expected UI: Lead queue loads from <code>leads</code>. Expected data: All org leads visible per RLS policy.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click <code>Open</code> on the lead row</strong><span>Expected UI: Lead Command Center opens with workflow cards (qualification, coverage, follow-up, compliance). Verify lead has buyer/supplier context and is not disqualified.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Click <code>Open coverage manager</code> if product coverage is missing</strong><span>Select product interest → Save. Expected data: <code>lead_product_interests</code> row created. Quote CTA becomes dominant when gate passes.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Click <code>Plan follow-up</code> if next action is missing</strong><span>Enter follow-up date and note. Expected data: <code>lead_follow_ups</code> row written.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Check compliance card for any quote-send blockers</strong><span>If red: click <code>Compliance check</code> or <code>Full screen</code>. Choose one: <code>Attach evidence</code>, <code>Waive for quote</code> (with reviewer reason), or <code>Defer to dispatch</code>.</span></div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-body"><strong>Click <code>Create quote</code> or <code>Continue quote</code></strong><span>Verify: lead not disqualified, product interest exists, country/market set, compliance posture acceptable.</span></div></div>
+</div>
+
+<div class="alert alert-amber"><strong>Do NOT:</strong> Treat a free-text product note as saved product coverage. Do NOT bypass compliance by creating a disconnected quote. Do NOT assume WhatsApp/email activity means delivery was confirmed.</div>
+
+<h2>Guide 2: Quote Build and Send</h2>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Click <code>Quote</code> in navigation or open from lead</strong><span>Select/create quote for the correct lead. Expected data: Draft <code>quote_versions</code> record exists or will be created.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click <code>Add product</code> and select catalog products</strong><span>System loads pack size, MOQ, pricing basis defaults from catalog. Verify each line has product, quantity, unit, price.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Confirm currency, pricing basis, validity, incoterm, freight profile</strong><span>For non-USD: verify FX snapshot exists or manual FX is enabled. Expected: FX context recorded in <code>quote_pricing_snapshots</code>.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Review pricing and enter override reasons for any manual changes</strong><span>Override &gt;15% triggers pending approval. Expected data: Approval flag set on <code>quote_versions</code>.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Click <code>Save draft</code> or <code>Create quote</code></strong><span>Expected data: <code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, <code>quote_pricing_snapshots</code> all written.</span></div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-body"><strong>Resolve any approval/compliance blockers</strong><span>If approval pending: owner/admin approves from Quotes workspace approval queue. If compliance blocker: use Step 4 → Review card inside quote workspace.</span></div></div>
+  <div class="step"><div class="step-num">7</div><div class="step-body"><strong>Click <code>Send quote</code></strong><span>Expected data: <code>quotes.sent_at</code> set, <code>quote_versions.status = 'sent'</code>, <code>communications</code> row created. Quote is now LOCKED from direct editing.</span></div></div>
+  <div class="step"><div class="step-num">8</div><div class="step-body"><strong>Click <code>Open customer PDF</code> to review output</strong><span>Verify: org logo, correct currency, all line items, incoterm/payment terms, tax ID visible.</span></div></div>
+  <div class="step"><div class="step-num">9</div><div class="step-body"><strong>Record buyer outcome: <code>Mark accepted</code> or <code>Mark rejected</code></strong><span>Only after actual buyer response. Expected data: <code>quotes.accepted_version_id</code> set on acceptance.</span></div></div>
+</div>
+
+<h2>Guide 3: Accepted Quote to Order</h2>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>In <code>/quotes</code>, open a sent quote → Click <code>Mark accepted</code></strong><span>Expected data: <code>quotes.accepted_version_id</code> set; contract/order handoff RPCs called; <code>orders</code> record created.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Navigate to <code>/orders</code> → Click <code>Open</code> on the new order</strong><span>Expected UI: Order workspace shows stage strip. Stage 1 = "Quote Approved". Verify <code>orders.source_quote_id</code> and <code>source_quote_version_id</code> are set.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Click <code>Prepare actual lines</code></strong><span>Expected: System seeds <code>order_lines</code> from accepted quote/contract. Gate status set to "prepared". Quote version lines remain UNCHANGED.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Review quote vs actual lines. Save quantity/price/reason for any differences</strong><span>Expected data: <code>order_lines</code> rows reflect actual order. Changes stored with reason fields. <code>quote_version_line_items</code> remain unchanged.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Click <code>Approve actual lines</code></strong><span>Expected data: <code>order_approval_gates</code> entry approved; <code>order_stage_events</code> written; order moves to Internal Approval stage.</span></div></div>
+</div>
+
+<h2>Guide 4: First Document and Send Tracking</h2>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Open the order → Stage: "Internal Approval" → Click <code>Prepare document</code></strong><span>System creates order document draft. Type: <code>proforma_invoice</code> (export) or <code>order_confirmation</code> (regional).</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click <code>Preview</code> → Review the rendered document</strong><span>Check: product, quantity, price, parties, incoterm, terms, org logo, tax IDs, bank details. Expected: Preview route opens, open count tracked.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Click <code>Approve</code></strong><span>Expected data: <code>order_documents.status = 'approved'</code>. Gate approved. Non-preview sends now permitted.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Click <code>Send tracked</code> → Select channel (Email/WhatsApp) → Verify recipient</strong><span>Expected data: <code>order_document_sends</code> row created with <code>status = 'link_created'</code>. Recipient defaults from lead contact info.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Use <code>Download / Print PDF</code> if a file is needed</strong><span>Opens browser print dialog. Expected: toolbar hidden from PDF output. Note: This is browser-print, not server-generated PDF binary.</span></div></div>
+</div>
+<div class="alert alert-red"><strong>Critical:</strong> <code>link_created</code> ≠ delivered. Do NOT treat a tracked link as confirmed email/WhatsApp delivery. Do NOT send unapproved documents to buyers.</div>
+
+<h2>Guide 5: Packing, Freight & Trade Requirements</h2>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Open order after first document approval → Click <code>Prepare packing sheet</code></strong><span>Expected data: <code>packing_plans</code> and <code>packing_plan_lines</code> created. Based on actual order lines.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click <code>Preview packing sheet</code> → Click <code>Approve packing sheet</code></strong><span>Expected: Packing stage complete. Processing and freight request actions now unlocked.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Click <code>Prepare freight request</code></strong><span>Confirm: origin, destination, incoterm, packing basis. Expected data: <code>freight_rate_requests</code> created.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Search and attach trade requirements → Click <code>Confirm source</code></strong><span>Expected data: <code>trade_requirements</code> and <code>trade_requirement_sources</code> rows created. No rule match = human review, NOT automatic clearance.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Resolve all blocking trade requirements before dispatch</strong><span>Blocking severity requirements must be reviewed by a human. Dispatch blocked until clear.</span></div></div>
+</div>
+
+<h2>Guide 6: Processing, Dispatch & Closeout</h2>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Open <code>Processing</code> stage → Save picked/packed/QC checks</strong><span>Mark: Picked ✓, Packed ✓, QC Passed ✓. Add notes for exceptions. Expected data: <code>order_processing_checks</code> metadata written.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Complete processing only when all three checks pass</strong><span>Expected: Delivery note and logistics unlocked. Processing gate approved.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Approve logistics documents → Click <code>Create shipment draft</code></strong><span>Enter: shipment mode, carrier, forwarder, booking/tracking reference. Expected data: <code>shipments</code> draft record created.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Resolve all blocking trade requirements → Click <code>Approve dispatch</code></strong><span>Expected data: <code>shipments.status = 'dispatched'</code>. Order stage moves to Dispatch/Invoice.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Prepare/Preview/Approve final invoice → Click <code>Approve invoice</code></strong><span>Expected: Final invoice document approved. <strong>Note:</strong> Final invoice must reflect actual dispatched quantities, NOT quoted quantities.</span></div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-body"><strong>Enter payment reference, reconciliation confirmation, outstanding amount = 0, archive confirmation → Click <code>Generate receipt + close</code></strong><span>Expected data: <code>orders.status = 'completed'</code>. <code>finance_sync_records</code> written. Closeout gate approved.</span></div></div>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 4: AUTOMATION TEST CASES -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s4">
+<div class="section-header">
+  <div class="section-num">4</div>
+  <h1>Automation Test Cases</h1>
+</div>
+
+<div class="alert alert-blue">Run with: <code>npm run typecheck</code> · <code>npm test</code> · <code>npm run test:pricing</code> · <code>npm run test:workspace</code> · <code>npm run test:orders</code> · <code>npm run test:integrations</code> · <code>npm run test:security</code> · <code>npm run verify</code></div>
+
+<h2>Lead Tests</h2>
+<div class="tbl-wrap"><table>
+<thead><tr><th>ID</th><th>Name</th><th>Preconditions</th><th>Steps</th><th>Expected API/Actions</th><th>DB Mutations</th><th>Error/Regression Coverage</th></tr></thead>
+<tbody>
+<tr><td><code>A-LEAD-001</code></td><td>Lead quote gate block</td><td>Org member, lead with no product interest</td><td>Attempt Create quote</td><td><code>getLeadQuoteGate</code> returns blocked</td><td>No quote rows created</td><td>Blocks no-product leads from quoting</td></tr>
+<tr><td><code>A-LEAD-002</code></td><td>Coverage save persists</td><td>Lead exists, catalog product exists</td><td>Save coverage, reopen lead</td><td>Lead coverage server action fires</td><td><code>lead_product_interests</code>, activity rows</td><td>UI and DB readiness must agree</td></tr>
+<tr><td><code>A-LEAD-003</code></td><td>Disqualified lead blocked</td><td>Lead status = disqualified</td><td>Attempt Create quote</td><td>Gate returns disqualified error</td><td>No quote rows</td><td>Disqualified leads cannot progress</td></tr>
+<tr><td><code>A-LEAD-004</code></td><td>Compliance evidence attach</td><td>Lead with open compliance blocker</td><td>Attach evidence document</td><td>Compliance server action</td><td><code>documents</code>, compliance review row</td><td>Evidence must be linked, not just uploaded</td></tr>
+</tbody>
+</table></div>
+
+<h2>Quote Tests</h2>
+<div class="tbl-wrap"><table>
+<thead><tr><th>ID</th><th>Name</th><th>Preconditions</th><th>Steps</th><th>Expected API/Actions</th><th>DB Mutations</th><th>Error/Regression Coverage</th></tr></thead>
+<tbody>
+<tr><td><code>A-QUOTE-001</code></td><td>Quote create</td><td>Lead ready, product/pricing exists</td><td>Create quote with line items</td><td><code>createQuote</code></td><td><code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, <code>quote_pricing_snapshots</code></td><td>Missing product/currency/line validation</td></tr>
+<tr><td><code>A-QUOTE-002</code></td><td>FX required blocker</td><td>Non-USD quote, no FX snapshot, manual FX disabled</td><td>Create quote</td><td>FX service throws error</td><td>No quote version committed</td><td>FX unavailability blocks quote creation</td></tr>
+<tr><td><code>A-QUOTE-003</code></td><td>Send blocked by compliance</td><td>Quote with active compliance blocker</td><td>Click Send quote</td><td><code>updateQuoteWorkflow</code> returns blocked</td><td><code>quote_send_blocked</code> audit/activity written</td><td>Compliance blocker prevents send</td></tr>
+<tr><td><code>A-QUOTE-004</code></td><td>Send success</td><td>Approved quote, no blockers</td><td>Send quote</td><td><code>app_send_quote_version_with_fanout_tx</code></td><td><code>quotes.sent_at</code>, version status = sent, <code>communications</code></td><td>Sent version must be locked after send</td></tr>
+<tr><td><code>A-QUOTE-005</code></td><td>Locked quote edit rejected</td><td>Sent quote</td><td>Attempt to edit a line</td><td>Update action refuses</td><td>No line mutation</td><td>Version immutability enforced</td></tr>
+<tr><td><code>A-QUOTE-006</code></td><td>Accept quote</td><td>Sent quote/version</td><td>Mark accepted</td><td><code>recordQuoteOutcomeWorkflow</code>, handoff RPCs</td><td>Accepted quote/version, contract/order lineage</td><td>Non-sent quote cannot be accepted</td></tr>
+<tr><td><code>A-QUOTE-007</code></td><td>Approval threshold trigger</td><td>Quote with >15% manual override</td><td>Save quote</td><td>Approval flag set</td><td><code>quote_versions.approval_required = true</code></td><td>Threshold triggers approval gate</td></tr>
+<tr><td><code>A-QUOTE-008</code></td><td>RFQ draft create</td><td>Lead exists, valid line item</td><td>Create RFQ</td><td><code>app_create_rfq_with_line_items_and_fanout_tx</code></td><td><code>rfqs</code>, <code>rfq_line_items</code></td><td>Validation failure on missing fields</td></tr>
+</tbody>
+</table></div>
+
+<h2>Order Execution Tests</h2>
+<div class="tbl-wrap"><table>
+<thead><tr><th>ID</th><th>Name</th><th>Preconditions</th><th>Steps</th><th>Expected API/Actions</th><th>DB Mutations</th><th>Error/Regression Coverage</th></tr></thead>
+<tbody>
+<tr><td><code>A-ORDER-001</code></td><td>Prepare actual lines</td><td>Accepted quote with lines</td><td>Prepare actual lines</td><td><code>ensureActualOrderLinesAction</code></td><td><code>orders</code>, <code>order_lines</code>, gate/event</td><td>Idempotency on repeat prepare</td></tr>
+<tr><td><code>A-ORDER-002</code></td><td>Actual line edit</td><td>Prepared actual line</td><td>Save changed quantity/reason</td><td><code>updateActualOrderLineAction</code></td><td><code>order_lines</code> changed, quote unchanged</td><td>Quote version immutability maintained</td></tr>
+<tr><td><code>A-ORDER-003</code></td><td>Approve actual lines</td><td>Prepared actual lines</td><td>Approve</td><td><code>approveActualOrderLinesGateAction</code></td><td>Gate approved, order active</td><td>First document blocked before approval</td></tr>
+<tr><td><code>A-DOC-001</code></td><td>First document prepare</td><td>Actual lines approved</td><td>Prepare → Preview → Approve</td><td>First document gate actions</td><td>Gate rows, <code>order_documents</code> approved</td><td>Requires actual-line approval gate</td></tr>
+<tr><td><code>A-DOC-002</code></td><td>Send approved document</td><td>Approved first document</td><td>Send email tracked</td><td><code>sendOrderDocumentLinkAction</code></td><td><code>order_document_sends.status = 'link_created'</code></td><td>Do NOT assert provider delivery</td></tr>
+<tr><td><code>A-DOC-003</code></td><td>Preview-only tracking</td><td>No approved document</td><td>Preview-only link</td><td>Preview path of send action</td><td>Send row <code>status = 'previewed'</code>, doc NOT approved</td><td>Preview must not mark document as approved</td></tr>
+<tr><td><code>A-DOC-004</code></td><td>Token preview opens</td><td>Valid send token</td><td>Open preview route</td><td><code>get_order_document_preview_by_token</code></td><td><code>order_document_sends.open_count</code> increments</td><td>Invalid token must return 404</td></tr>
+<tr><td><code>A-DOC-005</code></td><td>Quantity/value basis</td><td>Packed qty differs from ordered qty</td><td>Preview each document type</td><td>Preview route renders correct quantities</td><td>No mutation; values must use same basis with explicit label</td><td>Prevent proforma/invoice quantity mismatch</td></tr>
+<tr><td><code>A-PACK-001</code></td><td>Packing prepare</td><td>First doc approved</td><td>Prepare packing sheet</td><td><code>preparePackingSheetAction</code></td><td><code>packing_plans</code>, <code>packing_plan_lines</code></td><td>Block before first doc approval</td></tr>
+<tr><td><code>A-FRT-001</code></td><td>Freight request</td><td>Packing approved</td><td>Prepare/Preview/Approve freight request</td><td>Freight gate actions</td><td><code>freight_rate_requests</code>, gates</td><td>Block before packing approval</td></tr>
+<tr><td><code>A-TRD-001</code></td><td>Attach trade requirements</td><td>Order with product/country context</td><td>Search requirements</td><td><code>searchAndAttachTradeRequirementsAction</code></td><td><code>trade_requirements</code>, sources, gate</td><td>Fallback human review when no rules match</td></tr>
+<tr><td><code>A-TRD-002</code></td><td>Dispatch blocker — open requirement</td><td>Blocking requirement open</td><td>Approve dispatch</td><td>Dispatch action blocks</td><td>No dispatch status change</td><td>Required-before-dispatch severity enforced</td></tr>
+<tr><td><code>A-DISP-001</code></td><td>Shipment draft create</td><td>Logistics docs ready</td><td>Create shipment draft</td><td><code>createShipmentDraftGateAction</code></td><td><code>shipments</code> draft record</td><td>Dispatch blocked without draft</td></tr>
+<tr><td><code>A-DISP-002</code></td><td>Dispatch release</td><td>Draft exists, blockers resolved</td><td>Approve dispatch</td><td><code>approveDispatchGateAction</code></td><td>Shipment dispatched, order stage = dispatch</td><td>Blocks when trade requirements open</td></tr>
+<tr><td><code>A-FIN-001</code></td><td>Final invoice approval</td><td>Delivery note approved</td><td>Prepare/Preview/Approve final invoice</td><td>Final invoice gate actions</td><td><code>order_documents</code> final invoice approved</td><td>Block before delivery note approved</td></tr>
+<tr><td><code>A-FIN-002</code></td><td>Closeout complete</td><td>Final invoice approved, payment complete</td><td>Close order</td><td><code>closeOrderAction</code></td><td><code>orders.status = 'completed'</code>, closeout gate</td><td>Block when any closeout field incomplete</td></tr>
+<tr><td><code>A-SEC-001</code></td><td>RLS org boundary</td><td>User outside org</td><td>Query org records/actions</td><td>Supabase policies deny</td><td>No cross-org visibility or mutation</td><td>Workspace isolation critical regression</td></tr>
+<tr><td><code>A-SEC-002</code></td><td>Role boundary</td><td>Member lacking send/admin permission</td><td>Send quote / admin write</td><td>Permission helpers deny</td><td>No privileged mutation</td><td>Role enforcement regression</td></tr>
+</tbody>
+</table></div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 5: MANUAL TEST CASES -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s5">
+<div class="section-header">
+  <div class="section-num">5</div>
+  <h1>Manual Test Cases</h1>
+</div>
+
+<div class="tbl-wrap"><table>
+<thead><tr><th>ID</th><th>Workflow</th><th>Steps</th><th>Expected UI</th><th>Expected Persistence</th><th>Expected Documents</th><th>Expected Blockers</th></tr></thead>
+<tbody>
+<tr><td><code>M-001</code></td><td>Capture to follow-up</td><td>Capture lead, save, open Follow-up</td><td>Lead appears in queue</td><td><code>leads</code>, source/activity rows</td><td>—</td><td>Missing required fields highlighted</td></tr>
+<tr><td><code>M-002</code></td><td>Lead coverage</td><td>Open lead, open coverage manager, save product</td><td>Quote CTA becomes available when gate passes</td><td><code>lead_product_interests</code> row created</td><td>—</td><td>No product interest blocks quote</td></tr>
+<tr><td><code>M-003</code></td><td>Compliance assist</td><td>Open blocker, attach evidence</td><td>Compliance card updates to cleared state</td><td><code>documents</code>/review rows written</td><td>Evidence document tagged and linked</td><td>Missing evidence blocks send</td></tr>
+<tr><td><code>M-004</code></td><td>Quote creation</td><td>Create quote with product/currency/lines</td><td>Quote visible in <code>/quotes</code> as draft</td><td>Quote/version/line/snapshot rows all written</td><td>Quote PDF generatable</td><td>Missing line/currency blocks create</td></tr>
+<tr><td><code>M-005</code></td><td>Quote approval trigger</td><td>Trigger manual override above threshold</td><td>Pending approval displayed; Send disabled</td><td>Approval flag set on version</td><td>—</td><td>Send disabled until approved</td></tr>
+<tr><td><code>M-006</code></td><td>Quote send</td><td>Send approved quote</td><td>Sent state shown; PDF link available</td><td>Sent version, <code>communications</code> row</td><td>Customer-facing PDF/share page</td><td>Sent quote locked from direct editing</td></tr>
+<tr><td><code>M-007</code></td><td>Quote outcome</td><td>Mark accepted after buyer confirms</td><td>Order execution follow-through shown</td><td>Accepted version, contract/order created</td><td>—</td><td>Non-sent quote cannot be accepted</td></tr>
+<tr><td><code>M-008</code></td><td>Order line prepare</td><td>Open order, prepare actual lines</td><td>Quote vs actual line comparison shown</td><td><code>order_lines</code>, gate prepared</td><td>—</td><td>First doc unavailable before approval</td></tr>
+<tr><td><code>M-009</code></td><td>Actual line change</td><td>Change quantity/price, enter reason</td><td>Changed status visible next to original</td><td><code>order_lines</code> updated, quote UNCHANGED</td><td>—</td><td>Reason field required for changes</td></tr>
+<tr><td><code>M-010</code></td><td>First document</td><td>Prepare, preview, approve document</td><td>Document tray shows approved status</td><td><code>order_documents</code> approved</td><td>Proforma/order confirmation draft</td><td>Send blocked until approved</td></tr>
+<tr><td><code>M-011</code></td><td>Tracked send</td><td>Send approved doc via email channel</td><td>Send history row and preview link visible</td><td><code>order_document_sends</code> row with link_created</td><td>Tokenized preview URL generated</td><td>Link created ≠ provider delivery</td></tr>
+<tr><td><code>M-012</code></td><td>Preview route</td><td>Open preview link from send row</td><td>Document renders; print/PDF button visible</td><td><code>order_document_sends.open_count</code> increments</td><td>v3-style document body with terms</td><td>Invalid token returns 404</td></tr>
+<tr><td><code>M-013</code></td><td>Packing</td><td>Prepare, preview, approve packing sheet</td><td>Packing stage shows complete</td><td><code>packing_plans</code>, <code>packing_plan_lines</code></td><td>Packing sheet previewable</td><td>Block before first doc approval</td></tr>
+<tr><td><code>M-014</code></td><td>Freight</td><td>Prepare, preview, approve freight request</td><td>Freight request visible in stage panel</td><td><code>freight_rate_requests</code> approved</td><td>Freight rate request document</td><td>Block before packing approval</td></tr>
+<tr><td><code>M-015</code></td><td>Trade requirements</td><td>Attach and confirm requirement</td><td>Requirement shows reviewed status</td><td><code>trade_requirements</code>, <code>trade_requirement_sources</code></td><td>—</td><td>Dispatch blocked if blocking severity open</td></tr>
+<tr><td><code>M-016</code></td><td>Processing</td><td>Save incomplete then complete checks</td><td>Incomplete → approved state transition</td><td>Metadata, gates, <code>order_stage_events</code></td><td>—</td><td>Delivery note locked until all checks pass</td></tr>
+<tr><td><code>M-017</code></td><td>Logistics / Shipment</td><td>Approve logistics docs, create shipment draft</td><td>Shipment draft visible with carrier details</td><td><code>shipments</code> draft, gates/events</td><td>Delivery note, logistics docs</td><td>Dispatch blocked without draft</td></tr>
+<tr><td><code>M-018</code></td><td>Dispatch</td><td>Resolve blockers, approve dispatch</td><td>Dispatch state visible; order moves stage</td><td>Shipment dispatched; stage = Dispatch/Invoice</td><td>—</td><td>Blocking trade requirement prevents release</td></tr>
+<tr><td><code>M-019</code></td><td>Final invoice</td><td>Preview and approve final invoice</td><td>Invoice shows approved in document tray</td><td>Final invoice <code>order_documents</code> approved</td><td>Final invoice (actual dispatched quantities)</td><td>Block before delivery note approved</td></tr>
+<tr><td><code>M-020</code></td><td>Paid closeout</td><td>Enter payment/reconciliation/archive, close</td><td>Order shows Completed status</td><td><code>orders.status = 'completed'</code>, closeout event</td><td>Receipt, document archive</td><td>Outstanding amount blocks close</td></tr>
+<tr><td><code>M-021</code></td><td>Admin roles</td><td>Invite user, update role</td><td>Role reflected in Admin UI</td><td>Invitation/membership/role rows</td><td>Invitation email sent</td><td>Non-admin blocked from invite</td></tr>
+<tr><td><code>M-022</code></td><td>Catalog admin</td><td>Import categories then products CSV</td><td>Products visible after import with variant data</td><td>Product/pricing/variant rows</td><td>Import history row, row summary</td><td>Unauthorized member blocked; category must exist before products</td></tr>
+<tr><td><code>M-023</code></td><td>Multi-send tracking</td><td>Send same doc twice to different recipients</td><td>Two send rows visible with separate recipients</td><td>Two <code>order_document_sends</code> rows; parent NOT overwritten</td><td>Both preview links functional</td><td>Parent doc status not mutated by re-send</td></tr>
+<tr><td><code>M-024</code></td><td>Cross-org access</td><td>Log in as different org user, attempt access</td><td>No foreign org data visible</td><td>No cross-org mutation</td><td>—</td><td>RLS/access control must deny completely</td></tr>
+</tbody>
+</table></div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 6: MERMAID FLOWCHARTS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s6">
+<div class="section-header">
+  <div class="section-num">6</div>
+  <h1>Mermaid Flowcharts (All Workflows)</h1>
+</div>
+
+<h2>6.1 Lead Workflow</h2>
+<div class="mermaid-wrap">
+<div class="diagram-title">Lead → Quote Readiness Flowchart</div>
+<pre class="mermaid">
+flowchart LR
+  A([Capture]) --> B{Review Contact}
+  B -->|Valid| C[Save Lead]
+  B -->|Invalid| A
+  C --> D[Follow-up Queue /leads]
+  D --> E[Open Lead Command Center]
+  E --> F{Qualify?}
+  F -->|Disqualified| G([Dead End])
+  F -->|Qualified| H[Add Product Coverage]
+  H --> I{Coverage Saved?}
+  I -->|No| H
+  I -->|Yes| J[Plan Follow-up]
+  J --> K{Compliance Blocker?}
+  K -->|Yes| L{Resolution}
+  L -->|Attach Evidence| M[Upload Doc]
+  L -->|Waive for Quote| N[Record Reviewer Reason]
+  L -->|Defer to Dispatch| O[Record Dispatch Obligation]
+  M & N & O --> K
+  K -->|No| P([Create Quote / Continue Quote])
+</pre>
+</div>
+
+<h2>6.2 Quote Workflow</h2>
+<div class="mermaid-wrap">
+<div class="diagram-title">Quote Build → Send → Outcome Flowchart</div>
+<pre class="mermaid">
+flowchart LR
+  A([Open Quote Workspace]) --> B[Select / Create Quote for Lead]
+  B --> C[Add Catalog Products]
+  C --> D[Set Currency / FX / Incoterm / Validity]
+  D --> E{FX Available?}
+  E -->|No| F([Block — No FX Snapshot])
+  E -->|Yes| G[Review Pricing & Overrides]
+  G --> H{Override > 15%?}
+  H -->|Yes| I{Approval}
+  I -->|Rejected| J[Revise Quote]
+  J --> G
+  I -->|Approved| K
+  H -->|No| K[Save Draft / Create Quote]
+  K --> L{Compliance Send Blocker?}
+  L -->|Yes| M[Resolve Blocker]
+  M --> L
+  L -->|No| N[Send Quote]
+  N --> O[Quote Status → Sent — LOCKED]
+  O --> P{Buyer Outcome}
+  P -->|Accepted| Q([Mark Accepted → Create Order])
+  P -->|Rejected| R([Mark Rejected — Archive])
+  P -->|No Response| S[Revise → New Version]
+</pre>
+</div>
+
+<h2>6.3 Quote Versioning Workflow</h2>
+<div class="mermaid-wrap">
+<div class="diagram-title">Quote Version State Machine</div>
+<pre class="mermaid">
+flowchart LR
+  A([New Quote]) --> B[Draft Version]
+  B -->|Edit freely| B
+  B -->|Save| C[Current Version]
+  C -->|Approval required| D[Pending Approval]
+  D -->|Rejected| B
+  D -->|Approved| E
+  C -->|No approval needed| E[Send]
+  E --> F[Sent — IMMUTABLE]
+  F -->|Buyer accepts| G[Accepted — IMMUTABLE]
+  F -->|Buyer rejects| H[Rejected — IMMUTABLE]
+  F -->|Expires| I[Expired — IMMUTABLE]
+  F -->|Revise| J[New Version → Draft]
+  G --> K([Order Source — executes contract])
+  J --> B
+</pre>
+</div>
+
+<h2>6.4 Order Execution Workflow</h2>
+<div class="mermaid-wrap">
+<div class="diagram-title">Order Execution — Stage-by-Stage</div>
+<pre class="mermaid">
+flowchart LR
+  A([Accepted Quote]) --> B[Stage 1: Quote Approved]
+  B --> C[Prepare Actual Lines]
+  C --> D[Review Quote vs Actual — Save Reasons]
+  D --> E[Approve Actual Lines]
+  E --> F[Stage 2: First Document]
+  F --> G[Prepare Document]
+  G --> H[Preview Document]
+  H --> I[Approve Document]
+  I --> J[Send Tracked / Print PDF]
+  J --> K[Stage 3: Packing / Freight]
+  K --> L[Prepare Packing Sheet]
+  L --> M[Approve Packing Sheet]
+  M --> N[Prepare Freight Request]
+  N --> O[Approve Freight Request]
+  O --> P[Stage 4: Processing]
+  P --> Q{Pick + Pack + QC?}
+  Q -->|Incomplete| P
+  Q -->|Complete| R[Stage 5: Logistics]
+  R --> S[Approve Logistics Docs]
+  S --> T[Create Shipment Draft]
+  T --> U{Trade Requirements Clear?}
+  U -->|Blocking Open| V[Resolve Requirements]
+  V --> U
+  U -->|Clear| W[Approve Dispatch]
+  W --> X[Stage 6: Invoice / Closeout]
+  X --> Y[Prepare + Approve Final Invoice]
+  Y --> Z[Generate Receipt + Close]
+  Z --> AA([Paid & Closed])
+</pre>
+</div>
+
+<h2>6.5 Packing Workflow</h2>
+<div class="mermaid-wrap">
+<div class="diagram-title">Packing Sheet Preparation</div>
+<pre class="mermaid">
+flowchart LR
+  A{First Document Approved?} -->|No| B([Blocked])
+  A -->|Yes| C[Prepare Packing Sheet from Actual Lines]
+  C --> D[Preview Packing Sheet]
+  D --> E{Quantities Correct?}
+  E -->|No| F[Amend Actual Lines]
+  F --> C
+  E -->|Yes| G[Approve Packing Sheet]
+  G --> H{Unlocks}
+  H --> I([Processing Stage])
+  H --> J([Freight Request Stage])
+</pre>
+</div>
+
+<h2>6.6 Finance & Closeout Workflow</h2>
+<div class="mermaid-wrap">
+<div class="diagram-title">Finance and Closeout Gates</div>
+<pre class="mermaid">
+flowchart LR
+  A([Dispatch Approved]) --> B[Prepare Final Invoice]
+  B --> C[Preview Final Invoice — Actual Dispatched Qty]
+  C --> D[Approve Final Invoice]
+  D --> E[Send Final Invoice Tracked]
+  E --> F[Payment Received]
+  F --> G[Enter Payment Reference]
+  G --> H[Confirm Reconciliation — Outstanding = Zero]
+  H --> I[Confirm Receipt Acknowledged]
+  I --> J[Confirm Document Archive]
+  J --> K{All Closeout Checks Pass?}
+  K -->|No| L([Blocked — Cannot Close])
+  K -->|Yes| M[Generate Receipt + Close]
+  M --> N([Order Completed])
+</pre>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 7: SWIMLANE DIAGRAMS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s7">
+<div class="section-header">
+  <div class="section-num">7</div>
+  <h1>Mermaid Swimlane Diagrams</h1>
+</div>
+
+<h2>7.1 Lead-to-Quote Swimlane</h2>
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  subgraph Operator
+    O1[Capture / Scan card]
+    O2[Review parsed data]
+    O3[Save lead]
+    O4[Open Lead Command Center]
+    O5[Link product coverage]
+    O6[Plan follow-up]
+    O7[Attach evidence / Waive]
+    O8[Click Create Quote]
+  end
+  subgraph System
+    S1[Parse contact via AI vision]
+    S2[Create lead record]
+    S3[Run lead quote gate check]
+    S4[Write lead_product_interests]
+    S5[Write lead_follow_ups]
+    S6[Record compliance decision]
+    S7[Open quote workspace]
+  end
+  O1 --> S1 --> O2 --> O3 --> S2 --> O4 --> S3
+  S3 -->|Gate passes| O5 --> S4 --> O6 --> S5 --> O7 --> S6 --> O8 --> S7
+</pre>
+</div>
+
+<h2>7.2 Quote Build & Send Swimlane</h2>
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  subgraph Operator
+    O1[Open Quote / Create Quote]
+    O2[Add catalog products]
+    O3[Set currency / terms / FX]
+    O4[Enter override reason]
+    O5[Resolve compliance blocker]
+    O6[Click Send Quote]
+    O7[Review customer PDF]
+    O8[Mark Accepted or Rejected]
+  end
+  subgraph System
+    S1[Load catalog / pricing rules]
+    S2[Capture FX snapshot]
+    S3[Flag approval if override > 15%]
+    S4[Write quote / version / lines / snapshot]
+    S5[Check send gate]
+    S6[Lock version status = sent]
+    S7[Write communications row]
+    S8[Set accepted_version_id — create order]
+  end
+  O1 --> S1 --> O2 --> O3 --> S2 --> O4 --> S3 --> S4 --> O5 --> S5
+  S5 -->|Cleared| O6 --> S6 --> S7 --> O7 --> O8 --> S8
+</pre>
+</div>
+
+<h2>7.3 Order Execution Swimlane</h2>
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  subgraph Operator
+    O1[Open order in queue]
+    O2[Prepare actual lines]
+    O3[Save quantity changes + reasons]
+    O4[Approve actual lines]
+    O5[Prepare + Preview + Approve document]
+    O6[Send tracked]
+    O7[Approve packing sheet]
+    O8[Approve freight request]
+    O9[Confirm trade requirements]
+    O10[Save processing checks]
+    O11[Create shipment draft]
+    O12[Approve dispatch]
+    O13[Approve final invoice]
+    O14[Generate receipt + close]
+  end
+  subgraph System
+    S1[Load accepted quote lineage]
+    S2[Seed order_lines from quote]
+    S3[Write order_lines changes]
+    S4[Approve actual_lines gate]
+    S5[Prepare order_documents]
+    S6[Create order_document_sends row]
+    S7[Create packing_plans + lines]
+    S8[Create freight_rate_requests]
+    S9[Match trade_requirements rules]
+    S10[Write processing_checks metadata]
+    S11[Create shipments draft]
+    S12[Dispatch shipments — stage event]
+    S13[Approve final invoice gate]
+    S14[Write finance_sync_records — order completed]
+  end
+  O1 --> S1 --> O2 --> S2 --> O3 --> S3 --> O4 --> S4
+  S4 --> O5 --> S5 --> O6 --> S6 --> O7 --> S7 --> O8 --> S8
+  S8 --> O9 --> S9 --> O10 --> S10 --> O11 --> S11 --> O12 --> S12
+  S12 --> O13 --> S13 --> O14 --> S14
+</pre>
+</div>
+
+<h2>7.4 Document Send Tracking Swimlane</h2>
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  subgraph Operator
+    O1[Click Prepare Document]
+    O2[Click Preview]
+    O3[Click Approve]
+    O4[Select channel + verify recipient]
+    O5[Click Send Tracked]
+    O6[Open preview link]
+    O7[Click Download / Print PDF]
+  end
+  subgraph System
+    S1[Create order_documents gate row]
+    S2[Open preview route — increment open count]
+    S3[Set order_documents.status = approved]
+    S4[Create order_document_sends row — status link_created]
+    S5[Return tokenized preview URL]
+    S6[Increment open_count on send row]
+    S7[Browser print dialog — no server PDF binary yet]
+  end
+  O1 --> S1 --> O2 --> S2 --> O3 --> S3 --> O4 --> O5 --> S4 --> S5
+  S5 --> O6 --> S6
+  O6 --> O7 --> S7
+</pre>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 8: SLIDE-READY SIMPLIFIED DIAGRAMS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s8">
+<div class="section-header">
+  <div class="section-num">8</div>
+  <h1>Slide-Ready Simplified Diagrams</h1>
+</div>
+
+<div class="slide">
+  <div class="slide-title">Slide 1: Lead Workflow</div>
+  <div class="slide-sub">Turn captured contacts into quote-ready leads</div>
+  <div class="slide-flow">
+    <div class="slide-node">📱 Capture</div><div class="slide-arrow">→</div>
+    <div class="slide-node">📋 Follow-up</div><div class="slide-arrow">→</div>
+    <div class="slide-node">🔍 Command Center</div><div class="slide-arrow">→</div>
+    <div class="slide-node">📦 Coverage</div><div class="slide-arrow">→</div>
+    <div class="slide-node">✅ Quote Ready</div>
+  </div>
+  <div class="slide-rules">
+    <div class="slide-rule">No product coverage = No quote</div>
+    <div class="slide-rule">Disqualified = Dead end</div>
+    <div class="slide-rule">Compliance can block send later</div>
+    <div class="slide-rule">Waive/Defer requires reviewer reason</div>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-title">Slide 2: Quote Workflow</div>
+  <div class="slide-sub">Build a clean, approved quote before sending</div>
+  <div class="slide-flow">
+    <div class="slide-node">✏️ Create Quote</div><div class="slide-arrow">→</div>
+    <div class="slide-node">➕ Add Products</div><div class="slide-arrow">→</div>
+    <div class="slide-node">💱 Review Terms</div><div class="slide-arrow">→</div>
+    <div class="slide-node">🚫 Clear Blockers</div><div class="slide-arrow">→</div>
+    <div class="slide-node">📨 Send Quote</div>
+  </div>
+  <div class="slide-rules">
+    <div class="slide-rule">Sent quotes are LOCKED</div>
+    <div class="slide-rule">Override > 15% = Approval required</div>
+    <div class="slide-rule">Revise instead of editing sent versions</div>
+    <div class="slide-rule">Production-domain share links only</div>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-title">Slide 3: Quote Versioning</div>
+  <div class="slide-sub">Keep sent offers locked and traceable</div>
+  <div class="slide-flow">
+    <div class="slide-node">📝 Draft</div><div class="slide-arrow">→</div>
+    <div class="slide-node">📤 Sent <small style="opacity:0.6">LOCKED</small></div><div class="slide-arrow">→</div>
+    <div class="slide-node">✅ Accepted <small style="opacity:0.6">LOCKED</small></div><div class="slide-arrow">→</div>
+    <div class="slide-node">📦 Order Source</div>
+  </div>
+  <div class="slide-rules">
+    <div class="slide-rule">current_version_id ≠ accepted_version_id</div>
+    <div class="slide-rule">Revision creates NEW version</div>
+    <div class="slide-rule">History preserved for audit/PDF reproduction</div>
+    <div class="slide-rule">Orders start from accepted_version_id only</div>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-title">Slide 4: Order Execution</div>
+  <div class="slide-sub">Turn an accepted quote into controlled execution</div>
+  <div class="slide-flow">
+    <div class="slide-node">📋 Actual Lines</div><div class="slide-arrow">→</div>
+    <div class="slide-node">📄 First Document</div><div class="slide-arrow">→</div>
+    <div class="slide-node">📦 Packing</div><div class="slide-arrow">→</div>
+    <div class="slide-node">🚚 Dispatch</div><div class="slide-arrow">→</div>
+    <div class="slide-node">💰 Close</div>
+  </div>
+  <div class="slide-rules">
+    <div class="slide-rule">Actual lines can differ from quote lines</div>
+    <div class="slide-rule">Always record reason for differences</div>
+    <div class="slide-rule">Approve before any external send</div>
+    <div class="slide-rule">link_created ≠ provider delivered</div>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-title">Slide 5: Packing → Processing → Dispatch</div>
+  <div class="slide-sub">Physical execution gates — sequential and human-approved</div>
+  <div class="slide-flow">
+    <div class="slide-node">📄 First Doc ✓</div><div class="slide-arrow">→</div>
+    <div class="slide-node">📦 Packing Sheet ✓</div><div class="slide-arrow">→</div>
+    <div class="slide-node">✔️ Pick+Pack+QC</div><div class="slide-arrow">→</div>
+    <div class="slide-node">🚢 Shipment Draft</div><div class="slide-arrow">→</div>
+    <div class="slide-node">🚀 Approve Dispatch</div>
+  </div>
+  <div class="slide-rules">
+    <div class="slide-rule">Each gate is sequential — no skipping</div>
+    <div class="slide-rule">Freight booking is NOT automatic</div>
+    <div class="slide-rule">Blocking trade requirements stop dispatch</div>
+    <div class="slide-rule">QC must PASS — not just "checked"</div>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-title">Slide 6: Finance & Closeout</div>
+  <div class="slide-sub">Close only when all financial evidence is confirmed</div>
+  <div class="slide-flow">
+    <div class="slide-node">📄 Final Invoice ✓</div><div class="slide-arrow">→</div>
+    <div class="slide-node">💳 Payment ✓</div><div class="slide-arrow">→</div>
+    <div class="slide-node">⚖️ Reconciliation ✓</div><div class="slide-arrow">→</div>
+    <div class="slide-node">📁 Archive ✓</div><div class="slide-arrow">→</div>
+    <div class="slide-node">🔒 Closed</div>
+  </div>
+  <div class="slide-rules">
+    <div class="slide-rule">Final invoice ≠ proforma invoice</div>
+    <div class="slide-rule">Outstanding amount must be zero</div>
+    <div class="slide-rule">Finance sync not automatic</div>
+    <div class="slide-rule">All 5 closeout checks must pass</div>
+  </div>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 9: SVG ARCHITECTURE DIAGRAM -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s9">
+<div class="section-header">
+  <div class="section-num">9</div>
+  <h1>Full SVG Architecture Diagram</h1>
+</div>
+
+<div class="mermaid-wrap">
+<div class="diagram-title">SetuFlow CRM — System Architecture</div>
+<svg class="svg-arch" viewBox="0 0 940 600" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>SetuFlow CRM System Architecture</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- Background layers -->
+  <rect x="10" y="10" width="920" height="580" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- LAYER: Operators -->
+  <rect x="30" y="30" width="120" height="540" rx="8" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="90" y="54" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#475569" letter-spacing="1">OPERATORS</text>
+  <rect x="46" y="68" width="88" height="40" rx="6" fill="#0f2244" stroke="#1a3a6b" stroke-width="0.5"/>
+  <text x="90" y="84" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#fff">Sales</text>
+  <text x="90" y="98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Quote / Lead</text>
+  <rect x="46" y="120" width="88" height="40" rx="6" fill="#1a3a6b" stroke="#2d5aa0" stroke-width="0.5"/>
+  <text x="90" y="136" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#fff">Operations</text>
+  <text x="90" y="150" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Orders / Docs</text>
+  <rect x="46" y="172" width="88" height="40" rx="6" fill="#2d5aa0" stroke="#3b82f6" stroke-width="0.5"/>
+  <text x="90" y="188" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#fff">Admin</text>
+  <text x="90" y="202" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Org / Roles</text>
+  <rect x="46" y="224" width="88" height="40" rx="6" fill="#475569" stroke="#64748b" stroke-width="0.5"/>
+  <text x="90" y="240" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#fff">Mobile</text>
+  <text x="90" y="254" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Capture / vCard</text>
+
+  <!-- LAYER: Frontend -->
+  <rect x="168" y="30" width="200" height="540" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="268" y="54" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#1d4ed8" letter-spacing="1">NEXT.JS FRONTEND</text>
+  <rect x="182" y="68" width="172" height="32" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="268" y="84" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="600" fill="#1e3a8a">/leads — Follow-up</text>
+  <text x="268" y="97" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#3b82f6">Lead Command Center</text>
+  <rect x="182" y="110" width="172" height="32" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="268" y="126" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="600" fill="#1e3a8a">/quotes — Quote Builder</text>
+  <text x="268" y="139" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#3b82f6">Versioning · PDF · Share</text>
+  <rect x="182" y="152" width="172" height="32" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="268" y="168" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="600" fill="#1e3a8a">/orders — Execution</text>
+  <text x="268" y="181" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#3b82f6">Stage Panel · Doc Tray</text>
+  <rect x="182" y="194" width="172" height="32" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="268" y="210" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="600" fill="#1e3a8a">/approval-send</text>
+  <text x="268" y="223" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#3b82f6">Approval · Send Gate</text>
+  <rect x="182" y="236" width="172" height="32" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="268" y="252" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="600" fill="#1e3a8a">/pipeline · /products</text>
+  <text x="268" y="265" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#3b82f6">Pipeline · Catalog</text>
+  <rect x="182" y="278" width="172" height="32" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="268" y="294" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="600" fill="#1e3a8a">/admin/* routes</text>
+  <text x="268" y="307" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#3b82f6">Org · Users · Catalog Admin</text>
+  <rect x="182" y="320" width="172" height="32" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="268" y="336" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="600" fill="#1e3a8a">/mobile/capture</text>
+  <text x="268" y="349" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#3b82f6">Mobile · vCard · Scan</text>
+  <rect x="182" y="362" width="172" height="32" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="268" y="378" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="600" fill="#1e3a8a">/order-documents/preview</text>
+  <text x="268" y="391" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#3b82f6">Tokenized Doc Preview</text>
+
+  <!-- LAYER: Server Actions -->
+  <rect x="386" y="30" width="190" height="540" rx="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="481" y="54" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#166534" letter-spacing="1">SERVER ACTIONS / API</text>
+  <rect x="400" y="68" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="84" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">Lead / Coverage / Compliance</text>
+  <rect x="400" y="106" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">createQuote · updateQuoteWorkflow</text>
+  <rect x="400" y="144" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="160" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">sendQuote · recordOutcome · RPC fanout</text>
+  <rect x="400" y="182" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="198" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">ensureActualOrderLines</text>
+  <rect x="400" y="220" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="236" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">Document Gate Actions</text>
+  <rect x="400" y="258" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="274" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">Packing · Freight · Processing</text>
+  <rect x="400" y="296" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="312" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">Shipment · Dispatch · Trade Req</text>
+  <rect x="400" y="334" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="350" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">Finance · Closeout</text>
+  <rect x="400" y="372" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="388" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">sendOrderDocumentLink</text>
+  <rect x="400" y="410" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="426" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">RLS Permission Checks</text>
+  <rect x="400" y="448" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="464" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">Middleware · Auth Guard</text>
+  <rect x="400" y="486" width="162" height="30" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="0.5"/>
+  <text x="481" y="502" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="600" fill="#14532d">Public API: /api/public/*</text>
+
+  <!-- LAYER: Supabase -->
+  <rect x="594" y="30" width="180" height="380" rx="8" fill="#fefce8" stroke="#fde68a" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="684" y="54" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#92400e" letter-spacing="1">SUPABASE</text>
+  <rect x="608" y="66" width="152" height="50" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="0.5"/>
+  <text x="684" y="82" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#78350f">Auth</text>
+  <text x="684" y="96" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#92400e">JWT · Sessions · Org membership</text>
+  <rect x="608" y="126" width="152" height="90" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="0.5"/>
+  <text x="684" y="143" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#78350f">Postgres Database</text>
+  <text x="684" y="157" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#92400e">leads · quotes · orders</text>
+  <text x="684" y="170" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#92400e">quote_versions · order_lines</text>
+  <text x="684" y="183" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#92400e">order_documents · shipments</text>
+  <text x="684" y="196" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#92400e">packing_plans · trade_requirements</text>
+  <text x="684" y="209" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#92400e">finance_sync_records + 60+ tables</text>
+  <rect x="608" y="226" width="152" height="50" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="0.5"/>
+  <text x="684" y="242" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#78350f">RLS Policies</text>
+  <text x="684" y="256" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#92400e">Row-level workspace isolation</text>
+  <text x="684" y="269" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#b45309">⚠ Many tables missing policies</text>
+  <rect x="608" y="286" width="152" height="50" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="0.5"/>
+  <text x="684" y="302" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#78350f">RPCs / Functions</text>
+  <text x="684" y="316" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#92400e">create_rfq_fanout · send_quote_fanout</text>
+  <text x="684" y="329" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#b45309">⚠ SECURITY DEFINER issues</text>
+  <rect x="608" y="346" width="152" height="50" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="0.5"/>
+  <text x="684" y="362" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#78350f">Storage</text>
+  <text x="684" y="376" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#92400e">Documents · Logos · Uploads</text>
+  <text x="684" y="389" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#92400e">Compliance evidence files</text>
+
+  <!-- LAYER: Integrations -->
+  <rect x="594" y="426" width="180" height="144" rx="8" fill="#fdf2f8" stroke="#f0abfc" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="684" y="448" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#86198f" letter-spacing="1">INTEGRATIONS</text>
+  <rect x="608" y="458" width="68" height="30" rx="5" fill="#f5d0fe" stroke="#e879f9" stroke-width="0.5"/>
+  <text x="642" y="477" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="600" fill="#701a75">📧 Email</text>
+  <rect x="698" y="458" width="68" height="30" rx="5" fill="#f5d0fe" stroke="#e879f9" stroke-width="0.5"/>
+  <text x="732" y="477" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="600" fill="#701a75">💬 WhatsApp</text>
+  <rect x="608" y="498" width="68" height="30" rx="5" fill="#f5d0fe" stroke="#e879f9" stroke-width="0.5"/>
+  <text x="642" y="517" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="600" fill="#701a75">🚢 Freight</text>
+  <rect x="698" y="498" width="68" height="30" rx="5" fill="#f5d0fe" stroke="#e879f9" stroke-width="0.5"/>
+  <text x="732" y="517" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="600" fill="#701a75">💹 Finance</text>
+  <text x="684" y="548" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#9333ea">Adapter boundaries — not auto-connected</text>
+  <text x="684" y="560" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#b45309">⚠ link_created ≠ provider delivered</text>
+
+  <!-- Doc Engine -->
+  <rect x="792" y="30" width="136" height="200" rx="8" fill="#fff7ed" stroke="#fed7aa" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="860" y="52" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#9a3412" letter-spacing="0.5">DOCUMENT ENGINE</text>
+  <rect x="806" y="64" width="108" height="32" rx="5" fill="#ffedd5" stroke="#fb923c" stroke-width="0.5"/>
+  <text x="860" y="83" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="600" fill="#7c2d12">v3 Doc Renderer</text>
+  <rect x="806" y="104" width="108" height="32" rx="5" fill="#ffedd5" stroke="#fb923c" stroke-width="0.5"/>
+  <text x="860" y="123" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="600" fill="#7c2d12">Terms Profiles</text>
+  <rect x="806" y="144" width="108" height="32" rx="5" fill="#ffedd5" stroke="#fb923c" stroke-width="0.5"/>
+  <text x="860" y="163" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="600" fill="#7c2d12">Send Tracking</text>
+  <rect x="806" y="184" width="108" height="32" rx="5" fill="#ffedd5" stroke="#fb923c" stroke-width="0.5"/>
+  <text x="860" y="203" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="600" fill="#7c2d12">Open Tracking</text>
+  <text x="860" y="225" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8.5" fill="#c2410c">Browser print · No server PDF yet</text>
+
+  <!-- Arrows: Operators → Frontend -->
+  <line x1="134" y1="88" x2="168" y2="88" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="134" y1="140" x2="168" y2="140" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="134" y1="192" x2="168" y2="192" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Arrows: Frontend → Server Actions -->
+  <line x1="354" y1="200" x2="386" y2="200" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="354" y1="300" x2="386" y2="300" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Arrows: Server → Supabase -->
+  <line x1="562" y1="150" x2="594" y2="150" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="562" y1="260" x2="594" y2="260" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="562" y1="380" x2="594" y2="380" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Arrows: Server → Doc Engine -->
+  <line x1="562" y1="90" x2="792" y2="90" stroke="#f97316" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#arrow)"/>
+
+  <!-- Arrows: Server → Integrations -->
+  <line x1="562" y1="490" x2="594" y2="490" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#arrow)"/>
+
+  <!-- Legend -->
+  <rect x="30" y="510" width="300" height="60" rx="6" fill="rgba(255,255,255,0.8)" stroke="#e2e8f0" stroke-width="0.5"/>
+  <text x="45" y="528" font-family="system-ui,sans-serif" font-size="9" font-weight="700" fill="#475569">LEGEND</text>
+  <line x1="45" y1="540" x2="75" y2="540" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="80" y="544" font-family="system-ui,sans-serif" font-size="9" fill="#475569">User action / data flow</text>
+  <line x1="45" y1="558" x2="75" y2="558" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#arrow)"/>
+  <text x="80" y="562" font-family="system-ui,sans-serif" font-size="9" fill="#475569">Integration boundary (adapter needed)</text>
+  <text x="170" y="544" font-family="system-ui,sans-serif" font-size="8.5" fill="#b45309">⚠ = Known risk / gap</text>
+</svg>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 10: QUICK-REFERENCE CHEAT SHEETS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s10">
+<div class="section-header">
+  <div class="section-num">10</div>
+  <h1>Quick-Reference Cheat Sheets</h1>
+</div>
+
+<div class="cheat">
+  <div class="cheat-header"><div class="cheat-title">Lead Workflow</div><div class="cheat-goal">Goal: Move captured contact into quote-ready state</div></div>
+  <div class="cheat-body">
+    <div class="cheat-col"><h4>Key CTAs</h4><ul><li>Open</li><li>More → Continue quote</li><li>Open coverage manager</li><li>Compliance check</li><li>Attach evidence</li><li>Waive for quote</li><li>Defer to dispatch</li><li>Create quote</li></ul></div>
+    <div class="cheat-col"><h4>Key Blockers</h4><ul><li>No product coverage saved</li><li>Lead is disqualified</li><li>Missing country/market</li><li>Missing follow-up date</li><li>Compliance evidence missing</li><li>Advisory dispatch doc mistaken for quote blocker</li></ul></div>
+    <div class="cheat-col"><h4>Readiness + System Rules</h4><ul><li>Lead exists and is not disqualified</li><li>≥1 product interest saved</li><li>Country/market set</li><li>product_interests controls quote gate</li><li>Stage history auto-recorded</li><li>lead_activities logged per action</li></ul></div>
+  </div>
+</div>
+
+<div class="cheat">
+  <div class="cheat-header"><div class="cheat-title">Quote Build & Send</div><div class="cheat-goal">Goal: Create and send a clean commercial offer</div></div>
+  <div class="cheat-body">
+    <div class="cheat-col"><h4>Key CTAs</h4><ul><li>Create quote</li><li>Add product</li><li>Save draft</li><li>Send quote</li><li>Open customer PDF</li><li>Mark accepted</li><li>Mark rejected</li><li>Approve &amp; allow send</li></ul></div>
+    <div class="cheat-col"><h4>Key Blockers</h4><ul><li>Missing products/currency</li><li>Approval pending</li><li>Compliance evidence missing</li><li>No FX snapshot</li><li>No current version or line items</li><li>Send blocker flag active</li></ul></div>
+    <div class="cheat-col"><h4>Readiness + System Rules</h4><ul><li>Quote has line items</li><li>Approval cleared or not required</li><li>FX snapshot exists for non-USD</li><li>Sends write communications + audit rows</li><li>Sent quote is IMMUTABLE</li><li>Share links = production domain only</li></ul></div>
+  </div>
+</div>
+
+<div class="cheat">
+  <div class="cheat-header"><div class="cheat-title">Quote Versioning</div><div class="cheat-goal">Goal: Keep quote history clean and auditable</div></div>
+  <div class="cheat-body">
+    <div class="cheat-col"><h4>Version States</h4><ul><li>Draft — editable</li><li>Needs approval — blocked</li><li>Sent — LOCKED</li><li>Accepted — LOCKED → order source</li><li>Rejected — LOCKED</li><li>Superseded by vN</li></ul></div>
+    <div class="cheat-col"><h4>Key Rules</h4><ul><li>Revise instead of editing locked versions</li><li>current_version_id ≠ accepted_version_id</li><li>Orders start from accepted_version_id only</li><li>Earlier versions stay readable</li></ul></div>
+    <div class="cheat-col"><h4>Documents + System</h4><ul><li>Quote PDF from structured version data</li><li>Share page shows org logo when configured</li><li>quote_pricing_snapshots preserve FX context</li><li>parent_version_id links revision chain</li></ul></div>
+  </div>
+</div>
+
+<div class="cheat">
+  <div class="cheat-header"><div class="cheat-title">Order Execution</div><div class="cheat-goal">Goal: Turn accepted quote into controlled execution</div></div>
+  <div class="cheat-body">
+    <div class="cheat-col"><h4>Key CTAs</h4><ul><li>Open, Prepare actual lines</li><li>Save, Add line, Remove</li><li>Approve actual lines</li><li>Prepare / Preview / Approve document</li><li>Send tracked</li><li>Download / Print PDF</li></ul></div>
+    <div class="cheat-col"><h4>Key Blockers</h4><ul><li>No accepted quote lineage</li><li>Actual lines not approved</li><li>Document not approved before external send</li><li>Packing not approved before freight</li><li>Processing incomplete before dispatch</li><li>Blocking trade requirements open</li></ul></div>
+    <div class="cheat-col"><h4>Key Documents</h4><ul><li>Proforma invoice (export)</li><li>Order confirmation (regional)</li><li>Packing sheet / Packing list</li><li>Freight rate request</li><li>Delivery note</li><li>Final invoice (actual qty)</li><li>Receipt + archive</li></ul></div>
+  </div>
+</div>
+
+<div class="cheat">
+  <div class="cheat-header"><div class="cheat-title">Document Send Tracking</div><div class="cheat-goal">Goal: Track every document send per recipient with open analytics</div></div>
+  <div class="cheat-body">
+    <div class="cheat-col"><h4>Key CTAs</h4><ul><li>Send tracked (email / WhatsApp)</li><li>Preview</li><li>Download / Print PDF</li><li>Copy link</li><li>View history</li><li>Send again</li></ul></div>
+    <div class="cheat-col"><h4>Status Meanings</h4><ul><li>link_created — tracked link generated</li><li>previewed — preview-only link opened</li><li>link_opened — recipient accessed link</li><li>NOT ≡ provider-confirmed delivery</li></ul></div>
+    <div class="cheat-col"><h4>System Rules</h4><ul><li>Each send = 1 order_document_sends row</li><li>Parent order_documents not overwritten</li><li>open_count increments per link access</li><li>Channel defaults from lead contact info</li><li>Blank recipient → manual entry required</li></ul></div>
+  </div>
+</div>
+
+<div class="cheat">
+  <div class="cheat-header"><div class="cheat-title">Finance & Closeout</div><div class="cheat-goal">Goal: Close the order after invoice, payment, reconciliation, and archive</div></div>
+  <div class="cheat-body">
+    <div class="cheat-col"><h4>Key CTAs</h4><ul><li>Prepare final invoice</li><li>Approve invoice</li><li>Send final invoice again</li><li>Generate receipt + close</li><li>Download archive</li></ul></div>
+    <div class="cheat-col"><h4>Key Blockers</h4><ul><li>Final invoice not approved</li><li>Payment not received</li><li>Reconciliation incomplete</li><li>Outstanding amount above zero</li><li>Archive not confirmed</li></ul></div>
+    <div class="cheat-col"><h4>System Rules</h4><ul><li>Final invoice ≠ proforma invoice</li><li>Final invoice = actual dispatched quantities</li><li>Finance sync NOT automatic (adapter needed)</li><li>All 5 closeout fields must be true</li><li>orders.status = 'completed' on close</li></ul></div>
+  </div>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 11: REPO-AWARE CORRECTIONS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s11">
+<div class="section-header">
+  <div class="section-num">11</div>
+  <h1>Repo-Aware Corrections & Gaps</h1>
+</div>
+
+<div class="correction critical">
+  <div class="corr-title">CRITICAL: Quote-to-Order Handoff Identity Inconsistency</div>
+  <div class="corr-meta">File: Quote outcome + order creation server actions · Severity: Critical</div>
+  <div class="corr-body">Direct-order helper actions may not consistently call BOTH the contract AND order handoff RPCs. If only one fires, <code>orders.source_quote_version_id</code> may be null, causing the order to lack accepted quote lineage. This breaks all downstream execution gates. <strong>Fix:</strong> Regression test that verifies <code>orders.source_quote_id</code> AND <code>orders.source_quote_version_id</code> are non-null after acceptance, and that redirect uses actual order ID not quote ID.</div>
+</div>
+
+<div class="correction critical">
+  <div class="corr-title">CRITICAL: Lead Coverage Data Non-Persistence Race Condition</div>
+  <div class="corr-meta">File: Lead coverage manager + getLeadQuoteGate · Severity: Critical · Flagged in E2E evidence</div>
+  <div class="corr-body">Quote-ready UI state can appear while coverage data is not actually persisted to <code>lead_product_interests</code>. The gate and UI may read from different state sources. <strong>Fix:</strong> Gate check must read from the same DB source as the UI display. Add regression test: save coverage → refresh page → verify gate and UI both show "ready". Confirmed blocked in E2E report for new-lead-to-quote path.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Document Quantity/Value Basis Mismatch</div>
+  <div class="corr-meta">File: Order document preview route · Severity: High</div>
+  <div class="corr-body">The order document preview computes quantities by document type, but totals can still use stored <code>line_total</code> from <code>order_lines</code>, which can mismatch if packed/dispatched quantity differs from ordered quantity. Proforma invoice should show ordered quantity; final invoice should show actual dispatched quantity. <strong>Fix:</strong> Explicit quantity basis labels per document type; prevent proforma/final invoice showing same number if they differ.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Legacy/Deprecated Order UI Components Still Present</div>
+  <div class="corr-meta">File: /orders page components · Severity: Medium</div>
+  <div class="corr-body">Older deprecated order workspace components coexist with the Sprint 8W production-oriented UI. Server actions contain stronger gate truth but UI can be inconsistent. <strong>Fix:</strong> Audit all order UI component references. Remove or clearly mark deprecated components. Ensure all stage panels use Sprint 8W pattern (queue left, workspace right, stage panel active).</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Quote Share Links — Vercel Preview URL Exposure Risk</div>
+  <div class="corr-meta">File: Quote send / share route generation · Severity: Medium</div>
+  <div class="corr-body">Share links must use <code>https://www.setuflowcrm.com</code> production domain. Development/staging environments may generate Vercel preview domain links that are sent to buyers in WhatsApp/email messages. <strong>Fix:</strong> Enforce production domain at share link generation. Add environment check in server action. Add E2E test verifying share URL starts with correct domain.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Country-Market Mapping Incorrect for Some Regions</div>
+  <div class="corr-meta">File: countries table seed + lead market assignment · Severity: Medium</div>
+  <div class="corr-body">Ireland, Austria, and other European countries should map to the Europe market. If workspace provisioning copies country rows without preserving correct market mapping, leads from these countries get incorrect market assignment, affecting regional document terms and compliance rules. <strong>Fix:</strong> Verify seed data. Add market-by-country-ISO validation on workspace provisioning.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Compliance Assist — Fix Must Be Inside Quote Review, Not Global Overlay</div>
+  <div class="corr-meta">File: Compliance overlay / compliance assist page logic · Severity: Medium</div>
+  <div class="corr-body">Opening a global compliance overlay or navigating to the Compliance Assist page as the primary fix for a quote blocker is incorrect workflow. The resolution must happen inside the active quote Review workflow's Step 4 card. <strong>Fix:</strong> Ensure Compliance Assist page is an informational/secondary surface only. Primary compliance resolution CTAs must live inside the quote builder Step 4 panel.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">AI Guardrails — No State-Changing Actions from AI</div>
+  <div class="corr-meta">File: AI suggestions / Setu Guru · Severity: High</div>
+  <div class="corr-body">AI must NEVER: approve dispatch, mark a shipment dispatched, create/approve invoices, waive trade requirements, send documents, book freight, close orders, or sync finance records. These are documented in <code>docs/AI_GUARDRAILS.md</code> but must be enforced at the server action layer too, not just UI. <strong>Fix:</strong> Add server action permission checks that reject AI-origin mutation requests for all gate-advancing actions.</div>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 12: SUPABASE-AWARE CORRECTIONS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s12">
+<div class="section-header">
+  <div class="section-num">12</div>
+  <h1>Supabase-Aware Corrections</h1>
+</div>
+
+<div class="alert alert-red">Supabase security advisor review identified multiple categories of findings. None were remediated in the May 2026 cleanup pass. All require a dedicated hardening sprint before production scale.</div>
+
+<div class="correction critical">
+  <div class="corr-title">CRITICAL: RLS-Enabled Tables Without Policies</div>
+  <div class="corr-meta">Supabase Advisor Finding · Severity: Critical · Blocks production scale</div>
+  <div class="corr-body">Multiple tables have RLS enabled but no policies defined, meaning they default to DENY ALL — which silently fails read/write operations rather than throwing a clear error. This masks data availability issues. <strong>Fix:</strong> Audit all RLS-enabled tables. For each: either add explicit org-scoped read/write policies matching the <code>get_current_org_id()</code> pattern, or explicitly disable RLS if the table is not org-scoped. Write migration and add regression smoke tests for each newly-policy'd table.</div>
+</div>
+
+<div class="correction critical">
+  <div class="corr-title">CRITICAL: SECURITY DEFINER Functions Callable by anon/authenticated</div>
+  <div class="corr-meta">Supabase Advisor Finding · Severity: Critical</div>
+  <div class="corr-body">Several RPCs are marked <code>SECURITY DEFINER</code> and are callable by the <code>anon</code> and/or <code>authenticated</code> roles without additional permission checks. A malicious caller could execute these functions and bypass RLS. <strong>Fix:</strong> Audit all SECURITY DEFINER functions. Restrict callable roles to minimum required. Add internal permission checks at function entry. Consider converting to SECURITY INVOKER where RLS is sufficient.</div>
+</div>
+
+<div class="correction critical">
+  <div class="corr-title">CRITICAL: Security-Definer View — active_product_pricing_rules_v</div>
+  <div class="corr-meta">Supabase Advisor Finding · Severity: Critical</div>
+  <div class="corr-body">The <code>active_product_pricing_rules_v</code> view uses <code>SECURITY DEFINER</code>, meaning it executes as the view owner rather than the querying user. This bypasses RLS on the underlying tables and could expose cross-org pricing data. <strong>Fix:</strong> Convert to <code>SECURITY INVOKER</code> or wrap in an RPC with explicit org-check before returning rows.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Mutable Search Paths on Functions</div>
+  <div class="corr-meta">Supabase Advisor Finding · Severity: High</div>
+  <div class="corr-body">Functions with mutable search paths allow a malicious actor to create objects in a schema that shadows built-in functions. <strong>Fix:</strong> Set <code>search_path = ''</code> (empty) in all function definitions and use fully-qualified names (<code>public.tablename</code>, <code>extensions.uuid_generate_v4()</code>).</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Leaked Password Protection Disabled in Auth</div>
+  <div class="corr-meta">Supabase Auth Setting · Severity: High</div>
+  <div class="corr-body">Supabase Auth has a "leaked password protection" feature that checks passwords against known breach databases (HaveIBeenPwned). It is currently disabled. <strong>Fix:</strong> Enable in Supabase Auth → Passwords → "Prevent use of compromised passwords". No code change required.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Duplicate/Overlapping RLS Policies</div>
+  <div class="corr-meta">Supabase Advisor Finding · Severity: Medium</div>
+  <div class="corr-body">Some tables have duplicate or overlapping policies that create ambiguous access rules. Supabase evaluates all applicable policies with OR logic for permissive policies; duplicate policies add overhead and can mask policy intent. <strong>Fix:</strong> Consolidate overlapping policies per table. Name policies clearly (<code>leads_org_read</code>, <code>leads_org_write</code>) and remove duplicates.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Duplicate Indexes and Unindexed Foreign Keys</div>
+  <div class="corr-meta">Supabase Performance Advisor · Severity: Medium</div>
+  <div class="corr-body">Performance advisor reports duplicate indexes (wasted write overhead) and unindexed foreign keys (table scan on join). Critical foreign keys to index: <code>order_lines.order_id</code>, <code>order_document_sends.order_document_id</code>, <code>packing_plan_lines.packing_plan_id</code>, <code>trade_requirements.order_id</code>, <code>lead_product_interests.lead_id</code>. <strong>Fix:</strong> Run advisor query to list missing FK indexes; add in one migration. Drop duplicate indexes after confirming which to keep.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">Migration Reconciliation Required</div>
+  <div class="corr-meta">Supabase Migration State · Severity: Medium</div>
+  <div class="corr-body">Supabase reports one applied migration (<code>20260504022303_fix_client_onboarding_notification_columns</code>) but the repo has many more migration files. This means live schema and source-controlled history are diverged. <strong>Fix:</strong> Run <code>supabase db pull</code> to sync live schema into a new baseline migration. Then reconcile repo migration history with live state before any future migration work.</div>
+</div>
+
+<div class="tbl-wrap">
+<table>
+<thead><tr><th>Compatibility/Legacy Table</th><th>Status</th><th>Rule</th></tr></thead>
+<tbody>
+<tr><td><code>product_prices</code></td><td><span class="badge badge-amber">Legacy</span></td><td>New pricing must use <code>pricing_rule_sets</code> + <code>product_pricing_rules</code></td></tr>
+<tr><td><code>quote_line_items</code></td><td><span class="badge badge-amber">Compatibility only</span></td><td>New code must use <code>quote_version_line_items</code></td></tr>
+<tr><td><code>rfq_line_items</code></td><td><span class="badge badge-amber">Compatibility only</span></td><td>Quote compile must re-resolve pricing from catalog</td></tr>
+<tr><td><code>contract_line_items</code></td><td><span class="badge badge-amber">Legacy continuity</span></td><td>While versioned quote line truth matures; document fallback behavior</td></tr>
+</tbody>
+</table>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 13: RECOMMENDED FIXES -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s13">
+<div class="section-header">
+  <div class="section-num">13</div>
+  <h1>Recommended Fixes (Prioritized)</h1>
+</div>
+
+<h2>Priority 1 — Security Critical (Sprint 1)</h2>
+<div class="correction critical">
+  <div class="corr-title">Fix 1.1: RLS Policy Audit & Backfill</div>
+  <div class="corr-body">Run Supabase advisor query to list all tables with RLS enabled but no policies. For each table, add <code>org_id</code> scoped read/write policies using <code>get_current_org_id()</code>. Write migration. Test with cross-org login attempt. Target: zero RLS-enabled tables without a policy.</div>
+</div>
+<div class="correction critical">
+  <div class="corr-title">Fix 1.2: SECURITY DEFINER Function Scope Restriction</div>
+  <div class="corr-body">Audit all RPCs callable by <code>anon</code>/<code>authenticated</code> roles. Add <code>PERFORM check_organization_membership(org_id);</code> at function entry for all functions that touch org-scoped data. Convert <code>active_product_pricing_rules_v</code> to SECURITY INVOKER.</div>
+</div>
+<div class="correction critical">
+  <div class="corr-title">Fix 1.3: Quote-to-Order Handoff Regression Test</div>
+  <div class="corr-body">Add automated test: accept quote → verify <code>orders.source_quote_id</code> AND <code>orders.source_quote_version_id</code> are non-null → verify redirect URL contains actual order ID → verify <code>order_lines</code> seeded from accepted version. Block deployment if test fails.</div>
+</div>
+
+<h2>Priority 2 — Workflow Critical (Sprint 2)</h2>
+<div class="correction">
+  <div class="corr-title">Fix 2.1: Lead Coverage Gate Alignment</div>
+  <div class="corr-body">Ensure <code>getLeadQuoteGate</code> reads from the same source as the UI coverage display. Both must query <code>lead_product_interests</code> directly from DB (not from cached/optimistic state). Add E2E: save coverage → reload page → verify both gate AND UI show "covered".</div>
+</div>
+<div class="correction">
+  <div class="corr-title">Fix 2.2: Document Quantity Basis Explicit Labeling</div>
+  <div class="corr-body">In order document preview route: add a visible label indicating quantity basis ("Ordered quantity" / "Dispatched quantity") per document type. Proforma uses <code>order_lines.quantity</code>. Final invoice must check if actual dispatched quantity is recorded and use that instead.</div>
+</div>
+<div class="correction">
+  <div class="corr-title">Fix 2.3: Function Search Path Hardening</div>
+  <div class="corr-body">Add <code>SET search_path = ''</code> to all Postgres function definitions. Use fully-qualified schema prefixes throughout function bodies. Deploy as single migration. Regression-test all RPC calls after change.</div>
+</div>
+<div class="correction">
+  <div class="corr-title">Fix 2.4: Enable Leaked Password Protection</div>
+  <div class="corr-body">Supabase Dashboard → Auth → Passwords → Enable "Prevent use of compromised passwords". No code change. One-click fix. Confirm in Auth logs.</div>
+</div>
+
+<h2>Priority 3 — UX & Data Integrity (Sprint 3)</h2>
+<div class="correction">
+  <div class="corr-title">Fix 3.1: Deprecated Order UI Component Cleanup</div>
+  <div class="corr-body">Identify and remove or clearly annotate deprecated order workspace components. Ensure all order stage panels use Sprint 8W pattern. Remove any stacked source/logistics/trade-requirement panels below main workspace (these should be inside stage panel).</div>
+</div>
+<div class="correction">
+  <div class="corr-title">Fix 3.2: Production Domain Share Link Enforcement</div>
+  <div class="corr-body">Add environment check in quote share link generation. If <code>NODE_ENV !== 'production'</code> or <code>VERCEL_URL</code> is set, log warning. Never include Vercel preview domains in outbound WhatsApp/email messages. Add Playwright test verifying share URL domain.</div>
+</div>
+<div class="correction">
+  <div class="corr-title">Fix 3.3: FK Index Backfill Migration</div>
+  <div class="corr-body">Create migration adding indexes on: <code>order_lines.order_id</code>, <code>order_document_sends.order_document_id</code>, <code>packing_plan_lines.packing_plan_id</code>, <code>trade_requirements.order_id</code>, <code>lead_product_interests.lead_id</code>. CONCURRENTLY to avoid table lock in production.</div>
+</div>
+<div class="correction">
+  <div class="corr-title">Fix 3.4: Compliance Assist Primary Fix Routing</div>
+  <div class="corr-body">Audit all "resolve compliance blocker" entry points. Ensure the primary resolution path is always inside the active quote Step 4 Review card. The Compliance Assist page at <code>/compliance/assist</code> should display a notice directing users back to the quote Review workflow for active send blockers.</div>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 14: RECOMMENDED ENHANCEMENTS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s14">
+<div class="section-header">
+  <div class="section-num">14</div>
+  <h1>Recommended Enhancements</h1>
+</div>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-title">📧 Email Provider Integration</div>
+    <ul>
+      <li>Connect Resend/Postmark/SendGrid as transport adapter</li>
+      <li>Update <code>order_document_sends.status</code> from <code>link_created</code> to <code>delivered</code>/<code>bounced</code> via webhook</li>
+      <li>Surface delivery status in document tray</li>
+      <li>Buyer open tracking via pixel/link redirect</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">💬 WhatsApp Provider Integration</div>
+    <ul>
+      <li>Connect WhatsApp Business API (Twilio/Meta direct)</li>
+      <li>Replace link-created status with provider-confirmed delivery</li>
+      <li>Support native WhatsApp PDF attachment send</li>
+      <li>Inbound WhatsApp message triage in lead activity</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">🚢 Freight Provider Integration</div>
+    <ul>
+      <li>Connect freight API (Flexport / Freightos / DHL)</li>
+      <li>Auto-fetch rate quotes into <code>freight_rate_quotes</code></li>
+      <li>Shipment booking confirmation from carrier</li>
+      <li>BOL/AWB auto-populated on booking</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">💹 Finance System Integration</div>
+    <ul>
+      <li>Xero / QuickBooks / Tally connector for finance sync</li>
+      <li>Auto-create invoice in finance system on approval</li>
+      <li>Payment status sync back to <code>finance_sync_records</code></li>
+      <li>Payment reconciliation auto-matching</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📄 Server-Side PDF Generation</div>
+    <ul>
+      <li>Replace browser-print with server-generated PDFs (Puppeteer/Playwright)</li>
+      <li>Store PDF binary in Supabase Storage</li>
+      <li>Attach PDF natively to email sends</li>
+      <li>Version-stamped PDF archive per document gate</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 Admin Document Template Editor</div>
+    <ul>
+      <li>Full T&C editor in <code>/admin/document-templates</code></li>
+      <li>Regional/export template families per org country</li>
+      <li>Legal/tax review status + approval workflow</li>
+      <li>Version history for template changes</li>
+      <li>Preview before publish</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">🤖 AI Enhancements</div>
+    <ul>
+      <li>Quote cover note generation from quote line context</li>
+      <li>Trade requirement suggestion from HS code + country pair</li>
+      <li>Compliance gap pre-check before quote send</li>
+      <li>AI-assisted actual vs quoted line comparison</li>
+      <li>Never: price changes, state advances, compliance waives</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📱 Mobile Enhancement</div>
+    <ul>
+      <li>Offline queue for lead capture at trade events</li>
+      <li>Bi-directional vCard QR scan (receive and share)</li>
+      <li>Mobile-native order stage check (view-only)</li>
+      <li>Push notifications for quote approval requests</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">🔐 Security Hardening</div>
+    <ul>
+      <li>Complete RLS policy backfill (all tables)</li>
+      <li>SECURITY DEFINER → INVOKER where safe</li>
+      <li>Rate limiting on public API endpoints</li>
+      <li>API key rotation schedule</li>
+      <li>Supabase Edge Functions for webhook receivers</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Analytics & Reporting</div>
+    <ul>
+      <li>Conversion funnel: Lead → Quote → Order → Close</li>
+      <li>Pipeline velocity (avg days per stage)</li>
+      <li>Quote win/loss ratio by market/product</li>
+      <li>Document open rate analytics</li>
+      <li>Trade event ROI dashboard</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">⚙️ Platform Improvements</div>
+    <ul>
+      <li>Supabase Edge Functions for async event processing</li>
+      <li>Migration history reconciliation with live schema</li>
+      <li>Comprehensive E2E test suite (Playwright)</li>
+      <li>Webhook infrastructure for integration events</li>
+      <li>Multi-language support for buyer-facing documents</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">🌐 SEO & Public Surfaces</div>
+    <ul>
+      <li>Public onboarding page optimization</li>
+      <li>Buyer-facing quote share page branding enhancement</li>
+      <li>OG metadata for shared quote links</li>
+      <li>Structured data for organization pages</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Enhancement Roadmap Summary</h2>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Enhancement</th><th>Value</th><th>Complexity</th><th>Suggested Sprint</th><th>Dependencies</th></tr></thead>
+<tbody>
+<tr><td>RLS Policy Backfill (38 tables)</td><td><span class="badge badge-green">Done</span></td><td>Medium</td><td>Sprint 11</td><td>None</td></tr>
+<tr><td>Server-side PDF generation</td><td><span class="badge badge-red">High</span></td><td>Medium</td><td>Sprint 12</td><td>Document templates</td></tr>
+<tr><td>Email integration (Mailtrap)</td><td><span class="badge badge-green">Done</span></td><td>Medium</td><td>Sprint 11</td><td>None</td></tr>
+<tr><td>WhatsApp link-based send (wa.me)</td><td><span class="badge badge-green">Done</span></td><td>Low</td><td>Sprint 11</td><td>None</td></tr>
+<tr><td>Admin document template editor</td><td><span class="badge badge-amber">Medium</span></td><td>High</td><td>Sprint 13</td><td>Terms profiles exist</td></tr>
+<tr><td>Finance system integration</td><td><span class="badge badge-amber">Medium</span></td><td>High</td><td>Sprint 14</td><td>Final invoice stable</td></tr>
+<tr><td>Freight provider integration</td><td><span class="badge badge-amber">Medium</span></td><td>High</td><td>Sprint 14</td><td>Freight request approved</td></tr>
+<tr><td>Analytics dashboard</td><td><span class="badge badge-blue">Medium</span></td><td>Low</td><td>Sprint 15</td><td>Data volume needed</td></tr>
+<tr><td>AI trade requirement suggestion</td><td><span class="badge badge-blue">Medium</span></td><td>Medium</td><td>Sprint 15</td><td>HS code coverage</td></tr>
+<tr><td>Mobile push notifications</td><td><span class="badge badge-slate">Low</span></td><td>Low</td><td>Sprint 16</td><td>PWA manifest ready</td></tr>
+</tbody>
+</table></div>
+
+<div class="alert alert-green"><strong>Implementation Priority Order:</strong> Security hardening (1) → Quote-to-Order regression fix (2) → Lead coverage gate alignment (3) → Document quantity basis fix (4) → Email provider (5) → Server PDF (6) → WhatsApp provider (7) → Finance sync (8). Never ship integration features before security hardening is complete.</div>
+
+</section>
+
+</main>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#dbeafe',
+    primaryTextColor: '#1e3a8a',
+    primaryBorderColor: '#93c5fd',
+    lineColor: '#3b82f6',
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 15: SPRINT ISSUE TRACKER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="section" id="s15">
+<div class="section-header">
+  <div class="section-num">15</div>
+  <h1>Sprint Progress & Issue Tracker</h1>
+</div>
+
+<div class="alert alert-blue">Live source of truth: <code>public.sprint_issues</code> table in Supabase. This page reflects the last documentation update. Each issue ref maps 1:1 to a DB row. Status badges are updated with each sprint close.</div>
+
+<!-- SPRINT 11 -->
+<h2>Sprint 11 — Security + Email + WhatsApp <span class="badge badge-green" style="font-size:11px;margin-left:8px">Active</span></h2>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0 20px">
+  <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:#10b981">8</div><div style="font-size:11px;color:#64748b">Resolved</div></div>
+  <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:#f59e0b">2</div><div style="font-size:11px;color:#64748b">In Progress</div></div>
+  <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:#ef4444">1</div><div style="font-size:11px;color:#64748b">Open</div></div>
+  <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:#3b82f6">3</div><div style="font-size:11px;color:#64748b">DB Migrations</div></div>
+</div>
+
+<div class="tbl-wrap"><table>
+<thead><tr>
+  <th>Ref</th><th>Title</th><th>Area</th><th>Severity</th><th>Status</th><th>Fix Applied</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>S11-SEC-001</code></td>
+  <td>RLS Enabled Tables With No Policies (38 tables)</td>
+  <td><span class="badge badge-slate">security</span></td>
+  <td><span class="badge badge-red">critical</span></td>
+  <td><span class="badge badge-green">✓ resolved</span></td>
+  <td>Added org-scoped + join-based policies. Migration: <code>sprint_11_rls_policies_remaining</code></td>
+</tr>
+<tr>
+  <td><code>S11-SEC-002</code></td>
+  <td>Integrations Table Missing RLS Policies</td>
+  <td><span class="badge badge-slate">admin</span></td>
+  <td><span class="badge badge-red">critical</span></td>
+  <td><span class="badge badge-green">✓ resolved</span></td>
+  <td>org-member SELECT, org-admin INSERT/UPDATE added</td>
+</tr>
+<tr>
+  <td><code>S11-SCHEMA-001</code></td>
+  <td>SECURITY DEFINER Functions Callable by anon (51 RPCs)</td>
+  <td><span class="badge badge-slate">security</span></td>
+  <td><span class="badge badge-red">critical</span></td>
+  <td><span class="badge badge-amber">⟳ in progress</span></td>
+  <td>Full list identified. Conversion to SECURITY INVOKER + anon EXECUTE revoke → Sprint 12</td>
+</tr>
+<tr>
+  <td><code>S11-SCHEMA-002</code></td>
+  <td>active_product_pricing_rules_v SECURITY DEFINER View</td>
+  <td><span class="badge badge-slate">security</span></td>
+  <td><span class="badge badge-red">critical</span></td>
+  <td><span class="badge badge-amber">⟳ in progress</span></td>
+  <td>Investigation complete. View recreation as SECURITY INVOKER → Sprint 12</td>
+</tr>
+<tr>
+  <td><code>S11-SEC-003</code></td>
+  <td>Missing FK Performance Indexes (9 tables)</td>
+  <td><span class="badge badge-slate">schema</span></td>
+  <td><span class="badge badge-blue">high</span></td>
+  <td><span class="badge badge-green">✓ resolved</span></td>
+  <td>9 indexes added: order_lines, order_document_sends, packing_plan_lines, trade_requirements, lead_product_interests, order_approval_gates, order_stage_events, order_documents, quote_version_line_items</td>
+</tr>
+<tr>
+  <td><code>S11-SCHEMA-003</code></td>
+  <td>Leaked Password Protection Disabled in Auth</td>
+  <td><span class="badge badge-slate">admin</span></td>
+  <td><span class="badge badge-blue">high</span></td>
+  <td><span class="badge badge-red">○ open</span></td>
+  <td>1-click fix: Supabase Dashboard → Auth → Passwords → Enable "Prevent use of compromised passwords"</td>
+</tr>
+<tr>
+  <td><code>S11-EMAIL-001</code></td>
+  <td>Mailtrap Provider Registered in integrations table</td>
+  <td><span class="badge badge-teal">email</span></td>
+  <td><span class="badge badge-slate">medium</span></td>
+  <td><span class="badge badge-green">✓ resolved</span></td>
+  <td>Inserted Mailtrap record for all orgs via migration</td>
+</tr>
+<tr>
+  <td><code>S11-EMAIL-002</code></td>
+  <td>email_send_log Table Created for Delivery Tracking</td>
+  <td><span class="badge badge-teal">email</span></td>
+  <td><span class="badge badge-blue">high</span></td>
+  <td><span class="badge badge-green">✓ resolved</span></td>
+  <td>New table with RLS, indexes, org-scope. Links to communications + order_document_sends.</td>
+</tr>
+<tr>
+  <td><code>S11-EMAIL-003</code></td>
+  <td>communications table missing email delivery tracking columns</td>
+  <td><span class="badge badge-teal">email</span></td>
+  <td><span class="badge badge-slate">medium</span></td>
+  <td><span class="badge badge-green">✓ resolved</span></td>
+  <td>Added: email_provider, email_message_id, email_delivery_status, email_delivered_at, email_opened_at, email_bounce_reason, whatsapp_link, whatsapp_link_type</td>
+</tr>
+<tr>
+  <td><code>S11-WA-001</code></td>
+  <td>WhatsApp Send Creates DB Row But Does Not Open WhatsApp</td>
+  <td><span class="badge badge-teal">whatsapp</span></td>
+  <td><span class="badge badge-blue">high</span></td>
+  <td><span class="badge badge-green">✓ resolved</span></td>
+  <td>wa.me link generation added. UI shows "Open in WhatsApp" button. Operator presses Send manually in WhatsApp.</td>
+</tr>
+<tr>
+  <td><code>S11-WA-002</code></td>
+  <td>No Device Detection for WhatsApp Desktop vs Mobile</td>
+  <td><span class="badge badge-teal">whatsapp</span></td>
+  <td><span class="badge badge-slate">medium</span></td>
+  <td><span class="badge badge-green">✓ resolved</span></td>
+  <td>Desktop → web.whatsapp.com. Mobile → wa.me. Detection via navigator.userAgent in client component.</td>
+</tr>
+<tr>
+  <td><code>S11-DOC-001</code></td>
+  <td>Setu Guru Knowledge Base Updated for Email + WhatsApp</td>
+  <td><span class="badge badge-slate">docs</span></td>
+  <td><span class="badge badge-slate">medium</span></td>
+  <td><span class="badge badge-green">✓ resolved</span></td>
+  <td>SETUFLOW_KNOWLEDGE_BASE.md updated with Mailtrap config, WhatsApp link behavior, new columns, new tables</td>
+</tr>
+</tbody>
+</table></div>
+
+<!-- EMAIL INTEGRATION DETAIL -->
+<h2>Email Integration — Mailtrap (Sprint 11)</h2>
+<div class="alert alert-green"><strong>Status: Active.</strong> Mailtrap is the configured email provider. Invitations, order document emails, and quote send notifications route through Mailtrap.</div>
+<div class="card-grid">
+  <div class="card">
+    <div class="card-title">📧 What Mailtrap Sends</div>
+    <ul>
+      <li>Invitation emails (existing, unchanged)</li>
+      <li>Order document tracked emails (new)</li>
+      <li>Future: quote send, compliance reminders</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">⚙️ Environment Variables</div>
+    <ul>
+      <li><code>MAILTRAP_API_KEY</code> — required</li>
+      <li><code>MAILTRAP_USE_SANDBOX</code> — true for testing</li>
+      <li><code>MAILTRAP_SANDBOX_ID</code> — required when sandbox=true</li>
+      <li><code>SETU_EMAIL_PROVIDER=mailtrap</code></li>
+      <li><code>SETU_NOTIFICATION_FROM_EMAIL</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Delivery Status Values</div>
+    <ul>
+      <li><code>pending</code> — queued, not yet sent</li>
+      <li><code>sent</code> — Mailtrap accepted</li>
+      <li><code>delivered</code> — webhook confirmed (future)</li>
+      <li><code>bounced</code> — delivery failed (future)</li>
+      <li><code>failed</code> — API error</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📂 New Files (Sprint 11)</div>
+    <ul>
+      <li><code>src/lib/email/order-document-email.ts</code> — Order doc email sender</li>
+      <li><code>src/lib/whatsapp/whatsapp-link.ts</code> — WhatsApp link generator</li>
+      <li><code>public/internal/setuflow-docs.html</code> — This file (internal docs)</li>
+      <li><code>docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md</code> — Updated</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Email Send Flow (Updated)</h3>
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  A([Operator: Send tracked — Email]) --> B[Server Action]
+  B --> C[Create order_document_sends row — status link_created]
+  C --> D[Call Mailtrap API via order-document-email.ts]
+  D --> E{Mailtrap accepts?}
+  E -->|Yes| F[email_sent=true, status=sent, store messageId]
+  E -->|No| G[email_sent=false, status=failed, log error]
+  F --> H[Create email_send_log row]
+  H --> I[Return share URL to UI]
+  I --> J([UI shows: email sent + tracked link])
+  J --> K{Recipient opens link}
+  K --> L[open_count increments on order_document_sends]
+</pre>
+</div>
+
+<!-- WHATSAPP INTEGRATION DETAIL -->
+<h2>WhatsApp Integration — Link-Based (Sprint 11)</h2>
+<div class="alert alert-amber"><strong>No WhatsApp API.</strong> SetuFlow generates pre-filled wa.me links. The operator must open WhatsApp and press Send manually. This is intentional — no automated WhatsApp messages are sent.</div>
+<div class="card-grid">
+  <div class="card">
+    <div class="card-title">📱 Mobile Behavior</div>
+    <ul>
+      <li>Opens: <code>https://wa.me/[phone]?text=[msg]</code></li>
+      <li>Launches WhatsApp mobile app</li>
+      <li>Message pre-filled with document details + tracked URL</li>
+      <li>Operator reviews and presses Send in WhatsApp</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">🖥️ Desktop Behavior</div>
+    <ul>
+      <li>Opens: <code>https://web.whatsapp.com/send?phone=[phone]&text=[msg]</code></li>
+      <li>Opens WhatsApp Web in browser</li>
+      <li>Message pre-filled with document details + tracked URL</li>
+      <li>Operator reviews and presses Send in WhatsApp Web</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📝 Pre-filled Message Contains</div>
+    <ul>
+      <li>Organization name</li>
+      <li>Document type (Proforma Invoice, etc.)</li>
+      <li>Order number + company name</li>
+      <li>Amount in selected currency (when available)</li>
+      <li>Tracked share URL (SetuFlow document link)</li>
+      <li>Optional note from operator</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Status Tracking</div>
+    <ul>
+      <li><code>link_created</code> — wa.me link generated and shown to operator</li>
+      <li><code>whatsapp_link</code> column — stores the generated URL</li>
+      <li>Does NOT confirm message was sent or received</li>
+      <li>Document open tracking still works when recipient clicks the share link</li>
+    </ul>
+  </div>
+</div>
+
+<h3>WhatsApp Send Flow</h3>
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  A([Operator: Send tracked — WhatsApp]) --> B[Server Action]
+  B --> C[Create order_document_sends row — status link_created]
+  C --> D[Generate wa.me + web.whatsapp.com links via whatsapp-link.ts]
+  D --> E[Store whatsapp_link + whatsapp_phone in send row]
+  E --> F[Return links to UI]
+  F --> G{Device?}
+  G -->|Mobile — iOS/Android| H[Open wa.me link → WhatsApp App opens]
+  G -->|Desktop| I[Open web.whatsapp.com → WhatsApp Web opens]
+  H --> J[Pre-filled message shown]
+  I --> J
+  J --> K([Operator presses Send in WhatsApp])
+  K --> L{Recipient clicks share URL}
+  L --> M[SetuFlow open_count increments on send row]
+</pre>
+</div>
+
+<!-- SPRINT 12 PLANNED -->
+<h2>Sprint 12 — Planned <span class="badge badge-slate" style="font-size:11px;margin-left:8px">Upcoming</span></h2>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Ref</th><th>Title</th><th>Area</th><th>Priority</th><th>Blocks</th></tr></thead>
+<tbody>
+<tr><td><code>S12-SEC-001</code></td><td>Revoke anon EXECUTE on 51 SECURITY DEFINER RPCs</td><td><span class="badge badge-slate">security</span></td><td><span class="badge badge-red">critical</span></td><td>Rollover from S11-SCHEMA-001</td></tr>
+<tr><td><code>S12-SEC-002</code></td><td>Convert active_product_pricing_rules_v to SECURITY INVOKER</td><td><span class="badge badge-slate">security</span></td><td><span class="badge badge-red">critical</span></td><td>Rollover from S11-SCHEMA-002</td></tr>
+<tr><td><code>S12-SEC-003</code></td><td>Enable Leaked Password Protection in Supabase Auth</td><td><span class="badge badge-slate">admin</span></td><td><span class="badge badge-blue">high</span></td><td>1-click Supabase dashboard</td></tr>
+<tr><td><code>S12-SEC-004</code></td><td>Fix mutable search paths on 17 Postgres functions</td><td><span class="badge badge-slate">schema</span></td><td><span class="badge badge-blue">high</span></td><td>None</td></tr>
+<tr><td><code>S12-PDF-001</code></td><td>Server-side PDF binary generation (Puppeteer)</td><td><span class="badge badge-teal">orders</span></td><td><span class="badge badge-blue">high</span></td><td>Document templates</td></tr>
+<tr><td><code>S12-ORDER-001</code></td><td>Quote-to-Order Handoff Regression Test</td><td><span class="badge badge-teal">order</span></td><td><span class="badge badge-red">critical</span></td><td>orders.source_quote_version_id null risk</td></tr>
+<tr><td><code>S12-LEAD-001</code></td><td>Lead Coverage Gate DB vs UI Alignment Test</td><td><span class="badge badge-blue">lead</span></td><td><span class="badge badge-red">critical</span></td><td>E2E blocked path confirmed</td></tr>
+<tr><td><code>S12-EMAIL-001</code></td><td>Mailtrap Webhook Integration for Delivery Confirmation</td><td><span class="badge badge-teal">email</span></td><td><span class="badge badge-amber">medium</span></td><td>email_send_log table ready</td></tr>
+</tbody>
+</table></div>
+
+<!-- DB MIGRATION LOG -->
+<h2>Database Migration Log</h2>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Migration Name</th><th>Sprint</th><th>Applied</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>sprint_11_rls_policies_remaining</code></td><td>S11</td><td><span class="badge badge-green">✓ 2026-05-18</span></td><td>RLS policies for 30+ tables with no policies. Org-scoped + join-based + authenticated-only access patterns.</td></tr>
+<tr><td><code>sprint_11_email_whatsapp_comms_schema</code></td><td>S11</td><td><span class="badge badge-green">✓ 2026-05-18</span></td><td>email_send_log table, communications email/WhatsApp columns, order_document_sends WhatsApp columns, 9 FK indexes, Mailtrap integration record inserted.</td></tr>
+<tr><td><code>sprint_11_sprint_issue_tracker</code></td><td>S11</td><td><span class="badge badge-green">✓ 2026-05-18</span></td><td>sprint_issues table with RLS. Sprint 11 issues seeded (12 rows).</td></tr>
+</tbody>
+</table></div>
+
+<!-- NEW REPO FILES -->
+<h2>New Repo Files (Sprint 11)</h2>
+<div class="tbl-wrap"><table>
+<thead><tr><th>File Path</th><th>Purpose</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>src/lib/email/order-document-email.ts</code></td><td>Mailtrap email sender for order documents. Mirrors invitation-email.ts pattern. Returns provider message ID.</td><td><span class="badge badge-green">✓ Created</span></td></tr>
+<tr><td><code>src/lib/whatsapp/whatsapp-link.ts</code></td><td>WhatsApp link generator. Produces wa.me (mobile) and web.whatsapp.com (desktop) links with pre-filled messages.</td><td><span class="badge badge-green">✓ Created</span></td></tr>
+<tr><td><code>public/internal/setuflow-docs.html</code></td><td>This documentation file. Internal reference — not indexed or linked from public pages.</td><td><span class="badge badge-green">✓ Created</span></td></tr>
+<tr><td><code>docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md</code></td><td>Sprint 11 section appended: Mailtrap config, WhatsApp link behavior, new DB columns/tables, security fixes.</td><td><span class="badge badge-green">✓ Updated</span></td></tr>
+</tbody>
+</table></div>
+
+<!-- INTEGRATION STATUS BOARD -->
+<h2>Integration Status Board</h2>
+<div class="card-grid">
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">📧 Email — Mailtrap</div>
+    <div><span class="badge badge-green">Active</span></div>
+    <ul>
+      <li>Invitations: ✓ Working</li>
+      <li>Order documents: ✓ Sprint 11</li>
+      <li>Delivery webhooks: ⟳ Sprint 12</li>
+      <li>Email open tracking: ⟳ Sprint 12</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">💬 WhatsApp — Link-based</div>
+    <div><span class="badge badge-green">Active</span></div>
+    <ul>
+      <li>wa.me mobile links: ✓ Sprint 11</li>
+      <li>WhatsApp Web desktop: ✓ Sprint 11</li>
+      <li>Pre-filled messages: ✓ Sprint 11</li>
+      <li>API automation: ✗ Not planned</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #f59e0b">
+    <div class="card-title">🚢 Freight — Boundary</div>
+    <div><span class="badge badge-amber">Planned S14</span></div>
+    <ul>
+      <li>Rate request preparation: ✓ Existing</li>
+      <li>External carrier API: ✗ Not connected</li>
+      <li>Booking confirmation: ✗ Not connected</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #f59e0b">
+    <div class="card-title">💹 Finance — Boundary</div>
+    <div><span class="badge badge-amber">Planned S14</span></div>
+    <ul>
+      <li>finance_sync_records: ✓ Table exists</li>
+      <li>Xero / QuickBooks: ✗ Not connected</li>
+      <li>Auto-invoice posting: ✗ Not connected</li>
+    </ul>
+  </div>
+</div>
+
+</section>
+
+</main>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#dbeafe',
+    primaryTextColor: '#1e3a8a',
+    primaryBorderColor: '#93c5fd',
+    lineColor: '#3b82f6',
+    secondaryColor: '#f0fdf4',
+    tertiaryColor: '#fff7ed',
+    fontFamily: '"Segoe UI", system-ui, sans-serif',
+    fontSize: '13px',
+    edgeLabelBackground: '#f8fafc',
+  },
+  flowchart: { htmlLabels: true, curve: 'basis' },
+});
+
+const sections = document.querySelectorAll('section[id]');
+const links = document.querySelectorAll('.sidebar a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 80) current = s.id; });
+  links.forEach(l => { l.classList.toggle('active', l.getAttribute('href') === '#' + current); });
+}, { passive: true });
+</script>
+</body>
+</html>
