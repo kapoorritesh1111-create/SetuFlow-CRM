@@ -16,16 +16,20 @@ export function getRouteMeta(pathname: string): RouteMeta {
         ? 'Invitations'
         : pathname.startsWith('/admin/audit')
           ? 'Audit trail'
-          : pathname.startsWith('/admin/ai-analytics')
-            ? 'AI review'
-            : pathname.startsWith('/admin/organization')
-              ? 'Organization setup'
-              : pathname.startsWith('/admin/product-management')
-                ? 'Catalog admin'
-                : pathname.startsWith('/admin/users')
-                  ? 'People & access'
-                  : 'Admin / Organization',
-      description: 'Use admin for workspace setup: organization defaults, people access, invitations, audit proof, and admin-only controls. This is not the daily work route.',
+          : pathname.startsWith('/admin/integrations')
+            ? 'Integrations'
+            : pathname.startsWith('/admin/ai-analytics')
+              ? 'AI review'
+              : pathname.startsWith('/admin/organization')
+                ? 'Organization setup'
+                : pathname.startsWith('/admin/product-management')
+                  ? 'Catalog admin'
+                  : pathname.startsWith('/admin/users')
+                    ? 'People & access'
+                    : 'Admin / Organization',
+      description: pathname.startsWith('/admin/integrations')
+        ? 'Use integrations to see what is live, what is queue-ready, and what remains planned without overclaiming provider connectivity.'
+        : 'Use admin for workspace setup: organization defaults, people access, invitations, audit proof, and admin-only controls. This is not the daily work route.',
       sectionLabel: 'Workspace setup',
       tabs: ADMIN_TABS,
       showWorkspaceModeSwitch: false,
