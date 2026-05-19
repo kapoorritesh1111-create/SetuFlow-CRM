@@ -170,27 +170,23 @@ _Updated: May 2026. Sprint 10 import/catalog onboarding is closed and protected.
 
 ---
 
-## SPRINT 14-15 FIXES
+## SPRINT 16: PRODUCTION VERIFICATION
 
-### Problem: Vercel build fails with "Property 'legal_name' does not exist on type 'OrganizationRow'"
-**Cause:** share-actions.ts used workspace.organization.legal_name which is not in the OrganizationRow type.
-**Fix (applied S14-BUILD-001):** The .legal_name fallback was removed. OrganizationRow only has .name. No action needed — fixed in repo.
+### Verifying webhook is live
+GET https://www.setuflowcrm.com/api/webhooks/mailtrap → {"ok":true,"service":"setuflow-mailtrap-webhook","version":"1.0"} ✓
 
-### Problem: Analytics page shows 0 email delivered even when emails were sent
-**Cause:** Email delivery status requires Mailtrap webhook to update email_delivery_status from 'sent' to 'delivered'.
-**Fix:**
-1. Set up Mailtrap webhook: Mailtrap Dashboard → Sending → Webhooks → Add endpoint: https://www.setuflowcrm.com/api/webhooks/mailtrap
-2. Select events: delivery, bounce, open, click
-3. Copy signing secret → set MAILTRAP_WEBHOOK_SECRET env var in Vercel
-4. Without webhook: email_delivery_status stays at 'sent' indefinitely. This is correct — it means Mailtrap accepted the email but inbox delivery is unconfirmed.
+### Verifying analytics is live
+Navigate to https://www.setuflowcrm.com/dashboard/analytics — should show live funnel and metrics.
+If all counts are 0: ensure leads, quotes, and orders exist for the organization in Supabase.
 
-### Problem: Analytics page funnel shows 0 for Order Created even when orders exist
-**Cause:** Lead-to-order linkage requires orders.lead_id to be set. If orders were created without lead_id, they won't appear in the funnel.
-**Fix:** Check orders table for rows where lead_id IS NULL. These are legacy orders or direct-create orders not linked to a lead. The funnel count reflects orders with a lead_id that matches a lead.
+### Completing email delivery loop
+1. Mailtrap Dashboard → Email Sending → Webhooks → Add endpoint URL
+2. URL: https://www.setuflowcrm.com/api/webhooks/mailtrap
+3. Select: Delivery · Bounce · Open · Click
+4. Copy signing secret
+5. Vercel → Project → Environment Variables → Add MAILTRAP_WEBHOOK_SECRET = [secret]
+6. Redeploy → email_delivery_status updates to 'delivered' after next send
 
-### Problem: Final invoice shows ordered quantity instead of dispatched quantity
-**Sprint 14 fix:** order_documents.quantity_basis column added.
-**Fix:**
-1. When approving the final invoice gate, the server action should set quantity_basis='dispatched' on the order_document row
-2. The preview renderer should use quantity_basis to determine which quantity column to display
-3. This is a data labeling fix — the actual quantity values in order_lines remain unchanged
+### Quote share links using wrong domain
+Symptom: Share links show vercel-*.app domain instead of setuflowcrm.com
+Fix: Vercel → Project → Environment Variables → Verify NEXT_PUBLIC_APP_URL = https://www.setuflowcrm.com

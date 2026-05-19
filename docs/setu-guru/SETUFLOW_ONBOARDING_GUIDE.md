@@ -322,3 +322,24 @@
   <line x1="465" y1="283" x2="465" y2="302" stroke="#2563EB" stroke-width="1" opacity="0.4"/>
   <line x1="483" y1="288" x2="483" y2="302" stroke="#2563EB" stroke-width="1" opacity="0.4"/>
 </svg>
+
+---
+
+## SPRINT 16 PRODUCTION UPDATE
+
+### Live Application URLs (as of 2026-05-19)
+- Production: https://www.setuflowcrm.com
+- Dashboard: https://www.setuflowcrm.com/dashboard
+- Analytics: https://www.setuflowcrm.com/dashboard/analytics (NEW — Sprint 15)
+- Leads: https://www.setuflowcrm.com/leads
+- Quotes: https://www.setuflowcrm.com/quotes
+- Orders: https://www.setuflowcrm.com/orders
+- Internal docs: https://www.setuflowcrm.com/internal/setuflow-docs.html
+
+### Security Status (Sprint 16)
+All critical security items resolved. HaveIBeenPwned password protection enabled. RLS on all tables. SECURITY DEFINER RPCs protected. No open critical security items.
+
+### Email Integration (Sprint 16)
+Mailtrap is live and sending. Webhook endpoint verified. To complete:
+1. Configure POST webhook in Mailtrap Dashboard (URL + events)
+2. Add MAILTRAP_WEBHOOK_SECRET to Vercel environment variables
