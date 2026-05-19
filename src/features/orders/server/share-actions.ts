@@ -238,7 +238,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   let whatsappPhone: string | null = null;
   if (!previewOnly && channel === 'whatsapp' && resolvedRecipient) {
     try {
-      const orgName = workspace.organization.name ?? workspace.organization.legal_name ?? 'SETU Flow';
+      const orgName = workspace.organization.name ?? 'SETU Flow';
       const waLinks = generateWhatsAppLinks({
         phone: resolvedRecipient,
         organizationName: orgName,
@@ -287,7 +287,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   // Sprint 12: Fire email via Mailtrap for email channel
   if (!previewOnly && channel === 'email' && resolvedRecipient && sendRow?.id) {
     try {
-      const orgName = workspace.organization.name ?? workspace.organization.legal_name ?? 'SETU Flow';
+      const orgName = workspace.organization.name ?? 'SETU Flow';
       const emailResult = await sendOrderDocumentEmail({
         to: resolvedRecipient,
         organizationName: orgName,

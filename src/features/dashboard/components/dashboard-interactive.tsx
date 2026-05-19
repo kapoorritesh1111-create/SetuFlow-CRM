@@ -351,7 +351,14 @@ export default function DashboardInteractive({
 
   return (
     <div className="flex w-full flex-col gap-5 pb-10 pt-2 xl:gap-6">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        {/* Sprint 15: Analytics tab link */}
+        <a
+          href="/dashboard/analytics"
+          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-blue-700"
+        >
+          <span>📊</span> Analytics
+        </a>
         <DashboardHeaderControls
           customizeOpen={layout.customizeOpen}
           onToggleCustomize={layout.onToggleCustomize}

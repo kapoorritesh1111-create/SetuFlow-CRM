@@ -511,3 +511,57 @@ src/lib/freight/freight-adapter.ts created:
 CRITICAL RULE: External freight booking is NEVER automatic. SetuFlow prepares and approves the freight request data. The operator must explicitly queue a booking event, and the external carrier must independently confirm.
 
 Setu Guru policy: When asked "has freight been booked?", check freight_booking_events for event_type='booking_confirmed' with status='confirmed' AND the order has a dispatched shipment in shipments table. Do not say freight was booked unless both conditions are true.
+
+---
+
+## SPRINT 14 UPDATES: Pending Items Resolved
+
+### Build Fix (S14-BUILD-001)
+The Vercel build error `Property 'legal_name' does not exist on type 'OrganizationRow'` was fixed in share-actions.ts. OrganizationRow type in database.ts does not include legal_name. The fix removes the .legal_name fallback — only workspace.organization.name is used for the organization name in document emails and WhatsApp messages.
+
+### Migration Reconciliation (S14-SCHEMA-001)
+All 6 Sprint 11-13 migrations applied via Supabase MCP are now source-controlled in supabase/migrations/ as marker files with timestamps. This reconciles the divergence between live schema and repo migration history.
+
+### Document Quantity Basis (S14-DOC-001)
+order_documents table now has:
+- quantity_basis column: ordered | loaded | dispatched | delivered
+- dispatched_quantity_context JSONB: snapshot of actual dispatched quantities at time of final invoice approval
+
+Rule: Proforma invoice always uses quantity_basis='ordered'. Final invoice must use quantity_basis='dispatched' and capture dispatched_quantity_context before approval.
+
+### Analytics Snapshot Table (S14-ANALYTICS-001)
+analytics_snapshots table created for persistent daily/weekly/monthly analytics metrics. Fields: lead funnel (total, qualified, quoted, ordered, won, lost), quote metrics (win rate, avg days to accept), order metrics (draft, active, dispatched, completed), document send metrics (total, email, whatsapp, opened, delivered, bounced), pipeline value, top markets JSONB, top products JSONB.
+
+---
+
+## SPRINT 15 UPDATES: Analytics Dashboard
+
+### Analytics Dashboard at /dashboard/analytics
+
+A new analytics page is available at /dashboard/analytics, linked from the main dashboard header as "📊 Analytics". The analytics tab shows live data (not cached) queried on page load.
+
+Sections:
+1. Lead → Order Conversion Funnel: shows Total Leads → Quoted → Order Created → Dispatched → Paid & Closed with count, percentage, and visual bar. Each stage is clickable linking to the relevant workspace.
+2. Quote Performance: Sent, Accepted, Rejected, Win Rate %, Avg Days to Accept, Pending Approval counts.
+3. Order Execution: Total Orders, Active, Dispatched, Paid & Closed.
+4. Document Send Effectiveness (Last 90 days): Total Sends, Email Sends (Mailtrap), WhatsApp Sends (link-based), Links Opened, Email Delivered (webhook required), Email Bounced.
+5. Top Markets table: leads, quoted, orders per market.
+6. Product Categories: lead count and quoted count per product category.
+
+Setu Guru response policy for analytics questions:
+- "What is our quote win rate?" → Direct to /dashboard/analytics for live rate = accepted ÷ sent quotes
+- "How many leads became orders?" → Check conversion funnel on analytics page (leads_with_order ÷ total_leads)
+- "How is our email delivery performing?" → Email delivery rate requires Mailtrap webhook configured — see email_delivery_status in order_document_sends. Currently shows pending without webhook.
+- "Which is our best market?" → Top Markets table on analytics page by lead count and quote conversion
+- "How long does it take a quote to get accepted?" → Avg Days to Accept on analytics page
+
+Data freshness: Analytics data is live (queried on page load, not cached). For historical trends, analytics_snapshots table stores daily snapshots once the snapshot job is wired up.
+
+### Analytics Data Sources
+
+- Lead funnel from: leads, quotes (lead_id), orders (lead_id)
+- Quote metrics from: quotes table (status, created_at, updated_at)
+- Order metrics from: orders table (status, current_stage, execution_state)
+- Document sends from: order_document_sends (last 90 days — channel, open_count, email_delivery_status)
+- Market breakdown from: lead_markets + markets (lead_id → market name)
+- Product breakdown from: lead_product_interests + product_categories
