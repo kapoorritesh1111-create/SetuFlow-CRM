@@ -70,13 +70,13 @@ export async function POST(request: NextRequest) {
   const puppeteer = await loadPuppeteer();
   const browser = await puppeteer.launch({
     args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
     executablePath: await chromium.executablePath(),
     headless: chromium.headless,
   });
 
   try {
     const page = await browser.newPage();
+    await page.setViewport({ width: 1280, height: 1800, deviceScaleFactor: 1 });
     const previewUrl = `${buildOrigin(request)}/order-documents/preview/${encodeURIComponent(sendRow.share_token)}`;
     await page.goto(previewUrl, { waitUntil: 'networkidle0', timeout: 45_000 });
     const pdf = await page.pdf({
