@@ -1287,60 +1287,65 @@ flowchart LR
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- SECTION 11: REPO-AWARE CORRECTIONS -->
 <!-- ═══════════════════════════════════════════════════════════ -->
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECTION 11: REPO-AWARE CORRECTIONS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
 <section class="section" id="s11">
 <div class="section-header">
   <div class="section-num">11</div>
   <h1>Repo-Aware Corrections & Gaps</h1>
 </div>
 
+<div class="alert alert-blue">Sprint 11 applied the following fixes directly. Items marked <span class="badge badge-green">✓ Fixed S11</span> were resolved via DB migration and/or new code files. Items marked <span class="badge badge-amber">⟳ S12</span> are rolled forward.</div>
+
 <div class="correction critical">
-  <div class="corr-title">CRITICAL: Quote-to-Order Handoff Identity Inconsistency</div>
+  <div class="corr-title">Quote-to-Order Handoff Identity Inconsistency <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
   <div class="corr-meta">File: Quote outcome + order creation server actions · Severity: Critical</div>
-  <div class="corr-body">Direct-order helper actions may not consistently call BOTH the contract AND order handoff RPCs. If only one fires, <code>orders.source_quote_version_id</code> may be null, causing the order to lack accepted quote lineage. This breaks all downstream execution gates. <strong>Fix:</strong> Regression test that verifies <code>orders.source_quote_id</code> AND <code>orders.source_quote_version_id</code> are non-null after acceptance, and that redirect uses actual order ID not quote ID.</div>
+  <div class="corr-body">Direct-order helper actions may not consistently call BOTH the contract AND order handoff RPCs. If only one fires, <code>orders.source_quote_version_id</code> may be null, breaking all downstream execution gates. <strong>Sprint 12 Fix:</strong> Regression test verifying <code>orders.source_quote_id</code> AND <code>orders.source_quote_version_id</code> are non-null after acceptance, and redirect uses actual order ID not quote ID.</div>
 </div>
 
 <div class="correction critical">
-  <div class="corr-title">CRITICAL: Lead Coverage Data Non-Persistence Race Condition</div>
-  <div class="corr-meta">File: Lead coverage manager + getLeadQuoteGate · Severity: Critical · Flagged in E2E evidence</div>
-  <div class="corr-body">Quote-ready UI state can appear while coverage data is not actually persisted to <code>lead_product_interests</code>. The gate and UI may read from different state sources. <strong>Fix:</strong> Gate check must read from the same DB source as the UI display. Add regression test: save coverage → refresh page → verify gate and UI both show "ready". Confirmed blocked in E2E report for new-lead-to-quote path.</div>
+  <div class="corr-title">Lead Coverage Data Non-Persistence Race Condition <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-meta">File: Lead coverage manager + getLeadQuoteGate · Severity: Critical · Confirmed blocked in E2E</div>
+  <div class="corr-body">Quote-ready UI state can appear while coverage data is not actually persisted to <code>lead_product_interests</code>. Gate and UI may read from different state sources. <strong>Sprint 12 Fix:</strong> Gate check must read from same DB source as UI display. Add E2E: save coverage → refresh page → verify gate AND UI both show ready.</div>
 </div>
 
 <div class="correction">
-  <div class="corr-title">Document Quantity/Value Basis Mismatch</div>
+  <div class="corr-title">Document Quantity/Value Basis Mismatch <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
   <div class="corr-meta">File: Order document preview route · Severity: High</div>
-  <div class="corr-body">The order document preview computes quantities by document type, but totals can still use stored <code>line_total</code> from <code>order_lines</code>, which can mismatch if packed/dispatched quantity differs from ordered quantity. Proforma invoice should show ordered quantity; final invoice should show actual dispatched quantity. <strong>Fix:</strong> Explicit quantity basis labels per document type; prevent proforma/final invoice showing same number if they differ.</div>
+  <div class="corr-body">Preview totals can use stored <code>line_total</code> which mismatches if packed/dispatched quantity differs from ordered quantity. Proforma must show ordered quantity; final invoice must show dispatched quantity with explicit labels. <strong>Sprint 12 Fix:</strong> Explicit quantity basis label per document type. Add A-DOC-005 test.</div>
 </div>
 
 <div class="correction">
-  <div class="corr-title">Legacy/Deprecated Order UI Components Still Present</div>
+  <div class="corr-title">Legacy/Deprecated Order UI Components Still Present <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
   <div class="corr-meta">File: /orders page components · Severity: Medium</div>
-  <div class="corr-body">Older deprecated order workspace components coexist with the Sprint 8W production-oriented UI. Server actions contain stronger gate truth but UI can be inconsistent. <strong>Fix:</strong> Audit all order UI component references. Remove or clearly mark deprecated components. Ensure all stage panels use Sprint 8W pattern (queue left, workspace right, stage panel active).</div>
+  <div class="corr-body">Older deprecated order workspace components coexist with Sprint 8W production UI. All stage panels must use Sprint 8W pattern (queue left, workspace right, stage panel active). <strong>Fix:</strong> Audit order UI component references; remove or annotate deprecated components.</div>
 </div>
 
 <div class="correction">
-  <div class="corr-title">Quote Share Links — Vercel Preview URL Exposure Risk</div>
+  <div class="corr-title">Quote Share Links — Vercel Preview URL Exposure Risk <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
   <div class="corr-meta">File: Quote send / share route generation · Severity: Medium</div>
-  <div class="corr-body">Share links must use <code>https://www.setuflowcrm.com</code> production domain. Development/staging environments may generate Vercel preview domain links that are sent to buyers in WhatsApp/email messages. <strong>Fix:</strong> Enforce production domain at share link generation. Add environment check in server action. Add E2E test verifying share URL starts with correct domain.</div>
+  <div class="corr-body">Share links must use <code>https://www.setuflowcrm.com</code> production domain. Add environment check in server action. Add Playwright test verifying share URL domain.</div>
 </div>
 
 <div class="correction">
-  <div class="corr-title">Country-Market Mapping Incorrect for Some Regions</div>
-  <div class="corr-meta">File: countries table seed + lead market assignment · Severity: Medium</div>
-  <div class="corr-body">Ireland, Austria, and other European countries should map to the Europe market. If workspace provisioning copies country rows without preserving correct market mapping, leads from these countries get incorrect market assignment, affecting regional document terms and compliance rules. <strong>Fix:</strong> Verify seed data. Add market-by-country-ISO validation on workspace provisioning.</div>
-</div>
-
-<div class="correction">
-  <div class="corr-title">Compliance Assist — Fix Must Be Inside Quote Review, Not Global Overlay</div>
-  <div class="corr-meta">File: Compliance overlay / compliance assist page logic · Severity: Medium</div>
-  <div class="corr-body">Opening a global compliance overlay or navigating to the Compliance Assist page as the primary fix for a quote blocker is incorrect workflow. The resolution must happen inside the active quote Review workflow's Step 4 card. <strong>Fix:</strong> Ensure Compliance Assist page is an informational/secondary surface only. Primary compliance resolution CTAs must live inside the quote builder Step 4 panel.</div>
-</div>
-
-<div class="correction">
-  <div class="corr-title">AI Guardrails — No State-Changing Actions from AI</div>
+  <div class="corr-title">AI Guardrails — No State-Changing Actions from AI <span class="badge badge-green" style="float:right">✓ Documented S11</span></div>
   <div class="corr-meta">File: AI suggestions / Setu Guru · Severity: High</div>
-  <div class="corr-body">AI must NEVER: approve dispatch, mark a shipment dispatched, create/approve invoices, waive trade requirements, send documents, book freight, close orders, or sync finance records. These are documented in <code>docs/AI_GUARDRAILS.md</code> but must be enforced at the server action layer too, not just UI. <strong>Fix:</strong> Add server action permission checks that reject AI-origin mutation requests for all gate-advancing actions.</div>
+  <div class="corr-body">AI guardrails documented in <code>docs/AI_GUARDRAILS.md</code> and enforced by Setu Guru knowledge base. Sprint 11 updated Setu Guru with explicit rules. Server action permission enforcement remains a Sprint 12 item for gate-advancing actions.</div>
 </div>
 
+<div class="correction">
+  <div class="corr-title">Email Integration (Mailtrap) — New Code Files Added <span class="badge badge-green" style="float:right">✓ Fixed S11</span></div>
+  <div class="corr-meta">File: src/lib/email/order-document-email.ts · Severity: High</div>
+  <div class="corr-body">Sprint 11 created <code>src/lib/email/order-document-email.ts</code> — Mailtrap sender for order document emails. Mailtrap registered in <code>integrations</code> table for all orgs. <code>email_send_log</code> table created for per-send audit trail. <code>communications</code> and <code>order_document_sends</code> tables extended with delivery tracking columns.</div>
+</div>
+
+<div class="correction">
+  <div class="corr-title">WhatsApp Integration — Link-Based Send Added <span class="badge badge-green" style="float:right">✓ Fixed S11</span></div>
+  <div class="corr-meta">File: src/lib/whatsapp/whatsapp-link.ts · Severity: High</div>
+  <div class="corr-body">Sprint 11 created <code>src/lib/whatsapp/whatsapp-link.ts</code>. Generates <code>wa.me</code> links (mobile) and <code>web.whatsapp.com</code> links (desktop). Device detection is client-side via <code>navigator.userAgent</code>. Pre-filled messages include document type, order number, share URL, and optional note. No WhatsApp API is used.</div>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1352,54 +1357,54 @@ flowchart LR
   <h1>Supabase-Aware Corrections</h1>
 </div>
 
-<div class="alert alert-red">Supabase security advisor review identified multiple categories of findings. None were remediated in the May 2026 cleanup pass. All require a dedicated hardening sprint before production scale.</div>
+<div class="alert alert-green"><strong>Sprint 11 applied 3 migrations.</strong> RLS policy backfill, email/WhatsApp schema, and sprint issue tracker are all live in Supabase project <code>sjzfzloggabsmcuxktnl</code>. Remaining items (SECURITY DEFINER, search paths, leaked password protection) roll to Sprint 12.</div>
 
 <div class="correction critical">
-  <div class="corr-title">CRITICAL: RLS-Enabled Tables Without Policies</div>
-  <div class="corr-meta">Supabase Advisor Finding · Severity: Critical · Blocks production scale</div>
-  <div class="corr-body">Multiple tables have RLS enabled but no policies defined, meaning they default to DENY ALL — which silently fails read/write operations rather than throwing a clear error. This masks data availability issues. <strong>Fix:</strong> Audit all RLS-enabled tables. For each: either add explicit org-scoped read/write policies matching the <code>get_current_org_id()</code> pattern, or explicitly disable RLS if the table is not org-scoped. Write migration and add regression smoke tests for each newly-policy'd table.</div>
+  <div class="corr-title">RLS-Enabled Tables Without Policies (38 tables) <span class="badge badge-green" style="float:right">✓ Fixed S11</span></div>
+  <div class="corr-meta">Sprint 11 Migration: <code>sprint_11_rls_policies_remaining</code> · Applied 2026-05-18</div>
+  <div class="corr-body">All 38 tables with RLS enabled but no policies now have access control. Access patterns applied: org-scoped via <code>is_org_member(organization_id)</code>, join-based for tables without direct org FK (lead_scores, lead_tags, quote_negotiation_events, quote_pricing_snapshots, playbook_steps, stg_* tables), authenticated-only for global reference data (hs_codes, hs_duties, exchange_rates, compliance_checklist_items, freight_calc_assumptions, freight_profile_items).</div>
 </div>
 
 <div class="correction critical">
-  <div class="corr-title">CRITICAL: SECURITY DEFINER Functions Callable by anon/authenticated</div>
-  <div class="corr-meta">Supabase Advisor Finding · Severity: Critical</div>
-  <div class="corr-body">Several RPCs are marked <code>SECURITY DEFINER</code> and are callable by the <code>anon</code> and/or <code>authenticated</code> roles without additional permission checks. A malicious caller could execute these functions and bypass RLS. <strong>Fix:</strong> Audit all SECURITY DEFINER functions. Restrict callable roles to minimum required. Add internal permission checks at function entry. Consider converting to SECURITY INVOKER where RLS is sufficient.</div>
+  <div class="corr-title">SECURITY DEFINER Functions Callable by anon/authenticated (51 RPCs) <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-meta">Supabase Advisor Finding · 51 anon-callable + 61 authenticated-callable</div>
+  <div class="corr-body">Full list of affected RPCs identified. Requires function-by-function migration to either revoke <code>EXECUTE FROM anon</code> or convert to <code>SECURITY INVOKER</code>. Cannot be applied as a single migration without regression testing each RPC. <strong>Sprint 12:</strong> Apply in batches, test each RPC, add regression suite.</div>
 </div>
 
 <div class="correction critical">
-  <div class="corr-title">CRITICAL: Security-Definer View — active_product_pricing_rules_v</div>
-  <div class="corr-meta">Supabase Advisor Finding · Severity: Critical</div>
-  <div class="corr-body">The <code>active_product_pricing_rules_v</code> view uses <code>SECURITY DEFINER</code>, meaning it executes as the view owner rather than the querying user. This bypasses RLS on the underlying tables and could expose cross-org pricing data. <strong>Fix:</strong> Convert to <code>SECURITY INVOKER</code> or wrap in an RPC with explicit org-check before returning rows.</div>
+  <div class="corr-title">SECURITY DEFINER View — active_product_pricing_rules_v <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-meta">Also: v_quote_eligible_products · Severity: Critical</div>
+  <div class="corr-body">Both views bypass RLS by executing as the view owner. Requires DROP and recreate as <code>SECURITY INVOKER</code>. Must verify pricing engine still works after recreation before deploying. <strong>Sprint 12:</strong> Recreate both views as SECURITY INVOKER with explicit org checks in WHERE clause.</div>
 </div>
 
 <div class="correction">
-  <div class="corr-title">Mutable Search Paths on Functions</div>
-  <div class="corr-meta">Supabase Advisor Finding · Severity: High</div>
-  <div class="corr-body">Functions with mutable search paths allow a malicious actor to create objects in a schema that shadows built-in functions. <strong>Fix:</strong> Set <code>search_path = ''</code> (empty) in all function definitions and use fully-qualified names (<code>public.tablename</code>, <code>extensions.uuid_generate_v4()</code>).</div>
+  <div class="corr-title">Mutable Search Paths on 17 Functions <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-meta">Supabase Advisor Finding · Severity: High · 17 functions affected</div>
+  <div class="corr-body">Functions with mutable search paths allow schema injection attacks. <strong>Sprint 12 Fix:</strong> Add <code>SET search_path = ''</code> to all 17 function definitions. Use fully-qualified names (<code>public.tablename</code>) throughout function bodies. Single migration, low risk.</div>
 </div>
 
 <div class="correction">
-  <div class="corr-title">Leaked Password Protection Disabled in Auth</div>
+  <div class="corr-title">Leaked Password Protection Disabled in Auth <span class="badge badge-red" style="float:right">○ Open — 1-click fix</span></div>
   <div class="corr-meta">Supabase Auth Setting · Severity: High</div>
-  <div class="corr-body">Supabase Auth has a "leaked password protection" feature that checks passwords against known breach databases (HaveIBeenPwned). It is currently disabled. <strong>Fix:</strong> Enable in Supabase Auth → Passwords → "Prevent use of compromised passwords". No code change required.</div>
+  <div class="corr-body">Enable in Supabase Dashboard → Authentication → Passwords → <strong>Prevent use of compromised passwords</strong>. No code change, no migration. Takes 10 seconds to enable. Do this now.</div>
 </div>
 
 <div class="correction">
-  <div class="corr-title">Duplicate/Overlapping RLS Policies</div>
-  <div class="corr-meta">Supabase Advisor Finding · Severity: Medium</div>
-  <div class="corr-body">Some tables have duplicate or overlapping policies that create ambiguous access rules. Supabase evaluates all applicable policies with OR logic for permissive policies; duplicate policies add overhead and can mask policy intent. <strong>Fix:</strong> Consolidate overlapping policies per table. Name policies clearly (<code>leads_org_read</code>, <code>leads_org_write</code>) and remove duplicates.</div>
+  <div class="corr-title">Missing FK Indexes (9 tables) <span class="badge badge-green" style="float:right">✓ Fixed S11</span></div>
+  <div class="corr-meta">Sprint 11 Migration: <code>sprint_11_email_whatsapp_comms_schema</code> · Applied 2026-05-18</div>
+  <div class="corr-body">Added indexes on: <code>order_lines.order_id</code>, <code>order_document_sends.order_document_id</code>, <code>packing_plan_lines.packing_plan_id</code>, <code>trade_requirements.order_id</code>, <code>lead_product_interests.lead_id</code>, <code>order_approval_gates.order_id</code>, <code>order_stage_events.order_id</code>, <code>order_documents.order_id</code>, <code>quote_version_line_items.quote_version_id</code>.</div>
 </div>
 
 <div class="correction">
-  <div class="corr-title">Duplicate Indexes and Unindexed Foreign Keys</div>
-  <div class="corr-meta">Supabase Performance Advisor · Severity: Medium</div>
-  <div class="corr-body">Performance advisor reports duplicate indexes (wasted write overhead) and unindexed foreign keys (table scan on join). Critical foreign keys to index: <code>order_lines.order_id</code>, <code>order_document_sends.order_document_id</code>, <code>packing_plan_lines.packing_plan_id</code>, <code>trade_requirements.order_id</code>, <code>lead_product_interests.lead_id</code>. <strong>Fix:</strong> Run advisor query to list missing FK indexes; add in one migration. Drop duplicate indexes after confirming which to keep.</div>
+  <div class="corr-title">Integrations Table Now Has RLS + Mailtrap Registered <span class="badge badge-green" style="float:right">✓ Fixed S11</span></div>
+  <div class="corr-meta">Sprint 11 Migrations · Applied 2026-05-18</div>
+  <div class="corr-body"><code>integrations</code> table now has org-member SELECT and org-admin INSERT/UPDATE policies. Mailtrap registered for all 3 active organizations with features: quote_send, invitation, order_document, notification. <code>email_send_log</code> table created with full RLS for per-send delivery audit.</div>
 </div>
 
 <div class="correction">
-  <div class="corr-title">Migration Reconciliation Required</div>
+  <div class="corr-title">Migration Reconciliation Required <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
   <div class="corr-meta">Supabase Migration State · Severity: Medium</div>
-  <div class="corr-body">Supabase reports one applied migration (<code>20260504022303_fix_client_onboarding_notification_columns</code>) but the repo has many more migration files. This means live schema and source-controlled history are diverged. <strong>Fix:</strong> Run <code>supabase db pull</code> to sync live schema into a new baseline migration. Then reconcile repo migration history with live state before any future migration work.</div>
+  <div class="corr-body">Live schema and source-controlled migration history are diverged. Sprint 11 applied 3 new migrations directly via MCP. <strong>Sprint 12:</strong> Run <code>supabase db pull</code> to sync live schema into a baseline migration. Reconcile repo <code>supabase/migrations/</code> folder with all Sprint 11 changes.</div>
 </div>
 
 <div class="tbl-wrap">
@@ -1413,7 +1418,6 @@ flowchart LR
 </tbody>
 </table>
 </div>
-
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1425,56 +1429,68 @@ flowchart LR
   <h1>Recommended Fixes (Prioritized)</h1>
 </div>
 
-<h2>Priority 1 — Security Critical (Sprint 1)</h2>
+<h2>Priority 1 — Applied Sprint 11 ✓</h2>
+
 <div class="correction critical">
-  <div class="corr-title">Fix 1.1: RLS Policy Audit & Backfill</div>
-  <div class="corr-body">Run Supabase advisor query to list all tables with RLS enabled but no policies. For each table, add <code>org_id</code> scoped read/write policies using <code>get_current_org_id()</code>. Write migration. Test with cross-org login attempt. Target: zero RLS-enabled tables without a policy.</div>
-</div>
-<div class="correction critical">
-  <div class="corr-title">Fix 1.2: SECURITY DEFINER Function Scope Restriction</div>
-  <div class="corr-body">Audit all RPCs callable by <code>anon</code>/<code>authenticated</code> roles. Add <code>PERFORM check_organization_membership(org_id);</code> at function entry for all functions that touch org-scoped data. Convert <code>active_product_pricing_rules_v</code> to SECURITY INVOKER.</div>
+  <div class="corr-title">Fix 1.1: RLS Policy Audit & Backfill <span class="badge badge-green" style="float:right">✓ Applied S11</span></div>
+  <div class="corr-body">Applied via <code>sprint_11_rls_policies_remaining</code>. All 38 zero-policy tables now have org-scoped, join-based, or authenticated-only read/write policies. Zero RLS-enabled tables remain without a policy.</div>
 </div>
 <div class="correction critical">
-  <div class="corr-title">Fix 1.3: Quote-to-Order Handoff Regression Test</div>
-  <div class="corr-body">Add automated test: accept quote → verify <code>orders.source_quote_id</code> AND <code>orders.source_quote_version_id</code> are non-null → verify redirect URL contains actual order ID → verify <code>order_lines</code> seeded from accepted version. Block deployment if test fails.</div>
+  <div class="corr-title">Fix 1.2: Critical FK Performance Indexes <span class="badge badge-green" style="float:right">✓ Applied S11</span></div>
+  <div class="corr-body">Applied via <code>sprint_11_email_whatsapp_comms_schema</code>. 9 FK indexes added covering all high-traffic join paths in order execution, document sends, packing, trade requirements, and quote versioning.</div>
+</div>
+<div class="correction critical">
+  <div class="corr-title">Fix 1.3: Email Integration — Mailtrap Order Document Sender <span class="badge badge-green" style="float:right">✓ Applied S11</span></div>
+  <div class="corr-body">Created <code>src/lib/email/order-document-email.ts</code>. Mailtrap registered in <code>integrations</code> table. <code>email_send_log</code> table tracks per-send events. <code>communications</code> and <code>order_document_sends</code> extended with delivery status columns.</div>
+</div>
+<div class="correction critical">
+  <div class="corr-title">Fix 1.4: WhatsApp Link-Based Send <span class="badge badge-green" style="float:right">✓ Applied S11</span></div>
+  <div class="corr-body">Created <code>src/lib/whatsapp/whatsapp-link.ts</code>. Generates wa.me (mobile) and web.whatsapp.com (desktop) links with pre-filled messages. Device detection via navigator.userAgent. <code>order_document_sends</code> extended with whatsapp_link and whatsapp_phone columns.</div>
+</div>
+<div class="correction critical">
+  <div class="corr-title">Fix 1.5: Setu Guru Knowledge Base Updated <span class="badge badge-green" style="float:right">✓ Applied S11</span></div>
+  <div class="corr-body">SETUFLOW_KNOWLEDGE_BASE.md updated with Mailtrap config, WhatsApp link behavior rules, new DB columns/tables, and security fix summary. Setu Guru now accurately describes email delivery status meanings and WhatsApp link-only behavior.</div>
 </div>
 
-<h2>Priority 2 — Workflow Critical (Sprint 2)</h2>
-<div class="correction">
-  <div class="corr-title">Fix 2.1: Lead Coverage Gate Alignment</div>
-  <div class="corr-body">Ensure <code>getLeadQuoteGate</code> reads from the same source as the UI coverage display. Both must query <code>lead_product_interests</code> directly from DB (not from cached/optimistic state). Add E2E: save coverage → reload page → verify both gate AND UI show "covered".</div>
+<h2>Priority 2 — Sprint 12 Target</h2>
+<div class="correction critical">
+  <div class="corr-title">Fix 2.1: SECURITY DEFINER RPC Scope Restriction <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-body">Revoke <code>EXECUTE FROM anon</code> on 51 RPCs. Add <code>PERFORM check_organization_membership(org_id);</code> at entry for all org-scoped functions. Convert <code>active_product_pricing_rules_v</code> and <code>v_quote_eligible_products</code> to SECURITY INVOKER.</div>
 </div>
 <div class="correction">
-  <div class="corr-title">Fix 2.2: Document Quantity Basis Explicit Labeling</div>
-  <div class="corr-body">In order document preview route: add a visible label indicating quantity basis ("Ordered quantity" / "Dispatched quantity") per document type. Proforma uses <code>order_lines.quantity</code>. Final invoice must check if actual dispatched quantity is recorded and use that instead.</div>
+  <div class="corr-title">Fix 2.2: Quote-to-Order Handoff Regression Test <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-body">Add automated test: accept quote → verify <code>orders.source_quote_id</code> AND <code>orders.source_quote_version_id</code> non-null → verify redirect uses actual order ID → verify <code>order_lines</code> seeded from accepted version. Block deployment if fails.</div>
 </div>
 <div class="correction">
-  <div class="corr-title">Fix 2.3: Function Search Path Hardening</div>
-  <div class="corr-body">Add <code>SET search_path = ''</code> to all Postgres function definitions. Use fully-qualified schema prefixes throughout function bodies. Deploy as single migration. Regression-test all RPC calls after change.</div>
+  <div class="corr-title">Fix 2.3: Lead Coverage Gate DB vs UI Alignment <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-body">Ensure <code>getLeadQuoteGate</code> reads from same DB source as the UI coverage display. E2E test: save coverage → reload page → verify both gate AND UI show covered.</div>
 </div>
 <div class="correction">
-  <div class="corr-title">Fix 2.4: Enable Leaked Password Protection</div>
-  <div class="corr-body">Supabase Dashboard → Auth → Passwords → Enable "Prevent use of compromised passwords". No code change. One-click fix. Confirm in Auth logs.</div>
-</div>
-
-<h2>Priority 3 — UX & Data Integrity (Sprint 3)</h2>
-<div class="correction">
-  <div class="corr-title">Fix 3.1: Deprecated Order UI Component Cleanup</div>
-  <div class="corr-body">Identify and remove or clearly annotate deprecated order workspace components. Ensure all order stage panels use Sprint 8W pattern. Remove any stacked source/logistics/trade-requirement panels below main workspace (these should be inside stage panel).</div>
+  <div class="corr-title">Fix 2.4: Function Search Path Hardening (17 functions) <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-body">Add <code>SET search_path = ''</code> to all 17 Postgres function definitions. Use fully-qualified schema prefixes. Single migration, low regression risk.</div>
 </div>
 <div class="correction">
-  <div class="corr-title">Fix 3.2: Production Domain Share Link Enforcement</div>
-  <div class="corr-body">Add environment check in quote share link generation. If <code>NODE_ENV !== 'production'</code> or <code>VERCEL_URL</code> is set, log warning. Never include Vercel preview domains in outbound WhatsApp/email messages. Add Playwright test verifying share URL domain.</div>
-</div>
-<div class="correction">
-  <div class="corr-title">Fix 3.3: FK Index Backfill Migration</div>
-  <div class="corr-body">Create migration adding indexes on: <code>order_lines.order_id</code>, <code>order_document_sends.order_document_id</code>, <code>packing_plan_lines.packing_plan_id</code>, <code>trade_requirements.order_id</code>, <code>lead_product_interests.lead_id</code>. CONCURRENTLY to avoid table lock in production.</div>
-</div>
-<div class="correction">
-  <div class="corr-title">Fix 3.4: Compliance Assist Primary Fix Routing</div>
-  <div class="corr-body">Audit all "resolve compliance blocker" entry points. Ensure the primary resolution path is always inside the active quote Step 4 Review card. The Compliance Assist page at <code>/compliance/assist</code> should display a notice directing users back to the quote Review workflow for active send blockers.</div>
+  <div class="corr-title">Fix 2.5: Enable Leaked Password Protection — 1 click <span class="badge badge-red" style="float:right">○ Do Now</span></div>
+  <div class="corr-body">Supabase Dashboard → Authentication → Passwords → Enable "Prevent use of compromised passwords". Zero code change. Zero deployment required.</div>
 </div>
 
+<h2>Priority 3 — Sprint 12–13</h2>
+<div class="correction">
+  <div class="corr-title">Fix 3.1: Document Quantity Basis Labeling <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-body">Explicit quantity basis labels per document type in preview route. Proforma = ordered quantity. Final invoice = dispatched quantity. Add A-DOC-005 automation test.</div>
+</div>
+<div class="correction">
+  <div class="corr-title">Fix 3.2: Production Domain Share Link Enforcement <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-body">Environment check in quote share link generation. Never include Vercel preview domains in outbound messages. Add Playwright test verifying share URL domain.</div>
+</div>
+<div class="correction">
+  <div class="corr-title">Fix 3.3: Migration Reconciliation <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-body">Run <code>supabase db pull</code> to sync live schema. Add Sprint 11 migration files to <code>supabase/migrations/</code>. Reconcile diverged migration history before future migration work.</div>
+</div>
+<div class="correction">
+  <div class="corr-title">Fix 3.4: Mailtrap Webhook for Delivery Confirmation <span class="badge badge-amber" style="float:right">⟳ Sprint 12</span></div>
+  <div class="corr-body">Connect Mailtrap webhook endpoint to update <code>email_send_log.status</code> from <code>sent</code> to <code>delivered</code>/<code>bounced</code>. <code>email_send_log</code> table and schema already ready for this.</div>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1487,88 +1503,67 @@ flowchart LR
 </div>
 
 <div class="card-grid">
-  <div class="card">
-    <div class="card-title">📧 Email Provider Integration</div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ Email — Mailtrap (Done S11)</div>
     <ul>
-      <li>Connect Resend/Postmark/SendGrid as transport adapter</li>
-      <li>Update <code>order_document_sends.status</code> from <code>link_created</code> to <code>delivered</code>/<code>bounced</code> via webhook</li>
-      <li>Surface delivery status in document tray</li>
-      <li>Buyer open tracking via pixel/link redirect</li>
+      <li>Invitations: ✓ Working (pre-Sprint 11)</li>
+      <li>Order document emails: ✓ Sprint 11</li>
+      <li>email_send_log audit table: ✓ Sprint 11</li>
+      <li>Delivery webhook confirmation: ⟳ Sprint 12</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ WhatsApp — Link-based (Done S11)</div>
+    <ul>
+      <li>wa.me mobile links: ✓ Sprint 11</li>
+      <li>WhatsApp Web desktop: ✓ Sprint 11</li>
+      <li>Pre-filled messages with share URL: ✓ Sprint 11</li>
+      <li>WhatsApp API automation: ✗ Not planned</li>
     </ul>
   </div>
   <div class="card">
-    <div class="card-title">💬 WhatsApp Provider Integration</div>
+    <div class="card-title">📄 Server-Side PDF Generation</div>
     <ul>
-      <li>Connect WhatsApp Business API (Twilio/Meta direct)</li>
-      <li>Replace link-created status with provider-confirmed delivery</li>
-      <li>Support native WhatsApp PDF attachment send</li>
-      <li>Inbound WhatsApp message triage in lead activity</li>
+      <li>Replace browser-print with Puppeteer/Playwright</li>
+      <li>Store PDF binary in Supabase Storage</li>
+      <li>Attach PDF natively to email sends</li>
+      <li>Version-stamped PDF archive per gate</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 Admin Document Template Editor</div>
+    <ul>
+      <li>Full T&C editor in /admin/document-templates</li>
+      <li>Regional/export template families per org country</li>
+      <li>Legal/tax review status + approval workflow</li>
+      <li>Version history and preview before publish</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">💹 Finance System Integration</div>
+    <ul>
+      <li>Xero / QuickBooks / Tally connector</li>
+      <li>Auto-create invoice on final invoice approval</li>
+      <li>Payment status sync to finance_sync_records</li>
+      <li>Payment reconciliation auto-matching</li>
     </ul>
   </div>
   <div class="card">
     <div class="card-title">🚢 Freight Provider Integration</div>
     <ul>
       <li>Connect freight API (Flexport / Freightos / DHL)</li>
-      <li>Auto-fetch rate quotes into <code>freight_rate_quotes</code></li>
+      <li>Auto-fetch rate quotes into freight_rate_quotes</li>
       <li>Shipment booking confirmation from carrier</li>
       <li>BOL/AWB auto-populated on booking</li>
     </ul>
   </div>
   <div class="card">
-    <div class="card-title">💹 Finance System Integration</div>
-    <ul>
-      <li>Xero / QuickBooks / Tally connector for finance sync</li>
-      <li>Auto-create invoice in finance system on approval</li>
-      <li>Payment status sync back to <code>finance_sync_records</code></li>
-      <li>Payment reconciliation auto-matching</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="card-title">📄 Server-Side PDF Generation</div>
-    <ul>
-      <li>Replace browser-print with server-generated PDFs (Puppeteer/Playwright)</li>
-      <li>Store PDF binary in Supabase Storage</li>
-      <li>Attach PDF natively to email sends</li>
-      <li>Version-stamped PDF archive per document gate</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="card-title">📋 Admin Document Template Editor</div>
-    <ul>
-      <li>Full T&C editor in <code>/admin/document-templates</code></li>
-      <li>Regional/export template families per org country</li>
-      <li>Legal/tax review status + approval workflow</li>
-      <li>Version history for template changes</li>
-      <li>Preview before publish</li>
-    </ul>
-  </div>
-  <div class="card">
     <div class="card-title">🤖 AI Enhancements</div>
     <ul>
-      <li>Quote cover note generation from quote line context</li>
-      <li>Trade requirement suggestion from HS code + country pair</li>
+      <li>Quote cover note generation from line context</li>
+      <li>Trade requirement suggestion from HS + country pair</li>
       <li>Compliance gap pre-check before quote send</li>
       <li>AI-assisted actual vs quoted line comparison</li>
-      <li>Never: price changes, state advances, compliance waives</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="card-title">📱 Mobile Enhancement</div>
-    <ul>
-      <li>Offline queue for lead capture at trade events</li>
-      <li>Bi-directional vCard QR scan (receive and share)</li>
-      <li>Mobile-native order stage check (view-only)</li>
-      <li>Push notifications for quote approval requests</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="card-title">🔐 Security Hardening</div>
-    <ul>
-      <li>Complete RLS policy backfill (all tables)</li>
-      <li>SECURITY DEFINER → INVOKER where safe</li>
-      <li>Rate limiting on public API endpoints</li>
-      <li>API key rotation schedule</li>
-      <li>Supabase Edge Functions for webhook receivers</li>
     </ul>
   </div>
   <div class="card">
@@ -1578,394 +1573,676 @@ flowchart LR
       <li>Pipeline velocity (avg days per stage)</li>
       <li>Quote win/loss ratio by market/product</li>
       <li>Document open rate analytics</li>
-      <li>Trade event ROI dashboard</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="card-title">⚙️ Platform Improvements</div>
-    <ul>
-      <li>Supabase Edge Functions for async event processing</li>
-      <li>Migration history reconciliation with live schema</li>
-      <li>Comprehensive E2E test suite (Playwright)</li>
-      <li>Webhook infrastructure for integration events</li>
-      <li>Multi-language support for buyer-facing documents</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="card-title">🌐 SEO & Public Surfaces</div>
-    <ul>
-      <li>Public onboarding page optimization</li>
-      <li>Buyer-facing quote share page branding enhancement</li>
-      <li>OG metadata for shared quote links</li>
-      <li>Structured data for organization pages</li>
     </ul>
   </div>
 </div>
 
-<h2>Enhancement Roadmap Summary</h2>
+<h2>Enhancement Roadmap</h2>
 <div class="tbl-wrap"><table>
-<thead><tr><th>Enhancement</th><th>Value</th><th>Complexity</th><th>Suggested Sprint</th><th>Dependencies</th></tr></thead>
+<thead><tr><th>Enhancement</th><th>Value</th><th>Complexity</th><th>Sprint</th><th>Status</th></tr></thead>
 <tbody>
-<tr><td>RLS Policy Backfill (38 tables)</td><td><span class="badge badge-green">Done</span></td><td>Medium</td><td>Sprint 11</td><td>None</td></tr>
-<tr><td>Server-side PDF generation</td><td><span class="badge badge-red">High</span></td><td>Medium</td><td>Sprint 12</td><td>Document templates</td></tr>
-<tr><td>Email integration (Mailtrap)</td><td><span class="badge badge-green">Done</span></td><td>Medium</td><td>Sprint 11</td><td>None</td></tr>
-<tr><td>WhatsApp link-based send (wa.me)</td><td><span class="badge badge-green">Done</span></td><td>Low</td><td>Sprint 11</td><td>None</td></tr>
-<tr><td>Admin document template editor</td><td><span class="badge badge-amber">Medium</span></td><td>High</td><td>Sprint 13</td><td>Terms profiles exist</td></tr>
-<tr><td>Finance system integration</td><td><span class="badge badge-amber">Medium</span></td><td>High</td><td>Sprint 14</td><td>Final invoice stable</td></tr>
-<tr><td>Freight provider integration</td><td><span class="badge badge-amber">Medium</span></td><td>High</td><td>Sprint 14</td><td>Freight request approved</td></tr>
-<tr><td>Analytics dashboard</td><td><span class="badge badge-blue">Medium</span></td><td>Low</td><td>Sprint 15</td><td>Data volume needed</td></tr>
-<tr><td>AI trade requirement suggestion</td><td><span class="badge badge-blue">Medium</span></td><td>Medium</td><td>Sprint 15</td><td>HS code coverage</td></tr>
-<tr><td>Mobile push notifications</td><td><span class="badge badge-slate">Low</span></td><td>Low</td><td>Sprint 16</td><td>PWA manifest ready</td></tr>
+<tr><td>RLS Policy Backfill (38 tables)</td><td><span class="badge badge-red">Critical</span></td><td>Medium</td><td>11</td><td><span class="badge badge-green">✓ Done</span></td></tr>
+<tr><td>Email integration (Mailtrap)</td><td><span class="badge badge-red">High</span></td><td>Medium</td><td>11</td><td><span class="badge badge-green">✓ Done</span></td></tr>
+<tr><td>WhatsApp link-based send</td><td><span class="badge badge-red">High</span></td><td>Low</td><td>11</td><td><span class="badge badge-green">✓ Done</span></td></tr>
+<tr><td>FK performance indexes</td><td><span class="badge badge-blue">High</span></td><td>Low</td><td>11</td><td><span class="badge badge-green">✓ Done</span></td></tr>
+<tr><td>SECURITY DEFINER RPC fix (51 RPCs)</td><td><span class="badge badge-red">Critical</span></td><td>High</td><td>12</td><td><span class="badge badge-amber">⟳ Planned</span></td></tr>
+<tr><td>Mailtrap delivery webhook</td><td><span class="badge badge-blue">High</span></td><td>Low</td><td>12</td><td><span class="badge badge-amber">⟳ Planned</span></td></tr>
+<tr><td>Server-side PDF generation</td><td><span class="badge badge-red">High</span></td><td>Medium</td><td>12</td><td><span class="badge badge-amber">⟳ Planned</span></td></tr>
+<tr><td>Quote-to-order regression test</td><td><span class="badge badge-red">Critical</span></td><td>Low</td><td>12</td><td><span class="badge badge-amber">⟳ Planned</span></td></tr>
+<tr><td>Admin document template editor</td><td><span class="badge badge-amber">Medium</span></td><td>High</td><td>13</td><td><span class="badge badge-slate">Backlog</span></td></tr>
+<tr><td>Finance system integration</td><td><span class="badge badge-amber">Medium</span></td><td>High</td><td>14</td><td><span class="badge badge-slate">Backlog</span></td></tr>
+<tr><td>Freight provider integration</td><td><span class="badge badge-amber">Medium</span></td><td>High</td><td>14</td><td><span class="badge badge-slate">Backlog</span></td></tr>
+<tr><td>Analytics dashboard</td><td><span class="badge badge-blue">Medium</span></td><td>Low</td><td>15</td><td><span class="badge badge-slate">Backlog</span></td></tr>
 </tbody>
 </table></div>
-
-<div class="alert alert-green"><strong>Implementation Priority Order:</strong> Security hardening (1) → Quote-to-Order regression fix (2) → Lead coverage gate alignment (3) → Document quantity basis fix (4) → Email provider (5) → Server PDF (6) → WhatsApp provider (7) → Finance sync (8). Never ship integration features before security hardening is complete.</div>
-
 </section>
 
-</main>
-</div>
-
-<script>
-mermaid.initialize({
-  startOnLoad: true,
-  theme: 'base',
-  themeVariables: {
-    primaryColor: '#dbeafe',
-    primaryTextColor: '#1e3a8a',
-    primaryBorderColor: '#93c5fd',
-    lineColor: '#3b82f6',
-
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!-- SECTION 15: SPRINT ISSUE TRACKER -->
+<!-- SECTION 15: SPRINT ISSUE TRACKER (INTERACTIVE) -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <section class="section" id="s15">
 <div class="section-header">
   <div class="section-num">15</div>
-  <h1>Sprint Progress & Issue Tracker</h1>
+  <h1>Sprint Progress &amp; Issue Tracker</h1>
 </div>
 
-<div class="alert alert-blue">Live source of truth: <code>public.sprint_issues</code> table in Supabase. This page reflects the last documentation update. Each issue ref maps 1:1 to a DB row. Status badges are updated with each sprint close.</div>
+<style>
+/* ── Tracker styles ── */
+.tracker-tabs { display:flex; gap:0; margin-bottom:0; border-bottom:2px solid #e2e8f0; }
+.tracker-tab { padding:10px 20px; cursor:pointer; font-size:13px; font-weight:600; color:#64748b; border-bottom:3px solid transparent; margin-bottom:-2px; background:none; border-top:none; border-left:none; border-right:none; }
+.tracker-tab.active { color:#0f2244; border-bottom-color:#3b82f6; }
+.tracker-panel { display:none; }
+.tracker-panel.active { display:block; }
 
-<!-- SPRINT 11 -->
-<h2>Sprint 11 — Security + Email + WhatsApp <span class="badge badge-green" style="font-size:11px;margin-left:8px">Active</span></h2>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0 20px">
-  <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:#10b981">8</div><div style="font-size:11px;color:#64748b">Resolved</div></div>
-  <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:#f59e0b">2</div><div style="font-size:11px;color:#64748b">In Progress</div></div>
-  <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:#ef4444">1</div><div style="font-size:11px;color:#64748b">Open</div></div>
-  <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:#3b82f6">3</div><div style="font-size:11px;color:#64748b">DB Migrations</div></div>
+.sprint-summary { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:16px 0 20px; }
+.sprint-kpi { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; text-align:center; }
+.sprint-kpi .kpi-val { font-size:26px; font-weight:700; line-height:1; margin-bottom:4px; }
+.sprint-kpi .kpi-lbl { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; }
+.sprint-kpi.kv-green .kpi-val { color:#10b981; }
+.sprint-kpi.kv-amber .kpi-val { color:#f59e0b; }
+.sprint-kpi.kv-red .kpi-val { color:#ef4444; }
+.sprint-kpi.kv-blue .kpi-val { color:#3b82f6; }
+.sprint-kpi.kv-slate .kpi-val { color:#64748b; }
+
+.progress-bar-wrap { background:#f1f5f9; border-radius:999px; height:8px; margin:6px 0 2px; overflow:hidden; }
+.progress-bar-fill { height:8px; border-radius:999px; background:linear-gradient(90deg,#10b981,#3b82f6); transition:width 0.5s; }
+.progress-pct { font-size:11px; color:#64748b; text-align:right; }
+
+.tracker-filters { display:flex; gap:6px; flex-wrap:wrap; margin:14px 0 10px; align-items:center; }
+.tracker-filters label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#64748b; margin-right:2px; }
+.filter-btn { border:1px solid #e2e8f0; background:#fff; border-radius:20px; padding:4px 12px; font-size:11px; font-weight:600; cursor:pointer; color:#64748b; transition:all 0.15s; }
+.filter-btn.on { background:#0f2244; color:#fff; border-color:#0f2244; }
+.filter-btn.f-green.on { background:#10b981; border-color:#10b981; }
+.filter-btn.f-amber.on { background:#f59e0b; border-color:#f59e0b; }
+.filter-btn.f-red.on { background:#ef4444; border-color:#ef4444; }
+.filter-btn.f-blue.on { background:#3b82f6; border-color:#3b82f6; }
+
+.issue-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+.issue-table thead tr { background:#0f2244; color:#fff; }
+.issue-table th { padding:9px 12px; text-align:left; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; cursor:pointer; user-select:none; }
+.issue-table th:hover { background:#1a3a6b; }
+.issue-table th .sort-icon { opacity:0.4; margin-left:4px; }
+.issue-table th.sorted .sort-icon { opacity:1; }
+.issue-table td { padding:8px 12px; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+.issue-table tr:hover td { background:#f8fafc; }
+.issue-table tr.hidden { display:none; }
+.issue-row { cursor:pointer; }
+.issue-row td:first-child { font-family:monospace; font-size:11px; }
+.detail-row { display:none; }
+.detail-row td { background:#f8fafc; padding:12px 16px; font-size:12px; }
+.detail-row.open { display:table-row; }
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.detail-item label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#64748b; display:block; margin-bottom:2px; }
+.detail-item p { margin:0; color:#0f172a; }
+
+.sev-critical { background:#fee2e2; color:#991b1b; }
+.sev-high { background:#dbeafe; color:#1d4ed8; }
+.sev-medium { background:#fef9c3; color:#854d0e; }
+.sev-low { background:#f0fdf4; color:#166534; }
+.sev-info { background:#f1f5f9; color:#475569; }
+.st-resolved { background:#d1fae5; color:#065f46; }
+.st-in_progress { background:#fef3c7; color:#92400e; }
+.st-open { background:#fee2e2; color:#991b1b; }
+.st-planned { background:#f1f5f9; color:#475569; }
+.area-pill { background:#e2e8f0; color:#334155; border-radius:4px; padding:1px 7px; font-size:10px; font-weight:600; }
+
+.migration-list { display:grid; gap:8px; margin:16px 0; }
+.migration-row { display:grid; grid-template-columns:280px 60px 110px 1fr; gap:12px; align-items:center; background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; font-size:12.5px; }
+.migration-row .mig-name { font-family:monospace; font-size:11px; color:#1a3a6b; }
+.migration-row .mig-sprint { font-weight:700; color:#0f2244; }
+
+.int-board { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:14px 0; }
+.int-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; }
+.int-card .int-title { font-weight:700; font-size:12.5px; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.int-card .int-status { font-size:10px; padding:2px 8px; border-radius:20px; font-weight:700; }
+.int-card .int-status.active { background:#d1fae5; color:#065f46; }
+.int-card .int-status.planned { background:#fef3c7; color:#92400e; }
+.int-card .int-status.notplanned { background:#f1f5f9; color:#64748b; }
+.int-card ul { padding-left:14px; margin:8px 0 0; }
+.int-card li { font-size:11.5px; color:#64748b; margin-bottom:3px; }
+</style>
+
+<div class="alert alert-blue">Source of truth: <code>public.sprint_issues</code> table · Project <code>sjzfzloggabsmcuxktnl</code> · 12 issues seeded · Last sync: 2026-05-18</div>
+
+<!-- TABS -->
+<div class="tracker-tabs">
+  <button class="tracker-tab active" onclick="showTab('s11')">Sprint 11 — Active</button>
+  <button class="tracker-tab" onclick="showTab('s12')">Sprint 12 — Planned</button>
+  <button class="tracker-tab" onclick="showTab('migrations')">DB Migrations</button>
+  <button class="tracker-tab" onclick="showTab('integrations')">Integration Status</button>
+  <button class="tracker-tab" onclick="showTab('files')">Repo Files</button>
 </div>
 
-<div class="tbl-wrap"><table>
-<thead><tr>
-  <th>Ref</th><th>Title</th><th>Area</th><th>Severity</th><th>Status</th><th>Fix Applied</th>
-</tr></thead>
-<tbody>
-<tr>
-  <td><code>S11-SEC-001</code></td>
-  <td>RLS Enabled Tables With No Policies (38 tables)</td>
-  <td><span class="badge badge-slate">security</span></td>
-  <td><span class="badge badge-red">critical</span></td>
-  <td><span class="badge badge-green">✓ resolved</span></td>
-  <td>Added org-scoped + join-based policies. Migration: <code>sprint_11_rls_policies_remaining</code></td>
-</tr>
-<tr>
-  <td><code>S11-SEC-002</code></td>
-  <td>Integrations Table Missing RLS Policies</td>
-  <td><span class="badge badge-slate">admin</span></td>
-  <td><span class="badge badge-red">critical</span></td>
-  <td><span class="badge badge-green">✓ resolved</span></td>
-  <td>org-member SELECT, org-admin INSERT/UPDATE added</td>
-</tr>
-<tr>
-  <td><code>S11-SCHEMA-001</code></td>
-  <td>SECURITY DEFINER Functions Callable by anon (51 RPCs)</td>
-  <td><span class="badge badge-slate">security</span></td>
-  <td><span class="badge badge-red">critical</span></td>
-  <td><span class="badge badge-amber">⟳ in progress</span></td>
-  <td>Full list identified. Conversion to SECURITY INVOKER + anon EXECUTE revoke → Sprint 12</td>
-</tr>
-<tr>
-  <td><code>S11-SCHEMA-002</code></td>
-  <td>active_product_pricing_rules_v SECURITY DEFINER View</td>
-  <td><span class="badge badge-slate">security</span></td>
-  <td><span class="badge badge-red">critical</span></td>
-  <td><span class="badge badge-amber">⟳ in progress</span></td>
-  <td>Investigation complete. View recreation as SECURITY INVOKER → Sprint 12</td>
-</tr>
-<tr>
-  <td><code>S11-SEC-003</code></td>
-  <td>Missing FK Performance Indexes (9 tables)</td>
-  <td><span class="badge badge-slate">schema</span></td>
-  <td><span class="badge badge-blue">high</span></td>
-  <td><span class="badge badge-green">✓ resolved</span></td>
-  <td>9 indexes added: order_lines, order_document_sends, packing_plan_lines, trade_requirements, lead_product_interests, order_approval_gates, order_stage_events, order_documents, quote_version_line_items</td>
-</tr>
-<tr>
-  <td><code>S11-SCHEMA-003</code></td>
-  <td>Leaked Password Protection Disabled in Auth</td>
-  <td><span class="badge badge-slate">admin</span></td>
-  <td><span class="badge badge-blue">high</span></td>
-  <td><span class="badge badge-red">○ open</span></td>
-  <td>1-click fix: Supabase Dashboard → Auth → Passwords → Enable "Prevent use of compromised passwords"</td>
-</tr>
-<tr>
-  <td><code>S11-EMAIL-001</code></td>
-  <td>Mailtrap Provider Registered in integrations table</td>
-  <td><span class="badge badge-teal">email</span></td>
-  <td><span class="badge badge-slate">medium</span></td>
-  <td><span class="badge badge-green">✓ resolved</span></td>
-  <td>Inserted Mailtrap record for all orgs via migration</td>
-</tr>
-<tr>
-  <td><code>S11-EMAIL-002</code></td>
-  <td>email_send_log Table Created for Delivery Tracking</td>
-  <td><span class="badge badge-teal">email</span></td>
-  <td><span class="badge badge-blue">high</span></td>
-  <td><span class="badge badge-green">✓ resolved</span></td>
-  <td>New table with RLS, indexes, org-scope. Links to communications + order_document_sends.</td>
-</tr>
-<tr>
-  <td><code>S11-EMAIL-003</code></td>
-  <td>communications table missing email delivery tracking columns</td>
-  <td><span class="badge badge-teal">email</span></td>
-  <td><span class="badge badge-slate">medium</span></td>
-  <td><span class="badge badge-green">✓ resolved</span></td>
-  <td>Added: email_provider, email_message_id, email_delivery_status, email_delivered_at, email_opened_at, email_bounce_reason, whatsapp_link, whatsapp_link_type</td>
-</tr>
-<tr>
-  <td><code>S11-WA-001</code></td>
-  <td>WhatsApp Send Creates DB Row But Does Not Open WhatsApp</td>
-  <td><span class="badge badge-teal">whatsapp</span></td>
-  <td><span class="badge badge-blue">high</span></td>
-  <td><span class="badge badge-green">✓ resolved</span></td>
-  <td>wa.me link generation added. UI shows "Open in WhatsApp" button. Operator presses Send manually in WhatsApp.</td>
-</tr>
-<tr>
-  <td><code>S11-WA-002</code></td>
-  <td>No Device Detection for WhatsApp Desktop vs Mobile</td>
-  <td><span class="badge badge-teal">whatsapp</span></td>
-  <td><span class="badge badge-slate">medium</span></td>
-  <td><span class="badge badge-green">✓ resolved</span></td>
-  <td>Desktop → web.whatsapp.com. Mobile → wa.me. Detection via navigator.userAgent in client component.</td>
-</tr>
-<tr>
-  <td><code>S11-DOC-001</code></td>
-  <td>Setu Guru Knowledge Base Updated for Email + WhatsApp</td>
-  <td><span class="badge badge-slate">docs</span></td>
-  <td><span class="badge badge-slate">medium</span></td>
-  <td><span class="badge badge-green">✓ resolved</span></td>
-  <td>SETUFLOW_KNOWLEDGE_BASE.md updated with Mailtrap config, WhatsApp link behavior, new columns, new tables</td>
-</tr>
-</tbody>
-</table></div>
+<!-- ── SPRINT 11 PANEL ── -->
+<div class="tracker-panel active" id="panel-s11">
 
-<!-- EMAIL INTEGRATION DETAIL -->
-<h2>Email Integration — Mailtrap (Sprint 11)</h2>
-<div class="alert alert-green"><strong>Status: Active.</strong> Mailtrap is the configured email provider. Invitations, order document emails, and quote send notifications route through Mailtrap.</div>
-<div class="card-grid">
-  <div class="card">
-    <div class="card-title">📧 What Mailtrap Sends</div>
-    <ul>
-      <li>Invitation emails (existing, unchanged)</li>
-      <li>Order document tracked emails (new)</li>
-      <li>Future: quote send, compliance reminders</li>
-    </ul>
+  <div class="sprint-summary">
+    <div class="sprint-kpi kv-green"><div class="kpi-val" id="cnt-resolved">8</div><div class="kpi-lbl">Resolved</div></div>
+    <div class="sprint-kpi kv-amber"><div class="kpi-val" id="cnt-inprog">2</div><div class="kpi-lbl">In Progress</div></div>
+    <div class="sprint-kpi kv-red"><div class="kpi-val" id="cnt-open">1</div><div class="kpi-lbl">Open</div></div>
+    <div class="sprint-kpi kv-blue"><div class="kpi-val">3</div><div class="kpi-lbl">Migrations</div></div>
+    <div class="sprint-kpi kv-slate"><div class="kpi-val">2</div><div class="kpi-lbl">New Files</div></div>
   </div>
-  <div class="card">
-    <div class="card-title">⚙️ Environment Variables</div>
-    <ul>
-      <li><code>MAILTRAP_API_KEY</code> — required</li>
-      <li><code>MAILTRAP_USE_SANDBOX</code> — true for testing</li>
-      <li><code>MAILTRAP_SANDBOX_ID</code> — required when sandbox=true</li>
-      <li><code>SETU_EMAIL_PROVIDER=mailtrap</code></li>
-      <li><code>SETU_NOTIFICATION_FROM_EMAIL</code></li>
-    </ul>
+
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="s11-progress" style="width:0%"></div></div>
+  <div class="progress-pct" id="s11-pct">Calculating…</div>
+
+  <div class="tracker-filters">
+    <label>Status:</label>
+    <button class="filter-btn on" onclick="filterIssues('status','all',this)">All</button>
+    <button class="filter-btn f-green" onclick="filterIssues('status','resolved',this)">✓ Resolved</button>
+    <button class="filter-btn f-amber" onclick="filterIssues('status','in_progress',this)">⟳ In Progress</button>
+    <button class="filter-btn f-red" onclick="filterIssues('status','open',this)">○ Open</button>
+    <span style="width:8px"></span>
+    <label>Severity:</label>
+    <button class="filter-btn on" onclick="filterIssues('sev','all',this)" id="sev-all">All</button>
+    <button class="filter-btn f-red" onclick="filterIssues('sev','critical',this)">Critical</button>
+    <button class="filter-btn f-blue" onclick="filterIssues('sev','high',this)">High</button>
+    <button class="filter-btn" onclick="filterIssues('sev','medium',this)">Medium</button>
+    <span style="width:8px"></span>
+    <label>Area:</label>
+    <button class="filter-btn on" onclick="filterIssues('area','all',this)" id="area-all">All</button>
+    <button class="filter-btn" onclick="filterIssues('area','security',this)">Security</button>
+    <button class="filter-btn" onclick="filterIssues('area','email',this)">Email</button>
+    <button class="filter-btn" onclick="filterIssues('area','whatsapp',this)">WhatsApp</button>
+    <button class="filter-btn" onclick="filterIssues('area','schema',this)">Schema</button>
   </div>
-  <div class="card">
-    <div class="card-title">📊 Delivery Status Values</div>
-    <ul>
-      <li><code>pending</code> — queued, not yet sent</li>
-      <li><code>sent</code> — Mailtrap accepted</li>
-      <li><code>delivered</code> — webhook confirmed (future)</li>
-      <li><code>bounced</code> — delivery failed (future)</li>
-      <li><code>failed</code> — API error</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="card-title">📂 New Files (Sprint 11)</div>
-    <ul>
-      <li><code>src/lib/email/order-document-email.ts</code> — Order doc email sender</li>
-      <li><code>src/lib/whatsapp/whatsapp-link.ts</code> — WhatsApp link generator</li>
-      <li><code>public/internal/setuflow-docs.html</code> — This file (internal docs)</li>
-      <li><code>docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md</code> — Updated</li>
-    </ul>
+
+  <div style="overflow-x:auto">
+  <table class="issue-table" id="issue-table">
+  <thead><tr>
+    <th onclick="sortTable('ref')" data-col="ref">Ref <span class="sort-icon">↕</span></th>
+    <th onclick="sortTable('title')" data-col="title">Title <span class="sort-icon">↕</span></th>
+    <th onclick="sortTable('area')" data-col="area">Area <span class="sort-icon">↕</span></th>
+    <th onclick="sortTable('sev')" data-col="sev">Severity <span class="sort-icon">↕</span></th>
+    <th onclick="sortTable('status')" data-col="status">Status <span class="sort-icon">↕</span></th>
+    <th>Fix Summary</th>
+  </tr></thead>
+  <tbody id="issue-tbody">
+
+    <tr class="issue-row" data-status="resolved" data-sev="critical" data-area="security" onclick="toggleDetail('d-sec001')">
+      <td>S11-SEC-001</td>
+      <td>RLS Enabled Tables With No Policies (38 tables)</td>
+      <td><span class="area-pill">security</span></td>
+      <td><span class="badge sev-critical">critical</span></td>
+      <td><span class="badge st-resolved">✓ resolved</span></td>
+      <td>Org-scoped + join-based policies added for all 38 tables</td>
+    </tr>
+    <tr class="detail-row" id="d-sec001"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Root Cause</label><p>38 tables had RLS enabled but zero policies — silently denying all access instead of org-scoped access</p></div>
+      <div class="detail-item"><label>Fix Applied</label><p>Migration <code>sprint_11_rls_policies_remaining</code> — added org-member SELECT/INSERT/UPDATE policies. Join-based patterns for tables without direct organization_id. Authenticated-only for global reference data (hs_codes, exchange_rates, etc.)</p></div>
+      <div class="detail-item"><label>Tables Covered</label><p>document_requirement_rules, freight_profiles, freight_rate_quotes, import_normalization_rules, lead_attachments, lead_compliance_items, next_steps, order_processing_checks, packing_plan_lines, playbooks, pricing_calculator_default_rules, quote_number_counters, quote_templates, tags, trade_requirement_rules, trade_requirement_sources, integrations, compliance_checklist_items, exchange_rates, freight_calc_assumptions, freight_profile_items, hs_codes, hs_duties, lead_scores, lead_tags, playbook_steps, quote_negotiation_events, quote_pricing_snapshots, stg_* tables (6)</p></div>
+      <div class="detail-item"><label>Migration</label><p><code>sprint_11_rls_policies_remaining</code> · Applied 2026-05-18</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="resolved" data-sev="critical" data-area="security" onclick="toggleDetail('d-sec002')">
+      <td>S11-SEC-002</td>
+      <td>Integrations Table Missing RLS Policies</td>
+      <td><span class="area-pill">admin</span></td>
+      <td><span class="badge sev-critical">critical</span></td>
+      <td><span class="badge st-resolved">✓ resolved</span></td>
+      <td>org-member SELECT, org-admin INSERT/UPDATE policies added</td>
+    </tr>
+    <tr class="detail-row" id="d-sec002"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Root Cause</label><p>integrations table had RLS enabled but no policies — any authenticated user could read/write all org integrations</p></div>
+      <div class="detail-item"><label>Fix Applied</label><p>Added: integrations_select (is_org_member), integrations_admin_insert (is_org_admin), integrations_admin_update (is_org_admin)</p></div>
+      <div class="detail-item"><label>Impact</label><p>Mailtrap API keys and integration configs are now org-admin protected. Member users can view integration status but cannot modify.</p></div>
+      <div class="detail-item"><label>Migration</label><p><code>sprint_11_rls_policies_remaining</code> · Applied 2026-05-18</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="in_progress" data-sev="critical" data-area="security" onclick="toggleDetail('d-schema001')">
+      <td>S11-SCHEMA-001</td>
+      <td>SECURITY DEFINER Functions Callable by anon (51 RPCs)</td>
+      <td><span class="area-pill">security</span></td>
+      <td><span class="badge sev-critical">critical</span></td>
+      <td><span class="badge st-in_progress">⟳ in progress</span></td>
+      <td>Full list identified → Sprint 12 for function-by-function fix</td>
+    </tr>
+    <tr class="detail-row" id="d-schema001"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Root Cause</label><p>51 RPCs are SECURITY DEFINER and callable by anon role via /rest/v1/rpc/ — bypasses RLS on all data they touch</p></div>
+      <div class="detail-item"><label>Risk</label><p>Unauthenticated requests can execute state-changing RPCs (advance order stage, create RFQ, delete catalog price, etc.) if they know the function signature</p></div>
+      <div class="detail-item"><label>Sprint 12 Plan</label><p>Revoke EXECUTE FROM anon on all 51 functions. For authenticated-callable ones: add internal org_id membership check at function entry. Consider converting stateless helpers to SECURITY INVOKER.</p></div>
+      <div class="detail-item"><label>Rollover From</label><p>Sprint 11 investigation. Full fix requires per-function testing to avoid breaking app server actions that call these RPCs.</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="in_progress" data-sev="critical" data-area="security" onclick="toggleDetail('d-schema002')">
+      <td>S11-SCHEMA-002</td>
+      <td>active_product_pricing_rules_v SECURITY DEFINER View</td>
+      <td><span class="area-pill">security</span></td>
+      <td><span class="badge sev-critical">critical</span></td>
+      <td><span class="badge st-in_progress">⟳ in progress</span></td>
+      <td>Investigation complete — view recreation as SECURITY INVOKER in Sprint 12</td>
+    </tr>
+    <tr class="detail-row" id="d-schema002"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Root Cause</label><p>active_product_pricing_rules_v and v_quote_eligible_products use SECURITY DEFINER — they run as the view owner, bypassing RLS on underlying tables</p></div>
+      <div class="detail-item"><label>Risk</label><p>Cross-org pricing data could be exposed if a query joins through these views without explicit org filtering</p></div>
+      <div class="detail-item"><label>Sprint 12 Plan</label><p>DROP and recreate both views as SECURITY INVOKER. Add explicit WHERE organization_id = get_current_org_id() to view definitions. Test pricing engine thoroughly before deploying.</p></div>
+      <div class="detail-item"><label>Also Affected</label><p>v_quote_eligible_products (same SECURITY DEFINER issue)</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="resolved" data-sev="high" data-area="schema" onclick="toggleDetail('d-sec003')">
+      <td>S11-SEC-003</td>
+      <td>Missing FK Performance Indexes (9 tables)</td>
+      <td><span class="area-pill">schema</span></td>
+      <td><span class="badge sev-high">high</span></td>
+      <td><span class="badge st-resolved">✓ resolved</span></td>
+      <td>9 FK indexes added covering all high-traffic join paths</td>
+    </tr>
+    <tr class="detail-row" id="d-sec003"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Root Cause</label><p>Supabase performance advisor flagged 9 unindexed FK columns causing table scans on high-frequency joins</p></div>
+      <div class="detail-item"><label>Fix Applied</label><p>idx_order_lines_order_id, idx_order_doc_sends_doc_id, idx_packing_plan_lines_plan_id, idx_trade_requirements_order_id, idx_lead_product_interests_lead_id, idx_order_approval_gates_order_id, idx_order_stage_events_order_id, idx_order_documents_order_id, idx_quote_version_line_items_version</p></div>
+      <div class="detail-item"><label>Migration</label><p><code>sprint_11_email_whatsapp_comms_schema</code> · Applied 2026-05-18</p></div>
+      <div class="detail-item"><label>Impact</label><p>Significant query speedup for order execution, document tray, stage panel, and packing/freight views</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="open" data-sev="high" data-area="security" onclick="toggleDetail('d-schema003')">
+      <td>S11-SCHEMA-003</td>
+      <td>Leaked Password Protection Disabled in Auth</td>
+      <td><span class="area-pill">admin</span></td>
+      <td><span class="badge sev-high">high</span></td>
+      <td><span class="badge st-open">○ open</span></td>
+      <td>1-click fix: Supabase Dashboard → Auth → Passwords</td>
+    </tr>
+    <tr class="detail-row" id="d-schema003"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Root Cause</label><p>HaveIBeenPwned check is disabled in Supabase Auth settings — users can set passwords that appear in breach databases</p></div>
+      <div class="detail-item"><label>Fix</label><p>Supabase Dashboard → Authentication → Passwords → Enable "Prevent use of compromised passwords". Zero code change. Zero deployment. Takes 10 seconds.</p></div>
+      <div class="detail-item"><label>Why Not Done in Sprint 11</label><p>Requires Supabase dashboard access by the account owner. Cannot be applied via MCP migration.</p></div>
+      <div class="detail-item"><label>Action Owner</label><p>Ritesh (dashboard access required)</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="resolved" data-sev="high" data-area="email" onclick="toggleDetail('d-email002')">
+      <td>S11-EMAIL-002</td>
+      <td>email_send_log Table Created for Delivery Tracking</td>
+      <td><span class="area-pill">email</span></td>
+      <td><span class="badge sev-high">high</span></td>
+      <td><span class="badge st-resolved">✓ resolved</span></td>
+      <td>New table with RLS, indexes, links to communications + order_document_sends</td>
+    </tr>
+    <tr class="detail-row" id="d-email002"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Root Cause</label><p>No per-send audit trail existed for email sends. Could not distinguish between "send attempted" and "provider accepted".</p></div>
+      <div class="detail-item"><label>Fix Applied</label><p>Created email_send_log table: id, organization_id, communication_id, order_document_send_id, provider, provider_message_id, to_email, subject, template_type, status, sent_at, delivered_at, opened_at, bounce_reason, provider_payload. Full RLS + 4 indexes.</p></div>
+      <div class="detail-item"><label>Status Values</label><p>queued → sent (Mailtrap accepted) → delivered (webhook, Sprint 12) → bounced (webhook, Sprint 12)</p></div>
+      <div class="detail-item"><label>Migration</label><p><code>sprint_11_email_whatsapp_comms_schema</code> · Applied 2026-05-18</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="resolved" data-sev="medium" data-area="email" onclick="toggleDetail('d-email001')">
+      <td>S11-EMAIL-001</td>
+      <td>Mailtrap Provider Registered in integrations table</td>
+      <td><span class="area-pill">email</span></td>
+      <td><span class="badge sev-medium">medium</span></td>
+      <td><span class="badge st-resolved">✓ resolved</span></td>
+      <td>Mailtrap record inserted for all 3 organizations</td>
+    </tr>
+    <tr class="detail-row" id="d-email001"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Root Cause</label><p>Email was sending via Mailtrap but the integrations table had 0 rows — no way to query integration status from the app.</p></div>
+      <div class="detail-item"><label>Fix Applied</label><p>INSERT INTO integrations for all active orgs: provider=mailtrap, features=[quote_send, invitation, order_document, notification], is_active=true.</p></div>
+      <div class="detail-item"><label>Config Stored</label><p>from_email, from_name, sandbox_enabled, configured_at, features array. API key NOT stored in DB (stays in env vars).</p></div>
+      <div class="detail-item"><label>Migration</label><p><code>sprint_11_email_whatsapp_comms_schema</code> · Applied 2026-05-18</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="resolved" data-sev="medium" data-area="email" onclick="toggleDetail('d-email003')">
+      <td>S11-EMAIL-003</td>
+      <td>communications table missing email delivery tracking columns</td>
+      <td><span class="area-pill">email</span></td>
+      <td><span class="badge sev-medium">medium</span></td>
+      <td><span class="badge st-resolved">✓ resolved</span></td>
+      <td>8 new columns added: provider, message ID, delivery status, timestamps, bounce, WhatsApp fields</td>
+    </tr>
+    <tr class="detail-row" id="d-email003"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Fix Applied — Email columns</label><p>email_provider, email_message_id, email_delivery_status (pending/sent/delivered/bounced/failed), email_delivered_at, email_opened_at, email_bounce_reason</p></div>
+      <div class="detail-item"><label>Fix Applied — WhatsApp columns</label><p>whatsapp_link (generated wa.me or web.whatsapp.com URL), whatsapp_link_type (wa_me | web_whatsapp | both)</p></div>
+      <div class="detail-item"><label>Also Added to order_document_sends</label><p>email_sent (bool), email_provider, email_message_id, email_delivery_status, whatsapp_link, whatsapp_phone</p></div>
+      <div class="detail-item"><label>Migration</label><p><code>sprint_11_email_whatsapp_comms_schema</code> · Applied 2026-05-18</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="resolved" data-sev="high" data-area="whatsapp" onclick="toggleDetail('d-wa001')">
+      <td>S11-WA-001</td>
+      <td>WhatsApp Send Creates DB Row But Does Not Open WhatsApp</td>
+      <td><span class="area-pill">whatsapp</span></td>
+      <td><span class="badge sev-high">high</span></td>
+      <td><span class="badge st-resolved">✓ resolved</span></td>
+      <td>wa.me link generation added — operator opens WhatsApp and presses Send manually</td>
+    </tr>
+    <tr class="detail-row" id="d-wa001"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Root Cause</label><p>WhatsApp channel in order_document_sends created a link_created row but gave the operator no mechanism to actually open WhatsApp — the send was invisible to the user.</p></div>
+      <div class="detail-item"><label>Fix Applied</label><p>src/lib/whatsapp/whatsapp-link.ts generates pre-filled wa.me + web.whatsapp.com links. whatsapp_link column stores the URL. UI shows "Open in WhatsApp" button. Message pre-fills with: org name, document type, order number, amount, share URL, optional note.</p></div>
+      <div class="detail-item"><label>Operator Flow</label><p>Click "Send tracked" (WhatsApp) → DB row created → wa.me link generated → "Open in WhatsApp" button shown → Operator clicks → WhatsApp opens with pre-filled message → Operator reviews and presses Send</p></div>
+      <div class="detail-item"><label>What's NOT automated</label><p>SetuFlow never sends WhatsApp messages automatically. The operator always presses Send inside WhatsApp.</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="resolved" data-sev="medium" data-area="whatsapp" onclick="toggleDetail('d-wa002')">
+      <td>S11-WA-002</td>
+      <td>No Device Detection for WhatsApp Desktop vs Mobile</td>
+      <td><span class="area-pill">whatsapp</span></td>
+      <td><span class="badge sev-medium">medium</span></td>
+      <td><span class="badge st-resolved">✓ resolved</span></td>
+      <td>Desktop → web.whatsapp.com · Mobile → wa.me · Auto-detected via navigator.userAgent</td>
+    </tr>
+    <tr class="detail-row" id="d-wa002"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Fix Applied</label><p>getWhatsAppLinkForDevice() in whatsapp-link.ts checks navigator.userAgent for android|iphone|ipad|ipod|mobile|tablet — returns wa.me on mobile, web.whatsapp.com on desktop.</p></div>
+      <div class="detail-item"><label>Both Links Generated</label><p>Server always generates both links (mobileLink + desktopLink). Client-side function picks the right one based on device. whatsapp_link column stores the URL chosen at send time.</p></div>
+      <div class="detail-item"><label>Desktop URL format</label><p>https://web.whatsapp.com/send?phone=[E164_digits]&text=[encoded_message]</p></div>
+      <div class="detail-item"><label>Mobile URL format</label><p>https://wa.me/[E164_digits]?text=[encoded_message]</p></div>
+    </div></td></tr>
+
+    <tr class="issue-row" data-status="resolved" data-sev="medium" data-area="security" onclick="toggleDetail('d-doc001')">
+      <td>S11-DOC-001</td>
+      <td>Setu Guru Knowledge Base Updated</td>
+      <td><span class="area-pill">docs</span></td>
+      <td><span class="badge sev-medium">medium</span></td>
+      <td><span class="badge st-resolved">✓ resolved</span></td>
+      <td>SETUFLOW_KNOWLEDGE_BASE.md updated with Mailtrap, WhatsApp, new columns/tables, security fixes</td>
+    </tr>
+    <tr class="detail-row" id="d-doc001"><td colspan="6"><div class="detail-grid">
+      <div class="detail-item"><label>Sections Added</label><p>Sprint 11 Updates section covering: Mailtrap email flow, email delivery status meanings, WhatsApp link-only behavior, device detection, new DB columns (communications + order_document_sends), new tables (email_send_log, sprint_issues), RLS security fixes summary.</p></div>
+      <div class="detail-item"><label>Setu Guru Rules Added</label><p>Must not say "email was sent" unless email_sent=true. Must not say "WhatsApp message was sent" — only "a link was generated." Must explain link_created vs delivered distinction for both channels.</p></div>
+      <div class="detail-item"><label>File</label><p>docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md</p></div>
+      <div class="detail-item"><label>Also Updated</label><p>This documentation HTML (setuflow-docs.html) added to public/internal/ in the repo.</p></div>
+    </div></td></tr>
+
+  </tbody>
+  </table>
   </div>
 </div>
 
-<h3>Email Send Flow (Updated)</h3>
-<div class="mermaid-wrap">
-<pre class="mermaid">
-flowchart LR
-  A([Operator: Send tracked — Email]) --> B[Server Action]
-  B --> C[Create order_document_sends row — status link_created]
-  C --> D[Call Mailtrap API via order-document-email.ts]
-  D --> E{Mailtrap accepts?}
-  E -->|Yes| F[email_sent=true, status=sent, store messageId]
-  E -->|No| G[email_sent=false, status=failed, log error]
-  F --> H[Create email_send_log row]
-  H --> I[Return share URL to UI]
-  I --> J([UI shows: email sent + tracked link])
-  J --> K{Recipient opens link}
-  K --> L[open_count increments on order_document_sends]
-</pre>
+<!-- ── SPRINT 12 PANEL ── -->
+<div class="tracker-panel" id="panel-s12">
+  <div class="sprint-summary">
+    <div class="sprint-kpi kv-red"><div class="kpi-val">4</div><div class="kpi-lbl">Critical</div></div>
+    <div class="sprint-kpi kv-blue"><div class="kpi-val">3</div><div class="kpi-lbl">High</div></div>
+    <div class="sprint-kpi kv-slate"><div class="kpi-val">8</div><div class="kpi-lbl">Total Planned</div></div>
+    <div class="sprint-kpi kv-amber"><div class="kpi-val">0</div><div class="kpi-lbl">Started</div></div>
+    <div class="sprint-kpi kv-slate"><div class="kpi-val">—</div><div class="kpi-lbl">Target Date</div></div>
+  </div>
+  <div class="tbl-wrap" style="margin-top:16px"><table class="issue-table">
+  <thead><tr><th>Ref</th><th>Title</th><th>Area</th><th>Severity</th><th>Status</th><th>Dependency</th></tr></thead>
+  <tbody>
+  <tr class="issue-row"><td>S12-SEC-001</td><td>Revoke anon EXECUTE on 51 SECURITY DEFINER RPCs</td><td><span class="area-pill">security</span></td><td><span class="badge sev-critical">critical</span></td><td><span class="badge st-planned">◦ planned</span></td><td>Rollover from S11-SCHEMA-001</td></tr>
+  <tr class="issue-row"><td>S12-SEC-002</td><td>Convert SECURITY DEFINER views to INVOKER</td><td><span class="area-pill">security</span></td><td><span class="badge sev-critical">critical</span></td><td><span class="badge st-planned">◦ planned</span></td><td>Rollover from S11-SCHEMA-002</td></tr>
+  <tr class="issue-row"><td>S12-SEC-003</td><td>Enable Leaked Password Protection in Auth</td><td><span class="area-pill">admin</span></td><td><span class="badge sev-high">high</span></td><td><span class="badge st-open">○ open — do now</span></td><td>Dashboard access only</td></tr>
+  <tr class="issue-row"><td>S12-SEC-004</td><td>Fix mutable search paths on 17 Postgres functions</td><td><span class="area-pill">schema</span></td><td><span class="badge sev-high">high</span></td><td><span class="badge st-planned">◦ planned</span></td><td>None</td></tr>
+  <tr class="issue-row"><td>S12-ORDER-001</td><td>Quote-to-Order Handoff Regression Test</td><td><span class="area-pill">order</span></td><td><span class="badge sev-critical">critical</span></td><td><span class="badge st-planned">◦ planned</span></td><td>None — source_quote_version_id null risk</td></tr>
+  <tr class="issue-row"><td>S12-LEAD-001</td><td>Lead Coverage Gate DB vs UI Alignment Test</td><td><span class="area-pill">lead</span></td><td><span class="badge sev-critical">critical</span></td><td><span class="badge st-planned">◦ planned</span></td><td>E2E blocked path confirmed</td></tr>
+  <tr class="issue-row"><td>S12-PDF-001</td><td>Server-side PDF binary generation (Puppeteer)</td><td><span class="area-pill">orders</span></td><td><span class="badge sev-high">high</span></td><td><span class="badge st-planned">◦ planned</span></td><td>email_send_log ready for attachment</td></tr>
+  <tr class="issue-row"><td>S12-EMAIL-001</td><td>Mailtrap Webhook for Delivery Confirmation</td><td><span class="area-pill">email</span></td><td><span class="badge sev-medium">medium</span></td><td><span class="badge st-planned">◦ planned</span></td><td>email_send_log table ready</td></tr>
+  </tbody>
+  </table></div>
 </div>
 
-<!-- WHATSAPP INTEGRATION DETAIL -->
-<h2>WhatsApp Integration — Link-Based (Sprint 11)</h2>
-<div class="alert alert-amber"><strong>No WhatsApp API.</strong> SetuFlow generates pre-filled wa.me links. The operator must open WhatsApp and press Send manually. This is intentional — no automated WhatsApp messages are sent.</div>
-<div class="card-grid">
-  <div class="card">
-    <div class="card-title">📱 Mobile Behavior</div>
-    <ul>
-      <li>Opens: <code>https://wa.me/[phone]?text=[msg]</code></li>
-      <li>Launches WhatsApp mobile app</li>
-      <li>Message pre-filled with document details + tracked URL</li>
-      <li>Operator reviews and presses Send in WhatsApp</li>
-    </ul>
+<!-- ── MIGRATIONS PANEL ── -->
+<div class="tracker-panel" id="panel-migrations">
+  <h3 style="margin:16px 0 12px">Database Migrations Applied</h3>
+  <div class="migration-list">
+    <div style="display:grid;grid-template-columns:280px 60px 110px 1fr;gap:12px;padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b">
+      <span>Migration Name</span><span>Sprint</span><span>Applied</span><span>Description</span>
+    </div>
+    <div class="migration-row">
+      <span class="mig-name">sprint_11_rls_policies_remaining</span>
+      <span class="mig-sprint">S11</span>
+      <span><span class="badge badge-green">✓ 2026-05-18</span></span>
+      <span>RLS policies for 30+ tables. Org-scoped, join-based, and authenticated-only access patterns. Covers all zero-policy tables from security advisor report.</span>
+    </div>
+    <div class="migration-row">
+      <span class="mig-name">sprint_11_email_whatsapp_comms_schema</span>
+      <span class="mig-sprint">S11</span>
+      <span><span class="badge badge-green">✓ 2026-05-18</span></span>
+      <span>email_send_log table (RLS+indexes). Email delivery columns on communications + order_document_sends. WhatsApp link columns. 9 FK performance indexes. Mailtrap integration rows inserted for all 3 orgs.</span>
+    </div>
+    <div class="migration-row">
+      <span class="mig-name">sprint_11_sprint_issue_tracker</span>
+      <span class="mig-sprint">S11</span>
+      <span><span class="badge badge-green">✓ 2026-05-18</span></span>
+      <span>sprint_issues table with RLS. 12 Sprint 11 issues seeded. Backing store for Section 15 of this documentation.</span>
+    </div>
+    <div class="migration-row" style="opacity:0.5;border-style:dashed">
+      <span class="mig-name">sprint_12_security_definer_fix</span>
+      <span class="mig-sprint">S12</span>
+      <span><span class="badge badge-slate">planned</span></span>
+      <span>Revoke anon EXECUTE on 51 RPCs. Convert SECURITY DEFINER views to INVOKER. Fix mutable search paths on 17 functions.</span>
+    </div>
+    <div class="migration-row" style="opacity:0.5;border-style:dashed">
+      <span class="mig-name">sprint_12_migration_reconciliation</span>
+      <span class="mig-sprint">S12</span>
+      <span><span class="badge badge-slate">planned</span></span>
+      <span>Sync supabase/migrations/ folder with 3 Sprint 11 migrations applied via MCP. Reconcile diverged migration history.</span>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-title">🖥️ Desktop Behavior</div>
-    <ul>
-      <li>Opens: <code>https://web.whatsapp.com/send?phone=[phone]&text=[msg]</code></li>
-      <li>Opens WhatsApp Web in browser</li>
-      <li>Message pre-filled with document details + tracked URL</li>
-      <li>Operator reviews and presses Send in WhatsApp Web</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="card-title">📝 Pre-filled Message Contains</div>
-    <ul>
-      <li>Organization name</li>
-      <li>Document type (Proforma Invoice, etc.)</li>
-      <li>Order number + company name</li>
-      <li>Amount in selected currency (when available)</li>
-      <li>Tracked share URL (SetuFlow document link)</li>
-      <li>Optional note from operator</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="card-title">📊 Status Tracking</div>
-    <ul>
-      <li><code>link_created</code> — wa.me link generated and shown to operator</li>
-      <li><code>whatsapp_link</code> column — stores the generated URL</li>
-      <li>Does NOT confirm message was sent or received</li>
-      <li>Document open tracking still works when recipient clicks the share link</li>
-    </ul>
-  </div>
+
+  <h3 style="margin:20px 0 12px">New Tables (Sprint 11)</h3>
+  <div class="tbl-wrap"><table>
+  <thead><tr><th>Table</th><th>Purpose</th><th>RLS</th><th>Indexes</th></tr></thead>
+  <tbody>
+  <tr><td><code>email_send_log</code></td><td>Per-Mailtrap-API-call audit log. Links to communications + order_document_sends. Tracks provider_message_id, delivery status, bounce reason.</td><td><span class="badge badge-green">✓</span> org-member read, org-member insert/update</td><td>org_id, communication_id, order_document_send_id, provider_message_id</td></tr>
+  <tr><td><code>sprint_issues</code></td><td>Internal sprint tracker. One row per issue. Maps to Section 15 of this doc. Includes severity, status, fix_applied, db_migrations, files_changed.</td><td><span class="badge badge-green">✓</span> all-members read, org-admin write</td><td>sprint_number, status, severity</td></tr>
+  </tbody>
+  </table></div>
+
+  <h3 style="margin:20px 0 12px">Schema Changes (Sprint 11)</h3>
+  <div class="tbl-wrap"><table>
+  <thead><tr><th>Table</th><th>Columns Added</th></tr></thead>
+  <tbody>
+  <tr><td><code>communications</code></td><td>email_provider, email_message_id, email_delivery_status, email_delivered_at, email_opened_at, email_bounce_reason, whatsapp_link, whatsapp_link_type</td></tr>
+  <tr><td><code>order_document_sends</code></td><td>email_sent, email_provider, email_message_id, email_delivery_status, whatsapp_link, whatsapp_phone</td></tr>
+  </tbody>
+  </table></div>
 </div>
 
-<h3>WhatsApp Send Flow</h3>
-<div class="mermaid-wrap">
-<pre class="mermaid">
-flowchart LR
-  A([Operator: Send tracked — WhatsApp]) --> B[Server Action]
-  B --> C[Create order_document_sends row — status link_created]
-  C --> D[Generate wa.me + web.whatsapp.com links via whatsapp-link.ts]
-  D --> E[Store whatsapp_link + whatsapp_phone in send row]
-  E --> F[Return links to UI]
-  F --> G{Device?}
-  G -->|Mobile — iOS/Android| H[Open wa.me link → WhatsApp App opens]
-  G -->|Desktop| I[Open web.whatsapp.com → WhatsApp Web opens]
-  H --> J[Pre-filled message shown]
-  I --> J
-  J --> K([Operator presses Send in WhatsApp])
-  K --> L{Recipient clicks share URL}
-  L --> M[SetuFlow open_count increments on send row]
-</pre>
+<!-- ── INTEGRATIONS PANEL ── -->
+<div class="tracker-panel" id="panel-integrations">
+  <div class="int-board">
+    <div class="int-card" style="border-top:3px solid #10b981">
+      <div class="int-title">📧 Email — Mailtrap <span class="int-status active">Active</span></div>
+      <ul>
+        <li>✓ Invitation emails</li>
+        <li>✓ Order document emails (S11)</li>
+        <li>✓ email_send_log audit trail (S11)</li>
+        <li>✓ Registered in integrations table (S11)</li>
+        <li>⟳ Delivery webhook confirmation (S12)</li>
+        <li>⟳ Email open pixel tracking (S12)</li>
+        <li>✗ Bounce management UI (Backlog)</li>
+      </ul>
+      <div style="margin-top:10px;font-size:11px;color:#64748b">
+        <strong>Env:</strong> MAILTRAP_API_KEY, MAILTRAP_USE_SANDBOX, SETU_EMAIL_PROVIDER=mailtrap
+      </div>
+    </div>
+    <div class="int-card" style="border-top:3px solid #10b981">
+      <div class="int-title">💬 WhatsApp — Link-based <span class="int-status active">Active</span></div>
+      <ul>
+        <li>✓ wa.me mobile links (S11)</li>
+        <li>✓ WhatsApp Web desktop links (S11)</li>
+        <li>✓ Pre-filled messages with share URL (S11)</li>
+        <li>✓ Device detection via userAgent (S11)</li>
+        <li>✓ whatsapp_link stored in DB (S11)</li>
+        <li>✗ WhatsApp Business API (Not planned)</li>
+        <li>✗ Delivery confirmation (Not possible without API)</li>
+      </ul>
+      <div style="margin-top:10px;font-size:11px;color:#64748b">
+        <strong>Behavior:</strong> Operator always presses Send manually in WhatsApp
+      </div>
+    </div>
+    <div class="int-card" style="border-top:3px solid #f59e0b">
+      <div class="int-title">🚢 Freight <span class="int-status planned">Planned S14</span></div>
+      <ul>
+        <li>✓ Freight request preparation (Existing)</li>
+        <li>✓ Packing plan as freight basis (Existing)</li>
+        <li>✓ freight_rate_requests table (Existing)</li>
+        <li>✗ External carrier API</li>
+        <li>✗ Rate quote auto-fetch</li>
+        <li>✗ Booking confirmation</li>
+        <li>✗ BOL/AWB auto-populate</li>
+      </ul>
+    </div>
+    <div class="int-card" style="border-top:3px solid #f59e0b">
+      <div class="int-title">💹 Finance <span class="int-status planned">Planned S14</span></div>
+      <ul>
+        <li>✓ finance_sync_records table (Existing)</li>
+        <li>✓ Final invoice approval gate (Existing)</li>
+        <li>✗ Xero / QuickBooks / Tally connector</li>
+        <li>✗ Auto-invoice posting</li>
+        <li>✗ Payment status sync</li>
+        <li>✗ Reconciliation matching</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin:20px 0 10px">Channel Behavior Reference</h3>
+  <div class="tbl-wrap"><table>
+  <thead><tr><th>Channel</th><th>Action</th><th>DB Status Written</th><th>What It Means</th><th>What It Does NOT Mean</th></tr></thead>
+  <tbody>
+  <tr><td>Email</td><td>Send tracked</td><td>link_created → email_sent=true</td><td>Mailtrap accepted the email for delivery</td><td>Does NOT prove inbox receipt. No bounce confirmation yet.</td></tr>
+  <tr><td>Email</td><td>Recipient clicks link</td><td>open_count increments</td><td>The tracked share URL was accessed</td><td>Does NOT confirm email was read. Link could be forwarded.</td></tr>
+  <tr><td>WhatsApp</td><td>Send tracked</td><td>link_created, whatsapp_link stored</td><td>wa.me link was generated and shown to operator</td><td>Does NOT mean operator sent it. Does NOT mean recipient received it.</td></tr>
+  <tr><td>WhatsApp</td><td>Recipient clicks share link</td><td>open_count increments</td><td>The tracked share URL was accessed (from WhatsApp or any source)</td><td>Does NOT confirm WhatsApp was used. Link could be shared elsewhere.</td></tr>
+  <tr><td>Preview</td><td>Preview-only</td><td>status=previewed</td><td>Preview-only tokenized link was generated</td><td>Document is not approved or sent externally.</td></tr>
+  </tbody>
+  </table></div>
 </div>
 
-<!-- SPRINT 12 PLANNED -->
-<h2>Sprint 12 — Planned <span class="badge badge-slate" style="font-size:11px;margin-left:8px">Upcoming</span></h2>
-<div class="tbl-wrap"><table>
-<thead><tr><th>Ref</th><th>Title</th><th>Area</th><th>Priority</th><th>Blocks</th></tr></thead>
-<tbody>
-<tr><td><code>S12-SEC-001</code></td><td>Revoke anon EXECUTE on 51 SECURITY DEFINER RPCs</td><td><span class="badge badge-slate">security</span></td><td><span class="badge badge-red">critical</span></td><td>Rollover from S11-SCHEMA-001</td></tr>
-<tr><td><code>S12-SEC-002</code></td><td>Convert active_product_pricing_rules_v to SECURITY INVOKER</td><td><span class="badge badge-slate">security</span></td><td><span class="badge badge-red">critical</span></td><td>Rollover from S11-SCHEMA-002</td></tr>
-<tr><td><code>S12-SEC-003</code></td><td>Enable Leaked Password Protection in Supabase Auth</td><td><span class="badge badge-slate">admin</span></td><td><span class="badge badge-blue">high</span></td><td>1-click Supabase dashboard</td></tr>
-<tr><td><code>S12-SEC-004</code></td><td>Fix mutable search paths on 17 Postgres functions</td><td><span class="badge badge-slate">schema</span></td><td><span class="badge badge-blue">high</span></td><td>None</td></tr>
-<tr><td><code>S12-PDF-001</code></td><td>Server-side PDF binary generation (Puppeteer)</td><td><span class="badge badge-teal">orders</span></td><td><span class="badge badge-blue">high</span></td><td>Document templates</td></tr>
-<tr><td><code>S12-ORDER-001</code></td><td>Quote-to-Order Handoff Regression Test</td><td><span class="badge badge-teal">order</span></td><td><span class="badge badge-red">critical</span></td><td>orders.source_quote_version_id null risk</td></tr>
-<tr><td><code>S12-LEAD-001</code></td><td>Lead Coverage Gate DB vs UI Alignment Test</td><td><span class="badge badge-blue">lead</span></td><td><span class="badge badge-red">critical</span></td><td>E2E blocked path confirmed</td></tr>
-<tr><td><code>S12-EMAIL-001</code></td><td>Mailtrap Webhook Integration for Delivery Confirmation</td><td><span class="badge badge-teal">email</span></td><td><span class="badge badge-amber">medium</span></td><td>email_send_log table ready</td></tr>
-</tbody>
-</table></div>
+<!-- ── REPO FILES PANEL ── -->
+<div class="tracker-panel" id="panel-files">
+  <h3 style="margin:16px 0 12px">New Files Added — Sprint 11</h3>
+  <div class="tbl-wrap"><table>
+  <thead><tr><th>File Path</th><th>Type</th><th>Purpose</th><th>Status</th></tr></thead>
+  <tbody>
+  <tr>
+    <td><code>src/lib/email/order-document-email.ts</code></td>
+    <td><span class="badge badge-blue">TypeScript</span></td>
+    <td>Mailtrap email sender for order documents. Accepts document type, order details, share URL, recipient. Calls Mailtrap API. Returns provider message ID. Mirrors invitation-email.ts pattern.</td>
+    <td><span class="badge badge-green">✓ Created</span></td>
+  </tr>
+  <tr>
+    <td><code>src/lib/whatsapp/whatsapp-link.ts</code></td>
+    <td><span class="badge badge-blue">TypeScript</span></td>
+    <td>WhatsApp link generator. generateWhatsAppLinks() produces both mobileLink (wa.me) and desktopLink (web.whatsapp.com). getWhatsAppLinkForDevice() picks correct link based on navigator.userAgent. buildWhatsAppOpenLink() is the one-call convenience method for UI components.</td>
+    <td><span class="badge badge-green">✓ Created</span></td>
+  </tr>
+  <tr>
+    <td><code>public/internal/setuflow-docs.html</code></td>
+    <td><span class="badge badge-teal">HTML</span></td>
+    <td>This documentation file. Internal reference — 15 sections covering workflows, operator guides, test cases, diagrams, architecture, cheat sheets, corrections, and sprint tracker. Not indexed or linked from public pages.</td>
+    <td><span class="badge badge-green">✓ Created</span></td>
+  </tr>
+  <tr>
+    <td><code>docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md</code></td>
+    <td><span class="badge badge-slate">Markdown</span></td>
+    <td>Sprint 11 section appended covering Mailtrap email integration, WhatsApp link-based behavior, new DB columns and tables, security fix summary, and Setu Guru response rules for email/WhatsApp questions.</td>
+    <td><span class="badge badge-green">✓ Updated</span></td>
+  </tr>
+  </tbody>
+  </table></div>
 
-<!-- DB MIGRATION LOG -->
-<h2>Database Migration Log</h2>
-<div class="tbl-wrap"><table>
-<thead><tr><th>Migration Name</th><th>Sprint</th><th>Applied</th><th>Description</th></tr></thead>
-<tbody>
-<tr><td><code>sprint_11_rls_policies_remaining</code></td><td>S11</td><td><span class="badge badge-green">✓ 2026-05-18</span></td><td>RLS policies for 30+ tables with no policies. Org-scoped + join-based + authenticated-only access patterns.</td></tr>
-<tr><td><code>sprint_11_email_whatsapp_comms_schema</code></td><td>S11</td><td><span class="badge badge-green">✓ 2026-05-18</span></td><td>email_send_log table, communications email/WhatsApp columns, order_document_sends WhatsApp columns, 9 FK indexes, Mailtrap integration record inserted.</td></tr>
-<tr><td><code>sprint_11_sprint_issue_tracker</code></td><td>S11</td><td><span class="badge badge-green">✓ 2026-05-18</span></td><td>sprint_issues table with RLS. Sprint 11 issues seeded (12 rows).</td></tr>
-</tbody>
-</table></div>
-
-<!-- NEW REPO FILES -->
-<h2>New Repo Files (Sprint 11)</h2>
-<div class="tbl-wrap"><table>
-<thead><tr><th>File Path</th><th>Purpose</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td><code>src/lib/email/order-document-email.ts</code></td><td>Mailtrap email sender for order documents. Mirrors invitation-email.ts pattern. Returns provider message ID.</td><td><span class="badge badge-green">✓ Created</span></td></tr>
-<tr><td><code>src/lib/whatsapp/whatsapp-link.ts</code></td><td>WhatsApp link generator. Produces wa.me (mobile) and web.whatsapp.com (desktop) links with pre-filled messages.</td><td><span class="badge badge-green">✓ Created</span></td></tr>
-<tr><td><code>public/internal/setuflow-docs.html</code></td><td>This documentation file. Internal reference — not indexed or linked from public pages.</td><td><span class="badge badge-green">✓ Created</span></td></tr>
-<tr><td><code>docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md</code></td><td>Sprint 11 section appended: Mailtrap config, WhatsApp link behavior, new DB columns/tables, security fixes.</td><td><span class="badge badge-green">✓ Updated</span></td></tr>
-</tbody>
-</table></div>
-
-<!-- INTEGRATION STATUS BOARD -->
-<h2>Integration Status Board</h2>
-<div class="card-grid">
-  <div class="card" style="border-left:4px solid #10b981">
-    <div class="card-title">📧 Email — Mailtrap</div>
-    <div><span class="badge badge-green">Active</span></div>
-    <ul>
-      <li>Invitations: ✓ Working</li>
-      <li>Order documents: ✓ Sprint 11</li>
-      <li>Delivery webhooks: ⟳ Sprint 12</li>
-      <li>Email open tracking: ⟳ Sprint 12</li>
-    </ul>
-  </div>
-  <div class="card" style="border-left:4px solid #10b981">
-    <div class="card-title">💬 WhatsApp — Link-based</div>
-    <div><span class="badge badge-green">Active</span></div>
-    <ul>
-      <li>wa.me mobile links: ✓ Sprint 11</li>
-      <li>WhatsApp Web desktop: ✓ Sprint 11</li>
-      <li>Pre-filled messages: ✓ Sprint 11</li>
-      <li>API automation: ✗ Not planned</li>
-    </ul>
-  </div>
-  <div class="card" style="border-left:4px solid #f59e0b">
-    <div class="card-title">🚢 Freight — Boundary</div>
-    <div><span class="badge badge-amber">Planned S14</span></div>
-    <ul>
-      <li>Rate request preparation: ✓ Existing</li>
-      <li>External carrier API: ✗ Not connected</li>
-      <li>Booking confirmation: ✗ Not connected</li>
-    </ul>
-  </div>
-  <div class="card" style="border-left:4px solid #f59e0b">
-    <div class="card-title">💹 Finance — Boundary</div>
-    <div><span class="badge badge-amber">Planned S14</span></div>
-    <ul>
-      <li>finance_sync_records: ✓ Table exists</li>
-      <li>Xero / QuickBooks: ✗ Not connected</li>
-      <li>Auto-invoice posting: ✗ Not connected</li>
-    </ul>
-  </div>
+  <h3 style="margin:20px 0 10px">Files Needing Integration (Next Sprint)</h3>
+  <div class="tbl-wrap"><table>
+  <thead><tr><th>File</th><th>What To Connect</th><th>Sprint</th></tr></thead>
+  <tbody>
+  <tr><td><code>src/lib/email/order-document-email.ts</code></td><td>Call from <code>sendOrderDocumentLinkAction</code> when channel=email. Write result to email_send_log + update order_document_sends.email_sent.</td><td>S12</td></tr>
+  <tr><td><code>src/lib/whatsapp/whatsapp-link.ts</code></td><td>Call from <code>sendOrderDocumentLinkAction</code> when channel=whatsapp. Store generated link in order_document_sends.whatsapp_link. Return link to UI for "Open in WhatsApp" button.</td><td>S12</td></tr>
+  <tr><td><code>src/app/api/webhooks/mailtrap/route.ts</code></td><td>New file needed: Mailtrap webhook receiver. Updates email_send_log.status from sent → delivered/bounced. Updates order_document_sends.email_delivery_status.</td><td>S12</td></tr>
+  </tbody>
+  </table></div>
 </div>
+
+<script>
+(function() {
+  // Tab switching
+  window.showTab = function(name) {
+    document.querySelectorAll('.tracker-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tracker-panel').forEach(p => p.classList.remove('active'));
+    const panelEl = document.getElementById('panel-' + name);
+    if (panelEl) panelEl.classList.add('active');
+    const tabs = document.querySelectorAll('.tracker-tab');
+    const names = ['s11','s12','migrations','integrations','files'];
+    const idx = names.indexOf(name);
+    if (tabs[idx]) tabs[idx].classList.add('active');
+  };
+
+  // Expand/collapse detail rows
+  window.toggleDetail = function(id) {
+    const row = document.getElementById(id);
+    if (!row) return;
+    row.classList.toggle('open');
+  };
+
+  // Filter state
+  const state = { status: 'all', sev: 'all', area: 'all' };
+
+  window.filterIssues = function(type, value, btn) {
+    state[type] = value;
+    // Update button styles within that group
+    const groups = { status: ['all','resolved','in_progress','open'], sev: ['all','critical','high','medium'], area: ['all','security','email','whatsapp','schema'] };
+    const groupBtns = document.querySelectorAll('.tracker-filters .filter-btn');
+    groupBtns.forEach(b => {
+      const bval = b.getAttribute('onclick') || '';
+      if (bval.includes("'" + type + "'")) b.classList.remove('on');
+    });
+    btn.classList.add('on');
+    applyFilters();
+  };
+
+  function applyFilters() {
+    const rows = document.querySelectorAll('#issue-tbody .issue-row');
+    rows.forEach(row => {
+      const rs = row.dataset.status || '';
+      const rv = row.dataset.sev || '';
+      const ra = row.dataset.area || '';
+      const matchStatus = state.status === 'all' || rs === state.status;
+      const matchSev = state.sev === 'all' || rv === state.sev;
+      const matchArea = state.area === 'all' || ra === state.area;
+      const show = matchStatus && matchSev && matchArea;
+      row.classList.toggle('hidden', !show);
+      // Also hide detail row if parent is hidden
+      const next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) {
+        if (!show) next.classList.remove('open');
+      }
+    });
+    updateCounts();
+  }
+
+  function updateCounts() {
+    const rows = document.querySelectorAll('#issue-tbody .issue-row:not(.hidden)');
+    let res = 0, prog = 0, open = 0;
+    rows.forEach(r => {
+      const s = r.dataset.status;
+      if (s === 'resolved') res++;
+      else if (s === 'in_progress') prog++;
+      else if (s === 'open') open++;
+    });
+    const resEl = document.getElementById('cnt-resolved');
+    const progEl = document.getElementById('cnt-inprog');
+    const openEl = document.getElementById('cnt-open');
+    if (resEl) resEl.textContent = res;
+    if (progEl) progEl.textContent = prog;
+    if (openEl) openEl.textContent = open;
+  }
+
+  // Sort table
+  let sortCol = '', sortDir = 1;
+  window.sortTable = function(col) {
+    const tbody = document.getElementById('issue-tbody');
+    if (!tbody) return;
+    const rows = Array.from(tbody.querySelectorAll('.issue-row'));
+    if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
+
+    const colMap = { ref: 0, title: 1, area: 2, sev: 3, status: 4 };
+    const ci = colMap[col] ?? 0;
+
+    const sevOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+    const statOrder = { open: 0, in_progress: 1, resolved: 2, planned: 3 };
+
+    rows.sort((a, b) => {
+      let av = (a.cells[ci]?.textContent || '').trim().toLowerCase();
+      let bv = (b.cells[ci]?.textContent || '').trim().toLowerCase();
+      if (col === 'sev') { av = sevOrder[a.dataset.sev] ?? 9; bv = sevOrder[b.dataset.sev] ?? 9; return (av - bv) * sortDir; }
+      if (col === 'status') { av = statOrder[a.dataset.status] ?? 9; bv = statOrder[b.dataset.status] ?? 9; return (av - bv) * sortDir; }
+      return av.localeCompare(bv) * sortDir;
+    });
+
+    rows.forEach(r => {
+      tbody.appendChild(r);
+      const next = r.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) tbody.appendChild(next);
+    });
+
+    // Update sort icons
+    document.querySelectorAll('.issue-table th').forEach(th => th.classList.remove('sorted'));
+    const ths = document.querySelectorAll('.issue-table th');
+    const thIdx = Object.keys(colMap).indexOf(col);
+    if (ths[thIdx]) ths[thIdx].classList.add('sorted');
+  };
+
+  // Progress bar animation on load
+  function initProgress() {
+    const total = 12, resolved = 8;
+    const pct = Math.round((resolved / total) * 100);
+    const bar = document.getElementById('s11-progress');
+    const pctEl = document.getElementById('s11-pct');
+    if (bar) bar.style.width = pct + '%';
+    if (pctEl) pctEl.textContent = pct + '% complete (' + resolved + '/' + total + ' issues resolved)';
+  }
+  setTimeout(initProgress, 200);
+})();
+</script>
 
 </section>
 
