@@ -110,3 +110,60 @@ Use Catalog Admin for full setup and onboarding imports. Use Products for day-to
 Run **Check eligibility** first. Then enter a cleanup reason and type the exact confirmation phrase shown by the wizard. Capitalization is accepted either way, but the SKU/text must match.
 
 _Updated: May 2026. Sprint 10 import/catalog onboarding is closed and protected._
+
+---
+
+## SPRINT 12-13 FIXES
+
+### Problem: "I can quote this lead" but quote creation fails
+**Cause:** UI shows coverage as present but DB gate disagrees — fixed in Sprint 12.
+**Fix:**
+1. Open Admin → Audit Log and search for lead_quote_gate_log entries for this lead
+2. Check the most recent gate_result value
+3. If gate_result = 'missing-product-interest': open the lead, use Open Coverage Manager, save product interest, then try again
+4. If gate_result = 'coverage-read-error': database connectivity issue — refresh and retry
+5. If gate_result = 'gate-passed' but quote still won't open: escalate to engineering
+
+### Problem: Email shows "link_created" but recipient says they didn't receive it
+**Sprint 12 update:** email_delivery_status column now tracks Mailtrap delivery.
+**Fix:**
+1. Check order_document_sends.email_delivery_status for the send row
+2. 'sent' = Mailtrap accepted. 'delivered' = Mailtrap confirmed inbox delivery (requires webhook). 'bounced' = email bounced.
+3. If status is 'sent' but no delivery: check email_send_log for that send row — look at bounce_reason
+4. If status is 'failed': Mailtrap API rejected the email. Check email_send_log.provider_payload for error detail.
+5. Note: email_delivery_status = 'delivered' requires the Mailtrap webhook to be configured at /api/webhooks/mailtrap
+
+### Problem: WhatsApp message not being received by buyer
+**Updated Sprint 12 behavior:**
+1. Check order_document_sends.whatsapp_link — if null, WhatsApp link was not generated
+2. If whatsapp_link exists: the operator must click "Open in WhatsApp" and press Send inside WhatsApp
+3. SetuFlow NEVER sends WhatsApp messages automatically — operator must send manually
+4. Document opens (from the share link) are tracked via order_document_sends.open_count
+
+### Problem: Order shows source_quote_version_id as null
+**Sprint 12 fix:** DB constraint now prevents this. If you see a null source_quote_version_id, the order was created before Sprint 12 migration.
+**Fix:**
+1. Open the order in /orders
+2. Check if source_quote_id is set — if yes, run the app_ensure_order_for_accepted_quote_tx RPC manually with the correct version ID
+3. For new orders: the CHECK constraint prevents creation without version lineage
+4. Check order_stage_events for event_type='order_quote_lineage_set' to verify when lineage was set
+
+### Problem: Pricing shows wrong data across organizations
+**Sprint 12 fix:** active_product_pricing_rules_v and v_quote_eligible_products are now SECURITY INVOKER.
+**Fix:** No operator action needed. Views now automatically respect the caller's org context via RLS. If pricing still looks wrong, verify the calling session is authenticated and the user has the correct organization membership.
+
+### Problem: Dispatch Invoice not posting to Xero/QuickBooks
+**Sprint 13 status:** External finance posting requires the finance adapter to be configured.
+**Fix:**
+1. Admin → Integrations — check if Xero/QuickBooks is listed as an active integration
+2. Currently, no external finance adapter is connected (adapter_name = 'pending')
+3. Finance events are queued in finance_integration_events but not sent externally
+4. Contact Ritesh to configure the finance adapter for your organization
+
+### Problem: Freight booking not confirmed by carrier
+**Sprint 13 status:** External freight booking requires the freight adapter to be configured.
+**Fix:**
+1. Check freight_booking_events for the order — look for event_type='booking_request' with status='queued'
+2. Currently, no external freight adapter is connected (adapter_name = 'pending')
+3. Freight events are queued but not sent to Flexport/Freightos/DHL automatically
+4. Contact Ritesh to configure the freight adapter for your organization

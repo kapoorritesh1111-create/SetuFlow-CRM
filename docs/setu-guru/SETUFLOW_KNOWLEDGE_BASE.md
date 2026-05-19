@@ -396,3 +396,118 @@ Sprint 11 applied RLS policies to 38 tables that previously had RLS enabled but 
 - `compliance_checklist_items`, `exchange_rates`, `hs_codes`, `hs_duties` are now read-only for authenticated users (global reference data)
 - All `stg_*` staging tables now join through `import_runs` for org isolation
 - `integrations` table is now read-for-members, write-for-admins
+
+---
+
+## SPRINT 12 UPDATES: Security Hardening + Handoff Integrity
+
+### Security — SECURITY DEFINER RPCs Fixed
+
+Sprint 12 revoked anon EXECUTE on 32 non-trigger SECURITY DEFINER RPCs. This means:
+- Unauthenticated requests can NO LONGER call app_ RPCs like app_advance_order_stage_tx, app_safe_accept_sent_quote_tx, etc.
+- Trigger functions (14 total) still run as SECURITY DEFINER — this is correct behavior for triggers.
+- get_order_document_preview_by_token intentionally keeps anon access (token-gated, public document preview).
+- is_org_member, is_org_admin, is_setu_platform_admin keep anon access (required by RLS policies).
+
+### Security — SECURITY INVOKER Views
+
+Sprint 12 converted both SECURITY DEFINER views to SECURITY INVOKER:
+- active_product_pricing_rules_v — now respects RLS on product_pricing_rules per caller session
+- v_quote_eligible_products — now respects RLS on products, pricing_rule_sets, product_variants per caller session
+- Cross-org pricing data can no longer be exposed through these views
+
+### Quote-to-Order Handoff Integrity (S12-ORDER-001)
+
+A DB-level CHECK constraint now enforces: when source_quote_id is set on an order, source_quote_version_id MUST also be set. This prevents the silent null handoff bug where orders could be created without accepted quote version lineage.
+
+Audit trigger added: every time source_quote_version_id is set or changed, a row is written to order_stage_events with event_type = 'order_quote_lineage_set'. Setu Guru can look here when asked "was this order linked to the correct quote version?"
+
+### Lead Coverage Gate (S12-LEAD-001)
+
+A new table lead_quote_gate_log records every gate check result. Fields: gate_result (gate-passed | lead-not-found | lead-disqualified | missing-product-interest | coverage-read-error), product_interest_count, coverage_source.
+
+The canonical gate check is now in src/lib/leads/lead-quote-gate.ts — checkLeadQuoteGate(). Both the UI display AND gate enforcement must call this function for UI/DB alignment.
+
+Setu Guru response policy: When asked "why can't I quote this lead?", check lead_quote_gate_log for the most recent gate_result for that lead_id. Report the exact reason: gate-passed (should be quoting), missing-product-interest (need to add product coverage), lead-disqualified (cannot proceed), coverage-read-error (DB issue).
+
+### Email — Sprint 12 Wiring Complete
+
+Sprint 12 wired the email utility into the send action:
+- sendOrderDocumentLinkAction now calls sendOrderDocumentEmail() when channel=email
+- On success: email_sent=true, email_delivery_status='sent', email_message_id stored
+- On failure: email_sent=false, email_delivery_status='failed', non-fatal (send row still created)
+- email_send_log row written for every Mailtrap API call with provider_message_id
+
+Mailtrap webhook receiver added at /api/webhooks/mailtrap:
+- Receives delivery, bounce, open, click events from Mailtrap
+- Updates email_send_log.status from sent → delivered / bounced
+- Updates order_document_sends.email_delivery_status
+
+### WhatsApp — Sprint 12 Wiring Complete
+
+Sprint 12 wired WhatsApp link generation into the send action:
+- sendOrderDocumentLinkAction now calls generateWhatsAppLinks() when channel=whatsapp
+- whatsapp_link stored in order_document_sends (mobile wa.me link)
+- whatsapp_phone stored in E.164 format
+- UI uses getWhatsAppLinkForDevice() to pick desktop vs mobile link
+
+---
+
+## SPRINT 13 UPDATES: Admin Templates + Finance + Freight Adapters
+
+### Admin Document Templates (S13-TMPL-001, S13-TMPL-002)
+
+organization_document_terms_profiles now has version history support:
+- version_number: starts at 1, increments on each publish
+- parent_profile_id: links to previous version for history chain
+- review_status: draft → under_review → approved → published → superseded
+- reviewed_by, reviewed_at, published_at: audit fields
+- bank_details: JSONB with bank name, account number, SWIFT/IBAN, branch, IFSC
+- export_declarations: JSONB with LUT ARN, IEC, AD Code, GSTIN, PAN
+- clause_overrides: JSONB for country-pair, HS code, Incoterm specific clauses
+
+document_template_history table: immutable snapshot per save that changes review_status or content. One row per version per profile.
+
+Admin document templates editor at /admin/document-templates now supports:
+- View and edit page_one_terms (array of operational terms)
+- View and edit annexure_terms (array of legal/annexure terms)
+- View and edit bank_details (bank name, account, SWIFT, IFSC)
+- View and edit export_declarations (IEC, LUT ARN, GSTIN, etc.)
+- View and edit tax_profile (GST/VAT mode, tax numbers, rates)
+- View and edit identity_fields (legal name, address, registrations)
+- Save → creates history row → advances version_number
+- Review workflow: admin submits for review → owner approves → publishes
+
+Setu Guru policy: When asked "what bank details are on our documents?", look in organization_document_terms_profiles.bank_details for the active published profile matching the document type and org country. When asked "what IEC/LUT number is on export documents?", look in export_declarations.
+
+### Finance Integration Adapter (S13-FIN-001)
+
+finance_integration_events table created as the adapter event queue:
+- event_type: invoice_create | invoice_void | payment_received | reconciliation_complete | credit_note_create
+- adapter_name: xero | quickbooks | tally | pending
+- status: queued | sent | confirmed | failed | retrying
+
+src/lib/finance/finance-adapter.ts created:
+- queueFinanceEvent() — only entry point for external finance posting
+- getFinanceAdapterStatus() — check events for an order
+- getConnectedFinanceAdapter() — returns adapter name or 'pending'
+
+CRITICAL RULE: Finance posting is NEVER automatic. A human must approve the final invoice before any finance event is queued. Finance sync requires explicit operator action.
+
+Setu Guru policy: When asked "has this order been posted to Xero/QuickBooks?", check finance_integration_events for event_type='invoice_create' with status='confirmed'. If no confirmed row exists, the invoice has NOT been posted externally. Do not say finance sync happened unless confirmed.
+
+### Freight Integration Adapter (S13-FRT-001)
+
+freight_booking_events table created as the adapter event queue:
+- event_type: rate_request | booking_request | booking_confirmed | tracking_update | bol_received | awb_received
+- adapter_name: flexport | freightos | dhl | manual | pending
+- Fields: booking_reference, tracking_reference, carrier_name, forwarder_name
+
+src/lib/freight/freight-adapter.ts created:
+- queueFreightEvent() — only entry point for external freight booking
+- getFreightAdapterStatus() — check booking events for an order
+- getConnectedFreightAdapter() — returns adapter name or 'pending'
+
+CRITICAL RULE: External freight booking is NEVER automatic. SetuFlow prepares and approves the freight request data. The operator must explicitly queue a booking event, and the external carrier must independently confirm.
+
+Setu Guru policy: When asked "has freight been booked?", check freight_booking_events for event_type='booking_confirmed' with status='confirmed' AND the order has a dispatched shipment in shipments table. Do not say freight was booked unless both conditions are true.

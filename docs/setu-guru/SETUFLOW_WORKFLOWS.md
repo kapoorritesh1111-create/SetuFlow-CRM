@@ -241,3 +241,143 @@ _For chatbot knowledge base upload — May 2026_
 ---
 
 _This troubleshooting guide should be uploaded alongside the main knowledge base. Sprint 10 import/catalog onboarding is closed and protected._
+
+---
+
+## SPRINT 12-13 WORKFLOW UPDATES
+
+### Updated: Email Send Workflow (Now Live via Mailtrap)
+
+```
+Operator: Click "Send tracked" (channel = email)
+      |
+      v
+Server: Create order_document_sends row (status = link_created)
+      |
+      v
+Server: Call sendOrderDocumentEmail() via order-document-email.ts
+      |
+      v
+Mailtrap API: Send email with document type, order number, tracked share URL
+      |
+      +--[Success]--> email_sent=true, email_delivery_status='sent', email_message_id stored
+      |               email_send_log row created with provider_message_id
+      |
+      +--[Failure]--> email_sent=false, email_delivery_status='failed' (non-fatal)
+      |
+      v
+Recipient receives email → clicks tracked link → open_count increments
+      |
+      v
+Mailtrap Webhook (when configured) → /api/webhooks/mailtrap
+    → Updates email_delivery_status: sent → delivered / bounced
+```
+
+### Updated: WhatsApp Send Workflow (Link-Based, Now Fully Wired)
+
+```
+Operator: Click "Send tracked" (channel = whatsapp)
+      |
+      v
+Server: Create order_document_sends row (status = link_created)
+      |
+      v
+Server: Call generateWhatsAppLinks() via whatsapp-link.ts
+    → Generates wa.me/[phone]?text=[pre-filled message] (mobile link)
+    → Generates web.whatsapp.com/send?phone=[phone]&text=[message] (desktop link)
+    → Stores mobile link in whatsapp_link column
+      |
+      v
+UI: Shows "Open in WhatsApp" button
+    → Desktop: opens web.whatsapp.com
+    → Mobile: opens WhatsApp app (wa.me scheme)
+      |
+      v
+Operator: Pre-filled message shown in WhatsApp → Operator presses Send
+      |
+      v
+Recipient receives WhatsApp message → clicks share link → open_count increments
+```
+
+### New: Lead Coverage Gate (Canonical, Sprint 12)
+
+```
+Any CTA that opens quote creation:
+      |
+      v
+checkLeadQuoteGate(organizationId, leadId, actorUserId)
+      |
+      +-- Writes to lead_quote_gate_log (always, for debugging)
+      |
+      +--[lead-not-found]-----------> Block: Lead not in org
+      +--[lead-disqualified]--------> Block: Cannot quote disqualified lead
+      +--[missing-product-interest]-> Block: Open Coverage Manager first
+      +--[coverage-read-error]------> Block: DB read error, retry
+      +--[gate-passed]--------------> Allow: Open quote builder
+```
+
+### New: Finance Event Queueing (Sprint 13)
+
+```
+Human approves final invoice (explicit action)
+      |
+      v
+Operator triggers finance sync (future UI action)
+      |
+      v
+queueFinanceEvent({ eventType: 'invoice_create', ... })
+      |
+      v
+finance_integration_events row created (status = queued)
+      |
+      v
+Finance adapter worker processes queue (when adapter configured)
+      |
+      +--[xero/quickbooks/tally connected]--> External API call → confirmed
+      +--[adapter = pending]--------------> Row stays queued, no external call
+```
+
+### New: Freight Booking Event Queueing (Sprint 13)
+
+```
+Human approves freight request (existing gate)
+      |
+      v
+Operator triggers freight booking (future UI action)
+      |
+      v
+queueFreightEvent({ eventType: 'booking_request', ... })
+      |
+      v
+freight_booking_events row created (status = queued)
+      |
+      v
+Freight adapter worker processes queue (when adapter configured)
+      |
+      +--[flexport/freightos/dhl connected]--> External API call → confirmed
+      +--[adapter = pending]----------------> Row stays queued, no external call
+```
+
+### Updated: Document Template Lifecycle (Sprint 13)
+
+```
+[Admin creates/edits template]
+      |
+      v
+organization_document_terms_profiles.review_status = 'draft'
+      |
+      v
+Admin submits for review → review_status = 'under_review'
+      |
+      v
+Owner/Admin approves → review_status = 'approved'
+      |
+      v
+Admin publishes → review_status = 'published', published_at = now()
+    → Previous active profile superseded → review_status = 'superseded'
+    → document_template_history row created with full snapshot
+      |
+      v
+New documents use published template for page_one_terms, annexure_terms,
+bank_details, export_declarations, tax_profile, identity_fields, stamp_settings
+```

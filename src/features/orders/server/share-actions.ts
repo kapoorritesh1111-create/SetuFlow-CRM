@@ -8,6 +8,9 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { writeAuditLog } from '@/lib/auditLog';
+// Sprint 12: Email + WhatsApp utilities wired in
+import { sendOrderDocumentEmail } from '@/lib/email/order-document-email';
+import { generateWhatsAppLinks } from '@/lib/whatsapp/whatsapp-link';
 
 type DocumentType = 'order_confirmation' | 'proforma_invoice' | 'dispatch_invoice' | 'packing_sheet' | 'packing_list' | 'delivery_note' | 'freight_request';
 type SendChannel = 'email' | 'whatsapp' | 'preview';
@@ -230,6 +233,28 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   const shareUrl = `${buildAppOrigin()}/order-documents/preview/${shareToken}`;
   const sendStatus = previewOnly ? 'previewed' : 'link_created';
 
+  // Sprint 12: Generate WhatsApp links before insert
+  let whatsappLink: string | null = null;
+  let whatsappPhone: string | null = null;
+  if (!previewOnly && channel === 'whatsapp' && resolvedRecipient) {
+    try {
+      const orgName = workspace.organization.name ?? workspace.organization.legal_name ?? 'SETU Flow';
+      const waLinks = generateWhatsAppLinks({
+        phone: resolvedRecipient,
+        organizationName: orgName,
+        documentType,
+        orderNumber: order.order_number ?? order.id.slice(0, 8).toUpperCase(),
+        companyName: lead?.company_name ?? 'Buyer',
+        shareUrl,
+        note: note || null,
+      });
+      whatsappLink = waLinks.mobileLink; // Store mobile link; UI picks device-appropriate one
+      whatsappPhone = waLinks.phone;
+    } catch (waErr) {
+      console.error('[share-actions] WhatsApp link generation error:', waErr);
+    }
+  }
+
   const { data: sendRow } = await db.from('order_document_sends').insert({
     organization_id: workspace.organization.id,
     order_id: order.id,
@@ -244,6 +269,10 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     share_url: shareUrl,
     sent_at: now,
     created_by: workspace.user.id,
+    // Sprint 12: WhatsApp link columns
+    whatsapp_link: whatsappLink,
+    whatsapp_phone: whatsappPhone,
+    email_delivery_status: (!previewOnly && channel === 'email') ? 'pending' : null,
     metadata: {
       source: 'sendOrderDocumentLinkAction',
       preview_only: previewOnly,
@@ -254,6 +283,55 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       lead_id: order.lead_id ?? null,
     },
   }).select('id').single();
+
+  // Sprint 12: Fire email via Mailtrap for email channel
+  if (!previewOnly && channel === 'email' && resolvedRecipient && sendRow?.id) {
+    try {
+      const orgName = workspace.organization.name ?? workspace.organization.legal_name ?? 'SETU Flow';
+      const emailResult = await sendOrderDocumentEmail({
+        to: resolvedRecipient,
+        organizationName: orgName,
+        organizationLogo: workspace.organization.logo_url ?? null,
+        documentType,
+        documentLabel: labelFor(documentType),
+        orderNumber: order.order_number ?? order.id.slice(0, 8).toUpperCase(),
+        companyName: lead?.company_name ?? 'Buyer',
+        shareUrl,
+        note: note || null,
+        senderName: workspace.user.email ?? null,
+      });
+
+      // Update send row with email result
+      const emailUpdate: Record<string, unknown> = {
+        email_provider: emailResult.ok ? emailResult.provider : null,
+        email_sent: emailResult.ok,
+        email_delivery_status: emailResult.ok ? 'sent' : 'failed',
+        updated_at: now,
+      };
+      if (emailResult.ok && 'messageId' in emailResult) {
+        emailUpdate.email_message_id = emailResult.messageId ?? null;
+      }
+      await db.from('order_document_sends').update(emailUpdate).eq('id', sendRow.id);
+
+      // Write to email_send_log
+      if (emailResult.ok && 'messageId' in emailResult) {
+        await db.from('email_send_log').insert({
+          organization_id: workspace.organization.id,
+          order_document_send_id: sendRow.id,
+          provider: emailResult.provider,
+          provider_message_id: emailResult.messageId ?? null,
+          to_email: resolvedRecipient,
+          subject: `${labelFor(documentType)} — ${order.order_number ?? ''} | ${orgName}`,
+          template_type: 'order_document',
+          status: 'sent',
+          sent_at: now,
+        });
+      }
+    } catch (emailErr) {
+      console.error('[share-actions] Email send error:', emailErr);
+      // Non-fatal — send row already created, UI can show link_created
+    }
+  }
 
   await db.from('order_documents').update({
     status: previewOnly ? (trackedDocument.status === 'approved' ? 'approved' : 'previewed') : trackedDocument.status ?? 'approved',
