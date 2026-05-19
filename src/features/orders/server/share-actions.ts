@@ -100,6 +100,29 @@ async function findApprovedOrderDocument(db: any, input: {
   return data?.id ? data : null;
 }
 
+async function findLatestStoredWhatsAppSend(db: any, input: {
+  organizationId: string;
+  orderId: string;
+  orderDocumentId: string;
+  recipient?: string | null;
+}) {
+  let query = db
+    .from('order_document_sends')
+    .select('id, share_url, whatsapp_link, whatsapp_phone, recipient, created_at')
+    .eq('organization_id', input.organizationId)
+    .eq('order_id', input.orderId)
+    .eq('order_document_id', input.orderDocumentId)
+    .eq('channel', 'whatsapp')
+    .not('share_url', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (input.recipient) query = query.eq('recipient', input.recipient);
+
+  const { data } = await query.maybeSingle();
+  return data?.share_url ? data : null;
+}
+
 async function findOrCreateTrackedOrderDocument(db: any, input: {
   organizationId: string;
   orderId: string;
@@ -230,13 +253,25 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   const now = new Date().toISOString();
   const documentLabel = labelFor(documentType);
   const shareToken = randomUUID();
-  const shareUrl = `${buildAppOrigin()}/order-documents/preview/${shareToken}`;
+  const generatedShareUrl = `${buildAppOrigin()}/order-documents/preview/${shareToken}`;
   const sendStatus = previewOnly ? 'previewed' : 'link_created';
 
-  // Sprint 12: Generate WhatsApp links before insert
-  let whatsappLink: string | null = null;
-  let whatsappPhone: string | null = null;
-  if (!previewOnly && channel === 'whatsapp' && resolvedRecipient) {
+  let reusedWhatsAppSend: any = null;
+  if (!previewOnly && channel === 'whatsapp' && trackedDocument?.id) {
+    reusedWhatsAppSend = await findLatestStoredWhatsAppSend(db, {
+      organizationId: workspace.organization.id,
+      orderId: order.id,
+      orderDocumentId: trackedDocument.id,
+      recipient: resolvedRecipient || null,
+    });
+  }
+
+  const shareUrl = reusedWhatsAppSend?.share_url || generatedShareUrl;
+
+  // Sprint 12/Sprint 18: Generate WhatsApp links before insert; reuse stored tracked URL/link when present.
+  let whatsappLink: string | null = reusedWhatsAppSend?.whatsapp_link ?? null;
+  let whatsappPhone: string | null = reusedWhatsAppSend?.whatsapp_phone ?? null;
+  if (!previewOnly && channel === 'whatsapp' && resolvedRecipient && !whatsappLink) {
     try {
       const orgName = workspace.organization.name ?? 'SETU Flow';
       const waLinks = generateWhatsAppLinks({
@@ -281,6 +316,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
       lead_id: order.lead_id ?? null,
+      reused_share_url_from_send_id: reusedWhatsAppSend?.id ?? null,
     },
   }).select('id').single();
 
@@ -348,6 +384,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       source_quote_version_id: order.source_quote_version_id ?? null,
       note: note || null,
       workflow: 'order_confirmed_then_proforma_then_logistics',
+      reused_share_url_from_send_id: reusedWhatsAppSend?.id ?? null,
     },
   }).eq('organization_id', workspace.organization.id).eq('id', trackedDocument.id);
 
@@ -368,6 +405,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       transport_delivery_confirmed: false,
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
+      reused_share_url_from_send_id: reusedWhatsAppSend?.id ?? null,
     },
   });
 
@@ -390,7 +428,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     actorUserId: workspace.user.id,
     payload: {
       previous: { document_status: trackedDocument.status },
-      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now, share_url: shareUrl, preview_only: previewOnly, transport_delivery_confirmed: false },
+      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now, share_url: shareUrl, preview_only: previewOnly, transport_delivery_confirmed: false, reused_share_url_from_send_id: reusedWhatsAppSend?.id ?? null },
       metadata: { source: 'sendOrderDocumentLinkAction', order_id: order.id, quote_id: order.source_quote_id, lead_id: order.lead_id, order_document_id: trackedDocument.id, note },
     },
   });
