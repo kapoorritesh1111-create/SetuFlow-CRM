@@ -1,4 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm ci --no-audit --no-fund"
+  "installCommand": "npm install --no-audit --no-fund",
+  "crons": [
+    {
+      "path": "/api/cron/analytics-snapshot",
+      "schedule": "0 6 * * *"
+    }
+  ]
 }
