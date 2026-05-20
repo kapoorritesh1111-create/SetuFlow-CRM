@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
-import { OrderCatalogProductTypeahead } from '@/features/orders/components/OrderCatalogProductTypeahead';
+import { OrdersExecutionModalPolish } from '@/features/orders/components/OrdersExecutionModalPolish';
 
 export default function OrdersTemplate({ children }: { children: ReactNode }) {
   return (
     <>
-      <OrderCatalogProductTypeahead />
+      <OrdersExecutionModalPolish />
       {children}
     </>
   );
