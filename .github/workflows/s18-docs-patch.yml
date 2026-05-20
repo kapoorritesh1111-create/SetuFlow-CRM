@@ -1,3 +1,4 @@
+# trigger: 2
 name: One-off Sprint 18 docs patch
 
 on:
@@ -62,28 +63,13 @@ jobs:
 
 <h2>Approved Product Decisions</h2>
 <div class="s18-grid">
-  <div class="s18-card" style="border-left:4px solid #10b981">
-    <span class="s18-status s18-live">Production-ready</span>
-    <h3>Mailtrap email</h3>
-    <p>Mailtrap is the approved production email integration for now. It is tested, confirmed working, and remains the truthful live provider for invitations and order-document sends.</p>
-  </div>
-  <div class="s18-card" style="border-left:4px solid #3b82f6">
-    <span class="s18-status s18-ready">Approved UX</span>
-    <h3>Analytics shell</h3>
-    <p>The approved Analytics UX direction is locked. The current dashboard analytics shell has been updated with shared filters, KPI cards, funnel, trend, top markets/products, and insights/anomalies while avoiding overclaiming unavailable historical dimensions.</p>
-  </div>
-  <div class="s18-card" style="border-left:4px solid #3b82f6">
-    <span class="s18-status s18-ready">Approved direction</span>
-    <h3>Orders Execution Cockpit</h3>
-    <p>Orders UX direction is approved as an Execution Cockpit, not a Quote clone. Full redesign should wait for the complete CTA matrix, but Sprint 18 continues to improve execution truth, document preview, and send reliability.</p>
-  </div>
+  <div class="s18-card" style="border-left:4px solid #10b981"><span class="s18-status s18-live">Production-ready</span><h3>Mailtrap email</h3><p>Mailtrap is the approved production email integration for now. It is tested, confirmed working, and remains the truthful live provider for invitations and order-document sends.</p></div>
+  <div class="s18-card" style="border-left:4px solid #3b82f6"><span class="s18-status s18-ready">Approved UX</span><h3>Analytics shell</h3><p>The approved Analytics UX direction is locked. The current dashboard analytics shell has been updated with shared filters, KPI cards, funnel, trend, top markets/products, and insights/anomalies while avoiding overclaiming unavailable historical dimensions.</p></div>
+  <div class="s18-card" style="border-left:4px solid #3b82f6"><span class="s18-status s18-ready">Approved direction</span><h3>Orders Execution Cockpit</h3><p>Orders UX direction is approved as an Execution Cockpit, not a Quote clone. Full redesign should wait for the complete CTA matrix, but Sprint 18 continues to improve execution truth, document preview, and send reliability.</p></div>
 </div>
 
 <h2>Integration Truth Map</h2>
-<div class="tbl-wrap">
-<table>
-<thead><tr><th>Area</th><th>Sprint 18 truth</th><th>Operator language</th><th>Do not claim</th></tr></thead>
-<tbody>
+<div class="tbl-wrap"><table><thead><tr><th>Area</th><th>Sprint 18 truth</th><th>Operator language</th><th>Do not claim</th></tr></thead><tbody>
 <tr><td>Email</td><td><span class="badge badge-green">Live</span> Mailtrap active and working</td><td>Mailtrap production-ready</td><td>Multiple email providers live</td></tr>
 <tr><td>Finance</td><td><span class="badge badge-blue">Queue-ready</span> <code>finance_integration_events</code> with <code>adapter_name='pending'</code></td><td>Queue invoice sync, View queue, Copy payload, Retry queued event</td><td>Xero / QuickBooks / Tally live sync</td></tr>
 <tr><td>Freight</td><td><span class="badge badge-blue">Queue-ready</span> pending adapters only</td><td>Queue freight request, View queue, Copy payload</td><td>Live carrier booking or freight marketplace integration</td></tr>
@@ -91,82 +77,21 @@ jobs:
 <tr><td>WhatsApp</td><td><span class="badge badge-amber">Manual tracked links</span> wa.me / WhatsApp Web prefilled text</td><td>Open WhatsApp, operator reviews and sends manually</td><td>WhatsApp Business API live delivery</td></tr>
 <tr><td>PDF</td><td><span class="badge badge-green">Free OSS path</span> <code>puppeteer-core</code> + <code>@sparticuz/chromium</code></td><td>Generate PDF, Download signed URL, Browser print fallback</td><td>Paid PDF API dependency</td></tr>
 <tr><td>Open API / Webhooks</td><td><span class="badge badge-slate">Planned</span></td><td>Future partner contract</td><td>Public partner API available today</td></tr>
-</tbody>
-</table>
-</div>
+</tbody></table></div>
 
 <h2>Current Sprint 18 Implementation Status</h2>
 <div class="s18-grid">
-  <div class="s18-card" style="border-left:4px solid #10b981">
-    <span class="s18-status s18-live">Fixed</span>
-    <h3>WhatsApp placeholder bug</h3>
-    <ul class="s18-list">
-      <li>Orders no longer open WhatsApp with “Secure link will follow.”</li>
-      <li>Orders now create/reuse a tracked order-document preview URL.</li>
-      <li>Prefilled WhatsApp text includes <code>View secure document: https://www.setuflowcrm.com/order-documents/preview/...</code>.</li>
-      <li>Operator still manually reviews and sends in WhatsApp / WhatsApp Web.</li>
-    </ul>
-    <div class="s18-files">src/features/orders/server/order-whatsapp-delivery.ts<br>src/features/orders/components/OrdersProductionWorkspace81DRepair3.tsx</div>
-  </div>
-  <div class="s18-card" style="border-left:4px solid #10b981">
-    <span class="s18-status s18-live">Polished</span>
-    <h3>Order document preview</h3>
-    <ul class="s18-list">
-      <li>Order preview now follows the cleaner quote-style PDF direction.</li>
-      <li>Includes branded header, party grid, summary, line items, totals, signatures, and compact terms.</li>
-      <li>Browser print fallback remains intact.</li>
-      <li>Server PDF path remains free/open-source.</li>
-    </ul>
-    <div class="s18-files">src/app/order-documents/preview/[token]/page.tsx<br>src/app/api/order-documents/pdf/route.ts</div>
-  </div>
-  <div class="s18-card" style="border-left:4px solid #10b981">
-    <span class="s18-status s18-live">Updated shell</span>
-    <h3>Analytics dashboard</h3>
-    <ul class="s18-list">
-      <li>Approved Analytics UX proposal is locked for later deeper implementation.</li>
-      <li>Current shell now matches the approved layout direction: filters, KPIs, funnel, trend, top segments, and insights.</li>
-      <li>Copy remains honest where trend/filter dimensions are not yet fully historical.</li>
-    </ul>
-    <div class="s18-files">src/app/(app)/dashboard/analytics/page.tsx</div>
-  </div>
-  <div class="s18-card" style="border-left:4px solid #3b82f6">
-    <span class="s18-status s18-ready">Admin direction</span>
-    <h3>Admin Integrations page</h3>
-    <ul class="s18-list">
-      <li><code>/admin/integrations</code> presents live, queue-ready, manual, and planned integration states.</li>
-      <li>Investor-friendly but explicit: Mailtrap live; Finance/Freight queue-ready only; WhatsApp manual; PDF free renderer.</li>
-      <li>Open API/Webhooks remain planned.</li>
-    </ul>
-    <div class="s18-files">src/app/(app)/admin/integrations/page.tsx<br>src/lib/routes/manifest.json<br>src/components/shell/route-meta.ts</div>
-  </div>
+  <div class="s18-card" style="border-left:4px solid #10b981"><span class="s18-status s18-live">Fixed</span><h3>WhatsApp placeholder bug</h3><ul class="s18-list"><li>Orders no longer open WhatsApp with “Secure link will follow.”</li><li>Orders now create/reuse a tracked order-document preview URL.</li><li>Prefilled WhatsApp text includes <code>View secure document: https://www.setuflowcrm.com/order-documents/preview/...</code>.</li><li>Operator still manually reviews and sends in WhatsApp / WhatsApp Web.</li></ul><div class="s18-files">src/features/orders/server/order-whatsapp-delivery.ts<br>src/features/orders/components/OrdersProductionWorkspace81DRepair3.tsx</div></div>
+  <div class="s18-card" style="border-left:4px solid #10b981"><span class="s18-status s18-live">Polished</span><h3>Order document preview</h3><ul class="s18-list"><li>Order preview now follows the cleaner quote-style PDF direction.</li><li>Includes branded header, party grid, summary, line items, totals, signatures, and compact terms.</li><li>Browser print fallback remains intact.</li><li>Server PDF path remains free/open-source.</li></ul><div class="s18-files">src/app/order-documents/preview/[token]/page.tsx<br>src/app/api/order-documents/pdf/route.ts</div></div>
+  <div class="s18-card" style="border-left:4px solid #10b981"><span class="s18-status s18-live">Updated shell</span><h3>Analytics dashboard</h3><ul class="s18-list"><li>Approved Analytics UX proposal is locked for later deeper implementation.</li><li>Current shell now matches the approved layout direction: filters, KPIs, funnel, trend, top segments, and insights.</li><li>Copy remains honest where trend/filter dimensions are not yet fully historical.</li></ul><div class="s18-files">src/app/(app)/dashboard/analytics/page.tsx</div></div>
+  <div class="s18-card" style="border-left:4px solid #3b82f6"><span class="s18-status s18-ready">Admin direction</span><h3>Admin Integrations page</h3><ul class="s18-list"><li><code>/admin/integrations</code> presents live, queue-ready, manual, and planned integration states.</li><li>Investor-friendly but explicit: Mailtrap live; Finance/Freight queue-ready only; WhatsApp manual; PDF free renderer.</li><li>Open API/Webhooks remain planned.</li></ul><div class="s18-files">src/app/(app)/admin/integrations/page.tsx<br>src/lib/routes/manifest.json<br>src/components/shell/route-meta.ts</div></div>
 </div>
 
 <h2>Database / Storage Status</h2>
 <div class="card-grid">
-  <div class="card" style="border-left:4px solid #10b981">
-    <div class="card-title">✅ PDF storage path</div>
-    <ul>
-      <li><code>order_documents.pdf_storage_path</code> added if missing.</li>
-      <li>Used for Supabase Storage object paths.</li>
-      <li>Signed download URL returned by server route.</li>
-    </ul>
-  </div>
-  <div class="card" style="border-left:4px solid #10b981">
-    <div class="card-title">✅ Private PDF bucket</div>
-    <ul>
-      <li>Bucket: <code>order-documents</code>.</li>
-      <li>Private storage; PDFs are shared through signed URLs.</li>
-      <li>Allowed MIME intent: <code>application/pdf</code>.</li>
-    </ul>
-  </div>
-  <div class="card" style="border-left:4px solid #f59e0b">
-    <div class="card-title">⟳ Finance / Freight adapters</div>
-    <ul>
-      <li>Queue tables exist for integration-ready events.</li>
-      <li>Adapters remain pending.</li>
-      <li>No external provider is connected yet.</li>
-    </ul>
-  </div>
+  <div class="card" style="border-left:4px solid #10b981"><div class="card-title">✅ PDF storage path</div><ul><li><code>order_documents.pdf_storage_path</code> added if missing.</li><li>Used for Supabase Storage object paths.</li><li>Signed download URL returned by server route.</li></ul></div>
+  <div class="card" style="border-left:4px solid #10b981"><div class="card-title">✅ Private PDF bucket</div><ul><li>Bucket: <code>order-documents</code>.</li><li>Private storage; PDFs are shared through signed URLs.</li><li>Allowed MIME intent: <code>application/pdf</code>.</li></ul></div>
+  <div class="card" style="border-left:4px solid #f59e0b"><div class="card-title">⟳ Finance / Freight adapters</div><ul><li>Queue tables exist for integration-ready events.</li><li>Adapters remain pending.</li><li>No external provider is connected yet.</li></ul></div>
 </div>
 
 <h2>Leadership Notes</h2>
