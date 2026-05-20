@@ -474,7 +474,7 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <div class="gpt-icon">
           <svg class="ico" style="color:var(--brand-teal)" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         </div>
-        <div><div class="gpt-title">ChatGPT Issue Fix Protocol</div><div class="gpt-sub">3-step workflow: Load issues → Apply fix → Update Supabase status</div></div>
+        <div><div class="gpt-title">ChatGPT Issue Fix Protocol</div><div class="gpt-sub">Live workflow: Load issues → Fix → Validate build → Update tracker after every checkpoint</div></div>
       </div>
       <div class="gpt-actions">
         <button class="gpt-btn gpt-btn-outline" onclick="toggleGPT()" id="gpt-toggle-btn">Show prompt</button>
@@ -488,62 +488,269 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <div class="gpt-proto-row">
         <div class="gpt-step"><div class="gpt-step-n">Step 1 — Load</div><div class="gpt-step-t">Paste prompt into ChatGPT with the repo zip. GPT reads all Open issues sorted by severity.</div></div>
         <div class="gpt-step"><div class="gpt-step-n">Step 2 — Fix & Verify</div><div class="gpt-step-t">GPT picks the top issue, sets In Progress in Supabase, outputs changed files, you confirm.</div></div>
-        <div class="gpt-step"><div class="gpt-step-n">Step 3 — Update DB</div><div class="gpt-step-t">GPT patches status to Resolved with fix_notes and pr_link. Moves to the next issue automatically.</div></div>
+        <div class="gpt-step"><div class="gpt-step-n">Step 3 — Update DB</div><div class="gpt-step-t">GPT updates Supabase after each validation/build, then marks Resolved only after your confirmation.</div></div>
       </div>
-      <div class="prompt-box" id="gpt-prompt-text">You are a senior full-stack engineer working on SetuFlow CRM (Next.js 14 App Router, TypeScript, Supabase, Tailwind CSS). I'm sharing the repo zip with this message.
+      <div class="prompt-box" id="gpt-prompt-text">You are a senior full-stack engineer working on SetuFlow CRM.
+
+Stack:
+- Next.js 14 App Router
+- TypeScript
+- Supabase
+- Tailwind CSS
+
+I am sharing the repo zip with this message. Work directly on the repo files.
+
+Your output for every completed fix must include:
+1. Updated repo zip
+2. Fix summary
+3. Changed files
+4. Full final content of every changed file
+5. Typecheck/build result
+6. Tracker update status
+7. Readiness percentage
+8. Sprint percentage completed
+9. Next prompt to continue the sprint
+
+Do not run npm ci.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ISSUE TRACKER — SUPABASE REST API
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Base URL: https://sjzfzloggabsmcuxktnl.supabase.co/rest/v1
-Table: sprint_issues (filter: sprint_number=18)
-Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w
+Table: sprint_issues
+Filter: sprint_number=18
 
-READ issues:
-  GET /sprint_issues?sprint_number=eq.18&status=eq.Open&order=severity.asc,issue_number.asc
-  Header: apikey: {KEY}
+Use the provided Supabase anon key only.
+Never use, request, expose, or assume a service-role key.
 
-UPDATE status → In Progress:
-  PATCH /sprint_issues?issue_ref=eq.{REF}
-  Header: apikey: {KEY}, Content-Type: application/json
-  Body: {"status":"In Progress","assigned_to":"ChatGPT"}
+Key:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w
 
-UPDATE to Resolved:
-  PATCH /sprint_issues?issue_ref=eq.{REF}
-  Body: {"status":"Resolved","fix_applied":"{what was done}","pr_link":"{commit or PR URL}"}
+READ Open issues:
+GET /sprint_issues?sprint_number=eq.18&status=eq.Open&order=severity.asc,issue_number.asc
+Headers:
+apikey: {KEY}
+Authorization: Bearer {KEY}
+
+READ all Sprint 18 issues when calculating progress:
+GET /sprint_issues?sprint_number=eq.18&order=severity.asc,issue_number.asc
+Headers:
+apikey: {KEY}
+Authorization: Bearer {KEY}
+
+PATCH issue to In Progress:
+PATCH /sprint_issues?issue_ref=eq.{REF}
+Headers:
+apikey: {KEY}
+Authorization: Bearer {KEY}
+Content-Type: application/json
+Body:
+{
+  "status": "In Progress",
+  "assigned_to": "ChatGPT"
+}
+
+PATCH progress after every build/checkpoint:
+PATCH /sprint_issues?issue_ref=eq.{REF}
+Headers:
+apikey: {KEY}
+Authorization: Bearer {KEY}
+Content-Type: application/json
+Body:
+{
+  "status": "In Progress",
+  "assigned_to": "ChatGPT",
+  "fix_applied": "{current progress summary, files changed, build/typecheck result, remaining issue if any}",
+  "pr_link": "{updated repo zip filename or commit/PR URL if available}"
+}
+
+PATCH issue to Resolved only after my confirmation:
+PATCH /sprint_issues?issue_ref=eq.{REF}
+Headers:
+apikey: {KEY}
+Authorization: Bearer {KEY}
+Content-Type: application/json
+Body:
+{
+  "status": "Resolved",
+  "fix_applied": "{accurate final summary of what was changed, files touched, validation performed, and result}",
+  "pr_link": "{commit/PR URL if available, otherwise updated repo zip filename}"
+}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-YOUR WORKFLOW — FOLLOW THIS EXACTLY
+WORKFLOW — FOLLOW EXACTLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. Call GET to list all Open issues. Report: total open, count by severity.
-2. Pick the HIGHEST severity + sprint_target='7-Day Rescue' issue first.
-3. State clearly: "Starting SF-18-XXX: [title]"
-4. IMMEDIATELY call PATCH to set status='In Progress'.
-5. Read the issue's how_to_fix field for exact steps. Follow them precisely.
-6. Read files_changed — show me the FULL content of each file (not diffs).
-7. Run npx tsc --noEmit --skipLibCheck mentally — fix all type errors.
-8. Ask me: "Please confirm this fix is correct and I'll mark it Resolved."
-9. After my confirmation, PATCH to Resolved with fix_applied + pr_link.
-10. Immediately move to the next Open issue. Repeat.
+1. Call the GET endpoint and list all Open Sprint 18 issues.
+2. Also call the all-issues endpoint to calculate sprint progress.
+3. Report:
+   - total Open issues
+   - Critical Open count
+   - High Open count
+   - count by severity
+   - total Sprint 18 issues
+   - resolved count
+   - sprint completion percentage
+   - 7-Day Rescue completion percentage
+4. Pick the highest-severity Open issue where sprint_target = "7-Day Rescue".
+5. If no 7-Day Rescue issues are Open, pick the highest-severity Open issue overall.
+6. State clearly:
+   "Starting SF-18-XXX: [title]"
+7. Immediately PATCH that issue to In Progress.
+8. Read the issue fields carefully:
+   - issue_ref
+   - title
+   - severity
+   - sprint_target
+   - description
+   - how_to_fix
+   - files_changed
+   - regression_test
+9. Follow the how_to_fix field precisely.
+10. Inspect every file listed in files_changed.
+11. Apply the smallest safe fix that resolves the issue.
+12. Do not introduce unrelated refactors.
+13. Do not remove working behavior.
+14. Do not fabricate files, build results, PR links, or tracker updates.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BUILD + TRACKER UPDATE RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+After every meaningful code checkpoint, run validation when possible:
+
+Preferred validation:
+npx tsc --noEmit --skipLibCheck
+
+If the repo has a build script and dependencies are available, also run:
+npm run build
+
+Do not run npm ci.
+
+If validation cannot be run because dependencies are unavailable, clearly say:
+"Validation could not be run in this environment because [reason]."
+
+After every typecheck/build attempt, immediately PATCH the issue while it remains In Progress with:
+- what changed
+- files changed
+- whether typecheck passed/failed/not run
+- whether build passed/failed/not run
+- remaining errors, if any
+- updated repo zip filename if available
+
+If typecheck or build fails:
+1. Do not mark the issue Resolved.
+2. Fix errors caused by your changes.
+3. Re-run validation when possible.
+4. PATCH progress again after the next validation attempt.
+5. Continue until the issue is either fixed or you clearly identify the blocking problem.
+
+Only ask for my confirmation after:
+- the code fix is complete,
+- changed files are ready,
+- validation has passed or the limitation is clearly stated,
+- tracker has been updated with the latest In Progress notes,
+- updated repo zip has been created.
+
+Then ask exactly:
+"Please confirm this fix is correct and I'll mark SF-18-XXX Resolved."
+
+Do not PATCH to Resolved until I confirm.
+
+After I confirm:
+1. PATCH the issue to Resolved.
+2. Include the final fix summary in fix_applied.
+3. Use the real PR/commit URL if available.
+4. If no PR/commit URL exists, use the updated repo zip filename in pr_link.
+5. Recalculate sprint progress from the tracker.
+6. Move to the next Open issue.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT AFTER EACH FIX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Return the response in this structure:
+
+## Started Issue
+- Ref:
+- Title:
+- Severity:
+- Sprint target:
+
+## Tracker Status
+- Set to In Progress: yes/no
+- Progress update after build/typecheck: yes/no
+- Current tracker note:
+
+## What Changed
+- Summary:
+- Changed files:
+
+## Validation
+- Typecheck:
+- Build:
+- Remaining errors:
+
+## Final File Contents
+Provide the full final content of every changed file.
+
+## Updated Repo Zip
+Provide the updated repo zip.
+
+## Sprint Progress
+- Sprint readiness percentage:
+- Sprint completion percentage:
+- 7-Day Rescue completion percentage:
+- Remaining Open:
+- Critical Open:
+- High Open:
+
+## Confirmation Request
+Please confirm this fix is correct and I'll mark SF-18-XXX Resolved.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ARCHITECTURE RULES — NEVER BREAK THESE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✗ NEVER add live external API calls to: Xero, QuickBooks, Flexport, Freightos, DHL, WhatsApp Business API
-✗ WhatsApp = manual tracked link only (wa.me prefilled text, operator sends manually)
-✗ PDF = puppeteer-core + @sparticuz/chromium ONLY, no paid PDF API
-✗ Never use 'as any' — use types from src/types/database.generated.ts
-✗ No file > 400 lines — decompose if needed
-✗ Every server action MUST call getWorkspaceAccess() and filter by organization_id
-✓ Every new API route needs: auth check, org scope, Zod validation, error handling
-✓ Every new Supabase table needs RLS + org-scoped policies
-✓ Admin/service-role fallback must be org-scoped AND audit-logged
-✓ Run typecheck after every change
+✗ Never add live external API calls to Xero, QuickBooks, Flexport, Freightos, DHL, or WhatsApp Business API.
+✗ WhatsApp must remain manual tracked-link only using wa.me prefilled text.
+✗ PDF generation must use puppeteer-core + @sparticuz/chromium only. No paid PDF API.
+✗ Never use "as any". Use proper types from src/types/database.generated.ts.
+✗ No file may exceed 400 lines. Decompose if needed.
+✗ Do not remove existing working functionality.
+✗ Do not introduce schema assumptions without checking existing schema/types.
+✗ Do not mark an issue Resolved before my confirmation.
+✗ Do not claim a build/typecheck passed unless it was actually run and passed.
+
+✓ Every server action must call getWorkspaceAccess() and filter by organization_id.
+✓ Every new API route must include auth check, organization scope, Zod validation, and error handling.
+✓ Every new Supabase table requires RLS and org-scoped policies.
+✓ Admin/service-role fallback must be org-scoped and audit-logged.
+✓ Update the Supabase tracker after every typecheck/build attempt.
+✓ Return the updated repo zip after every completed fix.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HANDLING INCOMPLETE ISSUE DATA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If how_to_fix is missing:
+- inspect the relevant code paths,
+- infer the safest minimal fix,
+- explain the assumption,
+- proceed carefully.
+
+If files_changed is missing:
+- identify likely files from the issue description and codebase,
+- explain why those files were selected,
+- proceed with the smallest safe fix.
+
+If regression_test is missing:
+- create a practical manual or code-level validation plan,
+- include it in the fix summary and tracker progress note.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 START NOW
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Call the GET endpoint. Show me: total open, Critical count, High count. Then pick the first issue, patch it to In Progress, and begin the fix.</div>
+Call the GET endpoint for Open Sprint 18 issues.
+Call the all-issues endpoint for progress.
+Show total Open, Critical Open, High Open, count by severity, sprint completion percentage, and 7-Day Rescue completion percentage.
+
+Then pick the first eligible issue, PATCH it to In Progress, and begin the fix.</div>
       <div class="copy-row">
         <button class="copy-btn" onclick="copyPrompt()" id="copy-main-btn">
           <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-copy"/></svg>Copy Full Prompt
