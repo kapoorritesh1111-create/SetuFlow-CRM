@@ -32,7 +32,7 @@ function discountAmount(lineTotal: number, discountType: string | null, discount
 }
 
 async function recalculateOrderTotal(db: any, organizationId: string, orderId: string, actorUserId: string) {
-  const { data: lines } = await db.from('order_lines').select('line_total').eq('organization_id', organizationId).eq('order_id', orderId);
+  const { data: lines } = await db.from('order_lines').select('line_total').eq('organization_id', organizationId).eq('order_id', orderId).neq('line_status', 'removed');
   const total = (Array.isArray(lines) ? lines : []).reduce((sum: number, line: any) => sum + safeNumber(line.line_total, 0), 0);
   await db.from('orders').update({ total_order_value: total || null, updated_by: actorUserId, updated_at: new Date().toISOString() }).eq('organization_id', organizationId).eq('id', orderId);
   return total;
@@ -114,12 +114,47 @@ export async function updateActualOrderLineAction(formData: FormData) {
 }
 
 export async function removeActualOrderLineAction(formData: FormData) {
+  const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   const orderLineId = String(formData.get('order_line_id') ?? '').trim();
   if (!quoteId || !orderLineId) redirect(buildRedirect('order-line-action-invalid', quoteId));
   if (isPreviewLineId(orderLineId)) redirect(buildRedirect('prepare-actual-lines-first', quoteId));
+
+  const db = (await createClient()) as any;
+  const organizationId = workspace.organization.id;
+  const actorUserId = workspace.user.id;
+  const { data: order, error } = await findOrder(db, organizationId, quoteId);
+  if (error || !order?.id) redirect(buildRedirect('actual-order-lines-required', quoteId));
+
+  const { data: before } = await db
+    .from('order_lines')
+    .select('id, source_quote_version_line_item_id, product_name_snapshot, ordered_quantity, unit_price, line_status, line_total, change_type, change_reason, pricing_snapshot, product_snapshot')
+    .eq('organization_id', organizationId)
+    .eq('order_id', order.id)
+    .eq('id', orderLineId)
+    .maybeSingle();
+  if (!before?.id) redirect(buildRedirect('actual-order-line-not-found', order.id));
+
+  const reason = text(formData.get('change_reason')) ?? 'Buyer did not include this line in the actual order.';
+  const isAddedOrManualLine = !before.source_quote_version_line_item_id || ['added_after_quote', 'added_catalog_after_quote'].includes(String(before.change_type ?? ''));
+
+  if (isAddedOrManualLine) {
+    const { error: deleteError } = await db
+      .from('order_lines')
+      .delete()
+      .eq('organization_id', organizationId)
+      .eq('order_id', order.id)
+      .eq('id', orderLineId);
+    if (deleteError) redirect(buildRedirect('order-line-remove-error', order.id));
+    await recalculateOrderTotal(db, organizationId, order.id, actorUserId);
+    await writeAuditLog({ organizationId, action: 'actual_order_line_removed', entityType: 'order_line', entityId: orderLineId, actorUserId, payload: { previous: before, new: null, metadata: { quote_id: quoteId, order_id: order.id, removal_mode: 'deleted_from_active_lines', reason } } });
+    revalidatePath('/orders');
+    if (order.lead_id) revalidatePath(`/leads/${order.lead_id}`);
+    redirect(buildRedirect('order-line-removed', order.id));
+  }
+
   formData.set('ordered_quantity', '0');
-  if (!formData.get('change_reason')) formData.set('change_reason', 'Buyer did not include this quoted line in the actual order.');
+  if (!formData.get('change_reason')) formData.set('change_reason', reason);
   return updateActualOrderLineAction(formData);
 }
 
@@ -258,7 +293,7 @@ export async function saveOrderDiscountAction(formData: FormData) {
   const orderDiscountType = text(formData.get('order_discount_type'));
   const orderDiscountValue = safeNumber(formData.get('order_discount_value'), 0);
   const orderDiscountReason = text(formData.get('order_discount_reason')) ?? 'Order-level discount saved during actual line review.';
-  const { data: lines } = await db.from('order_lines').select('line_total').eq('organization_id', organizationId).eq('order_id', order.id);
+  const { data: lines } = await db.from('order_lines').select('line_total').eq('organization_id', organizationId).eq('order_id', order.id).neq('line_status', 'removed');
   const baseTotal = (Array.isArray(lines) ? lines : []).reduce((sum: number, line: any) => sum + safeNumber(line.line_total, 0), 0);
   const appliedOrderDiscount = discountAmount(baseTotal, orderDiscountType, orderDiscountValue);
   const totalAfterDiscount = Math.max(0, baseTotal - appliedOrderDiscount);
