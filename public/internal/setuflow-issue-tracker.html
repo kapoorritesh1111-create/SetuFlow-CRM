@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SetuFlow · Sprint 18 Issue Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0b1929;--navy2:#0f2340;--navy3:#142d52;
+  --accent:#3b82f6;--accent2:#60a5fa;--accent-dim:rgba(59,130,246,.12);
+  --green:#22c55e;--green-dim:rgba(34,197,94,.12);
+  --amber:#f59e0b;--amber-dim:rgba(245,158,11,.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,.12);
+  --purple:#a78bfa;--purple-dim:rgba(167,139,250,.12);
+  --teal:#14b8a6;--teal-dim:rgba(20,184,166,.12);
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
+  --bg:#080f1a;--bg2:#0d1829;--bg3:#111e33;--bg4:#172542;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+  --radius:8px;--radius-lg:14px;
+  --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;line-height:1.6;overflow-x:hidden}
+
+/* ── TOPBAR ── */
+.topbar{height:56px;background:var(--navy2);border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:200}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#818cf8);display:grid;place-items:center;font-weight:800;font-size:13px;color:#fff;letter-spacing:-.5px;flex-shrink:0}
+.logo-text{font-weight:700;font-size:15px;color:var(--text);letter-spacing:-.3px}
+.logo-text span{color:var(--accent2)}
+.topbar-badge{font-size:10px;background:var(--accent-dim);color:var(--accent2);border:1px solid rgba(59,130,246,.25);padding:2px 8px;border-radius:20px;font-weight:600;letter-spacing:.04em}
+.topbar-links{display:flex;gap:4px;margin-left:auto}
+.topbar-link{padding:6px 12px;border-radius:var(--radius);font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;transition:all .15s;border:1px solid transparent}
+.topbar-link:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.topbar-link.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.topbar-link.primary:hover{background:#2563eb}
+.live-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{opacity:.7;box-shadow:0 0 0 4px rgba(34,197,94,0)}}
+
+/* ── LAYOUT ── */
+.layout{display:flex;height:calc(100vh - 56px)}
+.sidebar{width:228px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:16px 0}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+/* ── SIDEBAR ── */
+.sb-group{margin-bottom:20px}
+.sb-label{padding:4px 16px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)}
+.sb-item{display:flex;align-items:center;justify-content:space-between;padding:7px 14px 7px 16px;cursor:pointer;color:var(--text2);transition:all .12s;user-select:none;font-size:12.5px;gap:6px}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:var(--accent-dim);color:var(--accent2);border-left:2px solid var(--accent)}
+.sb-item .sb-count{font-size:10px;padding:1px 6px;border-radius:10px;background:var(--bg3);color:var(--text3);font-weight:600;min-width:20px;text-align:center;flex-shrink:0}
+.sb-item.active .sb-count{background:var(--accent-dim);color:var(--accent2)}
+.sb-divider{height:1px;background:var(--border);margin:8px 12px}
+.sb-cta{margin:16px 12px 0;display:block;padding:8px 12px;border-radius:var(--radius);background:var(--accent);color:#fff;text-decoration:none;font-size:12px;font-weight:600;text-align:center;transition:background .15s}
+.sb-cta:hover{background:#2563eb}
+
+/* ── KPI BANNER ── */
+.kpi-banner{background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.kpi-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi-card:hover{border-color:var(--border2)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-card.c-total::before{background:var(--text3)}
+.kpi-card.c-crit::before{background:var(--red)}
+.kpi-card.c-high::before{background:var(--amber)}
+.kpi-card.c-prog::before{background:var(--accent)}
+.kpi-card.c-res::before{background:var(--green)}
+.kpi-card.c-7d::before{background:var(--purple)}
+.kpi-card.c-30d::before{background:var(--teal)}
+.kpi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:4px}
+.kpi-value{font-size:26px;font-weight:700;line-height:1;letter-spacing:-.5px}
+.kpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
+.kpi-card.c-total .kpi-value{color:var(--text)}
+.kpi-card.c-crit .kpi-value{color:#fca5a5}
+.kpi-card.c-high .kpi-value{color:#fcd34d}
+.kpi-card.c-prog .kpi-value{color:var(--accent2)}
+.kpi-card.c-res .kpi-value{color:#86efac}
+.kpi-card.c-7d .kpi-value{color:#c4b5fd}
+.kpi-card.c-30d .kpi-value{color:#5eead4}
+
+/* ── PROGRESS BAR ── */
+.progress-row{padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
+.prog-label{font-size:11px;color:var(--text3);white-space:nowrap}
+.prog-track{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),var(--accent));transition:width .8s cubic-bezier(.4,0,.2,1)}
+.prog-pct{font-size:12px;font-weight:700;color:var(--text2);white-space:nowrap;min-width:36px;text-align:right}
+.rescue-badge{font-size:10px;padding:2px 8px;border-radius:20px;background:var(--purple-dim);color:var(--purple);font-weight:600;white-space:nowrap}
+.cleanup-badge{font-size:10px;padding:2px 8px;border-radius:20px;background:var(--teal-dim);color:var(--teal);font-weight:600;white-space:nowrap}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:10px;padding:11px 20px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.toolbar-title{font-weight:600;font-size:14px;color:var(--text);white-space:nowrap}
+.search-wrap{position:relative;flex:1;min-width:180px;max-width:300px}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none}
+.search-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:7px 10px 7px 32px;color:var(--text);font-size:12.5px;font-family:var(--font);outline:none;transition:border-color .15s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--text3)}
+.kbd{display:inline-flex;align-items:center;gap:2px;font-size:10px;background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:0 5px;height:16px;color:var(--text3);font-family:var(--mono);margin-left:4px}
+select.flt{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:7px 28px 7px 10px;color:var(--text2);font-size:12px;font-family:var(--font);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color .15s}
+select.flt:focus{border-color:var(--accent);color:var(--text)}
+.spacer{flex:1}
+.result-count{font-size:11px;color:var(--text3);white-space:nowrap}
+
+/* ── TABLE ── */
+.table-wrap{flex:1}
+.issues-table{width:100%;border-collapse:collapse}
+.issues-table thead th{padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap;position:sticky;top:48px;z-index:50;cursor:pointer;user-select:none;transition:color .15s}
+.issues-table thead th:hover{color:var(--text2)}
+.issues-table thead th .sort-icon{margin-left:4px;opacity:.4;font-size:10px}
+.issues-table thead th.sorted .sort-icon{opacity:1;color:var(--accent2)}
+.issues-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.issues-table tbody tr:hover{background:rgba(255,255,255,.018)}
+.issues-table tbody tr.resolved-row{opacity:.55}
+.issues-table td{padding:10px 14px;vertical-align:middle}
+.col-num{width:54px;font-family:var(--mono);font-size:11px;color:var(--text3)}
+.col-ref{width:110px;font-family:var(--mono);font-size:11px;color:var(--text3)}
+.col-title{max-width:320px}
+.title-main{font-weight:500;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:310px;display:block}
+.title-sub{font-size:11px;color:var(--text3);margin-top:1px;display:block}
+.col-sev{width:90px}
+.col-area{width:110px;font-size:11.5px;color:var(--text2)}
+.col-status{width:128px}
+.col-target{width:120px}
+.col-arrow{width:30px;text-align:center;color:var(--text3);font-size:15px}
+
+/* ── SEVERITY BADGES ── */
+.sev{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.sev-Critical{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.2)}
+.sev-High{background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.2)}
+.sev-Medium{background:rgba(148,163,184,.08);color:#cbd5e1;border:1px solid rgba(148,163,184,.15)}
+.sev-Low{background:var(--bg3);color:var(--text3);border:1px solid var(--border2)}
+
+/* ── STATUS ── */
+.status{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;transition:opacity .15s;white-space:nowrap;border:1px solid transparent}
+.status:hover{opacity:.75}
+.status-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.s-Open{background:var(--bg3);color:var(--text2);border-color:var(--border2)}.s-Open .status-dot{background:var(--text3)}
+.s-In-Progress{background:var(--accent-dim);color:var(--accent2);border-color:rgba(59,130,246,.2)}.s-In-Progress .status-dot{background:var(--accent)}
+.s-Resolved{background:var(--green-dim);color:#86efac;border-color:rgba(34,197,94,.2)}.s-Resolved .status-dot{background:var(--green)}
+.s-Wont-Fix{background:var(--red-dim);color:#fca5a5;border-color:rgba(239,68,68,.15)}.s-Wont-Fix .status-dot{background:var(--red)}
+.s-Deferred{background:var(--purple-dim);color:#c4b5fd;border-color:rgba(167,139,250,.2)}.s-Deferred .status-dot{background:var(--purple)}
+
+/* ── TARGET BADGES ── */
+.target-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.tb-rescue{background:var(--purple-dim);color:#c4b5fd;border:1px solid rgba(167,139,250,.2)}
+.tb-cleanup{background:var(--teal-dim);color:#5eead4;border:1px solid rgba(20,184,166,.2)}
+
+/* ── DETAIL PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;display:none;align-items:flex-start;justify-content:flex-end;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.panel{width:560px;max-width:95vw;height:100vh;background:var(--bg2);border-left:1px solid var(--border2);overflow-y:auto;animation:slideIn .22s cubic-bezier(.4,0,.2,1)}
+@keyframes slideIn{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
+.panel-header{padding:20px 20px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:10}
+.panel-crumb{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.panel-ref{font-family:var(--mono);font-size:11px;color:var(--text3);background:var(--bg3);padding:2px 7px;border-radius:4px}
+.panel-sev-tag{font-size:11px;font-weight:600}
+.panel-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.35;margin-bottom:12px}
+.panel-meta-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.panel-close{position:absolute;top:18px;right:16px;width:30px;height:30px;border-radius:6px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);cursor:pointer;display:grid;place-items:center;font-size:15px;transition:all .15s}
+.panel-close:hover{background:var(--bg4);color:var(--text)}
+.panel-body{padding:18px 20px 40px}
+.panel-section{margin-bottom:22px}
+.panel-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.panel-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.desc-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:12.5px;color:var(--text2);line-height:1.7}
+.fix-steps{background:var(--navy3);border:1px solid rgba(59,130,246,.2);border-radius:var(--radius);padding:14px;font-size:12px;font-family:var(--mono);color:#c7d2fe;line-height:1.8;white-space:pre-wrap;word-break:break-word}
+.files-list{display:flex;flex-direction:column;gap:5px}
+.file-tag{font-family:var(--mono);font-size:11px;color:#7dd3fc;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.15);border-radius:4px;padding:4px 10px;display:block;word-break:break-all}
+.test-box{background:var(--green-dim);border:1px solid rgba(34,197,94,.2);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:#86efac;line-height:1.6}
+.status-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.status-btn{padding:6px 12px;border-radius:var(--radius);font-size:11.5px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s}
+.status-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--border2)}
+.status-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+textarea.notes-ta{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-size:12.5px;font-family:var(--font);outline:none;resize:vertical;min-height:80px;transition:border .15s}
+textarea.notes-ta:focus{border-color:var(--accent)}
+input.text-in{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:7px 10px;color:var(--text);font-size:12px;font-family:var(--font);outline:none;margin-top:4px;transition:border .15s}
+input.text-in:focus{border-color:var(--accent)}
+.save-row{display:flex;align-items:center;gap:10px;margin-top:12px}
+.save-btn{padding:8px 18px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background .15s}
+.save-btn:hover{background:#2563eb}
+.save-msg{font-size:12px;color:var(--text3)}
+
+/* ── GPT PROTOCOL PANEL ── */
+.gpt-section{background:var(--navy3);border:1px solid rgba(59,130,246,.25);border-radius:var(--radius-lg);margin:16px 20px 0;padding:18px 20px}
+.gpt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.gpt-title{font-size:13px;font-weight:700;color:var(--accent2);display:flex;align-items:center;gap:8px}
+.gpt-toggle{font-size:11px;color:var(--text3);cursor:pointer;padding:4px 10px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);transition:all .15s}
+.gpt-toggle:hover{background:var(--bg4);color:var(--text2)}
+.gpt-body{display:none}
+.gpt-body.open{display:block}
+.gpt-prompt-box{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:14px;font-size:11.5px;font-family:var(--mono);color:#e2e8f0;line-height:1.7;white-space:pre-wrap;margin-bottom:10px;max-height:340px;overflow-y:auto}
+.copy-btn{padding:7px 14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:background .15s;display:inline-flex;align-items:center;gap:6px}
+.copy-btn:hover{background:#2563eb}
+.copy-btn.copied{background:var(--green)}
+.protocol-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.proto-step{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px}
+.proto-step .pn{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:4px}
+.proto-step .pt{font-size:11.5px;color:var(--text2);line-height:1.5}
+
+/* ── EMPTY STATE ── */
+.empty-state{padding:80px 40px;text-align:center;color:var(--text3)}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.3;display:block}
+.empty-text{font-size:14px}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;gap:12px;color:var(--text3)}
+.spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:11px 16px;font-size:13px;z-index:999;display:none;animation:fadeUp .2s ease;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.toast.ok{color:var(--green)}.toast.err{color:var(--red)}
+
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(4,1fr)}.panel{width:100vw}}
+@media(max-width:640px){.sidebar{display:none}.kpi-grid{grid-template-columns:repeat(2,1fr)}.col-area,.col-ref{display:none}}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="setuflow-docs.html" class="logo">
+    <div class="logo-mark">SF</div>
+    <span class="logo-text">Setu<span>Flow</span></span>
+  </a>
+  <span class="topbar-badge">Issue Tracker · Sprint 18</span>
+  <div class="live-badge"><span class="live-dot"></span>Live · Supabase</div>
+  <div class="topbar-links">
+    <a href="setuflow-docs.html" class="topbar-link">← Docs Hub</a>
+    <a href="https://www.setuflowcrm.com" target="_blank" class="topbar-link">CRM Live ↗</a>
+    <a href="#gpt-section" class="topbar-link primary" onclick="openGPT()">ChatGPT Fix Prompt</a>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-group">
+      <div class="sb-label">Sprint 18</div>
+      <div class="sb-item active" onclick="filterSb('all')" id="sb-all">All Issues <span class="sb-count" id="cnt-all">–</span></div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-group">
+      <div class="sb-label">By Status</div>
+      <div class="sb-item" onclick="filterSb('Open')" id="sb-Open">Open <span class="sb-count" id="cnt-Open">–</span></div>
+      <div class="sb-item" onclick="filterSb('In Progress')" id="sb-InProgress">In Progress <span class="sb-count" id="cnt-InProgress">–</span></div>
+      <div class="sb-item" onclick="filterSb('Resolved')" id="sb-Resolved">Resolved <span class="sb-count" id="cnt-Resolved">–</span></div>
+      <div class="sb-item" onclick="filterSb('Deferred')" id="sb-Deferred">Deferred <span class="sb-count" id="cnt-Deferred">–</span></div>
+      <div class="sb-item" onclick="filterSb(\"Won't Fix\")" id="sb-WontFix">Won't Fix <span class="sb-count" id="cnt-WontFix">–</span></div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-group">
+      <div class="sb-label">By Severity</div>
+      <div class="sb-item" onclick="filterSb('sev:Critical')" id="sb-sevCritical">Critical <span class="sb-count" id="cnt-sevCritical">–</span></div>
+      <div class="sb-item" onclick="filterSb('sev:High')" id="sb-sevHigh">High <span class="sb-count" id="cnt-sevHigh">–</span></div>
+      <div class="sb-item" onclick="filterSb('sev:Medium')" id="sb-sevMedium">Medium <span class="sb-count" id="cnt-sevMedium">–</span></div>
+      <div class="sb-item" onclick="filterSb('sev:Low')" id="sb-sevLow">Low <span class="sb-count" id="cnt-sevLow">–</span></div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-group">
+      <div class="sb-label">By Sprint Target</div>
+      <div class="sb-item" onclick="filterSb('target:7-Day Rescue')" id="sb-t7d">7-Day Rescue <span class="sb-count" id="cnt-t7d">–</span></div>
+      <div class="sb-item" onclick="filterSb('target:30-Day Cleanup')" id="sb-t30d">30-Day Cleanup <span class="sb-count" id="cnt-t30d">–</span></div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-group">
+      <div class="sb-label">By Area</div>
+      <div id="sb-areas"></div>
+    </div>
+    <a href="#gpt-section" onclick="openGPT()" class="sb-cta">ChatGPT Fix Prompt</a>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- GPT PROTOCOL -->
+    <div class="gpt-section" id="gpt-section">
+      <div class="gpt-header">
+        <div class="gpt-title">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          ChatGPT Issue Fix Protocol — Copy & Paste to Start
+        </div>
+        <button class="gpt-toggle" onclick="toggleGPT()" id="gpt-toggle-btn">Show prompt ▼</button>
+      </div>
+      <div class="gpt-body" id="gpt-body">
+        <div class="protocol-steps">
+          <div class="proto-step"><div class="pn">Step 1 — Load</div><div class="pt">Paste prompt into ChatGPT with the repo zip attached. It reads the issue list from the tracker URL.</div></div>
+          <div class="proto-step"><div class="pn">Step 2 — Fix</div><div class="pt">GPT picks the highest severity Open issue, applies the exact fix steps, and outputs the changed files.</div></div>
+          <div class="proto-step"><div class="pn">Step 3 — Update DB</div><div class="pt">After confirming the fix, GPT updates the issue status in Supabase via the REST API and adds fix_notes.</div></div>
+        </div>
+        <div style="margin-top:14px;margin-bottom:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)">Master Prompt — paste this into ChatGPT with the repo zip:</div>
+        <div class="gpt-prompt-box" id="gpt-prompt-text">You are a senior full-stack engineer working on SetuFlow CRM (Next.js 14 App Router, TypeScript, Supabase, Tailwind CSS).
+
+ISSUE TRACKER: https://sjzfzloggabsmcuxktnl.supabase.co
+TABLE: public.sprint_issues (sprint_number=18)
+
+SUPABASE REST API FOR STATUS UPDATES:
+  PATCH https://sjzfzloggabsmcuxktnl.supabase.co/rest/v1/sprint_issues?issue_ref=eq.{REF}
+  Headers: apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w
+  Body: {"status":"In Progress","fix_applied":"<description of fix>","pr_link":"<PR URL if available>"}
+
+YOUR WORKFLOW FOR EVERY SESSION:
+1. Read all issues where status='Open' ordered by severity (Critical → High → Medium → Low) and sprint_target='7-Day Rescue' first.
+2. Pick the highest priority open issue. State: "Starting on [ISSUE_REF]: [TITLE]"
+3. IMMEDIATELY call the PATCH API to set status='In Progress' for that issue.
+4. Read the issue's how_to_fix field for exact steps. Follow them precisely.
+5. Show me the exact code changes (full file content, not diff) for each affected file listed in files_changed.
+6. After I confirm the fix is correct, call the PATCH API to set status='Resolved', fill fix_applied with what was done, and pr_link with the commit/PR.
+7. Move to the next Open issue. Repeat.
+
+ARCHITECTURE RULES YOU MUST FOLLOW:
+- Finance/freight adapters queue only — never add live external API calls to Xero, Flexport, DHL, or WhatsApp Business API
+- WhatsApp delivery is manual tracked link only (wa.me prefilled text)
+- PDF generation uses puppeteer-core + @sparticuz/chromium only — no paid PDF API
+- Every server action must call getWorkspaceAccess() and filter all queries by organization_id
+- Run npx tsc --noEmit --skipLibCheck after every change and fix all type errors before reporting done
+- Never use 'as any' — use proper types from src/types/database.generated.ts
+- Admin/service-role client fallback must always be org-scoped and audit-logged
+
+CODE QUALITY RULES:
+- No file should exceed 400 lines after your changes — decompose if needed
+- Every new API route needs: auth check, org scoping, input validation with Zod, error handling
+- Every new Supabase table needs RLS enabled with org-scoped policies
+- Write the regression test assertion alongside the fix
+
+START NOW: Query the sprint_issues table and report back:
+- Total open: {count}
+- Critical open: {count}
+- First issue to fix: {issue_ref} — {title}
+Then set it to 'In Progress' and begin.</div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="copy-btn" onclick="copyPrompt()" id="copy-btn">Copy Prompt</button>
+          <span style="font-size:11px;color:var(--text3)">After copying, open ChatGPT, attach the repo zip, and paste.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI BANNER -->
+    <div class="kpi-banner">
+      <div class="kpi-grid">
+        <div class="kpi-card c-total"><div class="kpi-label">Total Issues</div><div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub">Sprint 18</div></div>
+        <div class="kpi-card c-crit"><div class="kpi-label">Critical Open</div><div class="kpi-value" id="kpi-crit">–</div><div class="kpi-sub" id="kpi-crit-sub">remaining</div></div>
+        <div class="kpi-card c-high"><div class="kpi-label">High Open</div><div class="kpi-value" id="kpi-high">–</div><div class="kpi-sub">need attention</div></div>
+        <div class="kpi-card c-prog"><div class="kpi-label">In Progress</div><div class="kpi-value" id="kpi-prog">–</div><div class="kpi-sub">being fixed now</div></div>
+        <div class="kpi-card c-res"><div class="kpi-label">Resolved</div><div class="kpi-value" id="kpi-res">–</div><div class="kpi-sub" id="kpi-res-pct">0% done</div></div>
+        <div class="kpi-card c-7d"><div class="kpi-label">7-Day Rescue</div><div class="kpi-value" id="kpi-7d">–</div><div class="kpi-sub">critical path</div></div>
+        <div class="kpi-card c-30d"><div class="kpi-label">30-Day Cleanup</div><div class="kpi-value" id="kpi-30d">–</div><div class="kpi-sub">cleanup track</div></div>
+      </div>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-row">
+      <span class="prog-label">Sprint 18 completion</span>
+      <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <span class="prog-pct" id="prog-pct">0%</span>
+      <span class="rescue-badge" id="rescue-badge">7-Day: – open</span>
+      <span class="cleanup-badge" id="cleanup-badge">30-Day: – open</span>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <span class="toolbar-title" id="toolbar-title">All Issues</span>
+      <div class="search-wrap">
+        <svg class="search-icon" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" class="search-input" id="search" placeholder="Search issues, files, areas…" oninput="render()">
+      </div>
+      <select class="flt" id="flt-area" onchange="render()"><option value="">All areas</option></select>
+      <select class="flt" id="flt-target" onchange="render()">
+        <option value="">All targets</option>
+        <option value="7-Day Rescue">7-Day Rescue</option>
+        <option value="30-Day Cleanup">30-Day Cleanup</option>
+      </select>
+      <div class="spacer"></div>
+      <span class="result-count" id="result-count"></span>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <div id="loading" class="loading"><div class="spinner"></div>Loading from Supabase…</div>
+      <table class="issues-table" id="tbl" style="display:none">
+        <thead>
+          <tr>
+            <th class="col-num" onclick="sortBy('issue_number')"># <span class="sort-icon" id="sort-issue_number">↕</span></th>
+            <th class="col-ref" onclick="sortBy('issue_ref')">Ref <span class="sort-icon" id="sort-issue_ref">↕</span></th>
+            <th class="col-title">Title</th>
+            <th class="col-sev" onclick="sortBy('severity')">Severity <span class="sort-icon" id="sort-severity">↕</span></th>
+            <th class="col-area">Area</th>
+            <th class="col-status" onclick="sortBy('status')">Status <span class="sort-icon" id="sort-status">↕</span></th>
+            <th class="col-target">Target</th>
+            <th class="col-arrow"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty" class="empty-state" style="display:none">
+        <span class="empty-icon">🔍</span>
+        <div class="empty-text">No issues match this filter.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- DETAIL OVERLAY -->
+<div class="overlay" id="overlay" onclick="closePanel(event)">
+  <div class="panel" onclick="event.stopPropagation()">
+    <div class="panel-header">
+      <div class="panel-crumb">
+        <span class="panel-ref" id="p-ref">–</span>
+        <span id="p-sev-tag"></span>
+        <span id="p-target-tag"></span>
+      </div>
+      <div class="panel-title" id="p-title">–</div>
+      <div class="panel-meta-row" id="p-meta"></div>
+      <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="panel-section">
+        <div class="panel-section-title">Problem description</div>
+        <div class="desc-box" id="p-desc">–</div>
+      </div>
+      <div class="panel-section" id="p-fix-section">
+        <div class="panel-section-title">How to fix — step by step</div>
+        <div class="fix-steps" id="p-fix">No fix steps recorded yet. Add them in the fix notes below.</div>
+      </div>
+      <div class="panel-section" id="p-files-section">
+        <div class="panel-section-title">Files to change</div>
+        <div class="files-list" id="p-files"></div>
+      </div>
+      <div class="panel-section" id="p-test-section">
+        <div class="panel-section-title">Regression test</div>
+        <div class="test-box" id="p-test">–</div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-section-title">Update status</div>
+        <div class="status-row" id="p-status-row"></div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-section-title">Fix notes / what was done</div>
+        <textarea class="notes-ta" id="p-notes" placeholder="Describe what was changed, files edited, and any caveats…"></textarea>
+      </div>
+      <div class="panel-section">
+        <div class="panel-section-title">PR / commit link</div>
+        <input type="text" class="text-in" id="p-pr" placeholder="https://github.com/…/pull/42">
+      </div>
+      <div class="panel-section">
+        <div class="panel-section-title">Assignee</div>
+        <input type="text" class="text-in" id="p-assignee" placeholder="Name or @handle">
+      </div>
+      <div class="save-row">
+        <button class="save-btn" onclick="savePanel()">Save to Supabase</button>
+        <span class="save-msg" id="p-save-msg"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_URL='https://sjzfzloggabsmcuxktnl.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w';
+const db=supabase.createClient(SB_URL,SB_KEY);
+let ALL=[],VISIBLE=[],activeFilter='all',sortField='issue_number',sortDir=1,openIssue=null;
+const STATUSES=['Open','In Progress','Resolved',"Won't Fix",'Deferred'];
+const SEV_ORDER={'Critical':0,'High':1,'Medium':2,'Low':3};
+
+function sk(s){return(s||'').replace(/[^a-zA-Z]/g,'')}
+
+async function load(){
+  const{data,error}=await db.from('sprint_issues').select('*').eq('sprint_number',18).order('issue_number');
+  document.getElementById('loading').style.display='none';
+  if(error){toast('DB error: '+error.message,false);return;}
+  ALL=data||[];
+  buildAreaFilter();updateSidebar();render();
+}
+
+function buildAreaFilter(){
+  const areas=[...new Set(ALL.map(i=>i.area||i.workflow_area||'Other'))].sort();
+  const sel=document.getElementById('flt-area');
+  sel.innerHTML='<option value="">All areas</option>'+areas.map(a=>`<option value="${a}">${a}</option>`).join('');
+}
+
+function updateSidebar(){
+  const counts={},sevs={},targets={};
+  STATUSES.forEach(s=>counts[s]=0);
+  ['Critical','High','Medium','Low'].forEach(s=>sevs[s]=0);
+  ['7-Day Rescue','30-Day Cleanup'].forEach(t=>targets[t]=0);
+  ALL.forEach(i=>{
+    counts[i.status]=(counts[i.status]||0)+1;
+    sevs[i.severity]=(sevs[i.severity]||0)+1;
+    if(i.sprint_target)targets[i.sprint_target]=(targets[i.sprint_target]||0)+1;
+  });
+  set('cnt-all',ALL.length);
+  STATUSES.forEach(s=>{const el=document.getElementById('cnt-'+sk(s));if(el)el.textContent=counts[s]||0;});
+  ['Critical','High','Medium','Low'].forEach(s=>{const el=document.getElementById('cnt-sev'+s);if(el)el.textContent=sevs[s]||0;});
+  set('cnt-t7d',targets['7-Day Rescue']||0);
+  set('cnt-t30d',targets['30-Day Cleanup']||0);
+
+  // Build area sidebar
+  const areaEl=document.getElementById('sb-areas');
+  const areaCounts={};
+  ALL.forEach(i=>{const a=i.area||i.workflow_area||'Other';areaCounts[a]=(areaCounts[a]||0)+1;});
+  areaEl.innerHTML=Object.entries(areaCounts).sort((a,b)=>b[1]-a[1]).map(([a,c])=>
+    `<div class="sb-item" onclick="filterSb('area:${a}')" id="sb-area${sk(a)}">${a}<span class="sb-count" id="cnt-area${sk(a)}">${c}</span></div>`
+  ).join('');
+
+  // KPIs
+  const open=ALL.filter(i=>i.status!=='Resolved'&&i.status!=="Won't Fix");
+  const critOpen=open.filter(i=>i.severity==='Critical').length;
+  const highOpen=open.filter(i=>i.severity==='High').length;
+  const inProg=ALL.filter(i=>i.status==='In Progress').length;
+  const resolved=ALL.filter(i=>i.status==='Resolved'||i.status==="Won't Fix").length;
+  const rescue7=ALL.filter(i=>i.sprint_target==='7-Day Rescue');
+  const cleanup30=ALL.filter(i=>i.sprint_target==='30-Day Cleanup');
+  const rescue7open=rescue7.filter(i=>i.status==='Open'||i.status==='In Progress').length;
+  const cleanup30open=cleanup30.filter(i=>i.status==='Open'||i.status==='In Progress').length;
+  const pct=ALL.length?Math.round(resolved/ALL.length*100):0;
+
+  set('kpi-total',ALL.length);set('kpi-crit',critOpen);set('kpi-high',highOpen);
+  set('kpi-prog',inProg);set('kpi-res',resolved);set('kpi-res-pct',pct+'% done');
+  set('kpi-7d',rescue7.length);set('kpi-30d',cleanup30.length);
+  set('kpi-crit-sub',critOpen===0?'✓ all clear':'remaining');
+  document.getElementById('prog-fill').style.width=pct+'%';
+  set('prog-pct',pct+'%');
+  set('rescue-badge','7-Day: '+rescue7open+' open');
+  set('cleanup-badge','30-Day: '+cleanup30open+' open');
+}
+
+function filterSb(key){
+  document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('active'));
+  const id=key==='all'?'sb-all':key.startsWith('sev:')?'sb-sev'+key.slice(4):key.startsWith('area:')?'sb-area'+sk(key.slice(5)):key.startsWith('target:')?'sb-t'+sk(key.slice(7)):'sb-'+sk(key);
+  const el=document.getElementById(id);if(el)el.classList.add('active');
+  activeFilter=key;document.getElementById('search').value='';render();
+}
+
+function sortBy(field){
+  if(sortField===field)sortDir*=-1;else{sortField=field;sortDir=1;}
+  document.querySelectorAll('.sort-icon').forEach(e=>{e.textContent='↕';e.parentElement.classList.remove('sorted');});
+  const icon=document.getElementById('sort-'+field);
+  if(icon){icon.textContent=sortDir===1?'↑':'↓';icon.parentElement.classList.add('sorted');}
+  render();
+}
+
+function getFiltered(){
+  const search=document.getElementById('search').value.toLowerCase().trim();
+  const areaF=document.getElementById('flt-area').value;
+  const targetF=document.getElementById('flt-target').value;
+  return ALL.filter(i=>{
+    const area=i.area||i.workflow_area||'Other';
+    if(activeFilter==='all'){}
+    else if(activeFilter.startsWith('sev:'))if(i.severity!==activeFilter.slice(4))return false;
+    else if(activeFilter.startsWith('area:'))if(area!==activeFilter.slice(5))return false;
+    else if(activeFilter.startsWith('target:'))if(i.sprint_target!==activeFilter.slice(7))return false;
+    else if(i.status!==activeFilter)return false;
+    if(areaF&&area!==areaF)return false;
+    if(targetF&&i.sprint_target!==targetF)return false;
+    if(search){const t=(i.title+' '+(i.description||'')+' '+(i.issue_ref||'')+' '+area).toLowerCase();if(!t.includes(search))return false;}
+    return true;
+  }).sort((a,b)=>{
+    let av=a[sortField]??'',bv=b[sortField]??'';
+    if(sortField==='severity'){av=SEV_ORDER[a.severity]??9;bv=SEV_ORDER[b.severity]??9;}
+    if(av<bv)return -sortDir;if(av>bv)return sortDir;return 0;
+  });
+}
+
+function render(){
+  VISIBLE=getFiltered();
+  const tbl=document.getElementById('tbl'),empty=document.getElementById('empty'),tbody=document.getElementById('tbody');
+  set('result-count',VISIBLE.length+' issue'+(VISIBLE.length!==1?'s':''));
+  if(!VISIBLE.length){tbl.style.display='none';empty.style.display='block';return;}
+  tbl.style.display='table';empty.style.display='none';
+  tbody.innerHTML=VISIBLE.map(i=>{
+    const area=i.area||i.workflow_area||'Other';
+    const sk2=statusKey(i.status);
+    const tb=i.sprint_target==='7-Day Rescue'?'<span class="target-badge tb-rescue">7-Day</span>':i.sprint_target?'<span class="target-badge tb-cleanup">30-Day</span>':'';
+    const isRes=i.status==='Resolved'||i.status==="Won't Fix";
+    return`<tr onclick="openPanel('${i.id}')"${isRes?' class="resolved-row"':''}>
+      <td class="col-num">${i.issue_number}</td>
+      <td class="col-ref">${esc(i.issue_ref||'')}</td>
+      <td class="col-title"><span class="title-main">${esc(i.title)}</span><span class="title-sub">${esc(area)}</span></td>
+      <td class="col-sev"><span class="sev sev-${i.severity}">${i.severity}</span></td>
+      <td class="col-area">${esc(area)}</td>
+      <td class="col-status"><span class="status s-${sk2}" onclick="cycleStatus(event,'${i.id}')"><span class="status-dot"></span>${i.status}</span></td>
+      <td class="col-target">${tb}</td>
+      <td class="col-arrow">›</td>
+    </tr>`;
+  }).join('');
+}
+
+function statusKey(s){return(s||'').replace(/[^a-zA-Z]/g,'-')}
+
+async function cycleStatus(event,id){
+  event.stopPropagation();
+  const i=ALL.find(x=>x.id===id);if(!i)return;
+  const next=STATUSES[(STATUSES.indexOf(i.status)+1)%STATUSES.length];
+  await patchIssue(id,{status:next});
+}
+
+async function patchIssue(id,payload){
+  const{error}=await db.from('sprint_issues').update(payload).eq('id',id);
+  if(error){toast('Save failed: '+error.message,false);return false;}
+  const i=ALL.find(x=>x.id===id);if(i)Object.assign(i,payload);
+  updateSidebar();render();
+  if(openIssue&&openIssue.id===id){Object.assign(openIssue,payload);populatePanel(openIssue);}
+  toast('Updated: '+Object.keys(payload).join(', '));return true;
+}
+
+function openPanel(id){
+  openIssue=ALL.find(i=>i.id===id);if(!openIssue)return;
+  populatePanel(openIssue);
+  document.getElementById('overlay').classList.add('open');
+}
+
+function populatePanel(i){
+  const area=i.area||i.workflow_area||'Other';
+  set('p-ref',i.issue_ref||'SF-18-'+String(i.issue_number).padStart(3,'0'));
+  set('p-title',i.title);
+  set('p-desc',i.description||'–');
+  document.getElementById('p-fix').textContent=i.how_to_fix||'No step-by-step fix recorded yet. Use the fix notes field below or check the audit report.';
+  document.getElementById('p-notes').value=i.fix_applied||'';
+  document.getElementById('p-pr').value=i.pr_link||'';
+  document.getElementById('p-assignee').value=i.assigned_to||'';
+  set('p-save-msg','');
+
+  const sevTag=document.getElementById('p-sev-tag');
+  sevTag.innerHTML=`<span class="sev sev-${i.severity}">${i.severity}</span>`;
+
+  const tgtTag=document.getElementById('p-target-tag');
+  tgtTag.innerHTML=i.sprint_target==='7-Day Rescue'?'<span class="target-badge tb-rescue">7-Day Rescue</span>':i.sprint_target?'<span class="target-badge tb-cleanup">30-Day Cleanup</span>':'';
+
+  const metaEl=document.getElementById('p-meta');
+  metaEl.innerHTML=[
+    ['Area',esc(area)],
+    ['Status',`<span class="status s-${statusKey(i.status)}"><span class="status-dot"></span>${i.status}</span>`],
+    ['Updated',new Date(i.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})],
+    ['Assignee',esc(i.assigned_to||'Unassigned')],
+  ].map(([l,v])=>`<span style="font-size:11px;color:var(--text3);display:inline-flex;align-items:center;gap:4px">${l}: <span style="color:var(--text2)">${v}</span></span>`).join('');
+
+  const files=i.files_changed||[];
+  document.getElementById('p-files-section').style.display=files.length?'block':'none';
+  document.getElementById('p-files').innerHTML=files.map(f=>`<span class="file-tag">${esc(f)}</span>`).join('');
+
+  const test=i.regression_test||'';
+  document.getElementById('p-test-section').style.display=test?'block':'none';
+  set('p-test',test);
+
+  document.getElementById('p-status-row').innerHTML=STATUSES.map(s=>
+    `<button class="status-btn${s===i.status?' active':''}" onclick="patchIssue('${i.id}',{status:'${s.replace(/'/g,"\\'")}'})">${s}</button>`
+  ).join('');
+}
+
+async function savePanel(){
+  if(!openIssue)return;
+  set('p-save-msg','Saving…');
+  const ok=await patchIssue(openIssue.id,{fix_applied:document.getElementById('p-notes').value,pr_link:document.getElementById('p-pr').value,assigned_to:document.getElementById('p-assignee').value});
+  set('p-save-msg',ok?'Saved ✓':'Error — check console');
+  setTimeout(()=>set('p-save-msg',''),3000);
+}
+
+function closePanel(event){
+  if(!event||event.target===document.getElementById('overlay')){
+    document.getElementById('overlay').classList.remove('open');openIssue=null;
+  }
+}
+
+function openGPT(){document.getElementById('gpt-body').classList.add('open');set('gpt-toggle-btn','Hide prompt ▲');setTimeout(()=>document.getElementById('gpt-section').scrollIntoView({behavior:'smooth'}),50);}
+function toggleGPT(){
+  const b=document.getElementById('gpt-body');
+  b.classList.toggle('open');
+  set('gpt-toggle-btn',b.classList.contains('open')?'Hide prompt ▲':'Show prompt ▼');
+}
+function copyPrompt(){
+  const t=document.getElementById('gpt-prompt-text').textContent;
+  navigator.clipboard.writeText(t).then(()=>{
+    const btn=document.getElementById('copy-btn');btn.textContent='✓ Copied!';btn.classList.add('copied');
+    setTimeout(()=>{btn.innerHTML='Copy Prompt';btn.classList.remove('copied');},2500);
+  });
+}
+
+function toast(msg,ok=true){
+  const el=document.getElementById('toast');
+  el.textContent=(ok?'✓ ':'✗ ')+msg;el.className='toast '+(ok?'ok':'err');
+  el.style.display='block';setTimeout(()=>el.style.display='none',3000);
+}
+function set(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Keyboard shortcut
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('search').focus();}
+  if(e.key==='Escape')closePanel();
+});
+
+load();
+</script>
+</body>
+</html>

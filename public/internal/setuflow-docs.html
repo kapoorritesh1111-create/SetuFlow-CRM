@@ -164,8 +164,11 @@
 
 <div class="top-nav">
   <div class="brand">Setu<span>Flow</span> CRM</div>
-  <div class="version">Documentation Suite v2.0 · May 2026</div>
-  <div style="margin-left:auto; font-size:11px; opacity:0.6;">Synthesized from repo + docs + training materials</div>
+  <div class="version">Sprint 18 Docs · May 2026</div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+    <a href="setuflow-issue-tracker.html" style="color:#60a5fa;font-size:12px;font-weight:700;text-decoration:none;background:rgba(59,130,246,.15);padding:4px 12px;border-radius:20px;border:1px solid rgba(59,130,246,.3)">Issue Tracker →</a>
+    <a href="https://www.setuflowcrm.com" target="_blank" style="color:rgba(255,255,255,.6);font-size:11px;text-decoration:none">Live CRM ↗</a>
+  </div>
 </div>
 
 <div class="layout">
@@ -189,14 +192,11 @@
 
   <div class="sidebar-section">Reference</div>
   <a href="#s10"><span class="num">10</span> Cheat Sheets</a>
-  <a href="#s11"><span class="num">11</span> Repo Corrections</a>
-  <a href="#s12"><span class="num">12</span> Supabase Corrections</a>
-  <a href="#s13"><span class="num">13</span> Recommended Fixes</a>
-  <a href="#s14"><span class="num">14</span> Enhancements</a>
-  <a href="#s15"><span class="num">15</span> Sprint Tracker</a>
+  <a href="#s-status"><span class="num">→</span> Sprint Status</a>
+  <a href="setuflow-issue-tracker.html" style="color:#60a5fa;background:rgba(59,130,246,.1);border-left:3px solid #3b82f6"><span class="num" style="background:#1d4ed8">⚡</span> Issue Tracker</a>
   <a href="#s16"><span class="num">16</span> Production Status</a>
   <a href="#s17"><span class="num">17</span> Live UI Reference</a>
-  <a href="#s18"><span class="num">18</span> Sprint 18 Plan / Status</a>
+  <a href="#s18"><span class="num">18</span> Sprint 18 Status</a>
 </nav>
 
 <main class="main">
@@ -1292,362 +1292,82 @@ flowchart LR
 <!-- ═══════════════════════════════════════════════════════════ -->
 
 <!-- ═══ S11 ═══ -->
-<section class="section" id="s11">
-<div class="section-header"><div class="section-num">11</div><h1>Repo-Aware Corrections & Gaps</h1></div>
-<div class="alert alert-blue">Updated each sprint close. <span class="badge badge-green">✓</span> = resolved and live in production.</div>
-<div class="correction critical"><div class="corr-title">Build Error: legal_name on OrganizationRow <span class="badge badge-green" style="float:right">✓ Fixed S14 · Deployed</span></div><div class="corr-body">Removed <code>workspace.organization.legal_name</code> — <code>OrganizationRow</code> only has <code>.name</code>. Build clean since commit 3a89dc5.</div></div>
-<div class="correction critical"><div class="corr-title">Quote-to-Order Handoff — DB constraint + audit trigger <span class="badge badge-green" style="float:right">✓ Fixed S12 · Live</span></div><div class="corr-body">CHECK constraint + <code>trg_audit_order_quote_lineage</code>. Orders now DB-enforced to have <code>source_quote_version_id</code> when <code>source_quote_id</code> is set.</div></div>
-<div class="correction critical"><div class="corr-title">Lead Coverage Gate DB vs UI Alignment <span class="badge badge-green" style="float:right">✓ Fixed S12 · Live</span></div><div class="corr-body">Canonical <code>checkLeadQuoteGate()</code> in <code>src/lib/leads/lead-quote-gate.ts</code>. Logs to <code>lead_quote_gate_log</code>.</div></div>
-<div class="correction"><div class="corr-title">Email + WhatsApp Fully Wired <span class="badge badge-green" style="float:right">✓ Fixed S12 · Deployed</span></div><div class="corr-body">Email calls <code>sendOrderDocumentEmail()</code> via Mailtrap. WhatsApp calls <code>generateWhatsAppLinks()</code>. Both write to <code>order_document_sends</code>. Webhook live at <code>/api/webhooks/mailtrap</code>.</div></div>
-<div class="correction"><div class="corr-title">SECURITY DEFINER Views → SECURITY INVOKER <span class="badge badge-green" style="float:right">✓ Fixed S12 · Live</span></div><div class="corr-body"><code>active_product_pricing_rules_v</code> and <code>v_quote_eligible_products</code> live as SECURITY INVOKER.</div></div>
-<div class="correction"><div class="corr-title">Document Quantity Basis <span class="badge badge-green" style="float:right">✓ Fixed S14 · Deployed</span></div><div class="corr-body"><code>order_documents.quantity_basis</code> column (ordered | loaded | dispatched | delivered) + <code>dispatched_quantity_context</code> JSONB.</div></div>
-<div class="correction"><div class="corr-title">Migration History Reconciliation <span class="badge badge-green" style="float:right">✓ Fixed S14</span></div><div class="corr-body">6 marker migration files added to <code>supabase/migrations/</code> for Sprint 11-13 MCP migrations.</div></div>
-<div class="correction"><div class="corr-title">Finance + Freight Adapter Boundary <span class="badge badge-green" style="float:right">✓ Fixed S13 · Deployed</span></div><div class="corr-body"><code>finance-adapter.ts</code>, <code>freight-adapter.ts</code>, event queue tables live. adapter_name='pending' — queues ready, no external connectors.</div></div>
-<div class="correction"><div class="corr-title">Leaked Password Protection <span class="badge badge-green" style="float:right">✓ Enabled S16 · Ritesh ✓</span></div><div class="corr-body">Supabase Auth HaveIBeenPwned check enabled by Ritesh on 2026-05-19. All critical security items resolved.</div></div>
-<div class="correction"><div class="corr-title">NEXT_PUBLIC_APP_URL + MAILTRAP_WEBHOOK_SECRET in Vercel <span class="badge badge-amber" style="float:right">⟳ Verify Vercel env</span></div><div class="corr-body">Confirm <code>NEXT_PUBLIC_APP_URL=https://www.setuflowcrm.com</code> (prevents Vercel preview URL leakage in quote share links). Set <code>MAILTRAP_WEBHOOK_SECRET</code> to enable email delivery confirmation.</div></div>
-</section>
 
-<!-- ═══ S12 ═══ -->
-<section class="section" id="s12">
-<div class="section-header"><div class="section-num">12</div><h1>Supabase-Aware Corrections</h1></div>
-<div class="alert alert-green"><strong>ALL critical security issues resolved as of Sprint 16.</strong> RLS (38 tables), SECURITY DEFINER RPCs (32), INVOKER views (2), mutable search paths (12 functions), leaked password protection. Production deployed 2026-05-19.</div>
+<!-- ═══ SPRINT STATUS SUMMARY (replaces old s11-s15) ═══ -->
+<section class="section" id="s-status">
+<div class="section-header">
+  <div class="section-num">✓</div>
+  <h1>Sprint History — Corrections &amp; Status</h1>
+</div>
+
+<div class="alert alert-green" style="font-size:13px;margin-bottom:20px">
+  <strong>Sprints 11–16 complete.</strong> All critical security issues resolved. RLS on 38 tables, SECURITY DEFINER RPCs fixed, Mailtrap live, Finance/Freight adapter boundaries deployed, leaked password protection enabled. Two Vercel env vars remain.
+</div>
+
+<!-- Issue Tracker CTA -->
+<div style="background:#0f2244;border:1px solid rgba(59,130,246,.3);border-radius:14px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  <div>
+    <div style="font-weight:700;font-size:16px;color:#e2e8f0;margin-bottom:4px">Sprint 18 Issue Tracker</div>
+    <div style="font-size:13px;color:#94a3b8">50 issues identified in the Sprint 18 audit. Live Supabase backend. Track every fix, assign issues, and monitor progress in real time.</div>
+  </div>
+  <a href="setuflow-issue-tracker.html" style="display:inline-block;padding:10px 22px;background:#3b82f6;color:#fff;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0">Open Issue Tracker →</a>
+</div>
+
 <div class="card-grid">
-  <div class="card" style="border-left:4px solid #10b981"><div class="card-title">✅ Security — Complete</div><ul><li>✓ RLS policies on 38 tables (S11)</li><li>✓ anon EXECUTE revoked on 32 RPCs (S12)</li><li>✓ SECURITY INVOKER views (S12)</li><li>✓ search_path fixed on 12 functions (S12)</li><li>✓ Leaked password protection (S16)</li><li>✓ FK indexes on 9 join paths (S11)</li></ul></div>
-  <div class="card" style="border-left:4px solid #10b981"><div class="card-title">✅ Schema — Complete</div><ul><li>✓ email_send_log table (S11)</li><li>✓ sprint_issues table (S11)</li><li>✓ lead_quote_gate_log (S12)</li><li>✓ document_template_history (S13)</li><li>✓ finance_integration_events (S13)</li><li>✓ freight_booking_events (S13)</li><li>✓ analytics_snapshots (S14)</li><li>✓ order_documents.quantity_basis (S14)</li></ul></div>
-  <div class="card" style="border-left:4px solid #10b981"><div class="card-title">✅ Migrations — 8 Applied</div><ul><li>✓ sprint_11_rls_policies_remaining</li><li>✓ sprint_11_email_whatsapp_comms_schema</li><li>✓ sprint_11_sprint_issue_tracker</li><li>✓ sprint_12_revoke_anon_execute_on_rpcs</li><li>✓ sprint_12_security_invoker_views</li><li>✓ sprint_12_quote_order_integrity_constraints</li><li>✓ sprint_13_document_templates_finance_freight</li><li>✓ sprint_14_analytics_schema</li></ul></div>
-  <div class="card" style="border-left:4px solid #f59e0b"><div class="card-title">⟳ Vercel Env Actions</div><ul><li>⟳ NEXT_PUBLIC_APP_URL=https://www.setuflowcrm.com</li><li>⟳ MAILTRAP_WEBHOOK_SECRET (from Mailtrap → Webhooks)</li></ul><div style="margin-top:8px;font-size:11px;color:#64748b">Vercel → Project → Settings → Environment Variables</div></div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ Sprints 11–12 Security</div>
+    <ul>
+      <li>✓ RLS policies on 38 tables</li>
+      <li>✓ anon EXECUTE revoked on 32 RPCs</li>
+      <li>✓ SECURITY INVOKER views</li>
+      <li>✓ search_path fixed — 12 functions</li>
+      <li>✓ FK indexes on 9 join paths</li>
+      <li>✓ Quote-order integrity constraint</li>
+      <li>✓ Lead coverage gate canonical</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ Sprints 13–15 Features</div>
+    <ul>
+      <li>✓ Mailtrap email + webhook live</li>
+      <li>✓ WhatsApp manual tracked links</li>
+      <li>✓ Finance adapter boundary</li>
+      <li>✓ Freight adapter boundary</li>
+      <li>✓ Document template versioning</li>
+      <li>✓ Analytics dashboard live</li>
+      <li>✓ Migration reconciliation (6 files)</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ Sprint 16 — Production Clean</div>
+    <ul>
+      <li>✓ Build clean — 94 routes</li>
+      <li>✓ Webhook verified live</li>
+      <li>✓ Leaked password protection ON</li>
+      <li>✓ All Setu Guru docs updated</li>
+      <li>✓ sprint_issues table live</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #ef4444">
+    <div class="card-title">🔴 Sprint 18 Audit — 50 Issues</div>
+    <ul>
+      <li>5 Critical (including webhook auth, compliance file upload)</li>
+      <li>9 High (dead code, type safety, rate limits)</li>
+      <li>22 Medium (UX, testing, docs)</li>
+      <li>14 Low (cleanup, polish)</li>
+    </ul>
+    <div class="cta-list"><a href="setuflow-issue-tracker.html" class="cta-btn">View Full Tracker →</a></div>
+  </div>
+</div>
+
+<h2>Remaining Vercel Actions (2)</h2>
+<div class="alert alert-amber">
+  <strong>Action required:</strong> Set these in Vercel → Project → Settings → Environment Variables.
+  <code>NEXT_PUBLIC_APP_URL=https://www.setuflowcrm.com</code> · 
+  <code>MAILTRAP_WEBHOOK_SECRET</code> (from Mailtrap → Webhooks → Signing secret)
 </div>
 </section>
 
-<!-- ═══ S13 ═══ -->
-<section class="section" id="s13">
-<div class="section-header"><div class="section-num">13</div><h1>Recommended Fixes (Prioritized)</h1></div>
-<h2>✓ All Applied — Sprints 11–16</h2>
-<div class="card-grid">
-  <div class="card" style="border-left:4px solid #10b981"><div class="card-title">Sprints 11–12 Done</div><ul><li>✓ RLS backfill (38 tables)</li><li>✓ FK indexes (9)</li><li>✓ Mailtrap email + WhatsApp wired</li><li>✓ SECURITY DEFINER RPCs fixed</li><li>✓ SECURITY INVOKER views</li><li>✓ Quote-order integrity</li><li>✓ Lead coverage gate canonical</li></ul></div>
-  <div class="card" style="border-left:4px solid #10b981"><div class="card-title">Sprints 13–15 Done</div><ul><li>✓ Finance + freight adapter boundary</li><li>✓ Document template versioning</li><li>✓ Analytics dashboard live</li><li>✓ Conversion funnel widget</li><li>✓ Build error fixed + deployed</li><li>✓ Migration reconciliation (6 files)</li></ul></div>
-  <div class="card" style="border-left:4px solid #10b981"><div class="card-title">Sprint 16 Done</div><ul><li>✓ Build clean — 94 routes</li><li>✓ Webhook verified live</li><li>✓ Leaked password protection ON</li><li>✓ All Setu Guru docs updated</li><li>✓ sprint_issues fully current</li></ul></div>
-  <div class="card" style="border-left:4px solid #f59e0b"><div class="card-title">⟳ 2 Vercel actions remaining</div><ul><li>Set NEXT_PUBLIC_APP_URL</li><li>Set MAILTRAP_WEBHOOK_SECRET</li><li style="color:#10b981">Everything else: COMPLETE</li></ul></div>
-</div>
-<h2>Backlog (no urgency)</h2>
-<div class="correction"><div class="corr-title">Server-side PDF (Puppeteer) <span class="badge badge-slate" style="float:right">Backlog</span></div><div class="corr-body">Replace browser-print with Puppeteer PDF generation. Store binary in Supabase Storage. Attach to email sends. Not urgent while browser print works.</div></div>
-<div class="correction"><div class="corr-title">Finance Adapter External (Xero/QuickBooks) <span class="badge badge-slate" style="float:right">Backlog</span></div><div class="corr-body">finance_integration_events queue ready. Connect provider API when needed.</div></div>
-<div class="correction"><div class="corr-title">Freight Adapter External (Flexport/Freightos) <span class="badge badge-slate" style="float:right">Backlog</span></div><div class="corr-body">freight_booking_events queue ready. Connect carrier API when needed.</div></div>
-</section>
-
-<!-- ═══ S14 ═══ -->
-<section class="section" id="s14">
-<div class="section-header"><div class="section-num">14</div><h1>Recommended Enhancements</h1></div>
-<div class="tbl-wrap"><table><thead><tr><th>Enhancement</th><th>Sprint</th><th>Status</th><th>Production</th></tr></thead><tbody>
-<tr><td>RLS policy backfill (38 tables)</td><td>11</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live</td></tr>
-<tr><td>FK performance indexes (9)</td><td>11</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live</td></tr>
-<tr><td>Mailtrap email — full stack</td><td>11–12</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live · Webhook verified</td></tr>
-<tr><td>WhatsApp link-based send — full stack</td><td>11–12</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live</td></tr>
-<tr><td>SECURITY DEFINER RPC/view fix</td><td>12</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live</td></tr>
-<tr><td>Quote-order integrity constraint</td><td>12</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live</td></tr>
-<tr><td>Lead coverage gate canonical</td><td>12</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live</td></tr>
-<tr><td>Mailtrap webhook receiver</td><td>12</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Verified responding</td></tr>
-<tr><td>Document template versioning</td><td>13</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live</td></tr>
-<tr><td>Finance adapter boundary</td><td>13</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live (no external connector)</td></tr>
-<tr><td>Freight adapter boundary</td><td>13</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live (no external connector)</td></tr>
-<tr><td>Build error fix (legal_name)</td><td>14</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Deployed commit 3a89dc5</td></tr>
-<tr><td>Migration reconciliation (6 files)</td><td>14</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ In repo</td></tr>
-<tr><td>Analytics dashboard (/dashboard/analytics)</td><td>15</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live 94-route build</td></tr>
-<tr><td>Lead→Order funnel + metrics</td><td>15</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Live</td></tr>
-<tr><td>Leaked password protection</td><td>16</td><td><span class="badge badge-green">✓ Done</span></td><td>✓ Enabled by Ritesh 2026-05-19</td></tr>
-<tr><td>NEXT_PUBLIC_APP_URL in Vercel</td><td>16</td><td><span class="badge badge-amber">⟳ Verify</span></td><td>Action needed</td></tr>
-<tr><td>MAILTRAP_WEBHOOK_SECRET in Vercel</td><td>16</td><td><span class="badge badge-amber">⟳ Set</span></td><td>Action needed for delivery status</td></tr>
-<tr><td>Server-side PDF (Puppeteer)</td><td>17+</td><td><span class="badge badge-slate">Backlog</span></td><td>—</td></tr>
-<tr><td>Finance adapter external (Xero)</td><td>17+</td><td><span class="badge badge-slate">Backlog</span></td><td>—</td></tr>
-<tr><td>Freight adapter external</td><td>17+</td><td><span class="badge badge-slate">Backlog</span></td><td>—</td></tr>
-</tbody></table></div>
-</section>
-
-<!-- ═══ S15 ═══ -->
-<section class="section" id="s15">
-<div class="section-header"><div class="section-num">15</div><h1>Sprint Progress &amp; Issue Tracker</h1></div>
-
-<style>
-.tk-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid #e2e8f0;overflow-x:auto;scrollbar-width:none}
-.tk-tab{padding:9px 16px;cursor:pointer;font-size:12.5px;font-weight:600;color:#64748b;border-bottom:3px solid transparent;margin-bottom:-2px;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap}
-.tk-tab.active{color:#0f2244;border-bottom-color:#3b82f6}
-.tk-panel{display:none}.tk-panel.active{display:block;padding-top:14px}
-.sk{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:0 0 14px}
-.sk-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;text-align:center}
-.sk-kpi .v{font-size:24px;font-weight:700;line-height:1;margin-bottom:3px}
-.sk-kpi .l{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
-.vg .v{color:#10b981}.va .v{color:#f59e0b}.vr .v{color:#ef4444}.vb .v{color:#3b82f6}.vs .v{color:#64748b}
-.sb-wrap{background:#f1f5f9;border-radius:999px;height:7px;margin:2px 0 4px;overflow:hidden}
-.sb-fill{height:7px;border-radius:999px;background:linear-gradient(90deg,#10b981,#3b82f6)}
-.sp-pct{font-size:11px;color:#64748b;text-align:right;margin-bottom:10px}
-.it{width:100%;border-collapse:collapse;font-size:12.5px}
-.it thead tr{background:#0f2244;color:#fff}
-.it th{padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-.it td{padding:7px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top}
-.it tr:hover td{background:#f8fafc}.it tr.hidden{display:none}
-.ir{cursor:pointer}.ir td:first-child{font-family:monospace;font-size:11px}
-.dr{display:none}.dr.open{display:table-row}
-.dr td{background:#f8fafc;padding:12px 16px;font-size:12px}
-.dg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.dg label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b;display:block;margin-bottom:2px}
-.dg p{margin:0;color:#0f172a;line-height:1.5}
-.sc{border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700}
-.sc-c{background:#fee2e2;color:#991b1b}.sc-h{background:#dbeafe;color:#1d4ed8}.sc-m{background:#fef9c3;color:#854d0e}
-.ss-r{background:#d1fae5;color:#065f46;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700}
-.ss-o{background:#fee2e2;color:#991b1b;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700}
-.ss-p{background:#f1f5f9;color:#475569;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700}
-.ap{background:#e2e8f0;color:#334155;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600}
-.mr{display:grid;grid-template-columns:260px 55px 105px 1fr;gap:10px;align-items:start;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px}
-.mn{font-family:monospace;font-size:11px;color:#1a3a6b}.ms{font-weight:700;color:#0f2244}
-.ib{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0}
-.ic{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px}
-.ic-t{font-weight:700;font-size:12.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.ic-a{background:#d1fae5;color:#065f46;border-radius:20px;padding:1px 8px;font-size:10px;font-weight:700}
-.ic-p{background:#fef3c7;color:#92400e;border-radius:20px;padding:1px 8px;font-size:10px;font-weight:700}
-.ic ul{padding-left:14px;margin:8px 0 0}.ic li{font-size:11.5px;color:#64748b;margin-bottom:3px}
-.ft{width:100%;border-collapse:collapse;font-size:12px}
-.ft th{background:#f1f5f9;padding:7px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b}
-.ft td{padding:7px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top}
-.build-box{background:#ecfdf5;border:1px solid #6ee7b7;border-radius:10px;padding:16px 20px;margin:12px 0;font-family:monospace;font-size:12px;color:#064e3b;line-height:1.8}
-.build-box .bh{font-family:system-ui,sans-serif;font-size:13px;font-weight:700;margin-bottom:8px;color:#065f46}
-.route-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;margin:8px 0;font-size:11px}
-.route-item{display:flex;align-items:center;gap:6px;padding:3px 8px;background:#f0fdf4;border-radius:4px}
-.route-new{background:#dbeafe;font-weight:700}
-</style>
-
-<div class="alert alert-green" style="font-size:13px"><strong>Sprint 16 — Production clean.</strong> Build successful (94 routes). Webhook live. Password protection enabled. All Sprint 11-16 changes deployed. Two Vercel env vars remaining.</div>
-
-<div class="tk-tabs">
-  <button class="tk-tab active" onclick="st('s11')">S11 ✓</button>
-  <button class="tk-tab" onclick="st('s12')">S12 ✓</button>
-  <button class="tk-tab" onclick="st('s13')">S13 ✓</button>
-  <button class="tk-tab" onclick="st('s14t')">S14 ✓</button>
-  <button class="tk-tab" onclick="st('s15t')">S15 ✓</button>
-  <button class="tk-tab" onclick="st('s16')">S16 Active</button>
-  <button class="tk-tab" onclick="st('build')">Build Log</button>
-  <button class="tk-tab" onclick="st('mig')">Migrations</button>
-  <button class="tk-tab" onclick="st('int')">Integrations</button>
-  <button class="tk-tab" onclick="st('env')">Env Vars</button>
-  <button class="tk-tab" onclick="st('fil')">Repo Files</button>
-</div>
-
-<!-- S11 -->
-<div class="tk-panel active" id="p-s11">
-<div class="sk"><div class="sk-kpi vg"><div class="v">9</div><div class="l">Resolved</div></div><div class="sk-kpi vs"><div class="v">0</div><div class="l">Open</div></div><div class="sk-kpi vb"><div class="v">3</div><div class="l">Migrations</div></div><div class="sk-kpi vs"><div class="v">4</div><div class="l">Files</div></div><div class="sk-kpi vg"><div class="v">100%</div><div class="l">Complete</div></div></div>
-<div class="sb-wrap"><div class="sb-fill" style="width:100%"></div></div>
-<div class="sp-pct">Sprint 11 closed · All 9 resolved · Live in production ✓</div>
-<div style="overflow-x:auto"><table class="it"><thead><tr><th>Ref</th><th>Title</th><th>Area</th><th>Sev</th><th>Status</th><th>Production</th></tr></thead><tbody>
-<tr class="ir" onclick="td('d11-1')"><td>S11-SEC-001</td><td>RLS Enabled Tables With No Policies (38 tables)</td><td><span class="ap">security</span></td><td><span class="sc sc-c">critical</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="dr" id="d11-1"><td colspan="6"><div class="dg"><div><label>Fix Applied</label><p>Org-scoped + join-based + authenticated-only policies. Migration: sprint_11_rls_policies_remaining</p></div><div><label>Tables</label><p>38 tables. Join-based for lead_scores, lead_tags, quote_negotiation_events, quote_pricing_snapshots, playbook_steps, 6 stg_* tables.</p></div></div></td></tr>
-<tr class="ir" onclick="td('d11-2')"><td>S11-SEC-003</td><td>Missing FK Performance Indexes (9)</td><td><span class="ap">schema</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="dr" id="d11-2"><td colspan="6"><div class="dg"><div><label>Fix Applied</label><p>9 indexes on: order_lines.order_id, order_document_sends.order_document_id, packing_plan_lines.packing_plan_id, trade_requirements.order_id, lead_product_interests.lead_id, order_approval_gates.order_id, order_stage_events.order_id, order_documents.order_id, quote_version_line_items.quote_version_id</p></div><div><label>Impact</label><p>Major query speedup for order execution panel, document tray, packing views.</p></div></div></td></tr>
-<tr class="ir" onclick="td('d11-3')"><td>S11-EMAIL-001</td><td>Mailtrap registered in integrations + email_send_log table</td><td><span class="ap">email</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="dr" id="d11-3"><td colspan="6"><div class="dg"><div><label>Fix Applied</label><p>Mailtrap integration rows inserted for all orgs. email_send_log table with RLS. email/WhatsApp columns added to communications + order_document_sends.</p></div><div><label>Schema</label><p>email_provider, email_message_id, email_delivery_status, whatsapp_link, whatsapp_phone now on order_document_sends.</p></div></div></td></tr>
-<tr class="ir" onclick="td('d11-4')"><td>S11-WA-001</td><td>WhatsApp link generation added</td><td><span class="ap">whatsapp</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="dr" id="d11-4"><td colspan="6"><div class="dg"><div><label>Fix Applied</label><p>whatsapp-link.ts: generateWhatsAppLinks() → wa.me (mobile) + web.whatsapp.com (desktop). Pre-filled message with org name, doc type, order number, share URL.</p></div><div><label>Device detection</label><p>getWhatsAppLinkForDevice() checks navigator.userAgent. Desktop → WhatsApp Web. Mobile → WhatsApp app.</p></div></div></td></tr>
-</tbody></table></div>
-</div>
-
-<!-- S12 -->
-<div class="tk-panel" id="p-s12">
-<div class="sk"><div class="sk-kpi vg"><div class="v">8</div><div class="l">Resolved</div></div><div class="sk-kpi vs"><div class="v">0</div><div class="l">Open</div></div><div class="sk-kpi vb"><div class="v">3</div><div class="l">Migrations</div></div><div class="sk-kpi vs"><div class="v">4</div><div class="l">Files</div></div><div class="sk-kpi vg"><div class="v">100%</div><div class="l">Complete</div></div></div>
-<div class="sb-wrap"><div class="sb-fill" style="width:100%"></div></div>
-<div class="sp-pct">Sprint 12 closed · 8/8 resolved · Password protection enabled in S16 ✓</div>
-<div style="overflow-x:auto"><table class="it"><thead><tr><th>Ref</th><th>Title</th><th>Area</th><th>Sev</th><th>Status</th><th>Production</th></tr></thead><tbody>
-<tr class="ir" onclick="td('d12-1')"><td>S12-SEC-001</td><td>Revoke anon EXECUTE on 32 SECURITY DEFINER RPCs</td><td><span class="ap">security</span></td><td><span class="sc sc-c">critical</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="dr" id="d12-1"><td colspan="6"><div class="dg"><div><label>Fix Applied</label><p>REVOKE EXECUTE FROM anon on 32 non-trigger app_ RPCs. 14 trigger functions kept SECURITY DEFINER. Token-gated preview + RLS helpers kept anon.</p></div><div><label>Migration</label><p>sprint_12_revoke_anon_execute_on_rpcs · 2026-05-19</p></div></div></td></tr>
-<tr class="ir" onclick="td('d12-2')"><td>S12-SEC-002</td><td>SECURITY DEFINER views → SECURITY INVOKER</td><td><span class="ap">security</span></td><td><span class="sc sc-c">critical</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="dr" id="d12-2"><td colspan="6"><div class="dg"><div><label>Fix Applied</label><p>active_product_pricing_rules_v + v_quote_eligible_products recreated WITH (security_invoker = true). RLS now applies per caller session.</p></div><div><label>Migration</label><p>sprint_12_security_invoker_views · 2026-05-19</p></div></div></td></tr>
-<tr class="ir" onclick="td('d12-pw')"><td>S12-SEC-003</td><td>Leaked Password Protection</td><td><span class="ap">admin</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved S16</span></td><td>✓ Enabled</td></tr>
-<tr class="dr" id="d12-pw"><td colspan="6"><div class="dg"><div><label>Fix Applied</label><p>Supabase Auth "Prevent use of compromised passwords" enabled by Ritesh on 2026-05-19.</p></div><div><label>Resolved in Sprint</label><p>Originally open from Sprint 12. Closed in Sprint 16 production verification pass.</p></div></div></td></tr>
-<tr class="ir" onclick="td('d12-sp')"><td>S12-SEC-004</td><td>Mutable search paths (12 functions)</td><td><span class="ap">schema</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="ir" onclick="td('d12-ord')"><td>S12-ORDER-001</td><td>Quote-to-Order DB constraint + audit trigger</td><td><span class="ap">order</span></td><td><span class="sc sc-c">critical</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="ir" onclick="td('d12-lead')"><td>S12-LEAD-001</td><td>Lead coverage gate canonical function</td><td><span class="ap">lead</span></td><td><span class="sc sc-c">critical</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="ir" onclick="td('d12-ema')"><td>S12-EMAIL-001</td><td>Email + WhatsApp wired into share-actions.ts</td><td><span class="ap">email</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="ir" onclick="td('d12-wh')"><td>S12-PDF-001</td><td>Mailtrap webhook receiver</td><td><span class="ap">email</span></td><td><span class="sc sc-m">medium</span></td><td><span class="ss-r">✓ resolved + verified</span></td><td>✓ GET verified OK</td></tr>
-<tr class="dr" id="d12-wh"><td colspan="6"><div class="dg"><div><label>Route</label><p>POST /api/webhooks/mailtrap. HMAC-SHA256 verification via MAILTRAP_WEBHOOK_SECRET.</p></div><div><label>Verification</label><p>GET returns: {"ok":true,"service":"setuflow-mailtrap-webhook","version":"1.0"} ✓</p></div></div></td></tr>
-</tbody></table></div>
-</div>
-
-<!-- S13 -->
-<div class="tk-panel" id="p-s13">
-<div class="sk"><div class="sk-kpi vg"><div class="v">4</div><div class="l">Resolved</div></div><div class="sk-kpi vs"><div class="v">0</div><div class="l">Open</div></div><div class="sk-kpi vb"><div class="v">1</div><div class="l">Migration</div></div><div class="sk-kpi vs"><div class="v">3</div><div class="l">Files</div></div><div class="sk-kpi vg"><div class="v">100%</div><div class="l">Complete</div></div></div>
-<div class="sb-wrap"><div class="sb-fill" style="width:100%"></div></div>
-<div class="sp-pct">Sprint 13 closed · 4/4 resolved · Live in production ✓</div>
-<div style="overflow-x:auto"><table class="it"><thead><tr><th>Ref</th><th>Title</th><th>Area</th><th>Sev</th><th>Status</th></tr></thead><tbody>
-<tr class="ir" onclick="td('d13-1')"><td>S13-TMPL-001</td><td>Document template versioning schema</td><td><span class="ap">admin</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td></tr>
-<tr class="ir" onclick="td('d13-2')"><td>S13-TMPL-002</td><td>Admin document template editor activated</td><td><span class="ap">admin</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td></tr>
-<tr class="ir" onclick="td('d13-3')"><td>S13-FIN-001</td><td>Finance integration adapter boundary</td><td><span class="ap">finance</span></td><td><span class="sc sc-m">medium</span></td><td><span class="ss-r">✓ resolved (no external connector)</span></td></tr>
-<tr class="dr" id="d13-3"><td colspan="5"><div class="dg"><div><label>Status</label><p>finance_integration_events queue live. finance-adapter.ts boundary ready. adapter_name='pending'. No external Xero/QuickBooks/Tally connected — prep complete, connection is backlog.</p></div><div><label>Rule</label><p>Finance posting is NEVER automatic. All events require explicit human approval before queuing.</p></div></div></td></tr>
-<tr class="ir" onclick="td('d13-4')"><td>S13-FRT-001</td><td>Freight booking adapter boundary</td><td><span class="ap">freight</span></td><td><span class="sc sc-m">medium</span></td><td><span class="ss-r">✓ resolved (no external connector)</span></td></tr>
-<tr class="dr" id="d13-4"><td colspan="5"><div class="dg"><div><label>Status</label><p>freight_booking_events queue live. freight-adapter.ts boundary ready. adapter_name='pending'. No Flexport/Freightos/DHL connected — prep complete, connection is backlog.</p></div><div><label>Rule</label><p>External freight booking is NEVER automatic. Operator must queue and carrier must confirm independently.</p></div></div></td></tr>
-</tbody></table></div>
-</div>
-
-<!-- S14 -->
-<div class="tk-panel" id="p-s14t">
-<div class="sk"><div class="sk-kpi vg"><div class="v">5</div><div class="l">Resolved</div></div><div class="sk-kpi vs"><div class="v">0</div><div class="l">Open</div></div><div class="sk-kpi vb"><div class="v">1</div><div class="l">Migration</div></div><div class="sk-kpi vs"><div class="v">6</div><div class="l">Mig Files</div></div><div class="sk-kpi vg"><div class="v">100%</div><div class="l">Complete</div></div></div>
-<div class="sb-wrap"><div class="sb-fill" style="width:100%"></div></div>
-<div class="sp-pct">Sprint 14 closed · 5/5 resolved · Build clean ✓</div>
-<div style="overflow-x:auto"><table class="it"><thead><tr><th>Ref</th><th>Title</th><th>Sev</th><th>Status</th><th>Production</th></tr></thead><tbody>
-<tr class="ir" onclick="td('d14-1')"><td>S14-BUILD-001</td><td>Build error: legal_name on OrganizationRow</td><td><span class="sc sc-c">critical</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Clean build commit 3a89dc5</td></tr>
-<tr class="dr" id="d14-1"><td colspan="5"><div class="dg"><div><label>Error</label><p>Property 'legal_name' does not exist on type 'OrganizationRow'. share-actions.ts lines 241 + 290.</p></div><div><label>Fix</label><p>Removed .legal_name fallback. workspace.organization.name used only. Build clean since fix.</p></div></div></td></tr>
-<tr class="ir" onclick="td('d14-2')"><td>S14-SCHEMA-001</td><td>Migration reconciliation (6 marker files)</td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ In repo</td></tr>
-<tr class="ir" onclick="td('d14-3')"><td>S14-DOC-001</td><td>Document quantity basis column</td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="ir" onclick="td('d14-4')"><td>S14-ANALYTICS-001</td><td>Analytics snapshot table</td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="ir" onclick="td('d14-5')"><td>S14-SEC-001</td><td>Leaked password protection</td><td><span class="sc sc-c">critical</span></td><td><span class="ss-r">✓ resolved S16</span></td><td>✓ Enabled 2026-05-19</td></tr>
-</tbody></table></div>
-</div>
-
-<!-- S15 -->
-<div class="tk-panel" id="p-s15t">
-<div class="sk"><div class="sk-kpi vg"><div class="v">5</div><div class="l">Resolved</div></div><div class="sk-kpi vs"><div class="v">0</div><div class="l">Open</div></div><div class="sk-kpi vb"><div class="v">1</div><div class="l">Migration</div></div><div class="sk-kpi vs"><div class="v">3</div><div class="l">Files</div></div><div class="sk-kpi vg"><div class="v">100%</div><div class="l">Complete</div></div></div>
-<div class="sb-wrap"><div class="sb-fill" style="width:100%"></div></div>
-<div class="sp-pct">Sprint 15 closed · Analytics dashboard live at /dashboard/analytics ✓</div>
-<div style="overflow-x:auto"><table class="it"><thead><tr><th>Ref</th><th>Title</th><th>Sev</th><th>Status</th><th>Production</th></tr></thead><tbody>
-<tr class="ir" onclick="td('d15-1')"><td>S15-ANALYTICS-001</td><td>Analytics tab added to dashboard</td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ /dashboard/analytics live</td></tr>
-<tr class="dr" id="d15-1"><td colspan="5"><div class="dg"><div><label>Route</label><p>/dashboard/analytics — server component, live data on every load. "📊 Analytics" button in dashboard header.</p></div><div><label>Build confirmation</label><p>Route appears in Vercel build output as ƒ /dashboard/analytics (dynamic server-rendered)</p></div></div></td></tr>
-<tr class="ir" onclick="td('d15-2')"><td>S15-ANALYTICS-002</td><td>Lead-to-Order conversion funnel</td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="ir" onclick="td('d15-3')"><td>S15-ANALYTICS-003</td><td>Quote win/loss rate and velocity</td><td><span class="sc sc-m">medium</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-<tr class="ir" onclick="td('d15-4')"><td>S15-ANALYTICS-004</td><td>Document send effectiveness metrics</td><td><span class="sc sc-m">medium</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live (delivery rate needs webhook)</td></tr>
-<tr class="ir" onclick="td('d15-5')"><td>S15-ANALYTICS-005</td><td>Market + Product performance breakdown</td><td><span class="sc sc-m">medium</span></td><td><span class="ss-r">✓ resolved</span></td><td>✓ Live</td></tr>
-</tbody></table></div>
-</div>
-
-<!-- S16 -->
-<div class="tk-panel" id="p-s16">
-<div class="sk"><div class="sk-kpi vg"><div class="v">3</div><div class="l">Resolved</div></div><div class="sk-kpi va"><div class="v">2</div><div class="l">Action needed</div></div><div class="sk-kpi vb"><div class="v">0</div><div class="l">Migrations</div></div><div class="sk-kpi vs"><div class="v">0</div><div class="l">New Files</div></div><div class="sk-kpi vg"><div class="v">60%</div><div class="l">Complete</div></div></div>
-<div class="sb-wrap"><div class="sb-fill" style="width:60%"></div></div>
-<div class="sp-pct">Sprint 16 active — 3 verified, 2 Vercel env actions pending</div>
-<div style="overflow-x:auto"><table class="it"><thead><tr><th>Ref</th><th>Title</th><th>Area</th><th>Sev</th><th>Status</th></tr></thead><tbody>
-<tr class="ir" onclick="td('d16-1')"><td>S16-VERIFY-001</td><td>Vercel build clean — 94 routes all passing</td><td><span class="ap">admin</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ verified</span></td></tr>
-<tr class="dr" id="d16-1"><td colspan="5"><div class="dg"><div><label>Evidence</label><p>Build log commit 3a89dc5: ✓ Compiled successfully · ✓ Generating static pages (94/94) · Build Completed in 1m · Deployment completed.</p></div><div><label>New routes confirmed</label><p>ƒ /dashboard/analytics (242 B) · ƒ /api/webhooks/mailtrap (0 B) — both dynamic server-rendered.</p></div></div></td></tr>
-<tr class="ir" onclick="td('d16-2')"><td>S16-VERIFY-002</td><td>Mailtrap webhook endpoint verified live</td><td><span class="ap">email</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-r">✓ verified</span></td></tr>
-<tr class="dr" id="d16-2"><td colspan="5"><div class="dg"><div><label>Verification</label><p>GET https://www.setuflowcrm.com/api/webhooks/mailtrap returned: {"ok":true,"service":"setuflow-mailtrap-webhook","version":"1.0"}</p></div><div><label>Next step</label><p>Add POST webhook in Mailtrap Dashboard → Webhooks. Copy signing secret → set MAILTRAP_WEBHOOK_SECRET in Vercel. Select events: Delivery, Bounce, Open, Click.</p></div></div></td></tr>
-<tr class="ir" onclick="td('d16-3')"><td>S16-VERIFY-003</td><td>Leaked password protection enabled in Supabase</td><td><span class="ap">admin</span></td><td><span class="sc sc-c">critical</span></td><td><span class="ss-r">✓ verified by Ritesh</span></td></tr>
-<tr class="dr" id="d16-3"><td colspan="5"><div class="dg"><div><label>Action Taken</label><p>Supabase Auth → Passwords → "Prevent use of compromised passwords" enabled by Ritesh on 2026-05-19. All critical security findings from Sprints 11-16 are now fully resolved.</p></div><div><label>Security posture</label><p>✓ RLS (38 tables) ✓ anon EXECUTE revoked (32 RPCs) ✓ INVOKER views ✓ search_path fixed ✓ Leaked password protection</p></div></div></td></tr>
-<tr class="ir" onclick="td('d16-4')"><td>S16-ENV-001</td><td>NEXT_PUBLIC_APP_URL + MAILTRAP_WEBHOOK_SECRET in Vercel</td><td><span class="ap">admin</span></td><td><span class="sc sc-h">high</span></td><td><span class="ss-o">⟳ action needed</span></td></tr>
-<tr class="dr" id="d16-4"><td colspan="5"><div class="dg"><div><label>NEXT_PUBLIC_APP_URL</label><p>Set to https://www.setuflowcrm.com in Vercel → Project → Settings → Environment Variables. Prevents quote share links from using Vercel preview URLs. No redeploy needed if already set.</p></div><div><label>MAILTRAP_WEBHOOK_SECRET</label><p>Get from Mailtrap Dashboard → Webhooks → [your endpoint] → Signing secret. Add to Vercel env vars. Required for email_delivery_status to update from 'sent' to 'delivered'.</p></div></div></td></tr>
-<tr class="ir" onclick="td('d16-5')"><td>S16-SCREENSHOT-001</td><td>Live screenshots for training HTML</td><td><span class="ap">admin</span></td><td><span class="sc sc-m">medium</span></td><td><span class="ss-o">⟳ permission needed</span></td></tr>
-<tr class="dr" id="d16-5"><td colspan="5"><div class="dg"><div><label>How to grant permission</label><p>1. Open https://www.setuflowcrm.com/dashboard in Chrome · 2. Click the Claude extension icon (puzzle piece in toolbar) · 3. Click "Allow on this site" · 4. Tell Claude — screenshots will be captured automatically.</p></div><div><label>Screenshots planned</label><p>Dashboard · Analytics · Quotes · Orders · Leads · Pipeline · Mobile · Admin</p></div></div></td></tr>
-</tbody></table></div>
-</div>
-
-<!-- BUILD LOG -->
-<div class="tk-panel" id="p-build">
-<h3 style="margin:0 0 12px">Vercel Build Log — Commit 3a89dc5 · 2026-05-19 · CLEAN ✓</h3>
-<div class="build-box">
-<div class="bh">✓ Build completed successfully in 1 minute</div>
-Compiled successfully · Type check passed · 94 routes generated<br>
-Build machine: 8 cores, 16 GB · Node: 18 · Next.js 14.2.35
-</div>
-<h4 style="margin:16px 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b">New Routes Confirmed Live</h4>
-<div class="route-grid">
-<div class="route-item route-new">ƒ /dashboard/analytics <span style="margin-left:auto;color:#64748b">242 B</span></div>
-<div class="route-item route-new">ƒ /api/webhooks/mailtrap <span style="margin-left:auto;color:#64748b">0 B</span></div>
-</div>
-<h4 style="margin:16px 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b">Key Routes (All Dynamic ƒ)</h4>
-<div class="route-grid">
-<div class="route-item">ƒ /dashboard · 24.4 kB</div>
-<div class="route-item">ƒ /leads · 71.1 kB</div>
-<div class="route-item">ƒ /quotes · 242 B</div>
-<div class="route-item">ƒ /orders · 242 B</div>
-<div class="route-item">ƒ /pipeline · 19.1 kB</div>
-<div class="route-item">ƒ /products · 18.7 kB</div>
-<div class="route-item">ƒ /admin/document-templates · 242 B</div>
-<div class="route-item">ƒ /admin/users · 9.41 kB</div>
-</div>
-</div>
-
-<!-- MIGRATIONS -->
-<div class="tk-panel" id="p-mig">
-<h3 style="margin:0 0 12px">All 8 DB Migrations — Applied via MCP · Source-controlled in supabase/migrations/</h3>
-<div class="mr"><div><div class="mn">sprint_11_rls_policies_remaining</div></div><div class="ms">S11</div><div><span class="badge badge-green">✓ 2026-05-18</span></div><div>RLS policies for 30+ tables. Org-scoped, join-based, authenticated-only.</div></div>
-<div class="mr"><div><div class="mn">sprint_11_email_whatsapp_comms_schema</div></div><div class="ms">S11</div><div><span class="badge badge-green">✓ 2026-05-18</span></div><div>email_send_log table + columns. 9 FK indexes. Mailtrap integration rows.</div></div>
-<div class="mr"><div><div class="mn">sprint_11_sprint_issue_tracker</div></div><div class="ms">S11</div><div><span class="badge badge-green">✓ 2026-05-18</span></div><div>sprint_issues table with RLS. Issues seeded through S16.</div></div>
-<div class="mr"><div><div class="mn">sprint_12_revoke_anon_execute_on_rpcs</div></div><div class="ms">S12</div><div><span class="badge badge-green">✓ 2026-05-19</span></div><div>REVOKE EXECUTE FROM anon (32 RPCs). SET search_path='' (12 functions).</div></div>
-<div class="mr"><div><div class="mn">sprint_12_security_invoker_views</div></div><div class="ms">S12</div><div><span class="badge badge-green">✓ 2026-05-19</span></div><div>active_product_pricing_rules_v + v_quote_eligible_products as SECURITY INVOKER.</div></div>
-<div class="mr"><div><div class="mn">sprint_12_quote_order_integrity_constraints</div></div><div class="ms">S12</div><div><span class="badge badge-green">✓ 2026-05-19</span></div><div>CHECK constraint on orders. Audit trigger. lead_quote_gate_log. org_document_terms_profiles versioning columns.</div></div>
-<div class="mr"><div><div class="mn">sprint_13_document_templates_finance_freight</div></div><div class="ms">S13</div><div><span class="badge badge-green">✓ 2026-05-19</span></div><div>document_template_history. finance_integration_events. freight_booking_events.</div></div>
-<div class="mr"><div><div class="mn">sprint_14_analytics_schema</div></div><div class="ms">S14</div><div><span class="badge badge-green">✓ 2026-05-19</span></div><div>analytics_snapshots table. order_documents.quantity_basis. Sprint 16 issues seeded.</div></div>
-</div>
-
-<!-- INTEGRATIONS -->
-<div class="tk-panel" id="p-int">
-<div class="ib">
-  <div class="ic" style="border-top:3px solid #10b981"><div class="ic-t">📧 Email — Mailtrap <span class="ic-a">Active + Verified</span></div><ul><li>✓ Invitation emails (pre-S11)</li><li>✓ Order document emails (S11–12)</li><li>✓ email_send_log audit (S11)</li><li>✓ Webhook at /api/webhooks/mailtrap (S12)</li><li>✓ GET verified: {"ok":true} (S16)</li><li>⟳ MAILTRAP_WEBHOOK_SECRET needed for delivery status</li></ul></div>
-  <div class="ic" style="border-top:3px solid #10b981"><div class="ic-t">💬 WhatsApp — Link-based <span class="ic-a">Active</span></div><ul><li>✓ wa.me mobile links (S11)</li><li>✓ WhatsApp Web desktop (S11)</li><li>✓ Pre-filled messages (S11)</li><li>✓ Wired in share-actions.ts (S12)</li><li>✓ whatsapp_link stored in DB (S12)</li><li>✗ WhatsApp API — not planned</li></ul></div>
-  <div class="ic" style="border-top:3px solid #f59e0b"><div class="ic-t">💹 Finance <span class="ic-p">Prep Ready · No Connector</span></div><ul><li>✓ finance_sync_records (existing)</li><li>✓ finance_integration_events queue (S13)</li><li>✓ finance-adapter.ts boundary (S13)</li><li>⟳ Xero / QuickBooks connector (S17+)</li></ul></div>
-  <div class="ic" style="border-top:3px solid #f59e0b"><div class="ic-t">🚢 Freight <span class="ic-p">Prep Ready · No Connector</span></div><ul><li>✓ freight_rate_requests (existing)</li><li>✓ freight_booking_events queue (S13)</li><li>✓ freight-adapter.ts boundary (S13)</li><li>⟳ Flexport / Freightos connector (S17+)</li></ul></div>
-</div>
-</div>
-
-<!-- ENV VARS -->
-<div class="tk-panel" id="p-env">
-<div class="alert alert-amber">Vercel → Project → Settings → Environment Variables — check or add these</div>
-<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin:12px 0">
-<table style="width:100%;border-collapse:collapse;font-size:12.5px">
-<thead><tr style="background:#0f2244;color:#fff"><th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Variable</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Status</th><th style="padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Action Required</th></tr></thead>
-<tbody>
-<tr><td style="padding:9px 14px;font-family:monospace;font-size:11px;border-bottom:1px solid #f1f5f9">MAILTRAP_API_KEY</td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9"><span class="ss-r">✓ Should be set</span></td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#64748b">Required for invitation + order document emails.</td></tr>
-<tr><td style="padding:9px 14px;font-family:monospace;font-size:11px;border-bottom:1px solid #f1f5f9">MAILTRAP_WEBHOOK_SECRET</td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9"><span class="ss-o">⟳ Add</span></td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#64748b">Get from Mailtrap → Webhooks → [endpoint] → Signing secret. Enables delivery confirmation.</td></tr>
-<tr><td style="padding:9px 14px;font-family:monospace;font-size:11px;border-bottom:1px solid #f1f5f9">NEXT_PUBLIC_APP_URL</td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9"><span class="ss-o">⟳ Verify</span></td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#64748b">Must be https://www.setuflowcrm.com. Prevents share links using Vercel preview URLs.</td></tr>
-<tr><td style="padding:9px 14px;font-family:monospace;font-size:11px;border-bottom:1px solid #f1f5f9">NEXT_PUBLIC_SUPABASE_URL</td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9"><span class="ss-r">✓ Required</span></td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#64748b">Supabase project URL. Should be set.</td></tr>
-<tr><td style="padding:9px 14px;font-family:monospace;font-size:11px;border-bottom:1px solid #f1f5f9">NEXT_PUBLIC_SUPABASE_ANON_KEY</td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9"><span class="ss-r">✓ Required</span></td><td style="padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#64748b">Supabase anon key. Should be set.</td></tr>
-<tr><td style="padding:9px 14px;font-family:monospace;font-size:11px">SUPABASE_SERVICE_ROLE_KEY</td><td style="padding:9px 14px"><span class="ss-r">✓ Required</span></td><td style="padding:9px 14px;font-size:11px;color:#64748b">Service role key for admin operations. Should be set.</td></tr>
-</tbody></table>
-</div>
-<div style="background:#f0fdf4;border:1px solid #6ee7b7;border-radius:10px;padding:16px;margin-top:12px">
-<div style="font-weight:700;font-size:13px;color:#065f46;margin-bottom:8px">📧 Complete Mailtrap Webhook Setup (2 steps)</div>
-<ol style="font-size:12.5px;color:#064e3b;line-height:1.9;padding-left:16px">
-<li>Mailtrap Dashboard → Email Sending → Webhooks → <strong>Add webhook endpoint</strong></li>
-<li>URL: <code style="background:#fff;padding:1px 6px;border-radius:3px;font-size:11px">https://www.setuflowcrm.com/api/webhooks/mailtrap</code></li>
-<li>Select events: Delivery · Bounce · Open · Click</li>
-<li>Copy the <strong>Signing secret</strong></li>
-<li>Vercel → Environment Variables → Add <code style="background:#fff;padding:1px 6px;border-radius:3px;font-size:11px">MAILTRAP_WEBHOOK_SECRET</code> = [paste secret]</li>
-<li>Redeploy → email_delivery_status will update to 'delivered' after next email send</li>
-</ol>
-</div>
-</div>
-
-<!-- REPO FILES -->
-<div class="tk-panel" id="p-fil">
-<div style="overflow-x:auto"><table class="ft"><thead><tr><th>Sprint</th><th>File</th><th>Type</th><th>Production</th></tr></thead><tbody>
-<tr><td>S11</td><td><code>src/lib/email/order-document-email.ts</code></td><td><span class="badge badge-blue">TS</span></td><td>✓ Deployed</td></tr>
-<tr><td>S11</td><td><code>src/lib/whatsapp/whatsapp-link.ts</code></td><td><span class="badge badge-blue">TS</span></td><td>✓ Deployed</td></tr>
-<tr><td>S12</td><td><code>src/app/api/webhooks/mailtrap/route.ts</code></td><td><span class="badge badge-blue">TS</span></td><td>✓ Deployed · GET verified</td></tr>
-<tr><td>S12</td><td><code>src/lib/leads/lead-quote-gate.ts</code></td><td><span class="badge badge-blue">TS</span></td><td>✓ Deployed</td></tr>
-<tr><td>S12</td><td><code>src/features/orders/server/share-actions.ts</code></td><td><span class="badge badge-amber">Updated</span></td><td>✓ Build clean</td></tr>
-<tr><td>S13</td><td><code>src/lib/finance/finance-adapter.ts</code></td><td><span class="badge badge-blue">TS</span></td><td>✓ Deployed</td></tr>
-<tr><td>S13</td><td><code>src/lib/freight/freight-adapter.ts</code></td><td><span class="badge badge-blue">TS</span></td><td>✓ Deployed</td></tr>
-<tr><td>S14</td><td><code>supabase/migrations/20260518_sprint_11_*.sql</code> (3)</td><td><span class="badge badge-slate">SQL</span></td><td>✓ In repo</td></tr>
-<tr><td>S14</td><td><code>supabase/migrations/20260519_sprint_12-13_*.sql</code> (3)</td><td><span class="badge badge-slate">SQL</span></td><td>✓ In repo</td></tr>
-<tr><td>S15</td><td><code>src/lib/queries/analytics.ts</code></td><td><span class="badge badge-blue">TS</span></td><td>✓ Deployed</td></tr>
-<tr><td>S15</td><td><code>src/app/(app)/dashboard/analytics/page.tsx</code></td><td><span class="badge badge-blue">TSX</span></td><td>✓ Deployed · Route verified</td></tr>
-<tr><td>S15</td><td><code>src/features/dashboard/components/dashboard-interactive.tsx</code></td><td><span class="badge badge-amber">Updated</span></td><td>✓ Deployed</td></tr>
-<tr><td>All</td><td><code>docs/setu-guru/SETUFLOW_KNOWLEDGE_BASE.md</code></td><td><span class="badge badge-slate">MD</span></td><td>✓ S11-S16 complete</td></tr>
-<tr><td>All</td><td><code>docs/setu-guru/SETUFLOW_TROUBLESHOOTING.md</code></td><td><span class="badge badge-slate">MD</span></td><td>✓ S12-S16 complete</td></tr>
-<tr><td>All</td><td><code>docs/setu-guru/SETUFLOW_WORKFLOWS.md</code></td><td><span class="badge badge-slate">MD</span></td><td>✓ S12-S16 complete</td></tr>
-<tr><td>All</td><td><code>public/internal/setuflow-docs.html</code></td><td><span class="badge badge-teal">HTML</span></td><td>✓ v6 — live at /internal/setuflow-docs.html</td></tr>
-</tbody></table></div>
-</div>
-
-<script>
-(function(){
-  var tabs=['s11','s12','s13','s14t','s15t','s16','build','mig','int','env','fil'];
-  var panels=['p-s11','p-s12','p-s13','p-s14t','p-s15t','p-s16','p-build','p-mig','p-int','p-env','p-fil'];
-  window.st=function(name){
-    document.querySelectorAll('.tk-tab').forEach(function(t){t.classList.remove('active');});
-    document.querySelectorAll('.tk-panel').forEach(function(p){p.classList.remove('active');});
-    var i=tabs.indexOf(name);
-    if(i>=0){var t=document.querySelectorAll('.tk-tab');if(t[i])t[i].classList.add('active');var p=document.getElementById(panels[i]);if(p)p.classList.add('active');}
-  };
-  window.td=function(id){var r=document.getElementById(id);if(r)r.classList.toggle('open');};
-})();
-</script>
-</section>
-
-<!-- ═══ S16: PRODUCTION STATUS ═══ -->
 <section class="section" id="s16">
 <div class="section-header"><div class="section-num">16</div><h1>Production Status &amp; What's Next</h1></div>
 
