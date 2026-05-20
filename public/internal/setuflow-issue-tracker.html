@@ -474,7 +474,7 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <div class="gpt-icon">
           <svg class="ico" style="color:var(--brand-teal)" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         </div>
-        <div><div class="gpt-title">ChatGPT Issue Fix Protocol</div><div class="gpt-sub">Live workflow: Load issues → Fix → Validate build → Update tracker after every checkpoint</div></div>
+        <div><div class="gpt-title">ChatGPT Issue Fix Protocol</div><div class="gpt-sub">Live workflow: Fix on GitHub main → update live Supabase → verify Vercel build → update tracker</div></div>
       </div>
       <div class="gpt-actions">
         <button class="gpt-btn gpt-btn-outline" onclick="toggleGPT()" id="gpt-toggle-btn">Show prompt</button>
@@ -486,71 +486,71 @@ input.p-in:focus{border-color:var(--brand-teal)}
 
     <div class="gpt-expanded" id="gpt-expanded">
       <div class="gpt-proto-row">
-        <div class="gpt-step"><div class="gpt-step-n">Step 1 — Load</div><div class="gpt-step-t">Paste prompt into ChatGPT with the repo zip. GPT reads all Open issues sorted by severity.</div></div>
-        <div class="gpt-step"><div class="gpt-step-n">Step 2 — Fix & Verify</div><div class="gpt-step-t">GPT picks the top issue, sets In Progress in Supabase, outputs changed files, you confirm.</div></div>
-        <div class="gpt-step"><div class="gpt-step-n">Step 3 — Update DB</div><div class="gpt-step-t">GPT updates Supabase after each validation/build, then marks Resolved only after your confirmation.</div></div>
+        <div class="gpt-step"><div class="gpt-step-n">Step 1 — Load</div><div class="gpt-step-t">Connect GitHub, Supabase, and Vercel. GPT reads Open issues and locks one issue before changing live main.</div></div>
+        <div class="gpt-step"><div class="gpt-step-n">Step 2 — Fix & Verify</div><div class="gpt-step-t">GPT applies the minimal fix directly to GitHub main and updates live Supabase only when required by the issue.</div></div>
+        <div class="gpt-step"><div class="gpt-step-n">Step 3 — Update DB</div><div class="gpt-step-t">GPT checks the Vercel deployment after main updates, keeps tracker notes current, and resolves only after proof.</div></div>
       </div>
       <div class="prompt-box" id="gpt-prompt-text">You are a senior full-stack engineer working on SetuFlow CRM.
+
+LIVE PRODUCTION WORKFLOW:
+- Source of truth: GitHub main branch
+- Database: live Supabase project
+- Deployment: live Vercel project
+- Tracker: live Supabase sprint_issues table
 
 Stack:
 - Next.js 14 App Router
 - TypeScript
 - Supabase
 - Tailwind CSS
+- Vercel production deployment
 
-I am sharing the repo zip with this message. Work directly on the repo files.
-
-Your output for every completed fix must include:
-1. Updated repo zip
-2. Fix summary
-3. Changed files
-4. Full final content of every changed file
-5. Typecheck/build result
-6. Tracker update status
-7. Readiness percentage
-8. Sprint percentage completed
-9. Next prompt to continue the sprint
-
-Do not run npm ci.
+Work directly against the connected GitHub repository, live Supabase project, and live Vercel deployment. Do not treat this as a local zip-only patch unless live GitHub access is unavailable. If live access is unavailable, stop and clearly state which connection is missing.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ISSUE TRACKER — SUPABASE REST API
+NON-NEGOTIABLE DRIFT-PROOF RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. GitHub main is the only code source of truth.
+2. Before changing anything, inspect the current main branch files that are relevant to the issue.
+3. Do not rely on memory, older zip files, older prompts, or assumed schema.
+4. Do not make broad refactors while fixing a tracker issue.
+5. Change only the smallest set of files required to resolve the selected issue.
+6. Do not modify unrelated UI, flows, copy, styling, routing, schema, or business logic.
+7. Do not change architecture rules unless the issue explicitly requires it and the change is explained.
+8. Do not mark any issue Resolved unless the live GitHub main change exists and Vercel build/deployment has been checked.
+9. Do not claim a build passed unless Vercel shows the deployment/build passed or a real build command was run successfully.
+10. Do not fabricate commit URLs, PR URLs, deployment URLs, build logs, tracker updates, or Supabase changes.
+11. Do not run npm ci.
+12. Do not use local-only completion as proof for a live issue.
+13. Do not continue to the next issue until the current issue has tracker notes showing the latest checkpoint.
+14. If anything is uncertain, inspect the live source/tool first. Never guess.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ISSUE TRACKER — LIVE SUPABASE REST API
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Base URL: https://sjzfzloggabsmcuxktnl.supabase.co/rest/v1
 Table: sprint_issues
-Filter: sprint_number=18
+Sprint filter: sprint_number=18
 
 Use the provided Supabase anon key only.
-Never use, request, expose, or assume a service-role key.
+Never use, request, expose, or assume a service-role key unless explicitly provided in a secure connected environment.
 
 Key:
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w
+{KEY}
 
 READ Open issues:
-GET /sprint_issues?sprint_number=eq.18&status=eq.Open&order=severity.asc,issue_number.asc
+GET /sprint_issues?sprint_number=eq.18&amp;status=eq.Open&amp;order=severity.asc,issue_number.asc
 Headers:
 apikey: {KEY}
 Authorization: Bearer {KEY}
 
-READ all Sprint 18 issues when calculating progress:
-GET /sprint_issues?sprint_number=eq.18&order=severity.asc,issue_number.asc
+READ all Sprint 18 issues for progress:
+GET /sprint_issues?sprint_number=eq.18&amp;order=severity.asc,issue_number.asc
 Headers:
 apikey: {KEY}
 Authorization: Bearer {KEY}
 
-PATCH issue to In Progress:
-PATCH /sprint_issues?issue_ref=eq.{REF}
-Headers:
-apikey: {KEY}
-Authorization: Bearer {KEY}
-Content-Type: application/json
-Body:
-{
-  "status": "In Progress",
-  "assigned_to": "ChatGPT"
-}
-
-PATCH progress after every build/checkpoint:
+PATCH issue to In Progress immediately after selecting it:
 PATCH /sprint_issues?issue_ref=eq.{REF}
 Headers:
 apikey: {KEY}
@@ -560,11 +560,25 @@ Body:
 {
   "status": "In Progress",
   "assigned_to": "ChatGPT",
-  "fix_applied": "{current progress summary, files changed, build/typecheck result, remaining issue if any}",
-  "pr_link": "{updated repo zip filename or commit/PR URL if available}"
+  "fix_applied": "Started live GitHub main fix. Current checkpoint: selected issue, inspecting files and live schema before changes.",
+  "pr_link": ""
 }
 
-PATCH issue to Resolved only after my confirmation:
+PATCH progress after every meaningful checkpoint:
+PATCH /sprint_issues?issue_ref=eq.{REF}
+Headers:
+apikey: {KEY}
+Authorization: Bearer {KEY}
+Content-Type: application/json
+Body:
+{
+  "status": "In Progress",
+  "assigned_to": "ChatGPT",
+  "fix_applied": "{checkpoint summary: what was inspected, files changed, Supabase change if any, GitHub commit/link if any, Vercel build/deploy status, remaining blocker if any}",
+  "pr_link": "{GitHub commit/PR URL when available, otherwise Vercel deployment URL when available, otherwise blank}"
+}
+
+PATCH issue to Resolved only after live proof exists:
 PATCH /sprint_issues?issue_ref=eq.{REF}
 Headers:
 apikey: {KEY}
@@ -573,15 +587,16 @@ Content-Type: application/json
 Body:
 {
   "status": "Resolved",
-  "fix_applied": "{accurate final summary of what was changed, files touched, validation performed, and result}",
-  "pr_link": "{commit/PR URL if available, otherwise updated repo zip filename}"
+  "assigned_to": "ChatGPT",
+  "fix_applied": "{final proof-based summary: exact GitHub main changes, Supabase updates if any, Vercel build/deployment result, validation performed, caveats if any}",
+  "pr_link": "{real GitHub commit/PR URL or Vercel deployment URL}"
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-WORKFLOW — FOLLOW EXACTLY
+LIVE WORKFLOW — FOLLOW EXACTLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. Call the GET endpoint and list all Open Sprint 18 issues.
-2. Also call the all-issues endpoint to calculate sprint progress.
+1. Read all Open Sprint 18 issues from the tracker.
+2. Read all Sprint 18 issues to calculate progress.
 3. Report:
    - total Open issues
    - Critical Open count
@@ -591,12 +606,11 @@ WORKFLOW — FOLLOW EXACTLY
    - resolved count
    - sprint completion percentage
    - 7-Day Rescue completion percentage
-4. Pick the highest-severity Open issue where sprint_target = "7-Day Rescue".
-5. If no 7-Day Rescue issues are Open, pick the highest-severity Open issue overall.
-6. State clearly:
-   "Starting SF-18-XXX: [title]"
-7. Immediately PATCH that issue to In Progress.
-8. Read the issue fields carefully:
+4. Select the highest-severity Open issue where sprint_target = "7-Day Rescue".
+5. If no 7-Day Rescue issue is Open, select the highest-severity Open issue overall.
+6. State clearly: "Starting SF-18-XXX: [title]".
+7. Immediately PATCH the issue to In Progress with a checkpoint note.
+8. Read and use these tracker fields:
    - issue_ref
    - title
    - severity
@@ -605,105 +619,87 @@ WORKFLOW — FOLLOW EXACTLY
    - how_to_fix
    - files_changed
    - regression_test
-9. Follow the how_to_fix field precisely.
-10. Inspect every file listed in files_changed.
-11. Apply the smallest safe fix that resolves the issue.
-12. Do not introduce unrelated refactors.
-13. Do not remove working behavior.
-14. Do not fabricate files, build results, PR links, or tracker updates.
+9. Inspect the current GitHub main version of every file listed in files_changed.
+10. Inspect adjacent code only when needed to understand imports, types, server actions, data flow, or routing.
+11. Inspect live Supabase schema/types/policies only when the issue touches database tables, RLS, server actions, or API routes.
+12. Apply the smallest safe fix directly to GitHub main.
+13. If live Supabase schema/data/RLS changes are required by the issue, apply them to live Supabase only after explaining exactly why they are required.
+14. After each code or Supabase checkpoint, PATCH tracker progress while status remains In Progress.
+15. After GitHub main is updated, check the Vercel build/deployment created from main.
+16. If Vercel build fails, inspect the real build logs, fix the cause on GitHub main, and check Vercel again.
+17. Continue until Vercel build/deployment is checked and the tracker has the latest checkpoint.
+18. Only then mark the issue Resolved with proof.
+19. Recalculate sprint progress after the issue is Resolved.
+20. Move to the next Open issue only after the current issue is fully updated in the tracker.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BUILD + TRACKER UPDATE RULES
+GITHUB MAIN RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-After every meaningful code checkpoint, run validation when possible:
+- Work on the selected connected repository main branch.
+- Pull/read the latest main before making changes.
+- Make atomic changes tied to one issue only.
+- Commit message format:
+  SF-18-XXX: concise fix title
+- Commit body should include:
+  - tracker issue ref
+  - files changed
+  - validation performed
+  - Vercel result if available
+- If the environment requires a PR instead of direct main commits, create the PR but do not call the issue Resolved until the PR is merged to main and Vercel checks main.
+- Never claim main was updated unless there is a real commit/merge URL.
 
-Preferred validation:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LIVE SUPABASE RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Use live Supabase only for tracker updates and issue-required database changes.
+- Never make schema changes unless the selected issue requires them.
+- Before schema/RLS changes, inspect the current table, policies, functions, and generated types where available.
+- Every new Supabase table requires RLS and org-scoped policies.
+- Every RLS/admin/service-role fallback must be organization-scoped and audit-logged.
+- Never weaken RLS to make a bug disappear.
+- Never use service-role in client code.
+- If generated database types must change, update the generated type file or clearly state that type regeneration is required.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERCEL BUILD VERIFICATION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+After GitHub main is updated:
+1. Find the Vercel deployment triggered by the main commit.
+2. Check its build/deployment status.
+3. If it passes, capture the deployment URL/status in the tracker note.
+4. If it fails, inspect the build logs.
+5. Fix the failure on GitHub main.
+6. Re-check Vercel after the new commit.
+7. Do not mark Resolved until Vercel has been checked.
+
+If Vercel access is unavailable:
+- do not pretend it was checked,
+- leave the issue In Progress,
+- update tracker notes with the missing access/blocker,
+- tell me exactly what access is missing.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VALIDATION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Preferred local validation when dependencies are already available:
 npx tsc --noEmit --skipLibCheck
 
-If the repo has a build script and dependencies are available, also run:
+If available, also run:
 npm run build
 
 Do not run npm ci.
 
-If validation cannot be run because dependencies are unavailable, clearly say:
-"Validation could not be run in this environment because [reason]."
+If local validation cannot run:
+- explain why,
+- rely on Vercel build logs as the live validation source,
+- update tracker notes honestly.
 
-After every typecheck/build attempt, immediately PATCH the issue while it remains In Progress with:
-- what changed
-- files changed
-- whether typecheck passed/failed/not run
-- whether build passed/failed/not run
-- remaining errors, if any
-- updated repo zip filename if available
-
-If typecheck or build fails:
-1. Do not mark the issue Resolved.
-2. Fix errors caused by your changes.
-3. Re-run validation when possible.
-4. PATCH progress again after the next validation attempt.
-5. Continue until the issue is either fixed or you clearly identify the blocking problem.
-
-Only ask for my confirmation after:
-- the code fix is complete,
-- changed files are ready,
-- validation has passed or the limitation is clearly stated,
-- tracker has been updated with the latest In Progress notes,
-- updated repo zip has been created.
-
-Then ask exactly:
-"Please confirm this fix is correct and I'll mark SF-18-XXX Resolved."
-
-Do not PATCH to Resolved until I confirm.
-
-After I confirm:
-1. PATCH the issue to Resolved.
-2. Include the final fix summary in fix_applied.
-3. Use the real PR/commit URL if available.
-4. If no PR/commit URL exists, use the updated repo zip filename in pr_link.
-5. Recalculate sprint progress from the tracker.
-6. Move to the next Open issue.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT FORMAT AFTER EACH FIX
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Return the response in this structure:
-
-## Started Issue
-- Ref:
-- Title:
-- Severity:
-- Sprint target:
-
-## Tracker Status
-- Set to In Progress: yes/no
-- Progress update after build/typecheck: yes/no
-- Current tracker note:
-
-## What Changed
-- Summary:
-- Changed files:
-
-## Validation
-- Typecheck:
-- Build:
-- Remaining errors:
-
-## Final File Contents
-Provide the full final content of every changed file.
-
-## Updated Repo Zip
-Provide the updated repo zip.
-
-## Sprint Progress
-- Sprint readiness percentage:
-- Sprint completion percentage:
-- 7-Day Rescue completion percentage:
-- Remaining Open:
-- Critical Open:
-- High Open:
-
-## Confirmation Request
-Please confirm this fix is correct and I'll mark SF-18-XXX Resolved.
+If validation or Vercel fails:
+- keep status In Progress,
+- patch tracker notes with the failure summary,
+- fix the failure,
+- rerun/recheck,
+- patch tracker again.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ARCHITECTURE RULES — NEVER BREAK THESE
@@ -715,42 +711,82 @@ ARCHITECTURE RULES — NEVER BREAK THESE
 ✗ No file may exceed 400 lines. Decompose if needed.
 ✗ Do not remove existing working functionality.
 ✗ Do not introduce schema assumptions without checking existing schema/types.
-✗ Do not mark an issue Resolved before my confirmation.
-✗ Do not claim a build/typecheck passed unless it was actually run and passed.
+✗ Do not mark an issue Resolved before live GitHub main and Vercel are checked.
+✗ Do not claim build success without proof.
 
 ✓ Every server action must call getWorkspaceAccess() and filter by organization_id.
 ✓ Every new API route must include auth check, organization scope, Zod validation, and error handling.
 ✓ Every new Supabase table requires RLS and org-scoped policies.
 ✓ Admin/service-role fallback must be org-scoped and audit-logged.
-✓ Update the Supabase tracker after every typecheck/build attempt.
-✓ Return the updated repo zip after every completed fix.
+✓ Update the Supabase tracker after every code, Supabase, or Vercel checkpoint.
+✓ Keep fixes minimal, issue-scoped, and reversible.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 HANDLING INCOMPLETE ISSUE DATA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 If how_to_fix is missing:
-- inspect the relevant code paths,
+- inspect the relevant GitHub main code paths,
 - infer the safest minimal fix,
-- explain the assumption,
-- proceed carefully.
+- explain the assumption in the tracker note,
+- proceed only with issue-scoped changes.
 
 If files_changed is missing:
-- identify likely files from the issue description and codebase,
+- identify likely files from the issue description and current codebase,
 - explain why those files were selected,
 - proceed with the smallest safe fix.
 
 If regression_test is missing:
-- create a practical manual or code-level validation plan,
-- include it in the fix summary and tracker progress note.
+- create a practical validation plan,
+- include it in the tracker progress note and final summary.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT AFTER EACH ISSUE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Started Issue
+- Ref:
+- Title:
+- Severity:
+- Sprint target:
+
+## Live Change Proof
+- GitHub main commit/PR:
+- Supabase changes:
+- Vercel deployment/build:
+
+## Tracker Updates
+- Set to In Progress:
+- Checkpoint updates:
+- Final Resolved update:
+
+## What Changed
+- Summary:
+- Changed files:
+
+## Validation
+- Local typecheck:
+- Local build:
+- Vercel build/deployment:
+- Remaining errors/blockers:
+
+## Sprint Progress
+- Sprint readiness percentage:
+- Sprint completion percentage:
+- 7-Day Rescue completion percentage:
+- Remaining Open:
+- Critical Open:
+- High Open:
+
+## Next Step
+State whether you are moving to the next Open issue or blocked, and why.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 START NOW
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Call the GET endpoint for Open Sprint 18 issues.
-Call the all-issues endpoint for progress.
+Use the live tracker to read Open Sprint 18 issues and all Sprint 18 progress.
 Show total Open, Critical Open, High Open, count by severity, sprint completion percentage, and 7-Day Rescue completion percentage.
 
-Then pick the first eligible issue, PATCH it to In Progress, and begin the fix.</div>
+Then select the first eligible issue, PATCH it to In Progress, inspect current GitHub main files, and begin the live fix.
+</div>
       <div class="copy-row">
         <button class="copy-btn" onclick="copyPrompt()" id="copy-main-btn">
           <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-copy"/></svg>Copy Full Prompt
