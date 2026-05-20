@@ -474,7 +474,7 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <div class="gpt-icon">
           <svg class="ico" style="color:var(--brand-teal)" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         </div>
-        <div><div class="gpt-title">ChatGPT Issue Fix Protocol</div><div class="gpt-sub">Live workflow: Fix on GitHub main → update live Supabase → verify Vercel build → update tracker</div></div>
+        <div><div class="gpt-title">ChatGPT Issue Fix Protocol</div><div class="gpt-sub">Drift-proof live workflow: preflight access → branch/PR or main → live Supabase tracker → Vercel proof</div></div>
       </div>
       <div class="gpt-actions">
         <button class="gpt-btn gpt-btn-outline" onclick="toggleGPT()" id="gpt-toggle-btn">Show prompt</button>
@@ -488,7 +488,7 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <div class="gpt-proto-row">
         <div class="gpt-step"><div class="gpt-step-n">Step 1 — Load</div><div class="gpt-step-t">Connect GitHub, Supabase, and Vercel. GPT reads Open issues and locks one issue before changing live main.</div></div>
         <div class="gpt-step"><div class="gpt-step-n">Step 2 — Fix & Verify</div><div class="gpt-step-t">GPT applies the minimal fix directly to GitHub main and updates live Supabase only when required by the issue.</div></div>
-        <div class="gpt-step"><div class="gpt-step-n">Step 3 — Update DB</div><div class="gpt-step-t">GPT checks the Vercel deployment after main updates, keeps tracker notes current, and resolves only after proof.</div></div>
+        <div class="gpt-step"><div class="gpt-step-n">Step 3 — Update DB</div><div class="gpt-step-t">GPT updates tracker after each checkpoint, uses branch/PR for large changes, and resolves only after main + Vercel proof.</div></div>
       </div>
       <div class="prompt-box" id="gpt-prompt-text">You are a senior full-stack engineer working on SetuFlow CRM.
 
@@ -524,6 +524,22 @@ NON-NEGOTIABLE DRIFT-PROOF RULES
 12. Do not use local-only completion as proof for a live issue.
 13. Do not continue to the next issue until the current issue has tracker notes showing the latest checkpoint.
 14. If anything is uncertain, inspect the live source/tool first. Never guess.
+15. Do not PATCH an issue to In Progress until access preflight has passed.
+16. For large changes, prefer a branch + PR workflow. Do not force direct main commits through branch protection.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LIVE ACCESS PREFLIGHT — REQUIRED BEFORE ISSUE START
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Before selecting or PATCHING any issue, verify access to:
+1. GitHub repository current main branch.
+2. Supabase tracker read/write access.
+3. Vercel project/deployment access.
+
+If any access is missing:
+- do not PATCH an issue to In Progress,
+- do not start code changes,
+- report exactly which connection is missing,
+- explain the next required access/action.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ISSUE TRACKER — LIVE SUPABASE REST API
@@ -560,7 +576,7 @@ Body:
 {
   "status": "In Progress",
   "assigned_to": "ChatGPT",
-  "fix_applied": "Started live GitHub main fix. Current checkpoint: selected issue, inspecting files and live schema before changes.",
+  "fix_applied": "Started live GitHub workflow. Access preflight passed. Current checkpoint: selected issue, inspecting current main files and live schema before changes.",
   "pr_link": ""
 }
 
@@ -574,7 +590,7 @@ Body:
 {
   "status": "In Progress",
   "assigned_to": "ChatGPT",
-  "fix_applied": "{checkpoint summary: what was inspected, files changed, Supabase change if any, GitHub commit/link if any, Vercel build/deploy status, remaining blocker if any}",
+  "fix_applied": "{checkpoint summary: what was inspected, files changed, Supabase change if any, branch/PR/commit link if any, Vercel build/deploy status, remaining blocker if any}",
   "pr_link": "{GitHub commit/PR URL when available, otherwise Vercel deployment URL when available, otherwise blank}"
 }
 
@@ -595,6 +611,7 @@ Body:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LIVE WORKFLOW — FOLLOW EXACTLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+0. Run the live access preflight before selecting an issue.
 1. Read all Open Sprint 18 issues from the tracker.
 2. Read all Sprint 18 issues to calculate progress.
 3. Report:
@@ -609,7 +626,7 @@ LIVE WORKFLOW — FOLLOW EXACTLY
 4. Select the highest-severity Open issue where sprint_target = "7-Day Rescue".
 5. If no 7-Day Rescue issue is Open, select the highest-severity Open issue overall.
 6. State clearly: "Starting SF-18-XXX: [title]".
-7. Immediately PATCH the issue to In Progress with a checkpoint note.
+7. Immediately PATCH the issue to In Progress with a checkpoint note only after preflight passes.
 8. Read and use these tracker fields:
    - issue_ref
    - title
@@ -622,22 +639,54 @@ LIVE WORKFLOW — FOLLOW EXACTLY
 9. Inspect the current GitHub main version of every file listed in files_changed.
 10. Inspect adjacent code only when needed to understand imports, types, server actions, data flow, or routing.
 11. Inspect live Supabase schema/types/policies only when the issue touches database tables, RLS, server actions, or API routes.
-12. Apply the smallest safe fix directly to GitHub main.
+12. Apply the smallest safe issue-scoped fix using the connected GitHub workflow:
+   - If direct main commits are allowed and the fix is small, commit directly to main.
+   - If branch protection, repo policy, or change size requires a PR, create a dedicated issue branch and PR.
+   - Do not mark the issue Resolved until the change is merged into main and the Vercel deployment from main has been checked.
 13. If live Supabase schema/data/RLS changes are required by the issue, apply them to live Supabase only after explaining exactly why they are required.
 14. After each code or Supabase checkpoint, PATCH tracker progress while status remains In Progress.
 15. After GitHub main is updated, check the Vercel build/deployment created from main.
-16. If Vercel build fails, inspect the real build logs, fix the cause on GitHub main, and check Vercel again.
+16. If Vercel build fails, inspect the real build logs, fix the cause through the GitHub workflow, and check Vercel again.
 17. Continue until Vercel build/deployment is checked and the tracker has the latest checkpoint.
 18. Only then mark the issue Resolved with proof.
 19. Recalculate sprint progress after the issue is Resolved.
 20. Move to the next Open issue only after the current issue is fully updated in the tracker.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LARGE CHANGE RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If the selected issue requires broad changes across multiple files, schema, routing, permissions, server actions, APIs, or business logic:
+
+1. Do not commit directly to main unless the change is small, safe, and direct main commits are allowed.
+2. Create a dedicated issue branch and PR when the environment supports it.
+3. Use branch naming format:
+   sprint-18/{issue_ref-lowercase-short-title}
+   Example: sprint-18/sf-18-023-fix-org-scope
+4. Before editing, write a short implementation plan in the tracker checkpoint note:
+   - impacted files
+   - Supabase impact
+   - Vercel/build risk
+   - rollback plan
+5. Break the work into checkpoints:
+   - current-state inspection
+   - schema/types impact
+   - backend/server action/API changes
+   - UI integration if needed
+   - validation/build
+   - Vercel verification
+6. PATCH tracker notes after every checkpoint while status remains In Progress.
+7. Keep each commit atomic and tied to the selected issue.
+8. Do not mix multiple tracker issues in one branch or PR unless I explicitly instruct it.
+9. Do not mark Resolved until the PR/change is merged into main and Vercel deployment from main is checked.
+10. If the large change cannot be completed safely, leave the issue In Progress with a clear blocker note and rollback recommendation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GITHUB MAIN RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Work on the selected connected repository main branch.
+- Work on the selected connected repository using the repo's allowed workflow.
 - Pull/read the latest main before making changes.
 - Make atomic changes tied to one issue only.
+- Prefer branch + PR for large or risky changes.
 - Commit message format:
   SF-18-XXX: concise fix title
 - Commit body should include:
@@ -668,13 +717,13 @@ After GitHub main is updated:
 2. Check its build/deployment status.
 3. If it passes, capture the deployment URL/status in the tracker note.
 4. If it fails, inspect the build logs.
-5. Fix the failure on GitHub main.
-6. Re-check Vercel after the new commit.
+5. Fix the failure through the GitHub workflow.
+6. Re-check Vercel after the new commit/merge.
 7. Do not mark Resolved until Vercel has been checked.
 
 If Vercel access is unavailable:
 - do not pretend it was checked,
-- leave the issue In Progress,
+- leave the issue In Progress only if it was already started,
 - update tracker notes with the missing access/blocker,
 - tell me exactly what access is missing.
 
@@ -700,6 +749,20 @@ If validation or Vercel fails:
 - fix the failure,
 - rerun/recheck,
 - patch tracker again.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ROLLBACK / RECOVERY RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If a live code, Supabase, or deployment change causes a build failure or regression that cannot be fixed immediately:
+1. Do not mark the issue Resolved.
+2. Revert the issue-scoped code change when safe, or leave the branch/PR unmerged.
+3. For Supabase changes, apply the documented rollback only if it is safe and required.
+4. PATCH tracker notes with:
+   - failure summary
+   - current live state
+   - rollback status
+   - remaining blocker
+5. Stop before touching unrelated issues.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ARCHITECTURE RULES — NEVER BREAK THESE
@@ -748,8 +811,13 @@ OUTPUT FORMAT AFTER EACH ISSUE
 - Severity:
 - Sprint target:
 
+## Live Access Preflight
+- GitHub main access:
+- Supabase tracker read/write access:
+- Vercel deployment access:
+
 ## Live Change Proof
-- GitHub main commit/PR:
+- GitHub branch/PR/commit:
 - Supabase changes:
 - Vercel deployment/build:
 
@@ -782,11 +850,11 @@ State whether you are moving to the next Open issue or blocked, and why.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 START NOW
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Use the live tracker to read Open Sprint 18 issues and all Sprint 18 progress.
+Run the live access preflight first.
+If access passes, use the live tracker to read Open Sprint 18 issues and all Sprint 18 progress.
 Show total Open, Critical Open, High Open, count by severity, sprint completion percentage, and 7-Day Rescue completion percentage.
 
-Then select the first eligible issue, PATCH it to In Progress, inspect current GitHub main files, and begin the live fix.
-</div>
+Then select the first eligible issue, PATCH it to In Progress, inspect current GitHub main files, and begin the live fix.</div>
       <div class="copy-row">
         <button class="copy-btn" onclick="copyPrompt()" id="copy-main-btn">
           <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-copy"/></svg>Copy Full Prompt
