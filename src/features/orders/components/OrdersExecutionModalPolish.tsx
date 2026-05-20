@@ -69,15 +69,18 @@ function buildModal(title: string, description: string) {
 }
 
 function enhanceActualLines() {
-  document.querySelectorAll<HTMLElement>('.stage-card.actual-stage').forEach((stage) => {
+  document.querySelectorAll<HTMLSelectElement>('select[name="catalog_pricing_rule_id"]').forEach((selector) => {
+    const addForm = selector.closest('form');
+    const stage = selector.closest<HTMLElement>('.stage-card, article, section');
+    if (!(addForm instanceof HTMLFormElement) || !(stage instanceof HTMLElement)) return;
     if (stage.dataset.modalPolished === 'ready') return;
-    const splitPanel = stage.querySelector<HTMLElement>('.split-panel');
-    const addForm = stage.querySelector<HTMLFormElement>('form.add-line-card');
-    const discountForm = splitPanel?.querySelector<HTMLFormElement>('form:not(.add-line-card)');
-    if (!splitPanel || !addForm || !discountForm) return;
+
+    const discountForm = Array.from(stage.querySelectorAll<HTMLFormElement>('form')).find((form) => form !== addForm && form.querySelector('[name="order_discount_type"], [name="order_discount_value"], [name="order_discount_reason"]')) ?? null;
+    if (!discountForm) return;
 
     stage.dataset.modalPolished = 'ready';
 
+    const anchor = addForm.parentElement instanceof HTMLElement ? addForm.parentElement : stage;
     const card = document.createElement('section');
     card.className = 'actual-lines-clean-card';
     card.innerHTML = `
@@ -104,8 +107,8 @@ function enhanceActualLines() {
     addButton.addEventListener('click', addModal.openModal);
     discountButton.addEventListener('click', discountModal.openModal);
 
-    splitPanel.parentElement?.insertBefore(card, splitPanel);
-    splitPanel.style.display = 'none';
+    anchor.parentElement?.insertBefore(card, anchor);
+    anchor.style.display = 'none';
   });
 }
 
@@ -145,7 +148,6 @@ export function OrdersExecutionModalPolish() {
         .orders-modal-content textarea{min-height:96px!important}
         .orders-modal-content .oc-btn{border-radius:18px!important;min-height:52px!important;font-size:14px!important;background:#06405f!important;border-color:#06405f!important;color:#fff!important;box-shadow:0 18px 36px rgba(6,64,95,.18)!important}
         .orders-modal-content .catalog-combobox-list{z-index:1002}
-        .actual-stage .split-panel{margin-top:0}
         @media (max-width: 780px){.actual-lines-clean-card{display:grid;border-radius:24px}.actual-lines-clean-actions{justify-content:stretch}.actual-modal-trigger{width:100%}.orders-modal-overlay{padding:12px;align-items:end}.orders-modal-dialog{border-radius:28px 28px 0 0;max-height:90vh}.orders-modal-header{padding:20px}.orders-modal-header h2{font-size:24px}.orders-modal-content{padding:18px 20px 24px}.orders-modal-content .control-grid{grid-template-columns:1fr!important}.orders-modal-content .span-2{grid-column:auto!important}}
       `}</style>
     </>
