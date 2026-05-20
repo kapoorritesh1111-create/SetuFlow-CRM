@@ -2,17 +2,87 @@
 
 import { useEffect } from 'react';
 
-function optionText(option: HTMLOptionElement) {
-  return String(option.textContent ?? option.label ?? '').trim();
-}
+type CatalogComboboxOption = {
+  id: string;
+  productName: string;
+  secondary: string;
+  priceLabel: string;
+  searchText: string;
+  label: string;
+};
+
+type CatalogApiOption = {
+  id?: string | null;
+  productName?: string | null;
+  packLabel?: string | null;
+  skuCode?: string | null;
+  hsnCode?: string | null;
+  pricingType?: string | null;
+  basisLabel?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  searchText?: string | null;
+};
 
 function normalize(value: string) {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-function priceHint(label: string) {
-  const match = label.match(/\b(FOB|EXW|BULK|Pricing review)\b.*$/i);
-  return match ? match[0] : 'Catalog pricing';
+function optionText(option: HTMLOptionElement) {
+  return String(option.textContent ?? option.label ?? '').trim();
+}
+
+function fallbackFromSelect(option: HTMLOptionElement): CatalogComboboxOption {
+  const label = optionText(option);
+  const [productName, ...secondaryParts] = label.split(' · ');
+  const priceMatch = label.match(/\b(FOB|EXW|BULK|Pricing review)\b.*$/i);
+  return {
+    id: option.value,
+    productName: productName || 'Catalog product',
+    secondary: secondaryParts.join(' · ') || 'SKU / pack / HSN pending',
+    priceLabel: priceMatch ? priceMatch[0] : 'Catalog pricing',
+    searchText: label,
+    label,
+  };
+}
+
+function fromApiOption(option: CatalogApiOption): CatalogComboboxOption | null {
+  const id = String(option.id ?? '').trim();
+  if (!id) return null;
+  const productName = String(option.productName ?? 'Catalog product').trim() || 'Catalog product';
+  const priceLabel = option.price != null && Number.isFinite(Number(option.price))
+    ? `${option.basisLabel ?? 'Catalog'} ${option.currency ?? 'USD'} ${Number(option.price).toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+    : option.basisLabel ?? 'Pricing review';
+  const secondaryParts = [
+    option.skuCode ? `SKU ${option.skuCode}` : null,
+    option.packLabel ?? null,
+    option.hsnCode ? `HSN ${option.hsnCode}` : null,
+    option.pricingType ? `Pricing ${option.pricingType}` : null,
+  ].filter(Boolean) as string[];
+  const secondary = secondaryParts.join(' · ') || 'SKU / pack / HSN pending';
+  const label = [productName, ...secondaryParts, priceLabel].filter(Boolean).join(' · ');
+  const searchText = [option.searchText, productName, secondary, priceLabel].filter(Boolean).join(' ');
+  return { id, productName, secondary, priceLabel, searchText, label };
+}
+
+function syncNativeSelect(select: HTMLSelectElement, options: CatalogComboboxOption[], selectedId: string) {
+  select.innerHTML = '';
+  const blank = document.createElement('option');
+  blank.value = '';
+  blank.textContent = 'Manual / choose catalog product';
+  select.appendChild(blank);
+
+  options.forEach((option) => {
+    const item = document.createElement('option');
+    item.value = option.id;
+    item.textContent = option.label;
+    item.dataset.searchText = option.searchText;
+    select.appendChild(item);
+  });
+
+  if (selectedId && options.some((option) => option.id === selectedId)) {
+    select.value = selectedId;
+  }
 }
 
 function enhanceSelect(select: HTMLSelectElement) {
@@ -23,9 +93,11 @@ function enhanceSelect(select: HTMLSelectElement) {
   const wrapperLabel = select.closest('label');
   if (!form || !wrapperLabel) return;
 
-  const options = Array.from(select.options).filter((option) => option.value);
-  const selected = options.find((option) => option.value === select.value) ?? null;
-  const selectedLabel = selected ? optionText(selected) : '';
+  let options: CatalogComboboxOption[] = Array.from(select.options)
+    .filter((option) => option.value)
+    .map(fallbackFromSelect);
+  const selectedId = select.value;
+  let selected = options.find((option) => option.id === selectedId) ?? null;
 
   select.classList.add('catalog-native-select');
   select.tabIndex = -1;
@@ -43,7 +115,7 @@ function enhanceSelect(select: HTMLSelectElement) {
   input.autocomplete = 'off';
   input.className = 'catalog-combobox-input';
   input.placeholder = options.length ? 'Search live catalog by product, SKU, HSN, pack, or pricing type' : 'No active catalog products available';
-  input.value = selectedLabel;
+  input.value = selected?.label ?? '';
   input.setAttribute('role', 'combobox');
   input.setAttribute('aria-expanded', 'false');
   input.setAttribute('aria-autocomplete', 'list');
@@ -56,16 +128,31 @@ function enhanceSelect(select: HTMLSelectElement) {
 
   const helper = document.createElement('p');
   helper.className = 'field-note catalog-combobox-help';
-  helper.textContent = options.length
-    ? 'Catalog-linked line: selecting a product submits catalog_pricing_rule_id and lets the server preserve catalog/pricing lineage.'
-    : 'No active catalog products found for this organization. Check Catalog setup.';
 
   let activeIndex = -1;
-  let visibleOptions: HTMLOptionElement[] = [];
+  let visibleOptions: CatalogComboboxOption[] = [];
 
-  function syncSelected(option: HTMLOptionElement | null) {
-    select.value = option?.value ?? '';
-    input.value = option ? optionText(option) : '';
+  function setHelper(source?: string) {
+    helper.textContent = options.length
+      ? source === 'active'
+        ? 'Showing active catalog products because no quoteable catalog rows were returned for this organization.'
+        : 'Catalog-linked line: selecting a product submits catalog_pricing_rule_id and lets the server preserve catalog/pricing lineage.'
+      : 'No active catalog products found for this organization. Check Catalog setup.';
+  }
+
+  function refreshEmptyState() {
+    combobox.setAttribute('data-empty', options.length ? 'false' : 'true');
+    input.disabled = !options.length;
+    input.placeholder = options.length ? 'Search live catalog by product, SKU, HSN, pack, or pricing type' : 'No active catalog products available';
+    setHelper();
+    const oldEmpty = form.querySelector<HTMLElement>('.field-note.span-2');
+    if (!options.length && oldEmpty) oldEmpty.textContent = 'No active catalog products found for this organization. Check Catalog setup.';
+  }
+
+  function syncSelected(option: CatalogComboboxOption | null) {
+    selected = option;
+    select.value = option?.id ?? '';
+    input.value = option ? option.label : '';
     select.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
@@ -78,30 +165,28 @@ function enhanceSelect(select: HTMLSelectElement) {
   function render(query = input.value) {
     const needle = normalize(query);
     visibleOptions = options
-      .filter((option) => normalize(optionText(option)).includes(needle))
+      .filter((option) => normalize(option.searchText || option.label).includes(needle))
       .slice(0, 12);
 
     list.innerHTML = '';
     if (!visibleOptions.length) {
       const empty = document.createElement('div');
       empty.className = 'catalog-combobox-empty';
-      empty.textContent = 'No matching catalog product found for this search.';
+      empty.textContent = options.length ? 'No matching catalog product found for this search.' : 'No active catalog products found for this organization. Check Catalog setup.';
       list.appendChild(empty);
       return;
     }
 
     visibleOptions.forEach((option, index) => {
-      const label = optionText(option);
-      const [primary, ...secondaryParts] = label.split(' · ');
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'catalog-combobox-option';
       button.setAttribute('role', 'option');
-      button.setAttribute('aria-selected', option.value === select.value ? 'true' : 'false');
+      button.setAttribute('aria-selected', option.id === select.value ? 'true' : 'false');
       button.innerHTML = `<strong></strong><small></small><em></em>`;
-      button.querySelector('strong')!.textContent = primary || 'Catalog product';
-      button.querySelector('small')!.textContent = secondaryParts.join(' · ') || 'SKU / pack / HSN pending';
-      button.querySelector('em')!.textContent = priceHint(label);
+      button.querySelector('strong')!.textContent = option.productName;
+      button.querySelector('small')!.textContent = option.secondary;
+      button.querySelector('em')!.textContent = option.priceLabel;
       button.addEventListener('mousedown', (event) => event.preventDefault());
       button.addEventListener('click', () => {
         syncSelected(option);
@@ -114,6 +199,7 @@ function enhanceSelect(select: HTMLSelectElement) {
 
   input.addEventListener('input', () => {
     select.value = '';
+    selected = null;
     activeIndex = -1;
     render(input.value);
     list.hidden = false;
@@ -128,6 +214,7 @@ function enhanceSelect(select: HTMLSelectElement) {
 
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
+      syncSelected(null);
       closeList();
       return;
     }
@@ -154,9 +241,29 @@ function enhanceSelect(select: HTMLSelectElement) {
 
   combobox.append(input, list, helper);
   wrapperLabel.appendChild(combobox);
+  refreshEmptyState();
+  syncNativeSelect(select, options, selectedId);
 
-  const oldEmpty = form.querySelector<HTMLElement>('.field-note.span-2');
-  if (!options.length && oldEmpty) oldEmpty.textContent = 'No active catalog products found for this organization. Check Catalog setup.';
+  fetch('/api/orders/catalog-options', { credentials: 'same-origin' })
+    .then((response) => response.ok ? response.json() : null)
+    .then((payload: { options?: CatalogApiOption[]; source?: string } | null) => {
+      const liveOptions = Array.isArray(payload?.options) ? payload.options.map(fromApiOption).filter(Boolean) as CatalogComboboxOption[] : [];
+      if (!liveOptions.length) {
+        if (!options.length) refreshEmptyState();
+        return;
+      }
+      const currentId = select.value;
+      options = liveOptions;
+      selected = options.find((option) => option.id === currentId) ?? selected;
+      syncNativeSelect(select, options, currentId);
+      if (selected && select.value) input.value = selected.label;
+      setHelper(payload?.source);
+      refreshEmptyState();
+      render(input.value);
+    })
+    .catch(() => {
+      refreshEmptyState();
+    });
 }
 
 export function OrderCatalogProductTypeahead() {
