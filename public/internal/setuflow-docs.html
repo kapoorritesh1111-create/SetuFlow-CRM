@@ -196,7 +196,7 @@
   <a href="#s15"><span class="num">15</span> Sprint Tracker</a>
   <a href="#s16"><span class="num">16</span> Production Status</a>
   <a href="#s17"><span class="num">17</span> Live UI Reference</a>
-  <a href="#s18"><span class="num">18</span> Sprint 17 Changes</a>
+  <a href="#s18"><span class="num">18</span> Sprint 18 Plan / Status</a>
 </nav>
 
 <main class="main">
@@ -1940,71 +1940,141 @@ Build machine: 8 cores, 16 GB · Node: 18 · Next.js 14.2.35
 </section>
 
 
-<!-- ═══ S18: SPRINT 17 ═══ -->
+<!-- ═══ S18: SPRINT 18 ═══ -->
 <section class="section" id="s18">
-<div class="section-header"><div class="section-num">18</div><h1>Sprint 17 — Analytics Nav + Templates Editor + Orders UX</h1></div>
+<div class="section-header"><div class="section-num">18</div><h1>Sprint 18 — Integration-Ready Plan / Status</h1></div>
 
-<div class="alert alert-green"><strong>Sprint 17 closed — 5 issues resolved.</strong> Analytics in sidebar, real T&C editor live, Orders preview → new tab, WhatsApp auto-opens, document tray styled with channel badges.</div>
+<div class="alert alert-blue"><strong>Sprint 18 status:</strong> SetuFlow is being positioned truthfully as integration-ready, not falsely “fully integrated.” Mailtrap is production-ready and working. Finance, freight, banking, and WhatsApp Business API are not live external integrations yet.</div>
 
 <style>
-.s17-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;margin-bottom:16px}
-.s17-before{background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;color:#991b1b;margin-bottom:8px}
-.s17-after{background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:10px 14px;font-size:12px;color:#065f46}
-.s17-files{background:#f1f5f9;border-radius:8px;padding:8px 12px;font-size:11px;font-family:monospace;color:#334155;margin-top:8px}
-.s17-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.s18-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:16px}
+.s18-card h3{margin-top:0;color:#0f2244}
+.s18-status{display:inline-block;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
+.s18-live{background:#d1fae5;color:#065f46}
+.s18-ready{background:#dbeafe;color:#1d4ed8}
+.s18-pending{background:#fef3c7;color:#92400e}
+.s18-manual{background:#f1f5f9;color:#475569}
+.s18-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:16px 0}
+.s18-files{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:11px;font-family:monospace;color:#334155;margin-top:10px}
+.s18-list{padding-left:18px;margin-top:8px}
+.s18-list li{font-size:12.5px;color:#64748b;margin-bottom:4px}
 </style>
 
-<div class="s17-grid">
-  <div class="s17-card">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:6px">S17-NAV-001 · Analytics Sidebar Navigation</div>
-    <div class="s17-before">❌ Before: Analytics was a faint pill button in the dashboard header area — invisible when the dashboard re-renders. Screenshot showed empty red box where the button should be.</div>
-    <div class="s17-after">✅ After: Analytics is now a permanent sidebar nav item (line-chart icon, "Analytics" label) between Dash and Leads. Always visible, always accessible. /dashboard exact-match fixed so Analytics page doesn't activate the Dash icon.</div>
-    <div class="s17-files">Files: src/lib/routes/manifest.json · src/components/shell/navigation.tsx · src/components/shell/utils.ts</div>
+<h2>Approved Product Decisions</h2>
+<div class="s18-grid">
+  <div class="s18-card" style="border-left:4px solid #10b981">
+    <span class="s18-status s18-live">Production-ready</span>
+    <h3>Mailtrap email</h3>
+    <p>Mailtrap is the approved production email integration for now. It is tested, confirmed working, and remains the truthful live provider for invitations and order-document sends.</p>
   </div>
-  <div class="s17-card">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:6px">S17-TMPL-001 · Document Templates Real Editor</div>
-    <div class="s17-before">❌ Before: "Placeholder only: editing is intentionally deferred. Future pass will add versioned editor..." — no editing capability at all.</div>
-    <div class="s17-after">✅ After: Real working editor per profile. Four collapsible sections: Compact terms (one per line textarea), Annexure terms (legal clauses), Bank details (structured fields), Export declarations (country-aware: IEC/LUT/GSTIN for IN, VAT/EORI for EU). Default terms pre-filled by org country. Each save writes to document_template_history.</div>
-    <div class="s17-files">New: src/features/admin/server/document-terms-actions.ts · src/features/admin/components/document-terms-editor.tsx<br>Updated: src/app/(app)/admin/document-templates/page.tsx</div>
+  <div class="s18-card" style="border-left:4px solid #3b82f6">
+    <span class="s18-status s18-ready">Approved UX</span>
+    <h3>Analytics shell</h3>
+    <p>The approved Analytics UX direction is locked. The current dashboard analytics shell has been updated with shared filters, KPI cards, funnel, trend, top markets/products, and insights/anomalies while avoiding overclaiming unavailable historical dimensions.</p>
   </div>
-  <div class="s17-card">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:6px">S17-ORDERS-001 · All Previews Open in New Tab</div>
-    <div class="s17-before">❌ Before: Preview form used target="_blank" on the form element — Next.js server actions don't respect this. Previews opened in the same tab (disrupting the order queue state).</div>
-    <div class="s17-after">✅ After: href-based previews use target="_blank" rel="noreferrer noopener". Document tray review links show "Open ↗" — all open in new tab. First-preview form submit generates the share token; subsequent previews use the stored href directly.</div>
-    <div class="s17-files">Updated: src/features/orders/components/OrdersProductionWorkspace81DRepair3.tsx</div>
-  </div>
-  <div class="s17-card">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:6px">S17-ORDERS-002+003 · WhatsApp Auto-Open + Tray Badges</div>
-    <div class="s17-before">❌ Before: After WhatsApp send, operator had to find and copy the wa.me link manually. Document tray showed "email link Open" in plain text — no visual distinction.</div>
-    <div class="s17-after">✅ After: Selecting 💬 WhatsApp and clicking "Send &amp; open WhatsApp" auto-opens WhatsApp (wa.me on mobile, Web on desktop) with pre-filled message 600ms after form submit. Document tray shows 📧 Email (blue) / 💬 WhatsApp (green) channel badges + open-count ("3 opens") badge.</div>
-    <div class="s17-files">Updated: src/features/orders/components/OrdersProductionWorkspace81DRepair3.tsx</div>
+  <div class="s18-card" style="border-left:4px solid #3b82f6">
+    <span class="s18-status s18-ready">Approved direction</span>
+    <h3>Orders Execution Cockpit</h3>
+    <p>Orders UX direction is approved as an Execution Cockpit, not a Quote clone. Full UI redesign should wait for the complete CTA matrix, but Sprint 18 continues to improve execution truth, document preview, send reliability, and integration readiness.</p>
   </div>
 </div>
 
-<h2>Document Templates — How to Use the New Editor</h2>
+<h2>Integration Truth Map</h2>
+<div class="tbl-wrap">
+<table>
+<thead><tr><th>Area</th><th>Sprint 18 truth</th><th>Operator language</th><th>Do not claim</th></tr></thead>
+<tbody>
+<tr><td>Email</td><td><span class="badge badge-green">Live</span> Mailtrap active and working</td><td>Mailtrap production-ready</td><td>Multiple email providers live</td></tr>
+<tr><td>Finance</td><td><span class="badge badge-blue">Queue-ready</span> integration-ready queue only</td><td>Queue invoice sync, View queue, Copy payload, Retry queued event</td><td>Xero / QuickBooks / Tally live sync</td></tr>
+<tr><td>Freight</td><td><span class="badge badge-blue">Queue-ready</span> pending adapters only</td><td>Queue freight request, View queue, Copy payload</td><td>Live carrier booking or freight marketplace integration</td></tr>
+<tr><td>Banks / Payments</td><td><span class="badge badge-slate">Manual / planned</span></td><td>Record payment reference, Confirm reconciliation</td><td>Bank feed or payment processor connected</td></tr>
+<tr><td>WhatsApp</td><td><span class="badge badge-amber">Manual tracked links</span> wa.me / WhatsApp Web prefilled text</td><td>Open WhatsApp, operator reviews and sends manually</td><td>WhatsApp Business API live delivery</td></tr>
+<tr><td>PDF</td><td><span class="badge badge-green">Free OSS path</span> <code>puppeteer-core</code> + <code>@sparticuz/chromium</code></td><td>Generate PDF, Download signed URL, Browser print fallback</td><td>Paid PDF API dependency</td></tr>
+<tr><td>Open API / Webhooks</td><td><span class="badge badge-slate">Planned</span></td><td>Future partner contract</td><td>Public partner API available today</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Current Sprint 18 Implementation Status</h2>
+<div class="s18-grid">
+  <div class="s18-card" style="border-left:4px solid #10b981">
+    <span class="s18-status s18-live">Fixed</span>
+    <h3>WhatsApp placeholder bug</h3>
+    <ul class="s18-list">
+      <li>Orders no longer open WhatsApp with “Secure link will follow.”</li>
+      <li>Orders now create or reuse a tracked order-document preview URL.</li>
+      <li>Prefilled WhatsApp text includes <code>View secure document: https://www.setuflowcrm.com/order-documents/preview/...</code>.</li>
+      <li>Operator still manually reviews and sends in WhatsApp / WhatsApp Web.</li>
+      <li>No WhatsApp Business API is live yet.</li>
+    </ul>
+    <div class="s18-files">src/features/orders/server/order-whatsapp-delivery.ts<br>src/features/orders/components/OrdersProductionWorkspace81DRepair3.tsx</div>
+  </div>
+  <div class="s18-card" style="border-left:4px solid #10b981">
+    <span class="s18-status s18-live">Polished</span>
+    <h3>Order document preview</h3>
+    <ul class="s18-list">
+      <li>Order preview now follows the cleaner quote-style PDF direction.</li>
+      <li>Includes branded header, party grid, summary, line items, totals, signatures, and compact terms.</li>
+      <li>Browser print fallback remains intact.</li>
+      <li>Server PDF path remains free/open-source via <code>puppeteer-core</code> + <code>@sparticuz/chromium</code>.</li>
+    </ul>
+    <div class="s18-files">src/app/order-documents/preview/[token]/page.tsx<br>src/app/api/order-documents/pdf/route.ts</div>
+  </div>
+  <div class="s18-card" style="border-left:4px solid #10b981">
+    <span class="s18-status s18-live">Updated shell</span>
+    <h3>Analytics dashboard</h3>
+    <ul class="s18-list">
+      <li>Approved Analytics UX proposal is locked for later deeper implementation.</li>
+      <li>Current shell now matches the approved layout direction: filters, KPIs, funnel, trend, top segments, and insights.</li>
+      <li>Copy remains honest where trend/filter dimensions are not yet fully historical.</li>
+    </ul>
+    <div class="s18-files">src/app/(app)/dashboard/analytics/page.tsx</div>
+  </div>
+  <div class="s18-card" style="border-left:4px solid #3b82f6">
+    <span class="s18-status s18-ready">Admin direction</span>
+    <h3>Admin Integrations page</h3>
+    <ul class="s18-list">
+      <li><code>/admin/integrations</code> presents live, queue-ready, manual, and planned integration states.</li>
+      <li>Investor-friendly but explicit: Mailtrap live; Finance/Freight queue-ready only; WhatsApp manual; PDF free renderer.</li>
+      <li>Open API/Webhooks remain planned.</li>
+      <li>No live external finance or freight providers are connected yet.</li>
+    </ul>
+    <div class="s18-files">src/app/(app)/admin/integrations/page.tsx<br>src/lib/routes/manifest.json<br>src/components/shell/route-meta.ts</div>
+  </div>
+</div>
+
+<h2>Database / Storage Status</h2>
 <div class="card-grid">
-  <div class="card"><div class="card-title">Add payment terms to documents</div><ol style="padding-left:16px;font-size:12.5px;line-height:1.9"><li>Admin → Document Templates</li><li>Open the relevant profile (e.g. Export - Dispatch Invoice)</li><li>Click "Compact terms (page 1)"</li><li>Add/edit terms — one per line<br><code style="font-size:11px">Payment: 100% advance by TT</code><br><code style="font-size:11px">Incoterms: FOB Mumbai</code></li><li>Click Save changes</li></ol></div>
-  <div class="card"><div class="card-title">Add bank details to invoices</div><ol style="padding-left:16px;font-size:12.5px;line-height:1.9"><li>Admin → Document Templates</li><li>Open Export - Dispatch Invoice profile</li><li>Click "Bank details"</li><li>Fill: Bank name, Account name, Account number, SWIFT/BIC, IFSC (India)</li><li>Click Save changes</li></ol></div>
-  <div class="card"><div class="card-title">Add IEC/GSTIN to export docs</div><ol style="padding-left:16px;font-size:12.5px;line-height:1.9"><li>Admin → Document Templates</li><li>Open any Export profile</li><li>Click "Export declarations &amp; registrations"</li><li>Fill: IEC number, LUT ARN, GSTIN, PAN, AD Code</li><li>Click Save changes</li></ol></div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ PDF storage path</div>
+    <ul>
+      <li><code>order_documents.pdf_storage_path</code> added if missing.</li>
+      <li>Used for Supabase Storage object paths.</li>
+      <li>Signed download URL returned by server route.</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #10b981">
+    <div class="card-title">✅ Private PDF bucket</div>
+    <ul>
+      <li>Bucket: <code>order-documents</code>.</li>
+      <li>Private storage; PDFs are shared through signed URLs.</li>
+      <li>Allowed MIME intent: <code>application/pdf</code>.</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid #f59e0b">
+    <div class="card-title">⟳ Finance / Freight adapters</div>
+    <ul>
+      <li>Finance and freight queue tables exist for integration-ready events.</li>
+      <li>Adapters remain pending.</li>
+      <li>No external provider is connected yet.</li>
+    </ul>
+  </div>
 </div>
 
-<h2>Sprint 17 Issue Summary</h2>
-<div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>Title</th><th>Severity</th><th>Status</th></tr></thead><tbody>
-<tr><td style="font-family:monospace;font-size:11px">S17-NAV-001</td><td>Analytics moved to sidebar navigation</td><td><span class="badge badge-blue">High</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
-<tr><td style="font-family:monospace;font-size:11px">S17-TMPL-001</td><td>Document templates placeholder → real editor</td><td><span class="badge badge-red">Critical</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
-<tr><td style="font-family:monospace;font-size:11px">S17-ORDERS-001</td><td>All previews open in new tab</td><td><span class="badge badge-blue">High</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
-<tr><td style="font-family:monospace;font-size:11px">S17-ORDERS-002</td><td>WhatsApp auto-opens after send</td><td><span class="badge badge-blue">High</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
-<tr><td style="font-family:monospace;font-size:11px">S17-ORDERS-003</td><td>Document tray channel badges + new tab links</td><td><span class="badge badge-amber">Medium</span></td><td><span class="badge badge-green">✓ Resolved</span></td></tr>
-</tbody></table></div>
+<h2>Leadership Notes</h2>
+<div class="alert alert-amber"><strong>Do not overclaim:</strong> Sprint 18 positions SetuFlow as integration-ready, not fully externally integrated. Mailtrap is live. Finance, freight, banks/payments, WhatsApp Business API, and public Open API/Webhooks remain staged, manual, or planned.</div>
+<div class="alert alert-green"><strong>Current live progress:</strong> WhatsApp placeholder bug fixed, order preview polished, analytics shell updated, Admin Integrations page added, PDF route builds on Vercel, and Vercel is green.</div>
 
-<h2>What's Next — Sprint 18</h2>
-<div class="tbl-wrap"><table><thead><tr><th>Priority</th><th>Item</th><th>Notes</th></tr></thead><tbody>
-<tr><td><span class="badge badge-red">High</span></td><td>Server-side PDF generation (Puppeteer)</td><td>Replace browser-print with downloadable PDFs. Attach to email sends. Store in Supabase Storage.</td></tr>
-<tr><td><span class="badge badge-blue">Medium</span></td><td>Finance adapter external connection</td><td>Connect Xero or QuickBooks to finance_integration_events queue. UI to trigger invoice posting.</td></tr>
-<tr><td><span class="badge badge-blue">Medium</span></td><td>Freight adapter external connection</td><td>Connect Flexport or Freightos to freight_booking_events queue.</td></tr>
-<tr><td><span class="badge badge-amber">Medium</span></td><td>Order document WhatsApp: send stored wa.me link from DB</td><td>After first WhatsApp send stores whatsapp_link in DB, second send should use stored link (pre-personalized URL with document token). Currently re-generates generic message.</td></tr>
-<tr><td><span class="badge badge-amber">Medium</span></td><td>Analytics historical snapshots cron job</td><td>analytics_snapshots table ready. Wire up a daily snapshot compute job to enable trend views.</td></tr>
-</tbody></table></div>
 </section>
 
 </main>
