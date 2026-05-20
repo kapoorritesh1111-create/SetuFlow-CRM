@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -60,6 +61,15 @@ async function requireOrderWriteAccess() {
 
 async function findOrder(db: any, organizationId: string, quoteId: string) {
   return db.from('orders').select('id, lead_id, source_quote_id, approval_state, pricing_basis, currency, metadata, total_order_value').eq('organization_id', organizationId).eq('source_quote_id', quoteId).maybeSingle();
+}
+
+async function findCatalogPricingRule(db: any, organizationId: string, pricingRuleId: string) {
+  return db
+    .from('active_product_pricing_rules_v')
+    .select('id, pricing_rule_set_id, product_id, product_variant_id, sku_code, hsn_code, product_name, category_type, category_name, pack_label, units_per_case, moq, pricing_type, ex_factory_usd, fob_usd, bulk_ex_factory_usd_per_kg, ex_factory_usd_per_unit, fob_usd_per_unit, bulk_usd_per_kg, ex_factory_usd_per_case, fob_usd_per_case, fx_rate_to_usd, fx_provider, fx_reference_week_start, fx_reference_week_end')
+    .eq('organization_id', organizationId)
+    .eq('id', pricingRuleId)
+    .maybeSingle();
 }
 
 export async function updateActualOrderLineAction(formData: FormData) {
@@ -193,12 +203,19 @@ export async function addManualActualOrderLineAction(formData: FormData) {
   let productSnapshot: Record<string, unknown> = { source: 'manual_actual_order_line' };
 
   if (pricingRuleId) {
-    const { data: rule, error: ruleError } = await db
-      .from('active_product_pricing_rules_v')
-      .select('id, pricing_rule_set_id, product_id, product_variant_id, sku_code, hsn_code, product_name, category_type, category_name, pack_label, units_per_case, moq, pricing_type, ex_factory_usd, fob_usd, bulk_ex_factory_usd_per_kg, ex_factory_usd_per_unit, fob_usd_per_unit, bulk_usd_per_kg, ex_factory_usd_per_case, fob_usd_per_case, fx_rate_to_usd, fx_provider, fx_reference_week_start, fx_reference_week_end')
-      .eq('organization_id', organizationId)
-      .eq('id', pricingRuleId)
-      .maybeSingle();
+    const userRuleResult = await findCatalogPricingRule(db, organizationId, pricingRuleId);
+    let rule = userRuleResult.data;
+    let ruleError = userRuleResult.error;
+
+    if (ruleError || !rule?.id) {
+      const adminDb = createAdminSupabaseClient() as any;
+      if (adminDb) {
+        const adminRuleResult = await findCatalogPricingRule(adminDb, organizationId, pricingRuleId);
+        rule = adminRuleResult.data;
+        ruleError = adminRuleResult.error;
+      }
+    }
+
     if (ruleError || !rule?.id) redirect(buildRedirect('catalog-pricing-rule-not-found', order.id));
     productName = text(rule.product_name) ?? productName;
     variantName = text(rule.pack_label) ?? variantName;
