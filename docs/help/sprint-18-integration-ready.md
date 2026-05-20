@@ -21,6 +21,24 @@ Finance and Freight are integration-ready queues only. No live Xero, QuickBooks,
 7. Final Invoice
 8. Paid & Closed
 
+## Actual Lines: live Catalog product add flow
+
+The Actual Lines stage can add products from live Catalog pricing after quote acceptance without mutating the accepted quote version.
+
+Current production truth:
+
+- `/orders` loads Catalog options server-side from `active_product_pricing_rules_v` in `src/app/(app)/orders/layout.tsx`.
+- Catalog rows are scoped to the verified workspace organization.
+- The loader tries active + quoteable rows first, then active rows.
+- If the authenticated view/query path returns no rows while the workspace organization is verified, the loader may use a service-role/admin fallback scoped strictly to that same `organization_id`.
+- The add-line server action re-verifies the selected `catalog_pricing_rule_id` in `src/features/orders/server/order-line-actions.ts` before insert.
+- The submit action uses the same safe verified-organization fallback, scoped by `organization_id` and selected rule id, so products shown by the loader can also be inserted.
+- Catalog-linked actual lines use `change_type='added_catalog_after_quote'` and preserve product/pricing lineage through snapshots.
+- Manual lines remain separate and require reason/context.
+- Removed added/manual lines should disappear from active Actual Lines UI and remain only in audit/activity history.
+
+Setu Guru must not say Catalog is empty when live active/quoteable pricing rows exist. If products do not appear, treat it as a query/RLS/session/workspace context bug to investigate, not a reason to fake options.
+
 ## KPI meanings
 
 - All orders: all loaded execution orders.
