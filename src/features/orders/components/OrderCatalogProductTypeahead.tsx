@@ -311,7 +311,7 @@ export function OrderCatalogProductTypeahead() {
   useEffect(() => {
     const enhanceAll = () => {
       document
-        .querySelectorAll<HTMLSelectElement>('form.add-line-card select[name="catalog_pricing_rule_id"]')
+        .querySelectorAll<HTMLSelectElement>('select[name="catalog_pricing_rule_id"]')
         .forEach(enhanceSelect);
     };
 
