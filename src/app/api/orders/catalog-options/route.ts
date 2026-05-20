@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -21,6 +22,21 @@ function basisFor(rule: any) {
   return 'Pricing review';
 }
 
+async function fetchRows(client: any, orgId: string, quoteableOnly: boolean) {
+  const selectColumns = 'id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg, is_active, is_quoteable';
+  let query = client
+    .from('active_product_pricing_rules_v')
+    .select(selectColumns)
+    .eq('organization_id', orgId)
+    .eq('is_active', true)
+    .order('product_name', { ascending: true })
+    .limit(300);
+
+  if (quoteableOnly) query = query.eq('is_quoteable', true);
+  const { data, error } = await query;
+  return { rows: Array.isArray(data) ? data : [], error };
+}
+
 export async function GET() {
   if (!hasSupabaseEnv) return NextResponse.json({ options: [], error: 'Supabase environment is not configured.' }, { status: 503 });
 
@@ -28,30 +44,33 @@ export async function GET() {
   const orgId = workspace.organization?.id;
   if (!workspace.user || !orgId) return NextResponse.json({ options: [], error: 'Workspace membership required.' }, { status: 401 });
 
-  const db = (await createClient()) as any;
-  const selectColumns = 'id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg, is_active, is_quoteable';
-  const quoteableResult = await db
-    .from('active_product_pricing_rules_v')
-    .select(selectColumns)
-    .eq('organization_id', orgId)
-    .eq('is_active', true)
-    .eq('is_quoteable', true)
-    .order('product_name', { ascending: true })
-    .limit(300);
+  const userDb = (await createClient()) as any;
+  const adminDb = createAdminSupabaseClient() as any;
+  const clients = [
+    { db: userDb, sourcePrefix: 'rls' },
+    ...(adminDb ? [{ db: adminDb, sourcePrefix: 'verified_org_admin_fallback' }] : []),
+  ];
 
-  let rows = Array.isArray(quoteableResult.data) ? quoteableResult.data : [];
+  let rows: any[] = [];
   let source = 'quoteable';
+  let lastError: unknown = null;
 
-  if (!rows.length) {
-    const activeResult = await db
-      .from('active_product_pricing_rules_v')
-      .select(selectColumns)
-      .eq('organization_id', orgId)
-      .eq('is_active', true)
-      .order('product_name', { ascending: true })
-      .limit(300);
-    rows = Array.isArray(activeResult.data) ? activeResult.data : [];
-    source = 'active';
+  for (const client of clients) {
+    const quoteable = await fetchRows(client.db, orgId, true);
+    lastError = quoteable.error ?? lastError;
+    if (quoteable.rows.length) {
+      rows = quoteable.rows;
+      source = `${client.sourcePrefix}_quoteable`;
+      break;
+    }
+
+    const active = await fetchRows(client.db, orgId, false);
+    lastError = active.error ?? lastError;
+    if (active.rows.length) {
+      rows = active.rows;
+      source = `${client.sourcePrefix}_active`;
+      break;
+    }
   }
 
   const options = rows.map((rule: any) => {
@@ -75,5 +94,10 @@ export async function GET() {
     };
   });
 
-  return NextResponse.json({ options, source });
+  return NextResponse.json({
+    options,
+    source,
+    emptyReason: options.length ? null : 'No active catalog products found for this organization. Check Catalog setup.',
+    debug: options.length ? null : { lastError: lastError ? String((lastError as any).message ?? lastError) : null },
+  });
 }
