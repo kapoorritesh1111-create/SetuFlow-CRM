@@ -1,5 +1,6 @@
 import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace81DRepair3';
@@ -39,6 +40,19 @@ function basisPrice(rule: any) {
   return num(rule.fob_usd_per_case ?? rule.fob_usd_per_unit ?? rule.fob_usd) ?? num(rule.ex_factory_usd_per_case ?? rule.ex_factory_usd_per_unit ?? rule.ex_factory_usd) ?? num(rule.bulk_usd_per_kg ?? rule.bulk_ex_factory_usd_per_kg);
 }
 
+async function loadCatalogRows(client: any, orgId: string, quoteableOnly: boolean) {
+  let query = client
+    .from('active_product_pricing_rules_v')
+    .select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg')
+    .eq('organization_id', orgId)
+    .eq('is_active', true)
+    .order('product_name', { ascending: true })
+    .limit(300);
+  if (quoteableOnly) query = query.eq('is_quoteable', true);
+  const { data } = await query;
+  return Array.isArray(data) ? data : [];
+}
+
 function defaultContact(lead: any) {
   return clean(lead?.email) ?? clean(lead?.whatsapp) ?? clean(lead?.phone);
 }
@@ -57,6 +71,7 @@ export default async function OrdersLayout() {
   }
 
   const db = (await createClient()) as any;
+  const adminDb = createAdminSupabaseClient() as any;
   const orgId = workspace.organization.id;
   const orgCountry = clean((workspace.organization as any).country ?? (workspace.organization as any).country_name ?? (workspace.organization as any).billing_country);
 
@@ -100,8 +115,8 @@ export default async function OrdersLayout() {
     orderIds.length ? db.from('order_approval_gates').select('id, order_id, stage_key, gate_type, status, approved_at, previewed_at, completed_at, reason').eq('organization_id', orgId).in('order_id', orderIds) : Promise.resolve({ data: [] }),
     sourceVersionIds.length ? db.from('quote_version_line_items').select('id, quote_version_id, product_name, pack_label, sku_code, hsn_code, moq, final_unit_price, final_case_price, final_kg_price, display_currency, sort_order, basis_applied, pricing_mode, catalog_price_snapshot').in('quote_version_id', sourceVersionIds).order('sort_order', { ascending: true }) : Promise.resolve({ data: [] }),
     sourceVersionIds.length ? db.from('quote_versions').select('id, version_no, status, approved_at, sent_at, total_line_count').in('id', sourceVersionIds) : Promise.resolve({ data: [] }),
-    orderIds.length ? db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_id, product_variant_id, product_category_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, approved_quantity, packed_quantity, loaded_quantity, dispatched_quantity, delivered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, line_discount_type, line_discount_value, line_discount_amount, line_discount_reason, created_at, pricing_snapshot, product_snapshot').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: true }) : Promise.resolve({ data: [] }),
-    db.from('active_product_pricing_rules_v').select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg').eq('organization_id', orgId).eq('is_active', true).eq('is_quoteable', true).order('product_name', { ascending: true }).limit(200),
+    orderIds.length ? db.from('order_lines').select('id, order_id, source_quote_version_line_item_id, product_id, product_variant_id, product_category_id, product_name_snapshot, variant_name_snapshot, sku_code, hsn_code, quoted_quantity, ordered_quantity, approved_quantity, packed_quantity, loaded_quantity, dispatched_quantity, delivered_quantity, unit_of_measure, unit_price, currency, line_total, line_status, change_type, change_reason, line_discount_type, line_discount_value, line_discount_amount, line_discount_reason, created_at, pricing_snapshot, product_snapshot').eq('organization_id', orgId).in('order_id', orderIds).neq('line_status', 'removed').order('created_at', { ascending: true }) : Promise.resolve({ data: [] }),
+    db.from('active_product_pricing_rules_v').select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg').eq('organization_id', orgId).eq('is_active', true).eq('is_quoteable', true).order('product_name', { ascending: true }).limit(300),
     orderIds.length ? db.from('order_documents').select('id, order_id, document_type, status, pdf_storage_path, sent_at, opened_at, created_at').eq('organization_id', orgId).in('order_id', orderIds).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
     orderIds.length ? db.from('order_document_sends').select('id, order_id, order_document_id, document_type, channel, recipient, recipient_role, status, share_url, whatsapp_link, sent_at, opened_at, open_count').eq('organization_id', orgId).in('order_id', orderIds).order('sent_at', { ascending: false }) : Promise.resolve({ data: [] }),
     orderIds.length ? db.from('packing_plans').select('id, order_id, status, total_units, total_master_cases, total_pallets, total_net_weight_kg, total_gross_weight_kg, total_cbm, pickup_location, delivery_destination, freight_notes, override_snapshot, created_at, updated_at').eq('organization_id', orgId).in('order_id', orderIds).order('updated_at', { ascending: false }) : Promise.resolve({ data: [] }),
@@ -131,21 +146,14 @@ export default async function OrdersLayout() {
   const shipmentRows = Array.isArray(shipmentsResult.data) ? shipmentsResult.data : [];
 
   let catalogRows = Array.isArray(catalogResult.data) ? catalogResult.data : [];
-  if (!catalogRows.length) {
-    const { data: fallbackCatalog } = await db
-      .from('active_product_pricing_rules_v')
-      .select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg')
-      .eq('organization_id', orgId)
-      .eq('is_active', true)
-      .order('product_name', { ascending: true })
-      .limit(300);
-    catalogRows = Array.isArray(fallbackCatalog) ? fallbackCatalog : [];
-  }
+  if (!catalogRows.length) catalogRows = await loadCatalogRows(db, orgId, false);
+  if (!catalogRows.length && adminDb) catalogRows = await loadCatalogRows(adminDb, orgId, true);
+  if (!catalogRows.length && adminDb) catalogRows = await loadCatalogRows(adminDb, orgId, false);
 
   const catalogOptions: CatalogOrderOption8S[] = catalogRows.map((rule: any) => {
     const price = basisPrice(rule);
     const basisLabel = rule.fob_usd_per_case || rule.fob_usd_per_unit || rule.fob_usd ? 'FOB' : rule.ex_factory_usd_per_case || rule.ex_factory_usd_per_unit || rule.ex_factory_usd ? 'EXW' : rule.bulk_usd_per_kg || rule.bulk_ex_factory_usd_per_kg ? 'BULK' : 'Pricing review';
-    return { id: rule.id, label: `${rule.product_name ?? 'Catalog product'}${rule.pack_label ? ` · ${rule.pack_label}` : ''}${rule.sku_code ? ` · ${rule.sku_code}` : ''}${price != null ? ` · ${basisLabel} USD ${price}` : ''}`, productName: rule.product_name ?? 'Catalog product', variantName: rule.pack_label ?? null, skuCode: rule.sku_code ?? null, hsnCode: rule.hsn_code ?? null, pricingType: rule.pricing_type ?? null, basisLabel, fobPrice: num(rule.fob_usd_per_case ?? rule.fob_usd_per_unit ?? rule.fob_usd), exFactoryPrice: num(rule.ex_factory_usd_per_case ?? rule.ex_factory_usd_per_unit ?? rule.ex_factory_usd), bulkPrice: num(rule.bulk_usd_per_kg ?? rule.bulk_ex_factory_usd_per_kg), currency: 'USD' };
+    return { id: rule.id, label: `${rule.product_name ?? 'Catalog product'}${rule.pack_label ? ` · ${rule.pack_label}` : ''}${rule.sku_code ? ` · ${rule.sku_code}` : ''}${rule.hsn_code ? ` · HSN ${rule.hsn_code}` : ''}${rule.pricing_type ? ` · ${rule.pricing_type}` : ''}${price != null ? ` · ${basisLabel} USD ${price}` : ''}`, productName: rule.product_name ?? 'Catalog product', variantName: rule.pack_label ?? null, skuCode: rule.sku_code ?? null, hsnCode: rule.hsn_code ?? null, pricingType: rule.pricing_type ?? null, basisLabel, fobPrice: num(rule.fob_usd_per_case ?? rule.fob_usd_per_unit ?? rule.fob_usd), exFactoryPrice: num(rule.ex_factory_usd_per_case ?? rule.ex_factory_usd_per_unit ?? rule.ex_factory_usd), bulkPrice: num(rule.bulk_usd_per_kg ?? rule.bulk_ex_factory_usd_per_kg), currency: 'USD' };
   });
 
   const orders: ProductionOrder8S[] = orderRows.map((order: any) => {
