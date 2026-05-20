@@ -12,6 +12,28 @@ The eight stages are:
 Actual Lines -> Buyer Doc -> Packing -> Freight Queue -> Processing -> Delivery Note -> Final Invoice -> Paid & Closed
 ```
 
+## Actual Lines: live Catalog product add flow
+
+Actual Lines can add a product from live Catalog pricing after quote acceptance. This must preserve accepted quote immutability while recording the buyer's actual execution truth.
+
+Current production behavior:
+
+- `/orders` server-renders Catalog options from `active_product_pricing_rules_v` in `src/app/(app)/orders/layout.tsx`.
+- Options are scoped to the verified workspace organization.
+- The loader tries active quoteable pricing rules first, then active rules.
+- If the authenticated query path fails while workspace membership and organization are already verified, the loader may use the service-role/admin client as a verified-organization fallback. This fallback must remain strictly scoped by `organization_id`.
+- The product option label should expose product name, pack label, SKU/code, HSN/HS code, pricing type, price basis, and price.
+- The add-line form submits `catalog_pricing_rule_id`.
+- `addManualActualOrderLineAction` re-resolves the selected rule in `src/features/orders/server/order-line-actions.ts` using the same verified-organization pattern, scoped by `organization_id` and selected rule id.
+- Catalog-linked inserted rows use `change_type='added_catalog_after_quote'`.
+- The inserted line preserves catalog/pricing lineage through product and pricing snapshots, including product/variant IDs, SKU, HSN, pricing type, price basis, price columns, and FX metadata where available.
+- If unit price is blank, the server resolves a default from the selected Catalog rule.
+- Manual lines are separate, not catalog-linked, and require reason/context.
+- Removed added/manual lines should be deleted from active `order_lines` rendering and remain only in audit/activity history.
+- Accepted quote versions and accepted quote line items are never mutated by actual line edits.
+
+Do not fake catalog products. Do not use rows from another organization. If products are missing while the organization has active pricing rows, investigate the loader/action query path, RLS, session, or workspace context.
+
 ## Required Setu Guru answers
 
 What is blocking this order?
@@ -25,6 +47,23 @@ What should I approve before sending the first order document?
 - Line discount and total order discount reasons/context.
 - Actual-lines approval gate.
 - Do not mutate accepted quote version lines.
+
+How do I add a product after quote acceptance?
+
+- Use Actual Lines -> Add catalog product.
+- Pick a live Catalog pricing row for the same organization.
+- Search by product name, SKU/code, HSN/HS code, pack label, pricing type, or price basis.
+- Enter quantity, unit price if needed, and reason/context.
+- Submit Add line.
+- The server re-verifies the pricing rule and stores catalog/product/pricing snapshots on the actual order line.
+
+Why did a product show but fail to add earlier?
+
+- The loader and submit action must use the same verified-organization lookup pattern. If the loader can show a Catalog rule but the submit action cannot re-read it, the add-line action is broken. Fix the action query path; do not add fake options.
+
+Should removed lines still show in Actual Lines?
+
+- No. Removed added/manual lines should not appear as active or editable lines. They should remain only in audit/activity history.
 
 Can I queue finance now?
 
@@ -78,6 +117,8 @@ Use these labels:
 - Queue-ready
 - Pending adapter
 - Manual tracked link
+- Add catalog product
+- Manual line
 
 Do not use these labels as current truth:
 
@@ -87,6 +128,7 @@ Do not use these labels as current truth:
 - Connected to provider
 - Live accounting sync
 - Live carrier booking
+- Catalog product added from another organization
 
 ## Approval boundary
 
@@ -97,7 +139,9 @@ Setu Guru may draft:
 - dispatch evidence checklists;
 - finance/freight queue readiness checklists;
 - WhatsApp/email wording;
-- PDF/preview instructions.
+- PDF/preview instructions;
+- Catalog line picker explanations;
+- manual line reason/context guidance.
 
 Setu Guru must not perform:
 
@@ -111,4 +155,6 @@ Setu Guru must not perform:
 - invoice sync;
 - payment reconciliation;
 - order closeout;
-- delete/archive/mutate commercial truth.
+- delete/archive/mutate commercial truth;
+- creating fake products;
+- bypassing organization-scoped Catalog verification.
