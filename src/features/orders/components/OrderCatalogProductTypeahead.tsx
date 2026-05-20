@@ -157,6 +157,23 @@ function enhanceSelect(select: HTMLSelectElement) {
     if (!options.length && oldEmpty) oldEmpty.textContent = 'No active catalog products found for this organization. Check Catalog setup.';
   }
 
+  function clarifyManualLineBoundary() {
+    const manualProductInput = form.querySelector<HTMLInputElement>('input[name="product_name"]');
+    const manualProductLabel = manualProductInput?.closest('label')?.querySelector('span');
+    if (manualProductLabel) manualProductLabel.textContent = 'Manual line product';
+    const manualPriceInput = form.querySelector<HTMLInputElement>('input[name="unit_price"]');
+    const manualPriceLabel = manualPriceInput?.closest('label')?.querySelector('span');
+    if (manualPriceLabel) manualPriceLabel.textContent = 'Unit price / override';
+    if (!form.querySelector('.manual-line-boundary-note')) {
+      const note = document.createElement('p');
+      note.className = 'field-note span-2 manual-line-boundary-note';
+      note.textContent = 'Manual line only: not catalog-linked. Add product details and reason/context when no live Catalog product applies.';
+      const submitButton = form.querySelector('button[type="submit"]');
+      if (submitButton?.parentElement === form) form.insertBefore(note, submitButton);
+      else form.appendChild(note);
+    }
+  }
+
   function applySelectedDefaults(option: CatalogComboboxOption | null) {
     if (!option) return;
     const unitPriceInput = form.querySelector<HTMLInputElement>('input[name="unit_price"]');
@@ -262,6 +279,7 @@ function enhanceSelect(select: HTMLSelectElement) {
 
   combobox.append(input, list, helper);
   wrapperLabel.appendChild(combobox);
+  clarifyManualLineBoundary();
   refreshEmptyState();
   syncNativeSelect(select, options, selectedId);
 
@@ -326,6 +344,7 @@ export function OrderCatalogProductTypeahead() {
       .catalog-combobox-option em{font-style:normal;color:#1d4ed8;font-weight:800;font-size:11px;white-space:nowrap}
       .catalog-combobox-empty{padding:14px;color:#64748b;font-weight:800}
       .catalog-combobox-help{margin:0!important;text-transform:none!important;font-size:12px!important;letter-spacing:0!important;color:#47616c!important}
+      .manual-line-boundary-note{margin:0!important;text-transform:none!important;font-size:12px!important;letter-spacing:0!important;color:#92400e!important;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px!important}
       @media (max-width: 720px){.catalog-combobox-list{position:static;max-height:260px}.catalog-combobox-option{grid-template-columns:1fr}}
     `}</style>
   );
