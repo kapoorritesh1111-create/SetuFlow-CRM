@@ -96,9 +96,11 @@ function enhanceSelect(select: HTMLSelectElement) {
   if (select.dataset.catalogTypeahead === 'ready') return;
   select.dataset.catalogTypeahead = 'ready';
 
-  const form = select.closest('form');
-  const wrapperLabel = select.closest('label');
-  if (!form || !wrapperLabel) return;
+  const maybeForm = select.closest('form');
+  const maybeWrapperLabel = select.closest('label');
+  if (!(maybeForm instanceof HTMLFormElement) || !(maybeWrapperLabel instanceof HTMLElement)) return;
+  const form: HTMLFormElement = maybeForm;
+  const wrapperLabel: HTMLElement = maybeWrapperLabel;
 
   let options: CatalogComboboxOption[] = Array.from(select.options)
     .filter((option) => option.value)
