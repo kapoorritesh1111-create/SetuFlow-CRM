@@ -248,14 +248,14 @@ type ReadinessFilter = 'all' | 'ready' | 'blocked' | 'finance_ready' | 'freight_
 type DrawerState = { type: 'finance' | 'freight'; order: ProductionOrder8S } | null;
 
 const STAGES = [
-  { key: 'actual_lines', label: 'Actual Lines' },
-  { key: 'buyer_doc', label: 'Buyer Doc' },
-  { key: 'packing', label: 'Packing' },
-  { key: 'freight_queue', label: 'Freight Queue' },
-  { key: 'processing', label: 'Processing' },
-  { key: 'delivery_note', label: 'Delivery Note' },
-  { key: 'final_invoice', label: 'Final Invoice' },
-  { key: 'paid_closed', label: 'Paid & Closed' },
+  { key: 'actual_lines', label: 'Actual Lines', icon: '🧾' },
+  { key: 'buyer_doc', label: 'Buyer Doc', icon: '📄' },
+  { key: 'packing', label: 'Packing', icon: '📦' },
+  { key: 'freight_queue', label: 'Freight Queue', icon: '🚚' },
+  { key: 'processing', label: 'Processing', icon: '✅' },
+  { key: 'delivery_note', label: 'Delivery Note', icon: '🧍' },
+  { key: 'final_invoice', label: 'Final Invoice', icon: '💳' },
+  { key: 'paid_closed', label: 'Paid & Closed', icon: '🏁' },
 ] as const;
 
 type StageKey = typeof STAGES[number]['key'];
@@ -276,7 +276,7 @@ function asNumber(value: unknown, fallback = 0) {
 
 function money(value: number | null | undefined, currency: string | null | undefined) {
   if (value == null || !Number.isFinite(Number(value))) return 'Not available';
-  return `${currency ?? 'USD'} ${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  return `${currency ?? 'USD'} ${Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 }
 
 function initials(value: string) {
@@ -700,14 +700,16 @@ function PdfAction({ order, documentType, disabled = false, onRedirect }: { orde
 function DocumentSendForm({ order, documentType, channel, disabled, onRedirect }: { order: ProductionOrder8S; documentType: string; channel: 'email' | 'whatsapp'; disabled: boolean; onRedirect: (message: string) => void }) {
   const recipient = channel === 'email' ? order.defaultEmailRecipient ?? '' : order.defaultWhatsappRecipient ?? '';
   const label = channel === 'email' ? 'Send Email' : 'Open WhatsApp manually';
+  const docLabel = documentLabel(documentType);
   return (
-    <form action={sendOrderDocumentLinkAction} target={channel === 'whatsapp' ? '_blank' : undefined} className="send-form" onSubmit={() => onRedirect(channel === 'whatsapp' ? 'Opening WhatsApp with tracked link...' : 'Creating Mailtrap tracked email...')}>
+    <form action={sendOrderDocumentLinkAction} target={channel === 'whatsapp' ? '_blank' : undefined} className={`send-form ${channel === 'email' ? 'email-send-form' : ''}`} onSubmit={() => onRedirect(channel === 'whatsapp' ? 'Opening WhatsApp with tracked link...' : 'Creating Mailtrap tracked email...')}>
       <input type="hidden" name="order_id" value={order.orderId ?? ''} />
       <input type="hidden" name="quote_id" value={order.quoteId} />
       <input type="hidden" name="document_type" value={documentType} />
       <input type="hidden" name="channel" value={channel} />
       <input type="hidden" name="recipient_role" value="buyer" />
-      <input name="recipient" defaultValue={recipient} placeholder={channel === 'email' ? 'Buyer email' : 'WhatsApp phone'} disabled={disabled} />
+      <label><span>{channel === 'email' ? 'Email recipient' : 'WhatsApp phone'}</span><input name="recipient" defaultValue={recipient} placeholder={channel === 'email' ? 'Buyer email' : 'WhatsApp phone'} disabled={disabled} /></label>
+      {channel === 'email' ? <label className="span-2"><span>Message note sent with tracked link</span><textarea name="note" defaultValue={`Please review the ${docLabel}. The secure tracked document link is included below.`} disabled={disabled} /></label> : <p className="field-note span-2">WhatsApp opens manually with the tracked preview link. Operator reviews and sends; no Business API delivery is claimed.</p>}
       <ActionButton tone={channel === 'email' ? 'green' : 'teal'} disabled={disabled}>{label}</ActionButton>
     </form>
   );
@@ -762,12 +764,12 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
   }, [orders]);
 
   const kpis = useMemo(() => [
-    { key: 'all' as KpiFilter, label: 'All orders', count: orders.length, detail: 'Loaded execution orders' },
-    { key: 'ready_now' as KpiFilter, label: 'Ready now', count: orders.filter((order) => nextBestAction(order).blocks.length === 0 && !isBlocked(order)).length, detail: 'No current blocker' },
-    { key: 'blocked' as KpiFilter, label: 'Blocked', count: orders.filter(isBlocked).length, detail: 'Needs human review' },
-    { key: 'finance_ready' as KpiFilter, label: 'Finance queue-ready', count: orders.filter(isFinanceQueueReady).length, detail: 'Final invoice approved' },
-    { key: 'freight_ready' as KpiFilter, label: 'Freight queue-ready', count: orders.filter(isFreightQueueReady).length, detail: 'Packing payload approved' },
-    { key: 'whatsapp_ready' as KpiFilter, label: 'WhatsApp-ready docs', count: orders.filter(isWhatsappReady).length, detail: 'Approved tracked link docs' },
+    { key: 'all' as KpiFilter, icon: '📊', tone: 'value', label: 'All orders', count: orders.length, detail: 'Loaded execution orders' },
+    { key: 'ready_now' as KpiFilter, icon: '✅', tone: 'ready', label: 'Ready now', count: orders.filter((order) => nextBestAction(order).blocks.length === 0 && !isBlocked(order)).length, detail: 'No current blocker' },
+    { key: 'blocked' as KpiFilter, icon: '⛔', tone: 'blocked', label: 'Blocked', count: orders.filter(isBlocked).length, detail: 'Needs human review' },
+    { key: 'finance_ready' as KpiFilter, icon: '💳', tone: 'finance', label: 'Finance queue-ready', count: orders.filter(isFinanceQueueReady).length, detail: 'Final invoice approved' },
+    { key: 'freight_ready' as KpiFilter, icon: '🚚', tone: 'freight', label: 'Freight queue-ready', count: orders.filter(isFreightQueueReady).length, detail: 'Packing payload approved' },
+    { key: 'whatsapp_ready' as KpiFilter, icon: '💬', tone: 'whatsapp', label: 'WhatsApp-ready docs', count: orders.filter(isWhatsappReady).length, detail: 'Approved tracked link docs' },
   ], [orders]);
 
   const filteredOrders = useMemo(() => {
@@ -849,20 +851,6 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
 
   return (
     <main className="oc-page">
-      <header className="oc-header">
-        <div>
-          <span>Execution Cockpit v2</span>
-          <h1>Orders Execution Cockpit</h1>
-          <p>Actual buyer order lines, human approval gates, document sends, pending finance queue, and pending freight queue in one execution workspace.</p>
-        </div>
-        <div className="truth-strip">
-          <StatusPill tone="good">Mailtrap email live</StatusPill>
-          <StatusPill tone="warn">Finance pending adapter</StatusPill>
-          <StatusPill tone="warn">Freight pending adapter</StatusPill>
-          <StatusPill tone="blue">WhatsApp manual tracked link</StatusPill>
-        </div>
-      </header>
-
       {(notice || redirecting || copied) ? (
         <section className="oc-feedback">
           {notice ? <span>{titleCase(notice)}</span> : null}
@@ -875,8 +863,8 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
         {kpis.map((kpi) => {
           const active = kpiFilter === kpi.key || (!kpiFilter && kpi.key === 'all');
           return (
-            <button key={kpi.label} className={`kpi-card ${active ? 'active' : ''}`} onClick={() => setKpiFilter(active && kpi.key !== 'all' ? null : kpi.key === 'all' ? null : kpi.key)}>
-              <span>{kpi.label}</span>
+            <button key={kpi.label} className={`kpi-card ${kpi.tone} ${active ? 'active' : ''}`} onClick={() => setKpiFilter(active && kpi.key !== 'all' ? null : kpi.key === 'all' ? null : kpi.key)}>
+              <span className="kpi-top"><em>{kpi.label}</em><i>{kpi.icon}</i></span>
               <strong>{kpi.count}</strong>
               <small>{kpi.detail}</small>
             </button>
@@ -978,7 +966,7 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
                   const blocked = !unlocked;
                   return (
                     <button key={stage.key} className={`stage-pill ${active ? 'active' : ''} ${done ? 'done' : ''} ${blocked ? 'blocked' : ''}`} onClick={() => setSelectedStage(stage.key)}>
-                      <span>{index + 1}</span>
+                      <span><em>{stage.icon}</em>{index + 1}</span>
                       <b>{stage.label}</b>
                       <small>{done ? 'Done' : active ? 'Active' : blocked ? 'Blocked' : 'Open'}</small>
                     </button>
@@ -1060,15 +1048,16 @@ function StageWorkspace({ order, stageKey, stageIndex, catalogOptions, setDrawer
 }
 
 function ActualLinesStage({ order, catalogOptions }: { order: ProductionOrder8S; catalogOptions: CatalogOrderOption8S[] }) {
+  const actualApproved = workflow(order).actualApproved;
   return (
-    <article className="stage-card">
+    <article className="stage-card actual-stage">
       <div className="stage-head">
         <div>
           <span>Accepted quote lineage preserved</span>
           <h3>Actual vs quoted buyer order lines</h3>
-          <p>Actual order lines can differ from quoted lines. Sent/accepted quote version lines are never mutated.</p>
+          <p>Review the buyer's actual order against the accepted quote. Save line edits and discount changes together; the accepted quote version remains immutable.</p>
         </div>
-        <StatusPill tone={workflow(order).actualApproved ? 'good' : 'warn'}>{workflow(order).actualApproved ? 'Approved' : 'Approval required'}</StatusPill>
+        <StatusPill tone={actualApproved ? 'good' : 'warn'}>{actualApproved ? 'Approved' : 'Approval required'}</StatusPill>
       </div>
 
       <div className="line-table">
@@ -1091,16 +1080,18 @@ function ActualLinesStage({ order, catalogOptions }: { order: ProductionOrder8S;
             <form action={updateActualOrderLineAction} className="line-form">
               <input type="hidden" name="quote_id" value={order.quoteId} />
               <input type="hidden" name="order_line_id" value={line.id} />
-              <label><span>Product</span><input value={line.productName} readOnly /></label>
+              <div className="line-editor-title">
+                <b>{line.productName}</b>
+                <small>{line.skuCode ?? line.hsnCode ?? line.variantName ?? 'Catalog / SKU context pending'}</small>
+              </div>
               <label><span>Actual qty</span><input name="ordered_quantity" defaultValue={lineQty(line)} disabled={!line.isActual} /></label>
               <label><span>Unit price</span><input name="unit_price" defaultValue={line.unitPrice ?? ''} disabled={!line.isActual} /></label>
-              <label><span>Reason/context</span><input name="change_reason" defaultValue={line.reason ?? 'Actual buyer order review.'} disabled={!line.isActual} /></label>
+              <label className="span-2"><span>Reason / context</span><input name="change_reason" defaultValue={line.reason ?? 'Actual buyer order review.'} disabled={!line.isActual} /></label>
               <label><span>Line discount</span><select name="line_discount_type" defaultValue={line.lineDiscountType ?? 'none'} disabled={!line.isActual}><option value="none">No discount</option><option value="percent">Percent</option><option value="amount">Amount</option></select></label>
               <label><span>Discount value</span><input name="line_discount_value" defaultValue={line.lineDiscountValue ?? ''} disabled={!line.isActual} /></label>
-              <label><span>Discount reason</span><input name="line_discount_reason" defaultValue={line.lineDiscountReason ?? ''} disabled={!line.isActual} /></label>
+              <label className="span-2"><span>Discount reason</span><input name="line_discount_reason" defaultValue={line.lineDiscountReason ?? ''} disabled={!line.isActual} placeholder="Required when discount is applied" /></label>
               <div className="line-actions">
-                <ActionButton disabled={!line.isActual}>Save line</ActionButton>
-                <ActionButton tone="blue" disabled={!line.isActual}>Save line discount</ActionButton>
+                <ActionButton tone="blue" disabled={!line.isActual}>Save line + discount</ActionButton>
               </div>
             </form>
             <form action={removeActualOrderLineAction} className="remove-form">
@@ -1114,24 +1105,30 @@ function ActualLinesStage({ order, catalogOptions }: { order: ProductionOrder8S;
       </div>
 
       <div className="split-panel">
-        <form action={addManualActualOrderLineAction} className="control-grid">
+        <form action={addManualActualOrderLineAction} className="control-grid add-line-card">
           <input type="hidden" name="quote_id" value={order.quoteId} />
-          <label><span>Add catalog line</span><select name="catalog_pricing_rule_id"><option value="">Choose catalog product</option>{catalogOptions.slice(0, 80).map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
+          <label className="span-2"><span>Add catalog product</span><select name="catalog_pricing_rule_id"><option value="">Manual / choose catalog product</option>{catalogOptions.slice(0, 160).map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
+          {!catalogOptions.length ? <p className="field-note span-2">No quoteable catalog options were returned for this organization. Use manual product fields now; catalog mapping can be repaired separately.</p> : null}
+          <label><span>Manual product</span><input name="product_name" placeholder="Product name if catalog is blank" /></label>
+          <label><span>SKU / code</span><input name="sku_code" placeholder="Optional" /></label>
           <label><span>Qty</span><input name="ordered_quantity" placeholder="Quantity" /></label>
-          <label><span>Override price</span><input name="unit_price" placeholder="Optional" /></label>
-          <label><span>Reason/context</span><input name="change_reason" placeholder="Why this line is being added" /></label>
+          <label><span>Unit price</span><input name="unit_price" placeholder="Required for manual line" /></label>
+          <label><span>Currency</span><input name="currency" defaultValue={order.currency ?? 'USD'} /></label>
+          <label><span>HSN / HS code</span><input name="hsn_code" placeholder="Optional" /></label>
+          <label className="span-2"><span>Reason/context</span><input name="change_reason" placeholder="Why this line is being added" /></label>
           <ActionButton tone="blue">Add line</ActionButton>
         </form>
         <form action={saveOrderDiscountAction} className="control-grid">
           <input type="hidden" name="quote_id" value={order.quoteId} />
           <label><span>Total discount</span><select name="order_discount_type" defaultValue={order.orderDiscountType ?? 'none'}><option value="none">No total discount</option><option value="percent">Percent</option><option value="amount">Amount</option></select></label>
           <label><span>Discount value</span><input name="order_discount_value" defaultValue={order.orderDiscountValue ?? ''} /></label>
-          <label><span>Discount reason</span><input name="order_discount_reason" defaultValue={order.orderDiscountReason ?? ''} /></label>
+          <label className="span-2"><span>Discount reason</span><input name="order_discount_reason" defaultValue={order.orderDiscountReason ?? ''} placeholder="Why this total order discount is allowed" /></label>
           <ActionButton>Save total order discount</ActionButton>
         </form>
       </div>
-      <div className="cta-row">
+      <div className="cta-row approve-row">
         <GateForm action={approveActualOrderLinesGateAction} quoteId={order.quoteId} tone="green">Approve actual lines</GateForm>
+        <span className="approval-note">Human approval unlocks Buyer Doc. No quote version lines are changed.</span>
       </div>
     </article>
   );
@@ -1438,7 +1435,7 @@ function ActionStack({ order, next, setStage }: { order: ProductionOrder8S; next
       <section className="stack-section">
         <b>Latest activity/events</b>
         {activities.length ? activities.map((activity) => (
-          <p key={activity.id}><span>{activity.label}</span><small>{activity.at ? new Date(activity.at).toLocaleString() : 'Time not available'}</small></p>
+          <p key={activity.id}><span>{activity.label}</span><small>{activity.at ? activity.at.slice(0, 16).replace('T', ' ') : 'Time not available'}</small></p>
         )) : <p>No activity loaded yet.</p>}
       </section>
     </aside>
@@ -1507,71 +1504,19 @@ function QueueDrawer({ drawer, onClose, onCopy }: { drawer: { type: 'finance' | 
 }
 
 const css = `
-.oc-page{min-height:100vh;background:#f3f7f6;color:#102033;padding:24px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-.oc-header,.filter-bar,.queue-panel,.workspace-panel,.action-stack,.stage-card,.cockpit-title,.empty-shell,.oc-feedback{background:#fff;border:1px solid #d8e5e1;border-radius:8px;box-shadow:0 18px 45px rgba(21,44,58,.08)}
-.oc-header{display:flex;justify-content:space-between;gap:18px;padding:22px;margin-bottom:14px}
-.oc-header h1,.cockpit-title h2,.stage-card h3,.next-card h3,.empty-shell h1{margin:4px 0;color:#102033;letter-spacing:0}
-.oc-header p,.stage-card p,.next-card p,.empty-panel p,.empty-shell p,.stack-section p,.cockpit-title p{margin:4px 0;color:#64748b;line-height:1.45}
-.oc-header span,.stage-head span,.panel-head span,.cockpit-title span,.metric span,.next-card span,.empty-shell span,.filter-bar label span{font-size:11px;text-transform:uppercase;font-weight:800;letter-spacing:.04em;color:#607080}
-.truth-strip,.truth-list,.cta-row,.queue-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.oc-feedback{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:14px;color:#0f766e;font-weight:800}
-.kpi-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px}
-.kpi-card{border:1px solid #d8e5e1;background:#fff;border-radius:8px;padding:14px;text-align:left;box-shadow:0 12px 30px rgba(21,44,58,.06);cursor:pointer}
-.kpi-card.active{outline:2px solid #0f766e;background:#f0fdfa}
-.kpi-card span{display:block;font-size:11px;font-weight:900;text-transform:uppercase;color:#607080}
-.kpi-card strong{display:block;font-size:30px;color:#102033;margin:6px 0}
-.kpi-card small{color:#64748b}
-.filter-bar{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr 1fr auto;gap:10px;padding:14px;margin-bottom:14px;align-items:end}
-.filter-bar label{display:grid;gap:5px}
-.filter-bar input,.filter-bar select,.line-form input,.line-form select,.control-grid input,.control-grid select,.send-form input,.inline-form input,.check-form input,.closeout-form input,.closeout-form select,.closeout-form textarea{border:1px solid #cfddd8;border-radius:8px;padding:10px;background:#fff;color:#102033;min-width:0}
-.cockpit-grid{display:grid;grid-template-columns:360px minmax(0,1fr) 330px;gap:14px;align-items:start}
-.queue-panel,.workspace-panel,.action-stack{padding:14px}
-.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.panel-head strong{display:block;color:#102033}
-.queue-list{display:grid;gap:8px;max-height:calc(100vh - 320px);overflow:auto;padding-right:3px}
-.order-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:10px;align-items:start;width:100%;border:1px solid #e4ece9;background:#fff;border-radius:8px;padding:12px;text-align:left;cursor:pointer}
-.order-row.selected{border-color:#0f766e;background:#f0fdfa}
-.avatar{width:42px;height:42px;border-radius:8px;background:#155e75;color:#fff;display:grid;place-items:center;font-weight:900}
-.row-main{display:grid;gap:3px;min-width:0}
-.row-main b,.row-main small,.row-main em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row-main small,.row-main em,.row-side small{color:#64748b;font-style:normal;font-size:12px}
-.row-side{display:grid;gap:5px;justify-items:end}
-.row-side strong{font-size:12px;color:#102033}
-.progress{height:6px;background:#e7efec;border-radius:999px;overflow:hidden}
-.progress i{display:block;height:100%;background:linear-gradient(90deg,#0f766e,#2563eb)}
-.cockpit-title{display:flex;justify-content:space-between;gap:14px;padding:16px;margin-bottom:12px}
-.header-metrics{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:8px;min-width:330px}
-.metric{border:1px solid #e2eae7;background:#f8fbfa;border-radius:8px;padding:10px}
-.metric strong{display:block;color:#102033;margin-top:4px}
-.stage-rail{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;margin-bottom:12px}
-.stage-pill{border:1px solid #d8e5e1;background:#fff;border-radius:8px;padding:10px 8px;display:grid;gap:4px;text-align:left;min-height:84px;cursor:pointer}
-.stage-pill span{width:22px;height:22px;border-radius:999px;background:#e7efec;display:grid;place-items:center;font-weight:900;color:#47616c}
-.stage-pill b{font-size:12px;color:#102033}
-.stage-pill small{font-size:11px;color:#64748b}
-.stage-pill.active{border-color:#2563eb;background:#eff6ff}
-.stage-pill.done{border-color:#16a34a;background:#f0fdf4}
-.stage-pill.blocked{border-color:#f59e0b;background:#fff7ed}
-.stage-card{padding:18px}
-.stage-head{display:flex;justify-content:space-between;gap:14px;margin-bottom:14px}
-.pill{display:inline-flex;align-items:center;justify-content:center;border:1px solid #d8e5e1;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;white-space:nowrap}
-.pill.good{background:#ecfdf5;color:#047857;border-color:#bbf7d0}.pill.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}.pill.bad{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.pill.blue{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
-.oc-btn{border:1px solid #cfddd8;background:#fff;border-radius:8px;padding:10px 12px;font-weight:900;color:#17425b;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:40px}
-.oc-btn:hover{background:#f8fbfa}.oc-btn:disabled,.oc-btn.disabled{opacity:.45;cursor:not-allowed;pointer-events:none}.oc-btn.green{background:#0f766e;color:#fff;border-color:#0f766e}.oc-btn.teal{background:#ccfbf1;color:#115e59;border-color:#99f6e4}.oc-btn.blue{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}.oc-btn.danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.oc-btn.reset{height:42px}.oc-btn.full{width:100%}
-.line-table{border:1px solid #e2eae7;border-radius:8px;overflow:hidden;margin-bottom:14px}
-.line-head,.line-row{display:grid;grid-template-columns:1.5fr .7fr .7fr .8fr .8fr .8fr;gap:8px;align-items:center;padding:10px;border-bottom:1px solid #e2eae7}
-.line-head{background:#f8fbfa;font-size:11px;font-weight:900;text-transform:uppercase;color:#607080}
-.line-row:last-child{border-bottom:0}.line-row small{display:block;color:#64748b}
-.editor-list{display:grid;gap:10px}.line-editor{border:1px solid #e2eae7;border-radius:8px;padding:12px;background:#fbfdfc}.line-form{display:grid;grid-template-columns:1.3fr .6fr .7fr 1fr .7fr .7fr 1fr auto;gap:8px;align-items:end}.line-form label,.control-grid label,.closeout-form label{display:grid;gap:5px;font-size:11px;text-transform:uppercase;font-weight:800;color:#607080}.line-actions{display:flex;gap:6px}.remove-form{margin-top:8px}
-.split-panel{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;border:1px solid #e2eae7;border-radius:8px;padding:12px;background:#fbfdfc}.control-grid.wide{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}.span-2{grid-column:span 2}
-.metric-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:12px}
-.send-stack{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.send-form,.inline-form{display:flex;gap:8px;align-items:center}.send-form input{flex:1}.document-tray{border:1px solid #e2eae7;background:#f8fbfa;border-radius:8px;padding:12px;margin-top:14px}.document-row{background:#fff;border:1px solid #e2eae7;border-radius:8px;padding:10px;margin-top:8px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.document-row small,.document-row p{display:block;color:#64748b;margin:2px 0}.document-row p{grid-column:1/-1}
-.truth-list span{background:#f8fbfa;border:1px solid #d8e5e1;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800;color:#47616c}.truth-list.compact span{font-size:10px}
-.blocker-text,.note-text{border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:8px;padding:10px}
-.check-form{display:grid;grid-template-columns:repeat(3,auto) minmax(220px,1fr) auto auto;gap:10px;align-items:center}.check-form label{display:flex;gap:6px;align-items:center;font-weight:800;color:#47616c}
-.closeout-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.closeout-form textarea{grid-column:1/-1;min-height:90px}
-.action-stack{position:sticky;top:16px}.next-card{border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:12px;margin-bottom:12px}.stack-section{border-top:1px solid #e2eae7;padding:12px 0}.stack-section b{display:block;margin-bottom:5px;color:#102033}.stack-section ul{padding-left:18px;margin:6px 0;color:#92400e}.stack-section small{display:block;color:#64748b;margin-top:2px}
-.locked-card{border-style:dashed;background:#fff7ed}.empty-panel,.empty-workspace,.empty-shell{padding:24px;text-align:center}.empty-shell{max-width:760px;margin:80px auto}
-.drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);display:flex;justify-content:flex-end;z-index:50}.queue-drawer{width:min(760px,100%);height:100%;overflow:auto;background:#fff;padding:20px;box-shadow:-24px 0 60px rgba(15,23,42,.2)}.drawer-head{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #e2eae7;padding-bottom:14px}.drawer-head h3{margin:3px 0}.drawer-head p{color:#64748b;margin:0}.drawer-truth{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.event-card{border:1px solid #e2eae7;border-radius:8px;padding:14px;margin-bottom:12px}.event-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}.event-card pre{max-height:340px;overflow:auto;background:#0f172a;color:#d1fae5;border-radius:8px;padding:12px;font-size:12px;line-height:1.45}
-@media(max-width:1500px){.cockpit-grid{grid-template-columns:320px minmax(0,1fr)}.action-stack{grid-column:1/-1;position:static}.stage-rail{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi-row{grid-template-columns:repeat(3,minmax(0,1fr))}.filter-bar{grid-template-columns:repeat(3,minmax(0,1fr))}.line-form{grid-template-columns:repeat(3,minmax(0,1fr))}.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:900px){.oc-page{padding:14px}.oc-header,.cockpit-title,.stage-head{display:grid}.cockpit-grid,.filter-bar,.kpi-row,.stage-rail,.split-panel,.control-grid,.control-grid.wide,.send-stack,.check-form,.closeout-form,.metric-grid,.header-metrics,.event-meta{grid-template-columns:1fr}.queue-list{max-height:none}.line-head{display:none}.line-row{grid-template-columns:1fr}.line-form{grid-template-columns:1fr}.document-row{grid-template-columns:1fr}.send-form,.inline-form,.cta-row,.queue-actions{display:grid;grid-template-columns:1fr}.span-2{grid-column:auto}}
+.oc-page{min-height:100vh;background:#f4f8fb;color:#102033;padding:22px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.filter-bar,.queue-panel,.workspace-panel,.action-stack,.stage-card,.cockpit-title,.empty-shell,.oc-feedback{background:#fff;border:1px solid #dbe6ef;border-radius:22px;box-shadow:0 18px 42px rgba(15,23,42,.08)}
+.oc-header{display:none}.oc-feedback{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:14px;color:#0f766e;font-weight:800}
+.kpi-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px}.kpi-card{border:1px solid #dbe6ef;background:#fff;border-radius:22px;padding:15px;text-align:left;box-shadow:0 18px 42px rgba(15,23,42,.07);cursor:pointer;min-height:112px;display:grid;gap:8px;transition:.16s ease}.kpi-card:hover{transform:translateY(-2px);border-color:#93c5fd}.kpi-card.active{border-color:#0c7fff;box-shadow:0 0 0 3px rgba(12,127,255,.13),0 18px 42px rgba(15,23,42,.08);background:#eff6ff}.kpi-top{display:flex!important;justify-content:space-between;align-items:center;gap:10px;font-size:10px;font-weight:1000;text-transform:uppercase;letter-spacing:.12em;color:#607080}.kpi-top em{font-style:normal;line-height:1.2}.kpi-top i{width:34px;height:34px;border-radius:14px;display:grid;place-items:center;font-style:normal;font-size:18px;background:#f1f5f9}.kpi-card.ready .kpi-top i{background:#dcfce7;color:#047857}.kpi-card.blocked .kpi-top i{background:#fee2e2;color:#b91c1c}.kpi-card.finance .kpi-top i{background:#e8f3ff;color:#1d4ed8}.kpi-card.freight .kpi-top i{background:#ecfeff;color:#0891b2}.kpi-card.whatsapp .kpi-top i{background:#dcfce7;color:#16a34a}.kpi-card.value .kpi-top i{background:#fef3c7;color:#92400e}.kpi-card strong{display:block;font-size:30px;color:#082f49;margin:0;letter-spacing:-.05em}.kpi-card small{color:#64748b;font-weight:800}
+.filter-bar{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr 1fr auto;gap:10px;padding:14px;margin-bottom:14px;align-items:end}.filter-bar label,.line-form label,.control-grid label,.closeout-form label,.send-form label{display:grid;gap:5px}.filter-bar label span,.line-form label span,.control-grid label span,.closeout-form label span,.send-form label span{font-size:10px;text-transform:uppercase;font-weight:900;letter-spacing:.12em;color:#607080}.filter-bar input,.filter-bar select,.line-form input,.line-form select,.control-grid input,.control-grid select,.send-form input,.send-form textarea,.inline-form input,.check-form input,.closeout-form input,.closeout-form select,.closeout-form textarea{border:1px solid #cfddd8;border-radius:14px;padding:10px 12px;background:#fff;color:#102033;min-width:0;outline:none}.filter-bar input:focus,.filter-bar select:focus,.line-form input:focus,.line-form select:focus,.control-grid input:focus,.control-grid select:focus,.send-form input:focus,.send-form textarea:focus{border-color:#0c7fff;box-shadow:0 0 0 3px rgba(12,127,255,.1)}
+.cockpit-grid{display:grid;grid-template-columns:360px minmax(0,1fr) 330px;gap:14px;align-items:start}.queue-panel,.workspace-panel,.action-stack{padding:14px}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.panel-head strong{display:block;color:#102033}.queue-list{display:grid;gap:10px;max-height:calc(100vh - 285px);overflow:auto;padding-right:3px}.order-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:10px;align-items:start;width:100%;border:1px solid #e4ece9;background:#fff;border-radius:18px;padding:12px;text-align:left;cursor:pointer;transition:.16s ease}.order-row:hover{border-color:#93c5fd;background:#f8fbff}.order-row.selected{border-color:#0f766e;background:#f0fdfa;box-shadow:0 0 0 3px rgba(15,118,110,.12)}.avatar{width:42px;height:42px;border-radius:14px;background:#155e75;color:#fff;display:grid;place-items:center;font-weight:900}.row-main{display:grid;gap:3px;min-width:0}.row-main b,.row-main small,.row-main em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row-main small,.row-main em,.row-side small{color:#64748b;font-style:normal;font-size:12px}.row-side{display:grid;gap:5px;justify-items:end}.row-side strong{font-size:12px;color:#102033}.progress{height:6px;background:#e7efec;border-radius:999px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#0f766e,#2563eb)}
+.cockpit-title{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,430px);gap:14px;padding:16px;margin-bottom:12px}.cockpit-title h2,.stage-card h3,.next-card h3,.empty-shell h1{margin:4px 0;color:#102033;letter-spacing:-.02em}.cockpit-title p,.stage-card p,.next-card p,.empty-panel p,.empty-shell p,.stack-section p{margin:4px 0;color:#64748b;line-height:1.45}.cockpit-title span,.stage-head span,.panel-head span,.metric span,.next-card span,.empty-shell span{font-size:11px;text-transform:uppercase;font-weight:800;letter-spacing:.04em;color:#607080}.header-metrics{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:8px}.metric{border:1px solid #e2eae7;background:#f8fbfa;border-radius:16px;padding:10px}.metric strong{display:block;color:#102033;margin-top:4px}
+.stage-rail{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-bottom:12px}.stage-pill{border:1px solid #d8e5e1;background:#fff;border-radius:16px;padding:10px 9px;display:grid;gap:5px;text-align:left;min-height:86px;cursor:pointer;transition:.16s ease}.stage-pill:hover{border-color:#93c5fd}.stage-pill span{display:flex;align-items:center;gap:6px;font-weight:900;color:#47616c}.stage-pill span em{width:24px;height:24px;border-radius:999px;background:#e7efec;display:grid;place-items:center;font-style:normal;font-size:14px}.stage-pill b{font-size:12px;color:#102033}.stage-pill small{font-size:11px;color:#64748b}.stage-pill.active{border-color:#2563eb;background:#eff6ff}.stage-pill.done{border-color:#16a34a;background:#f0fdf4}.stage-pill.blocked{border-color:#f59e0b;background:#fff7ed}
+.stage-card{padding:18px}.stage-head{display:flex;justify-content:space-between;gap:14px;margin-bottom:14px}.pill{display:inline-flex;align-items:center;justify-content:center;border:1px solid #d8e5e1;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;white-space:nowrap}.pill.good{background:#ecfdf5;color:#047857;border-color:#bbf7d0}.pill.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}.pill.bad{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.pill.blue{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}.oc-btn{border:1px solid #cfddd8;background:#fff;border-radius:14px;padding:10px 14px;font-weight:900;color:#17425b;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:40px;transition:.16s ease}.oc-btn:hover{background:#f8fbfa;transform:translateY(-1px)}.oc-btn:disabled,.oc-btn.disabled{opacity:.45;cursor:not-allowed;pointer-events:none;transform:none}.oc-btn.green{background:#0f766e;color:#fff;border-color:#0f766e}.oc-btn.teal{background:#ccfbf1;color:#115e59;border-color:#99f6e4}.oc-btn.blue{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}.oc-btn.danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.oc-btn.reset{height:42px}.oc-btn.full{width:100%}
+.line-table{border:1px solid #e2eae7;border-radius:18px;overflow:hidden;margin-bottom:14px}.line-head,.line-row{display:grid;grid-template-columns:1.5fr .7fr .7fr .8fr .8fr .8fr;gap:8px;align-items:center;padding:11px;border-bottom:1px solid #e2eae7}.line-head{background:#f8fbfa;font-size:11px;font-weight:900;text-transform:uppercase;color:#607080}.line-row:last-child{border-bottom:0}.line-row small{display:block;color:#64748b}.editor-list{display:grid;gap:12px}.line-editor{border:1px solid #e2eae7;border-radius:18px;padding:14px;background:#fbfdfc}.line-form{display:grid;grid-template-columns:1.3fr .55fr .65fr 1fr .75fr .65fr 1fr auto;gap:10px;align-items:end}.line-editor-title{display:grid;gap:3px;align-self:center}.line-editor-title b{color:#102033}.line-editor-title small{color:#64748b}.line-actions{display:flex;gap:6px}.remove-form{margin-top:8px}.field-note{border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:14px;padding:9px 11px;margin:0;font-size:12px;line-height:1.45}.approval-note{color:#64748b;font-size:12px;font-weight:700}.split-panel{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border:1px solid #e2eae7;border-radius:18px;padding:14px;background:#fbfdfc}.control-grid.wide{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}.span-2{grid-column:span 2}.add-line-card{align-content:start}
+.metric-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:12px}.send-stack{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.send-form{display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:8px;align-items:end;border:1px solid #e2eae7;background:#fbfdfc;border-radius:18px;padding:12px}.email-send-form{grid-template-columns:minmax(200px,1fr) minmax(260px,1.3fr) auto}.send-form textarea{min-height:78px;resize:vertical}.inline-form{display:flex;gap:8px;align-items:center}.document-tray{border:1px solid #e2eae7;background:#f8fbfa;border-radius:18px;padding:12px;margin-top:14px}.document-row{background:#fff;border:1px solid #e2eae7;border-radius:16px;padding:10px;margin-top:8px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.document-row small,.document-row p{display:block;color:#64748b;margin:2px 0}.document-row p{grid-column:1/-1}.cta-row,.queue-actions,.truth-strip,.truth-list{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.truth-list span{background:#f8fbfa;border:1px solid #d8e5e1;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800;color:#47616c}.truth-list.compact span{font-size:10px}.blocker-text,.note-text{border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:14px;padding:10px}
+.check-form{display:grid;grid-template-columns:repeat(3,auto) minmax(220px,1fr) auto auto;gap:10px;align-items:center}.check-form label{display:flex;gap:6px;align-items:center;font-weight:800;color:#47616c}.closeout-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.closeout-form textarea{grid-column:1/-1;min-height:90px}.action-stack{position:sticky;top:16px}.next-card{border:1px solid #bfdbfe;background:#eff6ff;border-radius:18px;padding:12px;margin-bottom:12px}.stack-section{border-top:1px solid #e2eae7;padding:12px 0}.stack-section b{display:block;margin-bottom:5px;color:#102033}.stack-section ul{padding-left:18px;margin:6px 0;color:#92400e}.stack-section small{display:block;color:#64748b;margin-top:2px}.locked-card{border-style:dashed;background:#fff7ed}.empty-panel,.empty-workspace,.empty-shell{padding:24px;text-align:center}.empty-shell{max-width:760px;margin:80px auto}
+.drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);display:flex;justify-content:flex-end;z-index:50}.queue-drawer{width:min(760px,100%);height:100%;overflow:auto;background:#fff;padding:20px;box-shadow:-24px 0 60px rgba(15,23,42,.2)}.drawer-head{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #e2eae7;padding-bottom:14px}.drawer-head h3{margin:3px 0}.drawer-head p{color:#64748b;margin:0}.drawer-truth{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.event-card{border:1px solid #e2eae7;border-radius:18px;padding:14px;margin-bottom:12px}.event-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}.event-card pre{max-height:340px;overflow:auto;background:#0f172a;color:#d1fae5;border-radius:14px;padding:12px;font-size:12px;line-height:1.45}
+@media(max-width:1500px){.cockpit-grid{grid-template-columns:320px minmax(0,1fr)}.action-stack{grid-column:1/-1;position:static}.stage-rail{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi-row{grid-template-columns:repeat(3,minmax(0,1fr))}.filter-bar{grid-template-columns:repeat(3,minmax(0,1fr))}.line-form{grid-template-columns:repeat(3,minmax(0,1fr))}.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.email-send-form{grid-template-columns:1fr}.cockpit-title{grid-template-columns:1fr}.send-stack{grid-template-columns:1fr}}
+@media(max-width:900px){.oc-page{padding:14px}.stage-head{display:grid}.cockpit-grid,.filter-bar,.kpi-row,.stage-rail,.split-panel,.control-grid,.control-grid.wide,.send-stack,.check-form,.closeout-form,.metric-grid,.header-metrics,.event-meta{grid-template-columns:1fr}.queue-list{max-height:none}.line-head{display:none}.line-row{grid-template-columns:1fr}.line-form{grid-template-columns:1fr}.document-row{grid-template-columns:1fr}.send-form,.inline-form,.cta-row,.queue-actions{display:grid;grid-template-columns:1fr}.span-2{grid-column:auto}}
 `;

@@ -130,7 +130,19 @@ export default async function OrdersLayout() {
   const processingCheckRows = Array.isArray(processingChecksResult.data) ? processingChecksResult.data : [];
   const shipmentRows = Array.isArray(shipmentsResult.data) ? shipmentsResult.data : [];
 
-  const catalogOptions: CatalogOrderOption8S[] = (Array.isArray(catalogResult.data) ? catalogResult.data : []).map((rule: any) => {
+  let catalogRows = Array.isArray(catalogResult.data) ? catalogResult.data : [];
+  if (!catalogRows.length) {
+    const { data: fallbackCatalog } = await db
+      .from('active_product_pricing_rules_v')
+      .select('id, product_name, pack_label, sku_code, hsn_code, pricing_type, fob_usd_per_case, fob_usd_per_unit, fob_usd, ex_factory_usd_per_case, ex_factory_usd_per_unit, ex_factory_usd, bulk_usd_per_kg, bulk_ex_factory_usd_per_kg')
+      .eq('organization_id', orgId)
+      .eq('is_active', true)
+      .order('product_name', { ascending: true })
+      .limit(300);
+    catalogRows = Array.isArray(fallbackCatalog) ? fallbackCatalog : [];
+  }
+
+  const catalogOptions: CatalogOrderOption8S[] = catalogRows.map((rule: any) => {
     const price = basisPrice(rule);
     const basisLabel = rule.fob_usd_per_case || rule.fob_usd_per_unit || rule.fob_usd ? 'FOB' : rule.ex_factory_usd_per_case || rule.ex_factory_usd_per_unit || rule.ex_factory_usd ? 'EXW' : rule.bulk_usd_per_kg || rule.bulk_ex_factory_usd_per_kg ? 'BULK' : 'Pricing review';
     return { id: rule.id, label: `${rule.product_name ?? 'Catalog product'}${rule.pack_label ? ` · ${rule.pack_label}` : ''}${rule.sku_code ? ` · ${rule.sku_code}` : ''}${price != null ? ` · ${basisLabel} USD ${price}` : ''}`, productName: rule.product_name ?? 'Catalog product', variantName: rule.pack_label ?? null, skuCode: rule.sku_code ?? null, hsnCode: rule.hsn_code ?? null, pricingType: rule.pricing_type ?? null, basisLabel, fobPrice: num(rule.fob_usd_per_case ?? rule.fob_usd_per_unit ?? rule.fob_usd), exFactoryPrice: num(rule.ex_factory_usd_per_case ?? rule.ex_factory_usd_per_unit ?? rule.ex_factory_usd), bulkPrice: num(rule.bulk_usd_per_kg ?? rule.bulk_ex_factory_usd_per_kg), currency: 'USD' };
