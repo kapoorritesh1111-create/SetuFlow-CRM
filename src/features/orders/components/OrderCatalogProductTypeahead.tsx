@@ -9,6 +9,8 @@ type CatalogComboboxOption = {
   priceLabel: string;
   searchText: string;
   label: string;
+  defaultPrice: number | null;
+  currency: string | null;
 };
 
 type CatalogApiOption = {
@@ -36,6 +38,7 @@ function fallbackFromSelect(option: HTMLOptionElement): CatalogComboboxOption {
   const label = optionText(option);
   const [productName, ...secondaryParts] = label.split(' · ');
   const priceMatch = label.match(/\b(FOB|EXW|BULK|Pricing review)\b.*$/i);
+  const numericPrice = priceMatch?.[0]?.match(/(\d+(?:\.\d+)?)/)?.[1];
   return {
     id: option.value,
     productName: productName || 'Catalog product',
@@ -43,6 +46,8 @@ function fallbackFromSelect(option: HTMLOptionElement): CatalogComboboxOption {
     priceLabel: priceMatch ? priceMatch[0] : 'Catalog pricing',
     searchText: label,
     label,
+    defaultPrice: numericPrice ? Number(numericPrice) : null,
+    currency: 'USD',
   };
 }
 
@@ -50,8 +55,10 @@ function fromApiOption(option: CatalogApiOption): CatalogComboboxOption | null {
   const id = String(option.id ?? '').trim();
   if (!id) return null;
   const productName = String(option.productName ?? 'Catalog product').trim() || 'Catalog product';
-  const priceLabel = option.price != null && Number.isFinite(Number(option.price))
-    ? `${option.basisLabel ?? 'Catalog'} ${option.currency ?? 'USD'} ${Number(option.price).toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+  const defaultPrice = option.price != null && Number.isFinite(Number(option.price)) ? Number(option.price) : null;
+  const currency = option.currency ?? 'USD';
+  const priceLabel = defaultPrice != null
+    ? `${option.basisLabel ?? 'Catalog'} ${currency} ${defaultPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
     : option.basisLabel ?? 'Pricing review';
   const secondaryParts = [
     option.skuCode ? `SKU ${option.skuCode}` : null,
@@ -62,7 +69,7 @@ function fromApiOption(option: CatalogApiOption): CatalogComboboxOption | null {
   const secondary = secondaryParts.join(' · ') || 'SKU / pack / HSN pending';
   const label = [productName, ...secondaryParts, priceLabel].filter(Boolean).join(' · ');
   const searchText = [option.searchText, productName, secondary, priceLabel].filter(Boolean).join(' ');
-  return { id, productName, secondary, priceLabel, searchText, label };
+  return { id, productName, secondary, priceLabel, searchText, label, defaultPrice, currency };
 }
 
 function syncNativeSelect(select: HTMLSelectElement, options: CatalogComboboxOption[], selectedId: string) {
@@ -98,6 +105,7 @@ function enhanceSelect(select: HTMLSelectElement) {
     .map(fallbackFromSelect);
   const selectedId = select.value;
   let selected = options.find((option) => option.id === selectedId) ?? null;
+  let catalogSource: string | undefined;
 
   select.classList.add('catalog-native-select');
   select.tabIndex = -1;
@@ -144,15 +152,28 @@ function enhanceSelect(select: HTMLSelectElement) {
     combobox.setAttribute('data-empty', options.length ? 'false' : 'true');
     input.disabled = !options.length;
     input.placeholder = options.length ? 'Search live catalog by product, SKU, HSN, pack, or pricing type' : 'No active catalog products available';
-    setHelper();
+    setHelper(catalogSource);
     const oldEmpty = form.querySelector<HTMLElement>('.field-note.span-2');
     if (!options.length && oldEmpty) oldEmpty.textContent = 'No active catalog products found for this organization. Check Catalog setup.';
+  }
+
+  function applySelectedDefaults(option: CatalogComboboxOption | null) {
+    if (!option) return;
+    const unitPriceInput = form.querySelector<HTMLInputElement>('input[name="unit_price"]');
+    if (unitPriceInput && option.defaultPrice != null && !unitPriceInput.value.trim()) {
+      unitPriceInput.value = String(option.defaultPrice);
+    }
+    const currencyInput = form.querySelector<HTMLInputElement>('input[name="currency"]');
+    if (currencyInput && option.currency && (!currencyInput.value.trim() || currencyInput.value === 'USD')) {
+      currencyInput.value = option.currency;
+    }
   }
 
   function syncSelected(option: CatalogComboboxOption | null) {
     selected = option;
     select.value = option?.id ?? '';
     input.value = option ? option.label : '';
+    applySelectedDefaults(option);
     select.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
@@ -254,10 +275,10 @@ function enhanceSelect(select: HTMLSelectElement) {
       }
       const currentId = select.value;
       options = liveOptions;
+      catalogSource = payload?.source;
       selected = options.find((option) => option.id === currentId) ?? selected;
       syncNativeSelect(select, options, currentId);
       if (selected && select.value) input.value = selected.label;
-      setHelper(payload?.source);
       refreshEmptyState();
       render(input.value);
     })
